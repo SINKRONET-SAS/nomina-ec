@@ -1,0 +1,27 @@
+# Dependencias
+node_modules/
+
+# Salidas de compilacion
+dist/
+build/
+.expo/
+
+# Entorno y secretos
+.env
+.env.*
+!.env.example
+
+# Logs y cache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.cache/
+coverage/
+
+# Python y temporales
+__pycache__/
+*.pyc
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

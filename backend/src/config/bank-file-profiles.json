@@ -1,0 +1,74 @@
+{
+  "PICHINCHA": {
+    "bankCode": "2011",
+    "delimiter": ";",
+    "encoding": "utf8",
+    "lineEnding": "\n",
+    "dateFormat": "YYYYMMDD",
+    "amountDecimals": 2,
+    "decimalSeparator": ".",
+    "includeHeader": true,
+    "includeTrailer": true,
+    "accountLength": 10,
+    "fields": [
+      "tipoRegistro",
+      "oficina",
+      "digitoControl",
+      "cuenta",
+      "cedula",
+      "nombre",
+      "concepto",
+      "fechaOperacion",
+      "importe",
+      "referencia"
+    ]
+  },
+  "GUAYAQUIL": {
+    "bankCode": "2009",
+    "delimiter": ";",
+    "encoding": "utf8",
+    "lineEnding": "\n",
+    "dateFormat": "YYYYMMDD",
+    "amountDecimals": 2,
+    "decimalSeparator": ".",
+    "includeHeader": true,
+    "includeTrailer": true,
+    "accountLength": 10,
+    "fields": [
+      "tipoRegistro",
+      "oficina",
+      "digitoControl",
+      "cuenta",
+      "cedula",
+      "nombre",
+      "concepto",
+      "fechaOperacion",
+      "importe",
+      "referencia"
+    ]
+  },
+  "PRODUBANCO": {
+    "bankCode": "2017",
+    "delimiter": ";",
+    "encoding": "utf8",
+    "lineEnding": "\n",
+    "dateFormat": "YYYYMMDD",
+    "amountDecimals": 2,
+    "decimalSeparator": ".",
+    "includeHeader": true,
+    "includeTrailer": true,
+    "accountLength": 10,
+    "fields": [
+      "tipoRegistro",
+      "oficina",
+      "digitoControl",
+      "cuenta",
+      "cedula",
+      "nombre",
+      "concepto",
+      "fechaOperacion",
+      "importe",
+      "referencia"
+    ]
+  }
+}
