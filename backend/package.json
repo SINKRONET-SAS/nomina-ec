@@ -9,11 +9,13 @@
     "db:migrate": "node src/config/migrate.js",
     "seed:admins": "node scripts/seed-superadmin-owner.js",
     "cron:start": "node src/config/cron-jobs.js",
+    "verify:rls:render": "node scripts/verify-rls-render.js",
     "test": "jest"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1067.0",
+    "@aws-sdk/s3-request-presigner": "^3.1067.0",
     "@prisma/client": "^6.19.3",
-    "aws-sdk": "^2.1502.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "docx-templates": "^4.11.4",

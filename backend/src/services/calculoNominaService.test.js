@@ -1,5 +1,9 @@
 const { calcularDiasTrabajados, calcularIR } = require('./calculoNominaService');
 const { getLegalParameters } = require('../config/legal-ecuador');
+const {
+  assertLegalParametersReadyForProduction,
+  VALIDATED_SOURCE_STATUS,
+} = require('./legalParameterService');
 
 describe('calculoNominaService', () => {
   test('calcula dias trabajados proporcionales para ingreso a mitad de mes', () => {
@@ -14,5 +18,32 @@ describe('calculoNominaService', () => {
   test('calcula IR mensual para tramo progresivo', () => {
     const legal = getLegalParameters(2026);
     expect(calcularIR(2000, legal)).toBeGreaterThan(0);
+  });
+
+  test('bloquea calculos productivos con parametros legales pendientes', () => {
+    const previous = process.env.REQUIRE_VALIDATED_LEGAL_PARAMETERS;
+    process.env.REQUIRE_VALIDATED_LEGAL_PARAMETERS = 'true';
+
+    expect(() => assertLegalParametersReadyForProduction(getLegalParameters(2026), {
+      year: 2026,
+      tenantId: 'tenant-prueba',
+      operation: 'calculo_nomina',
+    })).toThrow('Los parametros legales del periodo no tienen validacion oficial');
+
+    process.env.REQUIRE_VALIDATED_LEGAL_PARAMETERS = previous;
+  });
+
+  test('permite calculos productivos cuando la fuente legal esta validada oficialmente', () => {
+    const previous = process.env.REQUIRE_VALIDATED_LEGAL_PARAMETERS;
+    process.env.REQUIRE_VALIDATED_LEGAL_PARAMETERS = 'true';
+    const legal = { ...getLegalParameters(2026), sourceStatus: VALIDATED_SOURCE_STATUS };
+
+    expect(() => assertLegalParametersReadyForProduction(legal, {
+      year: 2026,
+      tenantId: 'tenant-prueba',
+      operation: 'calculo_nomina',
+    })).not.toThrow();
+
+    process.env.REQUIRE_VALIDATED_LEGAL_PARAMETERS = previous;
   });
 });

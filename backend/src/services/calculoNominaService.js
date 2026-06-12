@@ -5,7 +5,10 @@
 const db = require('../config/database');
 const AppError = require('../utils/AppError');
 const { roundMoney, toMoneyString } = require('../utils/money');
-const { getLegalParametersForTenant } = require('./legalParameterService');
+const {
+  assertLegalParametersReadyForProduction,
+  getLegalParametersForTenant,
+} = require('./legalParameterService');
 
 async function calcularNominaMensual(tenantId, anio, mes) {
   console.log(`[NOMINA] Calculando ${mes}/${anio} para tenant ${tenantId}`);
@@ -42,6 +45,11 @@ async function calcularNominaMensual(tenantId, anio, mes) {
 
 async function calcularEmpleado(emp, tenantId, anio, mes) {
   const legalParameters = await getLegalParametersForTenant(tenantId, anio);
+  assertLegalParametersReadyForProduction(legalParameters, {
+    year: anio,
+    tenantId,
+    operation: 'calculo_nomina',
+  });
   const payrollParameters = legalParameters.payroll;
 
   const novedades = await db.query(`

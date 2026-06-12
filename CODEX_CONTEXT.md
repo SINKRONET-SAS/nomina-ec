@@ -29,9 +29,9 @@ Antes de modificar codigo runtime se debe leer `RULES.md` y validar `.vscode/Aud
 - El backend runtime sigue usando `pg` directo; Prisma gobierna migraciones.
 - El generador bancario usa perfiles configurables y descifra cuentas solo en memoria.
 - `SUPERADMIN` y `OWNER` tienen seed seguro por variables de entorno.
-- RLS existe en migracion SQL, pero requiere prueba en Render con usuario no superusuario.
-- AWS SDK v2 sigue presente en S3 y debe migrarse a AWS SDK v3.
-- Valores legales 2026 permanecen como `pendiente_validacion_oficial` hasta respaldo oficial.
+- RLS existe en migracion SQL y cuenta con runbook/script de verificacion Render; falta ejecutarlo con usuario no superusuario de staging.
+- AWS SDK v2 fue reemplazado por AWS SDK v3 modular en S3.
+- Valores legales 2026 tienen IR SRI y SBU MDT reconfirmados; IESS y cierre profesional permanecen pendientes, con bloqueo productivo activo.
 
 ## Orden HAIKY revisado
 
@@ -66,7 +66,6 @@ Antes de modificar codigo runtime se debe leer `RULES.md` y validar `.vscode/Aud
 
 ## Pendientes criticos
 
-- Validar valores legales Ecuador 2026 con fuente oficial antes de produccion.
-- Migrar `aws-sdk` v2 a AWS SDK v3 modular.
+- Validar aportes IESS Ecuador 2026 y revision profesional antes de levantar el bloqueo productivo.
 - Probar RLS en Render con usuario no superusuario y evidencia sin secretos.
 - Completar pruebas automatizadas de regresion para liquidacion, RBAC, bancos y aislamiento tenant.
