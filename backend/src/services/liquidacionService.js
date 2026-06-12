@@ -1,101 +1,80 @@
 // ============================================================
-// PLAN HAIKY - Servicio de Liquidación (Finiquito)
-// Cálculo de haberes al terminar relación laboral
+// PLAN HAIKY - Servicio de Liquidacion y Finiquito
 // ============================================================
 const db = require('../config/database');
+const AppError = require('../utils/AppError');
+const { roundMoney, toMoneyString } = require('../utils/money');
 const { generarActaFiniquito } = require('./templateGenerator');
+const { getLegalParametersForTenant } = require('./legalParameterService');
 
-/**
- * Calcula la liquidación de un empleado
- */
 async function calcularLiquidacion(empleadoId, tenantId, causaTerminacion) {
-  // 1. Obtener datos del empleado
   const empResult = await db.query(`
     SELECT * FROM empleados WHERE id = $1 AND tenant_id = $2
   `, [empleadoId, tenantId]);
-  
-  if (empResult.rows.length === 0) throw new Error('Empleado no encontrado');
+
+  if (empResult.rows.length === 0) {
+    throw new AppError('Empleado no encontrado', {
+      code: 'EMPLEADO_NO_ENCONTRADO',
+      statusCode: 404,
+    });
+  }
+
   const emp = empResult.rows[0];
-  
-  // 2. Obtener datos del tenant
   const tenantResult = await db.query('SELECT * FROM tenants WHERE id = $1', [tenantId]);
   const tenant = tenantResult.rows[0];
-  
-  // 3. Calcular tiempo de servicio
   const fechaIngreso = new Date(emp.fecha_ingreso);
   const fechaSalida = new Date();
-  const aniosServicio = (fechaSalida - fechaIngreso) / (1000 * 60 * 60 * 24 * 365.25);
+  const anio = fechaSalida.getFullYear();
+  const legalParameters = await getLegalParametersForTenant(tenantId, anio);
+  const sueldo = Number.parseFloat(emp.sueldo_bruto_mensual);
+  const diasServicio = Math.max(0, Math.floor((fechaSalida - fechaIngreso) / 86400000));
+  const aniosServicio = diasServicio / 365.25;
   const mesesServicio = Math.floor(aniosServicio * 12);
-  const diasServicio = Math.floor((fechaSalida - fechaIngreso) / (1000 * 60 * 60 * 24));
-  
-  // 4. Calcular sueldo pendiente (días del último mes)
-  const ultimoDiaMes = new Date(fechaSalida.getFullYear(), fechaSalida.getMonth() + 1, 0).getDate();
-  const diasMesActual = fechaSalida.getDate();
-  const sueldoDiario = parseFloat(emp.sueldo_bruto_mensual) / 30;
-  const sueldoPendiente = sueldoDiario * diasMesActual;
-  
-  // 5. Calcular décimo tercero proporcional
-  const decimoTercero = parseFloat(emp.sueldo_bruto_mensual) * (mesesServicio % 12) / 12;
-  
-  // 6. Calcular décimo cuarto proporcional
-  const decimoCuarto = 460 * (diasServicio % 365) / 365; // $460 anuales (2026)
-  
-  // 7. Calcular vacaciones proporcionales
-  // 1 mes de sueldo por cada 2 años = 1/24 del sueldo mensual por mes trabajado
-  const vacaciones = parseFloat(emp.sueldo_bruto_mensual) * mesesServicio / 24;
-  
-  // 8. Calcular indemnización por despido intempestivo (si aplica)
+  const sueldoDiario = sueldo / 30;
+  const sueldoPendiente = roundMoney(sueldoDiario * fechaSalida.getDate());
+  const decimoTercero = roundMoney(sueldo * (mesesServicio % 12) / 12);
+  const decimoCuarto = roundMoney(legalParameters.payroll.unifiedBaseSalary * (diasServicio % 365) / 365);
+  const vacaciones = roundMoney(sueldo * mesesServicio / 24);
   let indemnizacion = 0;
+
   if (causaTerminacion === 'despido_intempestivo') {
-    // Art. 188 Código del Trabajo
-    if (aniosServicio < 3) {
-      indemnizacion = parseFloat(emp.sueldo_bruto_mensual) * 3; // 3 meses
-    } else if (aniosServicio < 5) {
-      indemnizacion = parseFloat(emp.sueldo_bruto_mensual) * 4; // 4 meses
-    } else {
-      // 1 mes por cada año de servicio a partir del 5to
-      indemnizacion = parseFloat(emp.sueldo_bruto_mensual) * Math.max(4, Math.floor(aniosServicio));
-    }
+    indemnizacion = aniosServicio < 3
+      ? roundMoney(sueldo * 3)
+      : roundMoney(sueldo * Math.max(4, Math.floor(aniosServicio)));
   }
-  
-  // 9. Calcular desahucio (si aplica)
+
   let desahucio = 0;
   if (causaTerminacion === 'desahucio') {
-    // Art. 185 Código del Trabajo: 25% del último sueldo por cada año
-    desahucio = parseFloat(emp.sueldo_bruto_mensual) * 0.25 * Math.floor(aniosServicio);
+    desahucio = roundMoney(sueldo * 0.25 * Math.floor(aniosServicio));
   }
-  
-  // 10. Total liquidación
-  const total = sueldoPendiente + decimoTercero + decimoCuarto + vacaciones + indemnizacion + desahucio;
-  
-  // 11. VALIDACIÓN REGLA IRRENUNCIABLE: Verificar devolución de equipos
+
   const equiposPendientes = await verificarDevolucionEquipos(empleadoId, tenantId);
   if (equiposPendientes > 0) {
-    throw new Error(`VIOLACION_REGLA_IRRENUNCIABLE: El empleado tiene ${equiposPendientes} equipos sin devolver. No se puede generar el acta de finiquito.`);
+    throw new AppError(`El empleado tiene ${equiposPendientes} equipos sin devolver. No se puede generar el acta de finiquito.`, {
+      code: 'EQUIPOS_PENDIENTES_FINIQUITO',
+      statusCode: 409,
+    });
   }
-  
-  // 12. Actualizar empleado como inactivo
-  await db.query(`
-    UPDATE empleados SET 
-      activo = false, 
-      fecha_salida = CURRENT_DATE,
-      causa_salida = $1
-    WHERE id = $2
-  `, [causaTerminacion, empleadoId]);
-  
-  // 13. Generar acta de finiquito
+
+  const total = roundMoney(sueldoPendiente + decimoTercero + decimoCuarto + vacaciones + indemnizacion + desahucio);
   const liquidacion = {
-    sueldoPendiente: sueldoPendiente.toFixed(2),
-    decimoTercero: decimoTercero.toFixed(2),
-    decimoCuarto: decimoCuarto.toFixed(2),
-    vacaciones: vacaciones.toFixed(2),
-    indemnizacion: indemnizacion.toFixed(2),
-    desahucio: desahucio.toFixed(2),
-    total: total.toFixed(2),
+    sueldoPendiente: toMoneyString(sueldoPendiente),
+    decimoTercero: toMoneyString(decimoTercero),
+    decimoCuarto: toMoneyString(decimoCuarto),
+    vacaciones: toMoneyString(vacaciones),
+    indemnizacion: toMoneyString(indemnizacion),
+    desahucio: toMoneyString(desahucio),
+    total: toMoneyString(total),
   };
-  
+
+  await db.query(`
+    UPDATE empleados
+    SET activo = false, fecha_salida = CURRENT_DATE, updated_at = NOW()
+    WHERE id = $1 AND tenant_id = $2
+  `, [empleadoId, tenantId]);
+
   const actaUrl = await generarActaFiniquito(emp, tenant, causaTerminacion, liquidacion);
-  
+
   return {
     empleadoId,
     nombre: `${emp.nombres} ${emp.apellidos}`,
@@ -106,22 +85,14 @@ async function calcularLiquidacion(empleadoId, tenantId, causaTerminacion) {
   };
 }
 
-/**
- * Verifica si el empleado tiene equipos sin devolver
- */
 async function verificarDevolucionEquipos(empleadoId, tenantId) {
   const result = await db.query(`
-    SELECT COUNT(*) as pendientes FROM acta_entrega_equipos
-    WHERE empleado_id = $1 AND tenant_id = $2 AND tipo = 'entrega'
-    AND NOT EXISTS (
-      SELECT 1 FROM acta_entrega_equipos d
-      WHERE d.empleado_id = $1 AND d.tipo = 'devolucion'
-      AND d.items @> acta_entrega_equipos.items
-    )
+    SELECT COUNT(*) as pendientes
+    FROM acta_entrega_equipos
+    WHERE empleado_id = $1 AND tenant_id = $2 AND devuelto = false
   `, [empleadoId, tenantId]);
-  
-  return parseInt(result.rows[0].pendientes) || 0;
+
+  return Number.parseInt(result.rows[0].pendientes, 10) || 0;
 }
 
-module.exports = { calcularLiquidacion };
-
+module.exports = { calcularLiquidacion, verificarDevolucionEquipos };

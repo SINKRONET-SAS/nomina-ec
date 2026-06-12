@@ -58,6 +58,7 @@ model Tenant {
   configuracion  Json            @default("{}")
   ubicacionLat   Decimal?        @map("ubicacion_lat") @db.Decimal(10, 7)
   ubicacionLng   Decimal?        @map("ubicacion_lng") @db.Decimal(10, 7)
+  radioPerimetroMetros Int       @default(100) @map("radio_perimetro_metros")
   createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   usuarios       User[]
@@ -66,6 +67,8 @@ model Tenant {
   marcaciones    AttendanceMark[]
   novedades      AttendanceNovelty[]
   documentos     LegalDocument[]
+  parametrosLegales LegalParameter[]
+  perfilesBancarios BankProfile[]
 
   @@map("tenants")
 }
@@ -128,7 +131,10 @@ model AttendanceMark {
   timestamp      DateTime           @db.Timestamptz(6)
   latitud        Decimal?           @db.Decimal(10, 7)
   longitud       Decimal?           @db.Decimal(10, 7)
+  dentroPerimetro Boolean           @default(true) @map("dentro_perimetro")
+  distanciaMetros Decimal           @default(0) @map("distancia_metros") @db.Decimal(10, 2)
   fotoUrl        String?            @map("foto_url")
+  ipAddress      String?            @map("ip_address") @db.VarChar(80)
   metadata       Json               @default("{}")
   createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   empleado       Employee           @relation(fields: [empleadoId], references: [id])
@@ -172,8 +178,11 @@ model Payroll {
   totalIngresos       Decimal       @default(0) @map("total_ingresos") @db.Decimal(12, 2)
   aporteIessPersonal  Decimal       @default(0) @map("aporte_iess_personal") @db.Decimal(12, 2)
   impuestoRenta       Decimal       @default(0) @map("impuesto_renta") @db.Decimal(12, 2)
+  anticipos           Decimal       @default(0) @db.Decimal(12, 2)
+  prestamos           Decimal       @default(0) @db.Decimal(12, 2)
   totalDeducciones    Decimal       @default(0) @map("total_deducciones") @db.Decimal(12, 2)
   netoRecibir         Decimal       @default(0) @map("neto_recibir") @db.Decimal(12, 2)
+  detalleCalculo      Json          @default("{}") @map("detalle_calculo")
   estado              PayrollStatus @default(borrador)
   rolPdfUrl           String?       @map("rol_pdf_url")
   cerradoEn           DateTime?     @map("cerrado_en") @db.Timestamptz(6)
@@ -194,6 +203,7 @@ model LegalDocument {
   tipoDocumento LegalDocumentType @map("tipo_documento")
   documentoUrl  String            @map("documento_url")
   metadata      Json              @default("{}")
+  firmado       Boolean           @default(false)
   createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
   tenant        Tenant            @relation(fields: [tenantId], references: [id])
   empleado      Employee?         @relation(fields: [empleadoId], references: [id])
@@ -217,8 +227,10 @@ model EquipmentDeliveryAct {
   empleadoId  String    @map("empleado_id") @db.Uuid
   tenantId    String    @map("tenant_id") @db.Uuid
   descripcion String
+  serial      String    @default("") @db.VarChar(120)
   devuelto    Boolean   @default(false)
   devueltoEn  DateTime? @map("devuelto_en") @db.Timestamptz(6)
+  observaciones String  @default("")
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   empleado    Employee  @relation(fields: [empleadoId], references: [id])
 
@@ -234,9 +246,54 @@ model AuditLog {
   accion        String   @db.VarChar(120)
   entidad       String   @db.VarChar(120)
   entidadId     String?  @map("entidad_id") @db.Uuid
+  datosAnteriores Json   @default("{}") @map("datos_anteriores")
+  datosNuevos     Json   @default("{}") @map("datos_nuevos")
+  ipAddress     String?  @map("ip_address") @db.VarChar(80)
   metadata      Json     @default("{}")
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([tenantId, userId, createdAt])
   @@map("audit_logs")
+}
+
+model LegalParameter {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId              String?  @map("tenant_id") @db.Uuid
+  anio                  Int
+  pais                  String   @default("EC") @db.VarChar(2)
+  salarioBasico         Decimal  @map("salario_basico") @db.Decimal(12, 2)
+  aportePersonalPct     Decimal  @map("aporte_personal_pct") @db.Decimal(6, 4)
+  aportePatronalPct     Decimal  @map("aporte_patronal_pct") @db.Decimal(6, 4)
+  tablaImpuestoRenta    Json     @map("tabla_impuesto_renta")
+  decimoCuartoCostaMes  Int      @map("decimo_cuarto_costa_mes")
+  decimoCuartoSierraMes Int      @map("decimo_cuarto_sierra_mes")
+  jornadaMaximaSemanal  Int      @default(40) @map("jornada_maxima_semanal")
+  fuente                String   @default("pendiente_validacion_oficial")
+  vigente               Boolean  @default(true)
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant                Tenant?  @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, anio, pais])
+  @@map("parametros_legales")
+}
+
+model BankProfile {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String?  @map("tenant_id") @db.Uuid
+  bancoCodigo    String   @map("banco_codigo") @db.VarChar(20)
+  bancoNombre    String   @map("banco_nombre") @db.VarChar(120)
+  delimiter      String   @default(";") @db.VarChar(5)
+  encoding       String   @default("utf8") @db.VarChar(20)
+  dateFormat     String   @default("YYYYMMDD") @map("date_format") @db.VarChar(40)
+  includeHeader  Boolean  @default(true) @map("include_header")
+  includeTrailer Boolean  @default(true) @map("include_trailer")
+  fieldMap       Json     @default("{}") @map("field_map")
+  activo         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant         Tenant?  @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, bancoCodigo])
+  @@map("perfiles_bancarios")
 }

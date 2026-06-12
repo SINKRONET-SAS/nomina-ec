@@ -10,17 +10,22 @@ async function generarATS(req, res) {
   try {
     const { tenantId } = req;
     const { anio, mes } = req.body;
-    
+
     if (!anio || !mes) {
-      return res.status(400).json({ error: 'Año y mes requeridos' });
+      return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
     }
-    
+
     const resultado = await generarXML_ATS(tenantId, anio, mes);
-    
-    res.json({ success: true, reporte: resultado });
+    res.json({ success: true, reporte: resultado, correlationId: req.correlationId });
   } catch (err) {
-    console.error('[REPORTES] Error ATS:', err);
-    res.status(500).json({ error: err.message });
+    console.error('[REPORTES] Error ATS', {
+      code: err.code || 'REPORTE_ATS_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
   }
 }
 
@@ -28,17 +33,22 @@ async function generarSAE(req, res) {
   try {
     const { tenantId } = req;
     const { anio, mes } = req.body;
-    
+
     if (!anio || !mes) {
-      return res.status(400).json({ error: 'Año y mes requeridos' });
+      return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
     }
-    
+
     const resultado = await generarXML_SAE(tenantId, anio, mes);
-    
-    res.json({ success: true, reporte: resultado });
+    res.json({ success: true, reporte: resultado, correlationId: req.correlationId });
   } catch (err) {
-    console.error('[REPORTES] Error SAE:', err);
-    res.status(500).json({ error: err.message });
+    console.error('[REPORTES] Error SAE', {
+      code: err.code || 'REPORTE_SAE_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
   }
 }
 
@@ -46,17 +56,27 @@ async function generarArchivoBancoCtrl(req, res) {
   try {
     const { tenantId } = req;
     const { anio, mes, banco } = req.body;
-    
+
     if (!anio || !mes) {
-      return res.status(400).json({ error: 'Año y mes requeridos' });
+      return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
     }
-    
-    const resultado = await generarArchivoBanco(tenantId, anio, mes, banco);
-    
-    res.json({ success: true, reporte: resultado });
+
+    const resultado = await generarArchivoBanco(tenantId, anio, mes, banco, {
+      correlationId: req.correlationId,
+      userId: req.usuarioId,
+      ipAddress: req.ip,
+    });
+
+    res.json({ success: true, reporte: resultado, correlationId: req.correlationId });
   } catch (err) {
-    console.error('[REPORTES] Error Banco:', err);
-    res.status(500).json({ error: err.message });
+    console.error('[REPORTES] Error Banco', {
+      code: err.code || 'REPORTE_BANCO_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
   }
 }
 
@@ -64,7 +84,6 @@ async function reporteAsistencia(req, res) {
   try {
     const { anio, mes } = req.params;
     const { tenantId } = req;
-    
     const result = await db.query(`
       SELECT
         e.id as empleado_id,
@@ -74,7 +93,7 @@ async function reporteAsistencia(req, res) {
         SUM(CASE WHEN m.tipo_marcacion = 'inicio_jornada' THEN 1 ELSE 0 END) as marcaciones_inicio,
         SUM(CASE WHEN m.tipo_marcacion = 'fin_jornada' THEN 1 ELSE 0 END) as marcaciones_fin,
         COUNT(n.id) as novedades,
-        COALESCE(SUM(CASE WHEN n.tipo_novedad = 'tardia' THEN n.minutos ELSE 0 END), 0) as minutos_tardia,
+        COALESCE(SUM(CASE WHEN n.tipo_novedad = 'atraso' THEN n.minutos ELSE 0 END), 0) as minutos_atraso,
         COALESCE(SUM(CASE WHEN n.tipo_novedad = 'hora_extra_50' THEN n.minutos ELSE 0 END), 0) as minutos_extra_50,
         COALESCE(SUM(CASE WHEN n.tipo_novedad = 'hora_extra_100' THEN n.minutos ELSE 0 END), 0) as minutos_extra_100
       FROM empleados e
@@ -89,11 +108,17 @@ async function reporteAsistencia(req, res) {
       GROUP BY e.id, e.cedula, e.nombres, e.apellidos
       ORDER BY e.apellidos, e.nombres
     `, [tenantId, anio, mes]);
-    
-    res.json({ success: true, reporte: result.rows });
+
+    res.json({ success: true, reporte: result.rows, correlationId: req.correlationId });
   } catch (err) {
-    console.error('[REPORTES] Error:', err);
-    res.status(500).json({ error: 'Error interno' });
+    console.error('[REPORTES] Error asistencia', {
+      code: err.code || 'REPORTE_ASISTENCIA_ERROR',
+      statusCode: 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    res.status(500).json({ error: 'Error interno', correlationId: req.correlationId });
   }
 }
 
@@ -101,6 +126,5 @@ module.exports = {
   generarATS,
   generarSAE,
   generarArchivoBanco: generarArchivoBancoCtrl,
-  reporteAsistencia
+  reporteAsistencia,
 };
-

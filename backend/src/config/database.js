@@ -1,108 +1,98 @@
 // ============================================================
-// PLAN HAIKY - Configuración de Base de Datos PostgreSQL
+// PLAN HAIKY - Configuracion de Base de Datos PostgreSQL
 // ============================================================
 const { Pool } = require('pg');
 require('dotenv').config();
 
+const poolConfig = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+    }
+  : {
+      host: process.env.DB_HOST || 'localhost',
+      port: Number.parseInt(process.env.DB_PORT || '5432', 10),
+      database: process.env.DB_NAME || 'plan_haiky',
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || 'postgres',
+      ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+    };
+
 const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT) || 5432,
-  database: process.env.DB_NAME || 'plan_haiky',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+  ...poolConfig,
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 5000,
 });
 
-// Manejo de eventos del pool
-pool.on('connect', (client) => {
-  console.log('[DB] Nueva conexión establecida');
+pool.on('connect', () => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[DB] Nueva conexion establecida');
+  }
 });
 
 pool.on('error', (err) => {
-  console.error('[DB] Error inesperado en el pool:', err);
+  console.error('[DB] Error inesperado en el pool', {
+    code: err.code || 'DB_POOL_ERROR',
+    statusCode: 500,
+    correlationId: process.env.CORRELATION_ID || 'db-pool',
+    userId: null,
+    message: err.message,
+  });
   process.exit(-1);
 });
 
-/**
- * Ejecuta una query con parámetros
- * @param {string} text - SQL query
- * @param {Array} params - Parámetros
- * @returns {Promise<Object>} Resultado de la query
- */
-const query = async (text, params) => {
+async function query(text, params) {
   const start = Date.now();
-  const res = await pool.query(text, params);
+  const result = await pool.query(text, params);
   const duration = Date.now() - start;
-  
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[DB] Query ejecutada', { text: text.substring(0, 100), duration: duration + 'ms', rows: res.rowCount });
-  }
-  
-  return res;
-};
 
-/**
- * Obtiene un cliente del pool y configura el contexto de tenant
- * @param {string} tenantId - UUID del tenant
- * @param {string} userId - UUID del usuario
- * @returns {Promise<Object>} Cliente de la base de datos
- */
-const getClient = async (tenantId, userId) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[DB] Query ejecutada', {
+      text: text.substring(0, 100),
+      duration: `${duration}ms`,
+      rows: result.rowCount,
+    });
+  }
+
+  return result;
+}
+
+async function getClient(tenantId, userId) {
   const client = await pool.connect();
-  
+
   try {
-    // Configurar contexto de sesión para RLS
     await client.query('BEGIN');
-    await client.query(`SET LOCAL app.current_tenant_id = '${tenantId}'`);
-    if (userId) {
-      await client.query(`SET LOCAL app.current_user_id = '${userId}'`);
+
+    if (tenantId) {
+      await client.query('SELECT set_config($1, $2, true)', ['app.current_tenant_id', tenantId]);
     }
+
+    if (userId) {
+      await client.query('SELECT set_config($1, $2, true)', ['app.current_user_id', userId]);
+    }
+
     return client;
   } catch (err) {
     await client.query('ROLLBACK');
     client.release();
     throw err;
   }
-};
+}
 
-/**
- * Libera el cliente y hace commit
- * @param {Object} client - Cliente de la base de datos
- */
-const commit = async (client) => {
+async function commit(client) {
   await client.query('COMMIT');
   client.release();
-};
+}
 
-/**
- * Libera el cliente y hace rollback
- * @param {Object} client - Cliente de la base de datos
- */
-const rollback = async (client) => {
+async function rollback(client) {
   await client.query('ROLLBACK');
   client.release();
-};
+}
 
-/**
- * Ejecuta el esquema SQL inicial
- */
-const migrate = async () => {
-  const fs = require('fs');
-  const path = require('path');
-  
-  try {
-    const schemaPath = path.join(__dirname, 'schema.sql');
-    const schema = fs.readFileSync(schemaPath, 'utf8');
-    await pool.query(schema);
-    console.log('[DB] Migración completada exitosamente');
-  } catch (err) {
-    console.error('[DB] Error en migración:', err.message);
-    throw err;
-  }
-};
+async function migrate() {
+  throw new Error('Use npm run db:migrate para ejecutar migraciones Prisma');
+}
 
 module.exports = {
   pool,
@@ -112,4 +102,3 @@ module.exports = {
   rollback,
   migrate,
 };
-

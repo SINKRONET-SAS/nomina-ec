@@ -45,6 +45,8 @@ const authenticateToken = async (req, res, next) => {
       email: usuario.email,
       rol: usuario.rol,
     };
+    req.tenantId = usuario.tenant_id;
+    req.usuarioId = usuario.id;
 
     next();
   } catch (err) {

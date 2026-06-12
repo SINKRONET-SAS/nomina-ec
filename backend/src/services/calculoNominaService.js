@@ -1,114 +1,199 @@
 // ============================================================
-// PLAN HAIKY - Motor de Cálculo de Nómina Mensual
-// Ecuador 2026
+// PLAN HAIKY - Motor de Calculo de Nomina Mensual
+// Ecuador
 // ============================================================
 const db = require('../config/database');
-const { getLegalParameters } = require('../config/legal-ecuador');
+const AppError = require('../utils/AppError');
 const { roundMoney, toMoneyString } = require('../utils/money');
+const { getLegalParametersForTenant } = require('./legalParameterService');
 
 async function calcularNominaMensual(tenantId, anio, mes) {
   console.log(`[NOMINA] Calculando ${mes}/${anio} para tenant ${tenantId}`);
-  
+
   const empleados = await db.query(`
-    SELECT * FROM empleados 
-    WHERE tenant_id = $1 AND activo = true 
-    AND fecha_ingreso <= $2
-  `, [tenantId, `${anio}-${String(mes).padStart(2,'0')}-01`]);
-  
+    SELECT *
+    FROM empleados
+    WHERE tenant_id = $1
+      AND activo = true
+      AND fecha_ingreso <= $2
+  `, [tenantId, `${anio}-${String(mes).padStart(2, '0')}-01`]);
+
   const resultados = [];
-  
+
   for (const emp of empleados.rows) {
     try {
       const resultado = await calcularEmpleado(emp, tenantId, anio, mes);
       resultados.push(resultado);
     } catch (err) {
-      console.error(`Error empleado ${emp.id}:`, err.message);
+      console.error('[NOMINA] Error calculando empleado', {
+        code: err.code || 'NOMINA_EMPLEADO_ERROR',
+        statusCode: err.statusCode || 500,
+        correlationId: process.env.CORRELATION_ID || 'nomina-mensual',
+        userId: null,
+        empleadoId: emp.id,
+        message: err.message,
+      });
       resultados.push({ empleadoId: emp.id, error: err.message });
     }
   }
-  
+
   return { success: true, total: empleados.rows.length, resultados };
 }
 
 async function calcularEmpleado(emp, tenantId, anio, mes) {
-  // Obtener novedades aprobadas
+  const legalParameters = await getLegalParametersForTenant(tenantId, anio);
+  const payrollParameters = legalParameters.payroll;
+
   const novedades = await db.query(`
     SELECT tipo_novedad, SUM(minutos) as total_minutos
     FROM novedades_asistencia
-    WHERE empleado_id = $1 AND EXTRACT(YEAR FROM fecha) = $2 
-    AND EXTRACT(MONTH FROM fecha) = $3 AND estado = 'aprobado'
+    WHERE empleado_id = $1
+      AND EXTRACT(YEAR FROM fecha) = $2
+      AND EXTRACT(MONTH FROM fecha) = $3
+      AND estado = 'aprobado'
     GROUP BY tipo_novedad
   `, [emp.id, anio, mes]);
-  
-  const nov = {};
-  novedades.rows.forEach(n => nov[n.tipo_novedad] = parseInt(n.total_minutos) || 0);
-  
-  // Calcular días trabajados
-  const diasTrabajados = 30; // Simplificado
-  
-  // Valor hora
-  const legalParameters = getLegalParameters(anio);
-  const payrollParameters = legalParameters.payroll;
-  const sueldo = parseFloat(emp.sueldo_bruto_mensual);
+
+  const noveltyByType = {};
+  novedades.rows.forEach((novedad) => {
+    noveltyByType[novedad.tipo_novedad] = Number.parseInt(novedad.total_minutos, 10) || 0;
+  });
+
+  const diasTrabajados = calcularDiasTrabajados(emp.fecha_ingreso, anio, mes);
+  const sueldo = Number.parseFloat(emp.sueldo_bruto_mensual);
+  const sueldoProporcional = roundMoney((sueldo * diasTrabajados) / 30);
   const valorHora = sueldo / payrollParameters.monthlyWorkHours;
-  
-  // Horas extras
-  const extras50 = (nov['hora_extra_50'] || 0) / 60;
-  const extras100 = (nov['hora_extra_100'] || 0) / 60;
+  const extras50 = (noveltyByType.hora_extra_50 || 0) / 60;
+  const extras100 = (noveltyByType.hora_extra_100 || 0) / 60;
   const montoExtras50 = roundMoney(extras50 * valorHora * 1.5);
-  const montoExtras100 = roundMoney(extras100 * valorHora * 2.0);
-  
-  // Faltas
+  const montoExtras100 = roundMoney(extras100 * valorHora * 2);
+
   const faltas = await db.query(`
-    SELECT COUNT(*) as total FROM novedades_asistencia
-    WHERE empleado_id = $1 AND tipo_novedad = 'falta' 
-    AND estado = 'aprobado' AND EXTRACT(YEAR FROM fecha) = $2 
-    AND EXTRACT(MONTH FROM fecha) = $3
+    SELECT COUNT(*) as total
+    FROM novedades_asistencia
+    WHERE empleado_id = $1
+      AND tipo_novedad = 'falta'
+      AND estado = 'aprobado'
+      AND EXTRACT(YEAR FROM fecha) = $2
+      AND EXTRACT(MONTH FROM fecha) = $3
   `, [emp.id, anio, mes]);
-  const descuentoFaltas = roundMoney(parseInt(faltas.rows[0].total) * valorHora * payrollParameters.dailyMaxHours);
-  
-  // Total ingresos
-  const totalIngresos = roundMoney(sueldo + montoExtras50 + montoExtras100);
-  
-  // Deducciones
+  const descuentoFaltas = roundMoney((Number.parseInt(faltas.rows[0].total, 10) || 0) * valorHora * payrollParameters.dailyMaxHours);
+
+  const totalIngresos = roundMoney(sueldoProporcional + montoExtras50 + montoExtras100);
   const aporteIess = roundMoney(totalIngresos * payrollParameters.personalIessRate);
   const baseImponible = roundMoney(totalIngresos - aporteIess);
-  const impuestoRenta = calcularIR(baseImponible, anio);
-  
-  const totalDeducciones = roundMoney(aporteIess + impuestoRenta + descuentoFaltas);
+  const impuestoRenta = calcularIR(baseImponible, legalParameters);
+  const anticipos = 0;
+  const prestamos = 0;
+  const totalDeducciones = roundMoney(aporteIess + impuestoRenta + descuentoFaltas + anticipos + prestamos);
   const netoRecibir = roundMoney(totalIngresos - totalDeducciones);
-  
-  // Guardar nómina
+
+  if (netoRecibir < 0) {
+    throw new AppError('El neto a recibir no puede ser negativo', {
+      code: 'NOMINA_NETO_NEGATIVO',
+      statusCode: 422,
+    });
+  }
+
+  const detalleCalculo = {
+    fuenteLegal: legalParameters.sourceStatus,
+    diasTrabajados,
+    sueldoProporcional,
+    valorHora: roundMoney(valorHora),
+    extras50,
+    extras100,
+    montoExtras50,
+    montoExtras100,
+    descuentoFaltas,
+    aporteIess,
+    baseImponible,
+    impuestoRenta,
+    anticipos,
+    prestamos,
+    totalIngresos,
+    totalDeducciones,
+    netoRecibir,
+  };
+
   await db.query(`
-    INSERT INTO nominas (tenant_id, empleado_id, anio, mes, dias_trabajados,
+    INSERT INTO nominas (
+      tenant_id, empleado_id, anio, mes, dias_trabajados,
       sueldo_bruto, horas_extras_50, horas_extras_100, total_ingresos,
-      aporte_iess_personal, impuesto_renta, total_deducciones, neto_recibir)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+      aporte_iess_personal, impuesto_renta, anticipos, prestamos,
+      total_deducciones, neto_recibir, estado, detalle_calculo
+    )
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'borrador',$16)
     ON CONFLICT (tenant_id, empleado_id, anio, mes) DO UPDATE SET
+      dias_trabajados = EXCLUDED.dias_trabajados,
+      sueldo_bruto = EXCLUDED.sueldo_bruto,
+      horas_extras_50 = EXCLUDED.horas_extras_50,
+      horas_extras_100 = EXCLUDED.horas_extras_100,
       total_ingresos = EXCLUDED.total_ingresos,
       aporte_iess_personal = EXCLUDED.aporte_iess_personal,
-      neto_recibir = EXCLUDED.neto_recibir
-  `, [tenantId, emp.id, anio, mes, diasTrabajados, sueldo, montoExtras50,
-      montoExtras100, totalIngresos, aporteIess, impuestoRenta, totalDeducciones, netoRecibir]);
-  
+      impuesto_renta = EXCLUDED.impuesto_renta,
+      anticipos = EXCLUDED.anticipos,
+      prestamos = EXCLUDED.prestamos,
+      total_deducciones = EXCLUDED.total_deducciones,
+      neto_recibir = EXCLUDED.neto_recibir,
+      detalle_calculo = EXCLUDED.detalle_calculo,
+      updated_at = NOW()
+    WHERE nominas.estado = 'borrador'
+  `, [
+    tenantId,
+    emp.id,
+    anio,
+    mes,
+    diasTrabajados,
+    sueldoProporcional,
+    montoExtras50,
+    montoExtras100,
+    totalIngresos,
+    aporteIess,
+    impuestoRenta,
+    anticipos,
+    prestamos,
+    totalDeducciones,
+    netoRecibir,
+    JSON.stringify(detalleCalculo),
+  ]);
+
   return {
     empleadoId: emp.id,
     nombre: `${emp.nombres} ${emp.apellidos}`,
     totalIngresos: toMoneyString(totalIngresos),
     netoRecibir: toMoneyString(netoRecibir),
+    detalleCalculo,
   };
 }
 
-function calcularIR(baseMensual, anio) {
-  const legalParameters = getLegalParameters(anio);
+function calcularDiasTrabajados(fechaIngreso, anio, mes) {
+  const inicioMes = new Date(anio, mes - 1, 1);
+  const finMes = new Date(anio, mes, 0);
+  const ingreso = new Date(fechaIngreso);
+
+  if (ingreso > finMes) {
+    return 0;
+  }
+
+  const inicioCalculo = ingreso > inicioMes ? ingreso : inicioMes;
+  const dias = Math.floor((finMes - inicioCalculo) / 86400000) + 1;
+  return Math.max(0, Math.min(30, dias));
+}
+
+function calcularIR(baseMensual, legalParameters) {
   const baseAnual = baseMensual * 12;
+  const brackets = legalParameters.incomeTax;
   let annualTax = 0;
 
-  for (const bracket of legalParameters.incomeTax) {
-    const upperLimit = bracket.to || Number.POSITIVE_INFINITY;
+  for (const bracket of brackets) {
+    const from = Number(bracket.from ?? bracket.fraccion_basica ?? 0);
+    const to = bracket.to ?? bracket.exceso_hasta ?? null;
+    const upperLimit = to === null ? Number.POSITIVE_INFINITY : Number(to);
+    const rate = Number(bracket.rate ?? bracket.porcentaje ?? 0);
+    const baseTax = Number(bracket.baseTax ?? bracket.impuesto_fraccion_basica ?? 0);
 
-    if (baseAnual > bracket.from && baseAnual <= upperLimit) {
-      annualTax = bracket.baseTax + ((baseAnual - bracket.from) * bracket.rate);
+    if (baseAnual > from && baseAnual <= upperLimit) {
+      annualTax = baseTax + ((baseAnual - from) * rate);
       break;
     }
   }
@@ -116,5 +201,9 @@ function calcularIR(baseMensual, anio) {
   return roundMoney(annualTax / 12);
 }
 
-module.exports = { calcularNominaMensual };
-
+module.exports = {
+  calcularNominaMensual,
+  calcularEmpleado,
+  calcularDiasTrabajados,
+  calcularIR,
+};

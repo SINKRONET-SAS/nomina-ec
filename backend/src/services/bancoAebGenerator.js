@@ -1,129 +1,127 @@
 // ============================================================
-// PLAN HAIKY - Generador de Archivo Bancario (Formato AEB)
-// Para pago de nómina vía banco
+// PLAN HAIKY - Generador de Archivo Bancario
 // ============================================================
+const crypto = require('crypto');
 const ExcelJS = require('exceljs');
 const { s3Upload } = require('../config/s3');
 const db = require('../config/database');
 const bankProfiles = require('../config/bank-file-profiles.json');
 const { roundMoney, toMoneyString } = require('../utils/money');
+const { recordAudit } = require('./auditService');
 
-/**
- * Genera archivo CSV/Excel para pago bancario
- */
-async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA') {
+async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', context = {}) {
   const profile = getBankProfile(banco);
-
-  // 1. Obtener datos del tenant
   const tenantResult = await db.query('SELECT * FROM tenants WHERE id = $1', [tenantId]);
-  if (tenantResult.rows.length === 0) throw new Error('Tenant no encontrado');
-  const tenant = tenantResult.rows[0];
-  
-  // 2. Obtener nóminas con cuentas bancarias
+
+  if (tenantResult.rows.length === 0) {
+    throw new Error('Tenant no encontrado');
+  }
+
   const nominasResult = await db.query(`
     SELECT e.cedula, e.nombres, e.apellidos, e.cuenta_bancaria_cifrada,
       e.banco, e.tipo_cuenta, n.neto_recibir
     FROM nominas n
     JOIN empleados e ON n.empleado_id = e.id
-    WHERE n.tenant_id = $1 AND n.anio = $2 AND n.mes = $3
-    AND e.cuenta_bancaria_cifrada IS NOT NULL
+    WHERE n.tenant_id = $1
+      AND n.anio = $2
+      AND n.mes = $3
+      AND n.estado = 'cerrada'
+      AND e.cuenta_bancaria_cifrada IS NOT NULL
     ORDER BY e.apellidos, e.nombres
   `, [tenantId, anio, mes]);
-  
+
   if (nominasResult.rows.length === 0) {
-    throw new Error('No hay empleados con cuenta bancaria para el período');
+    throw new Error('No hay nominas cerradas con cuenta bancaria para el periodo');
   }
-  
-  // 3. Generar CSV formato AEB (Asociación Española de Banca - adaptado a Ecuador)
+
   const rows = [];
-  
-  // Cabecera
-  rows.push([
-    'TIPO_REGISTRO',
-    'OFICINA',
-    'DC',
-    'CUENTA',
-    'CEDULA',
-    'NOMBRE',
-    'CONCEPTO',
-    'FECHA_OPERACION',
-    'IMPORT',
-    'REFERENCIA'
-  ]);
-  
+  if (profile.includeHeader) {
+    rows.push(profile.fields.map((field) => field.toUpperCase()));
+  }
+
   let totalPagos = 0;
-  
-  for (const [index, n] of nominasResult.rows.entries()) {
-    const cuenta = await decryptBankAccount(n.cuenta_bancaria_cifrada);
-    const bancoCodigo = getBankProfile(n.banco || banco).bankCode;
-    const monto = roundMoney(parseFloat(n.neto_recibir));
-    
+
+  for (const [index, payroll] of nominasResult.rows.entries()) {
+    const cuenta = await decryptBankAccount(payroll.cuenta_bancaria_cifrada);
+    const bancoCodigo = getBankProfile(payroll.banco || banco).bankCode;
+    const monto = roundMoney(Number.parseFloat(payroll.neto_recibir));
+
     rows.push([
-      '1', // Tipo registro: pago
-      bancoCodigo.padStart(4, '0'), // Código banco
-      '00', // DC
-      cuenta.padStart(profile.accountLength, '0'), // Cuenta
-      n.cedula, // Cédula
-      `${n.apellidos} ${n.nombres}`.substring(0, 40), // Nombre
-      `NOMINA ${String(mes).padStart(2, '0')}/${anio}`.substring(0, 40), // Concepto
-      `${anio}${String(mes).padStart(2, '0')}28`, // Fecha operación (último día)
-      formatAmount(monto, profile), // Importe
-      `NOM${tenantId.substring(0, 8)}${String(index + 1).padStart(4, '0')}` // Referencia
+      '1',
+      bancoCodigo.padStart(4, '0'),
+      '00',
+      cuenta.padStart(profile.accountLength, '0'),
+      payroll.cedula,
+      `${payroll.apellidos} ${payroll.nombres}`.substring(0, 40),
+      `NOMINA ${String(mes).padStart(2, '0')}/${anio}`.substring(0, 40),
+      `${anio}${String(mes).padStart(2, '0')}28`,
+      formatAmount(monto, profile),
+      `NOM${tenantId.substring(0, 8)}${String(index + 1).padStart(4, '0')}`,
     ]);
-    
+
     totalPagos = roundMoney(totalPagos + monto);
   }
-  
-  // Total
-  rows.push([
-    '9', // Tipo registro: total
-    '', '', '', '', '', '', '',
-    formatAmount(totalPagos, profile),
-    nominasResult.rows.length.toString()
-  ]);
-  
-  // 4. Convertir a CSV
+
+  if (profile.includeTrailer) {
+    rows.push(['9', '', '', '', '', '', '', '', formatAmount(totalPagos, profile), nominasResult.rows.length.toString()]);
+  }
+
   validateBankRows(rows, totalPagos, nominasResult.rows.length, profile);
-  const csvContent = rows.map(row => row.join(profile.delimiter)).join(profile.lineEnding);
-  
-  // 5. Subir a S3
+  const csvContent = rows.map((row) => row.join(profile.delimiter)).join(profile.lineEnding);
+  const checksum = crypto.createHash('sha256').update(csvContent, 'utf8').digest('hex');
   const key = `reportes/${tenantId}/banco/PAGO_NOMINA_${anio}${String(mes).padStart(2, '0')}_${banco}.csv`;
-  const url = await s3Upload(Buffer.from(csvContent, 'utf8'), key, 'text/csv');
-  
-  // 6. También generar Excel
+  const url = await s3Upload(Buffer.from(csvContent, profile.encoding), key, 'text/csv');
+  const excelUrl = await generateReviewWorkbook(nominasResult.rows, tenantId, anio, mes);
+
+  if (context.correlationId) {
+    await recordAudit({
+      tenantId,
+      userId: context.userId || null,
+      correlationId: context.correlationId,
+      action: 'generar_archivo_bancario',
+      entity: 'perfiles_bancarios',
+      newData: { banco, anio, mes, totalPagos, totalEmpleados: nominasResult.rows.length, checksum },
+      ipAddress: context.ipAddress || null,
+    });
+  }
+
+  console.log(`[BANCO] Archivo generado para ${tenantId} - ${mes}/${anio}: ${nominasResult.rows.length} pagos`);
+
+  return {
+    csvUrl: url,
+    excelUrl,
+    totalPagos: toMoneyString(totalPagos),
+    totalEmpleados: nominasResult.rows.length,
+    checksum,
+  };
+}
+
+async function generateReviewWorkbook(rows, tenantId, anio, mes) {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Pagos');
-  
   sheet.columns = [
-    { header: 'Cédula', key: 'cedula', width: 15 },
+    { header: 'Cedula', key: 'cedula', width: 15 },
     { header: 'Nombre', key: 'nombre', width: 40 },
     { header: 'Banco', key: 'banco', width: 15 },
     { header: 'Cuenta', key: 'cuenta', width: 15 },
     { header: 'Monto', key: 'monto', width: 12 },
   ];
-  
-  nominasResult.rows.forEach(n => {
+
+  rows.forEach((row) => {
     sheet.addRow({
-      cedula: n.cedula,
-      nombre: `${n.apellidos} ${n.nombres}`,
-      banco: n.banco || banco,
-      cuenta: '****', // No mostrar cuenta completa
-      monto: parseFloat(n.neto_recibir),
+      cedula: row.cedula,
+      nombre: `${row.apellidos} ${row.nombres}`,
+      banco: row.banco,
+      cuenta: '****',
+      monto: Number.parseFloat(row.neto_recibir),
     });
   });
-  
+
   const excelBuffer = await workbook.xlsx.writeBuffer();
   const excelKey = `reportes/${tenantId}/banco/PAGO_NOMINA_${anio}${String(mes).padStart(2, '0')}.xlsx`;
-  const excelUrl = await s3Upload(excelBuffer, excelKey, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  
-  console.log(`[BANCO] Archivo generado para ${tenantId} - ${mes}/${anio}: ${nominasResult.rows.length} pagos, total $${toMoneyString(totalPagos)}`);
-  
-  return { csvUrl: url, excelUrl, totalPagos: toMoneyString(totalPagos), totalEmpleados: nominasResult.rows.length };
+  return s3Upload(excelBuffer, excelKey, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 }
 
-/**
- * Obtiene perfil bancario configurado
- */
 function getBankProfile(banco) {
   const key = String(banco || '').toUpperCase();
   const profile = bankProfiles[key];
@@ -166,5 +164,8 @@ function validateBankRows(rows, totalPagos, totalEmpleados, profile) {
   }
 }
 
-module.exports = { generarArchivoBanco };
-
+module.exports = {
+  generarArchivoBanco,
+  getBankProfile,
+  validateBankRows,
+};

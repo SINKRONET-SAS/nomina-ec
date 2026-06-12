@@ -1,0 +1,88 @@
+openapi: 3.0.3
+info:
+  title: Plan HAIKY Nomina EC API
+  version: 1.0.0
+  description: Contrato minimo inicial para API HAIKY.
+servers:
+  - url: https://haiky-api.onrender.com
+  - url: http://localhost:3000
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: Servicio disponible
+  /api/auth/login:
+    post:
+      summary: Login de usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Token emitido
+        "429":
+          description: Rate limit excedido
+  /api/empleados:
+    get:
+      summary: Lista empleados del tenant
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista de empleados
+    post:
+      summary: Crea empleado
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Empleado creado
+  /api/marcaciones:
+    post:
+      summary: Registra marcacion con GPS
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Marcacion registrada
+  /api/nomina/calcular:
+    post:
+      summary: Calcula nomina mensual
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Nomina calculada
+  /api/nomina/cerrar:
+    post:
+      summary: Cierra nomina mensual
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Nomina cerrada
+  /api/reportes/banco:
+    post:
+      summary: Genera archivo bancario
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Archivo generado
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
