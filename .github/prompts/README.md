@@ -1,14 +1,15 @@
-# Prompts HAIKY por fase
+# Prompts HAIKY por fase - nomina-ec
 
-Estos prompts ejecutan el plan por fases segun `RULES.md`.
+Estos prompts ejecutan `docs2/PLAN_HAIKY_NOMINA_EC_REVISADO.md` sobre el stack real del repositorio.
 
-Uso obligatorio:
+Reglas:
 
-1. Leer `.vscode/AuditLock.json`.
-2. Confirmar que la fase anterior esta firmada.
-3. Solicitar aprobacion explicita para iniciar la fase.
-4. Ejecutar solo tareas de la fase aprobada.
-5. Cerrar la fase actualizando `AuditLock.json`.
-6. Preparar commit con `phase: <X>` y `task: <Y.Z>`.
+1. Leer `RULES.md`.
+2. Leer `.vscode/AuditLock.json`.
+3. No iniciar una fase si la anterior no esta firmada.
+4. Ejecutar solo la fase aprobada.
+5. Actualizar `AuditLock.json` al cerrar cada fase.
+6. Validar UTF-8 sin BOM.
+7. Commit con `phase: <X>` y `task: <Y.Z>`.
 
-No adelantar tareas de fases posteriores.
+La referencia Base44 de `docs2/Plan_HAIKY_nomina_ec.md` queda adaptada a Express/PostgreSQL/Prisma/Render.

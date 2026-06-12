@@ -1,18 +1,17 @@
 # Fase 2 - GitHub y rama
 
-Actua bajo `RULES.md` y confirma que Fase 1 esta firmada.
+Actua bajo `RULES.md`.
 
-Objetivo: preparar rama y trazabilidad GitHub.
+Objetivo: conservar trazabilidad Git.
 
 Tareas:
 
-- Verificar estado Git.
-- Crear rama `codex/haiky-render-legal-plan` o la rama aprobada.
-- Revisar `.gitignore`.
-- Confirmar que no se suben secretos.
-- Crear commits atomicos por fase.
+- Verificar rama `codex/haiky-render-legal-plan`.
+- Verificar remoto `origin`.
+- Evitar subir secretos.
+- Commit por fase con `phase:` y `task:`.
+- Push solo cuando el usuario lo pida.
 
 Cierre:
 
-- Rama lista para push.
-- `AuditLock.json` actualizado.
+- Estado Git documentado.

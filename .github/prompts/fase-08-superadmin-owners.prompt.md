@@ -1,20 +1,17 @@
-# Fase 8 - SUPERADMIN y OWNERS
+# Fase 8 - SUPERADMIN, OWNERS y RBAC
 
-Actua bajo `RULES.md` y confirma que Fase 7 esta firmada.
+Actua bajo `RULES.md`.
 
-Objetivo: verificar entorno de administracion y propiedad.
+Objetivo: cerrar seguridad administrativa.
 
 Tareas:
 
-- Definir matriz RBAC.
-- Crear seed seguro de SUPERADMIN.
-- Crear OWNER por tenant.
+- Validar seed seguro.
+- Agregar `requireRole` granular por modulo.
 - Auditar acciones privilegiadas.
 - Validar aislamiento tenant.
-- Probar denegaciones de acceso.
+- Definir impersonacion auditada si aplica.
 
 Cierre:
 
-- RBAC aprobado.
-- Pruebas de autorizacion pasan.
-- `AuditLock.json` actualizado.
+- Matriz RBAC documentada.

@@ -1,17 +1,15 @@
-# Fase 0 - Preparacion y bloqueo de auditoria
+# Fase 0 - Preparacion, diagnostico y candado
 
 Actua bajo `RULES.md`.
 
-Objetivo: crear o revisar plan maestro, `CODEX_CONTEXT.md`, `.vscode/AuditLock.json` y prompts por fase.
+Objetivo: revisar `docs2/Plan_HAIKY_nomina_ec.md`, generar plan HAIKY revisado para este repo, actualizar `CODEX_CONTEXT.md`, prompts y `AuditLock.json`.
 
-Antes de responder:
-
-- Lee `RULES.md`.
-- Lee `.vscode/AuditLock.json` si existe.
-- No modifiques codigo runtime.
+No modifiques runtime salvo correcciones de integridad documental.
 
 Cierre:
 
-- Actualiza `AuditLock.json`.
-- Valida UTF-8 sin BOM.
-- Resume archivos modificados.
+- Plan revisado creado.
+- Contexto actualizado.
+- Prompts 00-16 disponibles.
+- UTF-8 sin BOM validado.
+- `AuditLock.json` firmado.

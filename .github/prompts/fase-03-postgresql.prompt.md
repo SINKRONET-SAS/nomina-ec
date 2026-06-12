@@ -1,19 +1,17 @@
-# Fase 3 - PostgreSQL
+# Fase 3 - PostgreSQL y Redis
 
-Actua bajo `RULES.md` y confirma que Fase 2 esta firmada.
+Actua bajo `RULES.md`.
 
-Objetivo: crear base PostgreSQL local y preparar equivalencia Render.
+Objetivo: validar infraestructura local y preparar Render.
 
 Tareas:
 
-- Crear base `plan_haiky`.
-- Crear roles separados para runtime, migracion y lectura.
-- Habilitar extensiones necesarias.
-- Validar conexion backend.
-- Documentar backup y restore.
+- Verificar PostgreSQL local.
+- Verificar Redis/Memurai local.
+- Confirmar base `plan_haiky`.
+- Revisar roles `haiky_app`, `haiky_migration`, `haiky_readonly`.
+- Planificar RLS real.
 
 Cierre:
 
-- Conexion probada.
-- Variables documentadas.
-- `AuditLock.json` actualizado.
+- Conexion DB y Redis documentada.

@@ -1,19 +1,17 @@
-# Fase 7 - Archivos planos bancarios
+# Fase 7 - Archivos bancarios
 
-Actua bajo `RULES.md` y confirma que Fase 6 esta firmada.
+Actua bajo `RULES.md`.
 
-Objetivo: configurar generacion de archivos bancarios por perfil.
+Objetivo: generar archivos bancarios seguros.
 
 Tareas:
 
-- Definir perfiles por banco.
-- Configurar delimitador, encoding, campos, trailer y validaciones.
-- Evitar logs con cuenta completa.
+- Validar perfiles bancarios configurables.
+- Prohibir cuentas placeholder.
 - Descifrar cuentas solo en memoria.
-- Generar muestras anonimizadas.
+- Validar trailer, conteo, total y checksum.
+- Auditar cada generacion.
 
 Cierre:
 
-- Perfiles iniciales documentados.
-- Pruebas de totales y conteo pasan.
-- `AuditLock.json` actualizado.
+- Pruebas con datos anonimizados.

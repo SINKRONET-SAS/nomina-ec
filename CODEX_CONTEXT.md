@@ -2,40 +2,53 @@
 
 Proyecto: SaaS RRHH Ecuador.  
 Raiz: `C:\proyectos web\nuevo_nomina`.  
+Repositorio remoto: `https://github.com/SINKRONET-SAS/nomina-ec.git`.  
+Rama activa esperada: `codex/haiky-render-legal-plan`.  
 Fecha de contexto: 2026-06-11.
 
 ## Regla principal
 
-Antes de modificar codigo runtime se debe leer `RULES.md` y validar la fase activa en `.vscode/AuditLock.json`.
+Antes de modificar codigo runtime se debe leer `RULES.md` y validar `.vscode/AuditLock.json`.
 
 ## Componentes
 
-- `backend`: Express, PostgreSQL con `pg`, JWT, S3, cron jobs, calculos de nomina, reportes y documentos.
-- `frontend-web`: React + Vite.
+- `backend`: Express, PostgreSQL con `pg`, Prisma para migraciones, JWT, S3, Redis, cron jobs, calculos de nomina, reportes y documentos.
+- `frontend-web`: React + Vite + Tailwind + React Router + TanStack Query.
 - `app-movil`: Expo + React Native.
 - `docs`: documentacion legal existente.
-- `docs2`: planificacion e insumos de ejecucion.
+- `docs2`: planes HAIKY, diagnosticos y runbooks.
 
-## Estado tecnico observado
+## Estado tecnico vigente
 
-- No existe Prisma instalado ni `schema.prisma`.
-- No existe `backend/src/config/schema.sql`.
-- No existe `backend/src/config/migrate.js`, aunque `backend/package.json` declara `db:migrate`.
-- El backend usa variables `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` y `DB_SSL`.
-- El worker cron esta en `backend/src/config/cron-jobs.js`.
-- El generador bancario actual esta en `backend/src/services/bancoAebGenerator.js`.
+- Prisma 6 esta instalado y `backend/prisma/schema.prisma` existe.
+- La migracion inicial existe en `backend/prisma/migrations`.
+- `backend/src/config/migrate.js` ejecuta `prisma migrate deploy`.
+- PostgreSQL local fue validado en `127.0.0.1:5432`.
+- Redis/Memurai local fue validado en `127.0.0.1:6379`.
+- `render.yaml` define API, worker cron, frontend estatico y PostgreSQL.
+- El backend runtime sigue usando `pg` directo; Prisma gobierna migraciones.
+- El generador bancario usa perfiles configurables y descifra cuentas solo en memoria.
+- `SUPERADMIN` y `OWNER` tienen seed seguro por variables de entorno.
 
-## Orden obligatorio
+## Orden HAIKY revisado
 
-1. Fase 0: plan, contexto, prompts y AuditLock.
-2. Fase 1: dependencias.
+1. Fase 0: preparacion, diagnostico y candado.
+2. Fase 1: dependencias y reproducibilidad.
 3. Fase 2: GitHub y rama.
-4. Fase 3: PostgreSQL.
-5. Fase 4: migraciones y decision Prisma.
+4. Fase 3: PostgreSQL y Redis.
+5. Fase 4: Prisma y migraciones.
 6. Fase 5: Render.
-7. Fase 6: cumplimiento legal.
-8. Fase 7: archivos planos bancarios.
-9. Fase 8: SUPERADMIN y OWNERS.
+7. Fase 6: legal Ecuador y redondeos.
+8. Fase 7: archivos bancarios.
+9. Fase 8: SUPERADMIN, OWNERS y RBAC.
+10. Fase 9: empleados y experiencia operativa.
+11. Fase 10: marcaciones y novedades.
+12. Fase 11: motor de nomina.
+13. Fase 12: liquidacion y finiquito.
+14. Fase 13: documentos regulatorios.
+15. Fase 14: reportes y auditoria visible.
+16. Fase 15: automatizaciones.
+17. Fase 16: pruebas, CI/CD y hardening.
 
 ## Criterios de escritura
 
@@ -47,9 +60,9 @@ Antes de modificar codigo runtime se debe leer `RULES.md` y validar la fase acti
 
 ## Pendientes criticos
 
-- Definir si se adopta Prisma o migrador SQL propio.
-- Crear base PostgreSQL local y estrategia Render.
-- Corregir `db:migrate`.
-- Parametrizar calculos legales por anio y fuente.
-- Sustituir placeholder de cuenta bancaria por descifrado seguro en memoria.
-- Validar RBAC de SUPERADMIN, OWNER, ADMIN_RRHH y EMPLOYEE.
+- Implementar RLS real o politica equivalente comprobable.
+- Agregar tests automatizados para nomina, liquidacion, RBAC y bancos.
+- Mover parametros legales versionados a base de datos.
+- Agregar `AppError` y `correlationId` universal.
+- Agregar CI/CD con GitHub Actions.
+- Validar valores legales Ecuador con fuente oficial antes de produccion.

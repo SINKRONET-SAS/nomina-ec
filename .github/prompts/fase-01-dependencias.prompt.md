@@ -1,19 +1,16 @@
-# Fase 1 - Dependencias
+# Fase 1 - Dependencias y reproducibilidad
 
-Actua bajo `RULES.md` y confirma aprobacion explicita del OWNER antes de ejecutar.
+Actua bajo `RULES.md`.
 
-Objetivo: instalar dependencias reproducibles para `backend`, `frontend-web` y `app-movil`.
+Objetivo: asegurar instalacion reproducible.
 
 Tareas:
 
-- Ejecutar instalacion por componente.
-- Generar lockfiles.
-- Verificar scripts disponibles.
-- Clasificar vulnerabilidades.
-- No cambiar comportamiento runtime salvo correccion necesaria para instalacion.
+- Ejecutar `npm ci` o `npm install` segun disponibilidad de lockfiles en `backend`, `frontend-web` y `app-movil`.
+- Verificar `package-lock.json`.
+- Ejecutar build frontend.
+- Documentar advertencias de dependencias deprecadas.
 
 Cierre:
 
-- Registrar comandos ejecutados.
-- Actualizar `AuditLock.json`.
-- Preparar commit con `phase: 1` y `task: 1.x`.
+- Checks registrados en `AuditLock.json`.

@@ -1,27 +1,16 @@
 # Fase 5 - Render
 
-Actua bajo `RULES.md` y confirma que Fase 4 esta firmada.
+Actua bajo `RULES.md`.
 
-Objetivo: desplegar staging en Render.
-
-Servicios:
-
-- PostgreSQL.
-- Backend API Web Service.
-- Frontend Static Site.
-- Worker cron separado.
-- Storage externo para documentos y reportes.
+Objetivo: mantener despliegue Render operable.
 
 Tareas:
 
-- Definir variables de entorno.
-- Configurar build/start commands.
-- Validar CORS y URL de API.
-- Verificar logs de API y worker.
-- Probar migracion en staging.
+- Validar `render.yaml`.
+- Confirmar API, worker cron, frontend y PostgreSQL.
+- Documentar Redis externo y storage S3.
+- No exponer secretos.
 
 Cierre:
 
-- URLs de staging documentadas.
-- Backups y secretos revisados.
-- `AuditLock.json` actualizado.
+- Runbook actualizado si cambia despliegue.

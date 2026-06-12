@@ -1,21 +1,16 @@
-# Fase 6 - Legal Ecuador
+# Fase 6 - Legal Ecuador y redondeos
 
-Actua bajo `RULES.md` y confirma que Fase 5 esta firmada.
+Actua bajo `RULES.md`.
 
-Objetivo: revisar cumplimiento legal tecnico para Ecuador.
+Objetivo: robustecer calculos legales.
 
 Tareas:
 
-- Revisar calculos laborales, IESS y SRI.
-- Parametrizar valores por anio y fuente.
-- Definir redondeos monetarios.
-- Revisar tratamiento de datos personales.
-- Agregar pruebas de casos borde.
-- Marcar puntos que requieren abogado laboral o contador.
+- Revisar parametros legales versionados.
+- Mover parametros a base de datos cuando se apruebe migracion.
+- Agregar pruebas de IESS, IR, decimos, vacaciones y finiquito.
+- Marcar fuentes oficiales y responsable de validacion.
 
 Cierre:
 
-- Matriz legal versionada.
-- Pruebas de calculo ejecutadas.
-- Riesgos abiertos documentados.
-- `AuditLock.json` actualizado.
+- Matriz legal actualizada y riesgos abiertos.

@@ -1,30 +1,17 @@
 # Fase 4 - Prisma y migraciones
 
-Actua bajo `RULES.md` y confirma que Fase 3 esta firmada.
+Actua bajo `RULES.md`.
 
-Objetivo: decidir e implementar estrategia de migracion.
+Objetivo: mantener Prisma como fuente de esquema.
 
-Decision requerida:
+Tareas:
 
-- Prisma como fuente de migraciones.
-- Migrador SQL propio con `pg`.
-
-Si se aprueba Prisma:
-
-- Instalar `prisma` y `@prisma/client`.
-- Crear `backend/prisma/schema.prisma`.
-- Crear migracion inicial.
-- Generar cliente.
-- Documentar convivencia con `pg`.
-
-Si se aprueba SQL:
-
-- Crear `schema.sql`.
-- Crear `migrate.js`.
-- Registrar tabla de migraciones.
+- Validar `backend/prisma/schema.prisma`.
+- Ejecutar `npx.cmd prisma validate`.
+- Ejecutar `npm run db:migrate`.
+- No crear `schema.sql` paralelo.
+- Documentar convivencia temporal con `pg`.
 
 Cierre:
 
-- Una sola estrategia activa.
-- Rollback documentado.
-- `AuditLock.json` actualizado.
+- Migraciones sin pendientes o aplicadas.
