@@ -101,10 +101,16 @@ function Parametrizacion() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  const { data: summary, isLoading } = useQuery({
+  const {
+    data: summary,
+    error: summaryError,
+    isError: summaryHasError,
+    isLoading,
+  } = useQuery({
     queryKey: ['configuration-summary'],
     queryFn: () => fetchConfigurationSummary(token),
     enabled: Boolean(token),
+    retry: false,
   });
 
   const createMutation = useMutation({
@@ -161,12 +167,17 @@ function Parametrizacion() {
 
       {message && <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{message}</div>}
       {error && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{error}</div>}
+      {summaryHasError && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+          {extractApiError(summaryError, 'No se pudo cargar la parametrizacion. Verifica que el backend este activo y que VITE_API_URL apunte al API.')}
+        </div>
+      )}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {metrics.map(([label, value]) => (
           <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" key={label}>
             <p className="text-sm text-slate-500">{label}</p>
-            <p className="mt-2 text-3xl font-semibold text-slate-950">{isLoading ? '...' : value}</p>
+            <p className="mt-2 text-3xl font-semibold text-slate-950">{isLoading && !summaryHasError ? '...' : value}</p>
           </article>
         ))}
       </section>

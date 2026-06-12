@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
+import { API_URL } from '../services/apiBase';
 
 const AuthContext = createContext(null);
-const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 function normalizeUser(payload) {
   return payload?.usuario || payload?.user || null;
