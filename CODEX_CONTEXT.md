@@ -4,7 +4,7 @@ Proyecto: SaaS RRHH Ecuador.
 Raiz: `C:\proyectos web\nuevo_nomina`.  
 Repositorio remoto: `https://github.com/SINKRONET-SAS/nomina-ec.git`.  
 Rama activa esperada: `codex/haiky-render-legal-plan`.  
-Fecha de contexto: 2026-06-11.
+Fecha de contexto: 2026-06-12.
 
 ## Regla principal
 
@@ -29,6 +29,9 @@ Antes de modificar codigo runtime se debe leer `RULES.md` y validar `.vscode/Aud
 - El backend runtime sigue usando `pg` directo; Prisma gobierna migraciones.
 - El generador bancario usa perfiles configurables y descifra cuentas solo en memoria.
 - `SUPERADMIN` y `OWNER` tienen seed seguro por variables de entorno.
+- RLS existe en migracion SQL, pero requiere prueba en Render con usuario no superusuario.
+- AWS SDK v2 sigue presente en S3 y debe migrarse a AWS SDK v3.
+- Valores legales 2026 permanecen como `pendiente_validacion_oficial` hasta respaldo oficial.
 
 ## Orden HAIKY revisado
 
@@ -49,6 +52,9 @@ Antes de modificar codigo runtime se debe leer `RULES.md` y validar `.vscode/Aud
 15. Fase 14: reportes y auditoria visible.
 16. Fase 15: automatizaciones.
 17. Fase 16: pruebas, CI/CD y hardening.
+18. Fase 17: validacion legal Ecuador 2026.
+19. Fase 18: migracion AWS SDK v3.
+20. Fase 19: prueba RLS Render con usuario no superusuario.
 
 ## Criterios de escritura
 
@@ -60,9 +66,7 @@ Antes de modificar codigo runtime se debe leer `RULES.md` y validar `.vscode/Aud
 
 ## Pendientes criticos
 
-- Implementar RLS real o politica equivalente comprobable.
-- Agregar tests automatizados para nomina, liquidacion, RBAC y bancos.
-- Mover parametros legales versionados a base de datos.
-- Agregar `AppError` y `correlationId` universal.
-- Agregar CI/CD con GitHub Actions.
-- Validar valores legales Ecuador con fuente oficial antes de produccion.
+- Validar valores legales Ecuador 2026 con fuente oficial antes de produccion.
+- Migrar `aws-sdk` v2 a AWS SDK v3 modular.
+- Probar RLS en Render con usuario no superusuario y evidencia sin secretos.
+- Completar pruebas automatizadas de regresion para liquidacion, RBAC, bancos y aislamiento tenant.
