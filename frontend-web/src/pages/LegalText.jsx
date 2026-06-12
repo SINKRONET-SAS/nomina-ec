@@ -1,26 +1,30 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
-function LegalText({ type }) {
-  const isPrivacy = type === 'privacy';
+const content = {
+  '/privacidad': {
+    title: 'Política de privacidad',
+    body: 'Nómina-Ec trata datos personales laborales para operar nómina, asistencia, documentos, auditoría y obligaciones regulatorias. La activación productiva requiere completar la revisión legal profesional y las políticas definitivas del responsable del tratamiento.',
+  },
+  '/terminos': {
+    title: 'Términos de servicio',
+    body: 'El uso de Nómina-Ec está sujeto a configuración segura de tenants, validación legal Ecuador 2026, prueba RLS en Render y aprobación comercial de planes. Los servicios de pago se concilian mediante PayPhone o modo mock en ambientes locales.',
+  },
+};
+
+function LegalText() {
+  const location = useLocation();
+  const data = content[location.pathname] || content['/privacidad'];
+
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <article className="mx-auto max-w-3xl rounded-lg bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold">{isPrivacy ? 'Política de privacidad' : 'Términos de servicio'}</h1>
-        <p className="mt-4 leading-7 text-slate-700">
-          Nómina-Ec procesa datos laborales, identificativos y operativos necesarios para prestar servicios de nómina,
-          marcaciones, documentos laborales, reportes y archivos bancarios. El tratamiento se rige por finalidad,
-          proporcionalidad, seguridad y trazabilidad.
-        </p>
-        <p className="mt-4 leading-7 text-slate-700">
-          PayPhone procesa pagos como proveedor externo. Nómina-Ec conserva referencias de transacción, estado,
-          monto y evidencia de conciliación, sin almacenar datos sensibles de tarjetas.
-        </p>
-        <p className="mt-4 leading-7 text-slate-700">
-          Este texto es base operativa y debe cerrarse con revisión legal ecuatoriana antes de producción.
-        </p>
-        <Link className="mt-6 inline-block font-semibold text-teal-700" to="/">Volver</Link>
-      </article>
+    <main className="app-shell">
+      <section className="page-container py-12">
+        <div className="soft-panel mx-auto max-w-3xl p-6 sm:p-8">
+          <Link className="text-sm font-semibold text-teal-800" to="/">Volver al inicio</Link>
+          <h1 className="mt-6 text-3xl font-semibold text-slate-950">{data.title}</h1>
+          <p className="mt-5 text-base leading-8 text-slate-600">{data.body}</p>
+        </div>
+      </section>
     </main>
   );
 }

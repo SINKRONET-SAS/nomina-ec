@@ -1,118 +1,153 @@
-# Plan HAIKY - Cierre de riesgos residuales
+# Plan HAIKY - Riesgos residuales y controles de parametrización
 
-Proyecto: nomina-ec  
-Fecha de plan: 2026-06-12  
-Estado base: fase 16 firmada en `.vscode/AuditLock.json`  
-Alcance: valores legales 2026, AWS SDK v3 y prueba RLS en Render con usuario no superusuario.
+Proyecto: Nómina-Ec  
+Fecha de revisión: 2026-06-12  
+Estado: segunda pasada documental
 
-## Regla de ejecucion
+## 1. Regla de ejecución
 
-Antes de ejecutar cualquiera de estas fases se debe leer `RULES.md`, validar que `.vscode/AuditLock.json` este firmado y confirmar que la fase anterior haya cerrado sin archivos pendientes. Este plan no autoriza cambios runtime por si solo; cada fase requiere ejecucion explicita y cierre de candado.
+Antes de ejecutar cualquier fase se debe leer `RULES.md`, validar `.vscode/AuditLock.json` y cerrar el candado con evidencia. Este documento no sustituye una validación legal, tributaria, laboral ni de seguridad.
 
-## Riesgo 1 - Valores legales 2026 pendientes de validacion oficial
+## 2. Riesgo principal actualizado
 
-### Situacion
+El riesgo mayor ya no es únicamente técnico. El sistema todavía es un boceto porque no permite parametrizar de forma suficiente:
 
-El sistema ya soporta parametros legales versionados en base de datos y mantiene respaldo en `backend/src/config/legal-ecuador.js`, pero los valores 2026 siguen marcados como `pendiente_validacion_oficial`. Esto impide declarar cumplimiento legal completo para calculos de IESS, decimos, vacaciones, liquidacion, finiquito, impuesto a la renta y redondeos.
+- Valores legales.
+- Tipos de novedades.
+- Estructura organizativa.
+- Zonas de marcación.
+- Jornadas y calendarios.
+- Bancos.
+- Flujos de aprobación.
+- Planes comerciales.
 
-### Fase 17 - Validacion legal Ecuador 2026
+Sin parametrización, Nómina-Ec no puede venderse como SaaS multiempresa porque cada cliente tendrá reglas, sedes, jornadas y procesos distintos.
 
-Objetivo: cerrar la brecha documental y tecnica de valores legales 2026 sin inventar fuentes ni asumir vigencia.
+## 3. Riesgos residuales
 
-Acciones:
+### Riesgo 1: valores legales 2026
 
-- Levantar matriz de parametros 2026 con campo, valor actual, fuente requerida, fecha de publicacion, responsable y estado.
-- Verificar cada valor contra fuente oficial aplicable antes de cambiar configuracion productiva.
-- Mantener `pendiente_validacion_oficial` cuando no exista evidencia suficiente.
-- Actualizar seeds o parametros en DB solo con respaldo documental.
-- Agregar prueba automatizada que bloquee calculos productivos cuando un periodo use parametros no validados.
-- Documentar redondeo legal por concepto: aportes, ingresos gravables, decimos, vacaciones, liquidacion y pagos bancarios.
+Estado: parcialmente reconfirmado, con bloqueo productivo pendiente.
 
-Entregables:
+Controles:
 
-- `docs2/MATRIZ_LEGAL_ECUADOR_2026.md`.
-- Ajustes versionados en parametros legales si existe fuente oficial suficiente.
-- Tests de bloqueo o advertencia para parametros no validados.
-- AuditLock firmado para fase 17.
+- Mantener estados por parámetro: `pendiente_validacion_oficial`, `validado_fuente_oficial`, `aprobado_profesional`.
+- Bloquear cálculos productivos cuando falte fuente o aprobación.
+- Guardar fuente, fecha, responsable y evidencia.
+- Versionar cada cambio por año y vigencia.
 
-Criterio de salida:
+### Riesgo 2: parametrización legal insuficiente
 
-- Ningun calculo productivo 2026 queda marcado como validado sin fuente oficial.
-- Cada parametro usado por nomina tiene estado, fuente, fecha y responsable.
+Estado: abierto.
 
-## Riesgo 2 - AWS SDK v2 pendiente de migracion a v3
+Controles:
 
-### Situacion
+- Crear tablas de parámetros legales con vigencia.
+- Crear pantallas de administración solo para SUPERADMIN y roles autorizados.
+- Permitir override por tenant únicamente cuando sea legalmente válido y auditado.
+- No permitir editar parámetros usados por nóminas cerradas; crear nueva versión.
 
-El backend mantiene `aws-sdk` v2 en `backend/package.json` y `backend/src/config/s3.js`. AWS SDK v2 debe migrarse a clientes modulares v3 para reducir superficie de dependencia y preparar mantenimiento de largo plazo.
+### Riesgo 3: novedades rígidas
 
-### Fase 18 - Migracion AWS SDK v3
+Estado: abierto.
 
-Objetivo: reemplazar el uso de `aws-sdk` v2 por AWS SDK v3 sin cambiar contratos publicos de carga, descarga, URL firmada y eliminacion.
+Controles:
 
-Acciones:
+- Catálogo configurable de novedades.
+- Definir impacto en nómina, IESS, IR, décimos, vacaciones y bancos.
+- Definir flujo de aprobación por rol, monto, cargo o sede.
+- Registrar evidencia obligatoria cuando aplique.
 
-- Instalar dependencias modulares requeridas: `@aws-sdk/client-s3` y `@aws-sdk/s3-request-presigner`.
-- Reescribir `backend/src/config/s3.js` con `S3Client`, `PutObjectCommand`, `GetObjectCommand`, `DeleteObjectCommand` y `getSignedUrl`.
-- Mantener nombres de funciones exportadas para compatibilidad.
-- Corregir logs y errores para cumplir `RULES.md`: mensajes visibles en espanol, sin `catch` silenciosos y con error estructurado cuando aplique.
-- Agregar prueba unitaria con mocks del cliente S3 para upload, signed URL y delete.
-- Eliminar `aws-sdk` v2 del manifiesto y lockfile.
+### Riesgo 4: estructura organizativa plana
 
-Entregables:
+Estado: abierto.
 
-- `backend/src/config/s3.js` migrado a v3.
-- Dependencias actualizadas.
-- Test unitario S3.
-- AuditLock firmado para fase 18.
+Controles:
 
-Criterio de salida:
+- Modelar empresa, sucursal, sede, departamento, área, equipo, cargo y centro de costo.
+- Usar vigencias para cambios de cargo, área o centro de costo.
+- Reportar nómina por estructura histórica del periodo.
 
-- No existe referencia runtime a `require('aws-sdk')`.
-- Tests pasan y no cambia el contrato de las funciones publicas S3.
+### Riesgo 5: zonas y jornadas insuficientes
 
-## Riesgo 3 - RLS debe probarse en Render con usuario no superusuario
+Estado: abierto.
 
-### Situacion
+Controles:
 
-Existe migracion SQL con politicas RLS, pero falta evidencia de ejecucion en Render con un usuario de base de datos no superusuario. Sin esta prueba no se puede afirmar aislamiento tenant en el entorno administrado.
+- Configurar geocercas por sede.
+- Configurar jornadas por empleado o grupo.
+- Modelar tolerancias, descansos, feriados, turnos y excepciones.
+- Auditar cambios de jornada y zona.
 
-### Fase 19 - Prueba RLS Render con usuario no superusuario
+### Riesgo 6: RLS Render sin evidencia
 
-Objetivo: comprobar que las politicas RLS funcionan en Render con credenciales no privilegiadas y que un tenant no puede leer ni modificar datos de otro tenant.
+Estado: pendiente.
 
-Acciones:
+Controles:
 
-- Crear o confirmar usuario de aplicacion no superusuario en PostgreSQL Render.
-- Ejecutar migraciones con el mecanismo autorizado sin degradar politicas RLS.
-- Preparar datos minimos de dos tenants de prueba.
-- Ejecutar consultas de lectura y escritura con contexto tenant valido e invalido.
-- Registrar evidencia sin secretos: comando, resultado esperado, resultado obtenido, timestamp y hash del script usado.
-- Agregar script repetible de verificacion RLS para entorno staging.
-- Documentar rollback operativo si una politica bloquea operaciones legitimas.
+- Ejecutar prueba con usuario no superusuario.
+- Registrar evidencia sin secretos.
+- Bloquear self-service comercial hasta comprobar aislamiento tenant.
 
-Entregables:
+### Riesgo 7: PayPhone sin sandbox real
 
-- `docs2/RUNBOOK_RLS_RENDER.md`.
-- Script de verificacion RLS para staging.
-- Evidencia de prueba con usuario no superusuario.
-- AuditLock firmado para fase 19.
+Estado: pendiente.
 
-Criterio de salida:
+Controles:
 
-- Usuario no superusuario no puede cruzar tenants.
-- La API conserva operaciones esperadas para el tenant autenticado.
-- La evidencia no contiene credenciales ni datos personales reales.
+- Validar credenciales sandbox.
+- Verificar firma de webhook si PayPhone la provee.
+- Probar idempotencia y conciliación.
+- No exponer secretos al cliente.
 
-## Cronograma recomendado
+### Riesgo 8: UX comercial insuficiente
 
-1. Fase 17: 1 a 2 dias habiles, depende de disponibilidad de fuentes oficiales y revision profesional.
-2. Fase 18: 0.5 a 1 dia habil, requiere instalacion de dependencias y tests S3.
-3. Fase 19: 1 dia habil, requiere acceso Render staging y credenciales no superusuario.
+Estado: en corrección.
 
-## Bloqueos antes de produccion
+Controles:
 
-- No liberar nomina 2026 como validada si la matriz legal conserva estados `pendiente_validacion_oficial`.
-- No cerrar hardening de dependencias mientras `aws-sdk` v2 siga en runtime.
-- No declarar aislamiento tenant completo hasta probar RLS en Render con usuario no superusuario.
+- Mantener UI profesional en landing, auth, planes y onboarding.
+- Agregar asistente de configuración inicial.
+- Ejecutar smoke visual desktop/móvil.
 
+## 4. Fases de cierre recomendadas
+
+### Fase 28: Catálogos base y gobierno de configuración
+
+Crear modelo común para catálogos globales y por tenant con vigencia, estado, auditoría y permisos.
+
+### Fase 29: Parámetros legales versionados
+
+Migrar SBU, IR, IESS, décimos, vacaciones, horas extra y liquidación a DB.
+
+### Fase 30: Novedades configurables
+
+Crear catálogo editable y reglas de impacto en nómina.
+
+### Fase 31: Organización y centros de costo
+
+Modelar estructura y relaciones históricas de empleados.
+
+### Fase 32: Jornadas, zonas y calendarios
+
+Crear reglas de asistencia parametrizables.
+
+### Fase 33: Onboarding de configuración
+
+Guiar al OWNER para dejar el tenant operable antes de cargar empleados.
+
+### Fase 34: QA productizable
+
+Probar flujo completo con tenant de muestra, parámetros reales, empleado, marcación, novedad, nómina, banco y pago.
+
+## 5. Criterio de no comercialización
+
+No comercializar si ocurre cualquiera de estas condiciones:
+
+- RLS Render no probado.
+- Parámetros legales productivos sin fuente y aprobación.
+- No existe configuración de jornadas, zonas y novedades.
+- No existe flujo claro para configurar organización.
+- PayPhone no probado en sandbox/oficial.
+- La PWA conserva pantallas en bruto o sin acción real.
+- No hay pruebas de RBAC y aislamiento tenant.
