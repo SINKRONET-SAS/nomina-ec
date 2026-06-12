@@ -1,6 +1,6 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { authenticatedApi } from '../../services/authenticatedApi';
 import { Download } from 'lucide-react';
 
 function RolesPagos() {
@@ -11,14 +11,14 @@ function RolesPagos() {
   const { data: nominas, isLoading } = useQuery({
     queryKey: ['roles-pagos', anio, mes],
     queryFn: async () => {
-      const response = await axios.get(`/api/nomina/${anio}/${mes}`);
+      const response = await authenticatedApi.get(`/nomina/${anio}/${mes}`);
       return response.data.nominas;
     }
   });
 
   const descargarPDF = async (id) => {
     try {
-      const response = await axios.get(`/api/nomina/${id}/rol-pdf`);
+      const response = await authenticatedApi.get(`/nomina/${id}/rol-pdf`);
       window.open(response.data.url, '_blank');
     } catch (err) {
       alert('Error al descargar PDF');

@@ -1,5 +1,5 @@
-﻿import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
+import { authenticatedApi } from '../../services/authenticatedApi';
 import { FileText, Download } from 'lucide-react';
 
 function DescargarReportes() {
@@ -13,11 +13,11 @@ function DescargarReportes() {
     try {
       let response;
       if (tipo === 'ats') {
-        response = await axios.post('/api/reportes/ats', { anio, mes });
+        response = await authenticatedApi.post('/reportes/ats', { anio, mes });
       } else if (tipo === 'sae') {
-        response = await axios.post('/api/reportes/sae', { anio, mes });
+        response = await authenticatedApi.post('/reportes/sae', { anio, mes });
       } else if (tipo === 'banco') {
-        response = await axios.post('/api/reportes/banco', { anio, mes });
+        response = await authenticatedApi.post('/reportes/banco', { anio, mes });
       }
       
       if (response.data.reporte?.url || response.data.reporte?.csvUrl) {

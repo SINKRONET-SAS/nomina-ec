@@ -1,5 +1,5 @@
-﻿import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
+import { authenticatedApi } from '../../services/authenticatedApi';
 import { Calculator, CheckCircle } from 'lucide-react';
 
 function CerrarMes() {
@@ -12,7 +12,7 @@ function CerrarMes() {
   const handleCalcular = async () => {
     setCargando(true);
     try {
-      const response = await axios.post('/api/nomina/calcular', { anio, mes });
+      const response = await authenticatedApi.post('/nomina/calcular', { anio, mes });
       setResultado(response.data.resultado);
     } catch (err) {
       alert(err.response?.data?.error || 'Error al calcular nómina');
@@ -26,7 +26,7 @@ function CerrarMes() {
     
     setCargando(true);
     try {
-      await axios.post('/api/nomina/cerrar', { anio, mes });
+      await authenticatedApi.post('/nomina/cerrar', { anio, mes });
       alert('Nómina cerrada exitosamente');
     } catch (err) {
       alert(err.response?.data?.error || 'Error al cerrar nómina');

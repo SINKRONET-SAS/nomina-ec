@@ -1,6 +1,6 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { authenticatedApi } from '../../services/authenticatedApi';
 import { ArrowLeft } from 'lucide-react';
 
 function NuevoEmpleado() {
@@ -23,7 +23,7 @@ function NuevoEmpleado() {
     setCargando(true);
     
     try {
-      await axios.post('/api/empleados', formData);
+      await authenticatedApi.post('/empleados', formData);
       navigate('/empleados');
     } catch (err) {
       setError(err.response?.data?.error || 'Error al crear empleado');

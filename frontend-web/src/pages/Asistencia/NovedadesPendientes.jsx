@@ -1,6 +1,6 @@
-﻿import React from 'react';
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import { authenticatedApi } from '../../services/authenticatedApi';
 import { Check, X, Clock } from 'lucide-react';
 
 function NovedadesPendientes() {
@@ -9,18 +9,18 @@ function NovedadesPendientes() {
   const { data: novedades, isLoading } = useQuery({
     queryKey: ['novedades-pendientes'],
     queryFn: async () => {
-      const response = await axios.get('/api/novedades/pendientes');
+      const response = await authenticatedApi.get('/novedades/pendientes');
       return response.data.novedades;
     }
   });
 
   const aprobarMutation = useMutation({
-    mutationFn: (id) => axios.put(`/api/novedades/${id}/aprobar`),
+    mutationFn: (id) => authenticatedApi.put(`/novedades/${id}/aprobar`),
     onSuccess: () => queryClient.invalidateQueries(['novedades-pendientes'])
   });
 
   const rechazarMutation = useMutation({
-    mutationFn: (id) => axios.put(`/api/novedades/${id}/rechazar`),
+    mutationFn: (id) => authenticatedApi.put(`/novedades/${id}/rechazar`),
     onSuccess: () => queryClient.invalidateQueries(['novedades-pendientes'])
   });
 

@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Settings2, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Settings2, LogOut, Menu, ShieldCheck, X } from 'lucide-react';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -52,6 +52,7 @@ function Layout() {
       ]
     },
     { path: '/dashboard/configuracion/parametrizacion', icon: Settings2, label: 'Parametrización', roles: ['superadmin', 'owner', 'admin_rrhh'] },
+    { path: '/dashboard/auditoria', icon: ShieldCheck, label: 'Auditoría', roles: ['superadmin', 'owner'] },
     { path: '/precios', icon: CreditCard, label: 'Planes', roles: ['superadmin', 'owner'] },
   ];
 

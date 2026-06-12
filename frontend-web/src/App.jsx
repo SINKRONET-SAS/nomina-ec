@@ -16,6 +16,7 @@ import Planes from './pages/Planes';
 import PaymentResult from './pages/PaymentResult';
 import LegalText from './pages/LegalText';
 import Parametrizacion from './pages/Configuracion/Parametrizacion';
+import Auditoria from './pages/Auditoria';
 import Dashboard from './pages/Dashboard';
 import ListaEmpleados from './pages/Empleados/ListaEmpleados';
 import NuevoEmpleado from './pages/Empleados/NuevoEmpleado';
@@ -136,6 +137,11 @@ function App() {
               <Route path="configuracion/parametrizacion" element={
                 <ProtectedRoute requiredRole={['superadmin', 'owner', 'admin_rrhh']}>
                   <Parametrizacion />
+                </ProtectedRoute>
+              } />
+              <Route path="auditoria" element={
+                <ProtectedRoute requiredRole={['superadmin', 'owner']}>
+                  <Auditoria />
                 </ProtectedRoute>
               } />
             </Route>

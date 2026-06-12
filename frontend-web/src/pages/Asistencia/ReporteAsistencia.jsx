@@ -1,6 +1,6 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { authenticatedApi } from '../../services/authenticatedApi';
 
 function ReporteAsistencia() {
   const hoy = new Date();
@@ -10,7 +10,7 @@ function ReporteAsistencia() {
   const { data: reporte, isLoading } = useQuery({
     queryKey: ['reporte-asistencia', anio, mes],
     queryFn: async () => {
-      const response = await axios.get(`/api/reportes/asistencia/${anio}/${mes}`);
+      const response = await authenticatedApi.get(`/reportes/asistencia/${anio}/${mes}`);
       return response.data.reporte;
     }
   });

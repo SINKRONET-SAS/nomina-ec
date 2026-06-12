@@ -1,6 +1,6 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { authenticatedApi } from '../../services/authenticatedApi';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Edit, UserX } from 'lucide-react';
 
@@ -10,7 +10,7 @@ function ListaEmpleados() {
   const { data, isLoading } = useQuery({
     queryKey: ['empleados'],
     queryFn: async () => {
-      const response = await axios.get('/api/empleados');
+      const response = await authenticatedApi.get('/empleados');
       return response.data.empleados;
     }
   });
@@ -24,7 +24,7 @@ function ListaEmpleados() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Empleados</h1>
-        <Link to="/empleados/nuevo" className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
+        <Link to="/dashboard/empleados/nuevo" className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
           <Plus size={20} className="mr-2" /> Nuevo Empleado
         </Link>
       </div>
@@ -69,7 +69,7 @@ function ListaEmpleados() {
                     <td className="px-6 py-4 text-sm">
                       <div className="flex space-x-2">
                         <button className="text-blue-600 hover:text-blue-800"><Edit size={16} /></button>
-                        <Link to={`/empleados/${emp.id}/terminar`} className="text-red-600 hover:text-red-800">
+                        <Link to={`/dashboard/empleados/${emp.id}/terminar`} className="text-red-600 hover:text-red-800">
                           <UserX size={16} />
                         </Link>
                       </div>

@@ -1,20 +1,20 @@
-﻿import React from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { authenticatedApi } from '../../services/authenticatedApi';
 import { FileText, Download } from 'lucide-react';
 
 function ContratosGenerados() {
   const { data: documentos, isLoading } = useQuery({
     queryKey: ['contratos'],
     queryFn: async () => {
-      const response = await axios.get('/api/documentos?tipo=contrato_indefinido,contrato_ocasional,contrato_obra');
+      const response = await authenticatedApi.get('/documentos?tipo=contrato_indefinido,contrato_ocasional,contrato_obra');
       return response.data.documentos;
     }
   });
 
   const descargar = async (id) => {
     try {
-      const response = await axios.get(`/api/documentos/${id}/download`);
+      const response = await authenticatedApi.get(`/documentos/${id}/download`);
       window.open(response.data.url, '_blank');
     } catch (err) {
       alert('Error al descargar documento');

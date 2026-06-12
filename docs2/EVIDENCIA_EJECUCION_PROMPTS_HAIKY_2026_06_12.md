@@ -63,3 +63,30 @@ Validacion:
 - Verificacion UTF-8 de archivos frontend tocados: PASS.
 - `node --check backend/src/app.js`: PASS.
 - Verificacion directa de endpoint con `/api`: endpoint encontrado; token dummy devuelve rechazo de autenticacion esperado.
+
+## Tercera pasada de visibilidad operativa
+
+Motivo: el backend ya exponia funcionalidad que no era suficientemente visible en la PWA.
+
+Hallazgos:
+
+- El Dashboard intentaba consultar `/api/dashboard/stats`, endpoint que no existe en el backend.
+- El backend ya expone recursos reales para empleados, novedades, marcaciones, nomina, documentos, reportes, pagos, parametrizacion y auditoria.
+- La auditoria existia en backend (`GET /api/auditoria`) pero no tenia pantalla ni entrada de menu.
+- Varias paginas internas dependian de rutas relativas `/api/...`; esto funciona con proxy local, pero puede ocultar funcionalidad en despliegues estaticos si `VITE_API_URL` apunta al backend externo.
+- El enlace interno para terminar empleado salia de `/dashboard`, haciendo que la pantalla protegida quedara dificil de alcanzar.
+
+Correccion:
+
+- Se reemplazo el Dashboard por una consola operativa que consume endpoints reales existentes: empleados, novedades pendientes, marcaciones del dia, parametrizacion, suscripcion y auditoria reciente segun rol.
+- Se agrego `frontend-web/src/pages/Auditoria.jsx` y ruta protegida `/dashboard/auditoria`.
+- Se agrego menu `Auditoria` visible para `owner` y `superadmin`.
+- Se agrego `frontend-web/src/services/authenticatedApi.js` con `baseURL` normalizado y token desde `localStorage`.
+- Se migraron pantallas internas protegidas a `authenticatedApi` para evitar dependencia exclusiva del proxy Vite.
+- Se corrigieron enlaces de empleados para permanecer bajo `/dashboard`.
+
+Validacion:
+
+- `npm run build` en `frontend-web`: PASS.
+- Verificacion UTF-8 de `frontend-web/src`: PASS.
+- `git diff --check`: PASS.

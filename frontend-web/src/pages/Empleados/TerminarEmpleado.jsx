@@ -1,6 +1,6 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
+import { authenticatedApi } from '../../services/authenticatedApi';
 import { ArrowLeft, AlertTriangle } from 'lucide-react';
 
 function TerminarEmpleado() {
@@ -15,7 +15,7 @@ function TerminarEmpleado() {
     setCargando(true);
     
     try {
-      const response = await axios.post(`/api/empleados/${id}/terminar`, { causa });
+      const response = await authenticatedApi.post(`/empleados/${id}/terminar`, { causa });
       setResultado(response.data.liquidacion);
     } catch (err) {
       alert(err.response?.data?.error || 'Error al terminar empleado');
