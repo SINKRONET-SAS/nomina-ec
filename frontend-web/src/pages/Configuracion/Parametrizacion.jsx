@@ -95,6 +95,13 @@ function countResources(summary, key) {
   return summary?.resources?.[key]?.length || 0;
 }
 
+function configurationLoadMessage(err) {
+  return extractApiError(
+    err,
+    'No pudimos cargar la configuración. Intenta actualizar la página en unos segundos.'
+  );
+}
+
 function Parametrizacion() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
@@ -117,19 +124,19 @@ function Parametrizacion() {
     mutationFn: async ({ resource, payload, stepCode, title }) => {
       const record = await createConfigurationResource(token, resource, payload);
       await completeOnboardingStep(token, stepCode, {
-        notes: `${title} creado desde asistente de parametrización.`,
+        notes: `${title} creado desde configuración inicial.`,
         evidence: { recordId: record.id, resource },
       });
       return record;
     },
     onSuccess: () => {
       setError('');
-      setMessage('Configuración guardada y checklist actualizado.');
+      setMessage('Listo. La configuración quedó guardada.');
       queryClient.invalidateQueries({ queryKey: ['configuration-summary'] });
     },
     onError: (err) => {
       setMessage('');
-      setError(extractApiError(err, 'No se pudo guardar la configuración.'));
+      setError(extractApiError(err, 'No pudimos guardar la configuración. Revisa los datos e intenta nuevamente.'));
     },
   });
 
@@ -148,15 +155,15 @@ function Parametrizacion() {
       <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Fases 28-34</p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Parametrización operativa</h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Configuración inicial</p>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Prepara tu operación de nómina</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Configura los mínimos para que Nómina-Ec deje de ser boceto: legal, novedades, organización,
-              zonas, jornadas, bancos y preparación del OWNER.
+              Define los parámetros laborales, novedades, organización, zonas, jornadas y bancos
+              que tu empresa necesita para trabajar con Nómina-Ec.
             </p>
           </div>
           <div className="rounded-md bg-teal-50 px-5 py-4 text-center">
-            <p className="text-sm font-medium text-teal-900">Preparación</p>
+            <p className="text-sm font-medium text-teal-900">Avance</p>
             <p className="text-3xl font-semibold text-teal-900">{completion}%</p>
           </div>
         </div>
@@ -169,14 +176,14 @@ function Parametrizacion() {
       {error && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{error}</div>}
       {summaryHasError && (
         <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-          {extractApiError(summaryError, 'No se pudo cargar la parametrizacion. Verifica que el backend este activo y que VITE_API_URL apunte al API.')}
+          {configurationLoadMessage(summaryError)}
         </div>
       )}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {metrics.map(([label, value]) => (
           <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" key={label}>
-            <p className="text-sm text-slate-500">{label}</p>
+          <p className="text-sm text-slate-500">{label}</p>
             <p className="mt-2 text-3xl font-semibold text-slate-950">{isLoading && !summaryHasError ? '...' : value}</p>
           </article>
         ))}
@@ -185,7 +192,7 @@ function Parametrizacion() {
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-5 flex items-center gap-3">
           <Settings2 className="h-6 w-6 text-teal-700" />
-          <h2 className="text-lg font-semibold text-slate-950">Acciones rápidas con API real</h2>
+          <h2 className="text-lg font-semibold text-slate-950">Primeros pasos recomendados</h2>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           {quickForms.map((item) => (
@@ -193,7 +200,7 @@ function Parametrizacion() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="font-semibold text-slate-950">{item.title}</h3>
-                  <p className="mt-1 text-sm text-slate-600">Crea un registro base y marca el paso de onboarding.</p>
+                  <p className="mt-1 text-sm text-slate-600">Crea una base inicial para empezar a operar y revisarla luego.</p>
                 </div>
                 <item.icon className="h-5 w-5 text-teal-700" />
               </div>
@@ -202,7 +209,7 @@ function Parametrizacion() {
                 disabled={createMutation.isPending}
                 onClick={() => createMutation.mutate(item)}
               >
-                {createMutation.isPending ? 'Guardando...' : 'Crear configuración base'}
+                {createMutation.isPending ? 'Guardando...' : 'Crear base inicial'}
               </button>
             </article>
           ))}
@@ -210,7 +217,7 @@ function Parametrizacion() {
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-950">Checklist OWNER</h2>
+        <h2 className="text-lg font-semibold text-slate-950">Progreso de configuración</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {(summary?.onboarding?.steps || []).map((step) => (
             <div className="flex items-center gap-3 rounded-md bg-slate-50 px-4 py-3" key={step.step_code}>

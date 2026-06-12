@@ -2,9 +2,9 @@
     "project":  "nomina-ec",
     "rulesFile":  "RULES.md",
     "phaseCompleted":  "34",
-    "phaseName":  "Ejecucion inicial, segunda pasada visual y tercera pasada de visibilidad operativa",
+    "phaseName":  "Ejecucion inicial, visibilidad operativa y humanizacion UI/UX",
     "status":  "signed",
-    "generatedAt":  "2026-06-12T22:05:00-05:00",
+    "generatedAt":  "2026-06-12T22:25:00-05:00",
     "filesModified":  [
                           ".vscode/AuditLock.json",
                           "CODEX_CONTEXT.md",
@@ -36,7 +36,11 @@
                           "frontend-web/src/pages/Nomina/RolesPagos.jsx",
                           "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
                           "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
-                          "frontend-web/src/pages/Documentos/ActasFiniquito.jsx"
+                          "frontend-web/src/pages/Documentos/ActasFiniquito.jsx",
+                          "frontend-web/src/pages/Login.jsx",
+                          "frontend-web/src/pages/Register.jsx",
+                          "frontend-web/src/pages/Landing.jsx",
+                          "frontend-web/src/pages/LegalText.jsx"
                       ],
     "validationChecks":  [
                              "RULES.md leido antes de modificar runtime",
@@ -74,11 +78,19 @@
                              "Enlaces de empleados corregidos para permanecer bajo /dashboard",
                              "npm run build en frontend-web PASS tras tercera pasada",
                              "Verificacion UTF-8 de frontend-web/src PASS tras tercera pasada",
-                             "git diff --check PASS tras tercera pasada"
+                             "git diff --check PASS tras tercera pasada",
+                             "Cuarta pasada UI/UX: se removio lenguaje interno visible como Fases 28-34, API real, backend, OWNER y tenant",
+                             "Parametrizacion usa lenguaje de configuracion inicial y primeros pasos recomendados",
+                             "Ruta no encontrada se traduce a mensaje accionable para usuario",
+                             "Login, landing y textos legales reemplazan jerga interna por empresa, compania y administrador",
+                             "Busqueda de jerga visible en pages/components PASS",
+                             "npm run build en frontend-web PASS tras humanizacion UI/UX",
+                             "Verificacion UTF-8 de frontend-web/src PASS tras humanizacion UI/UX",
+                             "git diff --check PASS tras humanizacion UI/UX"
                          ],
-    "previousLockHash":  "957b7d2e95ca5989575564d26b8101af84da61fdf11ee657a750f70f5f305bf9",
-    "signatureSource":  "previousLockHash + 2026-06-12T22:05:00-05:00",
-    "signature":  "ed41ac4a25acfeb7f6c9b8b2c5bbbd137669f673d94bc33fdaa20e24ad6ff9c8",
+    "previousLockHash":  "977a81ddab5461c168fc040f740906ffa5828845ef4cdaf919abca36f2e3c80b",
+    "signatureSource":  "previousLockHash + 2026-06-12T22:25:00-05:00",
+    "signature":  "56f195b0ec60bb031d2e412806654a1ba685e238e61e3c3fb07f50fa0b43c981",
     "nextPhase":  "35",
     "requiresOwnerApprovalForNextPhase":  true,
     "residualRisks":  [

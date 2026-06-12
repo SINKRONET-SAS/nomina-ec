@@ -90,3 +90,22 @@ Validacion:
 - `npm run build` en `frontend-web`: PASS.
 - Verificacion UTF-8 de `frontend-web/src`: PASS.
 - `git diff --check`: PASS.
+
+## Cuarta pasada de mensajes UI/UX
+
+Motivo: la interfaz seguia mostrando lenguaje interno de implementacion, por ejemplo `Fases 28-34`, `API real`, `OWNER`, `backend`, `tenant` y errores crudos como `Ruta no encontrada`.
+
+Correccion:
+
+- La pantalla de parametrizacion ahora habla de `Configuracion inicial`, `Prepara tu operacion de nomina`, `Primeros pasos recomendados` y `Progreso de configuracion`.
+- Los botones y ayudas cambiaron de `Crear configuracion base` / `registro base` a `Crear base inicial` y textos orientados a empezar a operar.
+- `Ruta no encontrada` se traduce a un mensaje accionable para el usuario.
+- Dashboard y Auditoria evitan hablar de backend/API y usan lenguaje de trabajo diario.
+- Login, landing y textos legales reemplazan `tenant` y `OWNER` por empresa, compania y administrador.
+
+Validacion:
+
+- Busqueda de jerga visible en `frontend-web/src/pages` y `frontend-web/src/components`: sin coincidencias para `Fases`, `API real`, `backend`, `OWNER`, `boceto`, `Ruta no encontrada`, `tenant`, `Consola operativa`.
+- `npm run build` en `frontend-web`: PASS.
+- Verificacion UTF-8 de `frontend-web/src`: PASS.
+- `git diff --check`: PASS.

@@ -54,7 +54,7 @@ function Login() {
           </div>
 
           <div className="grid max-w-xl gap-3 text-sm text-slate-200">
-            {['Multiempresa con aislamiento tenant', 'Flujos reales de registro, pago y recuperación', 'Bloqueos legales visibles antes de producción'].map((item) => (
+            {['Multiempresa con datos separados por compañía', 'Flujos reales de registro, pago y recuperación', 'Bloqueos legales visibles antes de producción'].map((item) => (
               <div className="flex items-center gap-3" key={item}>
                 <CheckCircle2 className="h-5 w-5 text-teal-300" />
                 <span>{item}</span>
@@ -140,7 +140,7 @@ function Login() {
             <div className="mt-6 rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-600">
               ¿Aún no tienes cuenta?{' '}
               <Link className="font-semibold text-teal-800" to="/registro">
-                Crear empresa y OWNER inicial
+                Crear empresa y administrador inicial
               </Link>
             </div>
           </div>

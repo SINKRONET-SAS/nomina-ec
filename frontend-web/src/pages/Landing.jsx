@@ -21,7 +21,7 @@ const capabilities = [
   {
     icon: ShieldCheck,
     title: 'Cumplimiento Ecuador',
-    text: 'Parámetros versionados, trazabilidad tenant y bloqueos cuando falte validación.',
+    text: 'Parámetros versionados, trazabilidad por empresa y bloqueos cuando falte validación.',
   },
 ];
 

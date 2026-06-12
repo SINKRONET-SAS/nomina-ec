@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Dashboard operativo
+// Nomina-Ec - Panel principal
 // ============================================================
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -146,14 +146,14 @@ function Dashboard() {
   const modules = [
     {
       title: 'Empleados',
-      description: 'Alta, consulta y terminacion laboral usan el backend de empleados.',
+      description: 'Alta, consulta y terminación laboral desde un solo lugar.',
       href: '/dashboard/empleados',
       icon: Users,
       enabled: ['owner', 'admin_rrhh', 'supervisor'].includes(role),
     },
     {
       title: 'Asistencia',
-      description: 'Novedades pendientes, marcaciones del dia y reporte mensual ya tienen API.',
+      description: 'Novedades pendientes, marcaciones del día y reporte mensual.',
       href: '/dashboard/asistencia/novedades',
       icon: Clock,
       enabled: ['owner', 'admin_rrhh', 'supervisor'].includes(role),
@@ -174,14 +174,14 @@ function Dashboard() {
     },
     {
       title: 'Planes y pagos',
-      description: 'Suscripcion activa, PayPhone y planes comerciales publicados.',
+      description: 'Suscripción activa, pagos y planes disponibles para tu empresa.',
       href: '/precios',
       icon: Banknote,
       enabled: ['owner', 'superadmin'].includes(role),
     },
     {
       title: 'Auditoria',
-      description: 'Trazabilidad de acciones sensibles por tenant y usuario.',
+      description: 'Historial de acciones importantes realizadas en la cuenta.',
       href: '/dashboard/auditoria',
       icon: ShieldCheck,
       enabled: canAudit,
@@ -199,15 +199,15 @@ function Dashboard() {
       <section className="soft-panel p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Consola operativa</p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Todo lo que ya esta conectado</h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Panel principal</p>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Tu operación en una sola vista</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Esta vista consume APIs reales del backend para que la funcionalidad no quede escondida:
-              empleados, asistencia, nomina, parametrizacion, pagos y auditoria segun tu rol.
+              Revisa empleados, asistencia, nómina, configuración, pagos y auditoría
+              según los permisos de tu usuario.
             </p>
           </div>
           <div className="rounded-md bg-teal-50 px-5 py-4 text-center">
-            <p className="text-sm font-medium text-teal-900">Preparacion</p>
+            <p className="text-sm font-medium text-teal-900">Configuración</p>
             <p className="text-3xl font-semibold text-teal-900">{isLoading ? '...' : `${completion}%`}</p>
           </div>
         </div>
@@ -236,7 +236,7 @@ function Dashboard() {
         <div className="soft-panel p-6">
           <div className="mb-4 flex items-center gap-3">
             <ListChecks className="h-5 w-5 text-teal-700" />
-            <h2 className="text-lg font-semibold text-slate-950">Modulos visibles por rol</h2>
+            <h2 className="text-lg font-semibold text-slate-950">Accesos disponibles</h2>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             {activeModules.map((module) => (
@@ -264,8 +264,8 @@ function Dashboard() {
             <div className="flex gap-3">
               <AlertCircle className="h-5 w-5 shrink-0 text-amber-700" />
               <p className="text-sm leading-6 text-amber-900">
-                IESS 2026 y revision profesional siguen bloqueando activacion productiva completa,
-                pero la consola ya deja navegar la operacion disponible.
+                IESS 2026 y revisión profesional siguen pendientes antes de activar
+                la operación productiva completa.
               </p>
             </div>
           </div>

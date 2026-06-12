@@ -8,7 +8,7 @@ const content = {
   },
   '/terminos': {
     title: 'Términos de servicio',
-    body: 'El uso de Nómina-Ec está sujeto a configuración segura de tenants, validación legal Ecuador 2026, prueba RLS en Render y aprobación comercial de planes. Los servicios de pago se concilian mediante PayPhone o modo mock en ambientes locales.',
+    body: 'El uso de Nómina-Ec está sujeto a configuración segura por empresa, validación legal Ecuador 2026 y aprobación comercial de planes. Los servicios de pago se concilian mediante PayPhone o modo de pruebas en ambientes locales.',
   },
 };
 

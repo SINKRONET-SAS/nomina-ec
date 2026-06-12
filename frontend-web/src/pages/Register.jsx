@@ -54,11 +54,11 @@ function Register() {
             Crea tu empresa y empieza con un flujo operativo real.
           </h1>
           <p className="mt-5 max-w-lg text-lg leading-8 text-slate-600">
-            El registro crea el tenant, el usuario OWNER inicial y la suscripción base seleccionada.
+            El registro crea la empresa, el usuario administrador inicial y la suscripción base seleccionada.
           </p>
           <div className="mt-8 grid gap-4">
             {[
-              'Tenant y OWNER inicial en una sola acción',
+              'Empresa y administrador inicial en una sola acción',
               'Prueba o plan comercial desde el primer acceso',
               'Aceptación explícita de términos y privacidad',
             ].map((item) => (
@@ -117,7 +117,7 @@ function Register() {
               <input className="auth-input" value={form.apellidos} onChange={(e) => update('apellidos', e.target.value)} />
             </label>
             <label className="space-y-2 md:col-span-2">
-              <span className="auth-label">Email OWNER</span>
+              <span className="auth-label">Email del administrador</span>
               <div className="relative">
                 <Mail className="pointer-events-none absolute left-3 top-3 h-5 w-5 text-slate-400" />
                 <input className="auth-input pl-10" type="email" required value={form.email} onChange={(e) => update('email', e.target.value)} />

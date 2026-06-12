@@ -32,11 +32,11 @@ function Auditoria() {
         <div className="flex items-start gap-3">
           <ShieldCheck className="mt-1 h-6 w-6 text-teal-700" />
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Backend visible</p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Auditoria operativa</h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Historial de actividad</p>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Auditoría de la cuenta</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Consulta eventos registrados por el backend para revisar acciones sensibles,
-              cambios de configuracion, documentos y procesos por tenant.
+              Consulta acciones importantes, cambios de configuración y movimientos
+              registrados para tu empresa.
             </p>
           </div>
         </div>

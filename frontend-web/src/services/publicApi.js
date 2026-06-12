@@ -7,7 +7,14 @@ export const publicApi = axios.create({
 });
 
 export function extractApiError(err, fallback = 'No se pudo completar la operación.') {
-  return err?.response?.data?.message || err?.response?.data?.error || err?.message || fallback;
+  const message = err?.response?.data?.message || err?.response?.data?.error || err?.message || fallback;
+  const normalized = String(message || '').trim().toLowerCase();
+
+  if (normalized === 'ruta no encontrada' || normalized === 'not_found') {
+    return 'No pudimos cargar esta sección. Actualiza la página y verifica que el servicio esté activo.';
+  }
+
+  return message;
 }
 
 export async function fetchPlans() {
