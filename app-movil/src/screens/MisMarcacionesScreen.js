@@ -1,12 +1,19 @@
-// ============================================================
-// PLAN HAIKY - Pantalla Mis Marcaciones (App MÃ³vil)
-// ============================================================
+// Nómina-Ec - Pantalla Mis Marcaciones (App móvil)
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 const API_URL = 'http://10.0.2.2:3000/api';
+
+function parseJwt(token) {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch (err) {
+    console.error('Error leyendo token de sesión:', err);
+    return null;
+  }
+}
 
 export default function MisMarcacionesScreen() {
   const [marcaciones, setMarcaciones] = useState([]);
@@ -20,12 +27,16 @@ export default function MisMarcacionesScreen() {
   const cargarMarcaciones = async () => {
     try {
       const token = await SecureStore.getItemAsync('token');
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      
+      const payload = token ? parseJwt(token) : null;
+
+      if (!payload?.userId) {
+        throw new Error('Sesión móvil inválida.');
+      }
+
       const response = await axios.get(`${API_URL}/marcaciones/empleado/${payload.userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       setMarcaciones(response.data.marcaciones || []);
     } catch (err) {
       console.error('Error cargando marcaciones:', err);
@@ -48,7 +59,7 @@ export default function MisMarcacionesScreen() {
         </Text>
         <View style={[styles.badge, item.es_valida ? styles.badgeValid : styles.badgeInvalid]}>
           <Text style={styles.badgeText}>
-            {item.es_valida ? 'VÃLIDA' : 'INVÃLIDA'}
+            {item.es_valida ? 'VÁLIDA' : 'INVÁLIDA'}
           </Text>
         </View>
       </View>
@@ -57,11 +68,11 @@ export default function MisMarcacionesScreen() {
       </Text>
       {item.distancia_metros && (
         <Text style={styles.distancia}>
-          Distancia: {parseInt(item.distancia_metros)}m
+          Distancia: {parseInt(item.distancia_metros, 10)}m
         </Text>
       )}
       {item.foto_url && (
-        <Text style={styles.foto}>ðŸ“· Foto adjunta</Text>
+        <Text style={styles.foto}>Foto adjunta</Text>
       )}
     </View>
   );
@@ -77,17 +88,17 @@ export default function MisMarcacionesScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Mis Marcaciones</Text>
-      
+
       <FlatList
         data={marcaciones}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        refreshControl={
+        refreshControl={(
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={
+        )}
+        ListEmptyComponent={(
           <Text style={styles.empty}>No hay marcaciones registradas</Text>
-        }
+        )}
         contentContainerStyle={styles.list}
       />
     </View>
@@ -171,4 +182,3 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
 });
-

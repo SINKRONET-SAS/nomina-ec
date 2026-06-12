@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Nómina-Ec">
+  <rect width="512" height="512" fill="#0f766e"/>
+  <circle cx="256" cy="256" r="176" fill="#ffffff"/>
+  <path d="M172 172h168v168H172z" fill="#ccfbf1"/>
+  <path d="M204 216h104v24H204zm0 56h104v24H204z" fill="#0f766e"/>
+  <path d="M214 340h84" stroke="#14b8a6" stroke-width="24" stroke-linecap="round"/>
+</svg>

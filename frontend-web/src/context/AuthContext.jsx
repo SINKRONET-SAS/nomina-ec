@@ -1,61 +1,91 @@
-﻿// ============================================================
-// PLAN HAIKY - Contexto de Autenticación
-// ============================================================
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext(null);
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+function normalizeUser(payload) {
+  return payload?.usuario || payload?.user || null;
+}
+
+function readStoredUser() {
+  try {
+    const raw = localStorage.getItem('usuario');
+    return raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    console.error('[AUTH] No se pudo leer usuario local', {
+      message: err.message,
+    });
+    localStorage.removeItem('usuario');
+    return null;
+  }
+}
 
 export function AuthProvider({ children }) {
-  const [usuario, setUsuario] = useState(null);
+  const [usuario, setUsuario] = useState(readStoredUser);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [cargando, setCargando] = useState(true);
-
-  useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      // Verificar token
-      verificarToken();
-    } else {
-      setCargando(false);
-    }
-  }, [token]);
-
-  const verificarToken = async () => {
-    try {
-      const response = await axios.post(`${API_URL}/auth/refresh`, { token });
-      setToken(response.data.token);
-      localStorage.setItem('token', response.data.token);
-      setCargando(false);
-    } catch (err) {
-      logout();
-    }
-  };
-
-  const login = async (email, password) => {
-    try {
-      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
-      setToken(response.data.token);
-      setUsuario(response.data.usuario);
-      localStorage.setItem('token', response.data.token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-      return response.data;
-    } catch (err) {
-      throw err.response?.data || { error: 'Error de conexión' };
-    }
-  };
 
   const logout = () => {
     setToken(null);
     setUsuario(null);
     localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
+    localStorage.removeItem('usuario');
+    delete axios.defaults.headers.common.Authorization;
+  };
+
+  const setSessionFromPayload = (payload) => {
+    const nextToken = payload?.token;
+    const nextUser = normalizeUser(payload);
+
+    if (!nextToken || !nextUser) {
+      throw new Error('Respuesta de autenticación inválida.');
+    }
+
+    setToken(nextToken);
+    setUsuario(nextUser);
+    localStorage.setItem('token', nextToken);
+    localStorage.setItem('usuario', JSON.stringify(nextUser));
+    axios.defaults.headers.common.Authorization = `Bearer ${nextToken}`;
+    return nextUser;
+  };
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+
+    if (!storedToken) {
+      setCargando(false);
+      return;
+    }
+
+    axios.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
+    axios.post(`${API_URL}/auth/refresh`, { token: storedToken })
+      .then((response) => setSessionFromPayload(response.data))
+      .catch((err) => {
+        console.error('[AUTH] No se pudo refrescar sesión', {
+          code: err?.response?.data?.error || 'AUTH_REFRESH_FAILED',
+          message: err?.response?.data?.message || err.message,
+        });
+        logout();
+      })
+      .finally(() => setCargando(false));
+  }, []);
+
+  const login = async (email, password) => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
+      setSessionFromPayload(response.data);
+      return response.data;
+    } catch (err) {
+      throw err.response?.data || {
+        error: 'Error de conexión',
+        message: 'No se pudo conectar con Nómina-Ec.',
+      };
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ usuario, token, cargando, login, logout }}>
+    <AuthContext.Provider value={{ usuario, token, cargando, login, logout, setSessionFromPayload }}>
       {children}
     </AuthContext.Provider>
   );
@@ -68,4 +98,3 @@ export function useAuth() {
   }
   return context;
 }
-

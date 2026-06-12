@@ -1,18 +1,13 @@
-// ============================================================
-// PLAN HAIKY - Servicio API (App MÃ³vil)
-// ============================================================
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const API_URL = 'http://10.0.2.2:3000/api'; // Android emulator
-// const API_URL = 'http://localhost:3000/api'; // iOS simulator
+const API_URL = 'http://10.0.2.2:3000/api';
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
+  timeout: 15000,
 });
 
-// Interceptor para agregar token
 api.interceptors.request.use(async (config) => {
   const token = await SecureStore.getItemAsync('token');
   if (token) {
@@ -21,17 +16,26 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Interceptor para manejar errores de autenticaciÃ³n
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
       await SecureStore.deleteItemAsync('token');
-      // Redirigir a login
     }
     return Promise.reject(error);
   }
 );
 
-export default api;
+export const authAPI = {
+  login: (email, password) => api.post('/auth/login', { email, password }),
+  publicRegister: (payload) => api.post('/auth/public-register', payload),
+  forgotPassword: (email) => api.post('/auth/password/forgot', { email }),
+  resetPassword: (payload) => api.post('/auth/password/reset', payload),
+};
 
+export const paymentAPI = {
+  plans: () => api.get('/pagos/planes'),
+  startCheckout: (planId) => api.post('/pagos/payment-methods/checkout-intent', { planId }),
+};
+
+export default api;

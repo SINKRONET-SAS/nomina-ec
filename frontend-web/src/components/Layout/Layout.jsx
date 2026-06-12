@@ -1,13 +1,10 @@
 ﻿// ============================================================
-// PLAN HAIKY - Layout Principal
+// Nómina-Ec - Layout principal
 // ============================================================
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import {
-  LayoutDashboard, Users, Clock, DollarSign, FileText,
-  LogOut, Menu, X, ChevronDown
-} from 'lucide-react';
+import { LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, LogOut, Menu, X } from 'lucide-react';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -16,44 +13,45 @@ function Layout() {
   const navigate = useNavigate();
 
   const menuItems = [
-    { path: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin_rrhh', 'supervisor', 'empleado'] },
+    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado'] },
     {
       label: 'Empleados',
       icon: Users,
-      roles: ['admin_rrhh', 'supervisor'],
+      roles: ['owner', 'admin_rrhh', 'supervisor'],
       submenu: [
-        { path: '/empleados', label: 'Lista de Empleados' },
-        { path: '/empleados/nuevo', label: 'Nuevo Empleado' },
+        { path: '/dashboard/empleados', label: 'Lista de Empleados' },
+        { path: '/dashboard/empleados/nuevo', label: 'Nuevo Empleado' },
       ]
     },
     {
       label: 'Asistencia',
       icon: Clock,
-      roles: ['admin_rrhh', 'supervisor'],
+      roles: ['owner', 'admin_rrhh', 'supervisor'],
       submenu: [
-        { path: '/asistencia/novedades', label: 'Novedades Pendientes' },
-        { path: '/asistencia/reporte', label: 'Reporte de Asistencia' },
+        { path: '/dashboard/asistencia/novedades', label: 'Novedades Pendientes' },
+        { path: '/dashboard/asistencia/reporte', label: 'Reporte de Asistencia' },
       ]
     },
     {
       label: 'Nómina',
       icon: DollarSign,
-      roles: ['admin_rrhh'],
+      roles: ['owner', 'admin_rrhh'],
       submenu: [
-        { path: '/nomina/cerrar', label: 'Cerrar Mes' },
-        { path: '/nomina/roles', label: 'Roles de Pago' },
-        { path: '/nomina/reportes', label: 'Reportes Entidades' },
+        { path: '/dashboard/nomina/cerrar', label: 'Cerrar Mes' },
+        { path: '/dashboard/nomina/roles', label: 'Roles de Pago' },
+        { path: '/dashboard/nomina/reportes', label: 'Reportes Entidades' },
       ]
     },
     {
       label: 'Documentos',
       icon: FileText,
-      roles: ['admin_rrhh'],
+      roles: ['owner', 'admin_rrhh'],
       submenu: [
-        { path: '/documentos/contratos', label: 'Contratos' },
-        { path: '/documentos/finiquitos', label: 'Actas de Finiquito' },
+        { path: '/dashboard/documentos/contratos', label: 'Contratos' },
+        { path: '/dashboard/documentos/finiquitos', label: 'Actas de Finiquito' },
       ]
     },
+    { path: '/precios', icon: CreditCard, label: 'Planes', roles: ['superadmin', 'owner'] },
   ];
 
   const handleLogout = () => {
@@ -68,7 +66,7 @@ function Layout() {
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-200 ease-in-out`}>
         <div className="flex items-center justify-between h-16 px-6 border-b">
-          <h1 className="text-xl font-bold text-blue-600">Plan Haiky</h1>
+          <h1 className="text-xl font-bold text-teal-700">Nómina-Ec</h1>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden">
             <X size={20} />
           </button>

@@ -1,6 +1,6 @@
 # Matriz de Cumplimiento Legal - Ecuador 2026
 
-## Requisitos Legales Implementados
+## Requisitos legales implementados
 
 | Requisito Legal | Articulo | Implementacion en el SaaS | Documento/Reporte |
 |----------------|----------|---------------------------|-------------------|
@@ -18,7 +18,7 @@
 | Desahucio | Art. 185 Codigo Trabajo | 25% por ano de servicio | Acta finiquito |
 | Proteccion datos | Ley Organica Proteccion Datos | Cifrado, RLS, auditoria | Bitacora auditoria |
 
-## Reglas Irrenunciables (Art. 326 Constitucion)
+## Reglas irrenunciables (Art. 326 Constitución)
 
 Estas reglas estan hardcodeadas en el sistema y NO PUEDEN ser desactivadas:
 
@@ -72,7 +72,7 @@ Estas reglas estan hardcodeadas en el sistema y NO PUEDEN ser desactivadas:
 | Aporte Patronal | 11.15% |
 | Total | 20.60% |
 
-## Valores Legales 2026
+## Valores legales 2026
 
 - Salario Basico Unificado: $460.00
 - Decimo Cuarto (Costa): $460.00 (pagadero en marzo)
@@ -82,5 +82,5 @@ Estas reglas estan hardcodeadas en el sistema y NO PUEDEN ser desactivadas:
 
 ---
 
-Plan Haiky - Cumplimiento Legal Ecuador 2026
+Nómina-Ec - Cumplimiento legal Ecuador 2026
 

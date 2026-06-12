@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Configuracion de AWS S3 / DigitalOcean Spaces
+// Nómina-Ec - Configuración de AWS S3 / DigitalOcean Spaces
 // ============================================================
 const {
   DeleteObjectCommand,
@@ -10,7 +10,7 @@ const {
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 require('dotenv').config();
 
-const BUCKET = process.env.AWS_S3_BUCKET || 'plan-haiky-documents';
+const BUCKET = process.env.AWS_S3_BUCKET || 'nomina-ec-documents';
 const REGION = process.env.AWS_REGION || 'us-east-1';
 const ENDPOINT = process.env.AWS_S3_ENDPOINT || undefined;
 

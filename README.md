@@ -1,13 +1,13 @@
-# PLAN HAIKY - SaaS RRHH Ecuador
+# Nómina-Ec - SaaS de Nómina Ecuador
 
-Sistema SaaS completo para gestion de Recursos Humanos adaptado a la legislacion ecuatoriana 2026.
+Sistema SaaS para gestión de nómina, asistencia y documentos laborales adaptado a la legislación ecuatoriana 2026.
 
 ## Caracteristicas Principales
 
 ### Cumplimiento Legal Ecuador
 - Codigo del Trabajo: Registro de jornada (Art. 71), contratos escritos (Art. 18)
 - IESS: Calculo automatico de aportes (9.45% personal, 11.15% patronal)
-- SRI: Generacion de XML ATS para declaracion de Impuesto a la Renta
+- SRI: Generación de XML ATS para declaración de Impuesto a la Renta
 - Ministerio del Trabajo: Actas de finiquito con todos los rubros legales
 
 ### Multi-Tenant
@@ -16,15 +16,15 @@ Sistema SaaS completo para gestion de Recursos Humanos adaptado a la legislacion
 - Auditoria completa de todas las operaciones
 
 ### App Movil (React Native + Expo)
-- Marcacion con foto + GPS obligatorio
-- Validacion de perimetro (radio configurable)
+- Marcación con foto + GPS obligatorio
+- Validación de perímetro (radio configurable)
 - Historial de marcaciones del empleado
 
 ### Frontend Web (React + Vite)
 - Dashboard con metricas en tiempo real
 - Gestion completa de empleados
-- Aprobacion de novedades
-- Cierre mensual de nomina
+- Aprobación de novedades
+- Cierre mensual de nómina
 
 ### Reglas Irrenunciables (Hardcode)
 1. No eliminacion de marcaciones
@@ -97,11 +97,11 @@ npm start
 
 PORT=3000
 DB_HOST=localhost
-DB_NAME=plan_haiky
+DB_NAME=nomina_ec
 JWT_SECRET=your-secret-key
-AWS_S3_BUCKET=plan-haiky-documents
+AWS_S3_BUCKET=nomina-ec-documents
 
 ---
 
-Plan Haiky - Sistema SaaS RRHH Ecuador 2026
+Nómina-Ec - Sistema SaaS de nómina Ecuador 2026
 

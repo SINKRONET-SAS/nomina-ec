@@ -1,5 +1,5 @@
 ﻿// ============================================================
-// PLAN HAIKY - Frontend Web (React)
+// Nómina-Ec - Frontend web
 // App.jsx - Componente Principal
 // ============================================================
 import React from 'react';
@@ -9,6 +9,12 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Páginas
 import Login from './pages/Login';
+import Landing from './pages/Landing';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import Planes from './pages/Planes';
+import PaymentResult from './pages/PaymentResult';
+import LegalText from './pages/LegalText';
 import Dashboard from './pages/Dashboard';
 import ListaEmpleados from './pages/Empleados/ListaEmpleados';
 import NuevoEmpleado from './pages/Empleados/NuevoEmpleado';
@@ -52,10 +58,17 @@ function App() {
         <Router>
           <Routes>
             {/* Rutas públicas */}
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/registro" element={<Register />} />
+            <Route path="/recuperar-password" element={<ForgotPassword />} />
+            <Route path="/precios" element={<Planes />} />
+            <Route path="/pago/resultado" element={<PaymentResult />} />
+            <Route path="/privacidad" element={<LegalText type="privacy" />} />
+            <Route path="/terminos" element={<LegalText type="terms" />} />
             
             {/* Rutas protegidas */}
-            <Route path="/" element={
+            <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Layout />
               </ProtectedRoute>
@@ -64,58 +77,58 @@ function App() {
               
               {/* Empleados */}
               <Route path="empleados" element={
-                <ProtectedRoute requiredRole={['admin_rrhh', 'supervisor']}>
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh', 'supervisor']}>
                   <ListaEmpleados />
                 </ProtectedRoute>
               } />
               <Route path="empleados/nuevo" element={
-                <ProtectedRoute requiredRole={['admin_rrhh']}>
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
                   <NuevoEmpleado />
                 </ProtectedRoute>
               } />
               <Route path="empleados/:id/terminar" element={
-                <ProtectedRoute requiredRole={['admin_rrhh']}>
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
                   <TerminarEmpleado />
                 </ProtectedRoute>
               } />
               
               {/* Asistencia */}
               <Route path="asistencia/novedades" element={
-                <ProtectedRoute requiredRole={['admin_rrhh', 'supervisor']}>
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh', 'supervisor']}>
                   <NovedadesPendientes />
                 </ProtectedRoute>
               } />
               <Route path="asistencia/reporte" element={
-                <ProtectedRoute requiredRole={['admin_rrhh', 'supervisor']}>
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh', 'supervisor']}>
                   <ReporteAsistencia />
                 </ProtectedRoute>
               } />
               
               {/* Nómina */}
               <Route path="nomina/cerrar" element={
-                <ProtectedRoute requiredRole={['admin_rrhh']}>
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
                   <CerrarMes />
                 </ProtectedRoute>
               } />
               <Route path="nomina/roles" element={
-                <ProtectedRoute requiredRole={['admin_rrhh']}>
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
                   <RolesPagos />
                 </ProtectedRoute>
               } />
               <Route path="nomina/reportes" element={
-                <ProtectedRoute requiredRole={['admin_rrhh']}>
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
                   <DescargarReportes />
                 </ProtectedRoute>
               } />
               
               {/* Documentos */}
               <Route path="documentos/contratos" element={
-                <ProtectedRoute requiredRole={['admin_rrhh']}>
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
                   <ContratosGenerados />
                 </ProtectedRoute>
               } />
               <Route path="documentos/finiquitos" element={
-                <ProtectedRoute requiredRole={['admin_rrhh']}>
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
                   <ActasFiniquito />
                 </ProtectedRoute>
               } />

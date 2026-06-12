@@ -1,6 +1,6 @@
 # Prompts HAIKY por fase - nomina-ec
 
-Estos prompts ejecutan `docs2/PLAN_HAIKY_NOMINA_EC_REVISADO.md` y `docs2/PLAN_HAIKY_RIESGOS_RESIDUALES.md` sobre el stack real del repositorio.
+Estos prompts ejecutan `docs2/PLAN_HAIKY_NOMINA_EC_REVISADO.md`, `docs2/PLAN_HAIKY_RIESGOS_RESIDUALES.md` y `docs2/PLAN_HAIKY_LANDING_PWA_AUTH_PAYPHONE.md` sobre el stack real del repositorio.
 
 Reglas:
 
@@ -19,3 +19,14 @@ Fases de cierre residual:
 - Fase 17: validacion legal Ecuador 2026.
 - Fase 18: migracion AWS SDK v2 a v3.
 - Fase 19: prueba RLS en Render con usuario no superusuario.
+
+Fases comerciales y experiencia publica:
+
+- Fase 20: renombre de producto a `Nómina-Ec`.
+- Fase 21: landing publica.
+- Fase 22: PWA.
+- Fase 23: auth backend, registro y recuperacion.
+- Fase 24: auth PWA y app movil.
+- Fase 25: planes y suscripciones.
+- Fase 26: PayPhone como canal de pago.
+- Fase 27: legal, QA comercial y Render.

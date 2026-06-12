@@ -1,7 +1,5 @@
-// ============================================================
-// PLAN HAIKY - App Móvil (React Native + Expo)
-// App.js - Componente Principal
-// ============================================================
+// Nómina-Ec - App móvil (React Native + Expo)
+// App.js - Componente principal
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -50,11 +48,6 @@ export default function App() {
     setToken(newToken);
   };
 
-  const handleLogout = async () => {
-    await SecureStore.deleteItemAsync('token');
-    setToken(null);
-  };
-
   if (cargando) return null;
 
   return (
@@ -74,4 +67,3 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
-

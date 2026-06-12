@@ -1,6 +1,6 @@
 # Contexto operativo Codex - Plan HAIKY
 
-Proyecto: SaaS RRHH Ecuador.  
+Proyecto: Nómina-Ec, SaaS de nomina Ecuador.  
 Raiz: `C:\proyectos web\nuevo_nomina`.  
 Repositorio remoto: `https://github.com/SINKRONET-SAS/nomina-ec.git`.  
 Rama activa esperada: `codex/haiky-render-legal-plan`.  
@@ -32,6 +32,9 @@ Antes de modificar codigo runtime se debe leer `RULES.md` y validar `.vscode/Aud
 - RLS existe en migracion SQL y cuenta con runbook/script de verificacion Render; falta ejecutarlo con usuario no superusuario de staging.
 - AWS SDK v2 fue reemplazado por AWS SDK v3 modular en S3.
 - Valores legales 2026 tienen IR SRI y SBU MDT reconfirmados; IESS y cierre profesional permanecen pendientes, con bloqueo productivo activo.
+- La marca visible correcta del sistema es `Nómina-Ec`; `Plan HAIKY` queda reservado para metodologia interna de planificacion.
+- Se reviso `C:\proyectos web\sinkroniq-mobile` como referencia para landing, PWA, auth, planes y PayPhone.
+- Existe plan documental nuevo en `docs2/PLAN_HAIKY_LANDING_PWA_AUTH_PAYPHONE.md`.
 
 ## Orden HAIKY revisado
 
@@ -55,6 +58,14 @@ Antes de modificar codigo runtime se debe leer `RULES.md` y validar `.vscode/Aud
 18. Fase 17: validacion legal Ecuador 2026.
 19. Fase 18: migracion AWS SDK v3.
 20. Fase 19: prueba RLS Render con usuario no superusuario.
+21. Fase 20: renombre de producto a Nómina-Ec.
+22. Fase 21: landing publica Nómina-Ec.
+23. Fase 22: PWA Nómina-Ec.
+24. Fase 23: auth backend, registro y recuperacion.
+25. Fase 24: auth PWA y app movil.
+26. Fase 25: planes y suscripciones Nómina-Ec.
+27. Fase 26: PayPhone como canal de pago.
+28. Fase 27: legal, QA comercial y Render.
 
 ## Criterios de escritura
 
@@ -69,3 +80,6 @@ Antes de modificar codigo runtime se debe leer `RULES.md` y validar `.vscode/Aud
 - Validar aportes IESS Ecuador 2026 y revision profesional antes de levantar el bloqueo productivo.
 - Probar RLS en Render con usuario no superusuario y evidencia sin secretos.
 - Completar pruebas automatizadas de regresion para liquidacion, RBAC, bancos y aislamiento tenant.
+- Corregir marca visible antigua `Plan Haiky` / `Sistema de RRHH Ecuador` a `Nómina-Ec`.
+- Implementar landing publica, PWA, registro, login y recuperacion de password para PWA y app movil.
+- Definir planes comerciales y canal PayPhone con checkout, webhook, conciliacion e idempotencia.

@@ -1,5 +1,5 @@
 ﻿// ============================================================
-// PLAN HAIKY - Página de Login
+// Nómina-Ec - Página de login
 // ============================================================
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -20,20 +20,20 @@ function Login() {
     
     try {
       await login(email, password);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
-      setError(err.error || 'Error al iniciar sesión');
+      setError(err.message || err.error || 'Error al iniciar sesión');
     } finally {
       setCargando(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
       <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Plan Haiky</h1>
-          <p className="text-gray-600 mt-2">Sistema de RRHH Ecuador</p>
+          <h1 className="text-3xl font-bold text-teal-700">Nómina-Ec</h1>
+          <p className="text-gray-600 mt-2">Portal de nómina Ecuador</p>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -51,7 +51,7 @@ function Login() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               placeholder="tu@email.com"
               required
             />
@@ -65,7 +65,7 @@ function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               placeholder="••••••••"
               required
             />
@@ -74,14 +74,19 @@ function Login() {
           <button
             type="submit"
             disabled={cargando}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 disabled:opacity-50 transition-colors"
+            className="w-full bg-teal-700 text-white py-2 px-4 rounded-lg hover:bg-teal-800 focus:ring-4 focus:ring-teal-200 disabled:opacity-50 transition-colors"
           >
             {cargando ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
         </form>
         
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>© 2026 Plan Haiky SaaS RRHH</p>
+          <p>© 2026 Nómina-Ec</p>
+          <p className="mt-2">
+            <a className="text-teal-700" href="/recuperar-password">Recuperar contraseña</a>
+            <span className="mx-2">·</span>
+            <a className="text-teal-700" href="/registro">Crear cuenta</a>
+          </p>
         </div>
       </div>
     </div>

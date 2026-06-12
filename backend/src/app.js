@@ -1,6 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Aplicacion Principal Backend
-// SaaS RRHH Ecuador
+// Nómina-Ec - Aplicacion principal backend
 // ============================================================
 const express = require('express');
 const cors = require('cors');
@@ -30,7 +29,7 @@ app.use(tenantResolver);
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
-    service: 'Plan Haiky Backend',
+    service: 'Nómina-Ec Backend',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
     correlationId: req.correlationId,
@@ -42,9 +41,31 @@ const { authenticateToken, requireRole } = require('./middleware/auth');
 const authRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 20, keyPrefix: 'auth' });
 app.post('/api/auth/login', authRateLimit, authController.login);
 app.post('/api/auth/refresh', authController.refreshToken);
+app.post('/api/auth/public-register', authRateLimit, authController.publicRegister);
+app.post('/api/auth/password/forgot', authRateLimit, authController.forgotPassword);
+app.post('/api/auth/password/reset', authRateLimit, authController.resetPassword);
+app.post('/api/auth/email-verification/request', authRateLimit, authController.requestEmailVerification);
+app.post('/api/auth/email-verification/resend', authRateLimit, authController.requestEmailVerification);
+app.post('/api/auth/email-verification/confirm', authRateLimit, authController.confirmEmailVerification);
 app.post('/api/auth/register', authRateLimit, authenticateToken, requireRole('superadmin', 'owner'), authController.register);
 
+const paymentController = require('./controllers/paymentController');
+app.get('/api/pagos/planes', paymentController.listPublicPlans);
+app.get('/api/pagos/confirm', paymentController.confirmPayment);
+app.post('/api/pagos/webhook', paymentController.confirmPayment);
+
 app.use('/api', authenticateToken);
+
+app.get('/api/auth/email-verification/status', authController.emailVerificationStatus);
+app.get('/api/pagos/status', paymentController.subscriptionStatus);
+app.get('/api/pagos/payment-methods', paymentController.listPaymentMethods);
+app.get('/api/pagos/payment-methods/capabilities', paymentController.paymentCapabilities);
+app.post('/api/pagos/payment-methods/checkout-intent', requireRole('owner', 'superadmin'), paymentController.createCheckoutIntent);
+app.post('/api/pagos/payment-methods/:paymentMethodId/revoke', requireRole('owner', 'superadmin'), paymentController.revokePaymentMethod);
+app.get('/api/pagos/planes/admin', requireRole('superadmin', 'owner'), paymentController.listAdminPlans);
+app.post('/api/pagos/planes', requireRole('superadmin'), paymentController.upsertPlan);
+app.put('/api/pagos/planes/:planId', requireRole('superadmin'), paymentController.upsertPlan);
+app.delete('/api/pagos/planes/:planId', requireRole('superadmin'), paymentController.deletePlan);
 
 const empleadoController = require('./controllers/empleadoController');
 app.get('/api/empleados', empleadoController.listar);
@@ -151,7 +172,7 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
   console.log('============================================================');
-  console.log('  PLAN HAIKY - Backend SaaS RRHH Ecuador');
+  console.log('  Nómina-Ec - Backend SaaS de nomina Ecuador');
   console.log(`  Puerto: ${PORT}`);
   console.log(`  Entorno: ${process.env.NODE_ENV || 'development'}`);
   console.log(`  URL: http://localhost:${PORT}`);
