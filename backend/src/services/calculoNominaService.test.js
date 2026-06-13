@@ -1,4 +1,8 @@
-const { calcularDiasTrabajados, calcularIR } = require('./calculoNominaService');
+const {
+  calcularDiasTrabajados,
+  calcularIR,
+  calcularProvisionFondosReserva,
+} = require('./calculoNominaService');
 const { getLegalParameters } = require('../config/legal-ecuador');
 const {
   assertLegalParametersReadyForProduction,
@@ -18,6 +22,14 @@ describe('calculoNominaService', () => {
   test('calcula IR mensual para tramo progresivo', () => {
     const legal = getLegalParameters(2026);
     expect(calcularIR(2000, legal)).toBeGreaterThan(0);
+  });
+
+  test('no provisiona fondos de reserva antes del primer año laboral', () => {
+    expect(calcularProvisionFondosReserva('2026-02-01', 600, 2026, 6)).toBe(0);
+  });
+
+  test('provisiona fondos de reserva despues del primer año laboral', () => {
+    expect(calcularProvisionFondosReserva('2024-01-01', 600, 2026, 6)).toBe(50);
   });
 
   test('bloquea calculos productivos con parametros legales pendientes', () => {

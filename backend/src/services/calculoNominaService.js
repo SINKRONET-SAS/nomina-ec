@@ -11,6 +11,7 @@ const {
 } = require('./legalParameterService');
 
 async function calcularNominaMensual(tenantId, anio, mes) {
+  validarPeriodoNomina(anio, mes);
   console.log(`[NOMINA] Calculando ${mes}/${anio} para tenant ${tenantId}`);
 
   const empleados = await db.query(`
@@ -89,8 +90,21 @@ async function calcularEmpleado(emp, tenantId, anio, mes) {
 
   const totalIngresos = roundMoney(sueldoProporcional + montoExtras50 + montoExtras100);
   const aporteIess = roundMoney(totalIngresos * payrollParameters.personalIessRate);
+  const aportePatronal = roundMoney(totalIngresos * payrollParameters.employerIessRate);
   const baseImponible = roundMoney(totalIngresos - aporteIess);
   const impuestoRenta = calcularIR(baseImponible, legalParameters);
+  const provisionDecimoTercero = roundMoney(totalIngresos / 12);
+  const provisionDecimoCuarto = roundMoney(payrollParameters.unifiedBaseSalary / 12);
+  const provisionVacaciones = roundMoney(totalIngresos * payrollParameters.vacationProvisionRate);
+  const provisionFondosReserva = calcularProvisionFondosReserva(emp.fecha_ingreso, totalIngresos, anio, mes);
+  const costoEmpleador = roundMoney(
+    totalIngresos
+    + aportePatronal
+    + provisionDecimoTercero
+    + provisionDecimoCuarto
+    + provisionVacaciones
+    + provisionFondosReserva
+  );
   const anticipos = 0;
   const prestamos = 0;
   const totalDeducciones = roundMoney(aporteIess + impuestoRenta + descuentoFaltas + anticipos + prestamos);
@@ -114,8 +128,14 @@ async function calcularEmpleado(emp, tenantId, anio, mes) {
     montoExtras100,
     descuentoFaltas,
     aporteIess,
+    aportePatronal,
     baseImponible,
     impuestoRenta,
+    provisionDecimoTercero,
+    provisionDecimoCuarto,
+    provisionVacaciones,
+    provisionFondosReserva,
+    costoEmpleador,
     anticipos,
     prestamos,
     totalIngresos,
@@ -188,6 +208,34 @@ function calcularDiasTrabajados(fechaIngreso, anio, mes) {
   return Math.max(0, Math.min(30, dias));
 }
 
+function validarPeriodoNomina(anio, mes) {
+  if (!Number.isInteger(Number(anio)) || !Number.isInteger(Number(mes))) {
+    throw new AppError('El periodo de nómina debe incluir año y mes válidos', {
+      code: 'NOMINA_PERIODO_INVALIDO',
+      statusCode: 400,
+    });
+  }
+
+  if (Number(mes) < 1 || Number(mes) > 12) {
+    throw new AppError('El mes de nómina debe estar entre 1 y 12', {
+      code: 'NOMINA_MES_INVALIDO',
+      statusCode: 400,
+    });
+  }
+}
+
+function calcularProvisionFondosReserva(fechaIngreso, totalIngresos, anio, mes) {
+  const ingreso = new Date(fechaIngreso);
+  const finPeriodo = new Date(anio, mes, 0);
+  const aniosServicio = (finPeriodo - ingreso) / (365.25 * 86400000);
+
+  if (aniosServicio < 1) {
+    return 0;
+  }
+
+  return roundMoney(totalIngresos / 12);
+}
+
 function calcularIR(baseMensual, legalParameters) {
   const baseAnual = baseMensual * 12;
   const brackets = legalParameters.incomeTax;
@@ -213,5 +261,6 @@ module.exports = {
   calcularNominaMensual,
   calcularEmpleado,
   calcularDiasTrabajados,
+  calcularProvisionFondosReserva,
   calcularIR,
 };

@@ -100,6 +100,7 @@ app.get('/api/nomina/:anio/:mes', nominaController.listarPorPeriodo);
 app.get('/api/nomina/empleado/:empleadoId/:anio/:mes', nominaController.obtenerPorEmpleado);
 app.get('/api/nomina/:id/rol-pdf', nominaController.descargarRolPDF);
 app.post('/api/nomina/cerrar', requireRole('owner', 'admin_rrhh'), nominaController.cerrarMes);
+app.post('/api/nomina/reabrir', requireRole('owner', 'admin_rrhh'), nominaController.reabrirMes);
 
 const documentoLegalController = require('./controllers/documentoLegalController');
 app.post('/api/documentos/contrato', requireRole('owner', 'admin_rrhh'), documentoLegalController.generarContrato);
@@ -173,7 +174,7 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
   res.status(404).json({
     error: 'NOT_FOUND',
-    message: 'Ruta no encontrada',
+    message: 'No encontramos ese recurso. Revisa la direccion o vuelve al inicio.',
     correlationId: req.correlationId,
   });
 });

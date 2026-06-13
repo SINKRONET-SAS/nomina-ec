@@ -4,10 +4,10 @@ const { recordAudit } = require('./auditService');
 
 const ONBOARDING_STEPS = [
   { code: 'empresa', label: 'Datos de empresa' },
-  { code: 'legal', label: 'Parámetros legales' },
+  { code: 'legal', label: 'Parametros legales' },
   { code: 'organizacion', label: 'Estructura organizativa' },
   { code: 'jornadas', label: 'Jornadas y calendarios' },
-  { code: 'zonas', label: 'Zonas de marcación' },
+  { code: 'zonas', label: 'Zonas de marcacion' },
   { code: 'novedades', label: 'Tipos de novedades' },
   { code: 'bancos', label: 'Banco y archivo plano' },
   { code: 'usuarios', label: 'Usuarios y roles' },

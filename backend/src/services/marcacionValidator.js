@@ -6,7 +6,19 @@ const { s3Upload } = require('../config/s3');
 const AppError = require('../utils/AppError');
 const { recordAudit } = require('./auditService');
 
-async function validarMarcacion({ empleadoId, tenantId, tipo, lat, lng, fotoBase64, ip, correlationId, userId }) {
+async function validarMarcacion({
+  empleadoId,
+  tenantId,
+  tipo,
+  lat,
+  lng,
+  fotoBase64,
+  permitirFueraPerimetro = false,
+  motivoFueraPerimetro = '',
+  ip,
+  correlationId,
+  userId,
+}) {
   if (lat === undefined || lng === undefined || Number.isNaN(lat) || Number.isNaN(lng)) {
     throw new AppError('La geolocalizacion es obligatoria para registrar marcaciones', {
       code: 'GEOLOCALIZACION_REQUERIDA',
@@ -44,6 +56,29 @@ async function validarMarcacion({ empleadoId, tenantId, tipo, lat, lng, fotoBase
       lng
     );
     dentroPerimetro = distancia <= radioPermitido;
+  }
+
+  if (!dentroPerimetro && !permitirFueraPerimetro) {
+    throw new AppError('La marcación está fuera de la zona permitida y requiere aprobación explícita', {
+      code: 'MARCACION_FUERA_PERIMETRO_REQUIERE_APROBACION',
+      statusCode: 409,
+      correlationId,
+      userId,
+      details: {
+        empleadoId,
+        distanciaMetros: Math.round(distancia),
+        radioPermitidoMetros: radioPermitido,
+      },
+    });
+  }
+
+  if (!dentroPerimetro && permitirFueraPerimetro && !String(motivoFueraPerimetro || '').trim()) {
+    throw new AppError('Indica el motivo para aceptar una marcación fuera de la zona permitida', {
+      code: 'MARCACION_FUERA_PERIMETRO_SIN_MOTIVO',
+      statusCode: 422,
+      correlationId,
+      userId,
+    });
   }
 
   let fotoUrl = null;
@@ -90,7 +125,11 @@ async function validarMarcacion({ empleadoId, tenantId, tipo, lat, lng, fotoBase
     dentroPerimetro,
     distancia,
     ip,
-    JSON.stringify({ radioPermitido }),
+    JSON.stringify({
+      radioPermitido,
+      permitirFueraPerimetro: Boolean(permitirFueraPerimetro),
+      motivoFueraPerimetro: motivoFueraPerimetro || '',
+    }),
   ]);
 
   const marcacionId = result.rows[0].id;
@@ -102,7 +141,13 @@ async function validarMarcacion({ empleadoId, tenantId, tipo, lat, lng, fotoBase
     action: 'registrar_marcacion',
     entity: 'marcaciones',
     entityId: marcacionId,
-    newData: { empleadoId, tipo, dentroPerimetro, distancia },
+    newData: {
+      empleadoId,
+      tipo,
+      dentroPerimetro,
+      distancia,
+      permitirFueraPerimetro: Boolean(permitirFueraPerimetro),
+    },
     ipAddress: ip,
   });
 

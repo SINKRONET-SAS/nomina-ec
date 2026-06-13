@@ -6,7 +6,15 @@ const { validarMarcacion } = require('../services/marcacionValidator');
 
 async function registrar(req, res) {
   try {
-    const { empleadoId, tipo, lat, lng, fotoBase64 } = req.body;
+    const {
+      empleadoId,
+      tipo,
+      lat,
+      lng,
+      fotoBase64,
+      permitirFueraPerimetro,
+      motivoFueraPerimetro,
+    } = req.body;
     const { tenantId } = req;
     const ip = req.ip || req.connection.remoteAddress;
 
@@ -31,6 +39,8 @@ async function registrar(req, res) {
       lat: Number.parseFloat(lat),
       lng: Number.parseFloat(lng),
       fotoBase64,
+      permitirFueraPerimetro: Boolean(permitirFueraPerimetro),
+      motivoFueraPerimetro,
       ip,
       correlationId: req.correlationId,
       userId: req.usuarioId,

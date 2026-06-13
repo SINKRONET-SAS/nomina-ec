@@ -150,4 +150,62 @@ async function cerrarMes(req, res) {
   }
 }
 
-module.exports = { calcularMes, listarPorPeriodo, obtenerPorEmpleado, descargarRolPDF, cerrarMes };
+async function reabrirMes(req, res) {
+  try {
+    const { tenantId, usuarioId } = req;
+    const { anio, mes, motivo } = req.body;
+
+    if (!anio || !mes) {
+      return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
+    }
+
+    if (!motivo || String(motivo).trim().length < 10) {
+      return res.status(422).json({
+        error: 'Indica un motivo claro para reabrir la nómina.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const result = await db.query(`
+      UPDATE nominas
+      SET estado = 'borrador', cerrado_en = NULL, updated_at = NOW()
+      WHERE tenant_id = $1 AND anio = $2 AND mes = $3 AND estado = 'cerrada'
+      RETURNING id
+    `, [tenantId, anio, mes]);
+
+    await recordAudit({
+      tenantId,
+      userId: usuarioId,
+      correlationId: req.correlationId,
+      action: 'reabrir_nomina',
+      entity: 'nominas',
+      newData: { anio, mes, total: result.rows.length, motivo: String(motivo).trim() },
+      ipAddress: req.ip,
+    });
+
+    res.json({
+      success: true,
+      mensaje: `${result.rows.length} nominas reabiertas`,
+      total: result.rows.length,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[NOMINA] Error reabriendo mes', {
+      code: err.code || 'NOMINA_REAPERTURA_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
+  }
+}
+
+module.exports = {
+  calcularMes,
+  listarPorPeriodo,
+  obtenerPorEmpleado,
+  descargarRolPDF,
+  cerrarMes,
+  reabrirMes,
+};

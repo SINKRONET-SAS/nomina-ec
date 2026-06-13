@@ -1,107 +1,117 @@
 {
-    "schemaVersion":  1,
-    "plan":  "HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026",
-    "planCode":  "HNBE26",
-    "status":  "baseline_deployed",
-    "phaseCompleted":  "HNBE26-00",
-    "currentPhase":  "HNBE26-01",
-    "updatedAt":  "2026-06-12T00:00:00.000-05:00",
-    "summary":  "Baseline documental para homologar nomina ecuatoriana desde Base44 hacia Nomina-Ec: cumplimiento legal, parametros, beneficios, asistencia, app, planes, perfiles y reporteria. No toca runtime.",
-    "rulesSource":  "RULES.md",
-    "previousAuditLockHash":  "b7ae4239628b899fab1b18fcd5caf4aa271f6a464a68888a1fdfa7300bb5f726",
-    "filesModified":  [
-                          "CODEX_CONTEXT.md",
-                          ".vscode/AuditLock.json",
-                          "docs2/homologacion-nomina-base44-ecuador-2026/PLAN_HAIKY_HOMOLOGACION_NOMINA_BASE44_ECUADOR_2026.md",
-                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-00-baseline.md",
-                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-01-forensic-map.md",
-                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-02-parametros-legales.md",
-                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-03-modelo-backend.md",
-                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-04-motor-calculo.md",
-                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-05-asistencia-mobile-pwa.md",
-                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-06-beneficios-documentos-app.md",
-                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-07-planes-perfiles.md",
-                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-08-reporteria.md",
-                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-09-gates-release.md"
-                      ],
-    "validationChecks":  [
-                             {
-                                 "gate":  "HNBE26-G00-01",
-                                 "status":  "PASS",
-                                 "detail":  "Plan documental creado sin tocar runtime."
-                             },
-                             {
-                                 "gate":  "HNBE26-G00-02",
-                                 "status":  "PASS",
-                                 "detail":  "Prompts HNBE26-00..09 creados conforme a RULES.md y orden de fases."
-                             },
-                             {
-                                 "gate":  "HNBE26-G00-03",
-                                 "status":  "PASS",
-                                 "detail":  "CODEX_CONTEXT.md actualizado con plan abierto HNBE26."
-                             },
-                             {
-                                 "gate":  "HNBE26-G00-04",
-                                 "status":  "PASS",
-                                 "detail":  "AuditLock JSON parseable y UTF-8 sin BOM."
-                             }
-                         ],
-    "fases":  [
-                  {
-                      "phase":  "HNBE26-00",
-                      "status":  "completed",
-                      "task":  "baseline governance"
-                  },
-                  {
-                      "phase":  "HNBE26-01",
-                      "status":  "planned",
-                      "task":  "forensic base44 sinkroniq map"
-                  },
-                  {
-                      "phase":  "HNBE26-02",
-                      "status":  "planned",
-                      "task":  "parametros legales ecuador"
-                  },
-                  {
-                      "phase":  "HNBE26-03",
-                      "status":  "planned",
-                      "task":  "modelo backend laboral"
-                  },
-                  {
-                      "phase":  "HNBE26-04",
-                      "status":  "planned",
-                      "task":  "motor calculo nomina"
-                  },
-                  {
-                      "phase":  "HNBE26-05",
-                      "status":  "planned",
-                      "task":  "asistencia mobile pwa"
-                  },
-                  {
-                      "phase":  "HNBE26-06",
-                      "status":  "planned",
-                      "task":  "beneficios documentos app"
-                  },
-                  {
-                      "phase":  "HNBE26-07",
-                      "status":  "planned",
-                      "task":  "planes perfiles permisos"
-                  },
-                  {
-                      "phase":  "HNBE26-08",
-                      "status":  "planned",
-                      "task":  "reporteria laboral"
-                  },
-                  {
-                      "phase":  "HNBE26-09",
-                      "status":  "planned",
-                      "task":  "gates release"
-                  }
-              ],
-    "residualRisk":  [
-                         "Los parametros legales de Base44 son referencia funcional y requieren verificacion oficial antes de runtime.",
-                         "La fuente Base44 presenta mojibake en algunos archivos; cualquier migracion textual debe normalizar UTF-8.",
-                         "La homologacion de nomina puede requerir validacion legal/contable externa antes de activacion comercial."
-                     ],
-    "signature":  "hnbe26-baseline-2026-06-12-nomina-ec"
+  "schemaVersion": 1,
+  "plan": "HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026",
+  "planCode": "HNBE26",
+  "status": "executed_with_residual_risks",
+  "phaseCompleted": "HNBE26-09",
+  "currentPhase": "HNBE26-CLOSED",
+  "updatedAt": "2026-06-12T00:00:00.000-05:00",
+  "summary": "Fases HNBE26-01..09 ejecutadas en orden: auditoria forense, contrato legal-parametrico, modelo backend, motor de calculo, asistencia, documentos, planes, reporteria y cierre. Se aplico hardening focalizado sin migraciones destructivas.",
+  "rulesSource": "RULES.md",
+  "previousAuditLockHash": "2d66df3b797307e0640b3c165f7df74d0af1b9bc3ccb5ff0fd99bb588d083382",
+  "filesModified": [
+    "CODEX_CONTEXT.md",
+    ".vscode/AuditLock.json",
+    "backend/src/app.js",
+    "backend/src/controllers/documentoLegalController.js",
+    "backend/src/controllers/marcacionController.js",
+    "backend/src/controllers/nominaController.js",
+    "backend/src/services/calculoNominaService.js",
+    "backend/src/services/calculoNominaService.test.js",
+    "backend/src/services/marcacionValidator.js",
+    "backend/src/services/configurationService.js",
+    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
+    "docs2/homologacion-nomina-base44-ecuador-2026/PLAN_HAIKY_HOMOLOGACION_NOMINA_BASE44_ECUADOR_2026.md",
+    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_01_VERIFICACION.md",
+    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_02_PARAMETROS_LEGALES.md",
+    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_03_MODELO_BACKEND.md",
+    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_04_MOTOR_CALCULO.md",
+    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_05_ASISTENCIA.md",
+    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_06_BENEFICIOS_DOCUMENTOS_APP.md",
+    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_07_PLANES_PERFILES.md",
+    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_08_REPORTERIA.md",
+    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_09_CIERRE.md"
+  ],
+  "validationChecks": [
+    {
+      "gate": "HNBE26-G01",
+      "status": "PASS",
+      "detail": "Reporte forense Base44 vs Nomina-Ec creado."
+    },
+    {
+      "gate": "HNBE26-G02",
+      "status": "PASS",
+      "detail": "Contrato legal-parametrico y matriz LOPDP documentados."
+    },
+    {
+      "gate": "HNBE26-G03",
+      "status": "PASS",
+      "detail": "Modelo backend laboral contrastado; sin migraciones destructivas."
+    },
+    {
+      "gate": "HNBE26-G04",
+      "status": "PASS",
+      "detail": "Motor de nomina ampliado con provisiones, costo empleador y reapertura auditada."
+    },
+    {
+      "gate": "HNBE26-G05",
+      "status": "PASS",
+      "detail": "Marcaciones fuera de perimetro requieren aprobacion explicita y motivo."
+    },
+    {
+      "gate": "HNBE26-G06",
+      "status": "PASS",
+      "detail": "Documentos legales responden con errores estructurados y correlationId."
+    },
+    {
+      "gate": "HNBE26-G07",
+      "status": "PASS",
+      "detail": "Planes/perfiles definidos sin catalogos paralelos."
+    },
+    {
+      "gate": "HNBE26-G08",
+      "status": "PASS",
+      "detail": "Reporterias laborales y brechas productivas documentadas."
+    },
+    {
+      "gate": "HNBE26-G09",
+      "status": "PASS",
+      "detail": "Cierre documental y riesgos residuales registrados."
+    },
+    {
+      "gate": "HNBE26-TEST-BACKEND",
+      "status": "PASS",
+      "detail": "npm.cmd test -- --runInBand: 6 suites, 18 tests."
+    },
+    {
+      "gate": "HNBE26-GIT-DIFF-CHECK",
+      "status": "PASS",
+      "detail": "git diff --check sin errores; solo advertencias CRLF esperadas por Windows."
+    },
+    {
+      "gate": "HNBE26-UTF8-NO-BOM",
+      "status": "PASS",
+      "detail": "Archivos modificados verificados como UTF-8 sin BOM."
+    }
+  ],
+  "fases": [
+    { "phase": "HNBE26-00", "status": "completed", "task": "baseline governance" },
+    { "phase": "HNBE26-01", "status": "completed", "task": "forensic base44 nomina-ec map" },
+    { "phase": "HNBE26-02", "status": "completed", "task": "parametros legales ecuador" },
+    { "phase": "HNBE26-03", "status": "completed", "task": "modelo backend laboral" },
+    { "phase": "HNBE26-04", "status": "completed", "task": "motor calculo nomina" },
+    { "phase": "HNBE26-05", "status": "completed", "task": "asistencia mobile pwa" },
+    { "phase": "HNBE26-06", "status": "completed", "task": "beneficios documentos app" },
+    { "phase": "HNBE26-07", "status": "completed", "task": "planes perfiles permisos" },
+    { "phase": "HNBE26-08", "status": "completed", "task": "reporteria laboral" },
+    { "phase": "HNBE26-09", "status": "completed", "task": "gates release" }
+  ],
+  "residualRisk": [
+    "IESS y validacion profesional siguen bloqueando activacion productiva.",
+    "Beneficios, prestamos y anticipos requieren modelo dedicado antes de comercializacion completa.",
+    "Autoservicio empleado mobile/PWA requiere una fase de implementacion especifica.",
+    "PWA debe verificarse visualmente con backend activo y usuario de prueba.",
+    "RLS en Render debe probarse con usuario no superusuario de staging."
+  ],
+  "signature": "hnbe26-closed-2026-06-12-2d66df3b797307e0640b3c165f7df74d0af1b9bc3ccb5ff0fd99bb588d083382"
 }

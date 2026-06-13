@@ -8,7 +8,7 @@ import { extractApiError } from '../../services/publicApi';
 const quickForms = [
   {
     key: 'legal',
-    title: 'Parámetro legal',
+    title: 'Parámetro laboral',
     icon: Scale,
     resource: 'legalParameters',
     stepCode: 'legal',
@@ -18,8 +18,8 @@ const quickForms = [
       value: { amount: 482 },
       unit: 'USD',
       validation_status: 'pendiente_validacion_oficial',
-      source_name: 'Pendiente de aprobación profesional',
-      notes: 'Valor editable desde parametrización legal.',
+      source_name: 'Pendiente de aprobación legal y contable',
+      notes: 'Base inicial editable antes de usarla en cálculos productivos.',
     },
   },
   {
@@ -96,10 +96,7 @@ function countResources(summary, key) {
 }
 
 function configurationLoadMessage(err) {
-  return extractApiError(
-    err,
-    'No pudimos cargar la configuración. Intenta actualizar la página en unos segundos.'
-  );
+  return extractApiError(err, 'No pudimos cargar tu configuración. Actualiza la página en unos segundos.');
 }
 
 function Parametrizacion() {
@@ -155,11 +152,11 @@ function Parametrizacion() {
       <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Configuración inicial</p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Prepara tu operación de nómina</h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Configuración de la empresa</p>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Deja lista la nómina para operar</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Define los parámetros laborales, novedades, organización, zonas, jornadas y bancos
-              que tu empresa necesita para trabajar con Nómina-Ec.
+              Configura parámetros laborales, novedades, estructura, zonas, jornadas y bancos antes
+              de calcular roles o cerrar un periodo.
             </p>
           </div>
           <div className="rounded-md bg-teal-50 px-5 py-4 text-center">
@@ -192,7 +189,7 @@ function Parametrizacion() {
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-5 flex items-center gap-3">
           <Settings2 className="h-6 w-6 text-teal-700" />
-          <h2 className="text-lg font-semibold text-slate-950">Primeros pasos recomendados</h2>
+          <h2 className="text-lg font-semibold text-slate-950">Bases para empezar</h2>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           {quickForms.map((item) => (
@@ -200,7 +197,7 @@ function Parametrizacion() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="font-semibold text-slate-950">{item.title}</h3>
-                  <p className="mt-1 text-sm text-slate-600">Crea una base inicial para empezar a operar y revisarla luego.</p>
+                  <p className="mt-1 text-sm text-slate-600">Crea un registro inicial revisable antes de usarlo en producción.</p>
                 </div>
                 <item.icon className="h-5 w-5 text-teal-700" />
               </div>
@@ -209,7 +206,7 @@ function Parametrizacion() {
                 disabled={createMutation.isPending}
                 onClick={() => createMutation.mutate(item)}
               >
-                {createMutation.isPending ? 'Guardando...' : 'Crear base inicial'}
+                {createMutation.isPending ? 'Guardando...' : 'Crear registro inicial'}
               </button>
             </article>
           ))}
@@ -217,7 +214,7 @@ function Parametrizacion() {
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-950">Progreso de configuración</h2>
+        <h2 className="text-lg font-semibold text-slate-950">Avance operativo</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {(summary?.onboarding?.steps || []).map((step) => (
             <div className="flex items-center gap-3 rounded-md bg-slate-50 px-4 py-3" key={step.step_code}>

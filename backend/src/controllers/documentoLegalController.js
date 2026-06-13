@@ -11,7 +11,7 @@ async function generarContratoCtrl(req, res) {
     const { tenantId } = req;
     
     if (!empleadoId || !tipoContrato) {
-      return res.status(400).json({ error: 'empleadoId y tipoContrato requeridos' });
+      return res.status(400).json({ error: 'empleadoId y tipoContrato requeridos', correlationId: req.correlationId });
     }
     
     // Obtener empleado
@@ -21,7 +21,7 @@ async function generarContratoCtrl(req, res) {
     );
     
     if (empResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Empleado no encontrado' });
+      return res.status(404).json({ error: 'Empleado no encontrado', correlationId: req.correlationId });
     }
     
     // Obtener tenant
@@ -29,10 +29,16 @@ async function generarContratoCtrl(req, res) {
     
     const resultado = await generarContrato(empResult.rows[0], tenantResult.rows[0], tipoContrato);
     
-    res.status(201).json({ success: true, documento: resultado });
+    res.status(201).json({ success: true, documento: resultado, correlationId: req.correlationId });
   } catch (err) {
-    console.error('[DOCUMENTOS] Error:', err);
-    res.status(500).json({ error: err.message });
+    console.error('[DOCUMENTOS] Error generando contrato', {
+      code: err.code || 'DOCUMENTO_CONTRATO_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
   }
 }
 
@@ -42,18 +48,24 @@ async function generarFiniquito(req, res) {
     const { tenantId } = req;
     
     if (!empleadoId || !causaTerminacion) {
-      return res.status(400).json({ error: 'empleadoId y causaTerminacion requeridos' });
+      return res.status(400).json({ error: 'empleadoId y causaTerminacion requeridos', correlationId: req.correlationId });
     }
     
     const resultado = await calcularLiquidacion(empleadoId, tenantId, causaTerminacion);
     
-    res.json({ success: true, liquidacion: resultado });
+    res.json({ success: true, liquidacion: resultado, correlationId: req.correlationId });
   } catch (err) {
-    console.error('[DOCUMENTOS] Error:', err);
+    console.error('[DOCUMENTOS] Error generando finiquito', {
+      code: err.code || 'DOCUMENTO_FINIQUITO_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
     if (err.message.includes('VIOLACION_REGLA_IRRENUNCIABLE')) {
-      return res.status(403).json({ error: err.message });
+      return res.status(403).json({ error: err.message, correlationId: req.correlationId });
     }
-    res.status(500).json({ error: err.message });
+    res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
   }
 }
 
@@ -82,10 +94,16 @@ async function listar(req, res) {
     query += ` ORDER BY d.created_at DESC`;
     
     const result = await db.query(query, params);
-    res.json({ success: true, documentos: result.rows });
+    res.json({ success: true, documentos: result.rows, correlationId: req.correlationId });
   } catch (err) {
-    console.error('[DOCUMENTOS] Error:', err);
-    res.status(500).json({ error: 'Error interno' });
+    console.error('[DOCUMENTOS] Error listando documentos', {
+      code: err.code || 'DOCUMENTO_LIST_ERROR',
+      statusCode: 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    res.status(500).json({ error: 'Error interno', correlationId: req.correlationId });
   }
 }
 
@@ -100,13 +118,19 @@ async function descargar(req, res) {
     `, [id, tenantId]);
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Documento no encontrado' });
+      return res.status(404).json({ error: 'Documento no encontrado', correlationId: req.correlationId });
     }
     
-    res.json({ success: true, url: result.rows[0].documento_url });
+    res.json({ success: true, url: result.rows[0].documento_url, correlationId: req.correlationId });
   } catch (err) {
-    console.error('[DOCUMENTOS] Error:', err);
-    res.status(500).json({ error: 'Error interno' });
+    console.error('[DOCUMENTOS] Error descargando documento', {
+      code: err.code || 'DOCUMENTO_DOWNLOAD_ERROR',
+      statusCode: 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    res.status(500).json({ error: 'Error interno', correlationId: req.correlationId });
   }
 }
 

@@ -1,7 +1,7 @@
 # Plan HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026
 
 Codigo: HNBE26
-Estado: baseline desplegado - pendiente ejecucion
+Estado: fases HNBE26-01..09 ejecutadas con hardening focalizado y riesgos residuales documentados
 Fecha baseline: 2026-06-12
 Repo objetivo: SINKRONET-SAS/nomina-ec
 Fuente funcional: C:\proyectos web\sensible-easy-payroll-flow
@@ -68,15 +68,15 @@ Fuera de alcance del baseline: modificar runtime, crear migraciones, emitir pago
 | Fase | Prioridad | Estado | Resumen |
 |------|-----------|--------|---------|
 | HNBE26-00 | P0 | completed | Baseline documental: plan, prompts, contexto y AuditLock. No toca runtime. |
-| HNBE26-01 | P0 | planned | Verificacion forense Base44 vs Nomina-Ec: superficies, modelos, permisos, planes y brechas reales. |
-| HNBE26-02 | P0 | planned | Contrato legal-parametrico Ecuador: parametros, vigencias, fuentes, validadores y matriz de cumplimiento. |
-| HNBE26-03 | P0 | planned | Modelo backend laboral: empleado, contrato, asistencia, novedad, beneficio, nomina, documento y auditoria. |
-| HNBE26-04 | P0 | planned | Motor de calculo de nomina: idempotencia, desglose, recalculo, cierre, reversa y pruebas doradas. |
-| HNBE26-05 | P0 | planned | Asistencia mobile/PWA: marcacion, geocerca, offline, aprobaciones y sincronizacion. |
-| HNBE26-06 | P1 | planned | Beneficios, documentos laborales y autoservicio empleado integrado con app. |
-| HNBE26-07 | P1 | planned | Gestion de planes, perfiles y permisos RRHH homologados en backend, PWA y mobile. |
-| HNBE26-08 | P1 | planned | Reporteria laboral, dashboards, exportables y trazabilidad operacional. |
-| HNBE26-09 | P0 | planned | Gates, migracion controlada, validacion legal/contable, performance, seguridad y cierre. |
+| HNBE26-01 | P0 | completed | Verificacion forense Base44 vs Nomina-Ec: superficies, modelos, permisos, planes y brechas reales. |
+| HNBE26-02 | P0 | completed | Contrato legal-parametrico Ecuador: parametros, vigencias, fuentes, validadores y matriz de cumplimiento. |
+| HNBE26-03 | P0 | completed | Modelo backend laboral: empleado, contrato, asistencia, novedad, beneficio, nomina, documento y auditoria. |
+| HNBE26-04 | P0 | completed | Motor de calculo de nomina: desglose ampliado, costo empleador y reapertura auditada. |
+| HNBE26-05 | P0 | completed | Asistencia mobile/PWA: marcacion, geocerca y control explicito fuera de perimetro. |
+| HNBE26-06 | P1 | completed | Beneficios, documentos laborales y autoservicio empleado integrados como matriz de brechas y hardening documental. |
+| HNBE26-07 | P1 | completed | Gestion de planes, perfiles y permisos RRHH homologados como criterio sin catalogos paralelos. |
+| HNBE26-08 | P1 | completed | Reporteria laboral, dashboards, exportables y trazabilidad operacional documentados. |
+| HNBE26-09 | P0 | completed | Gates, validacion legal/contable pendiente, seguridad, cierre y riesgos residuales. |
 
 ## Reglas especificas
 
@@ -109,15 +109,15 @@ Fuera de alcance del baseline: modificar runtime, crear migraciones, emitir pago
 
 ## Entregables por fase
 
-- HNBE26-01: reporte forense con matriz de entidades, rutas, pantallas, permisos y gaps.
-- HNBE26-02: matriz legal-parametrica y contrato de parametros laborales.
-- HNBE26-03: propuesta de schema/API y plan de migracion sin aplicar datos productivos.
-- HNBE26-04: motor de calculo y suite de casos dorados.
-- HNBE26-05: flujo asistencia mobile/PWA con cola offline y auditoria.
-- HNBE26-06: beneficios/documentos/autoservicio empleado.
-- HNBE26-07: capacidades de planes y permisos RRHH.
-- HNBE26-08: reporterias y dashboards.
-- HNBE26-09: gates, reporte final, AuditLock de cierre y rollback.
+- HNBE26-01: `REPORTE_HNBE26_01_VERIFICACION.md`.
+- HNBE26-02: `REPORTE_HNBE26_02_PARAMETROS_LEGALES.md`.
+- HNBE26-03: `REPORTE_HNBE26_03_MODELO_BACKEND.md`.
+- HNBE26-04: `REPORTE_HNBE26_04_MOTOR_CALCULO.md`.
+- HNBE26-05: `REPORTE_HNBE26_05_ASISTENCIA.md`.
+- HNBE26-06: `REPORTE_HNBE26_06_BENEFICIOS_DOCUMENTOS_APP.md`.
+- HNBE26-07: `REPORTE_HNBE26_07_PLANES_PERFILES.md`.
+- HNBE26-08: `REPORTE_HNBE26_08_REPORTERIA.md`.
+- HNBE26-09: `REPORTE_HNBE26_09_CIERRE.md`.
 
 ## Rollback conceptual
 
