@@ -1,3 +1,55 @@
+## Open Haiky Plan - HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026 |
+| Codigo | HNBE26 |
+| Estado | baseline desplegado - pendiente ejecucion |
+| Fase actual | HNBE26-01 |
+| Alcance | homologacion de nomina ecuatoriana desde prototipo Base44: cumplimiento legal, parametros, beneficios, asistencia, app, planes, perfiles y reporteria |
+| Repo objetivo | SINKRONET-SAS/nomina-ec |
+| Fuente funcional | `C:\proyectos web\sensible-easy-payroll-flow` |
+| Plan doc | `docs2/homologacion-nomina-base44-ecuador-2026/PLAN_HAIKY_HOMOLOGACION_NOMINA_BASE44_ECUADOR_2026.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Prompts | `.github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-{00..09}-*.md` |
+| RULES | `RULES.md` |
+
+### Resumen HNBE26
+
+Plan para homologar un modulo laboral y de nomina en Nomina-Ec usando como referencia funcional el prototipo Base44 `sensible-easy-payroll-flow`. El plan no copia su arquitectura; traduce sus dominios de Empresa, Empleado, Marcacion, NovedadAsistencia, Nomina, BeneficioEmpleado, DocumentoLegal, ParametroLegal y PlanSuscripcion al modelo real de Nomina-Ec: `Workspace`, `Empresa`, roles, permisos, planes, mobile, PWA, auditoria y reglas Haiky.
+
+El baseline deja la ejecucion pendiente desde `HNBE26-01`. Base44 queda como fuente funcional/UX, no como fuente normativa: los parametros laborales Ecuador deben verificarse con fuentes oficiales y aprobacion legal/contable antes de runtime.
+
+### Fases HNBE26
+
+| Fase | Prioridad | Estado | Resumen |
+|------|-----------|--------|---------|
+| HNBE26-00 | P0 | completed | Baseline documental: plan, prompts, contexto y AuditLock; no toca runtime. |
+| HNBE26-01 | P0 | planned | Verificacion forense Base44 vs Nomina-Ec: modelos, pantallas, permisos, planes y brechas. |
+| HNBE26-02 | P0 | planned | Contrato legal-parametrico Ecuador: parametros, fuentes, vigencias, validadores y LOPDP. |
+| HNBE26-03 | P0 | planned | Modelo backend laboral: empleado, contrato, asistencia, novedad, beneficio, nomina, documento y auditoria. |
+| HNBE26-04 | P0 | planned | Motor de calculo de nomina idempotente, auditable, reversible y con casos dorados. |
+| HNBE26-05 | P0 | planned | Asistencia mobile/PWA: marcacion, geocerca, offline, aprobaciones y sincronizacion. |
+| HNBE26-06 | P1 | planned | Beneficios, documentos laborales y autoservicio empleado integrado con app. |
+| HNBE26-07 | P1 | planned | Gestion de planes, perfiles y permisos RRHH homologados en backend, PWA y mobile. |
+| HNBE26-08 | P1 | planned | Reporteria laboral, dashboards, exportables y trazabilidad operacional. |
+| HNBE26-09 | P0 | planned | Gates, migracion controlada, validacion legal/contable, seguridad y cierre. |
+
+### Reglas HNBE26
+
+- `HNBE26-00` no toca runtime.
+- No iniciar `HNBE26-01` sin `.vscode/AuditLock.json` firmado para `HNBE26-00`.
+- Cada fase requiere aprobacion explicita por prompt.
+- No adelantar tareas de fases posteriores.
+- Todo parametro legal debe incluir vigencia, fuente oficial, fecha de carga, responsable y evidencia.
+- Ningun calculo de nomina puede depender de constantes hardcodeadas en UI/mobile.
+- Todo cierre de nomina debe ser idempotente, auditable y reversible mediante flujo documentado.
+- Datos bancarios, geolocalizacion, salud/subsidios y documentos laborales se tratan como datos sensibles LOPDP.
+- No crear catalogos de planes paralelos; usar `Plan`, servicios de plan y catalogos compartidos existentes.
+- Commits esperados: `phase: HNBE26-XX task: ...`.
+
+---
+
 # Contexto operativo Codex - Plan HAIKY
 
 Proyecto: Nómina-Ec, SaaS de nómina Ecuador.  

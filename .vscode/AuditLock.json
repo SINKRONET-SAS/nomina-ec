@@ -1,105 +1,107 @@
 {
-    "project":  "nomina-ec",
-    "rulesFile":  "RULES.md",
-    "phaseCompleted":  "34",
-    "phaseName":  "Ejecucion inicial, visibilidad operativa y humanizacion UI/UX",
-    "status":  "signed",
-    "generatedAt":  "2026-06-12T22:25:00-05:00",
+    "schemaVersion":  1,
+    "plan":  "HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026",
+    "planCode":  "HNBE26",
+    "status":  "baseline_deployed",
+    "phaseCompleted":  "HNBE26-00",
+    "currentPhase":  "HNBE26-01",
+    "updatedAt":  "2026-06-12T00:00:00.000-05:00",
+    "summary":  "Baseline documental para homologar nomina ecuatoriana desde Base44 hacia Nomina-Ec: cumplimiento legal, parametros, beneficios, asistencia, app, planes, perfiles y reporteria. No toca runtime.",
+    "rulesSource":  "RULES.md",
+    "previousAuditLockHash":  "b7ae4239628b899fab1b18fcd5caf4aa271f6a464a68888a1fdfa7300bb5f726",
     "filesModified":  [
-                          ".vscode/AuditLock.json",
                           "CODEX_CONTEXT.md",
-                          "backend/prisma/schema.prisma",
-                          "backend/prisma/migrations/20260612201500_parametrizacion_operativa/migration.sql",
-                          "backend/src/app.js",
-                          "backend/src/controllers/configurationController.js",
-                          "backend/src/services/configurationService.js",
-                          "backend/src/services/configurationService.test.js",
-                          "docs2/EVIDENCIA_QA_PARAMETRIZACION.md",
-                          "frontend-web/src/App.jsx",
-                          "frontend-web/src/components/Layout/Layout.jsx",
-                          "frontend-web/src/context/AuthContext.jsx",
-                          "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-                          "frontend-web/src/services/configurationApi.js",
-                          "frontend-web/src/services/publicApi.js",
-                          "docs2/EVIDENCIA_EJECUCION_PROMPTS_HAIKY_2026_06_12.md",
-                          ".gitignore",
-                          "frontend-web/src/services/apiBase.js",
-                          "frontend-web/src/pages/Dashboard.jsx",
-                          "frontend-web/src/pages/Auditoria.jsx",
-                          "frontend-web/src/services/authenticatedApi.js",
-                          "frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
-                          "frontend-web/src/pages/Empleados/NuevoEmpleado.jsx",
-                          "frontend-web/src/pages/Empleados/TerminarEmpleado.jsx",
-                          "frontend-web/src/pages/Asistencia/NovedadesPendientes.jsx",
-                          "frontend-web/src/pages/Asistencia/ReporteAsistencia.jsx",
-                          "frontend-web/src/pages/Nomina/CerrarMes.jsx",
-                          "frontend-web/src/pages/Nomina/RolesPagos.jsx",
-                          "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
-                          "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
-                          "frontend-web/src/pages/Documentos/ActasFiniquito.jsx",
-                          "frontend-web/src/pages/Login.jsx",
-                          "frontend-web/src/pages/Register.jsx",
-                          "frontend-web/src/pages/Landing.jsx",
-                          "frontend-web/src/pages/LegalText.jsx"
+                          ".vscode/AuditLock.json",
+                          "docs2/homologacion-nomina-base44-ecuador-2026/PLAN_HAIKY_HOMOLOGACION_NOMINA_BASE44_ECUADOR_2026.md",
+                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-00-baseline.md",
+                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-01-forensic-map.md",
+                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-02-parametros-legales.md",
+                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-03-modelo-backend.md",
+                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-04-motor-calculo.md",
+                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-05-asistencia-mobile-pwa.md",
+                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-06-beneficios-documentos-app.md",
+                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-07-planes-perfiles.md",
+                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-08-reporteria.md",
+                          ".github/prompts/HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-09-gates-release.md"
                       ],
     "validationChecks":  [
-                             "RULES.md leido antes de modificar runtime",
-                             "AuditLock previo verificado como firmado en fase 27.3",
-                             "Se ejecutaron prompts fase 28 a fase 34 por aprobacion explicita del usuario",
-                             "Se agrego migracion Prisma para configuration_catalogs, legal_parameter_versions, novelty_type_configs, organization_units, work_zones, work_shifts y tenant_onboarding_steps",
-                             "Se actualizo schema.prisma con modelos de parametrizacion y relaciones tenant",
-                             "Se implemento API protegida /api/configuracion para resumen, CRUD por recurso y onboarding",
-                             "Se implemento auditoria de creacion y actualizacion de configuracion",
-                             "Se implemento UI /dashboard/configuracion/parametrizacion con acciones reales contra API",
-                             "Se agrego evidencia QA en docs2/EVIDENCIA_QA_PARAMETRIZACION.md",
-                             "npx prisma validate ejecutado correctamente",
-                             "npx prisma migrate deploy aplicado correctamente en PostgreSQL local",
-                             "node --check ejecutado correctamente en configurationService, configurationController y app",
-                             "npm test -- --runInBand en backend: 6 suites, 16 tests aprobados",
-                             "npm run build en frontend-web ejecutado correctamente",
-                             "npx expo-doctor en app-movil: 21/21 checks aprobados",
-                             "Busqueda de mojibake en runtime y artefactos de gobierno sin coincidencias",
-                             "Se revisaron prompts disponibles en .github/prompts contra CODEX_CONTEXT.md y el contexto operativo adjunto",
-                             "Se agrego evidencia de cierre de ejecucion de prompts en docs2/EVIDENCIA_EJECUCION_PROMPTS_HAIKY_2026_06_12.md",
-                             "Se dejo .codex/logs fuera de versionamiento por ser salida local no versionable",
-                             "Se agrego .codex/ a .gitignore para excluir logs locales de Codex del versionamiento",
-                             "Segunda pasada visual: se confirmo que /api/configuracion/resumen existe y /configuracion/resumen devuelve 404",
-                             "Se agrego frontend-web/src/services/apiBase.js para normalizar VITE_API_URL con o sin sufijo /api",
-                             "configurationApi, publicApi y AuthContext reutilizan la base API normalizada",
-                             "Parametrizacion muestra error estable y contadores seguros si falla el resumen",
-                             "npm run build en frontend-web PASS tras segunda pasada",
-                             "Verificacion UTF-8 de archivos frontend tocados PASS",
-                             "node --check backend/src/app.js PASS",
-                             "Tercera pasada: se contrastaron endpoints backend visibles contra navegacion PWA",
-                             "Dashboard deja de usar /api/dashboard/stats inexistente y consume endpoints reales existentes",
-                             "Se agrego pantalla /dashboard/auditoria para exponer GET /api/auditoria a owner y superadmin",
-                             "Se agrego authenticatedApi con baseURL normalizado y token local para paginas protegidas",
-                             "Paginas internas protegidas migradas a authenticatedApi para no depender solo del proxy Vite",
-                             "Enlaces de empleados corregidos para permanecer bajo /dashboard",
-                             "npm run build en frontend-web PASS tras tercera pasada",
-                             "Verificacion UTF-8 de frontend-web/src PASS tras tercera pasada",
-                             "git diff --check PASS tras tercera pasada",
-                             "Cuarta pasada UI/UX: se removio lenguaje interno visible como Fases 28-34, API real, backend, OWNER y tenant",
-                             "Parametrizacion usa lenguaje de configuracion inicial y primeros pasos recomendados",
-                             "Ruta no encontrada se traduce a mensaje accionable para usuario",
-                             "Login, landing y textos legales reemplazan jerga interna por empresa, compania y administrador",
-                             "Busqueda de jerga visible en pages/components PASS",
-                             "npm run build en frontend-web PASS tras humanizacion UI/UX",
-                             "Verificacion UTF-8 de frontend-web/src PASS tras humanizacion UI/UX",
-                             "git diff --check PASS tras humanizacion UI/UX"
+                             {
+                                 "gate":  "HNBE26-G00-01",
+                                 "status":  "PASS",
+                                 "detail":  "Plan documental creado sin tocar runtime."
+                             },
+                             {
+                                 "gate":  "HNBE26-G00-02",
+                                 "status":  "PASS",
+                                 "detail":  "Prompts HNBE26-00..09 creados conforme a RULES.md y orden de fases."
+                             },
+                             {
+                                 "gate":  "HNBE26-G00-03",
+                                 "status":  "PASS",
+                                 "detail":  "CODEX_CONTEXT.md actualizado con plan abierto HNBE26."
+                             },
+                             {
+                                 "gate":  "HNBE26-G00-04",
+                                 "status":  "PASS",
+                                 "detail":  "AuditLock JSON parseable y UTF-8 sin BOM."
+                             }
                          ],
-    "previousLockHash":  "977a81ddab5461c168fc040f740906ffa5828845ef4cdaf919abca36f2e3c80b",
-    "signatureSource":  "previousLockHash + 2026-06-12T22:25:00-05:00",
-    "signature":  "56f195b0ec60bb031d2e412806654a1ba685e238e61e3c3fb07f50fa0b43c981",
-    "nextPhase":  "35",
-    "requiresOwnerApprovalForNextPhase":  true,
-    "residualRisks":  [
-                          "La parametrizacion ya tiene nucleo runtime inicial, pero falta integrarla a profundidad con motor de nomina, marcaciones, bancos y reportes.",
-                          "Falta smoke manual completo con backend, frontend, movil, PostgreSQL y Redis activos.",
-                          "Falta conectar zonas y jornadas configuradas al validador movil como fuente principal.",
-                          "Falta aplicar tipos de novedades configurables dentro del calculo mensual de nomina.",
-                          "PayPhone requiere validacion sandbox/oficial con credenciales reales y evidencia sin secretos.",
-                          "Fase 19 RLS Render sigue pendiente con usuario no superusuario.",
-                          "IESS Ecuador 2026 y revision profesional legal permanecen como bloqueo productivo."
-                      ]
+    "fases":  [
+                  {
+                      "phase":  "HNBE26-00",
+                      "status":  "completed",
+                      "task":  "baseline governance"
+                  },
+                  {
+                      "phase":  "HNBE26-01",
+                      "status":  "planned",
+                      "task":  "forensic base44 sinkroniq map"
+                  },
+                  {
+                      "phase":  "HNBE26-02",
+                      "status":  "planned",
+                      "task":  "parametros legales ecuador"
+                  },
+                  {
+                      "phase":  "HNBE26-03",
+                      "status":  "planned",
+                      "task":  "modelo backend laboral"
+                  },
+                  {
+                      "phase":  "HNBE26-04",
+                      "status":  "planned",
+                      "task":  "motor calculo nomina"
+                  },
+                  {
+                      "phase":  "HNBE26-05",
+                      "status":  "planned",
+                      "task":  "asistencia mobile pwa"
+                  },
+                  {
+                      "phase":  "HNBE26-06",
+                      "status":  "planned",
+                      "task":  "beneficios documentos app"
+                  },
+                  {
+                      "phase":  "HNBE26-07",
+                      "status":  "planned",
+                      "task":  "planes perfiles permisos"
+                  },
+                  {
+                      "phase":  "HNBE26-08",
+                      "status":  "planned",
+                      "task":  "reporteria laboral"
+                  },
+                  {
+                      "phase":  "HNBE26-09",
+                      "status":  "planned",
+                      "task":  "gates release"
+                  }
+              ],
+    "residualRisk":  [
+                         "Los parametros legales de Base44 son referencia funcional y requieren verificacion oficial antes de runtime.",
+                         "La fuente Base44 presenta mojibake en algunos archivos; cualquier migracion textual debe normalizar UTF-8.",
+                         "La homologacion de nomina puede requerir validacion legal/contable externa antes de activacion comercial."
+                     ],
+    "signature":  "hnbe26-baseline-2026-06-12-nomina-ec"
 }
