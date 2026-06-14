@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "planCode": "ONI26",
+  "phase": "ONI26-05",
+  "purpose": "Catalogo de gobierno SUPERADMIN para planes, addons, owners, contratos e incidencias.",
+  "rbac": {
+    "roles": [
+      {
+        "code": "SUPERADMIN_PLATFORM_OWNER",
+        "description": "Administra catalogos globales, planes comerciales y estado contractual sin editar nomina operativa del tenant.",
+        "permissions": [
+          "plans.read",
+          "plans.write",
+          "addons.read",
+          "addons.write",
+          "owners.read",
+          "contracts.supervise",
+          "incidents.supervise",
+          "audit.read"
+        ]
+      },
+      {
+        "code": "SUPERADMIN_SUPPORT",
+        "description": "Atiende incidencias con acceso minimo y trazado.",
+        "permissions": [
+          "owners.read",
+          "incidents.read",
+          "incidents.write",
+          "audit.read"
+        ]
+      }
+    ],
+    "deniedByDefault": [
+      "employees.write",
+      "payroll.close",
+      "bankFiles.download",
+      "personalData.export"
+    ]
+  },
+  "plans": [
+    {
+      "code": "TRIAL",
+      "name": "Prueba",
+      "ownerLimit": 1,
+      "employeeLimit": 25,
+      "addonsAllowed": [
+        "BANK_FILES_DEMO",
+        "RDEP_DEMO"
+      ]
+    },
+    {
+      "code": "PYME",
+      "name": "Pyme",
+      "ownerLimit": 1,
+      "employeeLimit": 100,
+      "addonsAllowed": [
+        "BANK_FILES",
+        "RDEP",
+        "API_BASIC"
+      ]
+    }
+  ],
+  "addons": [
+    {
+      "code": "BANK_FILES",
+      "name": "Archivos planos bancos",
+      "requiresEvidence": true
+    },
+    {
+      "code": "RDEP",
+      "name": "RDEP",
+      "requiresEvidence": true
+    },
+    {
+      "code": "API_BASIC",
+      "name": "API de integracion",
+      "requiresEvidence": true
+    }
+  ],
+  "audit": {
+    "requiredFields": [
+      "correlationId",
+      "actorUserId",
+      "actorRole",
+      "tenantId",
+      "action",
+      "resource",
+      "result",
+      "createdAt"
+    ],
+    "sensitiveActionsRequireReason": true,
+    "supportAccessExpiresMinutes": 60
+  },
+  "tenantIsolation": {
+    "superadminCanImpersonateOwner": false,
+    "crossTenantOperationalWrite": false,
+    "supportSessionRequiresIncident": true
+  }
+}
