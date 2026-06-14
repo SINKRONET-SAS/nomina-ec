@@ -329,3 +329,40 @@ Gobierno:
 - No crear modulos paralelos a landing, registro, parametrizacion, app o reportes existentes.
 - Cada fase debe firmar AuditLock y usar commit `phase: ONI26-XX task: ...`.
 - RDEP, bancos y API requieren contrato/ficha tecnica antes de implementacion.
+
+### Ejecucion ONI26 2026-06-14
+
+Estado: ONI26-00 a ONI26-14 ejecutadas localmente con commits por fase y AuditLock firmado.
+
+Entregables principales:
+
+- Diagnostico integral anti-churn.
+- Sitio publico ajustado para inicio, link publico y crear cuenta.
+- Mapeo contable parametrizable por tenant.
+- RDEP documentado con XSD versionado, fuentes SRI y bloqueo de validacion vigente.
+- Gobierno SUPERADMIN para planes, addons, owners, contratos e incidencias.
+- Matriz OWNER para bancos, archivos planos, usuarios, roles y accesos.
+- Contrato API v1 cerrado hasta gate de seguridad.
+- Politica de asistencia manual y marcacion APP con LOPDP.
+- Seed empresa DEMO con datos ficticios y fuente SRI.
+- Flujo de apertura mensual y lotes de novedades.
+- Contrato de carga masiva de empleados con plantilla DEMO.
+- Catalogo de reportes PDF, Excel tabular y CSV.
+- Metricas de dashboard y headcount.
+- Catalogo de mensajes humanizados y runbook QA/release.
+
+Fuentes SRI revisadas:
+
+- `https://www.sri.gob.ec/formularios-e-instructivos1`
+- `C:\Users\proam\Downloads\Esquema RDEP 2023.xsd`
+- `C:\Users\proam\Downloads\NAC-DGERCGC24-00000037.pdf`
+- `C:\Users\proam\Downloads\Catálogo vigente para el ejercicio fiscal 2024 (1).xls`
+- `C:\Users\proam\Downloads\Formulario_107 - Formato 2023 (2).xls`
+- `C:\Users\proam\Downloads\Tablas de cálculo de Impuesto a la Renta (2).pdf`
+
+Bloqueos externos:
+
+- Confirmar ficha tecnica RDEP vigente del ejercicio fiscal objetivo antes de XML productivo.
+- Validar fichas tecnicas bancarias por banco.
+- Implementar y probar RBAC/API/runtime antes de habilitar clientes externos.
+- Ejecutar QA E2E con backend y datos DEMO.

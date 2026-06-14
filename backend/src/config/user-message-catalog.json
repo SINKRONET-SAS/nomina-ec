@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "planCode": "ONI26",
+  "phase": "ONI26-14",
+  "purpose": "Catalogo base para humanizar mensajes tecnicos visibles.",
+  "messages": [
+    {
+      "code": "RDEP_SOURCE_OUTDATED",
+      "technical": "RDEP XSD source requires reconciliation",
+      "userMessage": "Antes de generar el RDEP productivo necesitamos confirmar la ficha tecnica vigente del SRI para este ejercicio fiscal.",
+      "severity": "warning"
+    },
+    {
+      "code": "BANK_FILE_PROFILE_MISSING",
+      "technical": "Bank profile not configured",
+      "userMessage": "Configura la ficha tecnica del banco antes de generar el archivo de pagos.",
+      "severity": "error"
+    },
+    {
+      "code": "ATTENDANCE_GPS_PERMISSION_DENIED",
+      "technical": "GPS permission denied",
+      "userMessage": "No pudimos registrar la ubicacion. Revisa el permiso de ubicacion o registra una novedad manual para aprobacion.",
+      "severity": "warning"
+    },
+    {
+      "code": "IMPORT_EMPLOYEES_HAS_ERRORS",
+      "technical": "Employee import prevalidation failed",
+      "userMessage": "La carga tiene filas por corregir. Descarga el reporte, ajusta los datos y vuelve a intentar.",
+      "severity": "error"
+    }
+  ],
+  "rules": {
+    "includeCorrelationIdInDetails": true,
+    "doNotExposeStackTrace": true,
+    "showNextAction": true
+  }
+}
