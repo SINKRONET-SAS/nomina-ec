@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "plan": "HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026",
   "planCode": "LPA26",
-  "status": "diagnostico_anti_churn_completed",
-  "phaseCompleted": "LPA26-01",
-  "currentPhase": "LPA26-02-LANDING-CONVERSION",
-  "updatedAt": "2026-06-14T10:10:19.1226006-05:00",
-  "summary": "Se completo el diagnostico anti-churn de landing, PWA y app movil antes de tocar runtime. Se inventariaron rutas, manifest, Workbox, assets, app Expo, legales y brechas P0/P1/P2.",
+  "status": "landing_conversion_completed",
+  "phaseCompleted": "LPA26-02",
+  "currentPhase": "LPA26-03-PWA-SEGURA",
+  "updatedAt": "2026-06-14T10:17:27.4148808-05:00",
+  "summary": "Se actualizo una unica landing publica de conversion para Nomina-Ec con flujo operativo Ecuador, CTA a registro, CTA a privacidad, datos ficticios y mensajes sin promesas absolutas de cumplimiento.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts de acuerdo al plan HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026.",
-  "previousAuditLockHash": "40fa35a5723f71a5977903f933928c4f12d3e3706b47a8de3d1ba61987c2aa5c",
+  "previousAuditLockHash": "11a2d4d3560f54190429341936c8b90a053f3f3b39cc3cba0295e00825b0cb01",
   "previousPlans": [
     {
       "plan": "HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026",
@@ -26,41 +26,42 @@
   ],
   "filesModified": [
     ".vscode/AuditLock.json",
-    "docs2/landing-pwa-app-store-2026/REPORTE_LPA26_01_DIAGNOSTICO.md"
+    "frontend-web/src/pages/Landing.jsx",
+    "docs2/landing-pwa-app-store-2026/REPORTE_LPA26_02_LANDING.md"
   ],
   "validationChecks": [
     {
-      "gate": "LPA26-01-RULES-READ",
+      "gate": "LPA26-02-RULES-READ",
       "status": "PASS",
-      "detail": "RULES.md leido antes de ejecutar el diagnostico."
+      "detail": "RULES.md y prompt LPA26-02 leidos antes de modificar runtime."
     },
     {
-      "gate": "LPA26-01-AUDITLOCK-SIGNATURE-IN",
+      "gate": "LPA26-02-AUDITLOCK-SIGNATURE-IN",
       "status": "PASS",
-      "detail": "Firma LPA26-00 validada como SHA256(previousAuditLockHash + updatedAt)."
+      "detail": "Firma LPA26-01 validada antes de iniciar landing conversion."
     },
     {
-      "gate": "LPA26-01-INVENTARIO-WEB",
+      "gate": "LPA26-02-LANDING-SINGLE",
       "status": "PASS",
-      "detail": "Rutas publicas, privadas, PWA, Workbox, assets y almacenamiento local inventariados."
+      "detail": "Se mantuvo una sola landing publica en frontend-web/src/pages/Landing.jsx."
     },
     {
-      "gate": "LPA26-01-INVENTARIO-MOBILE",
+      "gate": "LPA26-02-COPY-ECUADOR",
       "status": "PASS",
-      "detail": "App Expo, pantallas, servicios y ausencia de app.json/app.config.js inventariados."
+      "detail": "La propuesta de valor cubre empleados, novedades, roles, cierre, bancos, RDEP/IESS, documentos y auditoria."
     },
     {
-      "gate": "LPA26-01-NO-RUNTIME-CHANGES",
+      "gate": "LPA26-02-BUILD-FRONTEND",
       "status": "PASS",
-      "detail": "La fase LPA26-01 solo crea reporte documental y actualiza AuditLock."
+      "detail": "npm.cmd run build ejecutado correctamente en frontend-web."
     },
     {
-      "gate": "LPA26-01-REPORT-CREATED",
+      "gate": "LPA26-02-VISUAL-DESKTOP-MOBILE",
       "status": "PASS",
-      "detail": "Reporte P0/P1/P2 y archivos runtime permitidos creado."
+      "detail": "Revision desktop y mobile 390x844 sin mojibake ni overflow horizontal."
     },
     {
-      "gate": "LPA26-01-AUDITLOCK-SIGNATURE",
+      "gate": "LPA26-02-AUDITLOCK-SIGNATURE",
       "status": "PASS",
       "detail": "Firma calculada como SHA256(previousAuditLockHash + updatedAt)."
     }
@@ -68,7 +69,7 @@
   "fases": [
     { "phase": "LPA26-00", "status": "completed", "task": "baseline documental" },
     { "phase": "LPA26-01", "status": "completed", "task": "diagnostico anti-churn" },
-    { "phase": "LPA26-02", "status": "pending", "task": "landing de conversion" },
+    { "phase": "LPA26-02", "status": "completed", "task": "landing de conversion" },
     { "phase": "LPA26-03", "status": "pending", "task": "PWA instalable y segura" },
     { "phase": "LPA26-04", "status": "pending", "task": "app movil lista para tiendas" },
     { "phase": "LPA26-05", "status": "pending", "task": "LOPDP y privacidad operacional" },
@@ -91,5 +92,5 @@
     }
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "3a6e45a88c2cb2a26a11a7431e7730548d2c5eaa7a81391f1d630566420b9714"
+  "signature": "74f70abc452cf9b6f3c3076d63bd4313e2009d5e8a4617e03e08417647cc2340"
 }
