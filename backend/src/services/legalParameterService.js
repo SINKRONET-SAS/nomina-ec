@@ -49,6 +49,12 @@ function assertLegalParametersReadyForProduction(legalParameters, context = {}) 
   const sourceStatus = legalParameters?.sourceStatus || PENDING_SOURCE_STATUS;
 
   if (!requiresOfficialLegalValidation()) {
+    console.log('[LEGAL] Validacion oficial de parametros omitida por configuracion de entorno', {
+      correlationId: process.env.CORRELATION_ID || 'legal-parameters',
+      anio: context.year || null,
+      tenantId: context.tenantId || null,
+      operacion: context.operation || 'calculo_legal',
+    });
     return;
   }
 

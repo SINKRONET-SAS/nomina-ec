@@ -1,117 +1,144 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026",
-  "planCode": "HNBE26",
-  "status": "executed_with_residual_risks",
-  "phaseCompleted": "HNBE26-09",
-  "currentPhase": "HNBE26-CLOSED",
-  "updatedAt": "2026-06-12T00:00:00.000-05:00",
-  "summary": "Fases HNBE26-01..09 ejecutadas en orden: auditoria forense, contrato legal-parametrico, modelo backend, motor de calculo, asistencia, documentos, planes, reporteria y cierre. Se aplico hardening focalizado sin migraciones destructivas.",
+  "plan": "HAIKY-EJECUCION-PROMPTS-ADJUNTO-2026",
+  "planCode": "HEPA26",
+  "status": "executed_with_external_blocks",
+  "phaseCompleted": "HEPA26-34-CONSOLIDACION",
+  "currentPhase": "HEPA26-BLOCKED-EXTERNAL-GATES",
+  "updatedAt": "2026-06-14T01:24:57.559-05:00",
+  "summary": "Se ejecuto una pasada de consolidacion sobre el adjunto: prompts HNBE26-00..09 y fases HAIKY 00..34. Se verifico estado real, se corrigieron retornos silenciosos de bajo riesgo, se ejecutaron validaciones locales y se documentaron bloqueos externos.",
   "rulesSource": "RULES.md",
-  "previousAuditLockHash": "2d66df3b797307e0640b3c165f7df74d0af1b9bc3ccb5ff0fd99bb588d083382",
+  "previousAuditLockHash": "a9caff80474b54ad4c2fedef49a9081d407e7fadd763406706f913f6ca77dbfa",
+  "approvalSource": "Solicitud del usuario: Ejecutar todos los prompts de acuerdo al adjunto.",
+  "previousPlans": [
+    {
+      "plan": "HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026",
+      "planCode": "HNBE26",
+      "status": "executed_with_residual_risks",
+      "phaseCompleted": "HNBE26-09"
+    },
+    {
+      "plan": "HAIKY-PRODUCTIZACION-NOMINA-EC-DOCUMENTO-NOMINA-2026",
+      "planCode": "PNE26",
+      "status": "baseline_deployed_pending_phase_approval",
+      "phaseCompleted": "PNE26-00"
+    }
+  ],
   "filesModified": [
-    "CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "backend/src/app.js",
-    "backend/src/controllers/documentoLegalController.js",
-    "backend/src/controllers/marcacionController.js",
-    "backend/src/controllers/nominaController.js",
-    "backend/src/services/calculoNominaService.js",
-    "backend/src/services/calculoNominaService.test.js",
-    "backend/src/services/marcacionValidator.js",
-    "backend/src/services/configurationService.js",
-    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-    "docs2/homologacion-nomina-base44-ecuador-2026/PLAN_HAIKY_HOMOLOGACION_NOMINA_BASE44_ECUADOR_2026.md",
-    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_01_VERIFICACION.md",
-    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_02_PARAMETROS_LEGALES.md",
-    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_03_MODELO_BACKEND.md",
-    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_04_MOTOR_CALCULO.md",
-    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_05_ASISTENCIA.md",
-    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_06_BENEFICIOS_DOCUMENTOS_APP.md",
-    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_07_PLANES_PERFILES.md",
-    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_08_REPORTERIA.md",
-    "docs2/homologacion-nomina-base44-ecuador-2026/REPORTE_HNBE26_09_CIERRE.md"
+    "docs2/EVIDENCIA_EJECUCION_PROMPTS_ADJUNTO_HAIKY_2026_06_14.md",
+    "backend/src/services/legalParameterService.js",
+    "frontend-web/src/context/AuthContext.jsx",
+    "frontend-web/src/pages/Planes.jsx",
+    "frontend-web/src/pages/Nomina/CerrarMes.jsx",
+    "docs/PLAN_HAIKY_PRODUCTIZACION_NOMINA_EC_DOCUMENTO_NOMINA.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-00-baseline.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-01-contrato-tecnico.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-02-legal-ecuador.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-03-ui-layout.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-04-auth-rbac.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-05-empresas-onboarding.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-06-empleados.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-07-asistencia.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-08-motor-nomina.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-09-liquidaciones.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-10-documentos.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-11-bancos.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-12-reportes.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-13-seguridad-auditoria.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-14-automatizaciones.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-15-comercial.md",
+    ".github/prompts/PRODUCTIZACION-NOMINA-EC-2026-16-qa-release.md"
   ],
   "validationChecks": [
     {
-      "gate": "HNBE26-G01",
+      "gate": "HEPA26-RULES-READ",
       "status": "PASS",
-      "detail": "Reporte forense Base44 vs Nomina-Ec creado."
+      "detail": "RULES.md leido antes de modificar runtime."
     },
     {
-      "gate": "HNBE26-G02",
+      "gate": "HEPA26-AUDITLOCK-READ",
       "status": "PASS",
-      "detail": "Contrato legal-parametrico y matriz LOPDP documentados."
+      "detail": ".vscode/AuditLock.json leido antes de modificar runtime."
     },
     {
-      "gate": "HNBE26-G03",
+      "gate": "HEPA26-PROMPTS-READ",
       "status": "PASS",
-      "detail": "Modelo backend laboral contrastado; sin migraciones destructivas."
+      "detail": "Leidos prompts fase-00..34 y HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026-00..09."
     },
     {
-      "gate": "HNBE26-G04",
+      "gate": "HEPA26-ZERO-SILENT-RETURNS",
       "status": "PASS",
-      "detail": "Motor de nomina ampliado con provisiones, costo empleador y reapertura auditada."
+      "detail": "Corregidos retornos silenciosos en cierre de nomina, refresh sin token, checkout sin sesion y validacion legal omitida por entorno."
     },
     {
-      "gate": "HNBE26-G05",
+      "gate": "HEPA26-PRISMA-VALIDATE",
       "status": "PASS",
-      "detail": "Marcaciones fuera de perimetro requieren aprobacion explicita y motivo."
+      "detail": "npx.cmd prisma validate: schema valido."
     },
     {
-      "gate": "HNBE26-G06",
+      "gate": "HEPA26-PRISMA-MIGRATE-DEPLOY",
       "status": "PASS",
-      "detail": "Documentos legales responden con errores estructurados y correlationId."
+      "detail": "npx.cmd prisma migrate deploy: 7 migraciones encontradas, sin pendientes."
     },
     {
-      "gate": "HNBE26-G07",
-      "status": "PASS",
-      "detail": "Planes/perfiles definidos sin catalogos paralelos."
-    },
-    {
-      "gate": "HNBE26-G08",
-      "status": "PASS",
-      "detail": "Reporterias laborales y brechas productivas documentadas."
-    },
-    {
-      "gate": "HNBE26-G09",
-      "status": "PASS",
-      "detail": "Cierre documental y riesgos residuales registrados."
-    },
-    {
-      "gate": "HNBE26-TEST-BACKEND",
+      "gate": "HEPA26-BACKEND-TESTS",
       "status": "PASS",
       "detail": "npm.cmd test -- --runInBand: 6 suites, 18 tests."
     },
     {
-      "gate": "HNBE26-GIT-DIFF-CHECK",
+      "gate": "HEPA26-FRONTEND-BUILD",
+      "status": "PASS",
+      "detail": "npm.cmd run build en frontend-web: Vite build y PWA generados correctamente."
+    },
+    {
+      "gate": "HEPA26-EXPO-DOCTOR",
+      "status": "PASS",
+      "detail": "npx.cmd expo-doctor en app-movil: 21/21 checks passed."
+    },
+    {
+      "gate": "HEPA26-POSTGRES-LOCAL",
+      "status": "PASS",
+      "detail": "Puerto 5432 escuchando localmente."
+    },
+    {
+      "gate": "HEPA26-REDIS-LOCAL",
+      "status": "PASS",
+      "detail": "Puerto 6379 escuchando localmente."
+    },
+    {
+      "gate": "HEPA26-RLS-RENDER",
+      "status": "BLOCKED",
+      "detail": "node scripts/verify-rls-render.js no pudo ejecutarse sin RLS_TENANT_A, RLS_TENANT_B y RLS_EMPLOYEE_A."
+    },
+    {
+      "gate": "HEPA26-GIT-DIFF-CHECK",
       "status": "PASS",
       "detail": "git diff --check sin errores; solo advertencias CRLF esperadas por Windows."
     },
     {
-      "gate": "HNBE26-UTF8-NO-BOM",
+      "gate": "HEPA26-UTF8-NO-BOM",
       "status": "PASS",
       "detail": "Archivos modificados verificados como UTF-8 sin BOM."
     }
   ],
   "fases": [
-    { "phase": "HNBE26-00", "status": "completed", "task": "baseline governance" },
-    { "phase": "HNBE26-01", "status": "completed", "task": "forensic base44 nomina-ec map" },
-    { "phase": "HNBE26-02", "status": "completed", "task": "parametros legales ecuador" },
-    { "phase": "HNBE26-03", "status": "completed", "task": "modelo backend laboral" },
-    { "phase": "HNBE26-04", "status": "completed", "task": "motor calculo nomina" },
-    { "phase": "HNBE26-05", "status": "completed", "task": "asistencia mobile pwa" },
-    { "phase": "HNBE26-06", "status": "completed", "task": "beneficios documentos app" },
-    { "phase": "HNBE26-07", "status": "completed", "task": "planes perfiles permisos" },
-    { "phase": "HNBE26-08", "status": "completed", "task": "reporteria laboral" },
-    { "phase": "HNBE26-09", "status": "completed", "task": "gates release" }
+    { "phase": "HNBE26-00..09", "status": "reviewed", "task": "homologacion Base44 previamente cerrada segun adjunto" },
+    { "phase": "HAIKY-00..16", "status": "validated_local", "task": "preparacion, dependencias, infraestructura, legal, bancos, RBAC, empleados, asistencia, nomina, documentos, reportes, automatizaciones y hardening" },
+    { "phase": "HAIKY-17", "status": "blocked_external_validation", "task": "validacion legal/profesional Ecuador 2026 pendiente para IESS y parametros sensibles" },
+    { "phase": "HAIKY-18", "status": "validated_local", "task": "AWS SDK v3 confirmado por dependencias y tests S3" },
+    { "phase": "HAIKY-19", "status": "blocked_missing_env", "task": "RLS Render con usuario no superusuario requiere variables de staging" },
+    { "phase": "HAIKY-20..27", "status": "validated_local_with_external_blocks", "task": "renombre, landing, PWA, auth, planes, PayPhone y QA comercial; PayPhone sandbox/oficial pendiente" },
+    { "phase": "HAIKY-28..34", "status": "validated_local_with_residual_risks", "task": "parametrizacion y QA productizable; integracion profunda pendiente" }
   ],
   "residualRisk": [
-    "IESS y validacion profesional siguen bloqueando activacion productiva.",
-    "Beneficios, prestamos y anticipos requieren modelo dedicado antes de comercializacion completa.",
-    "Autoservicio empleado mobile/PWA requiere una fase de implementacion especifica.",
-    "PWA debe verificarse visualmente con backend activo y usuario de prueba.",
-    "RLS en Render debe probarse con usuario no superusuario de staging."
+    "IESS Ecuador 2026 y parametros sensibles requieren respaldo oficial y revision profesional antes de produccion.",
+    "RLS Render requiere credenciales no superusuario y variables RLS_TENANT_A, RLS_TENANT_B y RLS_EMPLOYEE_A.",
+    "PayPhone sandbox/oficial requiere credenciales, webhook, firma, conciliacion e idempotencia con entorno real.",
+    "Parametrizacion operativa debe integrarse mas profundamente con nomina, marcaciones, bancos y reportes.",
+    "Falta smoke visual PWA con backend activo y usuario de prueba.",
+    "No se hizo commit ni push; trazabilidad Git queda pendiente de aprobacion del usuario."
   ],
-  "signature": "hnbe26-closed-2026-06-12-2d66df3b797307e0640b3c165f7df74d0af1b9bc3ccb5ff0fd99bb588d083382"
+  "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
+  "signature": "ef8fb270594862827f740437a57cd8855223bb310bef0b2a851aba02bbe4e374"
 }

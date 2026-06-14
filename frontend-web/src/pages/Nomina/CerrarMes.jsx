@@ -22,7 +22,10 @@ function CerrarMes() {
   };
 
   const handleCerrar = async () => {
-    if (!confirm('¿Está seguro de cerrar la nómina? Esta acción no se puede deshacer.')) return;
+    if (!confirm('¿Está seguro de cerrar la nómina? Esta acción no se puede deshacer.')) {
+      console.log('[NOMINA] Cierre mensual cancelado por el usuario', { anio, mes });
+      return;
+    }
     
     setCargando(true);
     try {
