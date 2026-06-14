@@ -2,25 +2,24 @@
   "schemaVersion": 1,
   "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
   "planCode": "ONI26",
-  "status": "employee_import_contract_completed",
-  "phaseCompleted": "ONI26-11",
-  "currentPhase": "ONI26-12-REPORTES-NOMINA",
-  "updatedAt": "2026-06-14T13:05:00.0000000-05:00",
-  "summary": "Se definio contrato de carga masiva de empleados, plantilla DEMO, validaciones, prevalidacion, confirmacion, auditoria y rollback.",
+  "status": "payroll_reports_catalog_completed",
+  "phaseCompleted": "ONI26-12",
+  "currentPhase": "ONI26-13-DASHBOARD-HEADCOUNT",
+  "updatedAt": "2026-06-14T13:15:00.0000000-05:00",
+  "summary": "Se creo catalogo de reportes de nomina con PDF auditable, Excel tabular, permisos, filtros y privacidad.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts ONI26.",
-  "previousAuditLockHash": "3f6200adfe34cf940ad008ffc78988e82cd5de818941bd14cdb400b76a3d9914",
+  "previousAuditLockHash": "3ef6f3f239644ac231a30e0fd502dfcb4181c5599087a5e748b0863347a9928c",
   "filesModified": [
     ".vscode/AuditLock.json",
-    "backend/src/config/employee-import-contract.json",
-    "docs2/operacion-nomina-ec-integral-2026/plantilla_carga_empleados_demo.csv",
-    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_11_CARGA_EMPLEADOS.md",
-    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_11_CARGA_EMPLEADOS.md"
+    "backend/src/config/payroll-report-catalog.json",
+    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_12_REPORTES_NOMINA.md",
+    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_12_REPORTES_NOMINA.md"
   ],
   "validationChecks": [
-    { "gate": "ONI26-11-RULES-PROMPT", "status": "PASS", "detail": "RULES.md y prompt ONI26-11 leidos." },
-    { "gate": "ONI26-11-TEMPLATE", "status": "PASS", "detail": "Plantilla CSV DEMO creada." },
-    { "gate": "ONI26-11-ROLLBACK", "status": "PASS", "detail": "Rollback por importBatchId definido." }
+    { "gate": "ONI26-12-RULES-PROMPT", "status": "PASS", "detail": "RULES.md y prompt ONI26-12 leidos." },
+    { "gate": "ONI26-12-TABULAR", "status": "PASS", "detail": "Excel tabular definido sin celdas combinadas." },
+    { "gate": "ONI26-12-AUDIT", "status": "PASS", "detail": "PDF/exportaciones requieren correlationId y auditoria." }
   ],
   "fases": [
     { "phase": "ONI26-00", "status": "completed", "task": "baseline documental" },
@@ -35,13 +34,13 @@
     { "phase": "ONI26-09", "status": "completed", "task": "seeds demo" },
     { "phase": "ONI26-10", "status": "completed", "task": "apertura mes novedades" },
     { "phase": "ONI26-11", "status": "completed", "task": "carga masiva empleados" },
-    { "phase": "ONI26-12", "status": "pending", "task": "reportes nomina" },
+    { "phase": "ONI26-12", "status": "completed", "task": "reportes nomina" },
     { "phase": "ONI26-13", "status": "pending", "task": "dashboard headcount" },
     { "phase": "ONI26-14", "status": "pending", "task": "mensajes qa release" }
   ],
   "residualRisk": [
-    "Falta parser runtime y reporte de errores tabular descargable."
+    "Falta smoke de exportacion PDF/Excel con empresa DEMO."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "3926d6268751872eda150c8bfe9d673fb67f741fcc90a236d8dac3bec0eb27ba"
+  "signature": "beaf3ade04ca0ede6902bcba59e67e3d320ab3796a35039076ce008455549993"
 }

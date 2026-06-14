@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "planCode": "ONI26",
+  "phase": "ONI26-12",
+  "purpose": "Catalogo de reportes de nomina y exportaciones auditables.",
+  "reports": [
+    {
+      "code": "PAYROLL_SUMMARY",
+      "name": "Resumen de nomina",
+      "exports": ["pdf", "xlsx", "csv"],
+      "permissions": ["reports.read", "reports.export"],
+      "filters": ["periodId", "departmentId", "costCenterId"]
+    },
+    {
+      "code": "PAYROLL_DETAIL_TABULAR",
+      "name": "Detalle tabular de nomina",
+      "exports": ["xlsx", "csv"],
+      "permissions": ["reports.export"],
+      "filters": ["periodId", "employeeId", "departmentId"]
+    },
+    {
+      "code": "BANK_PAYMENT_RECONCILIATION",
+      "name": "Conciliacion de pagos bancarios",
+      "exports": ["pdf", "xlsx"],
+      "permissions": ["bankFiles.download", "reports.export"],
+      "filters": ["periodId", "bankProfile"]
+    },
+    {
+      "code": "RDEP_PRECHECK",
+      "name": "Prevalidacion RDEP",
+      "exports": ["xlsx"],
+      "permissions": ["reports.export"],
+      "filters": ["fiscalYear"]
+    }
+  ],
+  "pdf": {
+    "requiresGeneratedAt": true,
+    "requiresCorrelationId": true,
+    "requiresTenantWatermark": true
+  },
+  "excel": {
+    "format": "tabular",
+    "oneHeaderRow": true,
+    "mergedCells": false,
+    "machineReadable": true
+  },
+  "privacy": {
+    "maskSensitiveFieldsByDefault": true,
+    "exportRequiresAudit": true
+  }
+}
