@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "plan": "HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026",
   "planCode": "LPA26",
-  "status": "qa_visual_completed",
-  "phaseCompleted": "LPA26-07",
-  "currentPhase": "LPA26-08-RELEASE-STORES",
-  "updatedAt": "2026-06-14T10:46:05.1979241-05:00",
-  "summary": "Se ejecuto QA visual, performance y confianza con smoke PWA, checks de stores, expo-doctor y revision DOM desktop/mobile sin P0 locales.",
+  "status": "release_go_live_completed_with_external_blockers",
+  "phaseCompleted": "LPA26-08",
+  "currentPhase": "LPA26-CLOSED",
+  "updatedAt": "2026-06-14T10:49:03.8635009-05:00",
+  "summary": "Se completo LPA26 con runbook go-live, release stores, rollback, monitoreo, contexto actualizado y bloqueos externos documentados.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts de acuerdo al plan HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026.",
-  "previousAuditLockHash": "10e45f960b97c53b70de4b26c38657bb115985b603067d6ae7e96f8b41572f7d",
+  "previousAuditLockHash": "219f5ee217d733fdbffaabc042c2bd30146568a15f4553049bb7b2cecbcdcfc9",
   "previousPlans": [
     {
       "plan": "HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026",
@@ -26,41 +26,43 @@
   ],
   "filesModified": [
     ".vscode/AuditLock.json",
-    "docs2/landing-pwa-app-store-2026/REPORTE_LPA26_07_QA.md"
+    "CODEX_CONTEXT.md",
+    "docs2/landing-pwa-app-store-2026/RUNBOOK_LPA26_GO_LIVE.md",
+    "docs2/landing-pwa-app-store-2026/REPORTE_LPA26_08_RELEASE.md"
   ],
   "validationChecks": [
     {
-      "gate": "LPA26-07-RULES-READ",
+      "gate": "LPA26-08-RULES-READ",
       "status": "PASS",
-      "detail": "RULES.md y prompt LPA26-07 leidos antes de QA visual."
+      "detail": "RULES.md y prompt LPA26-08 leidos antes de release go-live."
     },
     {
-      "gate": "LPA26-07-AUDITLOCK-SIGNATURE-IN",
+      "gate": "LPA26-08-AUDITLOCK-SIGNATURE-IN",
       "status": "PASS",
-      "detail": "Firma LPA26-06 validada antes de iniciar QA."
+      "detail": "Firma LPA26-07 validada antes de iniciar release."
     },
     {
-      "gate": "LPA26-07-SMOKE-PWA",
+      "gate": "LPA26-08-RUNBOOK",
       "status": "PASS",
-      "detail": "npm.cmd run smoke:pwa ejecutado correctamente."
+      "detail": "Runbook go-live, monitoreo y rollback creado."
     },
     {
-      "gate": "LPA26-07-STORE-CHECKS",
+      "gate": "LPA26-08-RELEASE-DOCS",
       "status": "PASS",
-      "detail": "npm.cmd run check:stores y npx.cmd expo-doctor ejecutados correctamente."
+      "detail": "Reporte release stores y bloqueos externos creado."
     },
     {
-      "gate": "LPA26-07-VISUAL-DOM",
+      "gate": "LPA26-08-CONTEXT",
       "status": "PASS",
-      "detail": "Landing, registro, privacidad, terminos y eliminacion de cuenta sin mojibake ni overflow horizontal."
+      "detail": "CODEX_CONTEXT.md actualizado con cierre LPA26."
     },
     {
-      "gate": "LPA26-07-NO-REAL-DATA",
+      "gate": "LPA26-08-EXTERNAL-BLOCKERS",
       "status": "PASS",
-      "detail": "No se detectaron patrones obvios de datos reales en assets, frontend, mobile o docs LPA26."
+      "detail": "Play Console, Apple Developer, EAS real, certificados, URLs y revision legal documentados como bloqueos externos."
     },
     {
-      "gate": "LPA26-07-AUDITLOCK-SIGNATURE",
+      "gate": "LPA26-08-AUDITLOCK-SIGNATURE",
       "status": "PASS",
       "detail": "Firma calculada como SHA256(previousAuditLockHash + updatedAt)."
     }
@@ -74,7 +76,7 @@
     { "phase": "LPA26-05", "status": "completed", "task": "LOPDP y privacidad operacional" },
     { "phase": "LPA26-06", "status": "completed", "task": "registro y onboarding comercial" },
     { "phase": "LPA26-07", "status": "completed", "task": "QA visual performance y confianza" },
-    { "phase": "LPA26-08", "status": "pending", "task": "release stores y go-live" }
+    { "phase": "LPA26-08", "status": "completed_with_external_blockers", "task": "release stores y go-live" }
   ],
   "residualRisk": [
     "Google Play Console, Apple Developer, App Store Connect, ascAppId y appleTeamId son dependencias externas no verificables localmente.",
@@ -91,5 +93,5 @@
     }
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "0ee12cc097ed16b13de3a4af3f0c658a311bf15d9003a01d0dbb530ae06862ec"
+  "signature": "36780a6bd6e9091bfe7a7772648e55cce87da921523ebcaaaf30ca84eca472e7"
 }

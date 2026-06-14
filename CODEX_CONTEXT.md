@@ -4,8 +4,8 @@
 |-------|-------|
 | Plan | HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026 |
 | Codigo | LPA26 |
-| Estado | abierto en fase documental |
-| Fase actual | LPA26-00 cerrada documentalmente |
+| Estado | ejecutado localmente con bloqueos externos documentados |
+| Fase actual | LPA26-08 cerrada documentalmente |
 | Alcance | mejora anti-churn de landing publica, PWA y app movil para interes comercial, readiness Google Play / Apple App Store y cumplimiento LOPDP Ecuador |
 | Referencia UX/release | `C:\proyectos web\sinkroniq-mobile` |
 | Plan doc | `docs2/PLAN_HAIKY_LANDING_PWA_APP_STORE_NOMINA_EC_2026.md` |
@@ -24,14 +24,14 @@ La base legal principal revisada es la Ley Organica de Proteccion de Datos Perso
 | Fase | Prioridad | Estado | Resumen |
 |------|-----------|--------|---------|
 | LPA26-00 | P0 | completed | Baseline documental: plan, prompts, contexto y AuditLock; no toca runtime. |
-| LPA26-01 | P0 | pending | Diagnostico anti-churn de landing, PWA, app, assets, rutas y contratos actuales. |
-| LPA26-02 | P0 | pending | Landing de conversion para interes comercial en nomina Ecuador. |
-| LPA26-03 | P0 | pending | PWA instalable, segura y sin cache de datos personales. |
-| LPA26-04 | P0 | pending | App movil lista para Google Play y Apple App Store, con bloqueos externos documentados. |
-| LPA26-05 | P0 | pending | LOPDP: privacidad, consentimientos, retiro, incidentes, procesadores y retencion. |
-| LPA26-06 | P1 | pending | Registro, activacion y onboarding comercial del OWNER. |
-| LPA26-07 | P1 | pending | QA visual, performance, accesibilidad y confianza. |
-| LPA26-08 | P0 | pending | Release stores, TestFlight/internal testing, go-live, rollback y monitoreo. |
+| LPA26-01 | P0 | completed | Diagnostico anti-churn de landing, PWA, app, assets, rutas y contratos actuales. |
+| LPA26-02 | P0 | completed | Landing de conversion para interes comercial en nomina Ecuador. |
+| LPA26-03 | P0 | completed | PWA instalable, segura y sin cache de datos personales. |
+| LPA26-04 | P0 | completed with external blockers | App movil lista para Google Play y Apple App Store, con bloqueos externos documentados. |
+| LPA26-05 | P0 | completed | LOPDP: privacidad, consentimientos, retiro, incidentes, procesadores y retencion. |
+| LPA26-06 | P1 | completed | Registro, activacion y onboarding comercial del OWNER. |
+| LPA26-07 | P1 | completed | QA visual, performance, accesibilidad y confianza. |
+| LPA26-08 | P0 | completed with external blockers | Release stores, TestFlight/internal testing, go-live, rollback y monitoreo. |
 
 ### Reglas LPA26
 
@@ -266,3 +266,34 @@ El sistema debe permitir configuración por tenant, vigencia, fuente y rol para:
 - Completar pruebas automatizadas de regresión para liquidación, RBAC, bancos y aislamiento tenant.
 - Validar PayPhone sandbox/oficial con webhook, firma, conciliación e idempotencia.
 - Ejecutar smoke visual manual de PWA con backend activo.
+
+---
+
+## LPA26 - Landing, PWA, app stores y LOPDP
+
+Plan: `HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026`.
+
+Estado: fases LPA26-00 a LPA26-08 ejecutadas localmente con commits por fase y AuditLock firmado.
+
+Entregables principales:
+
+- Landing publica actualizada para interes comercial de Nomina-Ec.
+- PWA con manifest `es-EC`, screenshots, shortcuts y smoke que valida que `/api` queda en `NetworkOnly`.
+- App movil Expo con `app.json`, `eas.json`, assets PNG de tienda, metadata y checks locales.
+- Politicas publicas de privacidad, terminos, soporte y eliminacion de cuenta.
+- Consentimiento de cookies/medicion no esencial y consentimiento LOPDP versionado en registro OWNER.
+- Documentos LOPDP de incidentes, procesadores/DPA, retencion y derechos.
+- Runbook go-live, QA visual y release stores.
+
+Comandos validados:
+
+- `npm.cmd run smoke:pwa` en `frontend-web`.
+- `npm.cmd run check:stores` en `app-movil`.
+- `npx.cmd expo-doctor` en `app-movil` con 21/21 checks passed.
+
+Bloqueos externos:
+
+- Revision legal LOPDP profesional antes de produccion.
+- Google Play Console, Apple Developer y App Store Connect.
+- EAS `projectId`, `appleTeamId`, `ascAppId`, certificados y perfiles reales.
+- URLs productivas reales para privacidad, terminos, soporte y eliminacion de cuenta.
