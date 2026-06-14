@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "plan": "HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026",
   "planCode": "LPA26",
-  "status": "baseline_documental_completed",
-  "phaseCompleted": "LPA26-00",
-  "currentPhase": "LPA26-01-DIAGNOSTICO-ANTI-CHURN",
-  "updatedAt": "2026-06-14T10:00:17.1870456-05:00",
-  "summary": "Se abrio la linea Haiky LPA26 para mejorar landing publica, PWA y app movil de Nomina-Ec sin churn, con foco comercial, readiness Google Play / Apple App Store y cumplimiento LOPDP Ecuador. La fase LPA26-00 es documental y no modifica runtime.",
+  "status": "diagnostico_anti_churn_completed",
+  "phaseCompleted": "LPA26-01",
+  "currentPhase": "LPA26-02-LANDING-CONVERSION",
+  "updatedAt": "2026-06-14T10:10:19.1226006-05:00",
+  "summary": "Se completo el diagnostico anti-churn de landing, PWA y app movil antes de tocar runtime. Se inventariaron rutas, manifest, Workbox, assets, app Expo, legales y brechas P0/P1/P2.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: generar plan Haiky para mejorar Landing page, PWA y app, revisar sinkroniq-mobile, actualizar CODEX_CONTEXT, AuditLock y prompts por fases.",
-  "previousAuditLockHash": "6db4ec7a911a4f9098867f35ed66d97b8ac1da52c43693ffeb6a206a1de6605f",
+  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts de acuerdo al plan HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026.",
+  "previousAuditLockHash": "40fa35a5723f71a5977903f933928c4f12d3e3706b47a8de3d1ba61987c2aa5c",
   "previousPlans": [
     {
       "plan": "HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026",
@@ -25,59 +25,49 @@
     }
   ],
   "filesModified": [
-    "CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "docs2/PLAN_HAIKY_LANDING_PWA_APP_STORE_NOMINA_EC_2026.md",
-    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-00-baseline.md",
-    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-01-diagnostico.md",
-    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-02-landing-conversion.md",
-    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-03-pwa-segura.md",
-    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-04-app-stores.md",
-    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-05-lopdp.md",
-    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-06-onboarding-comercial.md",
-    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-07-qa-visual.md",
-    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-08-release.md"
+    "docs2/landing-pwa-app-store-2026/REPORTE_LPA26_01_DIAGNOSTICO.md"
   ],
   "validationChecks": [
     {
-      "gate": "LPA26-RULES-READ",
+      "gate": "LPA26-01-RULES-READ",
       "status": "PASS",
-      "detail": "RULES.md leido antes de crear plan, prompts, contexto y AuditLock."
+      "detail": "RULES.md leido antes de ejecutar el diagnostico."
     },
     {
-      "gate": "LPA26-AUDITLOCK-READ",
+      "gate": "LPA26-01-AUDITLOCK-SIGNATURE-IN",
       "status": "PASS",
-      "detail": ".vscode/AuditLock.json leido y hasheado antes de actualizar el candado."
+      "detail": "Firma LPA26-00 validada como SHA256(previousAuditLockHash + updatedAt)."
     },
     {
-      "gate": "LPA26-REFERENCE-SINKRONIQ-MOBILE",
+      "gate": "LPA26-01-INVENTARIO-WEB",
       "status": "PASS",
-      "detail": "Se revisaron guia Android/iOS, reportes LOPDP, smoke PWA, gate de assets y metadata de assets en sinkroniq-mobile como referencia de patrones, no como fuente de copia funcional."
+      "detail": "Rutas publicas, privadas, PWA, Workbox, assets y almacenamiento local inventariados."
     },
     {
-      "gate": "LPA26-LEGAL-LOPDP-OFFICIAL",
+      "gate": "LPA26-01-INVENTARIO-MOBILE",
       "status": "PASS",
-      "detail": "Se verifico fuente oficial MINTEL para Ley Organica de Proteccion de Datos Personales, Registro Oficial Quinto Suplemento No. 459 del 2021-05-26."
+      "detail": "App Expo, pantallas, servicios y ausencia de app.json/app.config.js inventariados."
     },
     {
-      "gate": "LPA26-NO-RUNTIME-CHANGES",
+      "gate": "LPA26-01-NO-RUNTIME-CHANGES",
       "status": "PASS",
-      "detail": "LPA26-00 solo modifica documentacion, prompts, contexto y AuditLock."
+      "detail": "La fase LPA26-01 solo crea reporte documental y actualiza AuditLock."
     },
     {
-      "gate": "LPA26-PROMPTS-CREATED",
+      "gate": "LPA26-01-REPORT-CREATED",
       "status": "PASS",
-      "detail": "Prompts LPA26-00..08 creados bajo RULES.md y orden estricto."
+      "detail": "Reporte P0/P1/P2 y archivos runtime permitidos creado."
     },
     {
-      "gate": "LPA26-AUDITLOCK-SIGNATURE",
+      "gate": "LPA26-01-AUDITLOCK-SIGNATURE",
       "status": "PASS",
       "detail": "Firma calculada como SHA256(previousAuditLockHash + updatedAt)."
     }
   ],
   "fases": [
     { "phase": "LPA26-00", "status": "completed", "task": "baseline documental" },
-    { "phase": "LPA26-01", "status": "pending", "task": "diagnostico anti-churn" },
+    { "phase": "LPA26-01", "status": "completed", "task": "diagnostico anti-churn" },
     { "phase": "LPA26-02", "status": "pending", "task": "landing de conversion" },
     { "phase": "LPA26-03", "status": "pending", "task": "PWA instalable y segura" },
     { "phase": "LPA26-04", "status": "pending", "task": "app movil lista para tiendas" },
@@ -88,7 +78,7 @@
   ],
   "residualRisk": [
     "Google Play Console, Apple Developer, App Store Connect, ascAppId y appleTeamId son dependencias externas no verificables localmente.",
-    "La implementacion runtime de LPA26 queda pendiente hasta aprobacion explicita de LPA26-01.",
+    "La implementacion runtime inicia en LPA26-02 y debe limitarse a los archivos permitidos por el diagnostico.",
     "La validacion legal LOPDP requiere revision profesional antes de afirmar cumplimiento total en marketing.",
     "No se debe publicar screenshots con datos reales de empleados, cuentas bancarias, geolocalizacion o documentos laborales.",
     "IESS y otros gates productivos de PNE26 siguen vigentes y no quedan resueltos por LPA26."
@@ -101,5 +91,5 @@
     }
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "86b610cef0107bf31addba0225cf0b6c74e42e31d29484e1544e792b79ae8b62"
+  "signature": "3a6e45a88c2cb2a26a11a7431e7730548d2c5eaa7a81391f1d630566420b9714"
 }
