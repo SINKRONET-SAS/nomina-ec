@@ -5,11 +5,23 @@
 const { XMLBuilder } = require('fast-xml-parser');
 const { s3Upload } = require('../config/s3');
 const db = require('../config/database');
+const {
+  assertLegalParametersReadyForProduction,
+  getLegalParametersForTenant,
+} = require('./legalParameterService');
 
 /**
  * Genera el XML del SAE para declaración al IESS
  */
 async function generarXML_SAE(tenantId, anio, mes) {
+  const legalParameters = await getLegalParametersForTenant(tenantId, anio);
+  assertLegalParametersReadyForProduction(legalParameters, {
+    year: anio,
+    tenantId,
+    operation: 'generacion_sae_iess',
+  });
+  const employerIessRate = Number(legalParameters.payroll.employerIessRate);
+
   // 1. Obtener datos del tenant
   const tenantResult = await db.query('SELECT * FROM tenants WHERE id = $1', [tenantId]);
   if (tenantResult.rows.length === 0) throw new Error('Tenant no encontrado');
@@ -39,9 +51,14 @@ async function generarXML_SAE(tenantId, anio, mes) {
       fechaIngreso: new Date(n.fecha_ingreso).toISOString().split('T')[0],
       sueldo: parseFloat(n.total_ingresos).toFixed(2),
       aportePersonal: parseFloat(n.aporte_iess_personal).toFixed(2),
-      aportePatronal: (parseFloat(n.total_ingresos) * 0.1115).toFixed(2),
+      aportePatronal: (parseFloat(n.total_ingresos) * employerIessRate).toFixed(2),
     }
   }));
+
+  const totalAportePatronal = nominasResult.rows.reduce(
+    (sum, n) => sum + (parseFloat(n.total_ingresos) * employerIessRate),
+    0,
+  );
   
   const sae = {
     'sae:planilla': {
@@ -58,8 +75,8 @@ async function generarXML_SAE(tenantId, anio, mes) {
         totalAportantes: nominasResult.rows.length,
         totalSalarios: nominasResult.rows.reduce((sum, n) => sum + parseFloat(n.total_ingresos), 0).toFixed(2),
         totalAportePersonal: nominasResult.rows.reduce((sum, n) => sum + parseFloat(n.aporte_iess_personal), 0).toFixed(2),
-        totalAportePatronal: nominasResult.rows.reduce((sum, n) => sum + (parseFloat(n.total_ingresos) * 0.1115), 0).toFixed(2),
-        totalAporte: nominasResult.rows.reduce((sum, n) => sum + parseFloat(n.aporte_iess_personal) + (parseFloat(n.total_ingresos) * 0.1115), 0).toFixed(2),
+        totalAportePatronal: totalAportePatronal.toFixed(2),
+        totalAporte: nominasResult.rows.reduce((sum, n) => sum + parseFloat(n.aporte_iess_personal), totalAportePatronal).toFixed(2),
       }
     }
   };

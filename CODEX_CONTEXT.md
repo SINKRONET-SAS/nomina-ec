@@ -50,6 +50,66 @@ La ejecucion HNBE26-01..09 quedo documentada en `docs2/homologacion-nomina-base4
 
 ---
 
+## Open Haiky Plan - HAIKY-PRODUCTIZACION-NOMINA-EC-DOCUMENTO-NOMINA-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-PRODUCTIZACION-NOMINA-EC-DOCUMENTO-NOMINA-2026 |
+| Codigo | PNE26 |
+| Estado | PNE26-01..16 ejecutadas en pasada local con bloqueos externos documentados |
+| Fase actual | PNE26-16 cerrada localmente; bloqueos externos pendientes |
+| Alcance | convertir `nuevo_nomina` en sistema real de nomina y RRHH Ecuador, con gobierno tecnico, legal, operativo y comercial |
+| Fuente de requerimiento | `C:\proyectos web\Docs\documento_nomina.md` |
+| Plan doc | `docs/PLAN_HAIKY_PRODUCTIZACION_NOMINA_EC_DOCUMENTO_NOMINA.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Prompts | `.github/prompts/PRODUCTIZACION-NOMINA-EC-2026-{00..16}-*.md` |
+| RULES | `RULES.md` |
+
+### Resumen PNE26
+
+PNE26 toma el diagnostico de `documento_nomina.md` y lo convierte en un plan ejecutable sobre el stack real de Nomina-Ec: Express, PostgreSQL, Prisma, React, Expo y Render. El plan emula los prompts funcionales del documento fuente, pero no adopta Base44 como arquitectura ni como fuente normativa.
+
+El objetivo es pasar de boceto o prototipo a sistema productizable mediante fases con aprobacion explicita, `AuditLock`, reportes por fase, pruebas, rollback documentado, parametros legales versionados, auditoria, RLS, LOPDP, PayPhone, PWA, app movil y validacion legal/contable antes de produccion.
+
+### Fases PNE26
+
+| Fase | Estado | Resumen |
+|------|--------|---------|
+| PNE26-00 | completed | Baseline documental, plan, prompts y AuditLock sin tocar runtime. |
+| PNE26-01 | completed_local | Contrato tecnico de datos, ORM, migraciones, errores y multi-tenant. |
+| PNE26-02 | completed_local_with_professional_block | Parametros legales Ecuador versionados y matriz de cumplimiento. |
+| PNE26-03 | completed_local | Identidad visual, layout operativo y navegacion por rol. |
+| PNE26-04 | completed_local | Autenticacion, RBAC, tenant activo y perfiles laborales. |
+| PNE26-05 | completed_local | Empresas, onboarding OWNER y configuracion inicial. |
+| PNE26-06 | completed_local | Empleados, contratos, datos bancarios cifrados y ficha laboral. |
+| PNE26-07 | completed_local | Marcaciones, geocerca, novedades y aprobaciones. |
+| PNE26-08 | completed_local_with_professional_block | Motor de nomina ecuatoriana, cierre, reapertura y casos dorados. |
+| PNE26-09 | completed_local_with_legal_review_required | Liquidaciones, finiquito, equipos y desvinculacion. |
+| PNE26-10 | completed_local_with_external_storage_block | Documentos legales, roles PDF, contratos, ATS y custodia. |
+| PNE26-11 | completed_local | Archivos bancarios configurables y conciliacion de totales. |
+| PNE26-12 | completed_local | Reportes operativos, regulatorios y exportables. |
+| PNE26-13 | completed_local_with_render_block | Auditoria visible, LOPDP, cifrado, RLS y trazabilidad. |
+| PNE26-14 | completed_local | Automatizaciones, cron jobs, Redis y notificaciones. |
+| PNE26-15 | completed_local_with_payphone_block | Planes, suscripciones, PayPhone y capacidades comerciales. |
+| PNE26-16 | completed_local_with_external_blocks | QA end-to-end, CI/CD, Render y evidencia productizable. |
+
+### Reglas PNE26
+
+- No iniciar una fase funcional sin aprobacion explicita del prompt correspondiente.
+- No adelantar tareas de fases posteriores.
+- No modificar API publica sin plan de compatibilidad.
+- No aplicar migraciones sin rollback documentado.
+- No introducir parametros legales sin vigencia, fuente, fecha de carga y responsable.
+- No calcular nomina con constantes hardcodeadas en frontend, mobile o servicios aislados.
+- No generar archivo bancario con cuenta placeholder, cuenta sin validar o datos sin cifrado.
+- No cerrar nomina sin idempotencia, auditoria y evidencia de calculo.
+- No eliminar marcaciones ni historicos laborales sensibles.
+- No guardar documentos, geolocalizacion, fotos o cuentas bancarias sin politica LOPDP.
+- No aceptar fallos silenciosos; todo error debe exponer `code`, `statusCode`, `correlationId` y contexto seguro.
+- Commits esperados: `phase: PNE26-XX task: ...`.
+
+---
+
 # Contexto operativo Codex - Plan HAIKY
 
 Proyecto: Nómina-Ec, SaaS de nómina Ecuador.  

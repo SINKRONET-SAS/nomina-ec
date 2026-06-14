@@ -66,11 +66,15 @@ Estas reglas estan hardcodeadas en el sistema y NO PUEDEN ser desactivadas:
 
 ## Aportes IESS 2026
 
-| Concepto | Porcentaje |
-|----------|------------|
-| Aporte Personal | 9.45% |
-| Aporte Patronal | 11.15% |
-| Total | 20.60% |
+Estado: referencial tecnico, no aprobado para produccion hasta validacion oficial IESS y aprobacion contable.
+
+| Concepto | Porcentaje referencial | Estado |
+|----------|-----------------------:|--------|
+| Aporte Personal | 9.45% | pendiente_validacion_oficial |
+| Aporte Patronal | 11.15% | pendiente_validacion_oficial |
+| Total | 20.60% | no productivo |
+
+La validacion legal/contable del 2026-06-14 reviso el portal IESS, la pagina de normativa y la consulta publica de resoluciones actualizada al 9/6/2026. No se localizo evidencia directa suficiente para liberar estas tasas como oficiales 2026. El sistema debe bloquear calculos productivos si los parametros no estan en `validado_oficial`.
 
 ## Valores legales 2026
 

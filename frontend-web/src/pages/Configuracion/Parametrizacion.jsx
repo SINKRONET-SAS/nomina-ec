@@ -15,11 +15,11 @@ const quickForms = [
     payload: {
       period_year: 2026,
       parameter_key: 'sbu',
-      value: { amount: 482 },
+      value: { amount: null, pendingInput: true },
       unit: 'USD',
       validation_status: 'pendiente_validacion_oficial',
       source_name: 'Pendiente de aprobación legal y contable',
-      notes: 'Base inicial editable antes de usarla en cálculos productivos.',
+      notes: 'Plantilla inicial sin monto prellenado. El responsable debe ingresar valor, fuente y evidencia antes de usarla en cálculos productivos.',
     },
   },
   {

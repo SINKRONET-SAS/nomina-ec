@@ -1,7 +1,7 @@
 # Plan HAIKY-PRODUCTIZACION-NOMINA-EC-DOCUMENTO-NOMINA-2026
 
 Codigo: PNE26
-Estado: baseline documental desplegado; fases funcionales pendientes de aprobacion explicita.
+Estado: PNE26-01..16 ejecutadas en pasada local con bloqueos externos documentados.
 Fecha: 2026-06-14
 Repositorio objetivo: nuevo_nomina
 Fuente de requerimiento: C:\proyectos web\Docs\documento_nomina.md
@@ -51,22 +51,22 @@ La meta no es copiar una arquitectura Base44 ni introducir catalogos paralelos. 
 | Fase | Estado inicial | Objetivo |
 |------|----------------|----------|
 | PNE26-00 | completed | Baseline documental, plan, prompts y AuditLock sin tocar runtime. |
-| PNE26-01 | pending_approval | Contrato tecnico de datos, ORM, migraciones, errores y multi-tenant. |
-| PNE26-02 | pending_approval | Parametros legales Ecuador versionados y matriz de cumplimiento. |
-| PNE26-03 | pending_approval | Identidad visual, layout operativo y navegacion por rol. |
-| PNE26-04 | pending_approval | Autenticacion, RBAC, tenant activo y perfiles laborales. |
-| PNE26-05 | pending_approval | Empresas, onboarding OWNER y configuracion inicial. |
-| PNE26-06 | pending_approval | Empleados, contratos, datos bancarios cifrados y ficha laboral. |
-| PNE26-07 | pending_approval | Marcaciones, geocerca, novedades y aprobaciones. |
-| PNE26-08 | pending_approval | Motor de nomina ecuatoriana, cierre, reapertura y casos dorados. |
-| PNE26-09 | pending_approval | Liquidaciones, finiquito, equipos y desvinculacion. |
-| PNE26-10 | pending_approval | Documentos legales, roles PDF, contratos, ATS y custodia. |
-| PNE26-11 | pending_approval | Archivos bancarios configurables y conciliacion de totales. |
-| PNE26-12 | pending_approval | Reportes operativos, regulatorios y exportables. |
-| PNE26-13 | pending_approval | Auditoria visible, LOPDP, cifrado, RLS y trazabilidad. |
-| PNE26-14 | pending_approval | Automatizaciones, cron jobs, Redis y notificaciones. |
-| PNE26-15 | pending_approval | Planes, suscripciones, PayPhone y capacidades comerciales. |
-| PNE26-16 | pending_approval | QA end-to-end, CI/CD, Render y evidencia productizable. |
+| PNE26-01 | completed_local | Contrato tecnico de datos, ORM, migraciones, errores y multi-tenant. |
+| PNE26-02 | completed_local_with_professional_block | Parametros legales Ecuador versionados y matriz de cumplimiento. |
+| PNE26-03 | completed_local | Identidad visual, layout operativo y navegacion por rol. |
+| PNE26-04 | completed_local | Autenticacion, RBAC, tenant activo y perfiles laborales. |
+| PNE26-05 | completed_local | Empresas, onboarding OWNER y configuracion inicial. |
+| PNE26-06 | completed_local | Empleados, contratos, datos bancarios cifrados y ficha laboral. |
+| PNE26-07 | completed_local | Marcaciones, geocerca, novedades y aprobaciones. |
+| PNE26-08 | completed_local_with_professional_block | Motor de nomina ecuatoriana, cierre, reapertura y casos dorados. |
+| PNE26-09 | completed_local_with_legal_review_required | Liquidaciones, finiquito, equipos y desvinculacion. |
+| PNE26-10 | completed_local_with_external_storage_block | Documentos legales, roles PDF, contratos, ATS y custodia. |
+| PNE26-11 | completed_local | Archivos bancarios configurables y conciliacion de totales. |
+| PNE26-12 | completed_local | Reportes operativos, regulatorios y exportables. |
+| PNE26-13 | completed_local_with_render_block | Auditoria visible, LOPDP, cifrado, RLS y trazabilidad. |
+| PNE26-14 | completed_local | Automatizaciones, cron jobs, Redis y notificaciones. |
+| PNE26-15 | completed_local_with_payphone_block | Planes, suscripciones, PayPhone y capacidades comerciales. |
+| PNE26-16 | completed_local_with_external_blocks | QA end-to-end, CI/CD, Render y evidencia productizable. |
 
 ## Entregables por fase
 

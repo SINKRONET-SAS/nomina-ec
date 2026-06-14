@@ -1,6 +1,7 @@
 // ============================================================
 // PLAN HAIKY - Utilidades Completas
 // ============================================================
+const { getLegalParameters } = require('../config/legal-ecuador');
 
 function validarCedula(cedula) {
   if (!cedula || cedula.length !== 10) return false;
@@ -114,9 +115,10 @@ function calcularIREcuador(baseMensual, anio) {
   return Math.round((irAnual / 12) * 100) / 100;
 }
 
-function calcularAporteIESS(sueldoBruto) {
-  const aportePersonal = sueldoBruto * 0.0945;
-  const aportePatronal = sueldoBruto * 0.1115;
+function calcularAporteIESS(sueldoBruto, legalParameters = getLegalParameters(new Date().getFullYear())) {
+  const payroll = legalParameters.payroll || {};
+  const aportePersonal = sueldoBruto * Number(payroll.personalIessRate);
+  const aportePatronal = sueldoBruto * Number(payroll.employerIessRate);
   
   return {
     aportePersonal: Math.round(aportePersonal * 100) / 100,

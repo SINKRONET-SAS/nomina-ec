@@ -11,7 +11,7 @@ Los parametros 2026 permanecen con estado `pendiente_validacion_oficial` hasta q
 - Ministerio del Trabajo: portal institucional y enlaces a Salarios y Acuerdos Ministeriales.
 - Ministerio del Trabajo: noticia oficial del 15 de diciembre sobre SBU 2026 en USD 482.
 - Servicio de Rentas Internas: pagina oficial de Impuesto a la Renta y PDF oficial de tablas enlazado desde esa pagina.
-- Instituto Ecuatoriano de Seguridad Social: portal institucional para validacion posterior de aportes.
+- Instituto Ecuatoriano de Seguridad Social: portal institucional, pagina de normativa y consulta publica de resoluciones revisadas el 2026-06-14 para validacion de aportes.
 
 URLs base:
 
@@ -21,14 +21,16 @@ URLs base:
 - `https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/58a7f4f6-ab51-48b6-b9ff-a8e97e1a28ef/Tablas%20de%20c%C3%A1lculo%20de%20Impuesto%20a%20la%20Renta.pdf`
 - `https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/ac3a6ab4-a60b-4892-8ecf-0f5b939169ae/Tablas%20de%20C%C3%A1lculo%20de%20Impuesto%20a%20la%20Renta%20Herencias%20y%20Legados.pdf`
 - `https://www.iess.gob.ec/`
+- `https://www.iess.gob.ec/normativa/`
+- `https://app.iess.gob.ec/iess-gestion-resolucion-publico-web/`
 
 ## Parametros 2026
 
 | Parametro | Valor tecnico actual | Fuente requerida | Estado | Responsable |
 | --- | ---: | --- | --- | --- |
 | Salario basico unificado | 482.00 | Noticia oficial Ministerio del Trabajo, SBU 2026 USD 482 | validado_fuente_mdt | Contador / abogado laboral |
-| Aporte IESS personal | 0.0945 | Resolucion o ficha oficial IESS vigente 2026 | pendiente_validacion_oficial | Contador |
-| Aporte IESS patronal | 0.1115 | Resolucion o ficha oficial IESS vigente 2026 | pendiente_validacion_oficial | Contador |
+| Aporte IESS personal | 0.0945 | Resolucion, ficha oficial IESS o norma vigente 2026; portal y consulta de resoluciones revisados sin evidencia directa suficiente | pendiente_validacion_oficial | Contador |
+| Aporte IESS patronal | 0.1115 | Resolucion, ficha oficial IESS o norma vigente 2026; portal y consulta de resoluciones revisados sin evidencia directa suficiente | pendiente_validacion_oficial | Contador |
 | Jornada maxima semanal | 40 | Codigo del Trabajo y normativa laboral vigente | pendiente_validacion_oficial | Abogado laboral |
 | Decimo cuarto Costa/Galapagos | Mes 3 | Codigo del Trabajo y calendario regional vigente | pendiente_validacion_oficial | Abogado laboral |
 | Decimo cuarto Sierra/Amazonia | Mes 8 | Codigo del Trabajo y calendario regional vigente | pendiente_validacion_oficial | Abogado laboral |
@@ -76,3 +78,9 @@ URLs base:
 ## Control automatizado
 
 El servicio `legalParameterService` define `validado_oficial` como unico estado aceptado para calculos productivos. Si los parametros mantienen `pendiente_validacion_oficial`, el motor de nomina debe lanzar `LEGAL_PARAMETERS_NOT_VALIDATED` en produccion o cuando `REQUIRE_VALIDATED_LEGAL_PARAMETERS=true`.
+
+## Validacion IESS 2026
+
+El 2026-06-14 se realizo una revision legal/contable IESS sobre el portal oficial, la pagina de normativa y la consulta publica de resoluciones. La consulta publica indica fecha de actualizacion 9/6/2026 y permite busqueda por numero, status, materia, palabra clave y fecha. No se localizo en la vista disponible un documento directo que confirme como vigentes las tasas 9.45% personal y 11.15% patronal para trabajadores en relacion de dependencia del sector privado.
+
+Decision: los valores permanecen como referenciales tecnicos y no pueden ser promovidos a `validado_oficial` sin evidencia oficial especifica y aprobacion del contador responsable.
