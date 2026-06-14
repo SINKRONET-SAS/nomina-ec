@@ -2,25 +2,25 @@
   "schemaVersion": 1,
   "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
   "planCode": "ONI26",
-  "status": "attendance_policy_completed",
-  "phaseCompleted": "ONI26-08",
-  "currentPhase": "ONI26-09-SEEDS-DEMO",
-  "updatedAt": "2026-06-14T12:35:00.0000000-05:00",
-  "summary": "Se definio politica de asistencia manual y marcacion APP con aprobaciones, novedades, LOPDP, auditoria y errores visibles.",
+  "status": "demo_seed_manifest_completed",
+  "phaseCompleted": "ONI26-09",
+  "currentPhase": "ONI26-10-APERTURA-MES-NOVEDADES",
+  "updatedAt": "2026-06-14T12:45:00.0000000-05:00",
+  "summary": "Se creo seed DEMO reproducible con datos ficticios, estructura organizativa, usuarios, bancos y fuentes legales SRI referenciadas.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts ONI26.",
-  "previousAuditLockHash": "90ab19be9515457f0a654bc2a1ce792b66fb883f5e007afe206e84f04e3e4917",
+  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts ONI26 y referencia SRI para RDEP.",
+  "previousAuditLockHash": "005bd18c4583a511082e935ed1855a5a321b5bc8f037c690beaa077ddcc914b2",
   "filesModified": [
     ".vscode/AuditLock.json",
-    "backend/src/config/attendance-policy-defaults.json",
-    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_08_ASISTENCIA.md",
-    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_08_ASISTENCIA.md"
+    "backend/src/config/demo-company-seed.json",
+    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_09_SEEDS_DEMO.md",
+    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_09_SEEDS_DEMO.md"
   ],
   "validationChecks": [
-    { "gate": "ONI26-08-RULES-PROMPT", "status": "PASS", "detail": "RULES.md y prompt ONI26-08 leidos." },
-    { "gate": "ONI26-08-PERMISSION-FAILURES", "status": "PASS", "detail": "Fallos de permisos, GPS y aprobacion deben auditarse." },
-    { "gate": "ONI26-08-LOPDP", "status": "PASS", "detail": "Retencion y finalidad de ubicacion/foto documentadas." },
-    { "gate": "ONI26-08-PAYROLL-LINK", "status": "PASS", "detail": "Novedades conectadas al periodo de nomina." }
+    { "gate": "ONI26-09-RULES-PROMPT", "status": "PASS", "detail": "RULES.md y prompt ONI26-09 leidos." },
+    { "gate": "ONI26-09-NO-REAL-DATA", "status": "PASS", "detail": "Seed usa datos ficticios y dominios locales." },
+    { "gate": "ONI26-09-SRI-SOURCE", "status": "PASS", "detail": "Pagina oficial SRI RDEP y PDF de tablas IR referenciados." },
+    { "gate": "ONI26-09-IDEMPOTENCY", "status": "PASS", "detail": "seedKey y rollback DEMO definidos." }
   ],
   "fases": [
     { "phase": "ONI26-00", "status": "completed", "task": "baseline documental" },
@@ -32,7 +32,7 @@
     { "phase": "ONI26-06", "status": "completed", "task": "OWNER bancos usuarios accesos" },
     { "phase": "ONI26-07", "status": "completed", "task": "API integracion" },
     { "phase": "ONI26-08", "status": "completed", "task": "asistencia manual app" },
-    { "phase": "ONI26-09", "status": "pending", "task": "seeds demo" },
+    { "phase": "ONI26-09", "status": "completed", "task": "seeds demo" },
     { "phase": "ONI26-10", "status": "pending", "task": "apertura mes novedades" },
     { "phase": "ONI26-11", "status": "pending", "task": "carga masiva empleados" },
     { "phase": "ONI26-12", "status": "pending", "task": "reportes nomina" },
@@ -40,8 +40,8 @@
     { "phase": "ONI26-14", "status": "pending", "task": "mensajes qa release" }
   ],
   "residualRisk": [
-    "La politica debe implementarse y probarse en app movil con datos DEMO antes de produccion."
+    "Falta runner idempotente contra DB real y smoke automatizado de rollback DEMO."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "22cdccba6f94e2c90f9291d2d1ebac5c85fe3f3b5b39d8370a7647dfc8b6c2b5"
+  "signature": "23932141047bef9405371558d7de1d5b581d06c2e9a0e50ea5afa05dad3fe0be"
 }

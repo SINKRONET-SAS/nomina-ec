@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "planCode": "ONI26",
+  "phase": "ONI26-09",
+  "purpose": "Seed reproducible para empresa DEMO sin datos reales.",
+  "officialReferences": [
+    {
+      "name": "SRI Formularios e instructivos - RDEP",
+      "url": "https://www.sri.gob.ec/formularios-e-instructivos1",
+      "observedOn": "2026-06-14",
+      "notes": "La pagina oficial lista RDEP, programa periodo fiscal 2026, ficha tecnica, catalogo, ejemplos y esquema RDEP."
+    },
+    {
+      "name": "Tablas de calculo de Impuesto a la Renta",
+      "originalPath": "C:/Users/proam/Downloads/Tablas de calculo de Impuesto a la Renta (2).pdf",
+      "sha256": "726b44d1f38e67524d228202c1ba0052efab44917657f534d8cc47ad87c91765",
+      "status": "referenced_not_copied"
+    }
+  ],
+  "tenant": {
+    "code": "DEMO_NOMINA_EC",
+    "legalName": "Empresa Demo Nomina Ec S.A.",
+    "ruc": "1790012345001",
+    "environment": "demo",
+    "containsRealPersonalData": false
+  },
+  "organization": {
+    "departments": [
+      { "code": "ADM", "name": "Administracion" },
+      { "code": "OPS", "name": "Operaciones" }
+    ],
+    "costCenters": [
+      { "code": "CC-ADM", "name": "Centro Administrativo" },
+      { "code": "CC-OPS", "name": "Centro Operativo" }
+    ]
+  },
+  "users": [
+    {
+      "email": "owner.demo@nomina-ec.local",
+      "role": "OWNER_ADMIN",
+      "passwordPolicy": "generated_by_environment_secret"
+    },
+    {
+      "email": "operador.demo@nomina-ec.local",
+      "role": "NOMINA_OPERADOR",
+      "passwordPolicy": "generated_by_environment_secret"
+    }
+  ],
+  "employees": [
+    {
+      "externalId": "DEMO-EMP-001",
+      "identification": "9999999999",
+      "firstName": "Demo",
+      "lastName": "Uno",
+      "department": "ADM",
+      "salary": 482.0,
+      "bank": "PICHINCHA"
+    },
+    {
+      "externalId": "DEMO-EMP-002",
+      "identification": "9999999998",
+      "firstName": "Demo",
+      "lastName": "Dos",
+      "department": "OPS",
+      "salary": 650.0,
+      "bank": "GUAYAQUIL"
+    }
+  ],
+  "idempotency": {
+    "seedKey": "ONI26-DEMO-2026-01",
+    "rollbackStrategy": "delete_by_seed_key_if_environment_is_demo"
+  }
+}
