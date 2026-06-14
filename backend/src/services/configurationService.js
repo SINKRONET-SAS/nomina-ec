@@ -53,6 +53,7 @@ const RESOURCE_CONFIG = {
   bankProfiles: {
     table: 'perfiles_bancarios',
     tenantScoped: false,
+    supportsCreatedBy: false,
     columns: ['banco_codigo', 'banco_nombre', 'delimiter', 'encoding', 'date_format', 'include_header', 'include_trailer', 'field_map', 'activo'],
     orderBy: 'banco_nombre',
   },
@@ -143,7 +144,9 @@ async function createResource(resource, payload, user, context = {}) {
   const config = getResourceConfig(resource);
   const tenantId = resolveTenantId(user, payload);
   const values = normalizePayload(config, payload, user);
-  values.created_by = user.id;
+  if (config.supportsCreatedBy !== false) {
+    values.created_by = user.id;
+  }
 
   if (config.table !== 'configuration_catalogs' || values.scope !== 'global') {
     values.tenant_id = tenantId;

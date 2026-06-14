@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  Building2,
   CheckCircle2,
   Circle,
+  CreditCard,
   MapPin,
   Network,
   Plus,
@@ -10,12 +12,61 @@ import {
   Settings2,
   ShieldCheck,
   TimerReset,
+  UserCog,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { completeOnboardingStep, createConfigurationResource, fetchConfigurationSummary } from '../../services/configurationApi';
 import { extractApiError } from '../../services/publicApi';
 
 const formDefinitions = [
+  {
+    key: 'empresa',
+    title: 'Datos de empresa',
+    description: 'Registra la informacion base del empleador para roles, contratos, anexos y archivos oficiales.',
+    icon: Building2,
+    resource: 'catalogs',
+    stepCode: 'empresa',
+    catalogType: 'empresa_operativa',
+    fields: [
+      { name: 'ruc', label: 'RUC', placeholder: '1790012345001', required: true },
+      { name: 'razon_social', label: 'Razon social', placeholder: 'EMPRESA S.A.', required: true },
+      { name: 'nombre_comercial', label: 'Nombre comercial' },
+      { name: 'representante_legal', label: 'Representante legal' },
+      { name: 'email', label: 'Correo administrativo', type: 'email' },
+      { name: 'telefono', label: 'Telefono' },
+      { name: 'ciudad', label: 'Ciudad' },
+      { name: 'direccion', label: 'Direccion matriz', type: 'textarea', wide: true },
+    ],
+    initial: {
+      ruc: '',
+      razon_social: '',
+      nombre_comercial: '',
+      representante_legal: '',
+      email: '',
+      telefono: '',
+      ciudad: '',
+      direccion: '',
+    },
+    buildPayload: (values) => ({
+      catalog_type: 'empresa_operativa',
+      code: values.ruc.trim(),
+      name: values.razon_social.trim(),
+      description: values.nombre_comercial.trim(),
+      status: 'activo',
+      payload: {
+        ruc: values.ruc.trim(),
+        razonSocial: values.razon_social.trim(),
+        nombreComercial: values.nombre_comercial.trim(),
+        representanteLegal: values.representante_legal.trim(),
+        email: values.email.trim(),
+        telefono: values.telefono.trim(),
+        ciudad: values.ciudad.trim(),
+        direccion: values.direccion.trim(),
+      },
+    }),
+    recordLabel: (record) => record.name,
+    recordMeta: (record) => `${record.code} - ${record.payload?.ciudad || 'sin ciudad'}`,
+  },
   {
     key: 'legal',
     title: 'Parametro laboral',
@@ -207,11 +258,123 @@ const formDefinitions = [
     recordLabel: (record) => record.name,
     recordMeta: (record) => `${record.start_time}-${record.end_time} · ${record.weekly_hours} h/sem`,
   },
+  {
+    key: 'banco',
+    title: 'Banco y archivo plano',
+    description: 'Configura el banco y el formato base para generar archivos de pago de nomina.',
+    icon: CreditCard,
+    resource: 'bankProfiles',
+    stepCode: 'bancos',
+    fields: [
+      { name: 'banco_codigo', label: 'Codigo banco', placeholder: 'PICHINCHA', required: true },
+      { name: 'banco_nombre', label: 'Nombre banco', placeholder: 'Banco Pichincha', required: true },
+      { name: 'delimiter', label: 'Separador', placeholder: ';', required: true },
+      { name: 'encoding', label: 'Codificacion', type: 'select', options: ['utf8', 'latin1'] },
+      { name: 'date_format', label: 'Formato fecha', type: 'select', options: ['YYYYMMDD', 'DD/MM/YYYY', 'YYYY-MM-DD'] },
+      { name: 'include_header', label: 'Incluye cabecera', type: 'checkbox' },
+      { name: 'include_trailer', label: 'Incluye totalizador', type: 'checkbox' },
+      { name: 'account_field', label: 'Campo cuenta', placeholder: 'cuentaBancaria' },
+      { name: 'amount_field', label: 'Campo valor', placeholder: 'netoRecibir' },
+    ],
+    initial: {
+      banco_codigo: '',
+      banco_nombre: '',
+      delimiter: ';',
+      encoding: 'utf8',
+      date_format: 'YYYYMMDD',
+      include_header: true,
+      include_trailer: true,
+      account_field: 'cuentaBancaria',
+      amount_field: 'netoRecibir',
+    },
+    buildPayload: (values) => ({
+      banco_codigo: values.banco_codigo.trim().toUpperCase(),
+      banco_nombre: values.banco_nombre.trim(),
+      delimiter: values.delimiter,
+      encoding: values.encoding,
+      date_format: values.date_format,
+      include_header: Boolean(values.include_header),
+      include_trailer: Boolean(values.include_trailer),
+      field_map: {
+        cuenta: values.account_field.trim(),
+        valor: values.amount_field.trim(),
+        identificacion: 'cedula',
+        beneficiario: 'nombreCompleto',
+      },
+      activo: true,
+    }),
+    recordLabel: (record) => record.banco_nombre,
+    recordMeta: (record) => `${record.banco_codigo} - ${record.encoding || 'utf8'} - ${record.delimiter || ';'}`,
+  },
+  {
+    key: 'usuarios',
+    title: 'Usuarios y roles',
+    description: 'Define la matriz minima de usuarios y permisos para operar nomina con trazabilidad.',
+    icon: UserCog,
+    resource: 'catalogs',
+    stepCode: 'usuarios',
+    catalogType: 'usuarios_roles',
+    fields: [
+      { name: 'code', label: 'Codigo matriz', placeholder: 'MATRIZ_RRHH', required: true },
+      { name: 'name', label: 'Nombre', placeholder: 'Matriz de roles RRHH', required: true },
+      { name: 'owner_email', label: 'Owner / representante', type: 'email' },
+      { name: 'admin_email', label: 'Administrador RRHH', type: 'email' },
+      { name: 'supervisor_enabled', label: 'Usa supervisores', type: 'checkbox' },
+      { name: 'employee_access', label: 'Acceso empleado', type: 'select', options: ['marcaciones_y_roles', 'solo_marcaciones', 'sin_acceso'] },
+      { name: 'notes', label: 'Notas de control', type: 'textarea', wide: true },
+    ],
+    initial: {
+      code: 'MATRIZ_RRHH',
+      name: 'Matriz de roles RRHH',
+      owner_email: '',
+      admin_email: '',
+      supervisor_enabled: true,
+      employee_access: 'marcaciones_y_roles',
+      notes: '',
+    },
+    buildPayload: (values) => ({
+      catalog_type: 'usuarios_roles',
+      code: values.code.trim().toUpperCase(),
+      name: values.name.trim(),
+      description: values.notes.trim(),
+      status: 'activo',
+      payload: {
+        ownerEmail: values.owner_email.trim(),
+        adminRrhhEmail: values.admin_email.trim(),
+        supervisorEnabled: Boolean(values.supervisor_enabled),
+        employeeAccess: values.employee_access,
+        roles: ['owner', 'admin_rrhh', 'supervisor', 'empleado'],
+      },
+    }),
+    recordLabel: (record) => record.name,
+    recordMeta: (record) => `${record.code} - ${record.payload?.employeeAccess || 'sin detalle'}`,
+  },
 ];
 
 function countResources(summary, key) {
   return summary?.resources?.[key]?.length || 0;
 }
+
+function countCatalog(summary, catalogType) {
+  return (summary?.resources?.catalogs || []).filter((record) => record.catalog_type === catalogType).length;
+}
+
+function recordsForDefinition(summary, definition) {
+  const records = summary?.resources?.[definition.resource] || [];
+  if (!definition.catalogType) return records;
+  return records.filter((record) => record.catalog_type === definition.catalogType);
+}
+
+const stepFormMap = {
+  empresa: 'empresa',
+  legal: 'legal',
+  organizacion: 'organizacion',
+  jornadas: 'jornada',
+  zonas: 'zona',
+  novedades: 'novedad',
+  bancos: 'banco',
+  usuarios: 'usuarios',
+};
 
 function configurationLoadMessage(err) {
   return extractApiError(err, 'No pudimos cargar tu configuracion. Actualiza la pagina en unos segundos.');
@@ -326,15 +489,17 @@ function Parametrizacion() {
   const activeDefinition = formDefinitions.find((definition) => definition.key === activeForm) || formDefinitions[0];
   const activeValues = forms[activeDefinition.key];
   const completion = summary?.onboarding?.completionPercent || 0;
-  const records = summary?.resources?.[activeDefinition.resource] || [];
+  const records = recordsForDefinition(summary, activeDefinition);
 
   const metrics = useMemo(() => ([
+    ['Datos de empresa', countCatalog(summary, 'empresa_operativa')],
     ['Parametros legales', countResources(summary, 'legalParameters')],
     ['Novedades', countResources(summary, 'noveltyTypes')],
     ['Organizacion', countResources(summary, 'organizationUnits')],
     ['Zonas', countResources(summary, 'workZones')],
     ['Jornadas', countResources(summary, 'workShifts')],
     ['Bancos', countResources(summary, 'bankProfiles')],
+    ['Usuarios y roles', countCatalog(summary, 'usuarios_roles')],
   ]), [summary]);
 
   function updateField(name, value) {
@@ -350,6 +515,11 @@ function Parametrizacion() {
   function submitForm(event) {
     event.preventDefault();
     createMutation.mutate({ definition: activeDefinition, values: activeValues });
+  }
+
+  function openStepForm(stepCode) {
+    const formKey = stepFormMap[stepCode];
+    if (formKey) setActiveForm(formKey);
   }
 
   return (
@@ -477,10 +647,19 @@ function Parametrizacion() {
               {step.status === 'completado'
                 ? <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                 : <Circle className="h-5 w-5 text-slate-400" />}
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-slate-900">{step.label}</p>
                 <p className="text-xs text-slate-500">{step.status}</p>
               </div>
+              {step.status !== 'completado' && stepFormMap[step.step_code] && (
+                <button
+                  className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-teal-700 hover:border-teal-300"
+                  type="button"
+                  onClick={() => openStepForm(step.step_code)}
+                >
+                  Configurar
+                </button>
+              )}
             </div>
           ))}
         </div>
