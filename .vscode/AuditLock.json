@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
   "planCode": "ONI26",
-  "status": "baseline_documental_completed",
-  "phaseCompleted": "ONI26-00",
-  "currentPhase": "ONI26-01-DIAGNOSTICO-INTEGRAL",
-  "updatedAt": "2026-06-14T11:05:00.0000000-05:00",
-  "summary": "Se abrio la linea ONI26 para mejora integral de sitio publico, contabilidad, RDEP, SUPERADMIN, OWNER, bancos, API, asistencia, seeds, apertura mensual, cargas masivas, reportes, dashboard, mensajes y QA E2E. La fase ONI26-00 es documental y no modifica runtime.",
+  "status": "diagnostico_integral_completed",
+  "phaseCompleted": "ONI26-01",
+  "currentPhase": "ONI26-02-SITIO-PUBLICO",
+  "updatedAt": "2026-06-14T11:20:00.0000000-05:00",
+  "summary": "Se completo diagnostico integral anti-churn de sitio publico, parametrizacion, nomina, bancos, RDEP, API, asistencia, reportes, dashboard y datos DEMO sin tocar runtime.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: generar plan Haiky para mejora de landing, parametros contables, RDEP, SUPERADMIN, OWNER, bancos, usuarios/accesos, API, asistencia, seeds, apertura mensual, cargas masivas, reportes, dashboard, mensajes y pruebas end to end.",
-  "previousAuditLockHash": "5734adf7948b58f3af6928290276919869a707666e075ebe7c324b8eaa4dba3a",
+  "previousAuditLockHash": "71dfd1049f579fbe59c9ab31256a7362aaf29bd355b48574c12d46e1e51605ad",
   "previousPlans": [
     {
       "plan": "HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026",
@@ -31,55 +31,39 @@
     }
   ],
   "filesModified": [
-    "CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "docs2/PLAN_HAIKY_OPERACION_NOMINA_EC_INTEGRAL_2026.md",
-    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-00-baseline.md",
-    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-01-diagnostico.md",
-    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-02-sitio-publico.md",
-    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-03-contabilidad.md",
-    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-04-rdep-xsd-xml.md",
-    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-05-superadmin.md",
-    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-06-owner-bancos-accesos.md",
-    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-07-api-integracion.md",
-    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-08-asistencia.md",
-    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-09-seeds-demo.md",
-    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-10-apertura-mes-novedades.md",
-    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-11-carga-empleados.md",
-    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-12-reportes.md",
-    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-13-dashboard-headcount.md",
-    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-14-qa-release.md"
+    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_01_DIAGNOSTICO.md"
   ],
   "validationChecks": [
     {
-      "gate": "ONI26-00-RULES-READ",
+      "gate": "ONI26-01-RULES-READ",
       "status": "PASS",
-      "detail": "RULES.md leido antes de crear plan, prompts, contexto y AuditLock."
+      "detail": "RULES.md y prompt ONI26-01 leidos antes del diagnostico."
     },
     {
-      "gate": "ONI26-00-AUDITLOCK-READ",
+      "gate": "ONI26-01-AUDITLOCK-SIGNATURE-IN",
       "status": "PASS",
-      "detail": "AuditLock LPA26-08 leido y hasheado antes de crear el candado ONI26."
+      "detail": "AuditLock ONI26-00 validado antes de diagnosticar."
     },
     {
-      "gate": "ONI26-00-NO-RUNTIME-CHANGES",
+      "gate": "ONI26-01-INVENTARIO",
       "status": "PASS",
-      "detail": "ONI26-00 solo modifica documentacion, prompts, contexto y AuditLock."
+      "detail": "Landing, PWA, app, nomina, configuracion, reportes, bancos, asistencia, auditoria y API inventariados."
     },
     {
-      "gate": "ONI26-00-PROMPTS-CREATED",
+      "gate": "ONI26-01-NO-RUNTIME-CHANGES",
       "status": "PASS",
-      "detail": "Prompts ONI26-00..14 creados bajo orden estricto."
+      "detail": "ONI26-01 solo crea reporte documental y actualiza AuditLock."
     },
     {
-      "gate": "ONI26-00-AUDITLOCK-SIGNATURE",
+      "gate": "ONI26-01-AUDITLOCK-SIGNATURE",
       "status": "PASS",
       "detail": "Firma calculada como SHA256(previousAuditLockHash + updatedAt)."
     }
   ],
   "fases": [
     { "phase": "ONI26-00", "status": "completed", "task": "baseline documental" },
-    { "phase": "ONI26-01", "status": "pending", "task": "diagnostico integral" },
+    { "phase": "ONI26-01", "status": "completed", "task": "diagnostico integral" },
     { "phase": "ONI26-02", "status": "pending", "task": "sitio publico" },
     { "phase": "ONI26-03", "status": "pending", "task": "mapeo contable" },
     { "phase": "ONI26-04", "status": "pending", "task": "RDEP XSD XML" },
@@ -102,5 +86,5 @@
     "Los datos DEMO y smoke no deben contener informacion real de empleados o empresas."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "d607c2669c7eacdcf1b296ab9d67f6bbd2c51e907c868ab0f18a943160dd21de"
+  "signature": "b51d31eee3858c546a275ffa5278e96030132d71d6661b4e0427226add2edae5"
 }
