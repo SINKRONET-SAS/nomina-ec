@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "country": "EC",
+  "planCode": "ONI26",
+  "description": "Catalogo base para mapear conceptos de nomina a cuentas contables por tenant. No contiene cuentas reales obligatorias.",
+  "requiredDimensions": ["tenantId", "periodo", "centroCosto", "empleadoId", "conceptoNomina"],
+  "conceptMappings": [
+    { "concept": "sueldo_base", "defaultDebit": "510101", "defaultCredit": "210101", "description": "Gasto de sueldo contra remuneraciones por pagar" },
+    { "concept": "horas_extra", "defaultDebit": "510102", "defaultCredit": "210101", "description": "Horas extra contra remuneraciones por pagar" },
+    { "concept": "aporte_iess_personal", "defaultDebit": "210101", "defaultCredit": "210201", "description": "Retencion IESS personal por pagar" },
+    { "concept": "aporte_iess_patronal", "defaultDebit": "510201", "defaultCredit": "210202", "description": "Aporte patronal IESS por pagar" },
+    { "concept": "impuesto_renta", "defaultDebit": "210101", "defaultCredit": "210301", "description": "Retencion impuesto a la renta por pagar" },
+    { "concept": "decimo_tercero", "defaultDebit": "510301", "defaultCredit": "210401", "description": "Provision decimo tercero" },
+    { "concept": "decimo_cuarto", "defaultDebit": "510302", "defaultCredit": "210402", "description": "Provision decimo cuarto" },
+    { "concept": "vacaciones", "defaultDebit": "510303", "defaultCredit": "210403", "description": "Provision vacaciones" },
+    { "concept": "neto_banco", "defaultDebit": "210101", "defaultCredit": "110201", "description": "Pago neto por banco" }
+  ],
+  "rules": {
+    "tenantOverrideRequired": true,
+    "allowCostCenterOverride": true,
+    "requireBalancedEntry": true,
+    "currency": "USD",
+    "rounding": "2_decimals"
+  }
+}

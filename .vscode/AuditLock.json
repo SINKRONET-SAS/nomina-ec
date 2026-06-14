@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
   "planCode": "ONI26",
-  "status": "sitio_publico_completed",
-  "phaseCompleted": "ONI26-02",
-  "currentPhase": "ONI26-03-MAPEO-CONTABLE",
-  "updatedAt": "2026-06-14T11:35:00.0000000-05:00",
-  "summary": "Se mejoro la landing publica existente con enlaces a crear cuenta, soporte/demo, privacidad, terminos y planes, corrigiendo mojibake sin crear pantallas paralelas.",
+  "status": "mapeo_contable_contract_completed",
+  "phaseCompleted": "ONI26-03",
+  "currentPhase": "ONI26-04-RDEP-XSD-XML",
+  "updatedAt": "2026-06-14T11:45:00.0000000-05:00",
+  "summary": "Se creo contrato de mapeo contable y catalogo base para mapear conceptos de nomina a cuentas contables parametrizables por tenant.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: generar plan Haiky para mejora de landing, parametros contables, RDEP, SUPERADMIN, OWNER, bancos, usuarios/accesos, API, asistencia, seeds, apertura mensual, cargas masivas, reportes, dashboard, mensajes y pruebas end to end.",
-  "previousAuditLockHash": "4e86ca6b270b092e00d6d2c1c992139a40d9c882c8e7c87336dd8f33188678b5",
+  "previousAuditLockHash": "e9f312a29fb550ddcee73ea158e7c96aa8f4349cb54e2c8d4d4b384f97f24e11",
   "previousPlans": [
     {
       "plan": "HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026",
@@ -32,32 +32,33 @@
   ],
   "filesModified": [
     ".vscode/AuditLock.json",
-    "frontend-web/src/pages/Landing.jsx",
-    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_02_SITIO_PUBLICO.md"
+    "backend/src/config/accounting-mapping-defaults.json",
+    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_03_MAPEO_CONTABLE.md",
+    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_03_CONTABILIDAD.md"
   ],
   "validationChecks": [
     {
-      "gate": "ONI26-02-RULES-READ",
+      "gate": "ONI26-03-RULES-READ",
       "status": "PASS",
-      "detail": "RULES.md y prompt ONI26-02 leidos antes de modificar landing."
+      "detail": "RULES.md y prompt ONI26-03 leidos antes de crear contrato contable."
     },
     {
-      "gate": "ONI26-02-AUDITLOCK-SIGNATURE-IN",
+      "gate": "ONI26-03-AUDITLOCK-SIGNATURE-IN",
       "status": "PASS",
-      "detail": "AuditLock ONI26-01 validado antes de modificar sitio publico."
+      "detail": "AuditLock ONI26-02 validado antes de mapeo contable."
     },
     {
-      "gate": "ONI26-02-BUILD-WEB",
+      "gate": "ONI26-03-CONTRACT",
       "status": "PASS",
-      "detail": "npm.cmd run build ejecutado correctamente en frontend-web."
+      "detail": "Contrato contable versionado creado."
     },
     {
-      "gate": "ONI26-02-SINGLE-LANDING",
+      "gate": "ONI26-03-DEFAULTS",
       "status": "PASS",
-      "detail": "Se actualizo Landing.jsx existente sin crear landing paralela."
+      "detail": "Catalogo base de conceptos creado sin cuentas reales obligatorias."
     },
     {
-      "gate": "ONI26-02-AUDITLOCK-SIGNATURE",
+      "gate": "ONI26-03-AUDITLOCK-SIGNATURE",
       "status": "PASS",
       "detail": "Firma calculada como SHA256(previousAuditLockHash + updatedAt)."
     }
@@ -66,7 +67,7 @@
     { "phase": "ONI26-00", "status": "completed", "task": "baseline documental" },
     { "phase": "ONI26-01", "status": "completed", "task": "diagnostico integral" },
     { "phase": "ONI26-02", "status": "completed", "task": "sitio publico" },
-    { "phase": "ONI26-03", "status": "pending", "task": "mapeo contable" },
+    { "phase": "ONI26-03", "status": "completed", "task": "mapeo contable" },
     { "phase": "ONI26-04", "status": "pending", "task": "RDEP XSD XML" },
     { "phase": "ONI26-05", "status": "pending", "task": "SUPERADMIN" },
     { "phase": "ONI26-06", "status": "pending", "task": "OWNER bancos usuarios accesos" },
@@ -87,5 +88,5 @@
     "Los datos DEMO y smoke no deben contener informacion real de empleados o empresas."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "e5910e05892339296e92b0f814cdb9255e473cf9348aec114cc435e71391487b"
+  "signature": "be3ccf267129712a75eabc81a3361f7e644a4282720aedf14d9f3ff157a9334a"
 }
