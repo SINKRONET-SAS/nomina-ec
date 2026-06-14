@@ -105,6 +105,75 @@ function normalizePayload(config, payload, user) {
   return values;
 }
 
+function normalizeIncomeTaxTable(value) {
+  const brackets = Array.isArray(value?.brackets) ? value.brackets : [];
+  if (brackets.length === 0) {
+    throw new AppError('La tabla de impuesto a la renta debe incluir al menos un intervalo.', {
+      code: 'INCOME_TAX_TABLE_EMPTY',
+      statusCode: 400,
+    });
+  }
+
+  return {
+    brackets: brackets.map((bracket, index) => {
+      const from = Number(bracket.from ?? bracket.fraccion_basica);
+      const toValue = bracket.to ?? bracket.exceso_hasta;
+      const to = toValue === null || toValue === '' || typeof toValue === 'undefined' ? null : Number(toValue);
+      const baseTax = Number(bracket.baseTax ?? bracket.impuesto_fraccion_basica);
+      const rate = Number(bracket.rate ?? bracket.porcentaje);
+
+      if (!Number.isFinite(from) || from < 0) {
+        throw new AppError(`La fraccion basica del intervalo ${index + 1} no es valida.`, {
+          code: 'INCOME_TAX_FROM_INVALID',
+          statusCode: 400,
+        });
+      }
+      if (to !== null && (!Number.isFinite(to) || to <= from)) {
+        throw new AppError(`El exceso hasta del intervalo ${index + 1} debe ser mayor que la fraccion basica.`, {
+          code: 'INCOME_TAX_TO_INVALID',
+          statusCode: 400,
+        });
+      }
+      if (!Number.isFinite(baseTax) || baseTax < 0) {
+        throw new AppError(`El impuesto de fraccion basica del intervalo ${index + 1} no es valido.`, {
+          code: 'INCOME_TAX_BASE_TAX_INVALID',
+          statusCode: 400,
+        });
+      }
+      if (!Number.isFinite(rate) || rate < 0 || rate > 1) {
+        throw new AppError(`El porcentaje del intervalo ${index + 1} debe expresarse como decimal entre 0 y 1.`, {
+          code: 'INCOME_TAX_RATE_INVALID',
+          statusCode: 400,
+        });
+      }
+
+      return {
+        from,
+        to,
+        baseTax,
+        rate,
+        fraccion_basica: from,
+        exceso_hasta: to,
+        impuesto_fraccion_basica: baseTax,
+        porcentaje: rate,
+      };
+    }),
+  };
+}
+
+function normalizeLegalParameterPayload(payload) {
+  if (!['income_tax_table', 'tabla_impuesto_renta'].includes(payload.parameter_key)) {
+    return payload;
+  }
+
+  return {
+    ...payload,
+    parameter_key: 'income_tax_table',
+    value: normalizeIncomeTaxTable(payload.value),
+    unit: payload.unit || 'tabla_anual',
+  };
+}
+
 function ensureWriteAllowed(user) {
   const allowed = ['superadmin', 'owner', 'admin_rrhh'];
   if (!allowed.includes(user.rol)) {
@@ -142,8 +211,9 @@ async function listResource(resource, user) {
 async function createResource(resource, payload, user, context = {}) {
   ensureWriteAllowed(user);
   const config = getResourceConfig(resource);
-  const tenantId = resolveTenantId(user, payload);
-  const values = normalizePayload(config, payload, user);
+  const normalizedPayload = resource === 'legalParameters' ? normalizeLegalParameterPayload(payload) : payload;
+  const tenantId = resolveTenantId(user, normalizedPayload);
+  const values = normalizePayload(config, normalizedPayload, user);
   if (config.supportsCreatedBy !== false) {
     values.created_by = user.id;
   }
@@ -194,7 +264,8 @@ async function createResource(resource, payload, user, context = {}) {
 async function updateResource(resource, id, payload, user, context = {}) {
   ensureWriteAllowed(user);
   const config = getResourceConfig(resource);
-  const values = normalizePayload(config, payload, user);
+  const normalizedPayload = resource === 'legalParameters' ? normalizeLegalParameterPayload(payload) : payload;
+  const values = normalizePayload(config, normalizedPayload, user);
 
   if (Object.keys(values).length === 0) {
     throw new AppError('No hay datos de configuración para actualizar.', {

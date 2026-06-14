@@ -12,6 +12,7 @@ import {
   Settings2,
   ShieldCheck,
   TimerReset,
+  Trash2,
   UserCog,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -106,6 +107,47 @@ const formDefinitions = [
     }),
     recordLabel: (record) => `${record.parameter_key} ${record.period_year}`,
     recordMeta: (record) => `${record.value?.amount ?? '-'} ${record.unit || ''}`,
+  },
+  {
+    key: 'ir',
+    title: 'Tabla impuesto a la renta',
+    description: 'Registra la tabla anual vigente con fraccion basica, exceso hasta, impuesto y porcentaje.',
+    icon: Scale,
+    resource: 'legalParameters',
+    stepCode: 'legal',
+    customType: 'incomeTaxTable',
+    initial: {
+      period_year: new Date().getFullYear(),
+      source_name: 'SRI',
+      source_url: 'https://www.sri.gob.ec/formularios-e-instructivos1',
+      source_date: '',
+      notes: '',
+      brackets: [
+        { from: '0', to: '', baseTax: '0', rate: '0' },
+      ],
+    },
+    buildPayload: (values) => ({
+      country_code: 'EC',
+      region_code: 'NACIONAL',
+      period_year: Number(values.period_year),
+      parameter_key: 'income_tax_table',
+      value: {
+        brackets: values.brackets.map((bracket) => ({
+          from: Number(bracket.from),
+          to: bracket.to === '' ? null : Number(bracket.to),
+          baseTax: Number(bracket.baseTax),
+          rate: Number(bracket.rate),
+        })),
+      },
+      unit: 'tabla_anual',
+      validation_status: 'pendiente_validacion_oficial',
+      source_name: values.source_name.trim(),
+      source_url: values.source_url.trim(),
+      source_date: values.source_date || null,
+      notes: values.notes.trim(),
+    }),
+    recordLabel: (record) => `Tabla IR ${record.period_year}`,
+    recordMeta: (record) => `${record.value?.brackets?.length || 0} intervalos - ${record.validation_status}`,
   },
   {
     key: 'novedad',
@@ -361,13 +403,19 @@ function countCatalog(summary, catalogType) {
 
 function recordsForDefinition(summary, definition) {
   const records = summary?.resources?.[definition.resource] || [];
+  if (definition.key === 'legal') {
+    return records.filter((record) => record.parameter_key !== 'income_tax_table');
+  }
+  if (definition.key === 'ir') {
+    return records.filter((record) => record.parameter_key === 'income_tax_table');
+  }
   if (!definition.catalogType) return records;
   return records.filter((record) => record.catalog_type === definition.catalogType);
 }
 
 const stepFormMap = {
   empresa: 'empresa',
-  legal: 'legal',
+  legal: 'ir',
   organizacion: 'organizacion',
   jornadas: 'jornada',
   zonas: 'zona',
@@ -444,6 +492,148 @@ function Field({ field, value, onChange }) {
   );
 }
 
+function IncomeTaxTableFields({ values, onFieldChange, onBracketChange, onAddBracket, onRemoveBracket }) {
+  const inputClass = 'mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100';
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 md:grid-cols-2">
+        <label>
+          <span className="text-sm font-medium text-slate-700">Anio fiscal</span>
+          <input
+            className={inputClass}
+            type="number"
+            value={values.period_year}
+            onChange={(event) => onFieldChange('period_year', event.target.value)}
+            required
+          />
+        </label>
+        <label>
+          <span className="text-sm font-medium text-slate-700">Fuente oficial</span>
+          <input
+            className={inputClass}
+            value={values.source_name}
+            onChange={(event) => onFieldChange('source_name', event.target.value)}
+            placeholder="SRI"
+          />
+        </label>
+        <label>
+          <span className="text-sm font-medium text-slate-700">URL de respaldo</span>
+          <input
+            className={inputClass}
+            type="url"
+            value={values.source_url}
+            onChange={(event) => onFieldChange('source_url', event.target.value)}
+            placeholder="https://www.sri.gob.ec/..."
+          />
+        </label>
+        <label>
+          <span className="text-sm font-medium text-slate-700">Fecha de fuente</span>
+          <input
+            className={inputClass}
+            type="date"
+            value={values.source_date}
+            onChange={(event) => onFieldChange('source_date', event.target.value)}
+          />
+        </label>
+      </div>
+
+      <div className="overflow-x-auto rounded-md border border-slate-200">
+        <table className="min-w-[760px] w-full text-left text-sm">
+          <thead className="bg-slate-50 text-slate-600">
+            <tr>
+              <th className="px-3 py-2 font-semibold">Fraccion basica</th>
+              <th className="px-3 py-2 font-semibold">Exceso hasta</th>
+              <th className="px-3 py-2 font-semibold">Impuesto fraccion basica</th>
+              <th className="px-3 py-2 font-semibold">Porcentaje decimal</th>
+              <th className="w-14 px-3 py-2" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {values.brackets.map((bracket, index) => (
+              <tr key={`ir-${index}`}>
+                <td className="px-3 py-2">
+                  <input
+                    className={inputClass}
+                    type="number"
+                    step="0.01"
+                    value={bracket.from}
+                    onChange={(event) => onBracketChange(index, 'from', event.target.value)}
+                    required
+                  />
+                </td>
+                <td className="px-3 py-2">
+                  <input
+                    className={inputClass}
+                    type="number"
+                    step="0.01"
+                    value={bracket.to}
+                    onChange={(event) => onBracketChange(index, 'to', event.target.value)}
+                    placeholder="Sin limite"
+                  />
+                </td>
+                <td className="px-3 py-2">
+                  <input
+                    className={inputClass}
+                    type="number"
+                    step="0.01"
+                    value={bracket.baseTax}
+                    onChange={(event) => onBracketChange(index, 'baseTax', event.target.value)}
+                    required
+                  />
+                </td>
+                <td className="px-3 py-2">
+                  <input
+                    className={inputClass}
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="1"
+                    value={bracket.rate}
+                    onChange={(event) => onBracketChange(index, 'rate', event.target.value)}
+                    placeholder="0.05"
+                    required
+                  />
+                </td>
+                <td className="px-3 py-2">
+                  <button
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-700 disabled:opacity-40"
+                    type="button"
+                    disabled={values.brackets.length === 1}
+                    onClick={() => onRemoveBracket(index)}
+                    title="Eliminar intervalo"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <button
+        className="inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-teal-700 hover:border-teal-300"
+        type="button"
+        onClick={onAddBracket}
+      >
+        <Plus className="h-4 w-4" />
+        Agregar intervalo
+      </button>
+
+      <label className="block">
+        <span className="text-sm font-medium text-slate-700">Notas de revision</span>
+        <textarea
+          className={`${inputClass} min-h-20`}
+          value={values.notes}
+          onChange={(event) => onFieldChange('notes', event.target.value)}
+          placeholder="Resolucion, ejercicio fiscal, observaciones de validacion..."
+        />
+      </label>
+    </div>
+  );
+}
+
 function Parametrizacion() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
@@ -508,6 +698,41 @@ function Parametrizacion() {
       [activeDefinition.key]: {
         ...current[activeDefinition.key],
         [name]: value,
+      },
+    }));
+  }
+
+  function updateBracket(index, name, value) {
+    setForms((current) => ({
+      ...current,
+      [activeDefinition.key]: {
+        ...current[activeDefinition.key],
+        brackets: current[activeDefinition.key].brackets.map((bracket, bracketIndex) => (
+          bracketIndex === index ? { ...bracket, [name]: value } : bracket
+        )),
+      },
+    }));
+  }
+
+  function addBracket() {
+    setForms((current) => ({
+      ...current,
+      [activeDefinition.key]: {
+        ...current[activeDefinition.key],
+        brackets: [
+          ...current[activeDefinition.key].brackets,
+          { from: '', to: '', baseTax: '0', rate: '0' },
+        ],
+      },
+    }));
+  }
+
+  function removeBracket(index) {
+    setForms((current) => ({
+      ...current,
+      [activeDefinition.key]: {
+        ...current[activeDefinition.key],
+        brackets: current[activeDefinition.key].brackets.filter((_, bracketIndex) => bracketIndex !== index),
       },
     }));
   }
@@ -599,16 +824,28 @@ function Parametrizacion() {
               <p className="mt-1 text-sm text-slate-600">{activeDefinition.description}</p>
             </div>
 
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              {activeDefinition.fields.map((field) => (
-                <Field
-                  key={field.name}
-                  field={field}
-                  value={activeValues[field.name]}
-                  onChange={updateField}
+            {activeDefinition.customType === 'incomeTaxTable' ? (
+              <div className="mt-5">
+                <IncomeTaxTableFields
+                  values={activeValues}
+                  onFieldChange={updateField}
+                  onBracketChange={updateBracket}
+                  onAddBracket={addBracket}
+                  onRemoveBracket={removeBracket}
                 />
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                {activeDefinition.fields.map((field) => (
+                  <Field
+                    key={field.name}
+                    field={field}
+                    value={activeValues[field.name]}
+                    onChange={updateField}
+                  />
+                ))}
+              </div>
+            )}
 
             <button
               className="mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60"

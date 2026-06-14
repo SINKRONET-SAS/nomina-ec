@@ -67,8 +67,8 @@ export const operationalBaseline = [
     status: 'contract',
     statusLabel: 'Contrato listo',
     owner: 'SUPERADMIN',
-    href: '/dashboard/operacion/base',
-    action: 'Revisar gobierno',
+    href: '/dashboard/operacion/integral',
+    action: 'Configurar gobierno',
     icon: ShieldCheck,
   },
   {
@@ -78,8 +78,8 @@ export const operationalBaseline = [
     status: 'contract',
     statusLabel: 'Cerrada por seguridad',
     owner: 'SUPERADMIN',
-    href: '/dashboard/operacion/base',
-    action: 'Ver contrato',
+    href: '/dashboard/operacion/integral',
+    action: 'Configurar API',
     icon: Plug,
   },
   {
@@ -100,8 +100,8 @@ export const operationalBaseline = [
     status: 'contract',
     statusLabel: 'Seed definido',
     owner: 'SUPERADMIN',
-    href: '/dashboard/operacion/base',
-    action: 'Ver datos DEMO',
+    href: '/dashboard/operacion/integral',
+    action: 'Configurar DEMO',
     icon: Users,
   },
   {
@@ -155,8 +155,8 @@ export const operationalBaseline = [
     status: 'contract',
     statusLabel: 'Catalogo listo',
     owner: 'PLATAFORMA',
-    href: '/dashboard/operacion/base',
-    action: 'Ver criterio',
+    href: '/dashboard/operacion/integral',
+    action: 'Configurar mensajes',
     icon: MessagesSquare,
   },
   {

@@ -54,6 +54,11 @@ function LineaBaseOperativa() {
           <h2 className="mt-3 font-semibold text-slate-950">Parametrizar ahora</h2>
           <p className="mt-1 text-sm text-slate-600">Empresa, parametros, bancos, usuarios, roles, jornadas y zonas.</p>
         </Link>
+        <Link className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-300" to="/dashboard/operacion/integral">
+          <CheckCircle2 className="h-6 w-6 text-teal-700" />
+          <h2 className="mt-3 font-semibold text-slate-950">Operar el plan</h2>
+          <p className="mt-1 text-sm text-slate-600">Formularios reales para cada modulo ONI26 con registros persistentes.</p>
+        </Link>
         <Link className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-300" to="/dashboard/nomina/reportes">
           <FileText className="h-6 w-6 text-teal-700" />
           <h2 className="mt-3 font-semibold text-slate-950">Reportes oficiales</h2>

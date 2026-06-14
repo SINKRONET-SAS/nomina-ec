@@ -2,50 +2,41 @@
   "schemaVersion": 1,
   "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
   "planCode": "ONI26",
-  "status": "completed_documentary_with_runtime_backlog",
-  "phaseCompleted": "ONI26-14",
-  "currentPhase": "ONI26-CLOSED",
-  "updatedAt": "2026-06-14T13:35:00.0000000-05:00",
-  "summary": "Se cerro ONI26 con mensajes humanizados, runbook QA E2E, gates release, rollback y bloqueos externos documentados.",
+  "status": "functional_second_pass_started",
+  "phaseCompleted": "ONI26-FUNC-01",
+  "currentPhase": "ONI26-FUNC-DEEPENING",
+  "updatedAt": "2026-06-14T14:10:00.0000000-05:00",
+  "summary": "Se ejecuto una segunda pasada funcional: tabla IR anual editable, validacion backend, motor de nomina usando parametros versionados y centro integral ONI26 con formularios persistentes por modulo.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts ONI26.",
-  "previousAuditLockHash": "30cc491cea7444feed68ea6ec8540385fde74118c1c1dc89705c6e3daae119a8",
+  "approvalSource": "Solicitud del usuario: el alcance es la funcionalidad de todo el plan, no una lista de buenas intenciones.",
+  "previousAuditLockHash": "af3099689c155b96ae86113e12d7336bf644b8a608b6bc7d7c02ea7522f80640",
   "filesModified": [
     ".vscode/AuditLock.json",
-    "CODEX_CONTEXT.md",
-    "backend/src/config/user-message-catalog.json",
-    "docs2/operacion-nomina-ec-integral-2026/RUNBOOK_ONI26_QA_RELEASE.md",
-    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_14_QA_RELEASE.md"
+    "backend/src/services/configurationService.js",
+    "backend/src/services/legalParameterService.js",
+    "frontend-web/src/App.jsx",
+    "frontend-web/src/components/Layout/Layout.jsx",
+    "frontend-web/src/config/operationalBaseline.js",
+    "frontend-web/src/config/operationalModules.js",
+    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
+    "frontend-web/src/pages/Dashboard.jsx",
+    "frontend-web/src/pages/Operacion/LineaBaseOperativa.jsx",
+    "frontend-web/src/pages/Operacion/OperacionIntegral.jsx",
+    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_FUNC_01_FUNCIONALIDAD_INTEGRAL.md"
   ],
   "validationChecks": [
-    { "gate": "ONI26-14-RULES-PROMPT", "status": "PASS", "detail": "RULES.md y prompt ONI26-14 leidos." },
-    { "gate": "ONI26-14-MESSAGES", "status": "PASS", "detail": "Catalogo de mensajes humanizados creado." },
-    { "gate": "ONI26-14-RUNBOOK", "status": "PASS", "detail": "Runbook QA E2E y rollback creado." },
-    { "gate": "ONI26-14-BLOCKERS", "status": "PASS", "detail": "Bloqueos externos documentados sin prometer cumplimiento total." }
-  ],
-  "fases": [
-    { "phase": "ONI26-00", "status": "completed", "task": "baseline documental" },
-    { "phase": "ONI26-01", "status": "completed", "task": "diagnostico integral" },
-    { "phase": "ONI26-02", "status": "completed", "task": "sitio publico" },
-    { "phase": "ONI26-03", "status": "completed", "task": "mapeo contable" },
-    { "phase": "ONI26-04", "status": "completed_with_external_blockers", "task": "RDEP XSD XML" },
-    { "phase": "ONI26-05", "status": "completed", "task": "SUPERADMIN" },
-    { "phase": "ONI26-06", "status": "completed", "task": "OWNER bancos usuarios accesos" },
-    { "phase": "ONI26-07", "status": "completed", "task": "API integracion" },
-    { "phase": "ONI26-08", "status": "completed", "task": "asistencia manual app" },
-    { "phase": "ONI26-09", "status": "completed", "task": "seeds demo" },
-    { "phase": "ONI26-10", "status": "completed", "task": "apertura mes novedades" },
-    { "phase": "ONI26-11", "status": "completed", "task": "carga masiva empleados" },
-    { "phase": "ONI26-12", "status": "completed", "task": "reportes nomina" },
-    { "phase": "ONI26-13", "status": "completed", "task": "dashboard headcount" },
-    { "phase": "ONI26-14", "status": "completed_with_runtime_backlog", "task": "mensajes qa release" }
+    { "gate": "ONI26-FUNC-01-FRONTEND", "status": "PASS", "detail": "npm.cmd run build ejecutado en frontend-web." },
+    { "gate": "ONI26-FUNC-01-BACKEND-CONFIG", "status": "PASS", "detail": "node --check configurationService.js." },
+    { "gate": "ONI26-FUNC-01-BACKEND-LEGAL", "status": "PASS", "detail": "node --check legalParameterService.js." },
+    { "gate": "ONI26-FUNC-01-UI-EXPOSURE", "status": "PASS", "detail": "Ruta, menu, pantalla integral y formularios persistentes expuestos." },
+    { "gate": "ONI26-FUNC-01-INCOME-TAX", "status": "PASS", "detail": "Tabla IR editable y consumible por motor de nomina cuando exista version parametrizada." }
   ],
   "residualRisk": [
-    "RDEP debe validarse con ficha tecnica vigente y validador XSD antes de produccion.",
-    "Bancos requieren fichas tecnicas vigentes y pruebas por entidad.",
-    "API externa requiere implementacion de seguridad y pruebas antes de exposicion.",
-    "QA E2E runtime queda pendiente con backend activo y empresa DEMO."
+    "Importacion CSV/XLSX requiere endpoint especializado y parser con reporte de errores.",
+    "RDEP productivo requiere validador XSD y ficha tecnica vigente.",
+    "API externa requiere llaves reales, rotacion, scopes efectivos y rate limiting en middleware.",
+    "SUPERADMIN requiere pantallas especificas por rol para contratos, incidencias y owners."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "37f561cb17695285952b4c6ab7485c513643db8ba66929f3ab327c407afb7c81"
+  "signature": "115b78370ba1e13bf25415c37a2f5891bdc052ecb8815083696cc6f756832e8c"
 }

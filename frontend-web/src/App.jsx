@@ -20,6 +20,7 @@ import Parametrizacion from './pages/Configuracion/Parametrizacion';
 import Auditoria from './pages/Auditoria';
 import Dashboard from './pages/Dashboard';
 import LineaBaseOperativa from './pages/Operacion/LineaBaseOperativa';
+import OperacionIntegral from './pages/Operacion/OperacionIntegral';
 import ListaEmpleados from './pages/Empleados/ListaEmpleados';
 import NuevoEmpleado from './pages/Empleados/NuevoEmpleado';
 import TerminarEmpleado from './pages/Empleados/TerminarEmpleado';
@@ -83,6 +84,11 @@ function App() {
               <Route path="operacion/base" element={
                 <ProtectedRoute requiredRole={['superadmin', 'owner', 'admin_rrhh']}>
                   <LineaBaseOperativa />
+                </ProtectedRoute>
+              } />
+              <Route path="operacion/integral" element={
+                <ProtectedRoute requiredRole={['superadmin', 'owner', 'admin_rrhh']}>
+                  <OperacionIntegral />
                 </ProtectedRoute>
               } />
               

@@ -303,6 +303,9 @@ function Dashboard() {
           <Link className="inline-flex min-h-10 items-center justify-center rounded-md bg-teal-700 px-4 text-sm font-semibold text-white" to="/dashboard/operacion/base">
             Ver linea base
           </Link>
+          <Link className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:border-teal-300" to="/dashboard/operacion/integral">
+            Operar modulos
+          </Link>
         </div>
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {baselineHighlights.map((item) => {

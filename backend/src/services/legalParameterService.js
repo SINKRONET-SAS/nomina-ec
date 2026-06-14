@@ -9,6 +9,7 @@ const VALIDATED_SOURCE_STATUS = 'validado_oficial';
 const PENDING_SOURCE_STATUS = 'pendiente_validacion_oficial';
 
 async function getLegalParametersForTenant(tenantId, year) {
+  const versionedParameters = await getVersionedLegalParametersForTenant(tenantId, year);
   const result = await db.query(`
     SELECT *
     FROM parametros_legales
@@ -21,11 +22,11 @@ async function getLegalParametersForTenant(tenantId, year) {
   `, [year, tenantId]);
 
   if (result.rows.length === 0) {
-    return getLegalParameters(year);
+    return mergeVersionedParameters(getLegalParameters(year), versionedParameters);
   }
 
   const row = result.rows[0];
-  return {
+  return mergeVersionedParameters({
     sourceStatus: row.fuente,
     payroll: {
       monthlyWorkHours: 240,
@@ -38,6 +39,62 @@ async function getLegalParametersForTenant(tenantId, year) {
       dailyMaxHours: 8,
     },
     incomeTax: row.tabla_impuesto_renta,
+  }, versionedParameters);
+}
+
+async function getVersionedLegalParametersForTenant(tenantId, year) {
+  const result = await db.query(`
+    SELECT parameter_key, value, validation_status, source_name, source_url
+    FROM legal_parameter_versions
+    WHERE period_year = $1
+      AND country_code = 'EC'
+      AND (tenant_id = $2 OR tenant_id IS NULL)
+      AND parameter_key IN ('income_tax_table', 'tabla_impuesto_renta')
+    ORDER BY tenant_id NULLS LAST, valid_from DESC, created_at DESC
+  `, [year, tenantId]);
+
+  const parameters = {};
+  for (const row of result.rows) {
+    if (!parameters[row.parameter_key]) {
+      parameters[row.parameter_key] = row;
+    }
+  }
+  return parameters;
+}
+
+function extractIncomeTaxTable(row) {
+  if (!row) return null;
+  const brackets = Array.isArray(row.value?.brackets) ? row.value.brackets : [];
+  if (brackets.length === 0) return null;
+
+  return brackets.map((bracket) => ({
+    from: Number(bracket.from ?? bracket.fraccion_basica ?? 0),
+    to: bracket.to ?? bracket.exceso_hasta ?? null,
+    baseTax: Number(bracket.baseTax ?? bracket.impuesto_fraccion_basica ?? 0),
+    rate: Number(bracket.rate ?? bracket.porcentaje ?? 0),
+    fraccion_basica: Number(bracket.from ?? bracket.fraccion_basica ?? 0),
+    exceso_hasta: bracket.to ?? bracket.exceso_hasta ?? null,
+    impuesto_fraccion_basica: Number(bracket.baseTax ?? bracket.impuesto_fraccion_basica ?? 0),
+    porcentaje: Number(bracket.rate ?? bracket.porcentaje ?? 0),
+  }));
+}
+
+function mergeVersionedParameters(baseParameters, versionedParameters) {
+  const incomeTaxRow = versionedParameters.income_tax_table || versionedParameters.tabla_impuesto_renta;
+  const incomeTax = extractIncomeTaxTable(incomeTaxRow);
+
+  if (!incomeTax) {
+    return baseParameters;
+  }
+
+  return {
+    ...baseParameters,
+    sourceStatus: incomeTaxRow.validation_status || baseParameters.sourceStatus,
+    source: {
+      name: incomeTaxRow.source_name || '',
+      url: incomeTaxRow.source_url || '',
+    },
+    incomeTax,
   };
 }
 
