@@ -2,25 +2,26 @@
   "schemaVersion": 1,
   "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
   "planCode": "ONI26",
-  "status": "owner_banks_access_contract_completed",
-  "phaseCompleted": "ONI26-06",
-  "currentPhase": "ONI26-07-API-INTEGRACION",
-  "updatedAt": "2026-06-14T12:15:00.0000000-05:00",
-  "summary": "Se definio matriz OWNER para bancos, archivos planos, roles, permisos, segregacion de funciones, auditoria y rollback reutilizando el catalogo bancario existente.",
+  "status": "api_contract_completed",
+  "phaseCompleted": "ONI26-07",
+  "currentPhase": "ONI26-08-ASISTENCIA",
+  "updatedAt": "2026-06-14T12:25:00.0000000-05:00",
+  "summary": "Se creo contrato API v1 con autenticacion, scopes, rate limits, idempotencia y auditoria, manteniendo exposicion cerrada hasta gates de seguridad.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts ONI26.",
-  "previousAuditLockHash": "ac3b0862584e6566103022c1e75b21eecc8688e90f811c297c2b89736617c7bb",
+  "previousAuditLockHash": "bdac9d08675ff2b355bf282c208d3ff72370263361b61352ec9a2dfc65f0669d",
   "filesModified": [
     ".vscode/AuditLock.json",
-    "backend/src/config/owner-access-bank-matrix.json",
-    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_06_OWNER_BANCOS_ACCESOS.md",
-    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_06_OWNER_BANCOS_ACCESOS.md"
+    "backend/src/config/public-api-contract.json",
+    "docs2/operacion-nomina-ec-integral-2026/OPENAPI_ONI26_INTEGRACION.yaml",
+    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_07_API_INTEGRACION.md",
+    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_07_API_INTEGRACION.md"
   ],
   "validationChecks": [
-    { "gate": "ONI26-06-RULES-PROMPT", "status": "PASS", "detail": "RULES.md y prompt ONI26-06 leidos." },
-    { "gate": "ONI26-06-BANK-CATALOG", "status": "PASS", "detail": "Se reutiliza backend/src/config/bank-file-profiles.json." },
-    { "gate": "ONI26-06-OWNER-RBAC", "status": "PASS", "detail": "Roles OWNER y permisos sensibles definidos." },
-    { "gate": "ONI26-06-ROLLBACK", "status": "PASS", "detail": "Rollback logico y versionado de archivos bancarios documentados." }
+    { "gate": "ONI26-07-RULES-PROMPT", "status": "PASS", "detail": "RULES.md y prompt ONI26-07 leidos." },
+    { "gate": "ONI26-07-NO-RUNTIME-EXPOSURE", "status": "PASS", "detail": "No se expusieron endpoints inseguros." },
+    { "gate": "ONI26-07-CONTRACT", "status": "PASS", "detail": "OpenAPI y manifiesto API versionados." },
+    { "gate": "ONI26-07-AUDIT", "status": "PASS", "detail": "correlationId e idempotencia obligatorios documentados." }
   ],
   "fases": [
     { "phase": "ONI26-00", "status": "completed", "task": "baseline documental" },
@@ -30,7 +31,7 @@
     { "phase": "ONI26-04", "status": "completed_with_external_blockers", "task": "RDEP XSD XML" },
     { "phase": "ONI26-05", "status": "completed", "task": "SUPERADMIN" },
     { "phase": "ONI26-06", "status": "completed", "task": "OWNER bancos usuarios accesos" },
-    { "phase": "ONI26-07", "status": "pending", "task": "API integracion" },
+    { "phase": "ONI26-07", "status": "completed", "task": "API integracion" },
     { "phase": "ONI26-08", "status": "pending", "task": "asistencia manual app" },
     { "phase": "ONI26-09", "status": "pending", "task": "seeds demo" },
     { "phase": "ONI26-10", "status": "pending", "task": "apertura mes novedades" },
@@ -40,9 +41,8 @@
     { "phase": "ONI26-14", "status": "pending", "task": "mensajes qa release" }
   ],
   "residualRisk": [
-    "Cada perfil bancario debe validarse contra ficha tecnica vigente del banco antes de produccion.",
-    "Los permisos OWNER deben conectarse al RBAC real y probarse con usuarios DEMO."
+    "La API debe pasar pruebas de seguridad, aislamiento tenant y LOPDP antes de habilitar clientes externos."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "ed9877dfb16d575c3c99b9a20eb61051fcd43f24ffb6915aa57511383937c829"
+  "signature": "0f907faff3cbc00f817a6de3491c2939c2bac8e74ef6e94f0b1eeb71d4527151"
 }

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "planCode": "ONI26",
+  "phase": "ONI26-07",
+  "apiVersion": "v1",
+  "basePath": "/api/v1",
+  "exposure": "disabled_until_security_gate",
+  "authentication": {
+    "type": "oauth2_client_credentials_or_signed_api_key",
+    "tokenTtlMinutes": 30,
+    "rotationDays": 90
+  },
+  "requiredHeaders": [
+    "Authorization",
+    "X-Correlation-Id",
+    "Idempotency-Key"
+  ],
+  "rateLimits": {
+    "defaultPerMinute": 60,
+    "burstPerMinute": 120,
+    "writePerMinute": 20
+  },
+  "scopes": [
+    "employees.read",
+    "employees.write",
+    "attendance.write",
+    "novelties.write",
+    "payroll.read",
+    "reports.read"
+  ],
+  "audit": {
+    "correlationIdRequired": true,
+    "logPayloadPersonalData": false,
+    "logResponsePersonalData": false,
+    "retentionDays": 365
+  },
+  "idempotency": {
+    "requiredForMethods": [
+      "POST",
+      "PUT",
+      "PATCH"
+    ],
+    "storeTtlHours": 24
+  }
+}
