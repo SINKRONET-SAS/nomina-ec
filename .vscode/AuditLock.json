@@ -1,16 +1,22 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026",
-  "planCode": "LPA26",
-  "status": "release_go_live_completed_with_external_blockers",
-  "phaseCompleted": "LPA26-08",
-  "currentPhase": "LPA26-CLOSED",
-  "updatedAt": "2026-06-14T10:49:03.8635009-05:00",
-  "summary": "Se completo LPA26 con runbook go-live, release stores, rollback, monitoreo, contexto actualizado y bloqueos externos documentados.",
+  "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
+  "planCode": "ONI26",
+  "status": "baseline_documental_completed",
+  "phaseCompleted": "ONI26-00",
+  "currentPhase": "ONI26-01-DIAGNOSTICO-INTEGRAL",
+  "updatedAt": "2026-06-14T11:05:00.0000000-05:00",
+  "summary": "Se abrio la linea ONI26 para mejora integral de sitio publico, contabilidad, RDEP, SUPERADMIN, OWNER, bancos, API, asistencia, seeds, apertura mensual, cargas masivas, reportes, dashboard, mensajes y QA E2E. La fase ONI26-00 es documental y no modifica runtime.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts de acuerdo al plan HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026.",
-  "previousAuditLockHash": "219f5ee217d733fdbffaabc042c2bd30146568a15f4553049bb7b2cecbcdcfc9",
+  "approvalSource": "Solicitud del usuario: generar plan Haiky para mejora de landing, parametros contables, RDEP, SUPERADMIN, OWNER, bancos, usuarios/accesos, API, asistencia, seeds, apertura mensual, cargas masivas, reportes, dashboard, mensajes y pruebas end to end.",
+  "previousAuditLockHash": "5734adf7948b58f3af6928290276919869a707666e075ebe7c324b8eaa4dba3a",
   "previousPlans": [
+    {
+      "plan": "HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026",
+      "planCode": "LPA26",
+      "status": "release_go_live_completed_with_external_blockers",
+      "phaseCompleted": "LPA26-08"
+    },
     {
       "plan": "HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026",
       "planCode": "HNBE26",
@@ -25,73 +31,76 @@
     }
   ],
   "filesModified": [
-    ".vscode/AuditLock.json",
     "CODEX_CONTEXT.md",
-    "docs2/landing-pwa-app-store-2026/RUNBOOK_LPA26_GO_LIVE.md",
-    "docs2/landing-pwa-app-store-2026/REPORTE_LPA26_08_RELEASE.md"
+    ".vscode/AuditLock.json",
+    "docs2/PLAN_HAIKY_OPERACION_NOMINA_EC_INTEGRAL_2026.md",
+    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-00-baseline.md",
+    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-01-diagnostico.md",
+    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-02-sitio-publico.md",
+    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-03-contabilidad.md",
+    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-04-rdep-xsd-xml.md",
+    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-05-superadmin.md",
+    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-06-owner-bancos-accesos.md",
+    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-07-api-integracion.md",
+    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-08-asistencia.md",
+    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-09-seeds-demo.md",
+    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-10-apertura-mes-novedades.md",
+    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-11-carga-empleados.md",
+    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-12-reportes.md",
+    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-13-dashboard-headcount.md",
+    ".github/prompts/OPERACION-NOMINA-EC-INTEGRAL-2026-14-qa-release.md"
   ],
   "validationChecks": [
     {
-      "gate": "LPA26-08-RULES-READ",
+      "gate": "ONI26-00-RULES-READ",
       "status": "PASS",
-      "detail": "RULES.md y prompt LPA26-08 leidos antes de release go-live."
+      "detail": "RULES.md leido antes de crear plan, prompts, contexto y AuditLock."
     },
     {
-      "gate": "LPA26-08-AUDITLOCK-SIGNATURE-IN",
+      "gate": "ONI26-00-AUDITLOCK-READ",
       "status": "PASS",
-      "detail": "Firma LPA26-07 validada antes de iniciar release."
+      "detail": "AuditLock LPA26-08 leido y hasheado antes de crear el candado ONI26."
     },
     {
-      "gate": "LPA26-08-RUNBOOK",
+      "gate": "ONI26-00-NO-RUNTIME-CHANGES",
       "status": "PASS",
-      "detail": "Runbook go-live, monitoreo y rollback creado."
+      "detail": "ONI26-00 solo modifica documentacion, prompts, contexto y AuditLock."
     },
     {
-      "gate": "LPA26-08-RELEASE-DOCS",
+      "gate": "ONI26-00-PROMPTS-CREATED",
       "status": "PASS",
-      "detail": "Reporte release stores y bloqueos externos creado."
+      "detail": "Prompts ONI26-00..14 creados bajo orden estricto."
     },
     {
-      "gate": "LPA26-08-CONTEXT",
-      "status": "PASS",
-      "detail": "CODEX_CONTEXT.md actualizado con cierre LPA26."
-    },
-    {
-      "gate": "LPA26-08-EXTERNAL-BLOCKERS",
-      "status": "PASS",
-      "detail": "Play Console, Apple Developer, EAS real, certificados, URLs y revision legal documentados como bloqueos externos."
-    },
-    {
-      "gate": "LPA26-08-AUDITLOCK-SIGNATURE",
+      "gate": "ONI26-00-AUDITLOCK-SIGNATURE",
       "status": "PASS",
       "detail": "Firma calculada como SHA256(previousAuditLockHash + updatedAt)."
     }
   ],
   "fases": [
-    { "phase": "LPA26-00", "status": "completed", "task": "baseline documental" },
-    { "phase": "LPA26-01", "status": "completed", "task": "diagnostico anti-churn" },
-    { "phase": "LPA26-02", "status": "completed", "task": "landing de conversion" },
-    { "phase": "LPA26-03", "status": "completed", "task": "PWA instalable y segura" },
-    { "phase": "LPA26-04", "status": "completed_with_external_blockers", "task": "app movil lista para tiendas" },
-    { "phase": "LPA26-05", "status": "completed", "task": "LOPDP y privacidad operacional" },
-    { "phase": "LPA26-06", "status": "completed", "task": "registro y onboarding comercial" },
-    { "phase": "LPA26-07", "status": "completed", "task": "QA visual performance y confianza" },
-    { "phase": "LPA26-08", "status": "completed_with_external_blockers", "task": "release stores y go-live" }
+    { "phase": "ONI26-00", "status": "completed", "task": "baseline documental" },
+    { "phase": "ONI26-01", "status": "pending", "task": "diagnostico integral" },
+    { "phase": "ONI26-02", "status": "pending", "task": "sitio publico" },
+    { "phase": "ONI26-03", "status": "pending", "task": "mapeo contable" },
+    { "phase": "ONI26-04", "status": "pending", "task": "RDEP XSD XML" },
+    { "phase": "ONI26-05", "status": "pending", "task": "SUPERADMIN" },
+    { "phase": "ONI26-06", "status": "pending", "task": "OWNER bancos usuarios accesos" },
+    { "phase": "ONI26-07", "status": "pending", "task": "API integracion" },
+    { "phase": "ONI26-08", "status": "pending", "task": "asistencia manual app" },
+    { "phase": "ONI26-09", "status": "pending", "task": "seeds demo" },
+    { "phase": "ONI26-10", "status": "pending", "task": "apertura mes novedades" },
+    { "phase": "ONI26-11", "status": "pending", "task": "carga masiva empleados" },
+    { "phase": "ONI26-12", "status": "pending", "task": "reportes nomina" },
+    { "phase": "ONI26-13", "status": "pending", "task": "dashboard headcount" },
+    { "phase": "ONI26-14", "status": "pending", "task": "mensajes qa release" }
   ],
   "residualRisk": [
-    "Google Play Console, Apple Developer, App Store Connect, ascAppId y appleTeamId son dependencias externas no verificables localmente.",
-    "La implementacion runtime inicia en LPA26-02 y debe limitarse a los archivos permitidos por el diagnostico.",
-    "La validacion legal LOPDP requiere revision profesional antes de afirmar cumplimiento total en marketing.",
-    "No se debe publicar screenshots con datos reales de empleados, cuentas bancarias, geolocalizacion o documentos laborales.",
-    "IESS y otros gates productivos de PNE26 siguen vigentes y no quedan resueltos por LPA26."
-  ],
-  "externalSources": [
-    {
-      "name": "Ley Organica de Proteccion de Datos Personales",
-      "url": "https://www.telecomunicaciones.gob.ec/wp-content/uploads/2021/06/Ley-Organica-de-Datos-Personales.pdf",
-      "detail": "Registro Oficial Quinto Suplemento No. 459, 2021-05-26."
-    }
+    "La ficha tecnica RDEP, XSD y bancos debe verificarse con fuente vigente antes de implementar.",
+    "La integracion contable depende del plan de cuentas de cada tenant.",
+    "La API externa requiere autenticacion, limites, auditoria y contrato versionado antes de exposicion.",
+    "Cargas masivas, reportes y asistencia tratan datos personales y deben mantener controles LOPDP.",
+    "Los datos DEMO y smoke no deben contener informacion real de empleados o empresas."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "36780a6bd6e9091bfe7a7772648e55cce87da921523ebcaaaf30ca84eca472e7"
+  "signature": "d607c2669c7eacdcf1b296ab9d67f6bbd2c51e907c868ab0f18a943160dd21de"
 }

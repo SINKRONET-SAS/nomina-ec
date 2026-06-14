@@ -297,3 +297,35 @@ Bloqueos externos:
 - Google Play Console, Apple Developer y App Store Connect.
 - EAS `projectId`, `appleTeamId`, `ascAppId`, certificados y perfiles reales.
 - URLs productivas reales para privacidad, terminos, soporte y eliminacion de cuenta.
+
+---
+
+## ONI26 - Operacion integral Nomina-Ec
+
+Plan: `HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026`.
+
+Estado: ONI26-00 cerrado documentalmente. No se ha tocado runtime para esta linea.
+
+Alcance:
+
+- Mejora de sitio publico: landing, link publico, inicio y crear cuenta.
+- Mapeo de parametros de nomina a cuentas contables.
+- RDEP con ficha tecnica, XSD y XML.
+- Entorno SUPERADMIN: planes, addons, contratos owners, incidencias y catalogos globales.
+- Entorno OWNER: archivos planos de bancos segun fichas tecnicas, usuarios, roles y accesos.
+- API de integracion para otros sistemas.
+- Asistencia manual y marcacion APP.
+- Seeds de parametros y empresa DEMO.
+- Apertura de mes y lote de novedades por estructura organizativa.
+- Carga masiva de empleados.
+- Reportes de nomina en PDF y Excel tabular.
+- Dashboard con headcount.
+- Humanizacion de mensajes tecnicos.
+- Pruebas end to end con datos smoke no reales.
+
+Gobierno:
+
+- No tocar runtime antes de ONI26-01.
+- No crear modulos paralelos a landing, registro, parametrizacion, app o reportes existentes.
+- Cada fase debe firmar AuditLock y usar commit `phase: ONI26-XX task: ...`.
+- RDEP, bancos y API requieren contrato/ficha tecnica antes de implementacion.
