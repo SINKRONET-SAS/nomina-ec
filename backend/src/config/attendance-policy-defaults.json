@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "planCode": "ONI26",
+  "phase": "ONI26-08",
+  "purpose": "Politica base para asistencia manual y marcacion APP.",
+  "manualAttendance": {
+    "enabled": true,
+    "requiresReason": true,
+    "requiresApproval": true,
+    "allowedRoles": [
+      "NOMINA_OPERADOR",
+      "NOMINA_APROBADOR"
+    ]
+  },
+  "mobileMarking": {
+    "enabled": true,
+    "requiresGpsConsent": true,
+    "requiresCameraConsent": false,
+    "gpsPrecisionMeters": 100,
+    "offlineQueue": {
+      "enabled": true,
+      "maxHours": 12,
+      "personalDataCache": "minimal_encrypted_metadata_only"
+    }
+  },
+  "novelties": {
+    "lateArrivalToleranceMinutes": 5,
+    "absenceRequiresApproval": true,
+    "overtimeRequiresApproval": true,
+    "linkToPayrollPeriod": true
+  },
+  "lopdp": {
+    "purpose": "Control de asistencia y cumplimiento laboral.",
+    "locationRetentionDays": 90,
+    "photoRetentionDays": 30,
+    "employeeNoticeRequired": true,
+    "withdrawalChannelRequired": true
+  },
+  "audit": {
+    "correlationIdRequired": true,
+    "recordPermissionFailures": true,
+    "recordGpsFailures": true,
+    "recordApprovalFlow": true
+  }
+}
