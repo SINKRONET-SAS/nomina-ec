@@ -2,33 +2,35 @@
   "schemaVersion": 1,
   "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
   "planCode": "ONI26",
-  "status": "functional_legal_mandatory_loader_completed",
-  "phaseCompleted": "ONI26-FUNC-02",
+  "status": "functional_mandatory_social_benefits_completed",
+  "phaseCompleted": "ONI26-FUNC-03",
   "currentPhase": "ONI26-FUNC-DEEPENING",
-  "updatedAt": "2026-06-14T14:25:00.0000000-05:00",
-  "summary": "Se agrego boton y endpoint para cargar parametros legales obligatorios por anio fiscal, con persistencia en legal_parameter_versions, auditoria y onboarding legal.",
+  "updatedAt": "2026-06-14T14:45:00.0000000-05:00",
+  "summary": "Se agregaron decimo tercero, decimo cuarto y fondo de reserva a la carga legal obligatoria, lectura versionada y calculo de nomina.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: debe haber un boton para cargar los parametros que son legales y obligatorios.",
-  "previousAuditLockHash": "7d9e9301bfab9f8761f14f42d672603380aa9ee0e735217b25b95e3d705dd6f2",
+  "approvalSource": "Solicitud del usuario: faltan Decimo Tercer Sueldo, Decimo Cuarto Sueldo, Fondo de Reserva, verificar legislacion vigente 2026 Ecuador.",
+  "previousAuditLockHash": "66674f4b3a152c89a931fd1ec7af74f9ed4d66afba26096a9e6ec927e509c1f7",
   "filesModified": [
     ".vscode/AuditLock.json",
-    "backend/src/app.js",
-    "backend/src/controllers/configurationController.js",
+    "backend/src/config/legal-ecuador.js",
+    "backend/src/services/calculoNominaService.js",
     "backend/src/services/configurationService.js",
+    "backend/src/services/legalParameterService.js",
     "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-    "frontend-web/src/services/configurationApi.js",
-    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_FUNC_02_CARGA_LEGAL_OBLIGATORIA.md"
+    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_FUNC_02_CARGA_LEGAL_OBLIGATORIA.md",
+    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_FUNC_03_BENEFICIOS_SOCIALES_2026.md"
   ],
   "validationChecks": [
-    { "gate": "ONI26-FUNC-02-BACKEND-SERVICE", "status": "PASS", "detail": "node --check configurationService.js." },
-    { "gate": "ONI26-FUNC-02-BACKEND-CONTROLLER", "status": "PASS", "detail": "node --check configurationController.js." },
-    { "gate": "ONI26-FUNC-02-BACKEND-APP", "status": "PASS", "detail": "node --check app.js." },
-    { "gate": "ONI26-FUNC-02-FRONTEND", "status": "PASS", "detail": "npm.cmd run build ejecutado en frontend-web." }
+    { "gate": "ONI26-FUNC-03-CONFIG-SERVICE", "status": "PASS", "detail": "node --check configurationService.js." },
+    { "gate": "ONI26-FUNC-03-LEGAL-SERVICE", "status": "PASS", "detail": "node --check legalParameterService.js." },
+    { "gate": "ONI26-FUNC-03-PAYROLL-SERVICE", "status": "PASS", "detail": "node --check calculoNominaService.js." },
+    { "gate": "ONI26-FUNC-03-FRONTEND", "status": "PASS", "detail": "npm.cmd run build ejecutado en frontend-web." },
+    { "gate": "ONI26-FUNC-03-BACKEND-TESTS", "status": "PASS", "detail": "npm.cmd test -- --runInBand ejecutado en backend." }
   ],
   "residualRisk": [
-    "Los parametros cargados quedan pendientes de validacion oficial/profesional antes de uso productivo.",
-    "Si se requiere cargar anios sin base legal interna, se debe incorporar primero la fuente oficial correspondiente."
+    "Los parametros quedan pendientes de validacion oficial/profesional antes de uso productivo.",
+    "El calendario regional de decimo cuarto debe revisarse ante cambios normativos o resoluciones vigentes."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "8334775879c2c9eacdefc4b801a7b66d29184f16b0c6a1f24d7eca41696e3ab6"
+  "signature": "e898a2d013b87826c99417fb8ee00ad646c06266826493cacc3c3dbcfcc61cd2"
 }

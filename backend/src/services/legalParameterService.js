@@ -33,6 +33,13 @@ async function getLegalParametersForTenant(tenantId, year) {
       personalIessRate: Number(row.aporte_personal_pct),
       employerIessRate: Number(row.aporte_patronal_pct),
       vacationProvisionRate: 1 / 24,
+      thirteenthSalaryProvisionRate: 1 / 12,
+      fourteenthSalaryProvisionRate: 1 / 12,
+      reserveFundRate: 1 / 12,
+      reserveFundStartsAfterMonths: 12,
+      thirteenthSalaryPaymentMonth: 12,
+      fourteenthSalaryCostaGalapagosPaymentMonth: Number(row.decimo_cuarto_costa_mes),
+      fourteenthSalarySierraAmazoniaPaymentMonth: Number(row.decimo_cuarto_sierra_mes),
       unifiedBaseSalary: Number(row.salario_basico),
       vacationDaysAfterFirstYear: 15,
       weeklyMaxHours: Number(row.jornada_maxima_semanal),
@@ -49,7 +56,14 @@ async function getVersionedLegalParametersForTenant(tenantId, year) {
     WHERE period_year = $1
       AND country_code = 'EC'
       AND (tenant_id = $2 OR tenant_id IS NULL)
-      AND parameter_key IN ('income_tax_table', 'tabla_impuesto_renta')
+      AND parameter_key IN (
+        'income_tax_table',
+        'tabla_impuesto_renta',
+        'decimo_tercero',
+        'decimo_cuarto_costa_galapagos',
+        'decimo_cuarto_sierra_amazonia',
+        'fondo_reserva'
+      )
     ORDER BY tenant_id NULLS LAST, valid_from DESC, created_at DESC
   `, [year, tenantId]);
 
@@ -82,13 +96,39 @@ function extractIncomeTaxTable(row) {
 function mergeVersionedParameters(baseParameters, versionedParameters) {
   const incomeTaxRow = versionedParameters.income_tax_table || versionedParameters.tabla_impuesto_renta;
   const incomeTax = extractIncomeTaxTable(incomeTaxRow);
+  const payroll = { ...baseParameters.payroll };
+
+  const thirteenth = versionedParameters.decimo_tercero?.value;
+  const fourteenthCosta = versionedParameters.decimo_cuarto_costa_galapagos?.value;
+  const fourteenthSierra = versionedParameters.decimo_cuarto_sierra_amazonia?.value;
+  const reserveFund = versionedParameters.fondo_reserva?.value;
+
+  if (thirteenth) {
+    payroll.thirteenthSalaryProvisionRate = Number(thirteenth.rate ?? payroll.thirteenthSalaryProvisionRate ?? (1 / 12));
+    payroll.thirteenthSalaryPaymentMonth = Number(thirteenth.paymentMonth ?? payroll.thirteenthSalaryPaymentMonth ?? 12);
+  }
+
+  if (fourteenthCosta || fourteenthSierra) {
+    payroll.fourteenthSalaryProvisionRate = Number((fourteenthCosta || fourteenthSierra).rate ?? payroll.fourteenthSalaryProvisionRate ?? (1 / 12));
+    payroll.fourteenthSalaryCostaGalapagosPaymentMonth = Number(fourteenthCosta?.paymentMonth ?? payroll.fourteenthSalaryCostaGalapagosPaymentMonth ?? 3);
+    payroll.fourteenthSalarySierraAmazoniaPaymentMonth = Number(fourteenthSierra?.paymentMonth ?? payroll.fourteenthSalarySierraAmazoniaPaymentMonth ?? 8);
+  }
+
+  if (reserveFund) {
+    payroll.reserveFundRate = Number(reserveFund.rate ?? payroll.reserveFundRate ?? (1 / 12));
+    payroll.reserveFundStartsAfterMonths = Number(reserveFund.startsAfterMonths ?? payroll.reserveFundStartsAfterMonths ?? 12);
+  }
 
   if (!incomeTax) {
-    return baseParameters;
+    return {
+      ...baseParameters,
+      payroll,
+    };
   }
 
   return {
     ...baseParameters,
+    payroll,
     sourceStatus: incomeTaxRow.validation_status || baseParameters.sourceStatus,
     source: {
       name: incomeTaxRow.source_name || '',

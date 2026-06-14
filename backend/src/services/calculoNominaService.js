@@ -93,10 +93,10 @@ async function calcularEmpleado(emp, tenantId, anio, mes) {
   const aportePatronal = roundMoney(totalIngresos * payrollParameters.employerIessRate);
   const baseImponible = roundMoney(totalIngresos - aporteIess);
   const impuestoRenta = calcularIR(baseImponible, legalParameters);
-  const provisionDecimoTercero = roundMoney(totalIngresos / 12);
-  const provisionDecimoCuarto = roundMoney(payrollParameters.unifiedBaseSalary / 12);
+  const provisionDecimoTercero = roundMoney(totalIngresos * (payrollParameters.thirteenthSalaryProvisionRate ?? (1 / 12)));
+  const provisionDecimoCuarto = roundMoney(payrollParameters.unifiedBaseSalary * (payrollParameters.fourteenthSalaryProvisionRate ?? (1 / 12)));
   const provisionVacaciones = roundMoney(totalIngresos * payrollParameters.vacationProvisionRate);
-  const provisionFondosReserva = calcularProvisionFondosReserva(emp.fecha_ingreso, totalIngresos, anio, mes);
+  const provisionFondosReserva = calcularProvisionFondosReserva(emp.fecha_ingreso, totalIngresos, anio, mes, payrollParameters);
   const costoEmpleador = roundMoney(
     totalIngresos
     + aportePatronal
@@ -224,16 +224,17 @@ function validarPeriodoNomina(anio, mes) {
   }
 }
 
-function calcularProvisionFondosReserva(fechaIngreso, totalIngresos, anio, mes) {
+function calcularProvisionFondosReserva(fechaIngreso, totalIngresos, anio, mes, payrollParameters = {}) {
   const ingreso = new Date(fechaIngreso);
   const finPeriodo = new Date(anio, mes, 0);
   const aniosServicio = (finPeriodo - ingreso) / (365.25 * 86400000);
+  const startsAfterMonths = Number(payrollParameters.reserveFundStartsAfterMonths ?? 12);
 
-  if (aniosServicio < 1) {
+  if ((aniosServicio * 12) < startsAfterMonths) {
     return 0;
   }
 
-  return roundMoney(totalIngresos / 12);
+  return roundMoney(totalIngresos * Number(payrollParameters.reserveFundRate ?? (1 / 12)));
 }
 
 function calcularIR(baseMensual, legalParameters) {

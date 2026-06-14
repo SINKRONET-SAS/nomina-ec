@@ -17,6 +17,10 @@ Se agrego funcionalidad real para cargar parametros legales obligatorios por ani
   - jornada maxima semanal,
   - provision vacaciones,
   - dias de vacaciones,
+  - decimo tercer sueldo,
+  - decimo cuarto sueldo Costa/Galapagos,
+  - decimo cuarto sueldo Sierra/Amazonia,
+  - fondo de reserva,
   - tabla anual de impuesto a la renta.
 - Auditoria con `correlationId`.
 - Paso de onboarding legal marcado como completado para tenant.

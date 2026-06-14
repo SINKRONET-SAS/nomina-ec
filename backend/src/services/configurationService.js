@@ -228,6 +228,51 @@ function legalParameterPayloadsFromBase(year) {
       notes: 'Provision de vacaciones cargada como parametro obligatorio revisable.',
     },
     {
+      parameter_key: 'decimo_tercero',
+      value: {
+        rate: Number(payroll.thirteenthSalaryProvisionRate ?? (1 / 12)),
+        paymentMonth: Number(payroll.thirteenthSalaryPaymentMonth ?? 12),
+        calculationBase: 'remuneracion_anual',
+      },
+      unit: 'regla',
+      notes: 'Decimo tercer sueldo: doceava parte de remuneraciones del periodo anual; pago hasta diciembre segun Codigo del Trabajo.',
+    },
+    {
+      parameter_key: 'decimo_cuarto_costa_galapagos',
+      value: {
+        amount: Number(payroll.unifiedBaseSalary),
+        rate: Number(payroll.fourteenthSalaryProvisionRate ?? (1 / 12)),
+        paymentMonth: Number(payroll.fourteenthSalaryCostaGalapagosPaymentMonth ?? 3),
+        region: 'costa_galapagos',
+        calculationBase: 'sbu_vigente',
+      },
+      unit: 'regla',
+      notes: 'Decimo cuarto sueldo Costa/Galapagos: equivalente a un SBU anual, pago regional en marzo; validar calendario vigente.',
+    },
+    {
+      parameter_key: 'decimo_cuarto_sierra_amazonia',
+      value: {
+        amount: Number(payroll.unifiedBaseSalary),
+        rate: Number(payroll.fourteenthSalaryProvisionRate ?? (1 / 12)),
+        paymentMonth: Number(payroll.fourteenthSalarySierraAmazoniaPaymentMonth ?? 8),
+        region: 'sierra_amazonia',
+        calculationBase: 'sbu_vigente',
+      },
+      unit: 'regla',
+      notes: 'Decimo cuarto sueldo Sierra/Amazonia: equivalente a un SBU anual, pago regional en agosto; validar calendario vigente.',
+    },
+    {
+      parameter_key: 'fondo_reserva',
+      value: {
+        rate: Number(payroll.reserveFundRate ?? (1 / 12)),
+        startsAfterMonths: Number(payroll.reserveFundStartsAfterMonths ?? 12),
+        paymentMode: 'pago_mensual_o_deposito_iess',
+        calculationBase: 'remuneracion_aportada',
+      },
+      unit: 'regla',
+      notes: 'Fondo de reserva: provision desde el primer anio cumplido; puede pagarse al trabajador o depositarse en IESS segun eleccion.',
+    },
+    {
       parameter_key: 'vacaciones_dias_anuales',
       value: { amount: Number(payroll.vacationDaysAfterFirstYear) },
       unit: 'dias',

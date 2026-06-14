@@ -813,7 +813,8 @@ function Parametrizacion() {
             <h2 className="text-lg font-semibold text-teal-950">Carga legal obligatoria</h2>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-teal-900">
               Carga SBU, aportes IESS, jornada, vacaciones y tabla de impuesto a la renta del anio seleccionado
-              como parametros revisables. No reemplaza la validacion contra fuente oficial vigente.
+              como parametros revisables. Incluye decimos tercero/cuarto y fondo de reserva. No reemplaza la validacion
+              contra fuente oficial vigente.
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
