@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "plan": "HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026",
   "planCode": "LPA26",
-  "status": "pwa_segura_completed",
-  "phaseCompleted": "LPA26-03",
-  "currentPhase": "LPA26-04-APP-STORES",
-  "updatedAt": "2026-06-14T10:24:25.1969884-05:00",
-  "summary": "Se reforzo la PWA instalable con manifest es-EC, assets versionados, screenshots, shortcuts y smoke que valida que el service worker no cachee API ni datos personales.",
+  "status": "app_stores_completed_with_external_blockers",
+  "phaseCompleted": "LPA26-04",
+  "currentPhase": "LPA26-05-LOPDP-PRIVACIDAD",
+  "updatedAt": "2026-06-14T10:32:49.5151312-05:00",
+  "summary": "Se preparo app movil para Google Play y Apple App Store con app.json, EAS, assets PNG, metadata, checks locales y bloqueos externos documentados.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts de acuerdo al plan HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026.",
-  "previousAuditLockHash": "660bb00ff7f7d5319503daab8c93867215a08eb5e1cca01f30dc15177bcac03e",
+  "previousAuditLockHash": "211fbe9c67dac605736ffafbc5664b4010464597ea90092969d0dcc91bf4cada",
   "previousPlans": [
     {
       "plan": "HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026",
@@ -26,50 +26,61 @@
   ],
   "filesModified": [
     ".vscode/AuditLock.json",
-    "frontend-web/package.json",
-    "frontend-web/pwa.config.js",
-    "frontend-web/vite.config.js",
-    "frontend-web/public/icon.svg",
-    "frontend-web/public/maskable-icon.svg",
-    "frontend-web/public/apple-touch-icon.svg",
-    "frontend-web/public/pwa-screenshot-wide.svg",
-    "frontend-web/public/pwa-screenshot-mobile.svg",
-    "frontend-web/scripts/smoke-pwa-lpa26.mjs",
-    "docs2/landing-pwa-app-store-2026/REPORTE_LPA26_03_PWA.md"
+    "app-movil/app.json",
+    "app-movil/eas.json",
+    "app-movil/package.json",
+    "app-movil/src/App.js",
+    "app-movil/src/screens/LoginScreen.js",
+    "app-movil/src/screens/MarcacionScreen.js",
+    "app-movil/src/screens/MisMarcacionesScreen.js",
+    "app-movil/src/services/api.js",
+    "app-movil/src/services/camera.js",
+    "app-movil/src/services/geolocation.js",
+    "app-movil/assets/icon.png",
+    "app-movil/assets/adaptive-icon.png",
+    "app-movil/assets/splash.png",
+    "app-movil/assets/notification-icon.png",
+    "app-movil/assets/store/feature-graphic.png",
+    "app-movil/assets/store/screenshots/phone-01.png",
+    "app-movil/assets/store/screenshots/phone-02.png",
+    "app-movil/scripts/check-store-readiness.mjs",
+    "docs2/landing-pwa-app-store-2026/METADATA_STORES_NOMINA_EC.md",
+    "docs2/landing-pwa-app-store-2026/GUIA_LPA26_ANDROID_IOS.md",
+    "docs2/landing-pwa-app-store-2026/REPORTE_LPA26_04_APP_STORES.md"
   ],
   "validationChecks": [
     {
-      "gate": "LPA26-03-RULES-READ",
+      "gate": "LPA26-04-RULES-READ",
       "status": "PASS",
-      "detail": "RULES.md y prompt LPA26-03 leidos antes de modificar PWA."
+      "detail": "RULES.md y prompt LPA26-04 leidos antes de modificar app movil."
     },
     {
-      "gate": "LPA26-03-AUDITLOCK-SIGNATURE-IN",
+      "gate": "LPA26-04-AUDITLOCK-SIGNATURE-IN",
       "status": "PASS",
-      "detail": "Firma LPA26-02 validada antes de iniciar PWA segura."
+      "detail": "Firma LPA26-03 validada antes de iniciar app stores."
     },
     {
-      "gate": "LPA26-03-MANIFEST",
+      "gate": "LPA26-04-EXPO-CONFIG",
       "status": "PASS",
-      "detail": "Manifest es-EC con iconos, maskable, screenshots y shortcuts."
+      "detail": "app.json define package, bundleIdentifier, versionCode, buildNumber, permisos y URLs."
     },
     {
-      "gate": "LPA26-03-SERVICE-WORKER",
+      "gate": "LPA26-04-STORE-ASSETS",
       "status": "PASS",
-      "detail": "Service worker mantiene /api en NetworkOnly y no contiene patrones de datos personales."
+      "detail": "Assets PNG de tienda versionados con datos ficticios."
     },
     {
-      "gate": "LPA26-03-SMOKE-PWA",
+      "gate": "LPA26-04-STORE-CHECK",
       "status": "PASS",
-      "detail": "npm.cmd run smoke:pwa ejecutado correctamente."
+      "detail": "npm.cmd run check:stores ejecutado correctamente."
     },
     {
-      "gate": "LPA26-03-ASSETS",
+      "gate": "LPA26-04-EXPO-DOCTOR",
       "status": "PASS",
-      "detail": "Assets PWA adicionales versionados y copiados a dist."
+      "detail": "npx.cmd expo-doctor ejecutado con 21/21 checks passed."
     },
     {
-      "gate": "LPA26-03-AUDITLOCK-SIGNATURE",
+      "gate": "LPA26-04-AUDITLOCK-SIGNATURE",
       "status": "PASS",
       "detail": "Firma calculada como SHA256(previousAuditLockHash + updatedAt)."
     }
@@ -79,7 +90,7 @@
     { "phase": "LPA26-01", "status": "completed", "task": "diagnostico anti-churn" },
     { "phase": "LPA26-02", "status": "completed", "task": "landing de conversion" },
     { "phase": "LPA26-03", "status": "completed", "task": "PWA instalable y segura" },
-    { "phase": "LPA26-04", "status": "pending", "task": "app movil lista para tiendas" },
+    { "phase": "LPA26-04", "status": "completed_with_external_blockers", "task": "app movil lista para tiendas" },
     { "phase": "LPA26-05", "status": "pending", "task": "LOPDP y privacidad operacional" },
     { "phase": "LPA26-06", "status": "pending", "task": "registro y onboarding comercial" },
     { "phase": "LPA26-07", "status": "pending", "task": "QA visual performance y confianza" },
@@ -100,5 +111,5 @@
     }
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "9e7ddafc755ab6eb5c5a39879505a5cf09b663ce9547f2a375d5a9a9dd5ec1aa"
+  "signature": "f9a8c18e55e8412be0dba33a99bb19490d30f70bbd3be7162586140e2afe726e"
 }

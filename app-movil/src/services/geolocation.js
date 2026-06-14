@@ -1,4 +1,4 @@
-// Nómina-Ec - Servicio de geolocalización (App móvil)
+﻿// Nómina-Ec - Servicio de geolocalización (App móvil)
 import * as Location from 'expo-location';
 
 export async function obtenerUbicacionActual() {
@@ -37,3 +37,4 @@ export function calcularDistancia(lat1, lon1, lat2, lon2) {
 
   return earthRadiusMeters * c;
 }
+

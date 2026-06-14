@@ -1,4 +1,4 @@
-// Nómina-Ec - Servicio de cámara (App móvil)
+﻿// Nómina-Ec - Servicio de cámara (App móvil)
 import { Camera } from 'expo-camera';
 
 export async function solicitarPermisoCamara() {
@@ -22,3 +22,4 @@ export async function tomarFoto(cameraRef) {
     height: photo.height,
   };
 }
+

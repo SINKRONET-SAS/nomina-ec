@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // PLAN HAIKY - Pantalla de Marcación (App Móvil)
 // ============================================================
 import React, { useState, useEffect } from 'react';
@@ -7,8 +7,7 @@ import * as Location from 'expo-location';
 import { Camera } from 'expo-camera';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-
-const API_URL = 'http://10.0.2.2:3000/api';
+import { API_URL } from '../services/api';
 
 export default function MarcacionScreen() {
   const [ubicacion, setUbicacion] = useState(null);
@@ -336,4 +335,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
 

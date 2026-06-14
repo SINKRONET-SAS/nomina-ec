@@ -1,10 +1,9 @@
-// Nómina-Ec - Pantalla Mis Marcaciones (App móvil)
+﻿// Nómina-Ec - Pantalla Mis Marcaciones (App móvil)
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-
-const API_URL = 'http://10.0.2.2:3000/api';
+import { API_URL } from '../services/api';
 
 function parseJwt(token) {
   try {
@@ -182,3 +181,4 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
 });
+

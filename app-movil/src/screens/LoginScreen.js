@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { authAPI, paymentAPI } from '../services/api';
 
@@ -290,3 +290,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+

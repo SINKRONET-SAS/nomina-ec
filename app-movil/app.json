@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "Nómina-Ec",
+    "slug": "nomina-ec",
+    "scheme": "nominaec",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "bundleIdentifier": "ec.com.nomina.app",
+      "buildNumber": "1",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Nómina-Ec usa la cámara solo cuando la empresa exige evidencia de marcación.",
+        "NSLocationWhenInUseUsageDescription": "Nómina-Ec usa ubicación aproximada durante la marcación de asistencia."
+      }
+    },
+    "android": {
+      "package": "ec.com.nomina.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0f766e"
+      },
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "00000000-0000-0000-0000-000000000000"
+      },
+      "apiBaseUrl": "https://api.nomina-ec.com/api",
+      "privacyUrl": "https://nomina-ec.com/privacidad",
+      "termsUrl": "https://nomina-ec.com/terminos",
+      "supportUrl": "https://nomina-ec.com/soporte",
+      "accountDeletionUrl": "https://nomina-ec.com/eliminar-cuenta"
+    },
+    "owner": "nomina-ec"
+  }
+}

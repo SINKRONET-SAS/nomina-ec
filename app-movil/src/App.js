@@ -1,4 +1,4 @@
-// Nómina-Ec - App móvil (React Native + Expo)
+﻿// Nómina-Ec - App móvil (React Native + Expo)
 // App.js - Componente principal
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
@@ -67,3 +67,4 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
