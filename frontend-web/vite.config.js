@@ -20,7 +20,14 @@ export default defineConfig(({ mode }) => {
       react(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.svg', 'icon.svg', 'maskable-icon.svg'],
+        includeAssets: [
+          'favicon.svg',
+          'icon.svg',
+          'maskable-icon.svg',
+          'apple-touch-icon.svg',
+          'pwa-screenshot-wide.svg',
+          'pwa-screenshot-mobile.svg',
+        ],
         manifest: pwaManifest,
         workbox: pwaWorkbox,
       }),

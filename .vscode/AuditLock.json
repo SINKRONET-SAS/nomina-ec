@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "plan": "HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026",
   "planCode": "LPA26",
-  "status": "landing_conversion_completed",
-  "phaseCompleted": "LPA26-02",
-  "currentPhase": "LPA26-03-PWA-SEGURA",
-  "updatedAt": "2026-06-14T10:17:27.4148808-05:00",
-  "summary": "Se actualizo una unica landing publica de conversion para Nomina-Ec con flujo operativo Ecuador, CTA a registro, CTA a privacidad, datos ficticios y mensajes sin promesas absolutas de cumplimiento.",
+  "status": "pwa_segura_completed",
+  "phaseCompleted": "LPA26-03",
+  "currentPhase": "LPA26-04-APP-STORES",
+  "updatedAt": "2026-06-14T10:24:25.1969884-05:00",
+  "summary": "Se reforzo la PWA instalable con manifest es-EC, assets versionados, screenshots, shortcuts y smoke que valida que el service worker no cachee API ni datos personales.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts de acuerdo al plan HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026.",
-  "previousAuditLockHash": "11a2d4d3560f54190429341936c8b90a053f3f3b39cc3cba0295e00825b0cb01",
+  "previousAuditLockHash": "660bb00ff7f7d5319503daab8c93867215a08eb5e1cca01f30dc15177bcac03e",
   "previousPlans": [
     {
       "plan": "HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026",
@@ -26,42 +26,50 @@
   ],
   "filesModified": [
     ".vscode/AuditLock.json",
-    "frontend-web/src/pages/Landing.jsx",
-    "docs2/landing-pwa-app-store-2026/REPORTE_LPA26_02_LANDING.md"
+    "frontend-web/package.json",
+    "frontend-web/pwa.config.js",
+    "frontend-web/vite.config.js",
+    "frontend-web/public/icon.svg",
+    "frontend-web/public/maskable-icon.svg",
+    "frontend-web/public/apple-touch-icon.svg",
+    "frontend-web/public/pwa-screenshot-wide.svg",
+    "frontend-web/public/pwa-screenshot-mobile.svg",
+    "frontend-web/scripts/smoke-pwa-lpa26.mjs",
+    "docs2/landing-pwa-app-store-2026/REPORTE_LPA26_03_PWA.md"
   ],
   "validationChecks": [
     {
-      "gate": "LPA26-02-RULES-READ",
+      "gate": "LPA26-03-RULES-READ",
       "status": "PASS",
-      "detail": "RULES.md y prompt LPA26-02 leidos antes de modificar runtime."
+      "detail": "RULES.md y prompt LPA26-03 leidos antes de modificar PWA."
     },
     {
-      "gate": "LPA26-02-AUDITLOCK-SIGNATURE-IN",
+      "gate": "LPA26-03-AUDITLOCK-SIGNATURE-IN",
       "status": "PASS",
-      "detail": "Firma LPA26-01 validada antes de iniciar landing conversion."
+      "detail": "Firma LPA26-02 validada antes de iniciar PWA segura."
     },
     {
-      "gate": "LPA26-02-LANDING-SINGLE",
+      "gate": "LPA26-03-MANIFEST",
       "status": "PASS",
-      "detail": "Se mantuvo una sola landing publica en frontend-web/src/pages/Landing.jsx."
+      "detail": "Manifest es-EC con iconos, maskable, screenshots y shortcuts."
     },
     {
-      "gate": "LPA26-02-COPY-ECUADOR",
+      "gate": "LPA26-03-SERVICE-WORKER",
       "status": "PASS",
-      "detail": "La propuesta de valor cubre empleados, novedades, roles, cierre, bancos, RDEP/IESS, documentos y auditoria."
+      "detail": "Service worker mantiene /api en NetworkOnly y no contiene patrones de datos personales."
     },
     {
-      "gate": "LPA26-02-BUILD-FRONTEND",
+      "gate": "LPA26-03-SMOKE-PWA",
       "status": "PASS",
-      "detail": "npm.cmd run build ejecutado correctamente en frontend-web."
+      "detail": "npm.cmd run smoke:pwa ejecutado correctamente."
     },
     {
-      "gate": "LPA26-02-VISUAL-DESKTOP-MOBILE",
+      "gate": "LPA26-03-ASSETS",
       "status": "PASS",
-      "detail": "Revision desktop y mobile 390x844 sin mojibake ni overflow horizontal."
+      "detail": "Assets PWA adicionales versionados y copiados a dist."
     },
     {
-      "gate": "LPA26-02-AUDITLOCK-SIGNATURE",
+      "gate": "LPA26-03-AUDITLOCK-SIGNATURE",
       "status": "PASS",
       "detail": "Firma calculada como SHA256(previousAuditLockHash + updatedAt)."
     }
@@ -70,7 +78,7 @@
     { "phase": "LPA26-00", "status": "completed", "task": "baseline documental" },
     { "phase": "LPA26-01", "status": "completed", "task": "diagnostico anti-churn" },
     { "phase": "LPA26-02", "status": "completed", "task": "landing de conversion" },
-    { "phase": "LPA26-03", "status": "pending", "task": "PWA instalable y segura" },
+    { "phase": "LPA26-03", "status": "completed", "task": "PWA instalable y segura" },
     { "phase": "LPA26-04", "status": "pending", "task": "app movil lista para tiendas" },
     { "phase": "LPA26-05", "status": "pending", "task": "LOPDP y privacidad operacional" },
     { "phase": "LPA26-06", "status": "pending", "task": "registro y onboarding comercial" },
@@ -92,5 +100,5 @@
     }
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "74f70abc452cf9b6f3c3076d63bd4313e2009d5e8a4617e03e08417647cc2340"
+  "signature": "9e7ddafc755ab6eb5c5a39879505a5cf09b663ce9547f2a375d5a9a9dd5ec1aa"
 }

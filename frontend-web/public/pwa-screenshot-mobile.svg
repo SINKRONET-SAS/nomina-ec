@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844" role="img" aria-label="Vista móvil de Nómina-Ec con datos ficticios">
+  <rect width="390" height="844" fill="#f8fafc"/>
+  <rect x="20" y="36" width="350" height="772" rx="24" fill="#fff" stroke="#dbe3eb"/>
+  <text x="44" y="88" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#0f172a">Nómina-Ec</text>
+  <text x="44" y="126" font-family="Arial, sans-serif" font-size="14" fill="#475569">Demo Ecuador · datos ficticios</text>
+  <rect x="44" y="166" width="302" height="88" rx="12" fill="#ecfeff" stroke="#99f6e4"/>
+  <text x="64" y="204" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#0f172a">Preparación para cierre</text>
+  <text x="64" y="232" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#0f766e">75%</text>
+  <rect x="44" y="288" width="302" height="72" rx="10" fill="#f8fafc" stroke="#dbe3eb"/>
+  <rect x="44" y="382" width="302" height="72" rx="10" fill="#f8fafc" stroke="#dbe3eb"/>
+  <rect x="44" y="476" width="302" height="72" rx="10" fill="#f8fafc" stroke="#dbe3eb"/>
+  <text x="64" y="331" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#0f172a">Banco y archivo plano</text>
+  <text x="64" y="425" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#0f172a">RDEP e IESS</text>
+  <text x="64" y="519" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#0f172a">Usuarios y roles</text>
+</svg>

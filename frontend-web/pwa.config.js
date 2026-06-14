@@ -24,6 +24,28 @@ export const pwaManifest = {
       type: 'image/svg+xml',
       purpose: 'maskable',
     },
+    {
+      src: '/apple-touch-icon.svg',
+      sizes: '180x180',
+      type: 'image/svg+xml',
+      purpose: 'any',
+    },
+  ],
+  screenshots: [
+    {
+      src: '/pwa-screenshot-wide.svg',
+      sizes: '1280x720',
+      type: 'image/svg+xml',
+      form_factor: 'wide',
+      label: 'Panel operativo de Nómina-Ec con datos ficticios',
+    },
+    {
+      src: '/pwa-screenshot-mobile.svg',
+      sizes: '390x844',
+      type: 'image/svg+xml',
+      form_factor: 'narrow',
+      label: 'Vista móvil de la operación mensual de Nómina-Ec',
+    },
   ],
   shortcuts: [
     {
@@ -59,16 +81,16 @@ export const pwaWorkbox = {
   globPatterns: ['**/*.{js,css,html,svg,ico,webmanifest}'],
   runtimeCaching: [
     {
+      urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+      handler: 'NetworkOnly',
+    },
+    {
       urlPattern: ({ request }) => request.mode === 'navigate',
       handler: 'NetworkFirst',
       options: {
         cacheName: 'nomina-ec-shell',
         networkTimeoutSeconds: 5,
       },
-    },
-    {
-      urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
-      handler: 'NetworkOnly',
     },
   ],
 };
