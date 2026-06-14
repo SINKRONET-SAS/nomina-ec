@@ -19,6 +19,7 @@ import CookieConsent from './components/Privacy/CookieConsent';
 import Parametrizacion from './pages/Configuracion/Parametrizacion';
 import Auditoria from './pages/Auditoria';
 import Dashboard from './pages/Dashboard';
+import LineaBaseOperativa from './pages/Operacion/LineaBaseOperativa';
 import ListaEmpleados from './pages/Empleados/ListaEmpleados';
 import NuevoEmpleado from './pages/Empleados/NuevoEmpleado';
 import TerminarEmpleado from './pages/Empleados/TerminarEmpleado';
@@ -79,6 +80,11 @@ function App() {
               </ProtectedRoute>
             }>
               <Route index element={<Dashboard />} />
+              <Route path="operacion/base" element={
+                <ProtectedRoute requiredRole={['superadmin', 'owner', 'admin_rrhh']}>
+                  <LineaBaseOperativa />
+                </ProtectedRoute>
+              } />
               
               {/* Empleados */}
               <Route path="empleados" element={

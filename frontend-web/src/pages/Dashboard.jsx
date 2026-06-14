@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { authenticatedApi } from '../services/authenticatedApi';
+import { operationalBaseline, statusStyles } from '../config/operationalBaseline';
 
 const monthNames = [
   'Enero',
@@ -235,6 +236,9 @@ function Dashboard() {
       tone: 'bg-amber-50 text-amber-700',
     },
   ];
+  const baselineHighlights = operationalBaseline.filter((item) => (
+    ['empresa', 'bancos', 'usuarios', 'rdep', 'superadmin', 'api'].includes(item.code)
+  ));
 
   return (
     <div className="space-y-6">
@@ -285,6 +289,42 @@ function Dashboard() {
             </div>
           </Link>
         ))}
+      </section>
+
+      <section className="soft-panel p-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Linea base ONI26</p>
+            <h2 className="mt-1 text-lg font-semibold text-slate-950">Procesos visibles para operar</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Empresa, bancos, usuarios, RDEP, SUPERADMIN y API ya tienen una ruta clara de configuracion o contrato.
+            </p>
+          </div>
+          <Link className="inline-flex min-h-10 items-center justify-center rounded-md bg-teal-700 px-4 text-sm font-semibold text-white" to="/dashboard/operacion/base">
+            Ver linea base
+          </Link>
+        </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {baselineHighlights.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link className="rounded-md border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50" key={item.code} to={item.href}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="rounded-md bg-slate-50 p-2 text-teal-700">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <h3 className="font-semibold text-slate-950">{item.title}</h3>
+                  </div>
+                  <span className={`rounded-full border px-2 py-1 text-xs font-semibold ${statusStyles[item.status]}`}>
+                    {item.statusLabel}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm leading-5 text-slate-600">{item.summary}</p>
+              </Link>
+            );
+          })}
+        </div>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.35fr_0.85fr]">

@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Settings2, LogOut, Menu, ShieldCheck, X } from 'lucide-react';
+import { ClipboardList, LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Settings2, LogOut, Menu, ShieldCheck, X } from 'lucide-react';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -14,6 +14,7 @@ function Layout() {
 
   const menuItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado'] },
+    { path: '/dashboard/operacion/base', icon: ClipboardList, label: 'Línea base', roles: ['superadmin', 'owner', 'admin_rrhh'] },
     {
       label: 'Empleados',
       icon: Users,
