@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Circle,
   CreditCard,
+  Download,
   MapPin,
   Network,
   Plus,
@@ -16,7 +17,12 @@ import {
   UserCog,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { completeOnboardingStep, createConfigurationResource, fetchConfigurationSummary } from '../../services/configurationApi';
+import {
+  completeOnboardingStep,
+  createConfigurationResource,
+  fetchConfigurationSummary,
+  loadMandatoryLegalParameters,
+} from '../../services/configurationApi';
 import { extractApiError } from '../../services/publicApi';
 
 const formDefinitions = [
@@ -639,6 +645,7 @@ function Parametrizacion() {
   const queryClient = useQueryClient();
   const [activeForm, setActiveForm] = useState(formDefinitions[0].key);
   const [forms, setForms] = useState(buildInitialState);
+  const [mandatoryYear, setMandatoryYear] = useState(new Date().getFullYear());
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
@@ -673,6 +680,20 @@ function Parametrizacion() {
     onError: (err) => {
       setMessage('');
       setError(extractApiError(err, 'No pudimos guardar la parametrizacion. Revisa los datos e intenta nuevamente.'));
+    },
+  });
+
+  const loadMandatoryMutation = useMutation({
+    mutationFn: () => loadMandatoryLegalParameters(token, mandatoryYear),
+    onSuccess: (data) => {
+      setError('');
+      setMessage(`Se cargaron ${data.count} parametros legales obligatorios para ${data.periodYear}. Revisalos antes de produccion.`);
+      setActiveForm('ir');
+      queryClient.invalidateQueries({ queryKey: ['configuration-summary'] });
+    },
+    onError: (err) => {
+      setMessage('');
+      setError(extractApiError(err, 'No pudimos cargar los parametros legales obligatorios.'));
     },
   });
 
@@ -784,6 +805,38 @@ function Parametrizacion() {
             <p className="mt-2 text-3xl font-semibold text-slate-950">{isLoading && !summaryHasError ? '...' : value}</p>
           </article>
         ))}
+      </section>
+
+      <section className="rounded-lg border border-teal-200 bg-teal-50 p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-teal-950">Carga legal obligatoria</h2>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-teal-900">
+              Carga SBU, aportes IESS, jornada, vacaciones y tabla de impuesto a la renta del anio seleccionado
+              como parametros revisables. No reemplaza la validacion contra fuente oficial vigente.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <label>
+              <span className="text-sm font-medium text-teal-950">Anio fiscal</span>
+              <input
+                className="mt-1 w-32 rounded-md border border-teal-300 bg-white px-3 py-2 text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+                type="number"
+                value={mandatoryYear}
+                onChange={(event) => setMandatoryYear(Number(event.target.value))}
+              />
+            </label>
+            <button
+              className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60"
+              disabled={loadMandatoryMutation.isPending}
+              type="button"
+              onClick={() => loadMandatoryMutation.mutate()}
+            >
+              <Download className="h-4 w-4" />
+              {loadMandatoryMutation.isPending ? 'Cargando...' : 'Cargar parametros obligatorios'}
+            </button>
+          </div>
+        </div>
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">

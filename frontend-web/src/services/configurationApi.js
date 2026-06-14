@@ -15,6 +15,15 @@ export async function createConfigurationResource(token, resource, payload) {
   return response.data?.data;
 }
 
+export async function loadMandatoryLegalParameters(token, year) {
+  const response = await axios.post(
+    `${API_URL}/configuracion/parametros-legales/obligatorios`,
+    { year },
+    authHeaders(token)
+  );
+  return response.data?.data;
+}
+
 export async function completeOnboardingStep(token, stepCode, payload = {}) {
   const response = await axios.post(`${API_URL}/configuracion/onboarding/${stepCode}`, payload, authHeaders(token));
   return response.data?.data;

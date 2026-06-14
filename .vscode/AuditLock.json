@@ -2,41 +2,33 @@
   "schemaVersion": 1,
   "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
   "planCode": "ONI26",
-  "status": "functional_second_pass_started",
-  "phaseCompleted": "ONI26-FUNC-01",
+  "status": "functional_legal_mandatory_loader_completed",
+  "phaseCompleted": "ONI26-FUNC-02",
   "currentPhase": "ONI26-FUNC-DEEPENING",
-  "updatedAt": "2026-06-14T14:10:00.0000000-05:00",
-  "summary": "Se ejecuto una segunda pasada funcional: tabla IR anual editable, validacion backend, motor de nomina usando parametros versionados y centro integral ONI26 con formularios persistentes por modulo.",
+  "updatedAt": "2026-06-14T14:25:00.0000000-05:00",
+  "summary": "Se agrego boton y endpoint para cargar parametros legales obligatorios por anio fiscal, con persistencia en legal_parameter_versions, auditoria y onboarding legal.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: el alcance es la funcionalidad de todo el plan, no una lista de buenas intenciones.",
-  "previousAuditLockHash": "af3099689c155b96ae86113e12d7336bf644b8a608b6bc7d7c02ea7522f80640",
+  "approvalSource": "Solicitud del usuario: debe haber un boton para cargar los parametros que son legales y obligatorios.",
+  "previousAuditLockHash": "7d9e9301bfab9f8761f14f42d672603380aa9ee0e735217b25b95e3d705dd6f2",
   "filesModified": [
     ".vscode/AuditLock.json",
+    "backend/src/app.js",
+    "backend/src/controllers/configurationController.js",
     "backend/src/services/configurationService.js",
-    "backend/src/services/legalParameterService.js",
-    "frontend-web/src/App.jsx",
-    "frontend-web/src/components/Layout/Layout.jsx",
-    "frontend-web/src/config/operationalBaseline.js",
-    "frontend-web/src/config/operationalModules.js",
     "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-    "frontend-web/src/pages/Dashboard.jsx",
-    "frontend-web/src/pages/Operacion/LineaBaseOperativa.jsx",
-    "frontend-web/src/pages/Operacion/OperacionIntegral.jsx",
-    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_FUNC_01_FUNCIONALIDAD_INTEGRAL.md"
+    "frontend-web/src/services/configurationApi.js",
+    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_FUNC_02_CARGA_LEGAL_OBLIGATORIA.md"
   ],
   "validationChecks": [
-    { "gate": "ONI26-FUNC-01-FRONTEND", "status": "PASS", "detail": "npm.cmd run build ejecutado en frontend-web." },
-    { "gate": "ONI26-FUNC-01-BACKEND-CONFIG", "status": "PASS", "detail": "node --check configurationService.js." },
-    { "gate": "ONI26-FUNC-01-BACKEND-LEGAL", "status": "PASS", "detail": "node --check legalParameterService.js." },
-    { "gate": "ONI26-FUNC-01-UI-EXPOSURE", "status": "PASS", "detail": "Ruta, menu, pantalla integral y formularios persistentes expuestos." },
-    { "gate": "ONI26-FUNC-01-INCOME-TAX", "status": "PASS", "detail": "Tabla IR editable y consumible por motor de nomina cuando exista version parametrizada." }
+    { "gate": "ONI26-FUNC-02-BACKEND-SERVICE", "status": "PASS", "detail": "node --check configurationService.js." },
+    { "gate": "ONI26-FUNC-02-BACKEND-CONTROLLER", "status": "PASS", "detail": "node --check configurationController.js." },
+    { "gate": "ONI26-FUNC-02-BACKEND-APP", "status": "PASS", "detail": "node --check app.js." },
+    { "gate": "ONI26-FUNC-02-FRONTEND", "status": "PASS", "detail": "npm.cmd run build ejecutado en frontend-web." }
   ],
   "residualRisk": [
-    "Importacion CSV/XLSX requiere endpoint especializado y parser con reporte de errores.",
-    "RDEP productivo requiere validador XSD y ficha tecnica vigente.",
-    "API externa requiere llaves reales, rotacion, scopes efectivos y rate limiting en middleware.",
-    "SUPERADMIN requiere pantallas especificas por rol para contratos, incidencias y owners."
+    "Los parametros cargados quedan pendientes de validacion oficial/profesional antes de uso productivo.",
+    "Si se requiere cargar anios sin base legal interna, se debe incorporar primero la fuente oficial correspondiente."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "115b78370ba1e13bf25415c37a2f5891bdc052ecb8815083696cc6f756832e8c"
+  "signature": "8334775879c2c9eacdefc4b801a7b66d29184f16b0c6a1f24d7eca41696e3ab6"
 }

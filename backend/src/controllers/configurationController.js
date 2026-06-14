@@ -77,6 +77,19 @@ async function completeOnboardingStep(req, res, next) {
   }
 }
 
+async function loadMandatoryLegalParameters(req, res, next) {
+  try {
+    const data = await configurationService.loadMandatoryLegalParameters(
+      req.body?.year || new Date().getFullYear(),
+      req.usuario,
+      requestContext(req)
+    );
+    return res.status(201).json({ data, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   summary,
   list,
@@ -84,4 +97,5 @@ module.exports = {
   update,
   onboarding,
   completeOnboardingStep,
+  loadMandatoryLegalParameters,
 };

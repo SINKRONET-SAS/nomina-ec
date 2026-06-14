@@ -1,6 +1,7 @@
 const db = require('../config/database');
 const AppError = require('../utils/AppError');
 const { recordAudit } = require('./auditService');
+const { getLegalParameters } = require('../config/legal-ecuador');
 
 const ONBOARDING_STEPS = [
   { code: 'empresa', label: 'Datos de empresa' },
@@ -183,6 +184,159 @@ function ensureWriteAllowed(user) {
       userId: user.id,
     });
   }
+}
+
+function legalParameterPayloadsFromBase(year) {
+  const parameters = getLegalParameters(year);
+  const payroll = parameters.payroll || {};
+
+  return [
+    {
+      parameter_key: 'sbu',
+      value: { amount: Number(payroll.unifiedBaseSalary) },
+      unit: 'USD',
+      notes: 'Salario basico unificado cargado como parametro obligatorio revisable.',
+    },
+    {
+      parameter_key: 'iess_aporte_personal',
+      value: { amount: Number(payroll.personalIessRate) },
+      unit: 'porcentaje_decimal',
+      notes: 'Aporte personal IESS cargado como parametro obligatorio revisable.',
+    },
+    {
+      parameter_key: 'iess_aporte_patronal',
+      value: { amount: Number(payroll.employerIessRate) },
+      unit: 'porcentaje_decimal',
+      notes: 'Aporte patronal IESS cargado como parametro obligatorio revisable.',
+    },
+    {
+      parameter_key: 'jornada_horas_mensuales',
+      value: { amount: Number(payroll.monthlyWorkHours) },
+      unit: 'horas',
+      notes: 'Horas mensuales de referencia para calculo de valor hora.',
+    },
+    {
+      parameter_key: 'jornada_maxima_semanal',
+      value: { amount: Number(payroll.weeklyMaxHours) },
+      unit: 'horas',
+      notes: 'Jornada maxima semanal cargada como parametro obligatorio revisable.',
+    },
+    {
+      parameter_key: 'provision_vacaciones',
+      value: { amount: Number(payroll.vacationProvisionRate) },
+      unit: 'porcentaje_decimal',
+      notes: 'Provision de vacaciones cargada como parametro obligatorio revisable.',
+    },
+    {
+      parameter_key: 'vacaciones_dias_anuales',
+      value: { amount: Number(payroll.vacationDaysAfterFirstYear) },
+      unit: 'dias',
+      notes: 'Dias de vacaciones anuales desde el primer anio completo.',
+    },
+    {
+      parameter_key: 'income_tax_table',
+      value: {
+        brackets: (parameters.incomeTax || []).map((bracket) => ({
+          from: Number(bracket.from ?? bracket.fraccion_basica ?? 0),
+          to: bracket.to ?? bracket.exceso_hasta ?? null,
+          baseTax: Number(bracket.baseTax ?? bracket.impuesto_fraccion_basica ?? 0),
+          rate: Number(bracket.rate ?? bracket.porcentaje ?? 0),
+          fraccion_basica: Number(bracket.from ?? bracket.fraccion_basica ?? 0),
+          exceso_hasta: bracket.to ?? bracket.exceso_hasta ?? null,
+          impuesto_fraccion_basica: Number(bracket.baseTax ?? bracket.impuesto_fraccion_basica ?? 0),
+          porcentaje: Number(bracket.rate ?? bracket.porcentaje ?? 0),
+        })),
+      },
+      unit: 'tabla_anual',
+      notes: 'Tabla anual de impuesto a la renta cargada como parametro obligatorio revisable.',
+    },
+  ];
+}
+
+async function loadMandatoryLegalParameters(year, user, context = {}) {
+  ensureWriteAllowed(user);
+  const periodYear = Number(year);
+
+  if (!Number.isInteger(periodYear) || periodYear < 2000 || periodYear > 2100) {
+    throw new AppError('El anio fiscal para cargar parametros legales no es valido.', {
+      code: 'LEGAL_PARAMETERS_YEAR_INVALID',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+
+  const tenantId = user.rol === 'superadmin' && !user.tenantId ? null : resolveTenantId(user, {});
+  const payloads = legalParameterPayloadsFromBase(periodYear);
+  const rows = [];
+
+  for (const payload of payloads) {
+    const params = [
+      tenantId,
+      periodYear,
+      payload.parameter_key,
+      JSON.stringify(payload.value),
+      payload.unit,
+      `Parametros base Nomina-Ec ${periodYear}`,
+      'https://www.sri.gob.ec/formularios-e-instructivos1',
+      `${payload.notes} Validar contra fuente oficial vigente antes de produccion.`,
+      user.id,
+    ];
+    const existing = await db.query(`
+      SELECT id
+      FROM legal_parameter_versions
+      WHERE COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid) = COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
+        AND country_code = 'EC'
+        AND region_code = 'NACIONAL'
+        AND period_year = $2
+        AND parameter_key = $3
+        AND valid_from = CURRENT_DATE
+      LIMIT 1
+    `, [tenantId, periodYear, payload.parameter_key]);
+
+    const result = existing.rows.length > 0
+      ? await db.query(`
+          UPDATE legal_parameter_versions
+          SET value = $4,
+              unit = $5,
+              source_name = $6,
+              source_url = $7,
+              source_date = CURRENT_DATE,
+              notes = $8,
+              updated_at = now()
+          WHERE id = $10
+          RETURNING *
+        `, [...params, existing.rows[0].id])
+      : await db.query(`
+          INSERT INTO legal_parameter_versions (
+            tenant_id, country_code, region_code, period_year, parameter_key, value, unit,
+            rounding_mode, validation_status, source_name, source_url, source_date, notes, created_by
+          )
+          VALUES ($1, 'EC', 'NACIONAL', $2, $3, $4, $5, 'half_up_2',
+            'pendiente_validacion_oficial', $6, $7, CURRENT_DATE, $8, $9)
+          RETURNING *
+        `, params);
+    rows.push(result.rows[0]);
+  }
+
+  await recordAudit({
+    tenantId,
+    userId: user.id,
+    correlationId: context.correlationId,
+    action: 'configuracion.cargar_parametros_legales_obligatorios',
+    entity: 'legal_parameter_versions',
+    entityId: null,
+    newData: { periodYear, count: rows.length, parameterKeys: rows.map((row) => row.parameter_key) },
+    ipAddress: context.ipAddress,
+  });
+
+  if (tenantId) {
+    await completeOnboardingStep('legal', {
+      notes: `Parametros legales obligatorios ${periodYear} cargados para revision.`,
+      evidence: { periodYear, count: rows.length },
+    }, user, context);
+  }
+
+  return { periodYear, count: rows.length, rows };
 }
 
 async function listResource(resource, user) {
@@ -447,6 +601,7 @@ async function getConfigurationSummary(user) {
 module.exports = {
   RESOURCE_CONFIG,
   ONBOARDING_STEPS,
+  loadMandatoryLegalParameters,
   listResource,
   createResource,
   updateResource,
