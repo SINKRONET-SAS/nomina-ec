@@ -2,24 +2,24 @@
   "schemaVersion": 1,
   "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
   "planCode": "ONI26",
-  "status": "payroll_reports_catalog_completed",
-  "phaseCompleted": "ONI26-12",
-  "currentPhase": "ONI26-13-DASHBOARD-HEADCOUNT",
-  "updatedAt": "2026-06-14T13:15:00.0000000-05:00",
-  "summary": "Se creo catalogo de reportes de nomina con PDF auditable, Excel tabular, permisos, filtros y privacidad.",
+  "status": "dashboard_headcount_contract_completed",
+  "phaseCompleted": "ONI26-13",
+  "currentPhase": "ONI26-14-QA-RELEASE",
+  "updatedAt": "2026-06-14T13:25:00.0000000-05:00",
+  "summary": "Se definieron metricas agregadas de dashboard, headcount, avance de nomina, bancos, alertas, estados vacios y politica visual.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts ONI26.",
-  "previousAuditLockHash": "3ef6f3f239644ac231a30e0fd502dfcb4181c5599087a5e748b0863347a9928c",
+  "previousAuditLockHash": "e1654b4ca076e501c36bbc16122ed855775019748bc6bf601d0605885e245e1a",
   "filesModified": [
     ".vscode/AuditLock.json",
-    "backend/src/config/payroll-report-catalog.json",
-    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_12_REPORTES_NOMINA.md",
-    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_12_REPORTES_NOMINA.md"
+    "backend/src/config/dashboard-headcount-metrics.json",
+    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_13_DASHBOARD_HEADCOUNT.md",
+    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_13_DASHBOARD_HEADCOUNT.md"
   ],
   "validationChecks": [
-    { "gate": "ONI26-12-RULES-PROMPT", "status": "PASS", "detail": "RULES.md y prompt ONI26-12 leidos." },
-    { "gate": "ONI26-12-TABULAR", "status": "PASS", "detail": "Excel tabular definido sin celdas combinadas." },
-    { "gate": "ONI26-12-AUDIT", "status": "PASS", "detail": "PDF/exportaciones requieren correlationId y auditoria." }
+    { "gate": "ONI26-13-RULES-PROMPT", "status": "PASS", "detail": "RULES.md y prompt ONI26-13 leidos." },
+    { "gate": "ONI26-13-METRICS", "status": "PASS", "detail": "Metricas agregadas y filtros definidos." },
+    { "gate": "ONI26-13-PRIVACY", "status": "PASS", "detail": "Dashboard evita datos sensibles por defecto." }
   ],
   "fases": [
     { "phase": "ONI26-00", "status": "completed", "task": "baseline documental" },
@@ -35,12 +35,12 @@
     { "phase": "ONI26-10", "status": "completed", "task": "apertura mes novedades" },
     { "phase": "ONI26-11", "status": "completed", "task": "carga masiva empleados" },
     { "phase": "ONI26-12", "status": "completed", "task": "reportes nomina" },
-    { "phase": "ONI26-13", "status": "pending", "task": "dashboard headcount" },
+    { "phase": "ONI26-13", "status": "completed", "task": "dashboard headcount" },
     { "phase": "ONI26-14", "status": "pending", "task": "mensajes qa release" }
   ],
   "residualRisk": [
-    "Falta smoke de exportacion PDF/Excel con empresa DEMO."
+    "Falta implementar UI responsive y QA visual con datos DEMO."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "beaf3ade04ca0ede6902bcba59e67e3d320ab3796a35039076ce008455549993"
+  "signature": "1870725ca5f576b7184b889d3a642e104bb074e0bd726908af7ccf1ab5aa1d98"
 }

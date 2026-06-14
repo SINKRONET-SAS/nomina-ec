@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "planCode": "ONI26",
+  "phase": "ONI26-13",
+  "purpose": "Metricas de dashboard y headcount para operacion de nomina.",
+  "metrics": [
+    {
+      "code": "HEADCOUNT_ACTIVE",
+      "name": "Headcount activo",
+      "aggregation": "count_active_employees",
+      "filters": ["departmentId", "costCenterId", "periodId"],
+      "privacy": "aggregate_only"
+    },
+    {
+      "code": "HEADCOUNT_MOVEMENTS",
+      "name": "Altas y bajas",
+      "aggregation": "count_hires_terminations",
+      "filters": ["periodId", "departmentId"],
+      "privacy": "aggregate_only"
+    },
+    {
+      "code": "PAYROLL_PROGRESS",
+      "name": "Avance de nomina",
+      "aggregation": "period_state_progress",
+      "filters": ["periodId"],
+      "privacy": "aggregate_only"
+    },
+    {
+      "code": "BANK_FILE_STATUS",
+      "name": "Estado de pagos bancarios",
+      "aggregation": "bank_file_status_by_period",
+      "filters": ["periodId", "bankProfile"],
+      "privacy": "aggregate_only"
+    },
+    {
+      "code": "OPERATIVE_ALERTS",
+      "name": "Alertas operativas",
+      "aggregation": "count_pending_items_by_severity",
+      "filters": ["periodId", "severity"],
+      "privacy": "no_personal_details_by_default"
+    }
+  ],
+  "emptyStates": {
+    "noEmployees": "Registra empleados DEMO o carga empleados para ver headcount.",
+    "noPeriod": "Abre un periodo de nomina para ver avance operativo.",
+    "noBankFiles": "Genera un archivo bancario DEMO para revisar estado de pagos."
+  },
+  "visualPolicy": {
+    "avoidSensitiveListsOnHome": true,
+    "preferAggregateNumbers": true,
+    "responsiveRequired": true
+  }
+}
