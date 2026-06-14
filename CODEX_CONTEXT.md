@@ -1,3 +1,52 @@
+## Open Haiky Plan - HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026 |
+| Codigo | LPA26 |
+| Estado | abierto en fase documental |
+| Fase actual | LPA26-00 cerrada documentalmente |
+| Alcance | mejora anti-churn de landing publica, PWA y app movil para interes comercial, readiness Google Play / Apple App Store y cumplimiento LOPDP Ecuador |
+| Referencia UX/release | `C:\proyectos web\sinkroniq-mobile` |
+| Plan doc | `docs2/PLAN_HAIKY_LANDING_PWA_APP_STORE_NOMINA_EC_2026.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Prompts | `.github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-{00..08}-*.md` |
+| RULES | `RULES.md` |
+
+### Resumen LPA26
+
+LPA26 abre una linea de mejora comercial y release para Nomina-Ec sin churn. El plan exige diagnostico antes de tocar runtime, una sola landing, una sola PWA, una sola app movil, assets versionados, politicas legales unificadas y gates de privacidad antes de publicacion. Usa `sinkroniq-mobile` como referencia de patrones de lanzamiento, assets, smoke PWA, LOPDP y tiendas; no copia su dominio de facturacion electronica.
+
+La base legal principal revisada es la Ley Organica de Proteccion de Datos Personales de Ecuador publicada en Registro Oficial Quinto Suplemento No. 459 del 2021-05-26, PDF oficial MINTEL: `https://www.telecomunicaciones.gob.ec/wp-content/uploads/2021/06/Ley-Organica-de-Datos-Personales.pdf`.
+
+### Fases LPA26
+
+| Fase | Prioridad | Estado | Resumen |
+|------|-----------|--------|---------|
+| LPA26-00 | P0 | completed | Baseline documental: plan, prompts, contexto y AuditLock; no toca runtime. |
+| LPA26-01 | P0 | pending | Diagnostico anti-churn de landing, PWA, app, assets, rutas y contratos actuales. |
+| LPA26-02 | P0 | pending | Landing de conversion para interes comercial en nomina Ecuador. |
+| LPA26-03 | P0 | pending | PWA instalable, segura y sin cache de datos personales. |
+| LPA26-04 | P0 | pending | App movil lista para Google Play y Apple App Store, con bloqueos externos documentados. |
+| LPA26-05 | P0 | pending | LOPDP: privacidad, consentimientos, retiro, incidentes, procesadores y retencion. |
+| LPA26-06 | P1 | pending | Registro, activacion y onboarding comercial del OWNER. |
+| LPA26-07 | P1 | pending | QA visual, performance, accesibilidad y confianza. |
+| LPA26-08 | P0 | pending | Release stores, TestFlight/internal testing, go-live, rollback y monitoreo. |
+
+### Reglas LPA26
+
+- No tocar runtime antes de ejecutar `LPA26-01`.
+- No crear landing, app, catalogos o politicas paralelas.
+- No copiar textos ni flujos de facturacion electronica de `sinkroniq-mobile`.
+- No usar datos reales de empleados en demos, screenshots o assets de tienda.
+- No activar analitica sin consentimiento.
+- No cachear datos personales de nomina en service worker o almacenamiento local.
+- No prometer cumplimiento legal total ni aprobacion de entidades sin evidencia.
+- Cada fase requiere aprobacion explicita por prompt y AuditLock firmado.
+- Commits esperados: `phase: LPA26-XX task: ...`.
+
+---
+
 ## Open Haiky Plan - HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026
 
 | Campo | Valor |

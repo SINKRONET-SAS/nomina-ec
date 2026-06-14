@@ -1,15 +1,15 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-PRODUCTIZACION-NOMINA-EC-DOCUMENTO-NOMINA-2026",
-  "planCode": "PNE26",
-  "status": "iess_validation_performed_blocked",
-  "phaseCompleted": "PNE26-IESS-VALIDACION",
-  "currentPhase": "PNE26-BLOCKED-EXTERNAL-GATES",
-  "updatedAt": "2026-06-14T01:59:01.013-05:00",
-  "summary": "PNE26-01..16 ejecutadas en pasada local. Se realizo validacion legal/contable IESS 2026 sobre fuentes oficiales disponibles; el gate IESS queda bloqueado para produccion por falta de documento oficial especifico y aprobacion contable.",
+  "plan": "HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026",
+  "planCode": "LPA26",
+  "status": "baseline_documental_completed",
+  "phaseCompleted": "LPA26-00",
+  "currentPhase": "LPA26-01-DIAGNOSTICO-ANTI-CHURN",
+  "updatedAt": "2026-06-14T10:00:17.1870456-05:00",
+  "summary": "Se abrio la linea Haiky LPA26 para mejorar landing publica, PWA y app movil de Nomina-Ec sin churn, con foco comercial, readiness Google Play / Apple App Store y cumplimiento LOPDP Ecuador. La fase LPA26-00 es documental y no modifica runtime.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: Ejecutar todos los prompts de acuerdo a Open Haiky Plan PNE26.",
-  "previousAuditLockHash": "0e692b21ffddd727f03789d84d3b4d45ff0813d79ccacf5eb35680192cba2fb8",
+  "approvalSource": "Solicitud del usuario: generar plan Haiky para mejorar Landing page, PWA y app, revisar sinkroniq-mobile, actualizar CODEX_CONTEXT, AuditLock y prompts por fases.",
+  "previousAuditLockHash": "6db4ec7a911a4f9098867f35ed66d97b8ac1da52c43693ffeb6a206a1de6605f",
   "previousPlans": [
     {
       "plan": "HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026",
@@ -18,160 +18,88 @@
       "phaseCompleted": "HNBE26-09"
     },
     {
-      "plan": "HAIKY-EJECUCION-PROMPTS-ADJUNTO-2026",
-      "planCode": "HEPA26",
-      "status": "context_updated_with_external_blocks",
-      "phaseCompleted": "HEPA26-CONTEXT-PNE26"
+      "plan": "HAIKY-PRODUCTIZACION-NOMINA-EC-DOCUMENTO-NOMINA-2026",
+      "planCode": "PNE26",
+      "status": "iess_validation_performed_blocked",
+      "phaseCompleted": "PNE26-IESS-VALIDACION"
     }
   ],
   "filesModified": [
     "CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "docs/PLAN_HAIKY_PRODUCTIZACION_NOMINA_EC_DOCUMENTO_NOMINA.md",
-    "backend/src/services/iessSaeGenerator.js",
-    "backend/src/services/iessSaeGenerator.test.js",
-    "backend/src/utils/utilidades.js",
-    "backend/test/jest.setup.js",
-    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-    "docs/VALIDACION_LEGAL_CONTABLE_IESS_2026.md",
-    "docs2/MATRIZ_LEGAL_ECUADOR_2026.md",
-    "docs/CUMPLIMIENTO_LEGAL.md",
-    "docs/REPORTE_PNE26_01_CONTRATO_TECNICO.md",
-    "docs/REPORTE_PNE26_02_LEGAL_ECUADOR.md",
-    "docs/REPORTE_PNE26_03_UI_LAYOUT.md",
-    "docs/REPORTE_PNE26_04_AUTH_RBAC.md",
-    "docs/REPORTE_PNE26_05_EMPRESAS_ONBOARDING.md",
-    "docs/REPORTE_PNE26_06_EMPLEADOS.md",
-    "docs/REPORTE_PNE26_07_ASISTENCIA.md",
-    "docs/REPORTE_PNE26_08_MOTOR_NOMINA.md",
-    "docs/REPORTE_PNE26_09_LIQUIDACIONES.md",
-    "docs/REPORTE_PNE26_10_DOCUMENTOS.md",
-    "docs/REPORTE_PNE26_11_BANCOS.md",
-    "docs/REPORTE_PNE26_12_REPORTES.md",
-    "docs/REPORTE_PNE26_13_SEGURIDAD_AUDITORIA.md",
-    "docs/REPORTE_PNE26_14_AUTOMATIZACIONES.md",
-    "docs/REPORTE_PNE26_15_COMERCIAL.md",
-    "docs/REPORTE_PNE26_16_QA_RELEASE.md"
+    "docs2/PLAN_HAIKY_LANDING_PWA_APP_STORE_NOMINA_EC_2026.md",
+    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-00-baseline.md",
+    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-01-diagnostico.md",
+    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-02-landing-conversion.md",
+    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-03-pwa-segura.md",
+    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-04-app-stores.md",
+    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-05-lopdp.md",
+    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-06-onboarding-comercial.md",
+    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-07-qa-visual.md",
+    ".github/prompts/LANDING-PWA-APP-STORE-NOMINA-EC-2026-08-release.md"
   ],
   "validationChecks": [
     {
-      "gate": "PNE26-RULES-READ",
+      "gate": "LPA26-RULES-READ",
       "status": "PASS",
-      "detail": "RULES.md leido antes de modificar runtime."
+      "detail": "RULES.md leido antes de crear plan, prompts, contexto y AuditLock."
     },
     {
-      "gate": "PNE26-AUDITLOCK-READ",
+      "gate": "LPA26-AUDITLOCK-READ",
       "status": "PASS",
-      "detail": ".vscode/AuditLock.json leido antes de modificar runtime."
+      "detail": ".vscode/AuditLock.json leido y hasheado antes de actualizar el candado."
     },
     {
-      "gate": "PNE26-PROMPTS-READ",
+      "gate": "LPA26-REFERENCE-SINKRONIQ-MOBILE",
       "status": "PASS",
-      "detail": "Prompts PRODUCTIZACION-NOMINA-EC-2026-00..16 leidos y ejecutados secuencialmente."
+      "detail": "Se revisaron guia Android/iOS, reportes LOPDP, smoke PWA, gate de assets y metadata de assets en sinkroniq-mobile como referencia de patrones, no como fuente de copia funcional."
     },
     {
-      "gate": "PNE26-REPORTS",
+      "gate": "LPA26-LEGAL-LOPDP-OFFICIAL",
       "status": "PASS",
-      "detail": "Reportes docs/REPORTE_PNE26_01..16 creados."
+      "detail": "Se verifico fuente oficial MINTEL para Ley Organica de Proteccion de Datos Personales, Registro Oficial Quinto Suplemento No. 459 del 2021-05-26."
     },
     {
-      "gate": "PNE26-LEGAL-CONSTANTS",
+      "gate": "LPA26-NO-RUNTIME-CHANGES",
       "status": "PASS",
-      "detail": "SAE y UI dejaron de usar constantes legales hardcodeadas; quedan solo en fallback centralizado legal-ecuador.js con bloqueo pendiente_validacion_oficial."
+      "detail": "LPA26-00 solo modifica documentacion, prompts, contexto y AuditLock."
     },
     {
-      "gate": "PNE26-ZERO-SILENT-RETURNS",
+      "gate": "LPA26-PROMPTS-CREATED",
       "status": "PASS",
-      "detail": "rg no encontro patron if (...) return; sin bloque explicito en runtime."
+      "detail": "Prompts LPA26-00..08 creados bajo RULES.md y orden estricto."
     },
     {
-      "gate": "PNE26-NODE-CHECK",
+      "gate": "LPA26-AUDITLOCK-SIGNATURE",
       "status": "PASS",
-      "detail": "node --check paso en iessSaeGenerator.js, utilidades.js e iessSaeGenerator.test.js."
-    },
-    {
-      "gate": "PNE26-PRISMA-VALIDATE",
-      "status": "PASS",
-      "detail": "npx.cmd prisma validate: schema valido."
-    },
-    {
-      "gate": "PNE26-PRISMA-MIGRATE-DEPLOY",
-      "status": "PASS",
-      "detail": "npx.cmd prisma migrate deploy: 7 migraciones, sin pendientes."
-    },
-    {
-      "gate": "PNE26-BACKEND-TESTS",
-      "status": "PASS",
-      "detail": "npm.cmd test -- --runInBand: 7 suites, 19 tests."
-    },
-    {
-      "gate": "PNE26-FRONTEND-PWA-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web: Vite build y PWA generados."
-    },
-    {
-      "gate": "PNE26-EXPO-DOCTOR",
-      "status": "PASS",
-      "detail": "npx.cmd expo-doctor: 21/21 checks passed."
-    },
-    {
-      "gate": "PNE26-POSTGRES-LOCAL",
-      "status": "PASS",
-      "detail": "Puerto 5432 escuchando localmente."
-    },
-    {
-      "gate": "PNE26-REDIS-LOCAL",
-      "status": "PASS",
-      "detail": "Puerto 6379 escuchando localmente."
-    },
-    {
-      "gate": "PNE26-RLS-RENDER",
-      "status": "BLOCKED",
-      "detail": "verify-rls-render.js requiere RLS_TENANT_A, RLS_TENANT_B y RLS_EMPLOYEE_A."
-    },
-    {
-      "gate": "PNE26-IESS-OFFICIAL-SOURCES",
-      "status": "BLOCKED",
-      "detail": "Portal IESS, normativa y consulta publica de resoluciones revisados el 2026-06-14; no se localizo documento directo suficiente para validar tasas 9.45% y 11.15%."
-    },
-    {
-      "gate": "PNE26-IESS-PROFESSIONAL-APPROVAL",
-      "status": "BLOCKED",
-      "detail": "Falta aprobacion firmada de contador o responsable legal/contable."
-    },
-    {
-      "gate": "PNE26-IESS-PRODUCTIVE-BLOCK",
-      "status": "PASS",
-      "detail": "legalParameterService mantiene bloqueo LEGAL_PARAMETERS_NOT_VALIDATED en produccion o con REQUIRE_VALIDATED_LEGAL_PARAMETERS=true."
+      "detail": "Firma calculada como SHA256(previousAuditLockHash + updatedAt)."
     }
   ],
   "fases": [
-    { "phase": "PNE26-00", "status": "completed", "task": "baseline documental" },
-    { "phase": "PNE26-01", "status": "completed_local", "task": "contrato tecnico de datos y runtime" },
-    { "phase": "PNE26-02", "status": "completed_local_with_professional_block", "task": "parametros legales Ecuador" },
-    { "phase": "PNE26-03", "status": "completed_local", "task": "UI layout y navegacion" },
-    { "phase": "PNE26-04", "status": "completed_local", "task": "auth RBAC y tenant activo" },
-    { "phase": "PNE26-05", "status": "completed_local", "task": "empresas y onboarding OWNER" },
-    { "phase": "PNE26-06", "status": "completed_local", "task": "empleados contratos y ficha laboral" },
-    { "phase": "PNE26-07", "status": "completed_local", "task": "marcaciones novedades y aprobaciones" },
-    { "phase": "PNE26-08", "status": "completed_local_with_professional_block", "task": "motor de nomina" },
-    { "phase": "PNE26-09", "status": "completed_local_with_legal_review_required", "task": "liquidaciones y finiquito" },
-    { "phase": "PNE26-10", "status": "completed_local_with_external_storage_block", "task": "documentos legales" },
-    { "phase": "PNE26-11", "status": "completed_local", "task": "archivos bancarios" },
-    { "phase": "PNE26-12", "status": "completed_local", "task": "reportes" },
-    { "phase": "PNE26-13", "status": "completed_local_with_render_block", "task": "seguridad auditoria LOPDP y RLS" },
-    { "phase": "PNE26-14", "status": "completed_local", "task": "automatizaciones y cron jobs" },
-    { "phase": "PNE26-15", "status": "completed_local_with_payphone_block", "task": "planes suscripciones y pagos" },
-    { "phase": "PNE26-16", "status": "completed_local_with_external_blocks", "task": "QA end-to-end y release productizable" }
+    { "phase": "LPA26-00", "status": "completed", "task": "baseline documental" },
+    { "phase": "LPA26-01", "status": "pending", "task": "diagnostico anti-churn" },
+    { "phase": "LPA26-02", "status": "pending", "task": "landing de conversion" },
+    { "phase": "LPA26-03", "status": "pending", "task": "PWA instalable y segura" },
+    { "phase": "LPA26-04", "status": "pending", "task": "app movil lista para tiendas" },
+    { "phase": "LPA26-05", "status": "pending", "task": "LOPDP y privacidad operacional" },
+    { "phase": "LPA26-06", "status": "pending", "task": "registro y onboarding comercial" },
+    { "phase": "LPA26-07", "status": "pending", "task": "QA visual performance y confianza" },
+    { "phase": "LPA26-08", "status": "pending", "task": "release stores y go-live" }
   ],
   "residualRisk": [
-    "IESS Ecuador 2026 y parametros sensibles requieren respaldo oficial y revision profesional antes de produccion.",
-    "RLS Render requiere credenciales no superusuario y variables RLS_TENANT_A, RLS_TENANT_B y RLS_EMPLOYEE_A.",
-    "PayPhone sandbox/oficial requiere credenciales, webhook, firma, conciliacion e idempotencia con entorno real.",
-    "Storage S3 real requiere credenciales y prueba de subida/descarga en staging.",
-    "Falta smoke visual PWA con backend activo y usuario de prueba.",
-    "Faltan pruebas automatizadas dedicadas para liquidaciones por causal, RBAC exhaustivo y exportaciones masivas."
+    "Google Play Console, Apple Developer, App Store Connect, ascAppId y appleTeamId son dependencias externas no verificables localmente.",
+    "La implementacion runtime de LPA26 queda pendiente hasta aprobacion explicita de LPA26-01.",
+    "La validacion legal LOPDP requiere revision profesional antes de afirmar cumplimiento total en marketing.",
+    "No se debe publicar screenshots con datos reales de empleados, cuentas bancarias, geolocalizacion o documentos laborales.",
+    "IESS y otros gates productivos de PNE26 siguen vigentes y no quedan resueltos por LPA26."
+  ],
+  "externalSources": [
+    {
+      "name": "Ley Organica de Proteccion de Datos Personales",
+      "url": "https://www.telecomunicaciones.gob.ec/wp-content/uploads/2021/06/Ley-Organica-de-Datos-Personales.pdf",
+      "detail": "Registro Oficial Quinto Suplemento No. 459, 2021-05-26."
+    }
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "5eebeec704fbb5e49a07a669423730342a646c1d3eb2be43c23d6873dfb60d2a"
+  "signature": "86b610cef0107bf31addba0225cf0b6c74e42e31d29484e1544e792b79ae8b62"
 }
