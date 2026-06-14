@@ -26,7 +26,7 @@ const flow = [
   {
     icon: ClipboardCheck,
     title: 'Roles y cierre',
-    text: 'Calculo de ingresos, descuentos, provisiones, cierre de periodo y rol de pago.',
+    text: 'Cálculo de ingresos, descuentos, provisiones, cierre de periodo y rol de pago.',
   },
   {
     icon: Banknote,
@@ -36,20 +36,20 @@ const flow = [
   {
     icon: FileSpreadsheet,
     title: 'RDEP, IESS y entidades',
-    text: 'Base para anexos laborales y reportes requeridos por entidades publicas ecuatorianas.',
+    text: 'Base para anexos laborales y reportes requeridos por entidades públicas ecuatorianas.',
   },
   {
     icon: ShieldCheck,
-    title: 'Auditoria y privacidad',
-    text: 'Trazabilidad por usuario, parametros versionados y controles de datos personales.',
+    title: 'Auditoría y privacidad',
+    text: 'Trazabilidad por usuario, parámetros versionados y controles de datos personales.',
   },
 ];
 
 const checklist = [
   'Datos ficticios para demo y capturas comerciales',
-  'Politicas publicas de privacidad y terminos',
-  'Sin analitica no esencial antes del consentimiento',
-  'Preparado para PWA y app movil de marcaciones',
+  'Políticas públicas de privacidad, soporte y eliminación de cuenta',
+  'Sin analítica no esencial antes del consentimiento',
+  'Preparado para PWA y app móvil de marcaciones',
 ];
 
 function Landing() {
@@ -66,6 +66,9 @@ function Landing() {
           <nav className="flex items-center gap-2 text-sm font-semibold">
             <Link className="hidden rounded-md px-3 py-2 text-slate-700 hover:bg-slate-100 sm:inline-flex" to="/precios">
               Planes
+            </Link>
+            <Link className="hidden rounded-md px-3 py-2 text-slate-700 hover:bg-slate-100 md:inline-flex" to="/soporte">
+              Soporte
             </Link>
             <Link className="secondary-button hidden sm:inline-flex" to="/privacidad">
               Privacidad
@@ -93,7 +96,10 @@ function Landing() {
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link className="primary-button" to="/registro">
-                Activar empresa <ArrowRight size={18} />
+                Crear cuenta <ArrowRight size={18} />
+              </Link>
+              <Link className="secondary-button" to="/soporte">
+                Solicitar demo
               </Link>
               <Link className="secondary-button" to="/privacidad">
                 Revisar privacidad
@@ -120,7 +126,7 @@ function Landing() {
                   {[
                     ['Datos de empresa', 'completo'],
                     ['Banco y archivo plano', 'pendiente'],
-                    ['RDEP e IESS', 'en revision'],
+                    ['RDEP e IESS', 'en revisión'],
                     ['Usuarios y roles', 'pendiente'],
                   ].map(([label, status]) => (
                     <div className="flex items-center justify-between gap-3" key={label}>
@@ -210,6 +216,7 @@ function Landing() {
         <div className="page-container flex flex-wrap items-center justify-between gap-3 py-6 text-sm text-slate-600">
           <span>Nómina-Ec</span>
           <div className="flex gap-4">
+            <Link className="font-semibold text-slate-700" to="/soporte">Soporte</Link>
             <Link className="font-semibold text-slate-700" to="/terminos">Términos</Link>
             <Link className="font-semibold text-slate-700" to="/privacidad">Privacidad</Link>
           </div>

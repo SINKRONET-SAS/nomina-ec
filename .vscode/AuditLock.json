@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
   "planCode": "ONI26",
-  "status": "diagnostico_integral_completed",
-  "phaseCompleted": "ONI26-01",
-  "currentPhase": "ONI26-02-SITIO-PUBLICO",
-  "updatedAt": "2026-06-14T11:20:00.0000000-05:00",
-  "summary": "Se completo diagnostico integral anti-churn de sitio publico, parametrizacion, nomina, bancos, RDEP, API, asistencia, reportes, dashboard y datos DEMO sin tocar runtime.",
+  "status": "sitio_publico_completed",
+  "phaseCompleted": "ONI26-02",
+  "currentPhase": "ONI26-03-MAPEO-CONTABLE",
+  "updatedAt": "2026-06-14T11:35:00.0000000-05:00",
+  "summary": "Se mejoro la landing publica existente con enlaces a crear cuenta, soporte/demo, privacidad, terminos y planes, corrigiendo mojibake sin crear pantallas paralelas.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: generar plan Haiky para mejora de landing, parametros contables, RDEP, SUPERADMIN, OWNER, bancos, usuarios/accesos, API, asistencia, seeds, apertura mensual, cargas masivas, reportes, dashboard, mensajes y pruebas end to end.",
-  "previousAuditLockHash": "71dfd1049f579fbe59c9ab31256a7362aaf29bd355b48574c12d46e1e51605ad",
+  "previousAuditLockHash": "4e86ca6b270b092e00d6d2c1c992139a40d9c882c8e7c87336dd8f33188678b5",
   "previousPlans": [
     {
       "plan": "HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026",
@@ -32,31 +32,32 @@
   ],
   "filesModified": [
     ".vscode/AuditLock.json",
-    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_01_DIAGNOSTICO.md"
+    "frontend-web/src/pages/Landing.jsx",
+    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_02_SITIO_PUBLICO.md"
   ],
   "validationChecks": [
     {
-      "gate": "ONI26-01-RULES-READ",
+      "gate": "ONI26-02-RULES-READ",
       "status": "PASS",
-      "detail": "RULES.md y prompt ONI26-01 leidos antes del diagnostico."
+      "detail": "RULES.md y prompt ONI26-02 leidos antes de modificar landing."
     },
     {
-      "gate": "ONI26-01-AUDITLOCK-SIGNATURE-IN",
+      "gate": "ONI26-02-AUDITLOCK-SIGNATURE-IN",
       "status": "PASS",
-      "detail": "AuditLock ONI26-00 validado antes de diagnosticar."
+      "detail": "AuditLock ONI26-01 validado antes de modificar sitio publico."
     },
     {
-      "gate": "ONI26-01-INVENTARIO",
+      "gate": "ONI26-02-BUILD-WEB",
       "status": "PASS",
-      "detail": "Landing, PWA, app, nomina, configuracion, reportes, bancos, asistencia, auditoria y API inventariados."
+      "detail": "npm.cmd run build ejecutado correctamente en frontend-web."
     },
     {
-      "gate": "ONI26-01-NO-RUNTIME-CHANGES",
+      "gate": "ONI26-02-SINGLE-LANDING",
       "status": "PASS",
-      "detail": "ONI26-01 solo crea reporte documental y actualiza AuditLock."
+      "detail": "Se actualizo Landing.jsx existente sin crear landing paralela."
     },
     {
-      "gate": "ONI26-01-AUDITLOCK-SIGNATURE",
+      "gate": "ONI26-02-AUDITLOCK-SIGNATURE",
       "status": "PASS",
       "detail": "Firma calculada como SHA256(previousAuditLockHash + updatedAt)."
     }
@@ -64,7 +65,7 @@
   "fases": [
     { "phase": "ONI26-00", "status": "completed", "task": "baseline documental" },
     { "phase": "ONI26-01", "status": "completed", "task": "diagnostico integral" },
-    { "phase": "ONI26-02", "status": "pending", "task": "sitio publico" },
+    { "phase": "ONI26-02", "status": "completed", "task": "sitio publico" },
     { "phase": "ONI26-03", "status": "pending", "task": "mapeo contable" },
     { "phase": "ONI26-04", "status": "pending", "task": "RDEP XSD XML" },
     { "phase": "ONI26-05", "status": "pending", "task": "SUPERADMIN" },
@@ -86,5 +87,5 @@
     "Los datos DEMO y smoke no deben contener informacion real de empleados o empresas."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "b51d31eee3858c546a275ffa5278e96030132d71d6661b4e0427226add2edae5"
+  "signature": "e5910e05892339296e92b0f814cdb9255e473cf9348aec114cc435e71391487b"
 }
