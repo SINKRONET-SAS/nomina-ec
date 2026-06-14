@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "planCode": "ONI26",
+  "phase": "ONI26-11",
+  "purpose": "Contrato de carga masiva de empleados.",
+  "template": {
+    "formats": [
+      "csv",
+      "xlsx"
+    ],
+    "encoding": "utf8",
+    "requiredColumns": [
+      "externalId",
+      "identification",
+      "firstName",
+      "lastName",
+      "departmentCode",
+      "position",
+      "hireDate",
+      "salary",
+      "bankCode",
+      "bankAccount"
+    ]
+  },
+  "workflow": [
+    "upload",
+    "prevalidate",
+    "show_error_report",
+    "confirm",
+    "import",
+    "audit",
+    "rollback_if_needed"
+  ],
+  "validations": {
+    "identification": "ecuador_or_passport_format",
+    "hireDate": "valid_date_not_future_without_reason",
+    "salary": "positive_number",
+    "departmentCode": "exists_in_tenant",
+    "bankCode": "exists_in_bank_profiles",
+    "bankAccount": "validated_by_bank_profile_when_available"
+  },
+  "rollback": {
+    "strategy": "delete_or_reverse_by_importBatchId",
+    "requiresConfirmation": true,
+    "keepsAudit": true
+  },
+  "audit": {
+    "correlationIdRequired": true,
+    "importBatchIdRequired": true,
+    "errorReportRequired": true
+  }
+}

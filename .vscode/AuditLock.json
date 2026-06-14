@@ -2,24 +2,25 @@
   "schemaVersion": 1,
   "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
   "planCode": "ONI26",
-  "status": "monthly_period_workflow_completed",
-  "phaseCompleted": "ONI26-10",
-  "currentPhase": "ONI26-11-CARGA-EMPLEADOS",
-  "updatedAt": "2026-06-14T12:55:00.0000000-05:00",
-  "summary": "Se definio apertura mensual, estados de periodo, lotes de novedades, idempotencia, duplicados y rollback auditado.",
+  "status": "employee_import_contract_completed",
+  "phaseCompleted": "ONI26-11",
+  "currentPhase": "ONI26-12-REPORTES-NOMINA",
+  "updatedAt": "2026-06-14T13:05:00.0000000-05:00",
+  "summary": "Se definio contrato de carga masiva de empleados, plantilla DEMO, validaciones, prevalidacion, confirmacion, auditoria y rollback.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts ONI26.",
-  "previousAuditLockHash": "f02360a3944b6b7128b8edda000ae89118574ee86fc224943b8be8921a7b6ab3",
+  "previousAuditLockHash": "3f6200adfe34cf940ad008ffc78988e82cd5de818941bd14cdb400b76a3d9914",
   "filesModified": [
     ".vscode/AuditLock.json",
-    "backend/src/config/monthly-period-workflow.json",
-    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_10_APERTURA_MES_NOVEDADES.md",
-    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_10_APERTURA_MES_NOVEDADES.md"
+    "backend/src/config/employee-import-contract.json",
+    "docs2/operacion-nomina-ec-integral-2026/plantilla_carga_empleados_demo.csv",
+    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_11_CARGA_EMPLEADOS.md",
+    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_11_CARGA_EMPLEADOS.md"
   ],
   "validationChecks": [
-    { "gate": "ONI26-10-RULES-PROMPT", "status": "PASS", "detail": "RULES.md y prompt ONI26-10 leidos." },
-    { "gate": "ONI26-10-STATES", "status": "PASS", "detail": "Estados y transiciones definidos." },
-    { "gate": "ONI26-10-IDEMPOTENCY", "status": "PASS", "detail": "Idempotencia y duplicados documentados." }
+    { "gate": "ONI26-11-RULES-PROMPT", "status": "PASS", "detail": "RULES.md y prompt ONI26-11 leidos." },
+    { "gate": "ONI26-11-TEMPLATE", "status": "PASS", "detail": "Plantilla CSV DEMO creada." },
+    { "gate": "ONI26-11-ROLLBACK", "status": "PASS", "detail": "Rollback por importBatchId definido." }
   ],
   "fases": [
     { "phase": "ONI26-00", "status": "completed", "task": "baseline documental" },
@@ -33,14 +34,14 @@
     { "phase": "ONI26-08", "status": "completed", "task": "asistencia manual app" },
     { "phase": "ONI26-09", "status": "completed", "task": "seeds demo" },
     { "phase": "ONI26-10", "status": "completed", "task": "apertura mes novedades" },
-    { "phase": "ONI26-11", "status": "pending", "task": "carga masiva empleados" },
+    { "phase": "ONI26-11", "status": "completed", "task": "carga masiva empleados" },
     { "phase": "ONI26-12", "status": "pending", "task": "reportes nomina" },
     { "phase": "ONI26-13", "status": "pending", "task": "dashboard headcount" },
     { "phase": "ONI26-14", "status": "pending", "task": "mensajes qa release" }
   ],
   "residualRisk": [
-    "Falta conectar estados de periodo al calculo real y smoke DEMO."
+    "Falta parser runtime y reporte de errores tabular descargable."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "40d31baf07df7a008ae3706c4eea01e9b78ade1880fc2e58296b838c7d1a1a36"
+  "signature": "3926d6268751872eda150c8bfe9d673fb67f741fcc90a236d8dac3bec0eb27ba"
 }
