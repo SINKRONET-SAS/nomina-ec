@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+﻿import React, { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_URL } from '../services/apiBase';
 
@@ -6,6 +6,22 @@ const AuthContext = createContext(null);
 
 function normalizeUser(payload) {
   return payload?.usuario || payload?.user || null;
+}
+
+function normalizeAuthError(data) {
+  const code = data?.error || data?.code;
+  const mapped = {
+    AUTH_CREDENCIALES_INVALIDAS: 'Credenciales inválidas. Verifica el correo y la contraseña.',
+    AUTH_EMAIL_NO_VERIFICADO: 'Correo no verificado. Revisa tu bandeja o solicita un nuevo código.',
+    TENANT_SUSPENDIDO: 'La empresa está suspendida. Contacta al OWNER o soporte.',
+    PLAN_VENCIDO: 'El plan está vencido. Actualiza la suscripción para continuar.',
+    REGISTRO_CONSENTIMIENTO_REQUERIDO: 'Debes aceptar términos, privacidad y tratamiento de datos para crear la empresa.',
+  };
+
+  return {
+    ...(data || {}),
+    message: mapped[code] || data?.message || 'No se pudo completar la autenticación.',
+  };
 }
 
 function readStoredUser() {
@@ -78,10 +94,10 @@ export function AuthProvider({ children }) {
       setSessionFromPayload(response.data);
       return response.data;
     } catch (err) {
-      throw err.response?.data || {
+      throw normalizeAuthError(err.response?.data || {
         error: 'Error de conexión',
         message: 'No se pudo conectar con Nómina-Ec.',
-      };
+      });
     }
   };
 
@@ -99,3 +115,4 @@ export function useAuth() {
   }
   return context;
 }
+

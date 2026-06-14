@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Building2, KeyRound, Mail } from 'lucide-react';
 import { extractApiError, forgotPassword, resetPassword } from '../services/publicApi';
@@ -99,3 +99,4 @@ function ForgotPassword() {
 }
 
 export default ForgotPassword;
+

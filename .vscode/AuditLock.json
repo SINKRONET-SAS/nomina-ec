@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "plan": "HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026",
   "planCode": "LPA26",
-  "status": "lopdp_privacidad_completed",
-  "phaseCompleted": "LPA26-05",
-  "currentPhase": "LPA26-06-ONBOARDING-COMERCIAL",
-  "updatedAt": "2026-06-14T10:39:28.0857095-05:00",
-  "summary": "Se implementaron politicas publicas versionadas, consentimiento de cookies, consentimiento LOPDP en registro, persistencia compatible en backend y documentos de incidentes, retencion y procesadores.",
+  "status": "onboarding_comercial_completed",
+  "phaseCompleted": "LPA26-06",
+  "currentPhase": "LPA26-07-QA-VISUAL",
+  "updatedAt": "2026-06-14T10:43:21.3177911-05:00",
+  "summary": "Se reforzo el onboarding comercial con consentimiento LOPDP versionado, errores de autenticacion normalizados y smoke de registro, login y recuperacion sin datos reales.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts de acuerdo al plan HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026.",
-  "previousAuditLockHash": "3ad49cd2aa0354ea14b5478e744f705b281ad48c3e0ffb593695e142e904905c",
+  "previousAuditLockHash": "3c092b44683756168a1cd3a033ec8e3e8d32b419609a576e1386e55d88d59049",
   "previousPlans": [
     {
       "plan": "HAIKY-HOMOLOGACION-NOMINA-BASE44-ECUADOR-2026",
@@ -26,50 +26,45 @@
   ],
   "filesModified": [
     ".vscode/AuditLock.json",
-    "backend/src/controllers/authController.js",
-    "frontend-web/src/App.jsx",
-    "frontend-web/src/components/Privacy/CookieConsent.jsx",
-    "frontend-web/src/pages/LegalText.jsx",
+    "frontend-web/src/context/AuthContext.jsx",
+    "frontend-web/src/pages/ForgotPassword.jsx",
+    "frontend-web/src/pages/Login.jsx",
     "frontend-web/src/pages/Register.jsx",
-    "frontend-web/src/services/publicApi.js",
-    "docs2/landing-pwa-app-store-2026/LOPDP_INCIDENTES.md",
-    "docs2/landing-pwa-app-store-2026/LOPDP_PROCESADORES_DPA.md",
-    "docs2/landing-pwa-app-store-2026/LOPDP_RETENCION_DERECHOS.md",
-    "docs2/landing-pwa-app-store-2026/REPORTE_LPA26_05_LOPDP.md"
+    "docs2/landing-pwa-app-store-2026/REPORTE_LPA26_06_ONBOARDING.md"
   ],
   "validationChecks": [
     {
-      "gate": "LPA26-05-RULES-READ",
+      "gate": "LPA26-06-RULES-READ",
       "status": "PASS",
-      "detail": "RULES.md y prompt LPA26-05 leidos antes de modificar privacidad."
+      "detail": "RULES.md y prompt LPA26-06 leidos antes de modificar onboarding."
     },
     {
-      "gate": "LPA26-05-AUDITLOCK-SIGNATURE-IN",
+      "gate": "LPA26-06-AUDITLOCK-SIGNATURE-IN",
       "status": "PASS",
-      "detail": "Firma LPA26-04 validada antes de iniciar LOPDP."
+      "detail": "Firma LPA26-05 validada antes de iniciar onboarding comercial."
     },
     {
-      "gate": "LPA26-05-POLITICAS-PUBLICAS",
-      "status": "PASS",
-      "detail": "Privacidad, terminos, soporte y eliminacion de cuenta disponibles como rutas publicas."
-    },
-    {
-      "gate": "LPA26-05-CONSENTIMIENTO",
-      "status": "PASS",
-      "detail": "Registro envia lopdpConsent versionado y backend lo almacena en configuracion del tenant."
-    },
-    {
-      "gate": "LPA26-05-BUILD-WEB",
+      "gate": "LPA26-06-BUILD-WEB",
       "status": "PASS",
       "detail": "npm.cmd run build ejecutado correctamente en frontend-web."
     },
     {
-      "gate": "LPA26-05-NO-ANALITICA-ACTIVA",
+      "gate": "LPA26-06-SMOKE-PUBLIC-ROUTES",
       "status": "PASS",
-      "detail": "No se detecto gtag, posthog, mixpanel ni analytics.js en runtime."
+      "detail": "Registro, login y recuperacion cargan sin mojibake y sin enviar formularios."
     },
     {
-      "gate": "LPA26-05-AUDITLOCK-SIGNATURE",
+      "gate": "LPA26-06-AUTH-ERRORS",
+      "status": "PASS",
+      "detail": "AuthContext normaliza credenciales invalidas, correo no verificado, tenant suspendido, plan vencido y consentimiento requerido."
+    },
+    {
+      "gate": "LPA26-06-MOBILE-CHECK",
+      "status": "PASS",
+      "detail": "npm.cmd run check:stores ejecutado correctamente en app-movil."
+    },
+    {
+      "gate": "LPA26-06-AUDITLOCK-SIGNATURE",
       "status": "PASS",
       "detail": "Firma calculada como SHA256(previousAuditLockHash + updatedAt)."
     }
@@ -81,7 +76,7 @@
     { "phase": "LPA26-03", "status": "completed", "task": "PWA instalable y segura" },
     { "phase": "LPA26-04", "status": "completed_with_external_blockers", "task": "app movil lista para tiendas" },
     { "phase": "LPA26-05", "status": "completed", "task": "LOPDP y privacidad operacional" },
-    { "phase": "LPA26-06", "status": "pending", "task": "registro y onboarding comercial" },
+    { "phase": "LPA26-06", "status": "completed", "task": "registro y onboarding comercial" },
     { "phase": "LPA26-07", "status": "pending", "task": "QA visual performance y confianza" },
     { "phase": "LPA26-08", "status": "pending", "task": "release stores y go-live" }
   ],
@@ -100,5 +95,5 @@
     }
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "167aac607d0f8564b9756e923b79ed733b6db82d0c822f808f69db1503115511"
+  "signature": "4199f7deb2f67d5f8a0c5a298c113996e169d3dfcccaf5c33743557e32ca3f61"
 }
