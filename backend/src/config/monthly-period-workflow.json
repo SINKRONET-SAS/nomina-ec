@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "planCode": "ONI26",
+  "phase": "ONI26-10",
+  "purpose": "Flujo de apertura mensual y lotes de novedades por estructura organizativa.",
+  "periodStates": [
+    "draft",
+    "open",
+    "novelties_loaded",
+    "calculated",
+    "approved",
+    "closed",
+    "reopened"
+  ],
+  "transitions": [
+    { "from": "draft", "to": "open", "permission": "payroll.period.open" },
+    { "from": "open", "to": "novelties_loaded", "permission": "novelties.write" },
+    { "from": "novelties_loaded", "to": "calculated", "permission": "payroll.calculate" },
+    { "from": "calculated", "to": "approved", "permission": "payroll.approve" },
+    { "from": "approved", "to": "closed", "permission": "payroll.close" },
+    { "from": "closed", "to": "reopened", "permission": "payroll.period.reopen" }
+  ],
+  "noveltyBatch": {
+    "allowedScopes": [
+      "company",
+      "department",
+      "costCenter",
+      "position",
+      "employee"
+    ],
+    "idempotencyKeyRequired": true,
+    "duplicateDetection": [
+      "tenantId",
+      "periodId",
+      "employeeId",
+      "noveltyType",
+      "sourceDocument"
+    ],
+    "rollback": "reverse_batch_with_audit"
+  },
+  "audit": {
+    "correlationIdRequired": true,
+    "reasonRequiredForReopen": true,
+    "snapshotBeforeClose": true
+  }
+}

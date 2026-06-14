@@ -2,25 +2,24 @@
   "schemaVersion": 1,
   "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
   "planCode": "ONI26",
-  "status": "demo_seed_manifest_completed",
-  "phaseCompleted": "ONI26-09",
-  "currentPhase": "ONI26-10-APERTURA-MES-NOVEDADES",
-  "updatedAt": "2026-06-14T12:45:00.0000000-05:00",
-  "summary": "Se creo seed DEMO reproducible con datos ficticios, estructura organizativa, usuarios, bancos y fuentes legales SRI referenciadas.",
+  "status": "monthly_period_workflow_completed",
+  "phaseCompleted": "ONI26-10",
+  "currentPhase": "ONI26-11-CARGA-EMPLEADOS",
+  "updatedAt": "2026-06-14T12:55:00.0000000-05:00",
+  "summary": "Se definio apertura mensual, estados de periodo, lotes de novedades, idempotencia, duplicados y rollback auditado.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts ONI26 y referencia SRI para RDEP.",
-  "previousAuditLockHash": "005bd18c4583a511082e935ed1855a5a321b5bc8f037c690beaa077ddcc914b2",
+  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts ONI26.",
+  "previousAuditLockHash": "f02360a3944b6b7128b8edda000ae89118574ee86fc224943b8be8921a7b6ab3",
   "filesModified": [
     ".vscode/AuditLock.json",
-    "backend/src/config/demo-company-seed.json",
-    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_09_SEEDS_DEMO.md",
-    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_09_SEEDS_DEMO.md"
+    "backend/src/config/monthly-period-workflow.json",
+    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_10_APERTURA_MES_NOVEDADES.md",
+    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_10_APERTURA_MES_NOVEDADES.md"
   ],
   "validationChecks": [
-    { "gate": "ONI26-09-RULES-PROMPT", "status": "PASS", "detail": "RULES.md y prompt ONI26-09 leidos." },
-    { "gate": "ONI26-09-NO-REAL-DATA", "status": "PASS", "detail": "Seed usa datos ficticios y dominios locales." },
-    { "gate": "ONI26-09-SRI-SOURCE", "status": "PASS", "detail": "Pagina oficial SRI RDEP y PDF de tablas IR referenciados." },
-    { "gate": "ONI26-09-IDEMPOTENCY", "status": "PASS", "detail": "seedKey y rollback DEMO definidos." }
+    { "gate": "ONI26-10-RULES-PROMPT", "status": "PASS", "detail": "RULES.md y prompt ONI26-10 leidos." },
+    { "gate": "ONI26-10-STATES", "status": "PASS", "detail": "Estados y transiciones definidos." },
+    { "gate": "ONI26-10-IDEMPOTENCY", "status": "PASS", "detail": "Idempotencia y duplicados documentados." }
   ],
   "fases": [
     { "phase": "ONI26-00", "status": "completed", "task": "baseline documental" },
@@ -33,15 +32,15 @@
     { "phase": "ONI26-07", "status": "completed", "task": "API integracion" },
     { "phase": "ONI26-08", "status": "completed", "task": "asistencia manual app" },
     { "phase": "ONI26-09", "status": "completed", "task": "seeds demo" },
-    { "phase": "ONI26-10", "status": "pending", "task": "apertura mes novedades" },
+    { "phase": "ONI26-10", "status": "completed", "task": "apertura mes novedades" },
     { "phase": "ONI26-11", "status": "pending", "task": "carga masiva empleados" },
     { "phase": "ONI26-12", "status": "pending", "task": "reportes nomina" },
     { "phase": "ONI26-13", "status": "pending", "task": "dashboard headcount" },
     { "phase": "ONI26-14", "status": "pending", "task": "mensajes qa release" }
   ],
   "residualRisk": [
-    "Falta runner idempotente contra DB real y smoke automatizado de rollback DEMO."
+    "Falta conectar estados de periodo al calculo real y smoke DEMO."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "23932141047bef9405371558d7de1d5b581d06c2e9a0e50ea5afa05dad3fe0be"
+  "signature": "40d31baf07df7a008ae3706c4eea01e9b78ade1880fc2e58296b838c7d1a1a36"
 }
