@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
   "planCode": "ONI26",
-  "status": "mapeo_contable_contract_completed",
-  "phaseCompleted": "ONI26-03",
-  "currentPhase": "ONI26-04-RDEP-XSD-XML",
-  "updatedAt": "2026-06-14T11:45:00.0000000-05:00",
-  "summary": "Se creo contrato de mapeo contable y catalogo base para mapear conceptos de nomina a cuentas contables parametrizables por tenant.",
+  "status": "rdep_xsd_xml_documented_with_external_blockers",
+  "phaseCompleted": "ONI26-04",
+  "currentPhase": "ONI26-05-SUPERADMIN",
+  "updatedAt": "2026-06-14T11:55:00.0000000-05:00",
+  "summary": "Se versiono el XSD RDEP 2023 adjunto, se registraron hashes de fuentes SRI recibidas, se creo contrato RDEP y XML DEMO bien formado. Queda bloqueo externo para validar ficha tecnica vigente y validador XSD local antes de uso productivo.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: generar plan Haiky para mejora de landing, parametros contables, RDEP, SUPERADMIN, OWNER, bancos, usuarios/accesos, API, asistencia, seeds, apertura mensual, cargas masivas, reportes, dashboard, mensajes y pruebas end to end.",
-  "previousAuditLockHash": "e9f312a29fb550ddcee73ea158e7c96aa8f4349cb54e2c8d4d4b384f97f24e11",
+  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts ONI26 y adjunto de esquema RDEP encontrado.",
+  "previousAuditLockHash": "5727ff4f1c9daacc8a875992c6d85246f308972ff685dc71e14732a7c6ae34db",
   "previousPlans": [
     {
       "plan": "HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026",
@@ -32,33 +32,45 @@
   ],
   "filesModified": [
     ".vscode/AuditLock.json",
-    "backend/src/config/accounting-mapping-defaults.json",
-    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_03_MAPEO_CONTABLE.md",
-    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_03_CONTABILIDAD.md"
+    "backend/src/config/rdep/Esquema_RDEP_2023.xsd",
+    "backend/src/config/rdep/rdep-source-manifest.json",
+    "backend/src/config/rdep/rdep-demo-2023.xml",
+    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_04_RDEP.md",
+    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_04_RDEP.md"
   ],
   "validationChecks": [
     {
-      "gate": "ONI26-03-RULES-READ",
+      "gate": "ONI26-04-RULES-READ",
       "status": "PASS",
-      "detail": "RULES.md y prompt ONI26-03 leidos antes de crear contrato contable."
+      "detail": "RULES.md y prompt ONI26-04 leidos antes de versionar fuentes RDEP."
     },
     {
-      "gate": "ONI26-03-AUDITLOCK-SIGNATURE-IN",
+      "gate": "ONI26-04-AUDITLOCK-SIGNATURE-IN",
       "status": "PASS",
-      "detail": "AuditLock ONI26-02 validado antes de mapeo contable."
+      "detail": "AuditLock ONI26-03 validado antes de iniciar RDEP."
     },
     {
-      "gate": "ONI26-03-CONTRACT",
+      "gate": "ONI26-04-XSD-VERSIONED",
       "status": "PASS",
-      "detail": "Contrato contable versionado creado."
+      "detail": "Esquema RDEP 2023 versionado con SHA256 registrado."
     },
     {
-      "gate": "ONI26-03-DEFAULTS",
+      "gate": "ONI26-04-SOURCES-HASHED",
       "status": "PASS",
-      "detail": "Catalogo base de conceptos creado sin cuentas reales obligatorias."
+      "detail": "PDF, catalogo XLS, formulario XLS y XSD recibidos quedan trazados por hash."
     },
     {
-      "gate": "ONI26-03-AUDITLOCK-SIGNATURE",
+      "gate": "ONI26-04-DEMO-XML",
+      "status": "PASS",
+      "detail": "XML DEMO creado con datos ficticios y validado como XML bien formado."
+    },
+    {
+      "gate": "ONI26-04-XSD-PRODUCTIVE-VALIDATION",
+      "status": "BLOCKED",
+      "detail": "La validacion XSD productiva queda bloqueada hasta confirmar ficha tecnica vigente y agregar validador local."
+    },
+    {
+      "gate": "ONI26-04-AUDITLOCK-SIGNATURE",
       "status": "PASS",
       "detail": "Firma calculada como SHA256(previousAuditLockHash + updatedAt)."
     }
@@ -68,7 +80,7 @@
     { "phase": "ONI26-01", "status": "completed", "task": "diagnostico integral" },
     { "phase": "ONI26-02", "status": "completed", "task": "sitio publico" },
     { "phase": "ONI26-03", "status": "completed", "task": "mapeo contable" },
-    { "phase": "ONI26-04", "status": "pending", "task": "RDEP XSD XML" },
+    { "phase": "ONI26-04", "status": "completed_with_external_blockers", "task": "RDEP XSD XML" },
     { "phase": "ONI26-05", "status": "pending", "task": "SUPERADMIN" },
     { "phase": "ONI26-06", "status": "pending", "task": "OWNER bancos usuarios accesos" },
     { "phase": "ONI26-07", "status": "pending", "task": "API integracion" },
@@ -81,12 +93,13 @@
     { "phase": "ONI26-14", "status": "pending", "task": "mensajes qa release" }
   ],
   "residualRisk": [
-    "La ficha tecnica RDEP, XSD y bancos debe verificarse con fuente vigente antes de implementar.",
+    "La ficha tecnica RDEP, XSD y bancos debe verificarse con fuente vigente antes de implementar uso productivo.",
+    "El XSD adjunto es 2023 y debe reconciliarse con catalogo 2024 y ejercicio fiscal objetivo.",
     "La integracion contable depende del plan de cuentas de cada tenant.",
     "La API externa requiere autenticacion, limites, auditoria y contrato versionado antes de exposicion.",
     "Cargas masivas, reportes y asistencia tratan datos personales y deben mantener controles LOPDP.",
     "Los datos DEMO y smoke no deben contener informacion real de empleados o empresas."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "be3ccf267129712a75eabc81a3361f7e644a4282720aedf14d9f3ff157a9334a"
+  "signature": "61b72b6f090ab71221f461a47746324b00b24e4c9f1d72e7089fddfd0f55d457"
 }

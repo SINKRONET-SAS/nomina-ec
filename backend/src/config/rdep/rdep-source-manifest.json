@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "planCode": "ONI26",
+  "phase": "ONI26-04",
+  "purpose": "Fuentes versionadas para generacion y validacion estructural de RDEP.",
+  "sources": [
+    {
+      "name": "Esquema RDEP 2023.xsd",
+      "kind": "xsd",
+      "repositoryPath": "backend/src/config/rdep/Esquema_RDEP_2023.xsd",
+      "originalPath": "C:/Users/proam/Downloads/Esquema RDEP 2023.xsd",
+      "sha256": "9067640f71c4c14549c5376e0f5c357d01f69189b24346ff70408adbb5c68046",
+      "status": "versioned"
+    },
+    {
+      "name": "NAC-DGERCGC24-00000037.pdf",
+      "kind": "resolution_pdf",
+      "originalPath": "C:/Users/proam/Downloads/NAC-DGERCGC24-00000037.pdf",
+      "sha256": "93fffda378b3814fd57e0a9b1fa138d45a72593ec1002ab0ccbcf6a2335b94f9",
+      "status": "referenced_not_copied"
+    },
+    {
+      "name": "Catalogo vigente para el ejercicio fiscal 2024.xls",
+      "kind": "rdep_catalog",
+      "originalPath": "C:/Users/proam/Downloads/Catalogo vigente para el ejercicio fiscal 2024 (1).xls",
+      "sha256": "4ecdd39ad5d4e57f024919764b6faab18fd9489e0507c308c47af11fc1b70571",
+      "status": "referenced_not_copied"
+    },
+    {
+      "name": "Formulario 107 - Formato 2023.xls",
+      "kind": "withholding_certificate_template",
+      "originalPath": "C:/Users/proam/Downloads/Formulario_107 - Formato 2023 (2).xls",
+      "sha256": "9a24edd1956ae7003f79db78a410ab3b8b9f439c3c03a28d616715afff34c12b",
+      "status": "referenced_not_copied"
+    }
+  ],
+  "validationPolicy": {
+    "xsdValidation": "required_before_productive_release",
+    "officialSourceReconciliation": "required_before_productive_release",
+    "demoDataOnly": true,
+    "noRealEmployeeData": true
+  },
+  "residualBlockers": [
+    "Confirmar ficha tecnica RDEP vigente con fuente oficial SRI para el ejercicio fiscal objetivo.",
+    "Reconciliar diferencias entre esquema 2023, catalogo 2024 y resoluciones vigentes antes de generar XML productivo.",
+    "Integrar validador XSD en pipeline sin enviar datos reales a servicios externos."
+  ]
+}

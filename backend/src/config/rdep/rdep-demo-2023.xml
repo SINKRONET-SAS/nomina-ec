@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdep>
+  <numRuc>1790012345001</numRuc>
+  <anio>2024</anio>
+  <tipoEmpleador>1</tipoEmpleador>
+  <enteSegSocial>1</enteSegSocial>
+  <retRelDep>
+    <datRetRelDep>
+      <empleado>
+        <benGalpg>NO</benGalpg>
+        <enfcatastro>NO</enfcatastro>
+        <numCargRebGastPers>0</numCargRebGastPers>
+        <tipIdRet>C</tipIdRet>
+        <idRet>9999999999</idRet>
+        <apellidoTrab>DEMO APELLIDO</apellidoTrab>
+        <nombreTrab>DEMO NOMBRE</nombreTrab>
+        <estab>001</estab>
+        <residenciaTrab>01</residenciaTrab>
+        <paisResidencia>593</paisResidencia>
+        <aplicaConvenio>NO</aplicaConvenio>
+        <tipoTrabajDiscap>00</tipoTrabajDiscap>
+        <porcentajeDiscap>0</porcentajeDiscap>
+        <tipIdDiscap>N</tipIdDiscap>
+      </empleado>
+      <suelSal>0.00</suelSal>
+      <sobSuelComRemu>0.00</sobSuelComRemu>
+      <partUtil>0.00</partUtil>
+      <intGrabGen>0.00</intGrabGen>
+      <impRentEmpl>0.00</impRentEmpl>
+      <decimTer>0.00</decimTer>
+      <decimCuar>0.00</decimCuar>
+      <fondoReserva>0.00</fondoReserva>
+      <salarioDigno>0.00</salarioDigno>
+      <otrosIngRenGrav>0.00</otrosIngRenGrav>
+      <ingGravConEsteEmpl>0.00</ingGravConEsteEmpl>
+      <sisSalNet>0</sisSalNet>
+      <apoPerIess>0.00</apoPerIess>
+      <aporPerIessConOtrosEmpls>0.00</aporPerIessConOtrosEmpls>
+      <deducVivienda>0.00</deducVivienda>
+      <deducSalud>0.00</deducSalud>
+      <deducEduca>0.00</deducEduca>
+      <deducEducartcult>0.00</deducEducartcult>
+      <deducAliement>0.00</deducAliement>
+      <deducVestim>0.00</deducVestim>
+      <deducArtycult>0.00</deducArtycult>
+      <deduccionTurismo>0.00</deduccionTurismo>
+      <exoDiscap>0.00</exoDiscap>
+      <exoTerEd>0.00</exoTerEd>
+      <basImp>0.00</basImp>
+      <impRentCaus>0.00</impRentCaus>
+      <rebajaGastosPersonales>0.00</rebajaGastosPersonales>
+      <impuestoRentaRebajaGastosPersonales>0.00</impuestoRentaRebajaGastosPersonales>
+      <valRetAsuOtrosEmpls>0.00</valRetAsuOtrosEmpls>
+      <valImpAsuEsteEmpl>0.00</valImpAsuEsteEmpl>
+      <valRet>0.00</valRet>
+    </datRetRelDep>
+  </retRelDep>
+</rdep>
