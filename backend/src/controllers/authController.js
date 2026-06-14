@@ -143,6 +143,7 @@ async function publicRegister(req, res, next) {
       planId = 'TRIAL',
       acceptedTerms,
       acceptedPrivacy,
+      lopdpConsent,
     } = req.body;
 
     if (!razonSocial || !email || !password || !nombres) {
@@ -171,7 +172,13 @@ async function publicRegister(req, res, next) {
         ruc ? String(ruc).trim() : null,
         String(razonSocial).trim(),
         nombreComercial ? String(nombreComercial).trim() : null,
-        JSON.stringify({ registroPublico: true, acceptedTerms: true, acceptedPrivacy: true }),
+        JSON.stringify({
+          registroPublico: true,
+          acceptedTerms: true,
+          acceptedPrivacy: true,
+          lopdpConsent: lopdpConsent || null,
+          lopdpConsentRecordedAt: new Date().toISOString(),
+        }),
       ]
     );
 

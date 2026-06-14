@@ -4,6 +4,8 @@ import { ArrowRight, Building2, CheckCircle2, LockKeyhole, Mail, UserRound } fro
 import { extractApiError, publicRegister } from '../services/publicApi';
 import { useAuth } from '../context/AuthContext';
 
+const LOPDP_VERSION = 'LOPDP-2026-06';
+
 function Register() {
   const [params] = useSearchParams();
   const [form, setForm] = useState({
@@ -17,6 +19,7 @@ function Register() {
     planId: params.get('plan') || 'TRIAL',
     acceptedTerms: false,
     acceptedPrivacy: false,
+    acceptedDataProcessing: false,
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,7 +33,17 @@ function Register() {
     setError('');
     setLoading(true);
     try {
-      const payload = await publicRegister(form);
+      const acceptedAt = new Date().toISOString();
+      const payload = await publicRegister({
+        ...form,
+        lopdpConsent: {
+          version: LOPDP_VERSION,
+          acceptedAt,
+          acceptedTerms: form.acceptedTerms,
+          acceptedPrivacy: form.acceptedPrivacy,
+          acceptedDataProcessing: form.acceptedDataProcessing,
+        },
+      });
       setSessionFromPayload(payload);
       navigate('/dashboard');
     } catch (err) {
@@ -60,7 +73,7 @@ function Register() {
             {[
               'Empresa y administrador inicial en una sola acción',
               'Prueba o plan comercial desde el primer acceso',
-              'Aceptación explícita de términos y privacidad',
+              'Aceptación explícita de términos, privacidad y tratamiento de datos',
             ].map((item) => (
               <div className="flex items-center gap-3 text-sm font-medium text-slate-700" key={item}>
                 <CheckCircle2 className="h-5 w-5 text-teal-700" />
@@ -139,7 +152,11 @@ function Register() {
             </label>
             <label className="flex gap-3 text-sm text-slate-700">
               <input className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600" type="checkbox" checked={form.acceptedPrivacy} onChange={(e) => update('acceptedPrivacy', e.target.checked)} />
-              <span>Acepto la política de privacidad y tratamiento de datos personales.</span>
+              <span>Acepto la política de privacidad.</span>
+            </label>
+            <label className="flex gap-3 text-sm text-slate-700">
+              <input className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600" type="checkbox" checked={form.acceptedDataProcessing} onChange={(e) => update('acceptedDataProcessing', e.target.checked)} />
+              <span>Autorizo el tratamiento de datos personales laborales bajo la versión {LOPDP_VERSION}.</span>
             </label>
           </div>
 

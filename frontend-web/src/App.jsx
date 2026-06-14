@@ -15,6 +15,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import Planes from './pages/Planes';
 import PaymentResult from './pages/PaymentResult';
 import LegalText from './pages/LegalText';
+import CookieConsent from './components/Privacy/CookieConsent';
 import Parametrizacion from './pages/Configuracion/Parametrizacion';
 import Auditoria from './pages/Auditoria';
 import Dashboard from './pages/Dashboard';
@@ -68,6 +69,8 @@ function App() {
             <Route path="/pago/resultado" element={<PaymentResult />} />
             <Route path="/privacidad" element={<LegalText type="privacy" />} />
             <Route path="/terminos" element={<LegalText type="terms" />} />
+            <Route path="/eliminar-cuenta" element={<LegalText />} />
+            <Route path="/soporte" element={<LegalText />} />
             
             {/* Rutas protegidas */}
             <Route path="/dashboard" element={
@@ -149,6 +152,7 @@ function App() {
             {/* 404 */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          <CookieConsent />
         </Router>
       </AuthProvider>
     </QueryClientProvider>
