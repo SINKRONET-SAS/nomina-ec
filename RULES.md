@@ -41,6 +41,13 @@
 - No adelantar tareas de fases posteriores.
 - Cada fase requiere aprobacion explicita (por prompt) antes de continuar.
 
-## 8. Trazabilidad
+## 8. Exposicion frontend obligatoria
+- Siempre que se ejecute un plan, el avance funcional debe quedar debidamente expuesto en frontend cuando afecte experiencia de usuario, operacion, configuracion o supervision.
+- No se considera cerrado un plan si sus entregables quedan ocultos solo en backend, documentacion, contratos, seeds o configuraciones internas.
+- Deben quedar configuradas las importaciones, rutas, pantallas indispensables, navegacion y estados UI/UX necesarios para que el usuario pueda encontrar, operar o revisar el avance.
+- Si una fase queda bloqueada por fuente externa, validacion legal, credenciales, tienda, banco o entidad publica, el bloqueo debe mostrarse en UI con mensaje claro y siguiente accion.
+- El cierre de fase debe validar que la pantalla o acceso frontend compila y no rompe navegacion existente.
+
+## 9. Trazabilidad
 - Cada cambio debe incluir en el commit: `phase: <X>` y `task: <Y.Z>`.
 - Los logs deben incluir `correlationId` de la operacion.
