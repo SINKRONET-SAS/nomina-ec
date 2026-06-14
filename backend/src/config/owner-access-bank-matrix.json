@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "planCode": "ONI26",
+  "phase": "ONI26-06",
+  "purpose": "Matriz OWNER para bancos, archivos planos, usuarios, roles y accesos por tenant.",
+  "bankProfilesSource": "backend/src/config/bank-file-profiles.json",
+  "bankFileControls": {
+    "requiredEvidenceByBank": true,
+    "demoFilesUseFictitiousData": true,
+    "downloadRequiresClosedPayroll": true,
+    "downloadRequiresPermission": "bankFiles.download",
+    "rollbackRequired": true,
+    "auditRequiredFields": [
+      "correlationId",
+      "tenantId",
+      "actorUserId",
+      "bankProfile",
+      "periodId",
+      "payrollRunId",
+      "recordCount",
+      "totalAmount",
+      "result"
+    ]
+  },
+  "roles": [
+    {
+      "code": "OWNER_ADMIN",
+      "description": "Administra configuracion del tenant y usuarios OWNER.",
+      "permissions": [
+        "tenant.settings.read",
+        "tenant.settings.write",
+        "users.read",
+        "users.write",
+        "roles.assign",
+        "bankProfiles.read",
+        "bankFiles.generate",
+        "audit.read"
+      ]
+    },
+    {
+      "code": "NOMINA_OPERADOR",
+      "description": "Opera empleados, asistencia, novedades, roles y bancos sin cambiar planes.",
+      "permissions": [
+        "employees.read",
+        "employees.write",
+        "attendance.read",
+        "attendance.write",
+        "novelties.write",
+        "payroll.calculate",
+        "bankFiles.generate"
+      ]
+    },
+    {
+      "code": "NOMINA_APROBADOR",
+      "description": "Aprueba cierre, reportes y descargas sensibles.",
+      "permissions": [
+        "payroll.approve",
+        "payroll.close",
+        "reports.export",
+        "bankFiles.download"
+      ]
+    },
+    {
+      "code": "LECTOR_AUDITOR",
+      "description": "Consulta reportes y auditoria sin modificar datos.",
+      "permissions": [
+        "reports.read",
+        "audit.read"
+      ]
+    }
+  ],
+  "separationOfDuties": [
+    {
+      "rule": "generate_and_download_bank_file",
+      "description": "Quien genera el archivo bancario no debe ser el unico aprobador de descarga.",
+      "enforcement": "requiresSecondApprover"
+    },
+    {
+      "rule": "role_assignment",
+      "description": "Asignar permisos de descarga bancaria exige OWNER_ADMIN y auditoria.",
+      "enforcement": "auditAndReasonRequired"
+    }
+  ]
+}

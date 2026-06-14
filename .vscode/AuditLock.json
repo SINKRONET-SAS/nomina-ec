@@ -2,25 +2,25 @@
   "schemaVersion": 1,
   "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
   "planCode": "ONI26",
-  "status": "superadmin_contract_completed",
-  "phaseCompleted": "ONI26-05",
-  "currentPhase": "ONI26-06-OWNER-BANCOS-ACCESOS",
-  "updatedAt": "2026-06-14T12:05:00.0000000-05:00",
-  "summary": "Se definio gobierno SUPERADMIN para planes, addons, owners, contratos, incidencias, RBAC, aislamiento tenant y auditoria con correlationId.",
+  "status": "owner_banks_access_contract_completed",
+  "phaseCompleted": "ONI26-06",
+  "currentPhase": "ONI26-07-API-INTEGRACION",
+  "updatedAt": "2026-06-14T12:15:00.0000000-05:00",
+  "summary": "Se definio matriz OWNER para bancos, archivos planos, roles, permisos, segregacion de funciones, auditoria y rollback reutilizando el catalogo bancario existente.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts ONI26.",
-  "previousAuditLockHash": "a344b0085e01f5cfe52576956e3aa2461c4410da6f68a1d91ebafe73f889252e",
+  "previousAuditLockHash": "ac3b0862584e6566103022c1e75b21eecc8688e90f811c297c2b89736617c7bb",
   "filesModified": [
     ".vscode/AuditLock.json",
-    "backend/src/config/superadmin-operations-catalog.json",
-    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_05_SUPERADMIN.md",
-    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_05_SUPERADMIN.md"
+    "backend/src/config/owner-access-bank-matrix.json",
+    "docs2/operacion-nomina-ec-integral-2026/CONTRATO_ONI26_06_OWNER_BANCOS_ACCESOS.md",
+    "docs2/operacion-nomina-ec-integral-2026/REPORTE_ONI26_06_OWNER_BANCOS_ACCESOS.md"
   ],
   "validationChecks": [
-    { "gate": "ONI26-05-RULES-PROMPT", "status": "PASS", "detail": "RULES.md y prompt ONI26-05 leidos." },
-    { "gate": "ONI26-05-RBAC", "status": "PASS", "detail": "RBAC SUPERADMIN definido con denegacion por defecto." },
-    { "gate": "ONI26-05-TENANT-ISOLATION", "status": "PASS", "detail": "Aislamiento tenant y prohibicion de impersonacion silenciosa documentados." },
-    { "gate": "ONI26-05-AUDIT", "status": "PASS", "detail": "Auditoria requiere correlationId y actor." }
+    { "gate": "ONI26-06-RULES-PROMPT", "status": "PASS", "detail": "RULES.md y prompt ONI26-06 leidos." },
+    { "gate": "ONI26-06-BANK-CATALOG", "status": "PASS", "detail": "Se reutiliza backend/src/config/bank-file-profiles.json." },
+    { "gate": "ONI26-06-OWNER-RBAC", "status": "PASS", "detail": "Roles OWNER y permisos sensibles definidos." },
+    { "gate": "ONI26-06-ROLLBACK", "status": "PASS", "detail": "Rollback logico y versionado de archivos bancarios documentados." }
   ],
   "fases": [
     { "phase": "ONI26-00", "status": "completed", "task": "baseline documental" },
@@ -29,7 +29,7 @@
     { "phase": "ONI26-03", "status": "completed", "task": "mapeo contable" },
     { "phase": "ONI26-04", "status": "completed_with_external_blockers", "task": "RDEP XSD XML" },
     { "phase": "ONI26-05", "status": "completed", "task": "SUPERADMIN" },
-    { "phase": "ONI26-06", "status": "pending", "task": "OWNER bancos usuarios accesos" },
+    { "phase": "ONI26-06", "status": "completed", "task": "OWNER bancos usuarios accesos" },
     { "phase": "ONI26-07", "status": "pending", "task": "API integracion" },
     { "phase": "ONI26-08", "status": "pending", "task": "asistencia manual app" },
     { "phase": "ONI26-09", "status": "pending", "task": "seeds demo" },
@@ -40,9 +40,9 @@
     { "phase": "ONI26-14", "status": "pending", "task": "mensajes qa release" }
   ],
   "residualRisk": [
-    "Las pantallas SUPERADMIN y pruebas RBAC automatizadas deben conectarse al modelo de permisos real.",
-    "El acceso de soporte debe quedar bloqueado si no existe incidencia activa."
+    "Cada perfil bancario debe validarse contra ficha tecnica vigente del banco antes de produccion.",
+    "Los permisos OWNER deben conectarse al RBAC real y probarse con usuarios DEMO."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "e39b1d5870fe535782931c0677ec26375b091d0761305cfd7353c74694e505ac"
+  "signature": "ed9877dfb16d575c3c99b9a20eb61051fcd43f24ffb6915aa57511383937c829"
 }
