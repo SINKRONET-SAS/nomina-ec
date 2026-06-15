@@ -7,6 +7,9 @@ function RolesPagos() {
   const hoy = new Date();
   const [anio, setAnio] = useState(hoy.getFullYear());
   const [mes, setMes] = useState(hoy.getMonth() + 1);
+  const [downloadingId, setDownloadingId] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
   const { data: nominas, isLoading } = useQuery({
     queryKey: ['roles-pagos', anio, mes],
@@ -17,17 +20,30 @@ function RolesPagos() {
   });
 
   const descargarPDF = async (id) => {
+    setDownloadingId(id);
+    setMessage('');
+    setError('');
     try {
       const response = await authenticatedApi.get(`/nomina/${id}/rol-pdf`);
-      window.open(response.data.url, '_blank');
+      const url = response.data?.url;
+      if (!url) {
+        throw new Error('El backend no entrego una URL de descarga.');
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setMessage(`Rol listo: ${response.data.fileName || 'PDF generado'}`);
     } catch (err) {
-      alert('Error al descargar PDF');
+      const apiMessage = err.response?.data?.message || err.response?.data?.error || err.message;
+      setError(apiMessage || 'No pudimos descargar el rol de pago.');
+    } finally {
+      setDownloadingId('');
     }
   };
 
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Roles de Pago</h1>
+      {message && <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}
+      {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
       
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="flex space-x-4">
@@ -80,7 +96,9 @@ function RolesPagos() {
                     </td>
                     <td className="px-6 py-4">
                       <button onClick={() => descargarPDF(n.id)}
-                        className="p-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200">
+                        disabled={downloadingId === n.id}
+                        title="Descargar rol de pago PDF"
+                        className="p-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 disabled:opacity-50">
                         <Download size={16} />
                       </button>
                     </td>

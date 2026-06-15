@@ -79,6 +79,7 @@ model Tenant {
   workZones WorkZone[]
   workShifts WorkShift[]
   onboardingSteps TenantOnboardingStep[]
+  beneficios EmployeeBenefit[]
 
   @@map("tenants")
 }
@@ -242,9 +243,36 @@ model Employee {
   nominas               Payroll[]
   documentos            LegalDocument[]
   actasEquipos          EquipmentDeliveryAct[]
+  beneficios            EmployeeBenefit[]
 
   @@index([tenantId, activo])
   @@map("empleados")
+}
+
+model EmployeeBenefit {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  empleadoId     String    @map("empleado_id") @db.Uuid
+  tipo           String    @db.VarChar(40)
+  descripcion    String    @default("")
+  montoTotal     Decimal   @default(0) @map("monto_total") @db.Decimal(12, 2)
+  saldoPendiente Decimal   @default(0) @map("saldo_pendiente") @db.Decimal(12, 2)
+  cuotaMensual   Decimal   @default(0) @map("cuota_mensual") @db.Decimal(12, 2)
+  anioInicio     Int       @map("anio_inicio")
+  mesInicio      Int       @map("mes_inicio")
+  estado         String    @default("pendiente") @db.VarChar(40)
+  aprobadoPor    String?   @map("aprobado_por") @db.Uuid
+  aprobadoEn     DateTime? @map("aprobado_en") @db.Timestamptz(6)
+  metadata       Json      @default("{}")
+  createdBy      String?   @map("created_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  empleado       Employee  @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, estado])
+  @@index([empleadoId, anioInicio, mesInicio])
+  @@map("beneficios_empleados")
 }
 
 model AttendanceMark {

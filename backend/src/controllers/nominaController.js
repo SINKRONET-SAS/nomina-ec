@@ -86,14 +86,30 @@ async function descargarRolPDF(req, res) {
     const { id } = req.params;
     const { tenantId } = req;
     const result = await db.query(`
-      SELECT rol_pdf_url FROM nominas WHERE id = $1 AND tenant_id = $2
+      SELECT n.rol_pdf_url, n.anio, n.mes, e.nombres, e.apellidos, e.cedula
+      FROM nominas n
+      JOIN empleados e ON e.id = n.empleado_id
+      WHERE n.id = $1 AND n.tenant_id = $2
     `, [id, tenantId]);
 
     if (result.rows.length === 0 || !result.rows[0].rol_pdf_url) {
-      return res.status(404).json({ error: 'PDF no encontrado', correlationId: req.correlationId });
+      return res.status(404).json({
+        error: 'NOMINA_PDF_NO_ENCONTRADO',
+        message: 'El rol de pago todavia no tiene PDF generado.',
+        correlationId: req.correlationId,
+      });
     }
 
-    res.json({ success: true, url: result.rows[0].rol_pdf_url, correlationId: req.correlationId });
+    const row = result.rows[0];
+    res.json({
+      success: true,
+      url: row.rol_pdf_url,
+      fileName: `rol_pago_${row.cedula}_${row.anio}_${String(row.mes).padStart(2, '0')}.pdf`,
+      contentType: 'application/pdf',
+      storageContract: 'url_firmada_o_publica',
+      encoding: 'url',
+      correlationId: req.correlationId,
+    });
   } catch (err) {
     console.error('[NOMINA] Error descargando rol PDF', {
       code: err.code || 'NOMINA_PDF_ERROR',
@@ -119,8 +135,34 @@ async function cerrarMes(req, res) {
       UPDATE nominas
       SET estado = 'cerrada', cerrado_en = NOW(), updated_at = NOW()
       WHERE tenant_id = $1 AND anio = $2 AND mes = $3 AND estado = 'borrador'
-      RETURNING id
+      RETURNING id, detalle_calculo
     `, [tenantId, anio, mes]);
+
+    for (const row of result.rows) {
+      const benefits = Array.isArray(row.detalle_calculo?.beneficiosDescontados)
+        ? row.detalle_calculo.beneficiosDescontados
+        : [];
+      for (const benefit of benefits) {
+        await db.query(`
+          UPDATE beneficios_empleados
+          SET saldo_pendiente = GREATEST(0, saldo_pendiente - $3::numeric),
+              estado = CASE
+                WHEN GREATEST(0, saldo_pendiente - $3::numeric) = 0 THEN 'descontado'
+                ELSE estado
+              END,
+              metadata = COALESCE(metadata, '{}'::jsonb) || $4::jsonb,
+              updated_at = NOW()
+          WHERE id = $1
+            AND tenant_id = $2
+            AND estado = 'aprobado'
+        `, [
+          benefit.id,
+          tenantId,
+          Number(benefit.amount || 0),
+          JSON.stringify({ ultimoDescuento: { anio, mes, nominaId: row.id, monto: Number(benefit.amount || 0) } }),
+        ]);
+      }
+    }
 
     await recordAudit({
       tenantId,

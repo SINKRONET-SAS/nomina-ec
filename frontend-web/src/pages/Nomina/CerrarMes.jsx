@@ -104,6 +104,8 @@ function CerrarMes() {
                     <tr>
                       <th className="px-4 py-2 text-left">Empleado</th>
                       <th className="px-4 py-2 text-right">Ingresos</th>
+                      <th className="px-4 py-2 text-right">Anticipos</th>
+                      <th className="px-4 py-2 text-right">Prestamos</th>
                       <th className="px-4 py-2 text-right">Neto</th>
                     </tr>
                   </thead>
@@ -112,6 +114,8 @@ function CerrarMes() {
                       <tr key={idx}>
                         <td className="px-4 py-2">{r.nombre}</td>
                         <td className="px-4 py-2 text-right">${r.totalIngresos}</td>
+                        <td className="px-4 py-2 text-right">${Number(r.detalleCalculo?.anticipos || 0).toFixed(2)}</td>
+                        <td className="px-4 py-2 text-right">${Number(r.detalleCalculo?.prestamos || 0).toFixed(2)}</td>
                         <td className="px-4 py-2 text-right font-semibold">${r.netoRecibir}</td>
                       </tr>
                     ))}

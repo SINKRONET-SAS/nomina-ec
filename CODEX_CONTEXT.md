@@ -1,3 +1,54 @@
+## Open Haiky Plan - HAIKY-CIERRE-BRECHAS-NOMINA-EC-DIAGNOSTICO-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-CIERRE-BRECHAS-NOMINA-EC-DIAGNOSTICO-2026 |
+| Codigo | CBN26 |
+| Estado | CBN26-01..10 ejecutadas localmente con riesgos residuales documentados |
+| Fase actual | CBN26-10 cerrada localmente |
+| Alcance | cerrar bugs criticos y brechas reales detectadas en PDF, nomina, beneficios, marcaciones, multi-tenant, planes, parametros legales y rendimiento |
+| Fuente de requerimiento | Diagnostico del usuario sobre hallazgos principales |
+| Plan doc | `docs/PLAN_HAIKY_CIERRE_BRECHAS_NOMINA_EC_DIAGNOSTICO_2026.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Prompts | `.github/prompts/CIERRE-BRECHAS-NOMINA-EC-2026-{00..10}-*.md` |
+| RULES | `RULES.md` |
+
+### Resumen CBN26
+
+CBN26 transforma el diagnostico de bugs criticos en una linea HAIKY ejecutable. El objetivo no es maquillar pantallas, sino cerrar fallos que impiden que Nomina-Ec opere como sistema real: generacion de roles PDF, auth inexistente de Base44, beneficios sin edicion ni wiring contable, marcaciones con estado compartido, deducciones omitidas, empresas multi-tenant decorativas, planes sin enforcement, parametros legales ignorados por el calculo y consultas ineficientes de marcaciones.
+
+CBN26-01..10 quedaron ejecutadas sobre el stack real. Donde el diagnostico mencionaba archivos Base44 inexistentes, se mapeo al equivalente real de Nomina-Ec. La gestion de planes toma como referencia `SINKRONET-SAS/sinkroniq-mobile`: autoridad backend, capacidades explicitas, fail-closed y pruebas.
+
+### Fases CBN26
+
+| Fase | Estado | Resumen |
+|------|--------|---------|
+| CBN26-00 | completed | Baseline documental, plan, prompts, contexto y AuditLock sin tocar runtime. |
+| CBN26-01 | completed_local | Contrato PDF reforzado sin Base44/UploadFile en runtime real. |
+| CBN26-02 | completed_local | Boton PDF con cliente API, estados UI y cero fallos silenciosos. |
+| CBN26-03 | completed_local | Beneficios CRUD real para prestamos y anticipos. |
+| CBN26-04 | completed_by_stack_mapping | `Marcaciones.jsx`/`empleadoFiltro` no existen en stack actual. |
+| CBN26-05 | completed_local | Deducciones automaticas de anticipos/prestamos en nomina con conciliacion. |
+| CBN26-06 | completed_by_stack_mapping | Multi-tenant sin fallback `empresas[0]`; nueva tabla respeta tenant. |
+| CBN26-07 | completed_local | Gestion de planes y capacidades con enforcement backend. |
+| CBN26-08 | completed_local_with_professional_block | Parametros legales versionados como fuente primaria del calculo. |
+| CBN26-09 | completed_local | Rendimiento: dashboard y marcaciones faltantes con filtros/agregados en origen. |
+| CBN26-10 | completed_local_with_residual_risks | QA, regresion y release local de cierre de brechas. |
+
+### Reglas CBN26
+
+- No iniciar una fase funcional sin aprobacion explicita del prompt correspondiente.
+- No adelantar fixes de fases posteriores.
+- No mantener tokens Base44 ni SDK inexistente si el runtime real usa otro mecanismo de auth.
+- No dejar errores de PDF, nomina, beneficios o permisos como fallos silenciosos.
+- No descontar prestamos/anticipos sin trazabilidad, periodo, idempotencia y conciliacion.
+- No aceptar multi-tenant o planes solo decorativos.
+- No usar parametros legales hardcodeados como fuente primaria para calculos oficiales.
+- No cargar colecciones grandes para agregados simples si la API o DB puede filtrar por fecha/tenant.
+- Commits esperados: `phase: CBN26-XX task: ...`.
+
+---
+
 ## Open Haiky Plan - HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026
 
 | Campo | Valor |

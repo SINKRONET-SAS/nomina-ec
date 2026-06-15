@@ -69,6 +69,7 @@ app.get('/api/auth/email-verification/status', authController.emailVerificationS
 app.get('/api/pagos/status', paymentController.subscriptionStatus);
 app.get('/api/pagos/payment-methods', paymentController.listPaymentMethods);
 app.get('/api/pagos/payment-methods/capabilities', paymentController.paymentCapabilities);
+app.get('/api/pagos/capabilities', paymentController.tenantCapabilities);
 app.post('/api/pagos/payment-methods/checkout-intent', requireRole('owner', 'superadmin'), paymentController.createCheckoutIntent);
 app.post('/api/pagos/payment-methods/:paymentMethodId/revoke', requireRole('owner', 'superadmin'), paymentController.revokePaymentMethod);
 app.get('/api/pagos/planes/admin', requireRole('superadmin', 'owner'), paymentController.listAdminPlans);
@@ -94,6 +95,11 @@ app.get('/api/novedades/pendientes', novedadController.listarPendientes);
 app.post('/api/novedades', requireRole('owner', 'admin_rrhh', 'supervisor'), novedadController.crear);
 app.put('/api/novedades/:id/aprobar', requireRole('owner', 'admin_rrhh'), novedadController.aprobar);
 app.put('/api/novedades/:id/rechazar', requireRole('owner', 'admin_rrhh'), novedadController.rechazar);
+
+const beneficioEmpleadoController = require('./controllers/beneficioEmpleadoController');
+app.get('/api/beneficios', requireRole('owner', 'admin_rrhh'), beneficioEmpleadoController.listar);
+app.post('/api/beneficios', requireRole('owner', 'admin_rrhh'), beneficioEmpleadoController.crear);
+app.put('/api/beneficios/:id', requireRole('owner', 'admin_rrhh'), beneficioEmpleadoController.actualizar);
 
 const nominaController = require('./controllers/nominaController');
 app.post('/api/nomina/calcular', requireRole('owner', 'admin_rrhh'), nominaController.calcularMes);

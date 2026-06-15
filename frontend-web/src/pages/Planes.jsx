@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Banknote, Building2, CheckCircle2 } from 'lucide-react';
 import { extractApiError, fetchPlans, startCheckout } from '../services/publicApi';
+import { fetchPlanCapabilities } from '../services/beneficiosApi';
 import { useAuth } from '../context/AuthContext';
 
 function formatPrice(plan) {
@@ -12,6 +13,7 @@ function formatPrice(plan) {
 function Planes() {
   const [planes, setPlanes] = useState([]);
   const [error, setError] = useState('');
+  const [capabilities, setCapabilities] = useState(null);
   const [loadingPlan, setLoadingPlan] = useState('');
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -21,6 +23,19 @@ function Planes() {
       .then(setPlanes)
       .catch((err) => setError(extractApiError(err, 'No se pudieron cargar los planes.')));
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    fetchPlanCapabilities()
+      .then(setCapabilities)
+      .catch((err) => console.error('[PLANES] No se pudieron cargar capacidades del plan actual', {
+        code: err.response?.data?.error || 'PLAN_CAPABILITIES_ERROR',
+        statusCode: err.response?.status || 500,
+        correlationId: err.response?.data?.correlationId || 'frontend-planes',
+        userId: null,
+        message: err.message,
+      }));
+  }, [token]);
 
   const handleCheckout = async (planId) => {
     if (!token) {
@@ -68,6 +83,11 @@ function Planes() {
         </div>
 
         {error && <div className="mt-6 status-error">{error}</div>}
+        {capabilities && (
+          <div className="mt-6 rounded-md border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+            Plan activo: <strong>{capabilities.planNombre}</strong>. Archivos bancarios: {capabilities.allowed?.bankFiles ? 'habilitados' : 'bloqueados'}.
+          </div>
+        )}
 
         <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {planes.map((plan) => (

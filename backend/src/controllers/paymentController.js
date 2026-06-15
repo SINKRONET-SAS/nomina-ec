@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const db = require('../config/database');
 const { buildPayphoneAmounts, formatUsdFromCents } = require('../services/paymentPricingService');
+const { getTenantPlanCapabilities } = require('../services/planCapabilityService');
 
 function normalizePlan(row) {
   return {
@@ -172,6 +173,15 @@ async function paymentCapabilities(_req, res) {
       mockMode: String(process.env.PAYPHONE_MOCK_MODE || 'true').toLowerCase() === 'true',
     },
   });
+}
+
+async function tenantCapabilities(req, res, next) {
+  try {
+    const capabilities = await getTenantPlanCapabilities(req.usuario.tenantId);
+    res.json({ success: true, data: capabilities, correlationId: req.correlationId });
+  } catch (err) {
+    next(err);
+  }
 }
 
 async function listPaymentMethods(req, res, next) {
@@ -394,6 +404,7 @@ module.exports = {
   upsertPlan,
   deletePlan,
   paymentCapabilities,
+  tenantCapabilities,
   listPaymentMethods,
   subscriptionStatus,
   createCheckoutIntent,

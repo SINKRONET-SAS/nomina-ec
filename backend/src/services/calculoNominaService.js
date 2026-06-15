@@ -9,6 +9,7 @@ const {
   assertLegalParametersReadyForProduction,
   getLegalParametersForTenant,
 } = require('./legalParameterService');
+const { getApprovedDeductions } = require('./beneficioEmpleadoService');
 
 async function calcularNominaMensual(tenantId, anio, mes) {
   validarPeriodoNomina(anio, mes);
@@ -105,8 +106,9 @@ async function calcularEmpleado(emp, tenantId, anio, mes) {
     + provisionVacaciones
     + provisionFondosReserva
   );
-  const anticipos = 0;
-  const prestamos = 0;
+  const benefitDeductions = await getApprovedDeductions(tenantId, emp.id, anio, mes);
+  const anticipos = benefitDeductions.anticipos;
+  const prestamos = benefitDeductions.prestamos;
   const totalDeducciones = roundMoney(aporteIess + impuestoRenta + descuentoFaltas + anticipos + prestamos);
   const netoRecibir = roundMoney(totalIngresos - totalDeducciones);
 
@@ -138,6 +140,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes) {
     costoEmpleador,
     anticipos,
     prestamos,
+    beneficiosDescontados: benefitDeductions.items,
     totalIngresos,
     totalDeducciones,
     netoRecibir,

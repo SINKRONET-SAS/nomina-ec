@@ -59,6 +59,13 @@ async function getVersionedLegalParametersForTenant(tenantId, year) {
       AND parameter_key IN (
         'income_tax_table',
         'tabla_impuesto_renta',
+        'sbu',
+        'iess_aporte_personal',
+        'iess_aporte_patronal',
+        'jornada_horas_mensuales',
+        'jornada_maxima_semanal',
+        'provision_vacaciones',
+        'vacaciones_dias_anuales',
         'decimo_tercero',
         'decimo_cuarto_costa_galapagos',
         'decimo_cuarto_sierra_amazonia',
@@ -102,6 +109,21 @@ function mergeVersionedParameters(baseParameters, versionedParameters) {
   const fourteenthCosta = versionedParameters.decimo_cuarto_costa_galapagos?.value;
   const fourteenthSierra = versionedParameters.decimo_cuarto_sierra_amazonia?.value;
   const reserveFund = versionedParameters.fondo_reserva?.value;
+  const sbu = versionedParameters.sbu?.value;
+  const personalIess = versionedParameters.iess_aporte_personal?.value;
+  const employerIess = versionedParameters.iess_aporte_patronal?.value;
+  const monthlyHours = versionedParameters.jornada_horas_mensuales?.value;
+  const weeklyHours = versionedParameters.jornada_maxima_semanal?.value;
+  const vacationProvision = versionedParameters.provision_vacaciones?.value;
+  const vacationDays = versionedParameters.vacaciones_dias_anuales?.value;
+
+  if (sbu) payroll.unifiedBaseSalary = Number(sbu.amount ?? payroll.unifiedBaseSalary);
+  if (personalIess) payroll.personalIessRate = Number(personalIess.amount ?? payroll.personalIessRate);
+  if (employerIess) payroll.employerIessRate = Number(employerIess.amount ?? payroll.employerIessRate);
+  if (monthlyHours) payroll.monthlyWorkHours = Number(monthlyHours.amount ?? payroll.monthlyWorkHours);
+  if (weeklyHours) payroll.weeklyMaxHours = Number(weeklyHours.amount ?? payroll.weeklyMaxHours);
+  if (vacationProvision) payroll.vacationProvisionRate = Number(vacationProvision.amount ?? payroll.vacationProvisionRate);
+  if (vacationDays) payroll.vacationDaysAfterFirstYear = Number(vacationDays.amount ?? payroll.vacationDaysAfterFirstYear);
 
   if (thirteenth) {
     payroll.thirteenthSalaryProvisionRate = Number(thirteenth.rate ?? payroll.thirteenthSalaryProvisionRate ?? (1 / 12));
@@ -119,17 +141,23 @@ function mergeVersionedParameters(baseParameters, versionedParameters) {
     payroll.reserveFundStartsAfterMonths = Number(reserveFund.startsAfterMonths ?? payroll.reserveFundStartsAfterMonths ?? 12);
   }
 
+  const statusRows = Object.values(versionedParameters).filter(Boolean);
+  const sourceStatus = statusRows.length > 0 && statusRows.every((row) => row.validation_status === VALIDATED_SOURCE_STATUS)
+    ? VALIDATED_SOURCE_STATUS
+    : (statusRows[0]?.validation_status || baseParameters.sourceStatus);
+
   if (!incomeTax) {
     return {
       ...baseParameters,
       payroll,
+      sourceStatus,
     };
   }
 
   return {
     ...baseParameters,
     payroll,
-    sourceStatus: incomeTaxRow.validation_status || baseParameters.sourceStatus,
+    sourceStatus,
     source: {
       name: incomeTaxRow.source_name || '',
       url: incomeTaxRow.source_url || '',

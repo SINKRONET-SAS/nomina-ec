@@ -6,6 +6,7 @@ const { generarXML_RDEP } = require('../services/sriRdepGenerator');
 const { generarXML_SAE } = require('../services/iessSaeGenerator');
 const { generarArchivoBanco } = require('../services/bancoAebGenerator');
 const db = require('../config/database');
+const { assertCapability } = require('../services/planCapabilityService');
 
 async function generarATS(req, res) {
   try {
@@ -84,6 +85,11 @@ async function generarArchivoBancoCtrl(req, res) {
     if (!anio || !mes) {
       return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
     }
+
+    await assertCapability(tenantId, 'bankFiles', {
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+    });
 
     const resultado = await generarArchivoBanco(tenantId, anio, mes, banco, {
       correlationId: req.correlationId,

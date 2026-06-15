@@ -99,15 +99,38 @@ async function listarPorEmpleado(req, res) {
 async function listarHoy(req, res) {
   try {
     const { tenantId } = req;
-    const result = await db.query(`
-      SELECT m.*, e.nombres, e.apellidos, e.cedula
-      FROM marcaciones m
-      JOIN empleados e ON m.empleado_id = e.id
-      WHERE m.tenant_id = $1 AND DATE(m.timestamp) = CURRENT_DATE
-      ORDER BY m.timestamp DESC
-    `, [tenantId]);
+    const limit = Math.min(Number.parseInt(req.query.limit || '50', 10) || 50, 200);
+    const [summary, marks] = await Promise.all([
+      db.query(`
+        SELECT
+          COUNT(*)::int AS total,
+          COUNT(DISTINCT empleado_id)::int AS empleados_marcados,
+          SUM(CASE WHEN tipo_marcacion = 'inicio_jornada' THEN 1 ELSE 0 END)::int AS inicios_jornada,
+          SUM(CASE WHEN tipo_marcacion = 'fin_jornada' THEN 1 ELSE 0 END)::int AS fines_jornada
+        FROM marcaciones
+        WHERE tenant_id = $1
+          AND timestamp >= CURRENT_DATE
+          AND timestamp < CURRENT_DATE + INTERVAL '1 day'
+      `, [tenantId]),
+      db.query(`
+        SELECT m.*, e.nombres, e.apellidos, e.cedula
+        FROM marcaciones m
+        JOIN empleados e ON m.empleado_id = e.id
+        WHERE m.tenant_id = $1
+          AND m.timestamp >= CURRENT_DATE
+          AND m.timestamp < CURRENT_DATE + INTERVAL '1 day'
+        ORDER BY m.timestamp DESC
+        LIMIT $2
+      `, [tenantId, limit]),
+    ]);
 
-    res.json({ success: true, marcaciones: result.rows, correlationId: req.correlationId });
+    res.json({
+      success: true,
+      marcaciones: marks.rows,
+      metrics: summary.rows[0] || { total: 0, empleados_marcados: 0, inicios_jornada: 0, fines_jornada: 0 },
+      limit,
+      correlationId: req.correlationId,
+    });
   } catch (err) {
     console.error('[MARCACIONES] Error listando marcaciones de hoy', {
       code: err.code || 'MARCACION_HOY_ERROR',

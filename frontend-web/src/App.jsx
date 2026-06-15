@@ -13,6 +13,7 @@ import Landing from './pages/Landing';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import Planes from './pages/Planes';
+import PlanesGestion from './pages/PlanesGestion';
 import PaymentResult from './pages/PaymentResult';
 import LegalText from './pages/LegalText';
 import CookieConsent from './components/Privacy/CookieConsent';
@@ -27,6 +28,7 @@ import TerminarEmpleado from './pages/Empleados/TerminarEmpleado';
 import NovedadesPendientes from './pages/Asistencia/NovedadesPendientes';
 import ReporteAsistencia from './pages/Asistencia/ReporteAsistencia';
 import CerrarMes from './pages/Nomina/CerrarMes';
+import Beneficios from './pages/Nomina/Beneficios';
 import RolesPagos from './pages/Nomina/RolesPagos';
 import DescargarReportes from './pages/Nomina/DescargarReportes';
 import ContratosGenerados from './pages/Documentos/ContratosGenerados';
@@ -127,6 +129,11 @@ function App() {
                   <CerrarMes />
                 </ProtectedRoute>
               } />
+              <Route path="nomina/beneficios" element={
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
+                  <Beneficios />
+                </ProtectedRoute>
+              } />
               <Route path="nomina/roles" element={
                 <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
                   <RolesPagos />
@@ -157,6 +164,11 @@ function App() {
               <Route path="auditoria" element={
                 <ProtectedRoute requiredRole={['superadmin', 'owner']}>
                   <Auditoria />
+                </ProtectedRoute>
+              } />
+              <Route path="planes" element={
+                <ProtectedRoute requiredRole={['superadmin']}>
+                  <PlanesGestion />
                 </ProtectedRoute>
               } />
             </Route>

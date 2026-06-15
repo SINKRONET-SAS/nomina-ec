@@ -40,6 +40,7 @@ function Layout() {
       roles: ['owner', 'admin_rrhh'],
       submenu: [
         { path: '/dashboard/nomina/cerrar', label: 'Cerrar Mes' },
+        { path: '/dashboard/nomina/beneficios', label: 'Beneficios y descuentos' },
         { path: '/dashboard/nomina/roles', label: 'Roles de Pago' },
         { path: '/dashboard/nomina/reportes', label: 'Reportes Entidades' },
       ]
@@ -55,7 +56,8 @@ function Layout() {
     },
     { path: '/dashboard/configuracion/parametrizacion', icon: Settings2, label: 'Parametrización', roles: ['superadmin', 'owner', 'admin_rrhh'] },
     { path: '/dashboard/auditoria', icon: ShieldCheck, label: 'Auditoría', roles: ['superadmin', 'owner'] },
-    { path: '/precios', icon: CreditCard, label: 'Planes', roles: ['superadmin', 'owner'] },
+    { path: '/dashboard/planes', icon: CreditCard, label: 'Gestion de planes', roles: ['superadmin'] },
+    { path: '/precios', icon: CreditCard, label: 'Planes publicos', roles: ['superadmin', 'owner'] },
   ];
 
   const handleLogout = () => {

@@ -67,7 +67,8 @@ async function verificarMarcacionesFaltantes() {
           SELECT 1
           FROM marcaciones m
           WHERE m.empleado_id = e.id
-            AND DATE(m.timestamp) = CURRENT_DATE
+            AND m.timestamp >= CURRENT_DATE
+            AND m.timestamp < CURRENT_DATE + INTERVAL '1 day'
             AND m.tipo_marcacion = 'inicio_jornada'
         )
     `, [tenant.id]);

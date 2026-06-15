@@ -87,6 +87,7 @@ async function loadDashboardData(role) {
     configuracionResult,
     nominasResult,
     suscripcionResult,
+    capacidadesResult,
     auditoriaResult,
   ] = await Promise.all([
     optionalGet('/empleados'),
@@ -95,6 +96,7 @@ async function loadDashboardData(role) {
     optionalGet('/configuracion/resumen'),
     optionalGet(`/nomina/${period.year}/${period.month}`),
     optionalGet('/pagos/status'),
+    optionalGet('/pagos/capabilities'),
     ['owner', 'superadmin'].includes(role) ? optionalGet('/auditoria?limit=5') : Promise.resolve({ ok: false }),
   ]);
 
@@ -107,6 +109,7 @@ async function loadDashboardData(role) {
   const onboarding = configuracionResult.data?.data?.onboarding || {};
   const qaChecklist = configuracionResult.data?.data?.qaChecklist || [];
   const subscription = suscripcionResult.data?.data || null;
+  const capabilities = capacidadesResult.data?.data || null;
 
   return {
     period,
@@ -119,6 +122,7 @@ async function loadDashboardData(role) {
     onboarding,
     qaChecklist,
     subscription,
+    capabilities,
     health: {
       empleados: empleadosResult.ok,
       novedades: novedadesResult.ok,
@@ -126,6 +130,7 @@ async function loadDashboardData(role) {
       configuracion: configuracionResult.ok,
       nominas: nominasResult.ok,
       suscripcion: suscripcionResult.ok,
+      capacidades: capacidadesResult.ok,
       auditoria: auditoriaResult.ok,
     },
   };
@@ -201,6 +206,7 @@ function Dashboard() {
   const subscriptionLabel = data?.subscription
     ? `${data.subscription.planNombre || data.subscription.planId} - ${data.subscription.estado}`
     : 'Sin suscripcion activa registrada';
+  const bankFilesAllowed = Boolean(data?.capabilities?.allowed?.bankFiles);
 
   const summaryCards = [
     {
@@ -439,6 +445,7 @@ function Dashboard() {
               <AlertCircle className="h-5 w-5 shrink-0 text-amber-700" />
               <p className="text-sm leading-6 text-amber-900">
                 Valida parametros legales vigentes antes de usar calculos, anexos o archivos oficiales en produccion.
+                {bankFilesAllowed ? ' Tu plan permite archivos bancarios.' : ' El plan actual no permite archivos bancarios.'}
               </p>
             </div>
           </div>
