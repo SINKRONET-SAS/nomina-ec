@@ -82,6 +82,7 @@ model Tenant {
   beneficios EmployeeBenefit[]
   apiClients ExternalApiClient[]
   apiIdempotencyKeys ExternalApiIdempotencyKey[]
+  employeeImportBatches EmployeeImportBatch[]
 
   @@map("tenants")
 }
@@ -268,6 +269,7 @@ model Employee {
   fechaSalida           DateTime?           @map("fecha_salida") @db.Date
   tipoContrato          String              @default("indefinido") @map("tipo_contrato") @db.VarChar(60)
   cuentaBancariaCifrada Bytes?              @map("cuenta_bancaria_cifrada")
+  importBatchId          String?             @map("import_batch_id") @db.Uuid
   banco                 String              @default("") @db.VarChar(80)
   tipoCuenta            String              @default("") @map("tipo_cuenta") @db.VarChar(40)
   direccionDomicilio    String              @default("") @map("direccion_domicilio")
@@ -283,9 +285,30 @@ model Employee {
   documentos            LegalDocument[]
   actasEquipos          EquipmentDeliveryAct[]
   beneficios            EmployeeBenefit[]
+  importBatch           EmployeeImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, activo])
+  @@index([tenantId, importBatchId])
   @@map("empleados")
+}
+
+model EmployeeImportBatch {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String     @map("tenant_id") @db.Uuid
+  createdBy   String?    @map("created_by") @db.Uuid
+  sourceName  String     @default("carga_manual") @map("source_name") @db.VarChar(180)
+  status      String     @default("preview") @db.VarChar(30)
+  totalRows   Int        @default(0) @map("total_rows")
+  validRows   Int        @default(0) @map("valid_rows")
+  errorRows   Int        @default(0) @map("error_rows")
+  summary     Json       @default("{}")
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  completedAt DateTime?  @map("completed_at") @db.Timestamptz(6)
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  empleados   Employee[]
+
+  @@index([tenantId, createdAt])
+  @@map("employee_import_batches")
 }
 
 model EmployeeBenefit {

@@ -1,75 +1,296 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { authenticatedApi } from '../../services/authenticatedApi';
+import React, { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Edit, UserX } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Edit,
+  FileSpreadsheet,
+  Plus,
+  Search,
+  Upload,
+  UserX,
+} from 'lucide-react';
+import { authenticatedApi } from '../../services/authenticatedApi';
+import { extractApiError } from '../../services/publicApi';
+
+const TEMPLATE = [
+  'identification;firstName;lastName;departmentCode;position;hireDate;salary;bankCode;bankAccount;accountType;contractType;email;phone',
+  '1710034065;Maria Fernanda;Demo Ruiz;ADM;Analista de Talento;2026-01-15;850.00;PICHINCHA;2200123456;AHORROS;indefinido;maria.demo@example.com;0999999999',
+].join('\n');
+
+function ImportPanel({ onImported }) {
+  const [rawText, setRawText] = useState('');
+  const [sourceName, setSourceName] = useState('carga_manual.csv');
+  const [preview, setPreview] = useState(null);
+  const [result, setResult] = useState(null);
+
+  const previewMutation = useMutation({
+    mutationFn: async () => {
+      const response = await authenticatedApi.post('/empleados/importar/preview', { rawText, sourceName });
+      return response.data?.preview;
+    },
+    onSuccess: (data) => {
+      setPreview(data);
+      setResult(null);
+    },
+  });
+
+  const commitMutation = useMutation({
+    mutationFn: async () => {
+      const response = await authenticatedApi.post('/empleados/importar/confirmar', { rawText, sourceName });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setResult(data);
+      setPreview(data.preview);
+      onImported();
+    },
+  });
+
+  const loadFile = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setSourceName(file.name);
+    setRawText(await file.text());
+    setPreview(null);
+    setResult(null);
+  };
+
+  const canPreview = rawText.trim().length > 0 && !previewMutation.isPending;
+  const canConfirm = preview?.validRows > 0 && preview?.errorRows === 0 && !commitMutation.isPending;
+  const previewRows = preview?.rows || [];
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <Upload className="h-5 w-5 text-teal-700" />
+            <h2 className="text-lg font-semibold text-slate-950">Carga masiva de empleados</h2>
+          </div>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            Importa empleados con prevalidacion, errores por fila y lote auditable. No se aplican filas si existe algun error.
+          </p>
+        </div>
+        <button
+          className="inline-flex min-h-10 w-fit items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700"
+          onClick={() => {
+            setSourceName('plantilla_empleados_demo.csv');
+            setRawText(TEMPLATE);
+            setPreview(null);
+            setResult(null);
+          }}
+          type="button"
+        >
+          <FileSpreadsheet className="h-4 w-4" />
+          Usar plantilla
+        </button>
+      </div>
+
+      <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="space-y-3">
+          <label className="block text-sm font-semibold text-slate-800" htmlFor="employee-import-file">
+            Archivo CSV o TSV
+          </label>
+          <input
+            accept=".csv,.txt,.tsv"
+            className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            id="employee-import-file"
+            onChange={loadFile}
+            type="file"
+          />
+
+          <label className="block text-sm font-semibold text-slate-800" htmlFor="employee-import-raw">
+            Contenido a validar
+          </label>
+          <textarea
+            className="min-h-[170px] w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+            id="employee-import-raw"
+            onChange={(event) => {
+              setRawText(event.target.value);
+              setPreview(null);
+              setResult(null);
+            }}
+            spellCheck="false"
+            value={rawText}
+          />
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+              disabled={!canPreview}
+              onClick={() => previewMutation.mutate()}
+              type="button"
+            >
+              <Search className="h-4 w-4" />
+              {previewMutation.isPending ? 'Validando' : 'Prevalidar carga'}
+            </button>
+            <button
+              className="inline-flex min-h-10 items-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+              disabled={!canConfirm}
+              onClick={() => commitMutation.mutate()}
+              type="button"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              {commitMutation.isPending ? 'Importando' : 'Confirmar importacion'}
+            </button>
+          </div>
+        </div>
+
+        <div className="rounded-md border border-slate-200 p-4">
+          <h3 className="text-sm font-semibold text-slate-900">Resumen</h3>
+          <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-md bg-slate-50 p-3">
+              <dt className="text-xs text-slate-500">Filas</dt>
+              <dd className="text-xl font-semibold text-slate-900">{preview?.totalRows || 0}</dd>
+            </div>
+            <div className="rounded-md bg-emerald-50 p-3">
+              <dt className="text-xs text-emerald-700">Validas</dt>
+              <dd className="text-xl font-semibold text-emerald-900">{preview?.validRows || 0}</dd>
+            </div>
+            <div className="rounded-md bg-red-50 p-3">
+              <dt className="text-xs text-red-700">Errores</dt>
+              <dd className="text-xl font-semibold text-red-900">{preview?.errorRows || 0}</dd>
+            </div>
+          </dl>
+
+          {result?.batchId && (
+            <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+              Lote {result.batchId}: {result.totalImported} empleados importados.
+            </div>
+          )}
+
+          {(previewMutation.isError || commitMutation.isError) && (
+            <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+              {extractApiError(previewMutation.error || commitMutation.error, 'No pudimos procesar la carga. Revisa el contenido e intenta nuevamente.')}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {previewRows.length > 0 && (
+        <div className="mt-5 overflow-x-auto rounded-md border border-slate-200">
+          <table className="w-full min-w-[980px] text-sm">
+            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+              <tr>
+                <th className="px-4 py-3 text-left">Fila</th>
+                <th className="px-4 py-3 text-left">Estado</th>
+                <th className="px-4 py-3 text-left">Identificacion</th>
+                <th className="px-4 py-3 text-left">Empleado</th>
+                <th className="px-4 py-3 text-left">Cargo</th>
+                <th className="px-4 py-3 text-left">Sueldo</th>
+                <th className="px-4 py-3 text-left">Errores</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {previewRows.slice(0, 20).map((row) => (
+                <tr className={row.status === 'error' ? 'bg-red-50/50' : 'bg-white'} key={row.rowNumber}>
+                  <td className="px-4 py-3">{row.rowNumber}</td>
+                  <td className="px-4 py-3">
+                    {row.status === 'valid' ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> valida
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-xs font-semibold text-red-800">
+                        <AlertTriangle className="h-3.5 w-3.5" /> error
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">{row.data.identification}</td>
+                  <td className="px-4 py-3">{row.data.firstName} {row.data.lastName}</td>
+                  <td className="px-4 py-3">{row.data.position || '-'}</td>
+                  <td className="px-4 py-3">${Number(row.data.salary || 0).toFixed(2)}</td>
+                  <td className="px-4 py-3 text-red-700">{row.errors.join('; ') || '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
 
 function ListaEmpleados() {
+  const queryClient = useQueryClient();
   const [busqueda, setBusqueda] = useState('');
-  
-  const { data, isLoading } = useQuery({
+
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['empleados'],
     queryFn: async () => {
       const response = await authenticatedApi.get('/empleados');
       return response.data.empleados;
-    }
+    },
   });
 
   const empleados = data || [];
-  const filtrados = empleados.filter(e => 
-    `${e.nombres} ${e.apellidos} ${e.cedula}`.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  const filtrados = useMemo(() => empleados.filter((empleado) => (
+    `${empleado.nombres} ${empleado.apellidos} ${empleado.cedula}`.toLowerCase().includes(busqueda.toLowerCase())
+  )), [empleados, busqueda]);
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Empleados</h1>
-        <Link to="/dashboard/empleados/nuevo" className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
-          <Plus size={20} className="mr-2" /> Nuevo Empleado
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Base laboral</p>
+          <h1 className="text-2xl font-bold text-slate-950">Empleados</h1>
+        </div>
+        <Link to="/dashboard/empleados/nuevo" className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white">
+          <Plus size={18} /> Nuevo empleado
         </Link>
       </div>
-      
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-4 border-b">
+
+      <ImportPanel onImported={() => queryClient.invalidateQueries({ queryKey: ['empleados'] })} />
+
+      {isError && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+          {extractApiError(error, 'No pudimos cargar empleados. Revisa la sesion e intenta nuevamente.')}
+        </div>
+      )}
+
+      <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 p-4">
           <div className="relative">
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
+            <Search className="absolute left-3 top-2.5 text-slate-400" size={20} />
             <input
+              className="w-full rounded-md border border-slate-300 py-2 pl-10 pr-4 text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+              onChange={(event) => setBusqueda(event.target.value)}
+              placeholder="Buscar por nombre o cedula"
               type="text"
-              placeholder="Buscar por nombre o cédula..."
               value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg"
             />
           </div>
         </div>
-        
+
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
+          <table className="w-full min-w-[760px]">
+            <thead className="bg-slate-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cédula</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cargo</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sueldo</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">Cedula</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">Nombre</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">Cargo</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">Sueldo</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-200">
               {isLoading ? (
-                <tr><td colSpan="5" className="px-6 py-4 text-center">Cargando...</td></tr>
+                <tr><td className="px-6 py-4 text-center text-sm text-slate-600" colSpan="5">Cargando empleados...</td></tr>
               ) : filtrados.length === 0 ? (
-                <tr><td colSpan="5" className="px-6 py-4 text-center">No hay empleados</td></tr>
+                <tr><td className="px-6 py-4 text-center text-sm text-slate-600" colSpan="5">No hay empleados para mostrar</td></tr>
               ) : (
-                filtrados.map(emp => (
-                  <tr key={emp.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm">{emp.cedula}</td>
-                    <td className="px-6 py-4 text-sm font-medium">{emp.nombres} {emp.apellidos}</td>
-                    <td className="px-6 py-4 text-sm">{emp.cargo || '-'}</td>
-                    <td className="px-6 py-4 text-sm">${parseFloat(emp.sueldo_bruto_mensual).toFixed(2)}</td>
+                filtrados.map((empleado) => (
+                  <tr className="hover:bg-slate-50" key={empleado.id}>
+                    <td className="px-6 py-4 text-sm">{empleado.cedula}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{empleado.nombres} {empleado.apellidos}</td>
+                    <td className="px-6 py-4 text-sm">{empleado.cargo || '-'}</td>
+                    <td className="px-6 py-4 text-sm">${Number(empleado.sueldo_bruto_mensual || 0).toFixed(2)}</td>
                     <td className="px-6 py-4 text-sm">
-                      <div className="flex space-x-2">
-                        <button className="text-blue-600 hover:text-blue-800"><Edit size={16} /></button>
-                        <Link to={`/dashboard/empleados/${emp.id}/terminar`} className="text-red-600 hover:text-red-800">
+                      <div className="flex gap-2">
+                        <button className="text-teal-700 hover:text-teal-900" type="button"><Edit size={16} /></button>
+                        <Link className="text-red-600 hover:text-red-800" to={`/dashboard/empleados/${empleado.id}/terminar`}>
                           <UserX size={16} />
                         </Link>
                       </div>
@@ -80,10 +301,9 @@ function ListaEmpleados() {
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
 
 export default ListaEmpleados;
-

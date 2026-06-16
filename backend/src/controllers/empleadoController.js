@@ -4,6 +4,10 @@
 const db = require('../config/database');
 const { validarCedula } = require('../utils/validarCedula');
 const { generarContrato } = require('../services/templateGenerator');
+const {
+  commitEmployeeImport,
+  previewEmployeeImport,
+} = require('../services/employeeImportService');
 
 async function listar(req, res) {
   try {
@@ -119,6 +123,69 @@ async function crear(req, res) {
   }
 }
 
+async function previewImportacion(req, res) {
+  try {
+    const preview = await previewEmployeeImport(req.body || {});
+    return res.json({ success: true, preview, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[EMPLEADOS] Error prevalidando importacion', {
+      code: err.code || 'EMPLOYEE_IMPORT_PREVIEW_ERROR',
+      statusCode: 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(500).json({
+      error: 'EMPLOYEE_IMPORT_PREVIEW_ERROR',
+      message: 'No pudimos prevalidar la carga. Revisa el archivo e intenta nuevamente.',
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function confirmarImportacion(req, res) {
+  try {
+    const result = await commitEmployeeImport({
+      tenantId: req.tenantId,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+      payload: req.body || {},
+    });
+
+    if (!result.ok) {
+      return res.status(result.status).json({
+        success: false,
+        error: 'EMPLOYEE_IMPORT_HAS_ERRORS',
+        message: 'La carga contiene filas con errores. Corrige el archivo y vuelve a prevalidar.',
+        preview: result.preview,
+        correlationId: req.correlationId,
+      });
+    }
+
+    return res.status(result.status).json({
+      success: true,
+      batchId: result.batchId,
+      totalImported: result.totalImported,
+      preview: result.preview,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[EMPLEADOS] Error confirmando importacion', {
+      code: err.code || 'EMPLOYEE_IMPORT_COMMIT_ERROR',
+      statusCode: 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(500).json({
+      error: 'EMPLOYEE_IMPORT_COMMIT_ERROR',
+      message: 'No pudimos importar empleados. No se aplicaron filas parciales.',
+      correlationId: req.correlationId,
+    });
+  }
+}
+
 async function actualizar(req, res) {
   try {
     const { id } = req.params;
@@ -173,5 +240,13 @@ async function terminar(req, res) {
   }
 }
 
-module.exports = { listar, obtener, crear, actualizar, terminar };
+module.exports = {
+  listar,
+  obtener,
+  crear,
+  actualizar,
+  terminar,
+  previewImportacion,
+  confirmarImportacion,
+};
 

@@ -3,13 +3,13 @@
   "plan": "HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026",
   "planCode": "DCF26",
   "status": "executing_runtime",
-  "phaseCompleted": "DCF26-06",
-  "currentPhase": "DCF26-07-carga-masiva-empleados",
-  "updatedAt": "2026-06-15T22:20:00.000-05:00",
-  "summary": "DCF26-06 API v1 de integracion: /api/v1 expuesto con API keys, scopes, rate limit, idempotencia, auditoria y gestion visible de clientes API en OperacionIntegral.",
+  "phaseCompleted": "DCF26-07",
+  "currentPhase": "DCF26-08-apertura-mes-lotes",
+  "updatedAt": "2026-06-15T22:55:00.000-05:00",
+  "summary": "DCF26-07 carga masiva de empleados: flujo visible en Empleados con plantilla, CSV/TSV, preview, errores por fila, commit transaccional y lote auditable.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: actuar como consultor, diagnosticar bugs, funcionalidad, codigo muerto, promesas no cumplidas y pantallas sin funcionalidad real; generar plan Haiky, contexto, AuditLock y prompts por fases.",
-  "previousAuditLockHash": "5e6669fd4ead737404f87272f38feccdb450789bcd31a809d54b3e565f53b187",
+  "previousAuditLockHash": "79621f16b74ec6a1cbb9a1f4b2dcbd7b9bfb4f12c9f76395c25841294f26fafd",
   "previousPlans": [
     {
       "plan": "HAIKY-CIERRE-BRECHAS-NOMINA-EC-DIAGNOSTICO-2026",
@@ -68,7 +68,12 @@
     "backend/src/controllers/integrationController.test.js",
     "backend/src/routes/externalApiRoutes.js",
     "frontend-web/src/services/integracionesApi.js",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_06_API_V1_INTEGRACION.md"
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_06_API_V1_INTEGRACION.md",
+    "backend/prisma/migrations/20260615224500_dcf26_employee_import_batches/migration.sql",
+    "backend/src/services/employeeImportService.js",
+    "backend/src/services/employeeImportService.test.js",
+    "frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_07_CARGA_MASIVA_EMPLEADOS.md"
   ],
   "validationChecks": [
     {
@@ -180,6 +185,31 @@
       "gate": "DCF26-06-DIFF-CHECK",
       "status": "PASS",
       "detail": "git diff --check sin errores; solo avisos CRLF esperados en Windows."
+    },
+    {
+      "gate": "DCF26-07-PRISMA-VALIDATE",
+      "status": "PASS",
+      "detail": "npx.cmd prisma validate en backend."
+    },
+    {
+      "gate": "DCF26-07-NODE-CHECK",
+      "status": "PASS",
+      "detail": "node --check employeeImportService, empleadoController y app."
+    },
+    {
+      "gate": "DCF26-07-IMPORT-TESTS",
+      "status": "PASS",
+      "detail": "npm.cmd test -- employeeImportService.test.js --runInBand: 1 suite, 5 tests."
+    },
+    {
+      "gate": "DCF26-07-FRONTEND-BUILD",
+      "status": "PASS",
+      "detail": "npm.cmd run build en frontend-web con carga masiva visible."
+    },
+    {
+      "gate": "DCF26-07-BROWSER",
+      "status": "SKIPPED_TOOL_UNAVAILABLE",
+      "detail": "Browser plugin intento conectar iab, pero el navegador integrado no estuvo disponible en esta sesion."
     }
   ],
   "fases": [
@@ -220,7 +250,7 @@
     },
     {
       "phase": "DCF26-07",
-      "status": "pending",
+      "status": "completed",
       "task": "carga masiva de empleados real"
     },
     {
@@ -253,8 +283,9 @@
     "DCF26-05 elimina ATS del runtime de nomina; cualquier obligacion ATS futura debe tratarse fuera del modulo de nomina.",
     "RDEP, bancos e integraciones necesitan validacion profesional/fuentes vigentes antes de produccion.",
     "Los gates locales pasan, pero no sustituyen E2E con datos DEMO ni validacion legal/tributaria.",
-    "La API v1 requiere migracion aplicada por ambiente y rate limit compartido para despliegues multi-instancia."
+    "La API v1 requiere migracion aplicada por ambiente y rate limit compartido para despliegues multi-instancia.",
+    "Carga masiva DCF26-07 limita documentos a cedula ecuatoriana porque la tabla actual usa cedula VARCHAR(10); rollback UI queda para fase posterior."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "551bc2105cc92c165a3a4ace94b8d1fca9f8f2b2bda1c01455786993975ead34"
+  "signature": "59e0029da6377a6a41a3a6079ac9451da3c0489a1a7374901d1dcbb4dc9771da"
 }
