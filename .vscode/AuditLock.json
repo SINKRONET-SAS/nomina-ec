@@ -3,13 +3,13 @@
   "plan": "HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026",
   "planCode": "DCF26",
   "status": "executing_runtime",
-  "phaseCompleted": "DCF26-04",
-  "currentPhase": "DCF26-05-retirar-ats-nomina",
-  "updatedAt": "2026-06-15T21:47:00.000-05:00",
-  "summary": "DCF26-04 agrego precheck RDEP, bloqueo por nomina cerrada, lectura de XSD versionado, validacion estructural runtime y UI visible para validar antes de generar.",
+  "phaseCompleted": "DCF26-05",
+  "currentPhase": "DCF26-06-api-v1-integracion",
+  "updatedAt": "2026-06-15T21:55:00.000-05:00",
+  "summary": "DCF26-05 retiro ATS del runtime de nomina: se elimino ruta /api/reportes/ats, controlador generarATS y sriAtsGenerator; reportes RDEP/SAE/banco siguen probados.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: actuar como consultor, diagnosticar bugs, funcionalidad, codigo muerto, promesas no cumplidas y pantallas sin funcionalidad real; generar plan Haiky, contexto, AuditLock y prompts por fases.",
-  "previousAuditLockHash": "2ce53ab312e71f42b6e1e9ff4d0bb5e6a21d7fdb3ff25332028bb766791d81ff",
+  "previousAuditLockHash": "7c5d65fe5e0fcd8693d62fe425763f35029d18c2ae564519c3de8d0c972a10e6",
   "previousPlans": [
     {
       "plan": "HAIKY-CIERRE-BRECHAS-NOMINA-EC-DIAGNOSTICO-2026",
@@ -54,7 +54,9 @@
     "backend/src/controllers/reporteController.js",
     "backend/src/app.js",
     "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_04_RDEP_XSD_RUNTIME.md"
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_04_RDEP_XSD_RUNTIME.md",
+    "backend/src/services/sriAtsGenerator.js",
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_05_RETIRAR_ATS_NOMINA.md"
   ],
   "validationChecks": [
     {
@@ -131,6 +133,16 @@
       "gate": "DCF26-04-FRONTEND-BUILD",
       "status": "PASS",
       "detail": "npm.cmd run build en frontend-web."
+    },
+    {
+      "gate": "DCF26-05-ATS-RUNTIME-CLEAN",
+      "status": "PASS",
+      "detail": "rg reportes/ats|generarATS|generarXML_ATS|sriAtsGenerator en runtime sin coincidencias."
+    },
+    {
+      "gate": "DCF26-05-REPORTS-TEST",
+      "status": "PASS",
+      "detail": "npm.cmd test -- sriRdepGenerator.test.js iessSaeGenerator.test.js bancoAebGenerator.test.js --runInBand: 10 tests."
     }
   ],
   "fases": [
@@ -161,7 +173,7 @@
     },
     {
       "phase": "DCF26-05",
-      "status": "pending",
+      "status": "completed",
       "task": "retirar ATS del flujo de nomina"
     },
     {
@@ -201,10 +213,10 @@
     }
   ],
   "residualRisk": [
-    "DCF26-04 implementa validacion estructural runtime con XSD versionado; no sustituye revision profesional ni confirmacion de ficha tecnica SRI vigente.",
+    "DCF26-05 elimina ATS del runtime de nomina; cualquier obligacion ATS futura debe tratarse fuera del modulo de nomina.",
     "RDEP, bancos e integraciones necesitan validacion profesional/fuentes vigentes antes de produccion.",
     "Los gates locales pasan, pero no sustituyen E2E con datos DEMO ni validacion legal/tributaria."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "231aff0148dcae4f9a5e82a5a5765c1b2130c0288f5e8fab967d1c829ed8be39"
+  "signature": "78b9ff7f3641dbe44863527126dc503a4c9eca6aa71e290f2cc8e751eeab209e"
 }

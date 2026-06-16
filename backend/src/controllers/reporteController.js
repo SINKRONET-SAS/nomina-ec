@@ -1,35 +1,11 @@
 // ============================================================
 // PLAN HAIKY - Controlador de Reportes
 // ============================================================
-const { generarXML_ATS } = require('../services/sriAtsGenerator');
 const { generarXML_RDEP, precheckRDEP } = require('../services/sriRdepGenerator');
 const { generarXML_SAE } = require('../services/iessSaeGenerator');
 const { generarArchivoBanco } = require('../services/bancoAebGenerator');
 const db = require('../config/database');
 const { assertCapability } = require('../services/planCapabilityService');
-
-async function generarATS(req, res) {
-  try {
-    const { tenantId } = req;
-    const { anio, mes } = req.body;
-
-    if (!anio || !mes) {
-      return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
-    }
-
-    const resultado = await generarXML_ATS(tenantId, anio, mes);
-    res.json({ success: true, reporte: resultado, correlationId: req.correlationId });
-  } catch (err) {
-    console.error('[REPORTES] Error ATS', {
-      code: err.code || 'REPORTE_ATS_ERROR',
-      statusCode: err.statusCode || 500,
-      correlationId: req.correlationId,
-      userId: req.usuarioId || null,
-      message: err.message,
-    });
-    res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
-  }
-}
 
 async function generarRDEP(req, res) {
   try {
@@ -176,7 +152,6 @@ async function reporteAsistencia(req, res) {
 }
 
 module.exports = {
-  generarATS,
   generarRDEP,
   validarRDEP,
   generarSAE,
