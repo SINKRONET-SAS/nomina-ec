@@ -3,13 +3,13 @@
   "plan": "HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026",
   "planCode": "DCF26",
   "status": "executing_runtime",
-  "phaseCompleted": "DCF26-02",
-  "currentPhase": "DCF26-03-bancos-owner-generador",
-  "updatedAt": "2026-06-15T21:18:00.000-05:00",
-  "summary": "DCF26-02 reemplazo OperacionIntegral: ya no guarda JSON generico en configuration_catalogs; ahora muestra modulos con acciones reales, checks y bloqueos visibles por fase.",
+  "phaseCompleted": "DCF26-03",
+  "currentPhase": "DCF26-04-rdep-xsd-runtime",
+  "updatedAt": "2026-06-15T21:31:00.000-05:00",
+  "summary": "DCF26-03 conecto perfiles bancarios OWNER al generador real: bancoAebGenerator busca perfiles en DB por tenant/banco y usa el JSON inicial solo como fallback controlado.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: actuar como consultor, diagnosticar bugs, funcionalidad, codigo muerto, promesas no cumplidas y pantallas sin funcionalidad real; generar plan Haiky, contexto, AuditLock y prompts por fases.",
-  "previousAuditLockHash": "3d25911136b97475d3b0d509d8e4d865ac493b6d2b6703aec66f6bd073d1208b",
+  "previousAuditLockHash": "0b305c6f773329fb8f91f0418ac38d4bd600c6b2ed2a270df6b6cd5442b57bdd",
   "previousPlans": [
     {
       "plan": "HAIKY-CIERRE-BRECHAS-NOMINA-EC-DIAGNOSTICO-2026",
@@ -45,7 +45,10 @@
     ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-12-qa-limpieza-release.md",
     "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_01_ENCODING.md",
     "frontend-web/src/pages/Operacion/OperacionIntegral.jsx",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_02_OPERACION_REAL.md"
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_02_OPERACION_REAL.md",
+    "backend/src/services/bancoAebGenerator.js",
+    "backend/src/services/bancoAebGenerator.test.js",
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_03_BANCOS_OWNER_GENERADOR.md"
   ],
   "validationChecks": [
     {
@@ -97,6 +100,16 @@
       "gate": "DCF26-02-NO-GENERIC-CATALOG",
       "status": "PASS",
       "detail": "rg no encontro createConfigurationResource, configuration_catalogs, JSON.stringify(record.payload), Guardar configuracion ni operationalModules en OperacionIntegral."
+    },
+    {
+      "gate": "DCF26-03-BANK-TEST",
+      "status": "PASS",
+      "detail": "npm.cmd test -- bancoAebGenerator.test.js --runInBand: 5 tests; cubre perfil tenant y fallback."
+    },
+    {
+      "gate": "DCF26-03-NODE-CHECK",
+      "status": "PASS",
+      "detail": "node --check src/services/bancoAebGenerator.js."
     }
   ],
   "fases": [
@@ -117,7 +130,7 @@
     },
     {
       "phase": "DCF26-03",
-      "status": "pending",
+      "status": "completed",
       "task": "bancos OWNER conectados al generador"
     },
     {
@@ -167,10 +180,10 @@
     }
   ],
   "residualRisk": [
-    "DCF26-02 convierte OperacionIntegral en centro de control visible, pero varios modulos quedan bloqueados hasta fases DCF26-03..12.",
+    "DCF26-03 requiere validacion de ficha tecnica bancaria real por banco antes de produccion.",
     "RDEP, bancos e integraciones necesitan validacion profesional/fuentes vigentes antes de produccion.",
     "Los gates locales pasan, pero no sustituyen E2E con datos DEMO ni validacion legal/tributaria."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "65d6588be4019427551e1dce6b5e92ea573beeab113fa9fe7bc24c76f470a909"
+  "signature": "7267253feb81f0e791110df9938d9ad0e848405639a27975a110d255ccc57de7"
 }

@@ -10,7 +10,7 @@ const { roundMoney, toMoneyString } = require('../utils/money');
 const { recordAudit } = require('./auditService');
 
 async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', context = {}) {
-  const profile = getBankProfile(banco);
+  const profile = await getBankProfileForTenant(tenantId, banco);
   const tenantResult = await db.query('SELECT * FROM tenants WHERE id = $1', [tenantId]);
 
   if (tenantResult.rows.length === 0) {
@@ -40,10 +40,15 @@ async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', con
   }
 
   let totalPagos = 0;
+  const bankProfileCache = new Map([[normalizeBankKey(banco), profile]]);
 
   for (const [index, payroll] of nominasResult.rows.entries()) {
     const cuenta = await decryptBankAccount(payroll.cuenta_bancaria_cifrada);
-    const bancoCodigo = getBankProfile(payroll.banco || banco).bankCode;
+    const rowBankKey = normalizeBankKey(payroll.banco || banco);
+    if (!bankProfileCache.has(rowBankKey)) {
+      bankProfileCache.set(rowBankKey, await getBankProfileForTenant(tenantId, payroll.banco || banco));
+    }
+    const bancoCodigo = bankProfileCache.get(rowBankKey).bankCode;
     const monto = roundMoney(Number.parseFloat(payroll.neto_recibir));
 
     rows.push([
@@ -69,7 +74,7 @@ async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', con
   validateBankRows(rows, totalPagos, nominasResult.rows.length, profile);
   const csvContent = rows.map((row) => row.join(profile.delimiter)).join(profile.lineEnding);
   const checksum = crypto.createHash('sha256').update(csvContent, 'utf8').digest('hex');
-  const key = `reportes/${tenantId}/banco/PAGO_NOMINA_${anio}${String(mes).padStart(2, '0')}_${banco}.csv`;
+  const key = `reportes/${tenantId}/banco/PAGO_NOMINA_${anio}${String(mes).padStart(2, '0')}_${profile.profileKey}.csv`;
   const url = await s3Upload(Buffer.from(csvContent, profile.encoding), key, 'text/csv');
   const excelUrl = await generateReviewWorkbook(nominasResult.rows, tenantId, anio, mes);
 
@@ -80,7 +85,20 @@ async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', con
       correlationId: context.correlationId,
       action: 'generar_archivo_bancario',
       entity: 'perfiles_bancarios',
-      newData: { banco, anio, mes, totalPagos, totalEmpleados: nominasResult.rows.length, checksum },
+      newData: {
+        banco,
+        anio,
+        mes,
+        totalPagos,
+        totalEmpleados: nominasResult.rows.length,
+        checksum,
+        bankProfile: {
+          id: profile.id || null,
+          source: profile.source,
+          key: profile.profileKey,
+          bankCode: profile.bankCode,
+        },
+      },
       ipAddress: context.ipAddress || null,
     });
   }
@@ -93,6 +111,12 @@ async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', con
     totalPagos: toMoneyString(totalPagos),
     totalEmpleados: nominasResult.rows.length,
     checksum,
+    bankProfile: {
+      id: profile.id || null,
+      source: profile.source,
+      key: profile.profileKey,
+      bankCode: profile.bankCode,
+    },
   };
 }
 
@@ -122,15 +146,109 @@ async function generateReviewWorkbook(rows, tenantId, anio, mes) {
   return s3Upload(excelBuffer, excelKey, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 }
 
+function normalizeBankKey(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
+function parseFieldMap(value) {
+  if (!value) return {};
+  if (typeof value === 'object') return value;
+  try {
+    return JSON.parse(value);
+  } catch (err) {
+    throw new Error('Mapa de campos bancario invalido');
+  }
+}
+
 function getBankProfile(banco) {
-  const key = String(banco || '').toUpperCase();
-  const profile = bankProfiles[key];
+  const key = normalizeBankKey(banco);
+  const profileKey = bankProfiles[key]
+    ? key
+    : Object.keys(bankProfiles).find((candidate) => bankProfiles[candidate].bankCode === key);
+  const profile = profileKey ? bankProfiles[profileKey] : null;
 
   if (!profile) {
     throw new Error(`Perfil bancario no configurado: ${key}`);
   }
 
-  return profile;
+  return {
+    ...profile,
+    source: 'static',
+    profileKey,
+  };
+}
+
+function normalizeTenantBankProfile(row, requestedBank) {
+  const fieldMap = parseFieldMap(row.field_map);
+  const fallbackKey = fieldMap.profile || row.banco_nombre || requestedBank || row.banco_codigo;
+  let fallbackProfile = null;
+
+  try {
+    fallbackProfile = getBankProfile(fallbackKey);
+  } catch (err) {
+    fallbackProfile = null;
+  }
+
+  const bankCode = String(fieldMap.bankCode || fallbackProfile?.bankCode || row.banco_codigo || '').trim();
+  if (!/^\d+$/.test(bankCode)) {
+    throw new Error(`Perfil bancario ${row.banco_nombre || row.banco_codigo} no tiene codigo bancario numerico`);
+  }
+
+  const fields = Array.isArray(fieldMap.fields) && fieldMap.fields.length > 0
+    ? fieldMap.fields
+    : (fallbackProfile?.fields || [
+      'tipoRegistro',
+      'oficina',
+      'digitoControl',
+      'cuenta',
+      'cedula',
+      'nombre',
+      'concepto',
+      'fechaOperacion',
+      'importe',
+      'referencia',
+    ]);
+
+  return {
+    ...(fallbackProfile || {}),
+    id: row.id,
+    source: row.tenant_id ? 'tenant' : 'global-db',
+    profileKey: normalizeBankKey(fieldMap.profile || row.banco_nombre || row.banco_codigo),
+    bankCode,
+    delimiter: row.delimiter || fallbackProfile?.delimiter || ';',
+    encoding: row.encoding || fallbackProfile?.encoding || 'utf8',
+    lineEnding: fieldMap.lineEnding || fallbackProfile?.lineEnding || '\n',
+    dateFormat: row.date_format || fallbackProfile?.dateFormat || 'YYYYMMDD',
+    amountDecimals: Number(fieldMap.amountDecimals ?? fallbackProfile?.amountDecimals ?? 2),
+    decimalSeparator: fieldMap.decimalSeparator || fallbackProfile?.decimalSeparator || '.',
+    includeHeader: Boolean(row.include_header),
+    includeTrailer: Boolean(row.include_trailer),
+    accountLength: Number(fieldMap.accountLength || fallbackProfile?.accountLength || 10),
+    fields,
+  };
+}
+
+async function getBankProfileForTenant(tenantId, banco) {
+  const key = normalizeBankKey(banco || 'PICHINCHA');
+  const result = await db.query(`
+    SELECT *
+    FROM perfiles_bancarios
+    WHERE activo = true
+      AND (tenant_id = $1 OR tenant_id IS NULL)
+      AND (
+        UPPER(banco_codigo) = $2
+        OR UPPER(banco_nombre) = $2
+        OR UPPER(field_map->>'profile') = $2
+      )
+    ORDER BY CASE WHEN tenant_id = $1 THEN 0 ELSE 1 END, updated_at DESC
+    LIMIT 1
+  `, [tenantId, key]);
+
+  if (result.rows.length === 0) {
+    return getBankProfile(key);
+  }
+
+  return normalizeTenantBankProfile(result.rows[0], key);
 }
 
 async function decryptBankAccount(encryptedAccount) {
@@ -167,5 +285,6 @@ function validateBankRows(rows, totalPagos, totalEmpleados, profile) {
 module.exports = {
   generarArchivoBanco,
   getBankProfile,
+  getBankProfileForTenant,
   validateBankRows,
 };
