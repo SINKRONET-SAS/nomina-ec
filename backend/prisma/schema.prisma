@@ -83,6 +83,8 @@ model Tenant {
   apiClients ExternalApiClient[]
   apiIdempotencyKeys ExternalApiIdempotencyKey[]
   employeeImportBatches EmployeeImportBatch[]
+  payrollPeriods PayrollPeriod[]
+  noveltyBatches NoveltyBatch[]
 
   @@map("tenants")
 }
@@ -373,10 +375,61 @@ model AttendanceNovelty {
   updatedAt      DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   empleado       Employee              @relation(fields: [empleadoId], references: [id])
   tenant         Tenant                @relation(fields: [tenantId], references: [id])
+  noveltyBatchId String?               @map("novelty_batch_id") @db.Uuid
+  noveltyBatch   NoveltyBatch?         @relation(fields: [noveltyBatchId], references: [id], onDelete: SetNull)
 
   @@unique([empleadoId, fecha, tipoNovedad])
   @@index([tenantId, estado])
+  @@index([tenantId, noveltyBatchId])
   @@map("novedades_asistencia")
+}
+
+model PayrollPeriod {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  anio         Int
+  mes          Int
+  status       String    @default("open") @db.VarChar(30)
+  openedBy     String?   @map("opened_by") @db.Uuid
+  openedAt     DateTime  @default(now()) @map("opened_at") @db.Timestamptz(6)
+  calculatedAt DateTime? @map("calculated_at") @db.Timestamptz(6)
+  closedAt     DateTime? @map("closed_at") @db.Timestamptz(6)
+  summary      Json      @default("{}")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  noveltyBatches NoveltyBatch[]
+
+  @@unique([tenantId, anio, mes])
+  @@index([tenantId, status])
+  @@map("payroll_periods")
+}
+
+model NoveltyBatch {
+  id             String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String             @map("tenant_id") @db.Uuid
+  periodId       String             @map("period_id") @db.Uuid
+  scopeType      String             @map("scope_type") @db.VarChar(40)
+  scopeValue     String             @default("") @map("scope_value") @db.VarChar(160)
+  tipoNovedad    AttendanceNoveltyType @map("tipo_novedad")
+  fecha          DateTime           @db.Date
+  minutos        Int                @default(0)
+  justificacion  String             @default("")
+  status         String             @default("procesando") @db.VarChar(30)
+  idempotencyKey String?            @map("idempotency_key") @db.VarChar(160)
+  totalEmpleados Int                @default(0) @map("total_empleados")
+  totalCreadas   Int                @default(0) @map("total_creadas")
+  errores        Json               @default("[]")
+  createdBy      String?            @map("created_by") @db.Uuid
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  completedAt    DateTime?          @map("completed_at") @db.Timestamptz(6)
+  tenant         Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  period         PayrollPeriod      @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  novedades      AttendanceNovelty[]
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, periodId, createdAt])
+  @@map("novelty_batches")
 }
 
 model Payroll {

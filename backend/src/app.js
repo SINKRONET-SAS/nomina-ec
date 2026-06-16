@@ -114,6 +114,9 @@ app.put('/api/beneficios/:id', requireRole('owner', 'admin_rrhh'), beneficioEmpl
 
 const nominaController = require('./controllers/nominaController');
 app.post('/api/nomina/calcular', requireRole('owner', 'admin_rrhh'), nominaController.calcularMes);
+app.get('/api/nomina/periodo/:anio/:mes', requireRole('owner', 'admin_rrhh'), nominaController.obtenerEstadoPeriodo);
+app.post('/api/nomina/periodo/abrir', requireRole('owner', 'admin_rrhh'), nominaController.abrirPeriodo);
+app.post('/api/nomina/novedades/lote', requireRole('owner', 'admin_rrhh'), nominaController.crearLoteNovedades);
 app.get('/api/nomina/:anio/:mes', nominaController.listarPorPeriodo);
 app.get('/api/nomina/empleado/:empleadoId/:anio/:mes', nominaController.obtenerPorEmpleado);
 app.get('/api/nomina/:id/rol-pdf', nominaController.descargarRolPDF);

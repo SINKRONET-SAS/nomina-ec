@@ -4,6 +4,11 @@
 const db = require('../config/database');
 const { calcularNominaMensual } = require('../services/calculoNominaService');
 const { recordAudit } = require('../services/auditService');
+const {
+  createNoveltyBatch,
+  getPayrollPeriodState,
+  openPayrollPeriod,
+} = require('../services/monthlyPeriodService');
 
 async function calcularMes(req, res) {
   try {
@@ -15,6 +20,13 @@ async function calcularMes(req, res) {
     }
 
     const resultado = await calcularNominaMensual(tenantId, Number(anio), Number(mes));
+    await db.query(`
+      UPDATE payroll_periods
+      SET status = CASE WHEN status IN ('open', 'novelties_loaded') THEN 'calculated' ELSE status END,
+          calculated_at = NOW(),
+          updated_at = NOW()
+      WHERE tenant_id = $1 AND anio = $2 AND mes = $3
+    `, [tenantId, Number(anio), Number(mes)]);
     res.json({ success: true, resultado, correlationId: req.correlationId });
   } catch (err) {
     console.error('[NOMINA] Error calculando mes', {
@@ -25,6 +37,74 @@ async function calcularMes(req, res) {
       message: err.message,
     });
     res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
+  }
+}
+
+async function obtenerEstadoPeriodo(req, res) {
+  try {
+    const { tenantId } = req;
+    const { anio, mes } = req.params;
+    const state = await getPayrollPeriodState({ tenantId, anio, mes });
+    return res.json({ success: true, state, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[NOMINA] Error obteniendo periodo', {
+      code: err.code || 'NOMINA_PERIODO_GET_ERROR',
+      statusCode: 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(400).json({ error: err.message, correlationId: req.correlationId });
+  }
+}
+
+async function abrirPeriodo(req, res) {
+  try {
+    const period = await openPayrollPeriod({
+      tenantId: req.tenantId,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+      anio: req.body.anio,
+      mes: req.body.mes,
+    });
+    return res.status(201).json({ success: true, period, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[NOMINA] Error abriendo periodo', {
+      code: err.code || 'NOMINA_PERIODO_OPEN_ERROR',
+      statusCode: 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(400).json({ error: err.message, correlationId: req.correlationId });
+  }
+}
+
+async function crearLoteNovedades(req, res) {
+  try {
+    const result = await createNoveltyBatch({
+      tenantId: req.tenantId,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+      payload: req.body || {},
+    });
+    return res.status(result.replay ? 200 : 201).json({
+      success: true,
+      replay: result.replay,
+      batch: result.batch,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[NOMINA] Error creando lote de novedades', {
+      code: err.code || 'NOMINA_NOVEDAD_BATCH_ERROR',
+      statusCode: 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(400).json({ error: err.message, correlationId: req.correlationId });
   }
 }
 
@@ -164,6 +244,14 @@ async function cerrarMes(req, res) {
       }
     }
 
+    await db.query(`
+      UPDATE payroll_periods
+      SET status = 'closed',
+          closed_at = NOW(),
+          updated_at = NOW()
+      WHERE tenant_id = $1 AND anio = $2 AND mes = $3
+    `, [tenantId, Number(anio), Number(mes)]);
+
     await recordAudit({
       tenantId,
       userId: usuarioId,
@@ -215,6 +303,14 @@ async function reabrirMes(req, res) {
       RETURNING id
     `, [tenantId, anio, mes]);
 
+    await db.query(`
+      UPDATE payroll_periods
+      SET status = 'reopened',
+          closed_at = NULL,
+          updated_at = NOW()
+      WHERE tenant_id = $1 AND anio = $2 AND mes = $3
+    `, [tenantId, Number(anio), Number(mes)]);
+
     await recordAudit({
       tenantId,
       userId: usuarioId,
@@ -245,6 +341,9 @@ async function reabrirMes(req, res) {
 
 module.exports = {
   calcularMes,
+  obtenerEstadoPeriodo,
+  abrirPeriodo,
+  crearLoteNovedades,
   listarPorPeriodo,
   obtenerPorEmpleado,
   descargarRolPDF,

@@ -3,13 +3,13 @@
   "plan": "HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026",
   "planCode": "DCF26",
   "status": "executing_runtime",
-  "phaseCompleted": "DCF26-07",
-  "currentPhase": "DCF26-08-apertura-mes-lotes",
-  "updatedAt": "2026-06-15T22:55:00.000-05:00",
-  "summary": "DCF26-07 carga masiva de empleados: flujo visible en Empleados con plantilla, CSV/TSV, preview, errores por fila, commit transaccional y lote auditable.",
+  "phaseCompleted": "DCF26-08",
+  "currentPhase": "DCF26-09-superadmin-sin-duplicidad",
+  "updatedAt": "2026-06-15T23:35:00.000-05:00",
+  "summary": "DCF26-08 apertura de mes y lotes: periodo mensual formal, lotes de novedades por alcance, calculo, cierre y estado visible en pantalla de nomina.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: actuar como consultor, diagnosticar bugs, funcionalidad, codigo muerto, promesas no cumplidas y pantallas sin funcionalidad real; generar plan Haiky, contexto, AuditLock y prompts por fases.",
-  "previousAuditLockHash": "79621f16b74ec6a1cbb9a1f4b2dcbd7b9bfb4f12c9f76395c25841294f26fafd",
+  "previousAuditLockHash": "cb4165dec88647071f65986e4752de84c62e07800340d8fc22da0f466728b56f",
   "previousPlans": [
     {
       "plan": "HAIKY-CIERRE-BRECHAS-NOMINA-EC-DIAGNOSTICO-2026",
@@ -73,7 +73,12 @@
     "backend/src/services/employeeImportService.js",
     "backend/src/services/employeeImportService.test.js",
     "frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_07_CARGA_MASIVA_EMPLEADOS.md"
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_07_CARGA_MASIVA_EMPLEADOS.md",
+    "backend/prisma/migrations/20260615233000_dcf26_payroll_periods_batches/migration.sql",
+    "backend/src/services/monthlyPeriodService.js",
+    "backend/src/services/monthlyPeriodService.test.js",
+    "frontend-web/src/pages/Nomina/CerrarMes.jsx",
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_08_APERTURA_MES_LOTES.md"
   ],
   "validationChecks": [
     {
@@ -210,6 +215,26 @@
       "gate": "DCF26-07-BROWSER",
       "status": "SKIPPED_TOOL_UNAVAILABLE",
       "detail": "Browser plugin intento conectar iab, pero el navegador integrado no estuvo disponible en esta sesion."
+    },
+    {
+      "gate": "DCF26-08-PRISMA-VALIDATE",
+      "status": "PASS",
+      "detail": "npx.cmd prisma validate en backend."
+    },
+    {
+      "gate": "DCF26-08-NODE-CHECK",
+      "status": "PASS",
+      "detail": "node --check monthlyPeriodService, nominaController y app."
+    },
+    {
+      "gate": "DCF26-08-PERIOD-TESTS",
+      "status": "PASS",
+      "detail": "npm.cmd test -- monthlyPeriodService.test.js --runInBand: 1 suite, 4 tests."
+    },
+    {
+      "gate": "DCF26-08-FRONTEND-BUILD",
+      "status": "PASS",
+      "detail": "npm.cmd run build en frontend-web con pantalla mensual visible."
     }
   ],
   "fases": [
@@ -255,7 +280,7 @@
     },
     {
       "phase": "DCF26-08",
-      "status": "pending",
+      "status": "completed",
       "task": "apertura de mes y lotes de novedades"
     },
     {
@@ -284,8 +309,9 @@
     "RDEP, bancos e integraciones necesitan validacion profesional/fuentes vigentes antes de produccion.",
     "Los gates locales pasan, pero no sustituyen E2E con datos DEMO ni validacion legal/tributaria.",
     "La API v1 requiere migracion aplicada por ambiente y rate limit compartido para despliegues multi-instancia.",
-    "Carga masiva DCF26-07 limita documentos a cedula ecuatoriana porque la tabla actual usa cedula VARCHAR(10); rollback UI queda para fase posterior."
+    "Carga masiva DCF26-07 limita documentos a cedula ecuatoriana porque la tabla actual usa cedula VARCHAR(10); rollback UI queda para fase posterior.",
+    "DCF26-08 deja rollback de lotes y aprobacion formal previa al cierre como riesgos residuales."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "59e0029da6377a6a41a3a6079ac9451da3c0489a1a7374901d1dcbb4dc9771da"
+  "signature": "5a96e313e1fe9f70b6e75dd61009ef8eac22a5f49c7c1c11edd7a74e1ab16544"
 }
