@@ -105,6 +105,12 @@ app.post('/api/marcaciones', marcacionController.registrar);
 app.get('/api/marcaciones/empleado/:empleadoId', marcacionController.listarPorEmpleado);
 app.get('/api/marcaciones/hoy', marcacionController.listarHoy);
 
+const mobileController = require('./controllers/mobileController');
+app.get('/api/mobile/me', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.perfil);
+app.get('/api/mobile/asistencia/resumen', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.resumenAsistencia);
+app.post('/api/mobile/marcaciones', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.registrarMarcacionMovil);
+app.get('/api/mobile/nomina/:anio/:mes', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.rolPago);
+
 const novedadController = require('./controllers/novedadController');
 app.get('/api/novedades', novedadController.listar);
 app.get('/api/novedades/pendientes', novedadController.listarPendientes);

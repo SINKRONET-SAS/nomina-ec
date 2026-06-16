@@ -1,184 +1,182 @@
-﻿// Nómina-Ec - Pantalla Mis Marcaciones (App móvil)
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
-import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
-import { API_URL } from '../services/api';
+import React, { useEffect, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { mobileAPI } from '../services/api';
 
-function parseJwt(token) {
-  try {
-    return JSON.parse(atob(token.split('.')[1]));
-  } catch (err) {
-    console.error('Error leyendo token de sesión:', err);
-    return null;
-  }
+function MarkItem({ item }) {
+  return (
+    <View style={styles.item}>
+      <View style={styles.itemHeader}>
+        <Text style={styles.tipo}>{String(item.tipo_marcacion || '').replace(/_/g, ' ').toUpperCase()}</Text>
+        <Text style={styles.badge}>{item.dentro_perimetro === false ? 'FUERA' : 'VALIDA'}</Text>
+      </View>
+      <Text style={styles.fecha}>{new Date(item.timestamp).toLocaleString('es-EC')}</Text>
+      <Text style={styles.detail}>Distancia: {Number(item.distancia_metros || 0).toFixed(0)} m</Text>
+    </View>
+  );
+}
+
+function NoveltyItem({ item }) {
+  return (
+    <View style={styles.novelty}>
+      <Text style={styles.tipo}>{String(item.tipo_novedad || '').replace(/_/g, ' ').toUpperCase()}</Text>
+      <Text style={styles.fecha}>{String(item.fecha).slice(0, 10)} | {item.estado}</Text>
+      <Text style={styles.detail}>{item.justificacion || 'Sin detalle'}</Text>
+    </View>
+  );
 }
 
 export default function MisMarcacionesScreen() {
   const [marcaciones, setMarcaciones] = useState([]);
-  const [cargando, setCargando] = useState(true);
+  const [novedades, setNovedades] = useState([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    cargarMarcaciones();
-  }, []);
-
-  const cargarMarcaciones = async () => {
+  const cargarResumen = async () => {
     try {
-      const token = await SecureStore.getItemAsync('token');
-      const payload = token ? parseJwt(token) : null;
-
-      if (!payload?.userId) {
-        throw new Error('Sesión móvil inválida.');
-      }
-
-      const response = await axios.get(`${API_URL}/marcaciones/empleado/${payload.userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      const response = await mobileAPI.attendanceSummary();
       setMarcaciones(response.data.marcaciones || []);
+      setNovedades(response.data.novedades || []);
+      setError('');
     } catch (err) {
-      console.error('Error cargando marcaciones:', err);
+      setError(err.response?.data?.message || 'No pudimos cargar tu historial.');
     } finally {
-      setCargando(false);
+      setLoading(false);
     }
   };
 
+  useEffect(() => {
+    cargarResumen();
+  }, []);
+
   const onRefresh = async () => {
     setRefreshing(true);
-    await cargarMarcaciones();
+    await cargarResumen();
     setRefreshing(false);
   };
 
-  const renderItem = ({ item }) => (
-    <View style={styles.item}>
-      <View style={styles.itemHeader}>
-        <Text style={styles.tipo}>
-          {item.tipo_marcacion.replace('_', ' ').toUpperCase()}
-        </Text>
-        <View style={[styles.badge, item.es_valida ? styles.badgeValid : styles.badgeInvalid]}>
-          <Text style={styles.badgeText}>
-            {item.es_valida ? 'VÁLIDA' : 'INVÁLIDA'}
-          </Text>
-        </View>
-      </View>
-      <Text style={styles.fecha}>
-        {new Date(item.timestamp).toLocaleString('es-EC')}
-      </Text>
-      {item.distancia_metros && (
-        <Text style={styles.distancia}>
-          Distancia: {parseInt(item.distancia_metros, 10)}m
-        </Text>
-      )}
-      {item.foto_url && (
-        <Text style={styles.foto}>Foto adjunta</Text>
-      )}
-    </View>
-  );
-
-  if (cargando) {
+  if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loading}>Cargando marcaciones...</Text>
+      <View style={styles.center}>
+        <Text style={styles.loading}>Cargando historial...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Mis Marcaciones</Text>
-
-      <FlatList
-        data={marcaciones}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        refreshControl={(
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        )}
-        ListEmptyComponent={(
-          <Text style={styles.empty}>No hay marcaciones registradas</Text>
-        )}
-        contentContainerStyle={styles.list}
-      />
-    </View>
+    <FlatList
+      data={marcaciones}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => <MarkItem item={item} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      ListHeaderComponent={(
+        <View>
+          <Text style={styles.title}>Mi asistencia</Text>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          <Text style={styles.sectionTitle}>Marcaciones recientes</Text>
+        </View>
+      )}
+      ListEmptyComponent={<Text style={styles.empty}>No hay marcaciones registradas</Text>}
+      ListFooterComponent={(
+        <View style={styles.footer}>
+          <Text style={styles.sectionTitle}>Novedades recientes</Text>
+          {novedades.length === 0 ? (
+            <Text style={styles.empty}>No hay novedades registradas</Text>
+          ) : novedades.map((item) => <NoveltyItem item={item} key={item.id} />)}
+        </View>
+      )}
+      contentContainerStyle={styles.container}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  center: {
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
     flex: 1,
-    backgroundColor: '#f0f4f8',
+    justifyContent: 'center',
+  },
+  container: {
+    backgroundColor: '#f8fafc',
     padding: 20,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#1f2937',
+    color: '#0f172a',
+    fontSize: 26,
+    fontWeight: '800',
+    marginBottom: 16,
   },
-  loading: {
-    textAlign: 'center',
-    color: '#6b7280',
-    marginTop: 50,
-  },
-  list: {
-    paddingBottom: 20,
+  sectionTitle: {
+    color: '#334155',
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 10,
+    marginTop: 6,
   },
   item: {
-    backgroundColor: 'white',
-    padding: 15,
+    backgroundColor: '#ffffff',
+    borderColor: '#e2e8f0',
     borderRadius: 8,
+    borderWidth: 1,
     marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    padding: 14,
+  },
+  novelty: {
+    backgroundColor: '#ffffff',
+    borderColor: '#dbeafe',
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 10,
+    padding: 14,
   },
   itemHeader: {
+    alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 5,
+    marginBottom: 6,
   },
   tipo: {
+    color: '#0f766e',
     fontSize: 14,
-    fontWeight: '600',
-    color: '#2563eb',
+    fontWeight: '800',
   },
   badge: {
+    backgroundColor: '#ecfdf5',
+    borderRadius: 999,
+    color: '#047857',
+    fontSize: 11,
+    fontWeight: '800',
+    overflow: 'hidden',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 12,
-  },
-  badgeValid: {
-    backgroundColor: '#d1fae5',
-  },
-  badgeInvalid: {
-    backgroundColor: '#fee2e2',
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '600',
   },
   fecha: {
+    color: '#475569',
     fontSize: 13,
-    color: '#4b5563',
-    marginBottom: 3,
   },
-  distancia: {
+  detail: {
+    color: '#64748b',
     fontSize: 12,
-    color: '#6b7280',
+    marginTop: 4,
   },
-  foto: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginTop: 3,
+  error: {
+    backgroundColor: '#fef2f2',
+    borderRadius: 8,
+    color: '#991b1b',
+    marginBottom: 12,
+    padding: 12,
   },
   empty: {
+    color: '#64748b',
+    marginBottom: 12,
     textAlign: 'center',
-    color: '#6b7280',
-    marginTop: 50,
+  },
+  footer: {
+    paddingBottom: 24,
+    paddingTop: 16,
+  },
+  loading: {
+    color: '#64748b',
   },
 });
-

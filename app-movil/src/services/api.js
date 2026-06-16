@@ -38,4 +38,11 @@ export const paymentAPI = {
   startCheckout: (planId) => api.post('/pagos/payment-methods/checkout-intent', { planId }),
 };
 
+export const mobileAPI = {
+  me: () => api.get('/mobile/me'),
+  attendanceSummary: () => api.get('/mobile/asistencia/resumen'),
+  registerMark: (payload) => api.post('/mobile/marcaciones', payload),
+  payroll: (anio, mes) => api.get(`/mobile/nomina/${anio}/${mes}`),
+};
+
 export default api;

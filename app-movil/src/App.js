@@ -11,15 +11,17 @@ import * as SecureStore from 'expo-secure-store';
 import LoginScreen from './screens/LoginScreen';
 import MarcacionScreen from './screens/MarcacionScreen';
 import MisMarcacionesScreen from './screens/MisMarcacionesScreen';
+import AutoservicioScreen from './screens/AutoservicioScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
   return (
-    <Tab.Navigator>
-      <Tab.Screen name="Marcación" component={MarcacionScreen} />
-      <Tab.Screen name="Mis Marcaciones" component={MisMarcacionesScreen} />
+    <Tab.Navigator screenOptions={{ headerTitleAlign: 'center' }}>
+      <Tab.Screen name="Asistencia" component={MarcacionScreen} />
+      <Tab.Screen name="Historial" component={MisMarcacionesScreen} />
+      <Tab.Screen name="Autoservicio" component={AutoservicioScreen} />
     </Tab.Navigator>
   );
 }

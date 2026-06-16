@@ -3,13 +3,13 @@
   "plan": "HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026",
   "planCode": "DCF26",
   "status": "executing_runtime",
-  "phaseCompleted": "DCF26-09",
-  "currentPhase": "DCF26-10-mobile-asistencia-autoservicio",
-  "updatedAt": "2026-06-16T00:10:00.000-05:00",
-  "summary": "DCF26-09 SUPERADMIN sin duplicidad: planes, owners/contratos e incidencias operan desde tablas reales, endpoints protegidos y pantalla visible de Gestion de planes.",
+  "phaseCompleted": "DCF26-10",
+  "currentPhase": "DCF26-11-humanizacion-uiux",
+  "updatedAt": "2026-06-16T00:40:00.000-05:00",
+  "summary": "DCF26-10 mobile asistencia y autoservicio: endpoints /api/mobile, marcacion sin empleadoId expuesto, historial de asistencia/novedades y autoservicio de perfil/rol.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: actuar como consultor, diagnosticar bugs, funcionalidad, codigo muerto, promesas no cumplidas y pantallas sin funcionalidad real; generar plan Haiky, contexto, AuditLock y prompts por fases.",
-  "previousAuditLockHash": "5c6cd850858389a960f9f4c98d3dfd492a1b9669a88e9868e4342a928d5b2bb6",
+  "previousAuditLockHash": "91d46b0d19c430fb4ecfea094c40987eca60e4510cd72732e158f6c70d81327c",
   "previousPlans": [
     {
       "plan": "HAIKY-CIERRE-BRECHAS-NOMINA-EC-DIAGNOSTICO-2026",
@@ -85,7 +85,15 @@
     "backend/src/controllers/superadminController.js",
     "frontend-web/src/services/superadminApi.js",
     "frontend-web/src/pages/PlanesGestion.jsx",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_09_SUPERADMIN_SIN_DUPLICIDAD.md"
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_09_SUPERADMIN_SIN_DUPLICIDAD.md",
+    "backend/src/controllers/mobileController.js",
+    "backend/src/controllers/mobileController.test.js",
+    "app-movil/src/App.js",
+    "app-movil/src/screens/MarcacionScreen.js",
+    "app-movil/src/screens/MisMarcacionesScreen.js",
+    "app-movil/src/screens/AutoservicioScreen.js",
+    "app-movil/src/services/api.js",
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_10_MOBILE_ASISTENCIA_AUTOSERVICIO.md"
   ],
   "validationChecks": [
     {
@@ -262,6 +270,26 @@
       "gate": "DCF26-09-FRONTEND-BUILD",
       "status": "PASS",
       "detail": "npm.cmd run build en frontend-web con consola SUPERADMIN visible."
+    },
+    {
+      "gate": "DCF26-10-NODE-CHECK",
+      "status": "PASS",
+      "detail": "node --check mobileController y app."
+    },
+    {
+      "gate": "DCF26-10-MOBILE-TESTS",
+      "status": "PASS",
+      "detail": "npm.cmd test -- mobileController.test.js --runInBand: 1 suite, 2 tests."
+    },
+    {
+      "gate": "DCF26-10-STORE-READINESS",
+      "status": "PASS",
+      "detail": "npm.cmd run check:stores en app-movil."
+    },
+    {
+      "gate": "DCF26-10-MOBILE-JSX-PARSE",
+      "status": "PASS",
+      "detail": "Parse JSX con @babel/parser sobre app-movil/src: MOBILE_JSX_PARSE_OK."
     }
   ],
   "fases": [
@@ -317,7 +345,7 @@
     },
     {
       "phase": "DCF26-10",
-      "status": "pending",
+      "status": "completed",
       "task": "mobile asistencia y autoservicio"
     },
     {
@@ -338,8 +366,9 @@
     "La API v1 requiere migracion aplicada por ambiente y rate limit compartido para despliegues multi-instancia.",
     "Carga masiva DCF26-07 limita documentos a cedula ecuatoriana porque la tabla actual usa cedula VARCHAR(10); rollback UI queda para fase posterior.",
     "DCF26-08 deja rollback de lotes y aprobacion formal previa al cierre como riesgos residuales.",
-    "DCF26-09 no crea sesiones de soporte dentro del tenant; mantiene aislamiento y deja soporte remoto avanzado para fase posterior."
+    "DCF26-09 no crea sesiones de soporte dentro del tenant; mantiene aislamiento y deja soporte remoto avanzado para fase posterior.",
+    "DCF26-10 vincula usuario movil por email_personal; una relacion formal usuario-empleado queda como mejora futura."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "29b49612b082bdb1464f09b85ee192f52885baa123ca20cbbbdc3b13a5faa5b8"
+  "signature": "9d037e762e3e93b7b82fe8fa0624022b4937d09d7ca6d9ec9ef21f7b437cabfc"
 }

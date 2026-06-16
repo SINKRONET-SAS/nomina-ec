@@ -1,339 +1,261 @@
-﻿// ============================================================
-// PLAN HAIKY - Pantalla de Marcación (App Móvil)
-// ============================================================
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as Location from 'expo-location';
-import { Camera } from 'expo-camera';
-import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
-import { API_URL } from '../services/api';
+import { mobileAPI } from '../services/api';
+
+function formatMark(mark) {
+  if (!mark) return 'Sin marcaciones hoy';
+  return `${String(mark.tipo_marcacion || '').replace(/_/g, ' ')} - ${new Date(mark.timestamp).toLocaleString('es-EC')}`;
+}
 
 export default function MarcacionScreen() {
   const [ubicacion, setUbicacion] = useState(null);
-  const [cargandoUbicacion, setCargandoUbicacion] = useState(false);
-  const [tienePermisoCamara, setTienePermisoCamara] = useState(null);
-  const [mostrarCamara, setMostrarCamara] = useState(false);
-  const [camara, setCamara] = useState(null);
-  const [cargando, setCargando] = useState(false);
+  const [employee, setEmployee] = useState(null);
   const [ultimaMarcacion, setUltimaMarcacion] = useState(null);
-
-  useEffect(() => {
-    solicitarPermisos();
-    cargarUltimaMarcacion();
-  }, []);
-
-  const solicitarPermisos = async () => {
-    // Permiso de ubicación
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permiso requerido', 'Se necesita acceso a la ubicación para marcar asistencia');
-      return;
-    }
-    
-    // Permiso de cámara
-    const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
-    setTienePermisoCamara(cameraStatus === 'granted');
-    
-    // Obtener ubicación actual
-    obtenerUbicacion();
-  };
-
-  const obtenerUbicacion = async () => {
-    setCargandoUbicacion(true);
-    try {
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-      setUbicacion({
-        lat: location.coords.latitude,
-        lng: location.coords.longitude,
-      });
-    } catch (err) {
-      Alert.alert('Error', 'No se pudo obtener la ubicación');
-    } finally {
-      setCargandoUbicacion(false);
-    }
-  };
-
-  const cargarUltimaMarcacion = async () => {
-    try {
-      const token = await SecureStore.getItemAsync('token');
-      // Decodificar token para obtener empleadoId (simplificado)
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      
-      const response = await axios.get(`${API_URL}/marcaciones/empleado/${payload.userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (response.data.marcaciones.length > 0) {
-        setUltimaMarcacion(response.data.marcaciones[0]);
-      }
-    } catch (err) {
-      console.error('Error cargando última marcación:', err);
-    }
-  };
-
-  const tomarFoto = async () => {
-    if (camara) {
-      const photo = await camara.takePictureAsync({
-        quality: 0.5,
-        base64: true,
-      });
-      return photo.base64;
-    }
-    return null;
-  };
-
-  const registrarMarcacion = async (tipo) => {
-    if (!ubicacion) {
-      Alert.alert('Error', 'Ubicación no disponible. Intente nuevamente.');
-      return;
-    }
-    
-    setCargando(true);
-    
-    try {
-      // Tomar foto si es inicio de jornada
-      let fotoBase64 = null;
-      if (tipo === 'inicio_jornada' && tienePermisoCamara) {
-        setMostrarCamara(true);
-        // Esperar a que el usuario tome la foto
-        await new Promise(resolve => setTimeout(resolve, 100));
-        fotoBase64 = await tomarFoto();
-        setMostrarCamara(false);
-      }
-      
-      const token = await SecureStore.getItemAsync('token');
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      
-      const response = await axios.post(`${API_URL}/marcaciones`, {
-        empleadoId: payload.userId,
-        tipo,
-        lat: ubicacion.lat,
-        lng: ubicacion.lng,
-        fotoBase64,
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      Alert.alert('Éxito', `Marcación registrada: ${tipo.replace('_', ' ')}`);
-      setUltimaMarcacion(response.data.marcacion);
-      
-      // Actualizar ubicación
-      obtenerUbicacion();
-      
-    } catch (err) {
-      Alert.alert('Error', err.response?.data?.error || 'Error al registrar marcación');
-    } finally {
-      setCargando(false);
-    }
-  };
+  const [status, setStatus] = useState({ type: 'info', text: 'Preparando asistencia movil.' });
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const puedeMarcarInicio = !ultimaMarcacion || ultimaMarcacion.tipo_marcacion === 'fin_jornada';
   const puedeMarcarFin = ultimaMarcacion && ultimaMarcacion.tipo_marcacion === 'inicio_jornada';
 
-  if (mostrarCamara && tienePermisoCamara) {
+  const statusStyle = useMemo(() => {
+    if (status.type === 'error') return styles.statusError;
+    if (status.type === 'success') return styles.statusSuccess;
+    return styles.statusInfo;
+  }, [status.type]);
+
+  const cargarResumen = async () => {
+    setLoading(true);
+    try {
+      const response = await mobileAPI.attendanceSummary();
+      setEmployee(response.data.employee);
+      setUltimaMarcacion((response.data.marcaciones || [])[0] || null);
+      setStatus({ type: 'success', text: 'Asistencia sincronizada.' });
+    } catch (err) {
+      setStatus({ type: 'error', text: err.response?.data?.message || 'No pudimos cargar tu asistencia movil.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const obtenerUbicacion = async () => {
+    const { status: permission } = await Location.requestForegroundPermissionsAsync();
+    if (permission !== 'granted') {
+      setStatus({ type: 'error', text: 'Activa el permiso de ubicacion para registrar asistencia.' });
+      return null;
+    }
+
+    const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+    const next = {
+      lat: location.coords.latitude,
+      lng: location.coords.longitude,
+      accuracy: location.coords.accuracy,
+    };
+    setUbicacion(next);
+    return next;
+  };
+
+  useEffect(() => {
+    cargarResumen();
+    obtenerUbicacion().catch(() => setStatus({ type: 'error', text: 'No pudimos obtener ubicacion.' }));
+  }, []);
+
+  const registrarMarcacion = async (tipo) => {
+    setSubmitting(true);
+    try {
+      const currentLocation = ubicacion || await obtenerUbicacion();
+      if (!currentLocation) return;
+
+      const response = await mobileAPI.registerMark({
+        tipo,
+        lat: currentLocation.lat,
+        lng: currentLocation.lng,
+      });
+      setUltimaMarcacion(response.data.marcacion);
+      setEmployee(response.data.employee || employee);
+      setStatus({ type: 'success', text: `Marcacion registrada: ${tipo.replace(/_/g, ' ')}.` });
+    } catch (err) {
+      setStatus({ type: 'error', text: err.response?.data?.message || 'No pudimos registrar la marcacion.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
     return (
-      <View style={styles.cameraContainer}>
-        <Camera style={styles.camera} ref={ref => setCamara(ref)}>
-          <View style={styles.cameraOverlay}>
-            <Text style={styles.cameraText}>Tome una foto para validar su marcación</Text>
-            <TouchableOpacity style={styles.captureButton} onPress={() => setMostrarCamara(false)}>
-              <Text style={styles.captureButtonText}>Tomar Foto</Text>
-            </TouchableOpacity>
-          </View>
-        </Camera>
+      <View style={styles.center}>
+        <ActivityIndicator color="#0f766e" size="large" />
+        <Text style={styles.loadingText}>Cargando asistencia...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Marcación de Asistencia</Text>
-      
-      {cargandoUbicacion ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2563eb" />
-          <Text style={styles.loadingText}>Obteniendo ubicación...</Text>
-        </View>
-      ) : ubicacion ? (
-        <View style={styles.infoContainer}>
-          <Text style={styles.infoLabel}>Ubicación actual:</Text>
-          <Text style={styles.infoValue}>
-            Lat: {ubicacion.lat.toFixed(6)}, Lng: {ubicacion.lng.toFixed(6)}
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>No se pudo obtener la ubicación</Text>
-          <TouchableOpacity onPress={obtenerUbicacion} style={styles.retryButton}>
-            <Text style={styles.retryButtonText}>Reintentar</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      
-      <View style={styles.buttonsContainer}>
-        <TouchableOpacity
-          style={[styles.button, styles.buttonStart, !puedeMarcarInicio && styles.buttonDisabled]}
-          onPress={() => registrarMarcacion('inicio_jornada')}
-          disabled={!puedeMarcarInicio || cargando || !ubicacion}
-        >
-          <Text style={styles.buttonText}>
-            {cargando ? 'Procesando...' : 'INICIAR JORNADA'}
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.button, styles.buttonEnd, !puedeMarcarFin && styles.buttonDisabled]}
-          onPress={() => registrarMarcacion('fin_jornada')}
-          disabled={!puedeMarcarFin || cargando || !ubicacion}
-        >
-          <Text style={styles.buttonText}>
-            {cargando ? 'Procesando...' : 'FINALIZAR JORNADA'}
-          </Text>
+      <Text style={styles.eyebrow}>Asistencia movil</Text>
+      <Text style={styles.title}>Marcacion de jornada</Text>
+
+      <View style={styles.card}>
+        <Text style={styles.cardLabel}>Empleado</Text>
+        <Text style={styles.employeeName}>{employee ? `${employee.nombres} ${employee.apellidos}` : 'Sin empleado vinculado'}</Text>
+        <Text style={styles.cardDetail}>{employee?.cargo || 'Cargo no registrado'}</Text>
+      </View>
+
+      <View style={[styles.status, statusStyle]}>
+        <Text style={styles.statusText}>{status.text}</Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardLabel}>Ubicacion actual</Text>
+        {ubicacion ? (
+          <Text style={styles.mono}>Lat {ubicacion.lat.toFixed(6)} | Lng {ubicacion.lng.toFixed(6)}</Text>
+        ) : (
+          <Text style={styles.cardDetail}>Ubicacion pendiente</Text>
+        )}
+        <TouchableOpacity style={styles.secondaryButton} onPress={obtenerUbicacion}>
+          <Text style={styles.secondaryButtonText}>Actualizar ubicacion</Text>
         </TouchableOpacity>
       </View>
-      
-      {ultimaMarcacion && (
-        <View style={styles.lastMarkContainer}>
-          <Text style={styles.lastMarkLabel}>Última marcación:</Text>
-          <Text style={styles.lastMarkValue}>
-            {ultimaMarcacion.tipo_marcacion.replace('_', ' ')} -{' '}
-            {new Date(ultimaMarcacion.timestamp).toLocaleString()}
-          </Text>
-        </View>
-      )}
+
+      <View style={styles.actions}>
+        <TouchableOpacity
+          disabled={!puedeMarcarInicio || submitting || !employee}
+          onPress={() => registrarMarcacion('inicio_jornada')}
+          style={[styles.primaryButton, styles.startButton, (!puedeMarcarInicio || submitting || !employee) && styles.disabledButton]}
+        >
+          <Text style={styles.primaryButtonText}>{submitting ? 'Procesando' : 'Iniciar jornada'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          disabled={!puedeMarcarFin || submitting || !employee}
+          onPress={() => registrarMarcacion('fin_jornada')}
+          style={[styles.primaryButton, styles.endButton, (!puedeMarcarFin || submitting || !employee) && styles.disabledButton]}
+        >
+          <Text style={styles.primaryButtonText}>{submitting ? 'Procesando' : 'Finalizar jornada'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardLabel}>Ultima marcacion</Text>
+        <Text style={styles.cardDetail}>{formatMark(ultimaMarcacion)}</Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  center: {
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
     flex: 1,
-    backgroundColor: '#f0f4f8',
-    padding: 20,
     justifyContent: 'center',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 30,
-    color: '#1f2937',
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    padding: 20,
-  },
   loadingText: {
-    marginTop: 10,
-    color: '#6b7280',
+    color: '#475569',
+    marginTop: 12,
   },
-  infoContainer: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  infoLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 5,
-  },
-  infoValue: {
-    fontSize: 14,
-    color: '#1f2937',
-    fontFamily: 'monospace',
-  },
-  errorContainer: {
-    backgroundColor: '#fef2f2',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  errorText: {
-    color: '#dc2626',
-    marginBottom: 10,
-  },
-  retryButton: {
-    backgroundColor: '#dc2626',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  retryButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  buttonsContainer: {
-    gap: 15,
-  },
-  button: {
+  container: {
+    backgroundColor: '#f8fafc',
+    flex: 1,
     padding: 20,
-    borderRadius: 12,
-    alignItems: 'center',
   },
-  buttonStart: {
-    backgroundColor: '#10b981',
-  },
-  buttonEnd: {
-    backgroundColor: '#ef4444',
-  },
-  buttonDisabled: {
-    backgroundColor: '#d1d5db',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  lastMarkContainer: {
-    marginTop: 30,
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 8,
-  },
-  lastMarkLabel: {
+  eyebrow: {
+    color: '#0f766e',
     fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 5,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
-  lastMarkValue: {
-    fontSize: 14,
-    color: '#1f2937',
+  title: {
+    color: '#0f172a',
+    fontSize: 26,
+    fontWeight: '800',
+    marginBottom: 18,
+    marginTop: 4,
   },
-  cameraContainer: {
-    flex: 1,
-  },
-  camera: {
-    flex: 1,
-  },
-  cameraOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingBottom: 50,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  cameraText: {
-    color: 'white',
-    fontSize: 16,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  captureButton: {
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
+  card: {
+    backgroundColor: '#ffffff',
+    borderColor: '#e2e8f0',
     borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 14,
+    padding: 16,
   },
-  captureButtonText: {
-    color: 'white',
-    fontSize: 16,
+  cardLabel: {
+    color: '#64748b',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  employeeName: {
+    color: '#0f172a',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  cardDetail: {
+    color: '#334155',
+    fontSize: 14,
+  },
+  mono: {
+    color: '#334155',
+    fontFamily: 'monospace',
+    fontSize: 13,
+  },
+  status: {
+    borderRadius: 8,
+    marginBottom: 14,
+    padding: 12,
+  },
+  statusInfo: {
+    backgroundColor: '#eff6ff',
+  },
+  statusSuccess: {
+    backgroundColor: '#ecfdf5',
+  },
+  statusError: {
+    backgroundColor: '#fef2f2',
+  },
+  statusText: {
+    color: '#0f172a',
+    fontSize: 14,
     fontWeight: '600',
+  },
+  actions: {
+    gap: 12,
+    marginBottom: 14,
+  },
+  primaryButton: {
+    alignItems: 'center',
+    borderRadius: 8,
+    minHeight: 54,
+    justifyContent: 'center',
+  },
+  startButton: {
+    backgroundColor: '#0f766e',
+  },
+  endButton: {
+    backgroundColor: '#b91c1c',
+  },
+  disabledButton: {
+    backgroundColor: '#cbd5e1',
+  },
+  primaryButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  secondaryButton: {
+    alignItems: 'center',
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 12,
+    minHeight: 42,
+    justifyContent: 'center',
+  },
+  secondaryButtonText: {
+    color: '#0f766e',
+    fontWeight: '700',
   },
 });
-
-
