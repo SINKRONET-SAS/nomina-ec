@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "plan": "HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026",
   "planCode": "DCF26",
-  "status": "open_documental_consultive",
-  "phaseCompleted": "DCF26-00",
-  "currentPhase": "DCF26-01-encoding-mensajes-base",
-  "updatedAt": "2026-06-15T20:48:00.000-05:00",
-  "summary": "Diagnostico consultivo de Nomina-Ec: el sistema compila y pasa pruebas, pero hay brechas entre pantallas/promesas y funcionalidad real. DCF26 exige cierre con frontend visible, servicios especializados, pruebas y evidencia.",
+  "status": "executing_runtime",
+  "phaseCompleted": "DCF26-01",
+  "currentPhase": "DCF26-02-operacion-real",
+  "updatedAt": "2026-06-15T21:05:00.000-05:00",
+  "summary": "DCF26-01 verifico encoding real del runtime con lectura UTF-8 desde Node. No se modifico runtime porque no habia mojibake real en bytes; la consola PowerShell puede renderizar acentos como mojibake.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: actuar como consultor, diagnosticar bugs, funcionalidad, codigo muerto, promesas no cumplidas y pantallas sin funcionalidad real; generar plan Haiky, contexto, AuditLock y prompts por fases.",
-  "previousAuditLockHash": "2fe66f4fbcb06673e7988d3394384bb6ec902b8fbf79e648bf27443bb78c0800",
+  "previousAuditLockHash": "793e4d37a3b087a37b41a7826521bb4eb66dfb1e615f7a13ffa0cc67593b4887",
   "previousPlans": [
     {
       "plan": "HAIKY-CIERRE-BRECHAS-NOMINA-EC-DIAGNOSTICO-2026",
@@ -42,7 +42,8 @@
     ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-09-superadmin-sin-duplicidad.md",
     ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-10-mobile-asistencia-autoservicio.md",
     ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-11-humanizacion-uiux.md",
-    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-12-qa-limpieza-release.md"
+    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-12-qa-limpieza-release.md",
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_01_ENCODING.md"
   ],
   "validationChecks": [
     {
@@ -74,6 +75,16 @@
       "gate": "DCF26-STATIC-DIAGNOSTIC",
       "status": "FINDINGS",
       "detail": "Se detectaron catalogos genericos, ATS backend, RDEP sin XSD runtime, API v1 no expuesta, alerts/window.open, mojibake y artefactos Qwen_python."
+    },
+    {
+      "gate": "DCF26-01-UTF8-RUNTIME",
+      "status": "PASS",
+      "detail": "Node scan sobre backend/src, frontend-web/src, app-movil/src y package.json devolvio OK_UTF8_RUNTIME."
+    },
+    {
+      "gate": "DCF26-01-RUNTIME-CHURN",
+      "status": "PASS",
+      "detail": "No se modifico runtime porque el encoding real ya estaba correcto."
     }
   ],
   "fases": [
@@ -84,7 +95,7 @@
     },
     {
       "phase": "DCF26-01",
-      "status": "pending",
+      "status": "completed",
       "task": "encoding y mensajes base UTF-8"
     },
     {
@@ -144,10 +155,10 @@
     }
   ],
   "residualRisk": [
-    "DCF26-00 no modifica runtime; los hallazgos requieren fases de implementacion posteriores.",
+    "DCF26-01 no modifica runtime porque la verificacion UTF-8 real paso.",
     "RDEP, bancos e integraciones necesitan validacion profesional/fuentes vigentes antes de produccion.",
     "Los gates locales pasan, pero no sustituyen E2E con datos DEMO ni validacion legal/tributaria."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "b0019e308aa8ba2671feaca1c19af4857dd683f6bba2a527b435e1c98650093a"
+  "signature": "adbd36573ae92c29a7c0d8618142ca6cd54be8effaf972635503a6821ca54312"
 }
