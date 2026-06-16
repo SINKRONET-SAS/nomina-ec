@@ -116,6 +116,7 @@ app.get('/api/documentos', documentoLegalController.listar);
 app.get('/api/documentos/:id/download', documentoLegalController.descargar);
 
 const reporteController = require('./controllers/reporteController');
+app.post('/api/reportes/rdep/precheck', requireRole('owner', 'admin_rrhh'), reporteController.validarRDEP);
 app.post('/api/reportes/rdep', requireRole('owner', 'admin_rrhh'), reporteController.generarRDEP);
 app.post('/api/reportes/ats', requireRole('owner', 'admin_rrhh'), reporteController.generarATS);
 app.post('/api/reportes/sae', requireRole('owner', 'admin_rrhh'), reporteController.generarSAE);

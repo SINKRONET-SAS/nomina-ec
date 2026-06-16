@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, Download, FileSpreadsheet, FileText, Landmark } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Download, FileSpreadsheet, FileText, Landmark, ShieldCheck } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 
 const institutionalReports = [
@@ -55,10 +55,43 @@ function DescargarReportes() {
   const [anio, setAnio] = useState(hoy.getFullYear());
   const [mes, setMes] = useState(hoy.getMonth() + 1);
   const [cargando, setCargando] = useState('');
+  const [rdepPrecheck, setRdepPrecheck] = useState(null);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  const validarRdep = async () => {
+    setCargando('rdep-precheck');
+    setMessage('');
+    setError('');
+    try {
+      const response = await authenticatedApi.post('/reportes/rdep/precheck', { anio, mes });
+      setRdepPrecheck(response.data.precheck);
+      setMessage(response.data.precheck.ready
+        ? 'RDEP listo para generar con validacion estructural activa.'
+        : 'RDEP requiere acciones antes de generar el XML.');
+      return response.data.precheck;
+    } catch (err) {
+      const nextError = err.response?.data?.message || err.response?.data?.error || 'No pudimos validar RDEP.';
+      setError(nextError);
+      setRdepPrecheck(null);
+      return null;
+    } finally {
+      setCargando('');
+    }
+  };
 
   const generarReporte = async (tipo) => {
     setCargando(tipo);
+    setMessage('');
+    setError('');
     try {
+      if (tipo === 'rdep') {
+        const precheck = rdepPrecheck?.anio === anio && rdepPrecheck?.mes === mes ? rdepPrecheck : await validarRdep();
+        if (!precheck?.ready) {
+          setCargando('');
+          return;
+        }
+      }
       const endpointByType = {
         rdep: '/reportes/rdep',
         sae: '/reportes/sae',
@@ -70,9 +103,9 @@ function DescargarReportes() {
       if (url) {
         window.open(url, '_blank');
       }
-      alert('Reporte generado exitosamente');
+      setMessage('Reporte generado exitosamente.');
     } catch (err) {
-      alert(err.response?.data?.message || err.response?.data?.error || 'Error al generar reporte');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Error al generar reporte');
     } finally {
       setCargando('');
     }
@@ -87,6 +120,9 @@ function DescargarReportes() {
           ATS no se muestra aqui porque corresponde a obligaciones tributarias generales.
         </p>
       </div>
+
+      {message && <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{message}</div>}
+      {error && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{error}</div>}
 
       <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap gap-4">
@@ -135,6 +171,46 @@ function DescargarReportes() {
           );
         })}
       </div>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="mt-1 h-5 w-5 text-teal-700" />
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950">Precheck RDEP</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Valida datos del empleador, nomina cerrada y XSD versionado antes de generar el XML.
+              </p>
+            </div>
+          </div>
+          <button
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-teal-200 px-4 text-sm font-semibold text-teal-700 hover:border-teal-400 disabled:opacity-60"
+            type="button"
+            disabled={cargando === 'rdep-precheck'}
+            onClick={validarRdep}
+          >
+            <ShieldCheck className="h-4 w-4" />
+            {cargando === 'rdep-precheck' ? 'Validando...' : 'Validar RDEP'}
+          </button>
+        </div>
+
+        {rdepPrecheck && (
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {rdepPrecheck.checks.map((check) => (
+              <div className={`flex items-start gap-3 rounded-md px-4 py-3 ${check.passed ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900'}`} key={check.code}>
+                {check.passed ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />}
+                <div>
+                  <p className="text-sm font-semibold">{check.label}</p>
+                  {check.detail && <p className="mt-1 text-xs opacity-80">{check.detail}</p>}
+                </div>
+              </div>
+            ))}
+            <div className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-700 lg:col-span-2">
+              XSD SHA-256: <span className="font-mono text-xs">{rdepPrecheck.xsd?.sha256}</span>
+            </div>
+          </div>
+        )}
+      </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-start gap-3">
