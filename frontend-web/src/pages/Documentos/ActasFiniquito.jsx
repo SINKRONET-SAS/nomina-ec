@@ -1,39 +1,52 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Download } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
-import { FileText, Download } from 'lucide-react';
+import { downloadUrl } from '../../utils/downloadUrl';
 
 function ActasFiniquito() {
+  const [descargandoId, setDescargandoId] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
   const { data: documentos, isLoading } = useQuery({
     queryKey: ['finiquitos'],
     queryFn: async () => {
       const response = await authenticatedApi.get('/documentos?tipo=acta_finiquito');
       return response.data.documentos;
-    }
+    },
   });
 
   const descargar = async (id) => {
+    setDescargandoId(id);
+    setMessage('');
+    setError('');
     try {
       const response = await authenticatedApi.get(`/documentos/${id}/download`);
-      window.open(response.data.url, '_blank');
+      downloadUrl(response.data.url, response.data.fileName || `acta-finiquito-${id}.pdf`);
+      setMessage('Acta de finiquito lista para descarga.');
     } catch (err) {
-      alert('Error al descargar documento');
+      setError(err.response?.data?.message || err.response?.data?.error || err.message || 'No pudimos preparar la descarga del acta.');
+    } finally {
+      setDescargandoId('');
     }
   };
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Actas de Finiquito</h1>
-      
-      <div className="bg-white rounded-lg shadow">
+      <h1 className="mb-6 text-2xl font-bold">Actas de Finiquito</h1>
+      {message && <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}
+      {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
+
+      <div className="rounded-lg bg-white shadow">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Empleado</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cédula</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Empleado</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Cedula</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Fecha</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -42,14 +55,19 @@ function ActasFiniquito() {
               ) : !documentos || documentos.length === 0 ? (
                 <tr><td colSpan="4" className="px-6 py-4 text-center">No hay actas de finiquito</td></tr>
               ) : (
-                documentos.map(doc => (
+                documentos.map((doc) => (
                   <tr key={doc.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm">{doc.nombres} {doc.apellidos}</td>
                     <td className="px-6 py-4 text-sm">{doc.cedula}</td>
                     <td className="px-6 py-4 text-sm">{new Date(doc.created_at).toLocaleDateString()}</td>
                     <td className="px-6 py-4">
-                      <button onClick={() => descargar(doc.id)}
-                        className="p-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200">
+                      <button
+                        type="button"
+                        onClick={() => descargar(doc.id)}
+                        disabled={descargandoId === doc.id}
+                        title="Descargar acta de finiquito"
+                        className="rounded bg-blue-100 p-1 text-blue-600 hover:bg-blue-200 disabled:opacity-50"
+                      >
                         <Download size={16} />
                       </button>
                     </td>
@@ -65,4 +83,3 @@ function ActasFiniquito() {
 }
 
 export default ActasFiniquito;
-

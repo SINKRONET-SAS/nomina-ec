@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AlertCircle, CheckCircle2, Download, FileSpreadsheet, FileText, Landmark, ShieldCheck } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
+import { downloadUrl } from '../../utils/downloadUrl';
 
 const institutionalReports = [
   {
@@ -101,7 +102,7 @@ function DescargarReportes() {
       const url = response.data.reporte?.url || response.data.reporte?.csvUrl;
 
       if (url) {
-        window.open(url, '_blank');
+        downloadUrl(url, response.data.reporte?.fileName || `${tipo}-${anio}-${mes}`);
       }
       setMessage('Reporte generado exitosamente.');
     } catch (err) {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { AlertTriangle, ArrowLeft } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
-import { ArrowLeft, AlertTriangle } from 'lucide-react';
 
 function TerminarEmpleado() {
   const { id } = useParams();
@@ -9,16 +9,18 @@ function TerminarEmpleado() {
   const [causa, setCausa] = useState('');
   const [cargando, setCargando] = useState(false);
   const [resultado, setResultado] = useState(null);
+  const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setCargando(true);
-    
+    setError('');
+
     try {
       const response = await authenticatedApi.post(`/empleados/${id}/terminar`, { causa });
       setResultado(response.data.liquidacion);
     } catch (err) {
-      alert(err.response?.data?.error || 'Error al terminar empleado');
+      setError(err.response?.data?.message || err.response?.data?.error || 'No pudimos terminar la relacion laboral. Revisa la causa y vuelve a intentar.');
     } finally {
       setCargando(false);
     }
@@ -27,26 +29,30 @@ function TerminarEmpleado() {
   if (resultado) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-6">Liquidación Generada</h1>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Detalle de Liquidación</h2>
+        <h1 className="mb-6 text-2xl font-bold">Liquidacion Generada</h1>
+        <div className="rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-lg font-semibold">Detalle de Liquidacion</h2>
           <div className="space-y-2">
             <p><strong>Empleado:</strong> {resultado.nombre}</p>
-            <p><strong>Cédula:</strong> {resultado.cedula}</p>
-            <p><strong>Años de Servicio:</strong> {resultado.aniosServicio}</p>
+            <p><strong>Cedula:</strong> {resultado.cedula}</p>
+            <p><strong>Anios de servicio:</strong> {resultado.aniosServicio}</p>
             <hr className="my-4" />
             <div className="grid grid-cols-2 gap-2">
-              <p>Sueldo Pendiente:</p><p className="text-right">${resultado.liquidacion.sueldoPendiente}</p>
-              <p>Décimo Tercero:</p><p className="text-right">${resultado.liquidacion.decimoTercero}</p>
-              <p>Décimo Cuarto:</p><p className="text-right">${resultado.liquidacion.decimoCuarto}</p>
+              <p>Sueldo pendiente:</p><p className="text-right">${resultado.liquidacion.sueldoPendiente}</p>
+              <p>Decimo tercero:</p><p className="text-right">${resultado.liquidacion.decimoTercero}</p>
+              <p>Decimo cuarto:</p><p className="text-right">${resultado.liquidacion.decimoCuarto}</p>
               <p>Vacaciones:</p><p className="text-right">${resultado.liquidacion.vacaciones}</p>
-              <p>Indemnización:</p><p className="text-right">${resultado.liquidacion.indemnizacion}</p>
+              <p>Indemnizacion:</p><p className="text-right">${resultado.liquidacion.indemnizacion}</p>
             </div>
             <hr className="my-4" />
             <p className="text-xl font-bold">TOTAL: ${resultado.liquidacion.total}</p>
           </div>
           <div className="mt-6 flex justify-end">
-            <button onClick={() => navigate('/empleados')} className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard/empleados')}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-white"
+            >
               Volver a Empleados
             </button>
           </div>
@@ -57,45 +63,58 @@ function TerminarEmpleado() {
 
   return (
     <div>
-      <button onClick={() => navigate(-1)} className="flex items-center text-gray-600 mb-4">
+      <button type="button" onClick={() => navigate(-1)} className="mb-4 flex items-center text-gray-600">
         <ArrowLeft size={20} className="mr-2" /> Volver
       </button>
-      
-      <h1 className="text-2xl font-bold mb-6">Terminar Relación Laboral</h1>
-      
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+
+      <h1 className="mb-6 text-2xl font-bold">Terminar Relacion Laboral</h1>
+      {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
+
+      <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
         <div className="flex items-start">
-          <AlertTriangle className="text-yellow-600 mr-3 mt-1" size={24} />
+          <AlertTriangle className="mr-3 mt-1 text-yellow-600" size={24} />
           <div>
-            <h3 className="font-semibold text-yellow-800">Atención</h3>
-            <p className="text-sm text-yellow-700 mt-1">
-              Esta acción generará el acta de finiquito y calculará la liquidación automática.
+            <h3 className="font-semibold text-yellow-800">Atencion</h3>
+            <p className="mt-1 text-sm text-yellow-700">
+              Esta accion generara el acta de finiquito y calculara la liquidacion automatica.
               El empleado debe haber devuelto todos los equipos asignados.
             </p>
           </div>
         </div>
       </div>
-      
-      <div className="bg-white rounded-lg shadow p-6">
+
+      <div className="rounded-lg bg-white p-6 shadow">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Causa de Terminación *</label>
-            <select value={causa} onChange={(e) => setCausa(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg" required>
+            <label className="mb-1 block text-sm font-medium">Causa de terminacion *</label>
+            <select
+              value={causa}
+              onChange={(event) => setCausa(event.target.value)}
+              className="w-full rounded-lg border px-3 py-2"
+              required
+            >
               <option value="">Seleccionar...</option>
-              <option value="renuncia_voluntaria">Renuncia Voluntaria</option>
-              <option value="despido_intempestivo">Despido Intempestivo</option>
+              <option value="renuncia_voluntaria">Renuncia voluntaria</option>
+              <option value="despido_intempestivo">Despido intempestivo</option>
               <option value="desahucio">Desahucio (Art. 186)</option>
-              <option value="mutuo_acuerdo">Mutuo Acuerdo</option>
+              <option value="mutuo_acuerdo">Mutuo acuerdo</option>
             </select>
           </div>
-          
+
           <div className="flex justify-end space-x-4 pt-4">
-            <button type="button" onClick={() => navigate(-1)}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancelar</button>
-            <button type="submit" disabled={cargando || !causa}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50">
-              {cargando ? 'Procesando...' : 'Generar Liquidación'}
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="rounded-lg border px-4 py-2 hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={cargando || !causa}
+              className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:opacity-50"
+            >
+              {cargando ? 'Procesando...' : 'Generar Liquidacion'}
             </button>
           </div>
         </form>
@@ -105,4 +124,3 @@ function TerminarEmpleado() {
 }
 
 export default TerminarEmpleado;
-
