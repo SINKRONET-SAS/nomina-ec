@@ -6,7 +6,9 @@ const { validarCedula } = require('../utils/validarCedula');
 const { generarContrato } = require('../services/templateGenerator');
 const {
   commitEmployeeImport,
+  listEmployeeImportBatches,
   previewEmployeeImport,
+  rollbackEmployeeImport,
 } = require('../services/employeeImportService');
 
 async function listar(req, res) {
@@ -186,6 +188,73 @@ async function confirmarImportacion(req, res) {
   }
 }
 
+async function listarLotesImportacion(req, res) {
+  try {
+    const batches = await listEmployeeImportBatches({
+      tenantId: req.tenantId,
+      limit: Number(req.query.limit || 10),
+    });
+    return res.json({ success: true, batches, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[EMPLEADOS] Error listando lotes de importacion', {
+      code: err.code || 'EMPLOYEE_IMPORT_BATCH_LIST_ERROR',
+      statusCode: 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(500).json({
+      error: 'EMPLOYEE_IMPORT_BATCH_LIST_ERROR',
+      message: 'No pudimos cargar los lotes recientes de importacion.',
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function revertirImportacion(req, res) {
+  try {
+    const result = await rollbackEmployeeImport({
+      tenantId: req.tenantId,
+      batchId: req.params.batchId,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+    });
+
+    if (!result.ok) {
+      return res.status(result.status).json({
+        success: false,
+        error: result.error,
+        message: result.message,
+        blockers: result.blockers,
+        correlationId: req.correlationId,
+      });
+    }
+
+    return res.status(result.status).json({
+      success: true,
+      batchId: result.batchId,
+      deletedEmployees: result.deletedEmployees,
+      employees: result.employees || [],
+      message: result.message,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[EMPLEADOS] Error revirtiendo importacion', {
+      code: err.code || 'EMPLOYEE_IMPORT_ROLLBACK_ERROR',
+      statusCode: 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(500).json({
+      error: 'EMPLOYEE_IMPORT_ROLLBACK_ERROR',
+      message: 'No pudimos revertir el lote. No se aplicaron cambios parciales.',
+      correlationId: req.correlationId,
+    });
+  }
+}
+
 async function actualizar(req, res) {
   try {
     const { id } = req.params;
@@ -248,5 +317,7 @@ module.exports = {
   terminar,
   previewImportacion,
   confirmarImportacion,
+  listarLotesImportacion,
+  revertirImportacion,
 };
 

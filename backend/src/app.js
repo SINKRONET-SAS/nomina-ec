@@ -93,8 +93,10 @@ app.delete('/api/pagos/planes/:planId', requireRole('superadmin'), paymentContro
 
 const empleadoController = require('./controllers/empleadoController');
 app.get('/api/empleados', empleadoController.listar);
+app.get('/api/empleados/importar/lotes', requireRole('owner', 'admin_rrhh'), empleadoController.listarLotesImportacion);
 app.post('/api/empleados/importar/preview', requireRole('owner', 'admin_rrhh'), empleadoController.previewImportacion);
 app.post('/api/empleados/importar/confirmar', requireRole('owner', 'admin_rrhh'), empleadoController.confirmarImportacion);
+app.delete('/api/empleados/importar/lotes/:batchId', requireRole('owner', 'admin_rrhh'), empleadoController.revertirImportacion);
 app.get('/api/empleados/:id', empleadoController.obtener);
 app.post('/api/empleados', requireRole('owner', 'admin_rrhh'), empleadoController.crear);
 app.put('/api/empleados/:id', requireRole('owner', 'admin_rrhh'), empleadoController.actualizar);

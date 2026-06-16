@@ -14,8 +14,10 @@ const { recordAudit } = require('./auditService');
 const {
   buildPreviewRows,
   commitEmployeeImport,
+  listEmployeeImportBatches,
   parseEmployeeImport,
   previewEmployeeImport,
+  rollbackEmployeeImport,
   splitDelimitedLine,
 } = require('./employeeImportService');
 
@@ -96,6 +98,65 @@ describe('employeeImportService', () => {
     expect(db.commit).toHaveBeenCalledWith(client);
     expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
       action: 'empleados.import.commit',
+      entityId: 'batch-1',
+    }));
+  });
+
+  test('listEmployeeImportBatches lista lotes recientes', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'batch-1', employee_count: 2 }] });
+
+    const batches = await listEmployeeImportBatches({ tenantId: 'tenant-1' });
+
+    expect(batches).toEqual([{ id: 'batch-1', employee_count: 2 }]);
+    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('employee_import_batches'), ['tenant-1', 10]);
+  });
+
+  test('rollbackEmployeeImport bloquea lotes con procesos asociados', async () => {
+    const client = {
+      query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'batch-1', status: 'completado', source_name: 'demo.csv' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'emp-1', cedula: '1710034065' }] })
+        .mockResolvedValueOnce({ rows: [{ empleado_id: 'emp-1', source: 'nominas', total: 1 }] }),
+    };
+    db.getClient.mockResolvedValueOnce(client);
+
+    const result = await rollbackEmployeeImport({
+      tenantId: 'tenant-1',
+      batchId: 'batch-1',
+      userId: 'user-1',
+      correlationId: 'corr-1',
+      ipAddress: '127.0.0.1',
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe(409);
+    expect(db.rollback).toHaveBeenCalledWith(client);
+  });
+
+  test('rollbackEmployeeImport elimina empleados importados sin dependencias', async () => {
+    const client = {
+      query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'batch-1', status: 'completado', source_name: 'demo.csv' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'emp-1', cedula: '1710034065' }] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{ id: 'emp-1', cedula: '1710034065' }] })
+        .mockResolvedValueOnce({ rows: [] }),
+    };
+    db.getClient.mockResolvedValueOnce(client);
+
+    const result = await rollbackEmployeeImport({
+      tenantId: 'tenant-1',
+      batchId: 'batch-1',
+      userId: 'user-1',
+      correlationId: 'corr-1',
+      ipAddress: '127.0.0.1',
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.deletedEmployees).toBe(1);
+    expect(db.commit).toHaveBeenCalledWith(client);
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'empleados.import.rollback',
       entityId: 'batch-1',
     }));
   });

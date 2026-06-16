@@ -4,8 +4,8 @@
 |-------|-------|
 | Plan | HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026 |
 | Codigo | DCF26 |
-| Estado | abierto en fase documental consultiva |
-| Fase actual | DCF26-00 cerrada documentalmente |
+| Estado | DCF26-00..12 ejecutadas localmente con cierre funcional y bloqueos externos documentados |
+| Fase actual | DCF26-12 cerrada localmente |
 | Alcance | segunda pasada profunda para cerrar brechas entre promesas, pantallas y funcionalidad real de Nomina-Ec |
 | Diagnostico | `docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_01_DIAGNOSTICO_CONSULTIVO.md` |
 | Matriz | `docs2/diagnostico-cierre-funcional-nomina-ec-2026/MATRIZ_DCF26_HALLAZGOS.md` |
@@ -50,23 +50,48 @@ El objetivo de DCF26 no es agregar mas promesas. Cada fase debe entregar funcion
 
 ## Linea de cierre funcional
 
-DCF26 convierte los hallazgos en una secuencia de cierre:
+DCF26 convierte los hallazgos en una secuencia de cierre ejecutada:
 
 | Fase | Prioridad | Estado | Objetivo |
 |------|-----------|--------|----------|
 | DCF26-00 | P0 | completed | Baseline consultiva: diagnostico, matriz, contexto, prompts y AuditLock. |
-| DCF26-01 | P0 | pending | Corregir encoding/mojibake y estabilizar mensajes base UTF-8. |
-| DCF26-02 | P0 | pending | Reemplazar catalogos genericos de operacion por modulos con servicios reales. |
-| DCF26-03 | P0 | pending | Conectar configuracion bancaria OWNER al generador real por ficha tecnica. |
-| DCF26-04 | P0 | pending | RDEP productizable: ficha vigente, XSD validation, precheck y evidencia. |
-| DCF26-05 | P0 | pending | Retirar ATS del flujo de nomina y dejarlo fuera o aislado como obligacion tributaria no nomina. |
-| DCF26-06 | P0 | pending | API externa `/api/v1` con autenticacion, scopes, rate limits, idempotencia y auditoria. |
-| DCF26-07 | P0 | pending | Carga masiva de empleados real con plantilla, validacion, rollback y reporte de errores. |
-| DCF26-08 | P0 | pending | Apertura de mes y lotes de novedades ejecutables por estructura organizativa. |
-| DCF26-09 | P1 | pending | SUPERADMIN real sin duplicar planes/addons/incidencias en catalogos paralelos. |
-| DCF26-10 | P1 | pending | App movil y asistencia: permisos, politicas, offline controlado, evidencias y autoservicio minimo. |
-| DCF26-11 | P1 | pending | Humanizacion UI/UX: eliminar `alert`, estados, toasts, errores accionables y pantallas vacias utiles. |
-| DCF26-12 | P0 | pending | QA E2E, limpieza de codigo/documentos muertos, datos DEMO y release gate anti-churn. |
+| DCF26-01 | P0 | completed | Encoding runtime revisado; base UTF-8 operativa sin churn. |
+| DCF26-02 | P0 | completed | Operacion integral reemplazada por accesos a modulos reales y checks visibles. |
+| DCF26-03 | P0 | completed | Banco OWNER conectado al generador con perfil tenant y fallback controlado. |
+| DCF26-04 | P0 | completed | RDEP con XSD versionado, precheck y validacion runtime. |
+| DCF26-05 | P0 | completed | ATS retirado del flujo runtime de nomina. |
+| DCF26-06 | P0 | completed | API externa `/api/v1` con autenticacion, scopes, rate limits, idempotencia y auditoria. |
+| DCF26-07 | P0 | completed | Carga masiva real con plantilla, prevalidacion, commit atomico y lote auditable. |
+| DCF26-08 | P0 | completed | Apertura de mes y lotes de novedades ejecutables por estructura organizativa. |
+| DCF26-09 | P1 | completed | SUPERADMIN usa fuentes reales de planes/owners/incidencias sin catalogo paralelo. |
+| DCF26-10 | P1 | completed | App movil con asistencia, historial y autoservicio minimo conectado a `/api/mobile`. |
+| DCF26-11 | P1 | completed | Frontend web sin `alert`, `confirm` ni `window.open`; descargas y errores visibles. |
+| DCF26-12 | P0 | completed | QA, archivo de codigo muerto, reversa segura de importaciones, runbook DEMO y AuditLock final. |
+
+## Cierre DCF26-12
+
+| Gate | Resultado | Evidencia |
+|------|-----------|-----------|
+| Backend tests | PASS | `npm.cmd test -- --runInBand`: 17 suites, 60 tests, 4.472 s. |
+| Frontend build/PWA | PASS | `npm.cmd run build` en `frontend-web`. |
+| Prisma schema | PASS | `npx.cmd prisma validate` en `backend`. |
+| App store readiness | PASS | `npm.cmd run check:stores` en `app-movil`. |
+| Mobile parse | PASS | Parse JSX sobre `app-movil/src`: `MOBILE_JSX_PARSE_OK`. |
+| ATS fuera de runtime nomina | PASS | `rg reportes/ats|generarATS|generarXML_ATS|sriAtsGenerator` sin coincidencias en runtime. |
+| Popups nativos web | PASS | `rg "alert\\(|confirm\\(|window\\.open" frontend-web/src` sin coincidencias. |
+| Codigo muerto docs2 | PASS | `docs2/Qwen_python_*.py` archivado en `docs2/archive/qwen-python-20260616/`. |
+| Diff check | PASS | `git diff --check` sin errores; avisos CRLF esperados en Windows. |
+| Smoke visual navegador | SKIPPED_TOOL_UNAVAILABLE | El controlador del navegador integrado no quedo disponible en esta sesion. |
+
+## Riesgos residuales convertidos en bloqueos controlados
+
+| Riesgo | Estado de cierre | Criterio antes de produccion |
+|--------|------------------|------------------------------|
+| Validacion legal/tributaria RDEP, bancos, IESS y parametros 2026 | Bloqueo externo profesional | Revision formal con fuentes vigentes y firma responsable por ambiente. |
+| API v1 multi-instancia | Hardening de despliegue | Rate limit compartido y pruebas de idempotencia en staging multi-instancia. |
+| Store release real | Bloqueo externo de cuentas | Google Play Console, Apple Developer, certificados, EAS y URLs productivas reales. |
+| Smoke visual browser | Bloqueo de herramienta local | Ejecutar runbook DCF26-12 con navegador disponible y guardar capturas. |
+| Relacion usuario-empleado movil | Backlog controlado UEM-01 | Sustituir resolucion por `email_personal` con relacion formal usuario-empleado migrada y probada. |
 
 ## Reglas DCF26
 

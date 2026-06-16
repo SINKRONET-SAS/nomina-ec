@@ -363,10 +363,180 @@ async function commitEmployeeImport({ tenantId, userId, correlationId, ipAddress
   }
 }
 
+async function listEmployeeImportBatches({ tenantId, limit = 10 }) {
+  const result = await db.query(`
+    SELECT
+      b.id,
+      b.source_name,
+      b.status,
+      b.total_rows,
+      b.valid_rows,
+      b.error_rows,
+      b.summary,
+      b.created_at,
+      b.completed_at,
+      COUNT(e.id)::int AS employee_count
+    FROM employee_import_batches b
+    LEFT JOIN empleados e
+      ON e.tenant_id = b.tenant_id
+     AND e.import_batch_id = b.id
+    WHERE b.tenant_id = $1
+    GROUP BY b.id
+    ORDER BY b.created_at DESC
+    LIMIT $2
+  `, [tenantId, limit]);
+
+  return result.rows;
+}
+
+async function rollbackEmployeeImport({ tenantId, batchId, userId, correlationId, ipAddress }) {
+  const client = await db.getClient(tenantId, userId);
+
+  try {
+    const batch = await client.query(`
+      SELECT id, status, source_name
+      FROM employee_import_batches
+      WHERE tenant_id = $1 AND id = $2
+      FOR UPDATE
+    `, [tenantId, batchId]);
+
+    if (batch.rows.length === 0) {
+      await db.rollback(client);
+      return {
+        ok: false,
+        status: 404,
+        error: 'EMPLOYEE_IMPORT_BATCH_NOT_FOUND',
+        message: 'No encontramos el lote de importacion solicitado.',
+      };
+    }
+
+    if (batch.rows[0].status === 'revertido') {
+      await db.rollback(client);
+      return {
+        ok: true,
+        status: 200,
+        batchId,
+        deletedEmployees: 0,
+        message: 'El lote ya estaba revertido.',
+      };
+    }
+
+    if (batch.rows[0].status !== 'completado') {
+      await db.rollback(client);
+      return {
+        ok: false,
+        status: 409,
+        error: 'EMPLOYEE_IMPORT_BATCH_NOT_READY',
+        message: 'Solo se pueden revertir lotes completados.',
+      };
+    }
+
+    const employees = await client.query(`
+      SELECT id, cedula, nombres, apellidos
+      FROM empleados
+      WHERE tenant_id = $1 AND import_batch_id = $2
+    `, [tenantId, batchId]);
+
+    if (employees.rows.length === 0) {
+      await client.query(`
+        UPDATE employee_import_batches
+        SET status = 'revertido', completed_at = NOW(),
+            summary = summary || $3::jsonb
+        WHERE tenant_id = $1 AND id = $2
+      `, [tenantId, batchId, JSON.stringify({ rollback: { deletedEmployees: 0, reason: 'sin_empleados_importados' } })]);
+      await db.commit(client);
+      return {
+        ok: true,
+        status: 200,
+        batchId,
+        deletedEmployees: 0,
+        message: 'El lote no tenia empleados activos para revertir.',
+      };
+    }
+
+    const blockers = await client.query(`
+      WITH imported AS (
+        SELECT id
+        FROM empleados
+        WHERE tenant_id = $1 AND import_batch_id = $2
+      )
+      SELECT empleado_id, source, COUNT(*)::int AS total
+      FROM (
+        SELECT empleado_id, 'nominas' AS source FROM nominas WHERE tenant_id = $1 AND empleado_id IN (SELECT id FROM imported)
+        UNION ALL
+        SELECT empleado_id, 'marcaciones' AS source FROM marcaciones WHERE tenant_id = $1 AND empleado_id IN (SELECT id FROM imported)
+        UNION ALL
+        SELECT empleado_id, 'novedades_asistencia' AS source FROM novedades_asistencia WHERE tenant_id = $1 AND empleado_id IN (SELECT id FROM imported)
+        UNION ALL
+        SELECT empleado_id, 'acta_entrega_equipos' AS source FROM acta_entrega_equipos WHERE tenant_id = $1 AND empleado_id IN (SELECT id FROM imported)
+        UNION ALL
+        SELECT empleado_id, 'beneficios_empleados' AS source FROM beneficios_empleados WHERE tenant_id = $1 AND empleado_id IN (SELECT id FROM imported)
+      ) refs
+      GROUP BY empleado_id, source
+      ORDER BY empleado_id, source
+    `, [tenantId, batchId]);
+
+    if (blockers.rows.length > 0) {
+      await db.rollback(client);
+      return {
+        ok: false,
+        status: 409,
+        error: 'EMPLOYEE_IMPORT_ROLLBACK_BLOCKED',
+        message: 'No se puede revertir el lote porque ya existen procesos laborales asociados.',
+        blockers: blockers.rows,
+      };
+    }
+
+    const deleted = await client.query(`
+      DELETE FROM empleados
+      WHERE tenant_id = $1 AND import_batch_id = $2
+      RETURNING id, cedula, nombres, apellidos
+    `, [tenantId, batchId]);
+
+    await client.query(`
+      UPDATE employee_import_batches
+      SET status = 'revertido', completed_at = NOW(),
+          summary = summary || $3::jsonb
+      WHERE tenant_id = $1 AND id = $2
+    `, [
+      tenantId,
+      batchId,
+      JSON.stringify({ rollback: { deletedEmployees: deleted.rows.length, correlationId } }),
+    ]);
+
+    await db.commit(client);
+
+    await recordAudit({
+      tenantId,
+      userId,
+      correlationId,
+      action: 'empleados.import.rollback',
+      entity: 'employee_import_batches',
+      entityId: batchId,
+      newData: { deletedEmployees: deleted.rows.length },
+      metadata: { sourceName: batch.rows[0].source_name },
+      ipAddress,
+    });
+
+    return {
+      ok: true,
+      status: 200,
+      batchId,
+      deletedEmployees: deleted.rows.length,
+      employees: deleted.rows,
+    };
+  } catch (err) {
+    await db.rollback(client);
+    throw err;
+  }
+}
+
 module.exports = {
   buildPreviewRows,
   commitEmployeeImport,
+  listEmployeeImportBatches,
   parseEmployeeImport,
   previewEmployeeImport,
+  rollbackEmployeeImport,
   splitDelimitedLine,
 };

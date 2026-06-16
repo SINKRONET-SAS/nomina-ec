@@ -7,6 +7,7 @@ import {
   Edit,
   FileSpreadsheet,
   Plus,
+  RotateCcw,
   Search,
   Upload,
   UserX,
@@ -24,6 +25,14 @@ function ImportPanel({ onImported }) {
   const [sourceName, setSourceName] = useState('carga_manual.csv');
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
+
+  const batchesQuery = useQuery({
+    queryKey: ['employee-import-batches'],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/empleados/importar/lotes');
+      return response.data.batches || [];
+    },
+  });
 
   const previewMutation = useMutation({
     mutationFn: async () => {
@@ -45,6 +54,19 @@ function ImportPanel({ onImported }) {
       setResult(data);
       setPreview(data.preview);
       onImported();
+      batchesQuery.refetch();
+    },
+  });
+
+  const rollbackMutation = useMutation({
+    mutationFn: async (batchId) => {
+      const response = await authenticatedApi.delete(`/empleados/importar/lotes/${batchId}`);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setResult({ ...data, rollback: true });
+      onImported();
+      batchesQuery.refetch();
     },
   });
 
@@ -161,10 +183,45 @@ function ImportPanel({ onImported }) {
             </div>
           )}
 
-          {(previewMutation.isError || commitMutation.isError) && (
-            <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
-              {extractApiError(previewMutation.error || commitMutation.error, 'No pudimos procesar la carga. Revisa el contenido e intenta nuevamente.')}
+          {result?.rollback && (
+            <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+              Lote revertido: {result.deletedEmployees} empleados retirados.
             </div>
+          )}
+
+          {(previewMutation.isError || commitMutation.isError || rollbackMutation.isError) && (
+            <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+              {extractApiError(previewMutation.error || commitMutation.error || rollbackMutation.error, 'No pudimos procesar la accion. Revisa el lote e intenta nuevamente.')}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-md border border-slate-200 p-4">
+        <h3 className="text-sm font-semibold text-slate-900">Lotes recientes</h3>
+        <div className="mt-3 space-y-2">
+          {(batchesQuery.data || []).length === 0 ? (
+            <p className="text-sm text-slate-600">Aun no hay lotes de importacion.</p>
+          ) : (
+            (batchesQuery.data || []).map((batch) => (
+              <div className="flex flex-col gap-2 rounded-md bg-slate-50 px-3 py-2 md:flex-row md:items-center md:justify-between" key={batch.id}>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{batch.source_name}</p>
+                  <p className="text-xs text-slate-600">
+                    {batch.status} - {batch.employee_count} empleados activos - {new Date(batch.created_at).toLocaleString()}
+                  </p>
+                </div>
+                <button
+                  className="inline-flex min-h-9 w-fit items-center gap-2 rounded-md border border-red-200 px-3 text-xs font-semibold text-red-700 hover:border-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={batch.status !== 'completado' || Number(batch.employee_count || 0) === 0 || rollbackMutation.isPending}
+                  onClick={() => rollbackMutation.mutate(batch.id)}
+                  type="button"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Revertir
+                </button>
+              </div>
+            ))
           )}
         </div>
       </div>

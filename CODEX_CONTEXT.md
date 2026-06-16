@@ -424,7 +424,7 @@ Bloqueos externos:
 
 Plan: `HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026`.
 
-Estado: DCF26-00 cerrado documentalmente como diagnostico consultivo. No se ha tocado runtime para esta linea.
+Estado: DCF26-00 a DCF26-12 ejecutadas localmente con segunda pasada runtime, commits por fase y AuditLock firmado.
 
 Motivo:
 
@@ -459,13 +459,46 @@ Hallazgos P1/P2:
 - `docs2` contiene artefactos `Qwen_python_*.py` que deben limpiarse o archivarse.
 - Backend tests pasan, pero hay prueba lenta relevante.
 
-Entregables DCF26-00:
+Entregables principales DCF26:
 
 - `docs2/PLAN_HAIKY_DIAGNOSTICO_CIERRE_FUNCIONAL_NOMINA_EC_2026.md`
 - `docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_01_DIAGNOSTICO_CONSULTIVO.md`
 - `docs2/diagnostico-cierre-funcional-nomina-ec-2026/MATRIZ_DCF26_HALLAZGOS.md`
+- `docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_02_OPERACION_REAL.md` a `REPORTE_DCF26_12_QA_LIMPIEZA_RELEASE.md`
+- `docs2/diagnostico-cierre-funcional-nomina-ec-2026/RUNBOOK_DCF26_12_E2E_DEMO.md`
+- `docs2/archive/qwen-python-20260616/README.md`
 - `.github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-00..12-*.md`
 - `.vscode/AuditLock.json`
+
+Runtime cerrado:
+
+- Operacion integral deja de guardar catalogos genericos para P0 y apunta a pantallas/procesos reales.
+- Bancos OWNER alimentan el generador de archivo plano con perfil tenant.
+- RDEP tiene precheck y validacion XSD runtime; ATS queda fuera del flujo de nomina.
+- API externa `/api/v1` existe con autenticacion, scopes, rate limit, idempotencia y auditoria.
+- Empleados tiene carga masiva con plantilla DEMO, prevalidacion, commit atomico, lote auditable y reversa segura.
+- Nomina tiene apertura de periodo y lotes de novedades por estructura organizativa.
+- SUPERADMIN gestiona planes, owners/incidencias desde fuentes reales.
+- App movil tiene endpoints `/api/mobile`, marcacion, historial y autoservicio minimo.
+- Frontend web queda sin `alert`, `confirm` ni `window.open` en runtime.
+- `docs2/Qwen_python_*.py` queda archivado como evidencia historica sin reuso operacional.
+
+Gates finales DCF26-12:
+
+- `npm.cmd test -- --runInBand` en `backend`: PASS, 17 suites y 60 tests, 4.472 s.
+- `npm.cmd run build` en `frontend-web`: PASS.
+- `npx.cmd prisma validate` en `backend`: PASS.
+- `npm.cmd run check:stores` en `app-movil`: PASS.
+- Parse JSX app movil: PASS, `MOBILE_JSX_PARSE_OK`.
+- `rg` de ATS runtime y popups nativos web: sin coincidencias.
+
+Bloqueos residuales controlados:
+
+- Validacion legal/tributaria/laboral profesional para RDEP, bancos, IESS y parametros antes de produccion.
+- Rate limit compartido API v1 en staging multi-instancia.
+- Cuentas y certificados reales Google Play, Apple Developer/EAS y URLs productivas.
+- Relacion formal usuario-empleado para reemplazar resolucion movil por `email_personal`.
+- Smoke visual con navegador integrado quedo pendiente por herramienta no disponible; repetir con `RUNBOOK_DCF26_12_E2E_DEMO.md`.
 
 Regla operativa DCF26:
 
