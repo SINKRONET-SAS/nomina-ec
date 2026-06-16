@@ -3,13 +3,13 @@
   "plan": "HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026",
   "planCode": "DCF26",
   "status": "executing_runtime",
-  "phaseCompleted": "DCF26-05",
-  "currentPhase": "DCF26-06-api-v1-integracion",
-  "updatedAt": "2026-06-15T21:55:00.000-05:00",
-  "summary": "DCF26-05 retiro ATS del runtime de nomina: se elimino ruta /api/reportes/ats, controlador generarATS y sriAtsGenerator; reportes RDEP/SAE/banco siguen probados.",
+  "phaseCompleted": "DCF26-06",
+  "currentPhase": "DCF26-07-carga-masiva-empleados",
+  "updatedAt": "2026-06-15T22:20:00.000-05:00",
+  "summary": "DCF26-06 API v1 de integracion: /api/v1 expuesto con API keys, scopes, rate limit, idempotencia, auditoria y gestion visible de clientes API en OperacionIntegral.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: actuar como consultor, diagnosticar bugs, funcionalidad, codigo muerto, promesas no cumplidas y pantallas sin funcionalidad real; generar plan Haiky, contexto, AuditLock y prompts por fases.",
-  "previousAuditLockHash": "7c5d65fe5e0fcd8693d62fe425763f35029d18c2ae564519c3de8d0c972a10e6",
+  "previousAuditLockHash": "5e6669fd4ead737404f87272f38feccdb450789bcd31a809d54b3e565f53b187",
   "previousPlans": [
     {
       "plan": "HAIKY-CIERRE-BRECHAS-NOMINA-EC-DIAGNOSTICO-2026",
@@ -56,7 +56,19 @@
     "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
     "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_04_RDEP_XSD_RUNTIME.md",
     "backend/src/services/sriAtsGenerator.js",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_05_RETIRAR_ATS_NOMINA.md"
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_05_RETIRAR_ATS_NOMINA.md",
+    "backend/prisma/migrations/20260615220000_dcf26_api_v1/migration.sql",
+    "backend/prisma/schema.prisma",
+    "backend/src/middleware/externalApiAuth.js",
+    "backend/src/middleware/externalApiAuth.test.js",
+    "backend/src/middleware/externalApiIdempotency.js",
+    "backend/src/middleware/externalApiIdempotency.test.js",
+    "backend/src/controllers/externalApiController.js",
+    "backend/src/controllers/integrationController.js",
+    "backend/src/controllers/integrationController.test.js",
+    "backend/src/routes/externalApiRoutes.js",
+    "frontend-web/src/services/integracionesApi.js",
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_06_API_V1_INTEGRACION.md"
   ],
   "validationChecks": [
     {
@@ -143,6 +155,31 @@
       "gate": "DCF26-05-REPORTS-TEST",
       "status": "PASS",
       "detail": "npm.cmd test -- sriRdepGenerator.test.js iessSaeGenerator.test.js bancoAebGenerator.test.js --runInBand: 10 tests."
+    },
+    {
+      "gate": "DCF26-06-PRISMA-VALIDATE",
+      "status": "PASS",
+      "detail": "npx.cmd prisma validate en backend."
+    },
+    {
+      "gate": "DCF26-06-NODE-CHECK",
+      "status": "PASS",
+      "detail": "node --check app, rutas, controladores y middlewares de API v1."
+    },
+    {
+      "gate": "DCF26-06-API-TESTS",
+      "status": "PASS",
+      "detail": "npm.cmd test -- externalApiAuth.test.js externalApiIdempotency.test.js integrationController.test.js --runInBand: 3 suites, 14 tests."
+    },
+    {
+      "gate": "DCF26-06-FRONTEND-BUILD",
+      "status": "PASS",
+      "detail": "npm.cmd run build en frontend-web con panel Clientes API v1 visible."
+    },
+    {
+      "gate": "DCF26-06-DIFF-CHECK",
+      "status": "PASS",
+      "detail": "git diff --check sin errores; solo avisos CRLF esperados en Windows."
     }
   ],
   "fases": [
@@ -178,7 +215,7 @@
     },
     {
       "phase": "DCF26-06",
-      "status": "pending",
+      "status": "completed",
       "task": "API v1 de integracion"
     },
     {
@@ -215,8 +252,9 @@
   "residualRisk": [
     "DCF26-05 elimina ATS del runtime de nomina; cualquier obligacion ATS futura debe tratarse fuera del modulo de nomina.",
     "RDEP, bancos e integraciones necesitan validacion profesional/fuentes vigentes antes de produccion.",
-    "Los gates locales pasan, pero no sustituyen E2E con datos DEMO ni validacion legal/tributaria."
+    "Los gates locales pasan, pero no sustituyen E2E con datos DEMO ni validacion legal/tributaria.",
+    "La API v1 requiere migracion aplicada por ambiente y rate limit compartido para despliegues multi-instancia."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "78b9ff7f3641dbe44863527126dc503a4c9eca6aa71e290f2cc8e751eeab209e"
+  "signature": "551bc2105cc92c165a3a4ace94b8d1fca9f8f2b2bda1c01455786993975ead34"
 }

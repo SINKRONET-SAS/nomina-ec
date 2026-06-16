@@ -54,6 +54,11 @@ app.get('/api/pagos/planes', paymentController.listPublicPlans);
 app.get('/api/pagos/confirm', paymentController.confirmPayment);
 app.post('/api/pagos/webhook', paymentController.confirmPayment);
 
+const externalApiRoutes = require('./routes/externalApiRoutes');
+const { authenticateExternalApi } = require('./middleware/externalApiAuth');
+const externalApiRateLimit = createRateLimiter({ windowMs: 60 * 1000, max: 120, keyPrefix: 'api-v1' });
+app.use('/api/v1', externalApiRateLimit, authenticateExternalApi, externalApiRoutes);
+
 app.use('/api', authenticateToken);
 
 const configurationController = require('./controllers/configurationController');
@@ -64,6 +69,10 @@ app.post('/api/configuracion/parametros-legales/obligatorios', requireRole('supe
 app.get('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.list);
 app.post('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.create);
 app.put('/api/configuracion/:resource/:id', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.update);
+
+const integrationController = require('./controllers/integrationController');
+app.get('/api/integraciones/clientes', requireRole('superadmin', 'owner'), integrationController.listApiClients);
+app.post('/api/integraciones/clientes', requireRole('superadmin', 'owner'), integrationController.createApiClient);
 
 app.get('/api/auth/email-verification/status', authController.emailVerificationStatus);
 app.get('/api/pagos/status', paymentController.subscriptionStatus);

@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -8,6 +8,7 @@ import {
   Building2,
   CalendarClock,
   CheckCircle2,
+  Copy,
   FileCode2,
   FileSpreadsheet,
   Gauge,
@@ -15,6 +16,7 @@ import {
   Landmark,
   LockKeyhole,
   MessageSquare,
+  Plus,
   ShieldCheck,
   Upload,
   UserCog,
@@ -22,7 +24,15 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { fetchConfigurationSummary } from '../../services/configurationApi';
+import { createApiClient, fetchApiClients } from '../../services/integracionesApi';
 import { extractApiError } from '../../services/publicApi';
+
+const API_SCOPE_OPTIONS = [
+  { value: 'employees.read', label: 'Empleados' },
+  { value: 'attendance.write', label: 'Asistencia' },
+  { value: 'novelties.write', label: 'Novedades' },
+  { value: 'payroll.read', label: 'Nomina' },
+];
 
 const MODULES = [
   {
@@ -105,12 +115,12 @@ const MODULES = [
     icon: KeyRound,
     owner: 'SUPERADMIN',
     phase: 'DCF26-06',
-    href: null,
-    action: 'Bloqueada hasta API v1',
-    ready: () => false,
-    blocked: true,
-    activeDescription: '',
-    pendingDescription: 'Contrato existe, pero no se expone `/api/v1` hasta implementar autenticacion, scopes, rate limits e idempotencia.',
+    href: '#api-v1-clientes',
+    action: 'Gestionar clientes',
+    ready: ({ counts }) => counts.apiClients > 0,
+    gatedByRoles: ['owner', 'superadmin'],
+    activeDescription: 'API v1 expuesta con clientes, scopes, autenticacion por API key, rate limit e idempotencia.',
+    pendingDescription: 'Crea al menos un cliente API con scopes minimos para integrar asistencia, novedades o consulta de nomina.',
   },
   {
     key: 'asistencia',
@@ -207,6 +217,15 @@ function buildCounts(summary) {
 }
 
 function moduleState(module, context, role) {
+  if (module.gatedByRoles && !module.gatedByRoles.includes(role)) {
+    return {
+      label: 'Restringido por rol',
+      tone: 'border-slate-200 bg-slate-50 text-slate-700',
+      icon: LockKeyhole,
+      description: module.pendingDescription,
+    };
+  }
+
   if (module.gatedByRole && module.gatedByRole !== role) {
     return {
       label: 'Restringido por rol',
@@ -256,8 +275,158 @@ function ReadinessBar({ value }) {
   );
 }
 
+function ApiClientsPanel({ clients = [], createMutation, canManage }) {
+  const [name, setName] = useState('');
+  const [scopes, setScopes] = useState(['employees.read']);
+  const [createdKey, setCreatedKey] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  const toggleScope = (scope) => {
+    setScopes((current) => (
+      current.includes(scope)
+        ? current.filter((item) => item !== scope)
+        : [...current, scope]
+    ));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    try {
+      const response = await createMutation.mutateAsync({ name, scopes });
+      setCreatedKey(response?.apiKey || null);
+      setCopied(false);
+      setName('');
+      setScopes(['employees.read']);
+    } catch {
+      setCreatedKey(null);
+    }
+  };
+
+  const copyKey = async () => {
+    if (!createdKey || !navigator.clipboard) return;
+    await navigator.clipboard.writeText(createdKey);
+    setCopied(true);
+  };
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" id="api-v1-clientes">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <KeyRound className="h-5 w-5 text-teal-700" />
+            <h2 className="text-lg font-semibold text-slate-950">Clientes API v1</h2>
+          </div>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            Crea credenciales para integrar sistemas externos sin exponer usuarios finales. Cada cliente queda limitado
+            por scopes, rate limit, auditoria e idempotencia en escrituras.
+          </p>
+        </div>
+        <span className="inline-flex w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+          /api/v1 disponible
+        </span>
+      </div>
+
+      {!canManage && (
+        <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          Esta seccion requiere rol OWNER o SUPERADMIN para administrar integraciones.
+        </div>
+      )}
+
+      {canManage && (
+        <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <form className="rounded-md border border-slate-200 p-4" onSubmit={handleSubmit}>
+            <label className="block text-sm font-semibold text-slate-800" htmlFor="api-client-name">
+              Nombre del cliente
+            </label>
+            <input
+              className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+              id="api-client-name"
+              maxLength={80}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="ERP interno, app asistencia, BI nomina"
+              value={name}
+            />
+
+            <fieldset className="mt-4">
+              <legend className="text-sm font-semibold text-slate-800">Scopes permitidos</legend>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {API_SCOPE_OPTIONS.map((option) => (
+                  <label className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700" key={option.value}>
+                    <input
+                      checked={scopes.includes(option.value)}
+                      className="h-4 w-4 accent-teal-700"
+                      onChange={() => toggleScope(option.value)}
+                      type="checkbox"
+                    />
+                    <span>{option.label}</span>
+                    <span className="ml-auto text-xs text-slate-500">{option.value}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            {createMutation.isError && (
+              <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+                {extractApiError(createMutation.error, 'No pudimos crear el cliente API. Revisa los datos e intenta nuevamente.')}
+              </div>
+            )}
+
+            <button
+              className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+              disabled={!name.trim() || scopes.length === 0 || createMutation.isPending}
+              type="submit"
+            >
+              <Plus className="h-4 w-4" />
+              {createMutation.isPending ? 'Creando cliente' : 'Crear cliente API'}
+            </button>
+          </form>
+
+          <div className="rounded-md border border-slate-200 p-4">
+            <h3 className="text-sm font-semibold text-slate-900">Clientes activos</h3>
+            <div className="mt-3 space-y-2">
+              {clients.length === 0 && (
+                <p className="rounded-md bg-slate-50 px-3 py-3 text-sm text-slate-600">
+                  Todavia no hay clientes API para este tenant.
+                </p>
+              )}
+              {clients.map((client) => (
+                <div className="rounded-md bg-slate-50 px-3 py-3" key={client.id}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-semibold text-slate-900">{client.name}</p>
+                    <span className="text-xs font-semibold text-teal-700">{client.active ? 'activo' : 'inactivo'}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">Rate limit: {client.rate_limit_per_minute || 60}/min</p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {(client.scopes || []).map((scope) => (
+                      <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-600" key={scope}>{scope}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {createdKey && (
+        <div className="mt-5 rounded-md border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-semibold text-amber-900">API key creada. Se muestra una sola vez.</p>
+          <div className="mt-3 flex flex-col gap-2 md:flex-row md:items-center">
+            <code className="min-h-10 flex-1 overflow-auto rounded-md bg-white px-3 py-2 text-sm text-slate-800">{createdKey}</code>
+            <button className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white" onClick={copyKey} type="button">
+              <Copy className="h-4 w-4" />
+              {copied ? 'Copiada' : 'Copiar'}
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function OperacionIntegral() {
   const { token, usuario } = useAuth();
+  const queryClient = useQueryClient();
 
   const {
     data: summary,
@@ -271,7 +440,29 @@ function OperacionIntegral() {
     retry: false,
   });
 
-  const counts = useMemo(() => buildCounts(summary), [summary]);
+  const canManageApi = ['owner', 'superadmin'].includes(usuario?.rol);
+  const {
+    data: apiClients = [],
+    error: apiClientsError,
+    isError: isApiClientsError,
+  } = useQuery({
+    queryKey: ['api-clients'],
+    queryFn: fetchApiClients,
+    enabled: Boolean(token) && canManageApi,
+    retry: false,
+  });
+
+  const createApiClientMutation = useMutation({
+    mutationFn: createApiClient,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['api-clients'] });
+    },
+  });
+
+  const counts = useMemo(() => ({
+    ...buildCounts(summary),
+    apiClients: apiClients.length,
+  }), [summary, apiClients.length]);
   const completion = summary?.onboarding?.completionPercent || 0;
   const context = { counts, completion };
   const enrichedModules = MODULES.map((module) => ({
@@ -326,6 +517,7 @@ function OperacionIntegral() {
               <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Parametros legales</span><strong>{counts.legalParameters}</strong></p>
               <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Bancos</span><strong>{counts.bankProfiles}</strong></p>
               <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Usuarios y roles</span><strong>{counts.usuarios}</strong></p>
+              <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Clientes API</span><strong>{counts.apiClients}</strong></p>
               <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Zonas / jornadas</span><strong>{counts.workZones}/{counts.workShifts}</strong></p>
             </div>
           </div>
@@ -335,7 +527,9 @@ function OperacionIntegral() {
           {enrichedModules.map((module) => {
             const Icon = module.icon;
             const StateIcon = module.state.icon;
-            const actionDisabled = !module.href || (module.gatedByRole && module.gatedByRole !== usuario?.rol);
+            const actionDisabled = !module.href
+              || (module.gatedByRole && module.gatedByRole !== usuario?.rol)
+              || (module.gatedByRoles && !module.gatedByRoles.includes(usuario?.rol));
 
             return (
               <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" key={module.key}>
@@ -375,6 +569,14 @@ function OperacionIntegral() {
           })}
         </div>
       </section>
+
+      {isApiClientsError && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+          {extractApiError(apiClientsError, 'No pudimos cargar los clientes API. Revisa la sesion e intenta nuevamente.')}
+        </div>
+      )}
+
+      <ApiClientsPanel clients={apiClients} createMutation={createApiClientMutation} canManage={canManageApi} />
     </div>
   );
 }

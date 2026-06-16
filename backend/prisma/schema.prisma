@@ -80,8 +80,47 @@ model Tenant {
   workShifts WorkShift[]
   onboardingSteps TenantOnboardingStep[]
   beneficios EmployeeBenefit[]
+  apiClients ExternalApiClient[]
+  apiIdempotencyKeys ExternalApiIdempotencyKey[]
 
   @@map("tenants")
+}
+
+model ExternalApiClient {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String   @map("tenant_id") @db.Uuid
+  name               String   @db.VarChar(160)
+  apiKeyHash         String   @unique @map("api_key_hash") @db.VarChar(128)
+  scopes             String[] @default([])
+  active             Boolean  @default(true)
+  rateLimitPerMinute Int      @default(60) @map("rate_limit_per_minute")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  idempotencyKeys    ExternalApiIdempotencyKey[]
+
+  @@index([tenantId, active])
+  @@map("api_clients")
+}
+
+model ExternalApiIdempotencyKey {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clientId       String   @map("client_id") @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  idempotencyKey String   @map("idempotency_key") @db.VarChar(160)
+  method         String   @db.VarChar(12)
+  path           String
+  requestHash    String   @map("request_hash") @db.VarChar(128)
+  statusCode     Int      @map("status_code")
+  responseBody   Json     @default("{}") @map("response_body")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt      DateTime @default(dbgenerated("(now() + '24:00:00'::interval)")) @map("expires_at") @db.Timestamptz(6)
+  client         ExternalApiClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, idempotencyKey])
+  @@index([tenantId, createdAt])
+  @@map("api_idempotency_keys")
 }
 
 model User {
