@@ -74,6 +74,11 @@ const integrationController = require('./controllers/integrationController');
 app.get('/api/integraciones/clientes', requireRole('superadmin', 'owner'), integrationController.listApiClients);
 app.post('/api/integraciones/clientes', requireRole('superadmin', 'owner'), integrationController.createApiClient);
 
+const superadminController = require('./controllers/superadminController');
+app.get('/api/superadmin/overview', requireRole('superadmin'), superadminController.overview);
+app.post('/api/superadmin/incidencias', requireRole('superadmin'), superadminController.createSupportIncident);
+app.put('/api/superadmin/incidencias/:id', requireRole('superadmin'), superadminController.updateSupportIncident);
+
 app.get('/api/auth/email-verification/status', authController.emailVerificationStatus);
 app.get('/api/pagos/status', paymentController.subscriptionStatus);
 app.get('/api/pagos/payment-methods', paymentController.listPaymentMethods);

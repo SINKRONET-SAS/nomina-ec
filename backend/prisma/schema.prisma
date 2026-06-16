@@ -85,6 +85,7 @@ model Tenant {
   employeeImportBatches EmployeeImportBatch[]
   payrollPeriods PayrollPeriod[]
   noveltyBatches NoveltyBatch[]
+  supportIncidents SupportIncident[]
 
   @@map("tenants")
 }
@@ -256,6 +257,25 @@ model PaymentTransaction {
 
   @@index([tenantId, estado])
   @@map("transacciones_pago")
+}
+
+model SupportIncident {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String?   @map("tenant_id") @db.Uuid
+  title       String    @db.VarChar(180)
+  description String   @default("")
+  severity    String   @default("media") @db.VarChar(30)
+  status      String   @default("abierta") @db.VarChar(30)
+  createdBy   String?  @map("created_by") @db.Uuid
+  assignedTo  String?  @map("assigned_to") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  closedAt    DateTime? @map("closed_at") @db.Timestamptz(6)
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([status, severity, createdAt])
+  @@index([tenantId, createdAt])
+  @@map("support_incidents")
 }
 
 model Employee {

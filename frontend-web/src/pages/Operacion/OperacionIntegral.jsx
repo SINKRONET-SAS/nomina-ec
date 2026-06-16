@@ -104,10 +104,10 @@ const MODULES = [
     phase: 'DCF26-09',
     href: '/dashboard/planes',
     action: 'Gestionar planes',
-    ready: () => false,
+    ready: () => true,
     gatedByRole: 'superadmin',
-    activeDescription: '',
-    pendingDescription: 'Planes tienen modulo real. Owners, contratos e incidencias se consolidan sin catalogos paralelos en DCF26-09.',
+    activeDescription: 'Planes, owners/contratos e incidencias se supervisan con tablas reales y endpoints SUPERADMIN.',
+    pendingDescription: 'Requiere rol SUPERADMIN para ver planes, contratos de owners e incidencias.',
   },
   {
     key: 'api',
