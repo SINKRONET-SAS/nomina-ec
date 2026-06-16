@@ -1,16 +1,22 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-CIERRE-BRECHAS-NOMINA-EC-DIAGNOSTICO-2026",
-  "planCode": "CBN26",
-  "status": "executed_local_with_residual_risks",
-  "phaseCompleted": "CBN26-10",
-  "currentPhase": "CBN26-CLOSED-LOCAL",
-  "updatedAt": "2026-06-14T21:04:48.901-05:00",
-  "summary": "Se ejecutaron CBN26-01..10 sobre el stack real: PDF sin Base44, beneficios CRUD, deducciones de anticipos/prestamos, capacidades y gestion de planes con referencia sinkroniq-mobile, parametros legales versionados ampliados y optimizacion de marcaciones.",
+  "plan": "HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026",
+  "planCode": "DCF26",
+  "status": "open_documental_consultive",
+  "phaseCompleted": "DCF26-00",
+  "currentPhase": "DCF26-01-encoding-mensajes-base",
+  "updatedAt": "2026-06-15T20:48:00.000-05:00",
+  "summary": "Diagnostico consultivo de Nomina-Ec: el sistema compila y pasa pruebas, pero hay brechas entre pantallas/promesas y funcionalidad real. DCF26 exige cierre con frontend visible, servicios especializados, pruebas y evidencia.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: Ejecutar todos los prompts CBN26 y usar SINKRONET-SAS/sinkroniq-mobile como referencia para enforcement/gestion de planes.",
-  "previousAuditLockHash": "447112be2bd7915709aeb116b450bc710df253a95f32168d440bf26af024c686",
+  "approvalSource": "Solicitud del usuario: actuar como consultor, diagnosticar bugs, funcionalidad, codigo muerto, promesas no cumplidas y pantallas sin funcionalidad real; generar plan Haiky, contexto, AuditLock y prompts por fases.",
+  "previousAuditLockHash": "2fe66f4fbcb06673e7988d3394384bb6ec902b8fbf79e648bf27443bb78c0800",
   "previousPlans": [
+    {
+      "plan": "HAIKY-CIERRE-BRECHAS-NOMINA-EC-DIAGNOSTICO-2026",
+      "planCode": "CBN26",
+      "status": "executed_local_with_residual_risks",
+      "phaseCompleted": "CBN26-10"
+    },
     {
       "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
       "planCode": "ONI26",
@@ -21,85 +27,127 @@
   "filesModified": [
     ".vscode/AuditLock.json",
     "CODEX_CONTEXT.md",
-    "docs/PLAN_HAIKY_CIERRE_BRECHAS_NOMINA_EC_DIAGNOSTICO_2026.md",
-    ".github/prompts/CIERRE-BRECHAS-NOMINA-EC-2026-00-baseline.md",
-    ".github/prompts/CIERRE-BRECHAS-NOMINA-EC-2026-01-pdf-upload-auth.md",
-    ".github/prompts/CIERRE-BRECHAS-NOMINA-EC-2026-02-nomina-pdf-ui.md",
-    ".github/prompts/CIERRE-BRECHAS-NOMINA-EC-2026-03-beneficios-crud.md",
-    ".github/prompts/CIERRE-BRECHAS-NOMINA-EC-2026-04-marcaciones-estado.md",
-    ".github/prompts/CIERRE-BRECHAS-NOMINA-EC-2026-05-deducciones-nomina.md",
-    ".github/prompts/CIERRE-BRECHAS-NOMINA-EC-2026-06-multi-tenant-empresas.md",
-    ".github/prompts/CIERRE-BRECHAS-NOMINA-EC-2026-07-planes-capacidades.md",
-    ".github/prompts/CIERRE-BRECHAS-NOMINA-EC-2026-08-parametros-legales.md",
-    ".github/prompts/CIERRE-BRECHAS-NOMINA-EC-2026-09-rendimiento-marcaciones.md",
-    ".github/prompts/CIERRE-BRECHAS-NOMINA-EC-2026-10-qa-release.md",
-    "backend/prisma/schema.prisma",
-    "backend/prisma/migrations/20260614205000_cbn26_employee_benefits/migration.sql",
-    "backend/src/app.js",
-    "backend/src/config/cron-jobs.js",
-    "backend/src/controllers/beneficioEmpleadoController.js",
-    "backend/src/controllers/marcacionController.js",
-    "backend/src/controllers/nominaController.js",
-    "backend/src/controllers/paymentController.js",
-    "backend/src/controllers/reporteController.js",
-    "backend/src/services/beneficioEmpleadoService.js",
-    "backend/src/services/beneficioEmpleadoService.test.js",
-    "backend/src/services/calculoNominaService.js",
-    "backend/src/services/legalParameterService.js",
-    "backend/src/services/planCapabilityService.js",
-    "backend/src/services/planCapabilityService.test.js",
-    "frontend-web/src/App.jsx",
-    "frontend-web/src/components/Layout/Layout.jsx",
-    "frontend-web/src/pages/Dashboard.jsx",
-    "frontend-web/src/pages/Nomina/Beneficios.jsx",
-    "frontend-web/src/pages/Nomina/CerrarMes.jsx",
-    "frontend-web/src/pages/Nomina/RolesPagos.jsx",
-    "frontend-web/src/pages/Planes.jsx",
-    "frontend-web/src/pages/PlanesGestion.jsx",
-    "frontend-web/src/services/beneficiosApi.js",
-    "docs/REPORTE_CBN26_01_PDF_UPLOAD_AUTH.md",
-    "docs/REPORTE_CBN26_02_NOMINA_PDF_UI.md",
-    "docs/REPORTE_CBN26_03_BENEFICIOS_CRUD.md",
-    "docs/REPORTE_CBN26_04_MARCACIONES_ESTADO.md",
-    "docs/REPORTE_CBN26_05_DEDUCCIONES_NOMINA.md",
-    "docs/REPORTE_CBN26_06_MULTI_TENANT_EMPRESAS.md",
-    "docs/REPORTE_CBN26_07_PLANES_CAPACIDADES.md",
-    "docs/REPORTE_CBN26_08_PARAMETROS_LEGALES.md",
-    "docs/REPORTE_CBN26_09_RENDIMIENTO_MARCACIONES.md",
-    "docs/REPORTE_CBN26_10_QA_RELEASE.md"
+    "docs2/PLAN_HAIKY_DIAGNOSTICO_CIERRE_FUNCIONAL_NOMINA_EC_2026.md",
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_01_DIAGNOSTICO_CONSULTIVO.md",
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/MATRIZ_DCF26_HALLAZGOS.md",
+    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-00-baseline.md",
+    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-01-encoding-mensajes-base.md",
+    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-02-operacion-real.md",
+    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-03-bancos-owner-generador.md",
+    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-04-rdep-xsd-runtime.md",
+    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-05-retirar-ats-nomina.md",
+    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-06-api-v1-integracion.md",
+    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-07-carga-masiva-empleados.md",
+    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-08-apertura-mes-lotes.md",
+    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-09-superadmin-sin-duplicidad.md",
+    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-10-mobile-asistencia-autoservicio.md",
+    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-11-humanizacion-uiux.md",
+    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-12-qa-limpieza-release.md"
   ],
   "validationChecks": [
-    { "gate": "CBN26-RULES-READ", "status": "PASS", "detail": "RULES.md leido antes de modificar runtime." },
-    { "gate": "CBN26-AUDITLOCK-READ", "status": "PASS", "detail": ".vscode/AuditLock.json leido y fase CBN26-00 confirmada." },
-    { "gate": "CBN26-PROMPTS-READ", "status": "PASS", "detail": "Prompts CBN26-01..10 leidos y ejecutados secuencialmente." },
-    { "gate": "CBN26-REFERENCE-SINKRONIQ", "status": "PASS", "detail": "Se reviso sinkroniq-mobile para patron de plan access, runtime authority, fail-closed y gestion de planes." },
-    { "gate": "CBN26-BASE44-PATTERNS", "status": "PASS", "detail": "rg no encontro base44, UploadFile ni getToken?.( en runtime." },
-    { "gate": "CBN26-PRISMA-MIGRATE", "status": "PASS", "detail": "npx.cmd prisma migrate deploy aplico 20260614205000_cbn26_employee_benefits." },
-    { "gate": "CBN26-PRISMA-VALIDATE", "status": "PASS", "detail": "npx.cmd prisma validate: schema valido." },
-    { "gate": "CBN26-NODE-CHECK", "status": "PASS", "detail": "node --check paso en servicios/controladores backend modificados." },
-    { "gate": "CBN26-BACKEND-TESTS", "status": "PASS", "detail": "npm.cmd test -- --runInBand: 9 suites, 22 tests." },
-    { "gate": "CBN26-FRONTEND-BUILD", "status": "PASS", "detail": "npm.cmd run build en frontend-web: Vite build y PWA generados." },
-    { "gate": "CBN26-PATTERN-CLEANUP", "status": "PASS", "detail": "rg no encontro empresas[0], PARAMETROS_2026, const anticipos = 0 ni const prestamos = 0." }
+    {
+      "gate": "DCF26-RULES-READ",
+      "status": "PASS",
+      "detail": "RULES.md leido; incluye exposicion frontend obligatoria."
+    },
+    {
+      "gate": "DCF26-BACKEND-TESTS",
+      "status": "PASS_WITH_SLOWNESS",
+      "detail": "npm.cmd test -- --runInBand: 9 suites, 22 tests, 182.121 s; bancoAebGenerator.test.js 166.267 s."
+    },
+    {
+      "gate": "DCF26-FRONTEND-BUILD",
+      "status": "PASS",
+      "detail": "npm.cmd run build: Vite build y PWA generados."
+    },
+    {
+      "gate": "DCF26-PRISMA-VALIDATE",
+      "status": "PASS",
+      "detail": "npx.cmd prisma validate: schema valido."
+    },
+    {
+      "gate": "DCF26-MOBILE-STORES",
+      "status": "PASS",
+      "detail": "npm.cmd run check:stores: identificadores, URLs y assets verificados."
+    },
+    {
+      "gate": "DCF26-STATIC-DIAGNOSTIC",
+      "status": "FINDINGS",
+      "detail": "Se detectaron catalogos genericos, ATS backend, RDEP sin XSD runtime, API v1 no expuesta, alerts/window.open, mojibake y artefactos Qwen_python."
+    }
   ],
   "fases": [
-    { "phase": "CBN26-00", "status": "completed", "task": "baseline documental y contexto raiz" },
-    { "phase": "CBN26-01", "status": "completed_local", "task": "PDF sin Base44 y contrato reforzado" },
-    { "phase": "CBN26-02", "status": "completed_local", "task": "boton PDF con estados UI" },
-    { "phase": "CBN26-03", "status": "completed_local", "task": "beneficios CRUD real" },
-    { "phase": "CBN26-04", "status": "completed_by_stack_mapping", "task": "marcaciones estado compartido no reproducible" },
-    { "phase": "CBN26-05", "status": "completed_local", "task": "deducciones de prestamos y anticipos" },
-    { "phase": "CBN26-06", "status": "completed_by_stack_mapping", "task": "multi-tenant sin empresas[0]" },
-    { "phase": "CBN26-07", "status": "completed_local", "task": "gestion de planes y capacidades" },
-    { "phase": "CBN26-08", "status": "completed_local_with_professional_block", "task": "parametros legales versionados como fuente primaria" },
-    { "phase": "CBN26-09", "status": "completed_local", "task": "rendimiento de dashboard y marcaciones" },
-    { "phase": "CBN26-10", "status": "completed_local_with_residual_risks", "task": "QA y cierre local" }
+    {
+      "phase": "DCF26-00",
+      "status": "completed",
+      "task": "baseline consultiva y plan de cierre funcional"
+    },
+    {
+      "phase": "DCF26-01",
+      "status": "pending",
+      "task": "encoding y mensajes base UTF-8"
+    },
+    {
+      "phase": "DCF26-02",
+      "status": "pending",
+      "task": "operacion integral real sin catalogos genericos P0"
+    },
+    {
+      "phase": "DCF26-03",
+      "status": "pending",
+      "task": "bancos OWNER conectados al generador"
+    },
+    {
+      "phase": "DCF26-04",
+      "status": "pending",
+      "task": "RDEP con XSD validation runtime"
+    },
+    {
+      "phase": "DCF26-05",
+      "status": "pending",
+      "task": "retirar ATS del flujo de nomina"
+    },
+    {
+      "phase": "DCF26-06",
+      "status": "pending",
+      "task": "API v1 de integracion"
+    },
+    {
+      "phase": "DCF26-07",
+      "status": "pending",
+      "task": "carga masiva de empleados real"
+    },
+    {
+      "phase": "DCF26-08",
+      "status": "pending",
+      "task": "apertura de mes y lotes de novedades"
+    },
+    {
+      "phase": "DCF26-09",
+      "status": "pending",
+      "task": "SUPERADMIN sin duplicidad"
+    },
+    {
+      "phase": "DCF26-10",
+      "status": "pending",
+      "task": "mobile asistencia y autoservicio"
+    },
+    {
+      "phase": "DCF26-11",
+      "status": "pending",
+      "task": "humanizacion UI/UX"
+    },
+    {
+      "phase": "DCF26-12",
+      "status": "pending",
+      "task": "QA, limpieza y release anti-churn"
+    }
   ],
   "residualRisk": [
-    "PDF depende de que el flujo documental genere rol_pdf_url.",
-    "Planes solo bloquean archivo bancario en esta pasada; nuevas funcionalidades monetizadas deben agregarse a planCapabilityService.",
-    "IESS y parametros legales siguen sujetos a validacion oficial/profesional antes de produccion.",
-    "RLS Render con usuario no superusuario sigue como gate externo."
+    "DCF26-00 no modifica runtime; los hallazgos requieren fases de implementacion posteriores.",
+    "RDEP, bancos e integraciones necesitan validacion profesional/fuentes vigentes antes de produccion.",
+    "Los gates locales pasan, pero no sustituyen E2E con datos DEMO ni validacion legal/tributaria."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "b9ab55b2a26d31ed9479b86ea44452620f2a6c1613c1dd89b69e5712fa71ea33"
+  "signature": "b0019e308aa8ba2671feaca1c19af4857dd683f6bba2a527b435e1c98650093a"
 }

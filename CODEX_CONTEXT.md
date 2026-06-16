@@ -417,3 +417,58 @@ Bloqueos externos:
 - Validar fichas tecnicas bancarias por banco.
 - Implementar y probar RBAC/API/runtime antes de habilitar clientes externos.
 - Ejecutar QA E2E con backend y datos DEMO.
+
+---
+
+## DCF26 - Diagnostico y cierre funcional Nomina-Ec
+
+Plan: `HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026`.
+
+Estado: DCF26-00 cerrado documentalmente como diagnostico consultivo. No se ha tocado runtime para esta linea.
+
+Motivo:
+
+- El usuario detecto que parte del avance queda oculto o parece backend/documental.
+- La parametrizacion y operacion integral deben dejar pantallas, importaciones, acciones UI/UX y procesos reales, no solo registros genericos.
+- El alcance es cerrar la funcionalidad de todo el plan, con evidencia visible y sin churn.
+
+Diagnostico ejecutado el 2026-06-15:
+
+- `npm.cmd test -- --runInBand` en `backend`: PASS, 9 suites y 22 tests; riesgo por lentitud de 182.121 s.
+- `npm.cmd run build` en `frontend-web`: PASS, Vite build y PWA generados.
+- `npx.cmd prisma validate` en `backend`: PASS.
+- `npm.cmd run check:stores` en `app-movil`: PASS.
+- Revision estatica con `rg` y lectura directa de pantallas, servicios, rutas, reportes y configuracion.
+
+Hallazgos P0:
+
+- `OperacionIntegral` guarda JSON generico en `configuration_catalogs` para modulos que prometen procesos reales.
+- Bancos configurados por OWNER no gobiernan aun `bancoAebGenerator`, que usa `bank-file-profiles.json`.
+- RDEP genera XML sin validacion XSD runtime ni reconciliacion vigente completa.
+- ATS sigue activo en backend de reportes de nomina aunque no debe pertenecer al flujo de nomina.
+- API externa `/api/v1` esta documentada, pero no expuesta como rutas funcionales.
+- Avance operativo se basa en conteos o pasos completados, no en readiness funcional verificable.
+- Carga masiva y apertura mensual/lotes existen como catalogos, no como flujos ejecutables.
+
+Hallazgos P1/P2:
+
+- SUPERADMIN tiene riesgo de duplicidad entre planes reales y catalogos genericos.
+- Persisten `alert()` y `window.open()` en flujos criticos.
+- Hay mojibake en runtime/backend y metadatos.
+- La app movil pasa readiness formal, pero su alcance funcional aun es minimo.
+- `docs2` contiene artefactos `Qwen_python_*.py` que deben limpiarse o archivarse.
+- Backend tests pasan, pero hay prueba lenta relevante.
+
+Entregables DCF26-00:
+
+- `docs2/PLAN_HAIKY_DIAGNOSTICO_CIERRE_FUNCIONAL_NOMINA_EC_2026.md`
+- `docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_01_DIAGNOSTICO_CONSULTIVO.md`
+- `docs2/diagnostico-cierre-funcional-nomina-ec-2026/MATRIZ_DCF26_HALLAZGOS.md`
+- `.github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-00..12-*.md`
+- `.vscode/AuditLock.json`
+
+Regla operativa DCF26:
+
+- Ninguna fase puede cerrarse si solo deja documentos o catalogos genericos.
+- Toda fase de runtime debe exponer frontend, importaciones, pantalla o accion visible, endpoint/servicio, prueba y evidencia.
+- Cada fase requiere AuditLock firmado y commit `phase: DCF26-XX task: ...`.
