@@ -1,201 +1,378 @@
-import React, { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Plus } from 'lucide-react';
-import { operationalModules, emptyOperationalForm } from '../../config/operationalModules';
+import React, { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import {
+  AlertTriangle,
+  ArrowRight,
+  Banknote,
+  Building2,
+  CalendarClock,
+  CheckCircle2,
+  FileCode2,
+  FileSpreadsheet,
+  Gauge,
+  KeyRound,
+  Landmark,
+  LockKeyhole,
+  MessageSquare,
+  ShieldCheck,
+  Upload,
+  UserCog,
+  Workflow,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { createConfigurationResource, fetchConfigurationSummary } from '../../services/configurationApi';
+import { fetchConfigurationSummary } from '../../services/configurationApi';
 import { extractApiError } from '../../services/publicApi';
 
-function Field({ field, value, onChange }) {
-  const className = 'mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100';
+const MODULES = [
+  {
+    key: 'empresa',
+    title: 'Datos de empresa',
+    icon: Building2,
+    owner: 'OWNER',
+    phase: 'DCF26-02',
+    href: '/dashboard/configuracion/parametrizacion',
+    action: 'Configurar empresa',
+    ready: ({ counts }) => counts.empresa > 0,
+    activeDescription: 'Registro operativo del empleador disponible para contratos, roles, RDEP y archivos oficiales.',
+    pendingDescription: 'Registra RUC, razon social, representante, direccion y correo administrativo en parametrizacion.',
+  },
+  {
+    key: 'legal',
+    title: 'Parametros legales',
+    icon: Landmark,
+    owner: 'OWNER',
+    phase: 'DCF26-02',
+    href: '/dashboard/configuracion/parametrizacion',
+    action: 'Cargar parametros',
+    ready: ({ counts }) => counts.legalParameters > 0,
+    activeDescription: 'Hay parametros legales versionados; se deben revisar antes de calculos productivos.',
+    pendingDescription: 'Carga SBU, IESS, decimos, fondo de reserva, vacaciones y tabla IR desde el boton obligatorio.',
+  },
+  {
+    key: 'bancos',
+    title: 'Banco y archivo plano',
+    icon: Banknote,
+    owner: 'OWNER',
+    phase: 'DCF26-03',
+    href: '/dashboard/configuracion/parametrizacion',
+    action: 'Configurar banco',
+    ready: ({ counts }) => counts.bankProfiles > 0,
+    activeDescription: 'Perfil bancario registrado; DCF26-03 conectara este perfil al generador de archivo.',
+    pendingDescription: 'Configura al menos un banco y su estructura base. La conexion al generador se cierra en DCF26-03.',
+  },
+  {
+    key: 'usuarios',
+    title: 'Usuarios y roles',
+    icon: UserCog,
+    owner: 'OWNER',
+    phase: 'DCF26-02',
+    href: '/dashboard/configuracion/parametrizacion',
+    action: 'Configurar accesos',
+    ready: ({ counts }) => counts.usuarios > 0,
+    activeDescription: 'Matriz inicial de usuarios y roles registrada para trazabilidad operativa.',
+    pendingDescription: 'Define OWNER, administrador RRHH, supervisor, acceso empleado y segregacion de funciones.',
+  },
+  {
+    key: 'rdep',
+    title: 'RDEP SRI',
+    icon: FileCode2,
+    owner: 'OWNER',
+    phase: 'DCF26-04',
+    href: '/dashboard/nomina/reportes',
+    action: 'Abrir reportes',
+    ready: () => false,
+    blocked: true,
+    activeDescription: '',
+    pendingDescription: 'Generacion visible existe, pero el cierre productivo requiere precheck y validacion XSD runtime.',
+  },
+  {
+    key: 'superadmin',
+    title: 'SUPERADMIN',
+    icon: ShieldCheck,
+    owner: 'SUPERADMIN',
+    phase: 'DCF26-09',
+    href: '/dashboard/planes',
+    action: 'Gestionar planes',
+    ready: () => false,
+    gatedByRole: 'superadmin',
+    activeDescription: '',
+    pendingDescription: 'Planes tienen modulo real. Owners, contratos e incidencias se consolidan sin catalogos paralelos en DCF26-09.',
+  },
+  {
+    key: 'api',
+    title: 'API de integracion',
+    icon: KeyRound,
+    owner: 'SUPERADMIN',
+    phase: 'DCF26-06',
+    href: null,
+    action: 'Bloqueada hasta API v1',
+    ready: () => false,
+    blocked: true,
+    activeDescription: '',
+    pendingDescription: 'Contrato existe, pero no se expone `/api/v1` hasta implementar autenticacion, scopes, rate limits e idempotencia.',
+  },
+  {
+    key: 'asistencia',
+    title: 'Asistencia manual y APP',
+    icon: CalendarClock,
+    owner: 'OWNER',
+    phase: 'DCF26-10',
+    href: '/dashboard/asistencia/reporte',
+    action: 'Revisar asistencia',
+    ready: ({ counts }) => counts.workZones > 0 && counts.workShifts > 0,
+    activeDescription: 'Zonas y jornadas estan configuradas; la app movil se profundiza en DCF26-10.',
+    pendingDescription: 'Configura zonas de marcacion y jornadas antes de usar asistencia productiva.',
+  },
+  {
+    key: 'apertura',
+    title: 'Apertura de mes y lotes',
+    icon: Workflow,
+    owner: 'OWNER',
+    phase: 'DCF26-08',
+    href: '/dashboard/nomina/cerrar',
+    action: 'Ir al periodo',
+    ready: () => false,
+    blocked: true,
+    activeDescription: '',
+    pendingDescription: 'Hoy existe calculo/cierre; la apertura formal de periodo y lotes idempotentes se implementan en DCF26-08.',
+  },
+  {
+    key: 'carga',
+    title: 'Carga masiva de empleados',
+    icon: Upload,
+    owner: 'OWNER',
+    phase: 'DCF26-07',
+    href: '/dashboard/empleados',
+    action: 'Ver empleados',
+    ready: () => false,
+    blocked: true,
+    activeDescription: '',
+    pendingDescription: 'Altas individuales existen. Importacion con plantilla, preview, errores y rollback se implementa en DCF26-07.',
+  },
+  {
+    key: 'reportes',
+    title: 'Reportes PDF y Excel',
+    icon: FileSpreadsheet,
+    owner: 'OWNER',
+    phase: 'DCF26-11',
+    href: '/dashboard/nomina/reportes',
+    action: 'Generar reportes',
+    ready: ({ counts }) => counts.legalParameters > 0,
+    activeDescription: 'Reportes institucionales visibles; DCF26-04/11 completan validaciones y mejor experiencia.',
+    pendingDescription: 'Completa parametros legales antes de generar reportes oficiales o bancarios.',
+  },
+  {
+    key: 'dashboard',
+    title: 'Dashboard y headcount',
+    icon: Gauge,
+    owner: 'OWNER',
+    phase: 'DCF26-02',
+    href: '/dashboard',
+    action: 'Ver dashboard',
+    ready: ({ completion }) => completion > 0,
+    activeDescription: 'Dashboard toma datos reales de empleados, nomina, asistencia, planes y configuracion.',
+    pendingDescription: 'Completa la parametrizacion minima para que el dashboard tenga senales operativas.',
+  },
+  {
+    key: 'mensajes',
+    title: 'Mensajes claros',
+    icon: MessageSquare,
+    owner: 'PLATAFORMA',
+    phase: 'DCF26-11',
+    href: null,
+    action: 'Pendiente DCF26-11',
+    ready: () => false,
+    blocked: true,
+    activeDescription: '',
+    pendingDescription: 'Se retiraran alerts y se expondran estados accionables en DCF26-11.',
+  },
+];
 
-  if (field.type === 'textarea') {
-    return (
-      <label className="md:col-span-2">
-        <span className="text-sm font-medium text-slate-700">{field.label}</span>
-        <textarea className={`${className} min-h-20`} value={value} onChange={(event) => onChange(field.name, event.target.value)} placeholder={field.placeholder} />
-      </label>
-    );
+function countCatalog(summary, catalogType) {
+  return (summary?.resources?.catalogs || []).filter((record) => record.catalog_type === catalogType).length;
+}
+
+function buildCounts(summary) {
+  return {
+    empresa: countCatalog(summary, 'empresa_operativa'),
+    usuarios: countCatalog(summary, 'usuarios_roles'),
+    legalParameters: summary?.resources?.legalParameters?.length || 0,
+    bankProfiles: summary?.resources?.bankProfiles?.length || 0,
+    organizationUnits: summary?.resources?.organizationUnits?.length || 0,
+    workZones: summary?.resources?.workZones?.length || 0,
+    workShifts: summary?.resources?.workShifts?.length || 0,
+    noveltyTypes: summary?.resources?.noveltyTypes?.length || 0,
+  };
+}
+
+function moduleState(module, context, role) {
+  if (module.gatedByRole && module.gatedByRole !== role) {
+    return {
+      label: 'Restringido por rol',
+      tone: 'border-slate-200 bg-slate-50 text-slate-700',
+      icon: LockKeyhole,
+      description: module.pendingDescription,
+    };
   }
 
-  if (field.type === 'select') {
-    return (
-      <label>
-        <span className="text-sm font-medium text-slate-700">{field.label}</span>
-        <select className={className} value={value} onChange={(event) => onChange(field.name, event.target.value)}>
-          {field.options.map((option) => <option key={option} value={option}>{option}</option>)}
-        </select>
-      </label>
-    );
+  if (module.blocked) {
+    return {
+      label: `Pendiente ${module.phase}`,
+      tone: 'border-amber-200 bg-amber-50 text-amber-900',
+      icon: AlertTriangle,
+      description: module.pendingDescription,
+    };
   }
 
-  if (field.type === 'checkbox') {
-    return (
-      <label className="flex min-h-[70px] items-center gap-3 rounded-md border border-slate-200 px-3 py-2">
-        <input className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-700" type="checkbox" checked={Boolean(value)} onChange={(event) => onChange(field.name, event.target.checked)} />
-        <span className="text-sm font-medium text-slate-700">{field.label}</span>
-      </label>
-    );
+  if (module.ready(context)) {
+    return {
+      label: 'Operativo visible',
+      tone: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+      icon: CheckCircle2,
+      description: module.activeDescription,
+    };
   }
 
+  return {
+    label: 'Requiere accion',
+    tone: 'border-blue-200 bg-blue-50 text-blue-800',
+    icon: ArrowRight,
+    description: module.pendingDescription,
+  };
+}
+
+function ReadinessBar({ value }) {
   return (
-    <label>
-      <span className="text-sm font-medium text-slate-700">{field.label}</span>
-      <input className={className} type={field.type || 'text'} value={value} onChange={(event) => onChange(field.name, event.target.value)} placeholder={field.placeholder} required={field.required} />
-    </label>
+    <div className="rounded-md bg-slate-50 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-medium text-slate-700">Avance funcional verificado</span>
+        <span className="text-lg font-semibold text-teal-800">{value}%</span>
+      </div>
+      <div className="mt-3 h-2 rounded-full bg-white">
+        <div className="h-2 rounded-full bg-teal-700" style={{ width: `${value}%` }} />
+      </div>
+    </div>
   );
 }
 
-function buildInitialForms() {
-  return Object.fromEntries(operationalModules.map((module) => [module.key, emptyOperationalForm(module)]));
-}
-
-function recordsForModule(summary, moduleKey) {
-  return (summary?.resources?.catalogs || []).filter((record) => record.catalog_type === moduleKey);
-}
-
 function OperacionIntegral() {
-  const { token } = useAuth();
-  const queryClient = useQueryClient();
-  const [activeKey, setActiveKey] = useState(operationalModules[0].key);
-  const [forms, setForms] = useState(buildInitialForms);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const activeModule = operationalModules.find((module) => module.key === activeKey) || operationalModules[0];
+  const { token, usuario } = useAuth();
 
-  const { data: summary, isLoading } = useQuery({
+  const {
+    data: summary,
+    error,
+    isError,
+    isLoading,
+  } = useQuery({
     queryKey: ['configuration-summary'],
     queryFn: () => fetchConfigurationSummary(token),
     enabled: Boolean(token),
     retry: false,
   });
 
-  const createMutation = useMutation({
-    mutationFn: async ({ module, values }) => createConfigurationResource(token, 'catalogs', {
-      catalog_type: module.key,
-      code: (values[module.fields[0].name] || module.key).toString().trim().toUpperCase().replace(/\s+/g, '_'),
-      name: (values[module.fields[1]?.name] || module.title).toString().trim(),
-      description: module.description,
-      status: 'activo',
-      payload: values,
-    }),
-    onSuccess: (_, { module }) => {
-      setMessage(`${module.title} guardado y visible para operacion.`);
-      setError('');
-      setForms((current) => ({ ...current, [module.key]: emptyOperationalForm(module) }));
-      queryClient.invalidateQueries({ queryKey: ['configuration-summary'] });
-    },
-    onError: (err) => {
-      setMessage('');
-      setError(extractApiError(err, 'No pudimos guardar esta configuracion operativa.'));
-    },
-  });
-
-  const moduleStats = useMemo(() => operationalModules.map((module) => ({
+  const counts = useMemo(() => buildCounts(summary), [summary]);
+  const completion = summary?.onboarding?.completionPercent || 0;
+  const context = { counts, completion };
+  const enrichedModules = MODULES.map((module) => ({
     ...module,
-    count: recordsForModule(summary, module.key).length,
-  })), [summary]);
-
-  const records = recordsForModule(summary, activeModule.key);
-
-  function updateField(name, value) {
-    setForms((current) => ({
-      ...current,
-      [activeModule.key]: {
-        ...current[activeModule.key],
-        [name]: value,
-      },
-    }));
-  }
-
-  function submit(event) {
-    event.preventDefault();
-    createMutation.mutate({ module: activeModule, values: forms[activeModule.key] });
-  }
+    state: moduleState(module, context, usuario?.rol),
+  }));
+  const operativeCount = enrichedModules.filter((module) => module.state.label === 'Operativo visible').length;
+  const blockedCount = enrichedModules.filter((module) => module.state.label.startsWith('Pendiente')).length;
 
   return (
     <div className="space-y-6">
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">ONI26 funcional</p>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-950">Centro de operacion integral</h1>
-        <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
-          Cada modulo del plan tiene una accion persistente. Los registros quedan por tenant en configuracion,
-          visibles para operar, revisar o completar implementacion runtime.
-        </p>
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">DCF26 cierre funcional</p>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Centro de operacion integral</h1>
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
+              Esta vista ya no guarda configuraciones genericas. Cada modulo abre un flujo real existente
+              o muestra el bloqueo de fase que impide declararlo operativo.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[520px]">
+            <div className="rounded-md bg-emerald-50 px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-emerald-700">Operativos</p>
+              <p className="mt-1 text-2xl font-semibold text-emerald-900">{isLoading ? '...' : operativeCount}</p>
+            </div>
+            <div className="rounded-md bg-amber-50 px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-amber-700">Bloqueados</p>
+              <p className="mt-1 text-2xl font-semibold text-amber-900">{isLoading ? '...' : blockedCount}</p>
+            </div>
+            <div className="rounded-md bg-teal-50 px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-teal-700">Onboarding</p>
+              <p className="mt-1 text-2xl font-semibold text-teal-900">{isLoading ? '...' : `${completion}%`}</p>
+            </div>
+          </div>
+        </div>
       </section>
 
-      {message && <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{message}</div>}
-      {error && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{error}</div>}
+      {isError && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+          {extractApiError(error, 'No pudimos cargar el estado operativo. Revisa la sesion e intenta nuevamente.')}
+        </div>
+      )}
 
-      <section className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
-        <aside className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="font-semibold text-slate-950">Modulos del plan</h2>
-          <div className="mt-4 space-y-2">
-            {moduleStats.map((module) => {
-              const Icon = module.icon;
-              const active = module.key === activeModule.key;
-              return (
-                <button
-                  className={`flex w-full items-center justify-between gap-3 rounded-md border px-3 py-2 text-left text-sm ${active ? 'border-teal-700 bg-teal-50 text-teal-900' : 'border-slate-200 text-slate-700 hover:border-teal-300'}`}
-                  key={module.key}
-                  type="button"
-                  onClick={() => setActiveKey(module.key)}
-                >
-                  <span className="flex min-w-0 items-center gap-2">
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span className="truncate font-medium">{module.title}</span>
-                  </span>
-                  <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">{isLoading ? '...' : module.count}</span>
-                </button>
-              );
-            })}
+      <section className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
+        <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-950">Checks que alimentan la operacion</h2>
+          <div className="mt-4 space-y-3">
+            <ReadinessBar value={completion} />
+            <div className="grid gap-2 text-sm">
+              <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Empresa</span><strong>{counts.empresa}</strong></p>
+              <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Parametros legales</span><strong>{counts.legalParameters}</strong></p>
+              <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Bancos</span><strong>{counts.bankProfiles}</strong></p>
+              <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Usuarios y roles</span><strong>{counts.usuarios}</strong></p>
+              <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Zonas / jornadas</span><strong>{counts.workZones}/{counts.workShifts}</strong></p>
+            </div>
           </div>
         </aside>
 
-        <div className="space-y-4">
-          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-start gap-3">
-              <span className="rounded-md bg-teal-50 p-2 text-teal-700">
-                <activeModule.icon className="h-5 w-5" />
-              </span>
-              <div>
-                <h2 className="text-lg font-semibold text-slate-950">{activeModule.title}</h2>
-                <p className="mt-1 text-sm text-slate-600">{activeModule.description}</p>
-              </div>
-            </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {enrichedModules.map((module) => {
+            const Icon = module.icon;
+            const StateIcon = module.state.icon;
+            const actionDisabled = !module.href || (module.gatedByRole && module.gatedByRole !== usuario?.rol);
 
-            <form className="mt-6" onSubmit={submit}>
-              <div className="grid gap-4 md:grid-cols-2">
-                {activeModule.fields.map((field) => (
-                  <Field key={field.name} field={field} value={forms[activeModule.key][field.name]} onChange={updateField} />
-                ))}
-              </div>
-              <button className="mt-5 inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60" type="submit" disabled={createMutation.isPending}>
-                <Plus className="h-4 w-4" />
-                {createMutation.isPending ? 'Guardando...' : 'Guardar configuracion'}
-              </button>
-            </form>
-          </section>
-
-          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-teal-700" />
-              <h2 className="text-lg font-semibold text-slate-950">Registros guardados</h2>
-            </div>
-            {records.length === 0 ? (
-              <p className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-600">Aun no hay registros para este modulo.</p>
-            ) : (
-              <div className="grid gap-3 lg:grid-cols-2">
-                {records.map((record) => (
-                  <article className="rounded-md border border-slate-200 p-4" key={record.id}>
-                    <p className="font-semibold text-slate-950">{record.name}</p>
-                    <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-500">{record.code}</p>
-                    <pre className="mt-3 max-h-40 overflow-auto rounded-md bg-slate-50 p-3 text-xs text-slate-700">{JSON.stringify(record.payload || {}, null, 2)}</pre>
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
+            return (
+              <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" key={module.key}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="rounded-md bg-teal-50 p-2 text-teal-700">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold text-slate-950">{module.title}</h3>
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">{module.owner}</span>
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">{module.state.description}</p>
+                    </div>
+                  </div>
+                  <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold ${module.state.tone}`}>
+                    <StateIcon className="h-3.5 w-3.5" />
+                    {module.state.label}
+                  </span>
+                </div>
+                <div className="mt-5 flex items-center justify-between gap-3">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{module.phase}</span>
+                  {actionDisabled ? (
+                    <span className="inline-flex min-h-10 items-center rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-500">
+                      {module.action}
+                    </span>
+                  ) : (
+                    <Link className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white" to={module.href}>
+                      {module.action}
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  )}
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
     </div>

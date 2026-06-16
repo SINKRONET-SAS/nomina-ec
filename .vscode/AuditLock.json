@@ -3,13 +3,13 @@
   "plan": "HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026",
   "planCode": "DCF26",
   "status": "executing_runtime",
-  "phaseCompleted": "DCF26-01",
-  "currentPhase": "DCF26-02-operacion-real",
-  "updatedAt": "2026-06-15T21:05:00.000-05:00",
-  "summary": "DCF26-01 verifico encoding real del runtime con lectura UTF-8 desde Node. No se modifico runtime porque no habia mojibake real en bytes; la consola PowerShell puede renderizar acentos como mojibake.",
+  "phaseCompleted": "DCF26-02",
+  "currentPhase": "DCF26-03-bancos-owner-generador",
+  "updatedAt": "2026-06-15T21:18:00.000-05:00",
+  "summary": "DCF26-02 reemplazo OperacionIntegral: ya no guarda JSON generico en configuration_catalogs; ahora muestra modulos con acciones reales, checks y bloqueos visibles por fase.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: actuar como consultor, diagnosticar bugs, funcionalidad, codigo muerto, promesas no cumplidas y pantallas sin funcionalidad real; generar plan Haiky, contexto, AuditLock y prompts por fases.",
-  "previousAuditLockHash": "793e4d37a3b087a37b41a7826521bb4eb66dfb1e615f7a13ffa0cc67593b4887",
+  "previousAuditLockHash": "3d25911136b97475d3b0d509d8e4d865ac493b6d2b6703aec66f6bd073d1208b",
   "previousPlans": [
     {
       "plan": "HAIKY-CIERRE-BRECHAS-NOMINA-EC-DIAGNOSTICO-2026",
@@ -43,7 +43,9 @@
     ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-10-mobile-asistencia-autoservicio.md",
     ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-11-humanizacion-uiux.md",
     ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-12-qa-limpieza-release.md",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_01_ENCODING.md"
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_01_ENCODING.md",
+    "frontend-web/src/pages/Operacion/OperacionIntegral.jsx",
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_02_OPERACION_REAL.md"
   ],
   "validationChecks": [
     {
@@ -85,6 +87,16 @@
       "gate": "DCF26-01-RUNTIME-CHURN",
       "status": "PASS",
       "detail": "No se modifico runtime porque el encoding real ya estaba correcto."
+    },
+    {
+      "gate": "DCF26-02-FRONTEND-BUILD",
+      "status": "PASS",
+      "detail": "npm.cmd run build en frontend-web paso con OperacionIntegral reemplazada."
+    },
+    {
+      "gate": "DCF26-02-NO-GENERIC-CATALOG",
+      "status": "PASS",
+      "detail": "rg no encontro createConfigurationResource, configuration_catalogs, JSON.stringify(record.payload), Guardar configuracion ni operationalModules en OperacionIntegral."
     }
   ],
   "fases": [
@@ -100,7 +112,7 @@
     },
     {
       "phase": "DCF26-02",
-      "status": "pending",
+      "status": "completed",
       "task": "operacion integral real sin catalogos genericos P0"
     },
     {
@@ -155,10 +167,10 @@
     }
   ],
   "residualRisk": [
-    "DCF26-01 no modifica runtime porque la verificacion UTF-8 real paso.",
+    "DCF26-02 convierte OperacionIntegral en centro de control visible, pero varios modulos quedan bloqueados hasta fases DCF26-03..12.",
     "RDEP, bancos e integraciones necesitan validacion profesional/fuentes vigentes antes de produccion.",
     "Los gates locales pasan, pero no sustituyen E2E con datos DEMO ni validacion legal/tributaria."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "adbd36573ae92c29a7c0d8618142ca6cd54be8effaf972635503a6821ca54312"
+  "signature": "65d6588be4019427551e1dce6b5e92ea573beeab113fa9fe7bc24c76f470a909"
 }
