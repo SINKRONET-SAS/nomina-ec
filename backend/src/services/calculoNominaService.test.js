@@ -2,6 +2,7 @@ const {
   calcularDiasTrabajados,
   calcularIR,
   calcularProvisionFondosReserva,
+  calcularValorHora,
 } = require('./calculoNominaService');
 const { getLegalParameters } = require('../config/legal-ecuador');
 const {
@@ -22,6 +23,29 @@ describe('calculoNominaService', () => {
   test('calcula IR mensual para tramo progresivo', () => {
     const legal = getLegalParameters(2026);
     expect(calcularIR(2000, legal)).toBeGreaterThan(0);
+  });
+
+  test('deduce gastos personales anuales hasta el limite configurado para IR', () => {
+    const legal = getLegalParameters(2026);
+    const withoutExpenses = calcularIR(2000, legal, 0);
+    const withExpenses = calcularIR(2000, legal, 10000);
+
+    expect(withExpenses).toBeLessThan(withoutExpenses);
+  });
+
+  test('calcula valor hora segun jornada mensual del empleado', () => {
+    expect(calcularValorHora({
+      sueldo_bruto_mensual: 900,
+      jornada_horas_mensuales: 180,
+      tipo_contrato: 'indefinido',
+    }, { monthlyWorkHours: 240 })).toBe(5);
+  });
+
+  test('contrato por hora usa sueldo como valor hora', () => {
+    expect(calcularValorHora({
+      sueldo_bruto_mensual: 12.5,
+      tipo_contrato: 'hora',
+    }, { monthlyWorkHours: 240 })).toBe(12.5);
   });
 
   test('no provisiona fondos de reserva antes del primer año laboral', () => {

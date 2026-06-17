@@ -37,6 +37,7 @@ async function getLegalParametersForTenant(tenantId, year) {
       fourteenthSalaryProvisionRate: 1 / 12,
       reserveFundRate: 1 / 12,
       reserveFundStartsAfterMonths: 12,
+      personalExpenseDeductionLimit: Number(row.gastos_personales_limite || 16302),
       thirteenthSalaryPaymentMonth: 12,
       fourteenthSalaryCostaGalapagosPaymentMonth: Number(row.decimo_cuarto_costa_mes),
       fourteenthSalarySierraAmazoniaPaymentMonth: Number(row.decimo_cuarto_sierra_mes),

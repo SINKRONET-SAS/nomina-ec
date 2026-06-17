@@ -7,7 +7,8 @@ function NuevoEmpleado() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     cedula: '', nombres: '', apellidos: '', cargo: '',
-    sueldo_bruto_mensual: '', fecha_ingreso: '', tipo_contrato: 'indefinido',
+    sueldo_bruto_mensual: '', jornada_horas_mensuales: '', gastos_personales_anuales: '',
+    fecha_ingreso: '', tipo_contrato: 'indefinido',
     banco: '', cuenta_bancaria: ''
   });
   const [error, setError] = useState('');
@@ -71,6 +72,32 @@ function NuevoEmpleado() {
                 onChange={handleChange} className="w-full px-3 py-2 border rounded-lg" step="0.01" required />
             </div>
             <div>
+              <label className="block text-sm font-medium mb-1">Jornada mensual (horas)</label>
+              <input
+                type="number"
+                name="jornada_horas_mensuales"
+                value={formData.jornada_horas_mensuales}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg"
+                min="1"
+                step="0.01"
+                placeholder="240 por defecto"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Gastos personales anuales SRI</label>
+              <input
+                type="number"
+                name="gastos_personales_anuales"
+                value={formData.gastos_personales_anuales}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium mb-1">Fecha de Ingreso *</label>
               <input type="date" name="fecha_ingreso" value={formData.fecha_ingreso} onChange={handleChange}
                 className="w-full px-3 py-2 border rounded-lg" required />
@@ -82,6 +109,7 @@ function NuevoEmpleado() {
                 <option value="indefinido">Indefinido</option>
                 <option value="ocasional">Ocasional</option>
                 <option value="obra">Obra o Faena</option>
+                <option value="hora">Por hora</option>
               </select>
             </div>
             <div>

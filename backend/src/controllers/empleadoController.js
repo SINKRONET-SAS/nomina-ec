@@ -18,7 +18,8 @@ async function listar(req, res) {
     
     const result = await db.query(`
       SELECT id, cedula, nombres, apellidos, cargo, departamento,
-        sueldo_bruto_mensual, fecha_ingreso, tipo_contrato, activo
+        sueldo_bruto_mensual, jornada_horas_mensuales, gastos_personales_anuales,
+        fecha_ingreso, tipo_contrato, activo
       FROM empleados
       WHERE tenant_id = $1 AND activo = $2
       ORDER BY apellidos, nombres
@@ -57,6 +58,7 @@ async function crear(req, res) {
     const {
       cedula, nombres, apellidos, cargo, departamento,
       sueldo_bruto_mensual, fecha_ingreso, tipo_contrato,
+      jornada_horas_mensuales, gastos_personales_anuales,
       cuenta_bancaria, banco, tipo_cuenta, direccion, telefono, email
     } = req.body;
     
@@ -93,14 +95,19 @@ async function crear(req, res) {
     const result = await db.query(`
       INSERT INTO empleados (
         tenant_id, cedula, nombres, apellidos, cargo, departamento,
-        sueldo_bruto_mensual, fecha_ingreso, tipo_contrato,
+        sueldo_bruto_mensual, jornada_horas_mensuales, gastos_personales_anuales,
+        fecha_ingreso, tipo_contrato,
         cuenta_bancaria_cifrada, banco, tipo_cuenta,
         direccion_domicilio, telefono, email_personal
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-      RETURNING id, cedula, nombres, apellidos, cargo, sueldo_bruto_mensual, fecha_ingreso, tipo_contrato
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+      RETURNING id, cedula, nombres, apellidos, cargo, sueldo_bruto_mensual,
+        jornada_horas_mensuales, gastos_personales_anuales, fecha_ingreso, tipo_contrato
     `, [
       tenantId, cedula, nombres, apellidos, cargo || '', departamento || '',
-      sueldo_bruto_mensual, fecha_ingreso, tipo_contrato || 'indefinido',
+      sueldo_bruto_mensual,
+      jornada_horas_mensuales || null,
+      gastos_personales_anuales || 0,
+      fecha_ingreso, tipo_contrato || 'indefinido',
       cuentaCifrada, banco || '', tipo_cuenta || '',
       direccion || '', telefono || '', email || ''
     ]);
@@ -292,7 +299,7 @@ async function terminar(req, res) {
   try {
     const { id } = req.params;
     const { tenantId } = req;
-    const { causa } = req.body;
+    const { causa, fecha_salida } = req.body;
     
     if (!causa) {
       return res.status(400).json({ error: 'Causa de terminación requerida' });
@@ -300,7 +307,7 @@ async function terminar(req, res) {
     
     // Calcular liquidación
     const { calcularLiquidacion } = require('../services/liquidacionService');
-    const liquidacion = await calcularLiquidacion(id, tenantId, causa);
+    const liquidacion = await calcularLiquidacion(id, tenantId, causa, { fechaSalida: fecha_salida });
     
     res.json({ success: true, liquidacion });
   } catch (err) {

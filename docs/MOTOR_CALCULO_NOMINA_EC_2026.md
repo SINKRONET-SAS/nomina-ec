@@ -52,7 +52,7 @@ El resultado se guarda en `nominas.detalle_calculo` con el desglose auditable us
 7. Total ingresos: `sueldo_proporcional + extras_50 + extras_100`.
 8. IESS personal: `total_ingresos * 0.0945`.
 9. Base imponible IR mensual: `total_ingresos - IESS_personal`.
-10. IR mensual: proyecta `base_mensual * 12`, aplica tabla progresiva anual y divide para 12.
+10. IR mensual: proyecta `base_mensual * 12`, deduce gastos personales anuales del empleado hasta el limite configurado y aplica tabla progresiva anual antes de dividir para 12.
 11. Decimo tercero provisionado: `total_ingresos / 12`.
 12. Decimo cuarto provisionado: `SBU / 12`.
 13. Vacaciones provisionadas: `total_ingresos / 24`.
@@ -96,3 +96,14 @@ Cada exportacion registra auditoria con periodo, tipo de reporte, formato, filtr
 - El rol PDF por persona existe como contrato de endpoint, pero depende de `rol_pdf_url`; el cierre mensual todavia no genera automaticamente el PDF del rol.
 - Los reportes a entidades publicas distintos de RDEP/IESS/archivo bancario deben activarse solo con formato oficial por entidad, actividad economica y periodo.
 - La estructura organizativa esta modelada, pero empleados aun guardan `departamento` como texto; falta una relacion fuerte empleado-unidad para reporterias complejas.
+
+## Reconciliacion con diagnostico externo 2026-06-17
+
+Se revisaron los scripts externos de correccion para NominaEC. No se aplicaron literalmente porque pertenecen a otro stack (`Base44`, `pages/Nomina.jsx`, `lib/legal-ecuador.js`) y contienen valores que contradicen la parametrizacion actual de este repo, como SBU 460 y una tabla IR anterior. Se portaron las reglas compatibles al backend actual:
+
+- IR: se agrego `gastos_personales_anuales` por empleado y se deduce del calculo anual hasta el limite parametrizado.
+- Horas extra: se agrego `jornada_horas_mensuales` por empleado; contratos `hora` usan el sueldo registrado como valor hora.
+- Liquidacion: se corrigio periodo de decimo tercero, indemnizacion por despido intempestivo con minimo 3 meses y tope 25 meses, desahucio para causas aplicables y fondo de reserva proporcional.
+- Carga masiva/UI: se agregaron campos para jornada mensual y gastos personales.
+
+No se cambio el aporte IESS personal a 9.95%. El propio diagnostico lo marca como punto critico a validar con contador y este repo mantiene el bloqueo productivo de parametros no validados.

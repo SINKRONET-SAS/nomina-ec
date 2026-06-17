@@ -7,6 +7,7 @@ function TerminarEmpleado() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [causa, setCausa] = useState('');
+  const [fechaSalida, setFechaSalida] = useState(new Date().toISOString().slice(0, 10));
   const [cargando, setCargando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState('');
@@ -17,7 +18,7 @@ function TerminarEmpleado() {
     setError('');
 
     try {
-      const response = await authenticatedApi.post(`/empleados/${id}/terminar`, { causa });
+      const response = await authenticatedApi.post(`/empleados/${id}/terminar`, { causa, fecha_salida: fechaSalida });
       setResultado(response.data.liquidacion);
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'No pudimos terminar la relacion laboral. Revisa la causa y vuelve a intentar.');
@@ -42,7 +43,9 @@ function TerminarEmpleado() {
               <p>Decimo tercero:</p><p className="text-right">${resultado.liquidacion.decimoTercero}</p>
               <p>Decimo cuarto:</p><p className="text-right">${resultado.liquidacion.decimoCuarto}</p>
               <p>Vacaciones:</p><p className="text-right">${resultado.liquidacion.vacaciones}</p>
+              <p>Fondo de reserva:</p><p className="text-right">${resultado.liquidacion.fondoReserva}</p>
               <p>Indemnizacion:</p><p className="text-right">${resultado.liquidacion.indemnizacion}</p>
+              <p>Desahucio:</p><p className="text-right">${resultado.liquidacion.desahucio}</p>
             </div>
             <hr className="my-4" />
             <p className="text-xl font-bold">TOTAL: ${resultado.liquidacion.total}</p>
@@ -99,6 +102,16 @@ function TerminarEmpleado() {
               <option value="desahucio">Desahucio (Art. 186)</option>
               <option value="mutuo_acuerdo">Mutuo acuerdo</option>
             </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Fecha de salida *</label>
+            <input
+              type="date"
+              value={fechaSalida}
+              onChange={(event) => setFechaSalida(event.target.value)}
+              className="w-full rounded-lg border px-3 py-2"
+              required
+            />
           </div>
 
           <div className="flex justify-end space-x-4 pt-4">

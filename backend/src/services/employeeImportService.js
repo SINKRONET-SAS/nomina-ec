@@ -27,6 +27,13 @@ const HEADER_ALIASES = {
   salary: 'salary',
   sueldo: 'salary',
   sueldo_bruto_mensual: 'salary',
+  jornada_horas_mensuales: 'monthlyHours',
+  monthly_hours: 'monthlyHours',
+  monthlyhours: 'monthlyHours',
+  horas_mensuales: 'monthlyHours',
+  gastos_personales_anuales: 'annualPersonalExpenses',
+  annual_personal_expenses: 'annualPersonalExpenses',
+  gastos_personales: 'annualPersonalExpenses',
   bank_code: 'bankCode',
   bankcode: 'bankCode',
   banco: 'bankCode',
@@ -137,6 +144,8 @@ function normalizeEmployeeRow(row, rowNumber = 1) {
     position: String(source.position || source.cargo || '').trim(),
     hireDate: String(source.hireDate || source.fecha_ingreso || '').trim(),
     salary: String(source.salary || source.sueldo_bruto_mensual || '').trim(),
+    monthlyHours: String(source.monthlyHours || source.jornada_horas_mensuales || '').trim(),
+    annualPersonalExpenses: String(source.annualPersonalExpenses || source.gastos_personales_anuales || '').trim(),
     bankCode: String(source.bankCode || source.banco || '').trim(),
     bankAccount: String(source.bankAccount || source.cuenta_bancaria || '').trim(),
     accountType: String(source.accountType || source.tipo_cuenta || '').trim(),
@@ -189,6 +198,14 @@ function buildPreviewRows(rows, existingCedulas = new Set()) {
     if (!Number.isFinite(salary) || salary <= 0) {
       errors.push('Sueldo debe ser un numero positivo');
     }
+    const monthlyHours = row.monthlyHours ? Number(row.monthlyHours) : null;
+    if (row.monthlyHours && (!Number.isFinite(monthlyHours) || monthlyHours <= 0)) {
+      errors.push('Jornada mensual debe ser un numero positivo');
+    }
+    const annualPersonalExpenses = row.annualPersonalExpenses ? Number(row.annualPersonalExpenses) : 0;
+    if (row.annualPersonalExpenses && (!Number.isFinite(annualPersonalExpenses) || annualPersonalExpenses < 0)) {
+      errors.push('Gastos personales anuales debe ser un numero positivo o cero');
+    }
 
     if (row.hireDate && !isValidDate(row.hireDate)) {
       errors.push('Fecha de ingreso debe usar formato YYYY-MM-DD');
@@ -210,6 +227,8 @@ function buildPreviewRows(rows, existingCedulas = new Set()) {
         position: row.position,
         hireDate: row.hireDate,
         salary: salary > 0 ? salary : row.salary,
+        monthlyHours: monthlyHours || '',
+        annualPersonalExpenses,
         bankCode: row.bankCode,
         bankAccount: maskBankAccount(row.bankAccount),
         accountType: row.accountType,
@@ -300,11 +319,12 @@ async function commitEmployeeImport({ tenantId, userId, correlationId, ipAddress
       const result = await client.query(`
         INSERT INTO empleados (
           tenant_id, cedula, nombres, apellidos, cargo, departamento,
-          sueldo_bruto_mensual, fecha_ingreso, tipo_contrato,
+          sueldo_bruto_mensual, jornada_horas_mensuales, gastos_personales_anuales,
+          fecha_ingreso, tipo_contrato,
           cuenta_bancaria_cifrada, banco, tipo_cuenta,
           direccion_domicilio, telefono, email_personal, import_batch_id
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
         RETURNING id, cedula, nombres, apellidos
       `, [
         tenantId,
@@ -314,6 +334,8 @@ async function commitEmployeeImport({ tenantId, userId, correlationId, ipAddress
         row.position,
         row.departmentCode,
         Number(row.salary),
+        row.monthlyHours ? Number(row.monthlyHours) : null,
+        row.annualPersonalExpenses ? Number(row.annualPersonalExpenses) : 0,
         row.hireDate,
         row.contractType || 'indefinido',
         encryptedAccount,

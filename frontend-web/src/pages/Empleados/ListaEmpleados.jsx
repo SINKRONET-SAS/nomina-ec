@@ -16,8 +16,8 @@ import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 
 const TEMPLATE = [
-  'identification;firstName;lastName;departmentCode;position;hireDate;salary;bankCode;bankAccount;accountType;contractType;email;phone',
-  '1710034065;Maria Fernanda;Demo Ruiz;ADM;Analista de Talento;2026-01-15;850.00;PICHINCHA;2200123456;AHORROS;indefinido;maria.demo@example.com;0999999999',
+  'identification;firstName;lastName;departmentCode;position;hireDate;salary;monthlyHours;annualPersonalExpenses;bankCode;bankAccount;accountType;contractType;email;phone',
+  '1710034065;Maria Fernanda;Demo Ruiz;ADM;Analista de Talento;2026-01-15;850.00;240;0;PICHINCHA;2200123456;AHORROS;indefinido;maria.demo@example.com;0999999999',
 ].join('\n');
 
 function ImportPanel({ onImported }) {

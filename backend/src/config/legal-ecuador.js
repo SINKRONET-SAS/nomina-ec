@@ -20,6 +20,7 @@ const LEGAL_PARAMETERS = {
       fourteenthSalaryProvisionRate: 1 / 12,
       reserveFundRate: 1 / 12,
       reserveFundStartsAfterMonths: 12,
+      personalExpenseDeductionLimit: 16302,
       thirteenthSalaryPaymentMonth: 12,
       fourteenthSalaryCostaGalapagosPaymentMonth: 3,
       fourteenthSalarySierraAmazoniaPaymentMonth: 8,

@@ -72,7 +72,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes) {
   const diasTrabajados = calcularDiasTrabajados(emp.fecha_ingreso, anio, mes);
   const sueldo = Number.parseFloat(emp.sueldo_bruto_mensual);
   const sueldoProporcional = roundMoney((sueldo * diasTrabajados) / 30);
-  const valorHora = sueldo / payrollParameters.monthlyWorkHours;
+  const valorHora = calcularValorHora(emp, payrollParameters);
   const extras50 = (noveltyByType.hora_extra_50 || 0) / 60;
   const extras100 = (noveltyByType.hora_extra_100 || 0) / 60;
   const montoExtras50 = roundMoney(extras50 * valorHora * 1.5);
@@ -93,7 +93,11 @@ async function calcularEmpleado(emp, tenantId, anio, mes) {
   const aporteIess = roundMoney(totalIngresos * payrollParameters.personalIessRate);
   const aportePatronal = roundMoney(totalIngresos * payrollParameters.employerIessRate);
   const baseImponible = roundMoney(totalIngresos - aporteIess);
-  const impuestoRenta = calcularIR(baseImponible, legalParameters);
+  const impuestoRenta = calcularIR(
+    baseImponible,
+    legalParameters,
+    Number.parseFloat(emp.gastos_personales_anuales || 0)
+  );
   const provisionDecimoTercero = roundMoney(totalIngresos * (payrollParameters.thirteenthSalaryProvisionRate ?? (1 / 12)));
   const provisionDecimoCuarto = roundMoney(payrollParameters.unifiedBaseSalary * (payrollParameters.fourteenthSalaryProvisionRate ?? (1 / 12)));
   const provisionVacaciones = roundMoney(totalIngresos * payrollParameters.vacationProvisionRate);
@@ -124,6 +128,8 @@ async function calcularEmpleado(emp, tenantId, anio, mes) {
     diasTrabajados,
     sueldoProporcional,
     valorHora: roundMoney(valorHora),
+    jornadaHorasMensuales: getEmployeeMonthlyHours(emp, payrollParameters),
+    gastosPersonalesAnuales: roundMoney(Number.parseFloat(emp.gastos_personales_anuales || 0)),
     extras50,
     extras100,
     montoExtras50,
@@ -240,8 +246,40 @@ function calcularProvisionFondosReserva(fechaIngreso, totalIngresos, anio, mes, 
   return roundMoney(totalIngresos * Number(payrollParameters.reserveFundRate ?? (1 / 12)));
 }
 
-function calcularIR(baseMensual, legalParameters) {
-  const baseAnual = baseMensual * 12;
+function calcularValorHora(emp, payrollParameters = {}) {
+  const sueldo = Number.parseFloat(emp.sueldo_bruto_mensual || 0);
+  const tipoContrato = String(emp.tipo_contrato || '').trim().toLowerCase();
+
+  if (tipoContrato === 'hora') {
+    return sueldo;
+  }
+
+  const monthlyHours = getEmployeeMonthlyHours(emp, payrollParameters);
+  return sueldo / monthlyHours;
+}
+
+function getEmployeeMonthlyHours(emp = {}, payrollParameters = {}) {
+  const employeeHours = Number.parseFloat(emp.jornada_horas_mensuales || 0);
+  const configuredHours = Number.parseFloat(payrollParameters.monthlyWorkHours || 0);
+  const monthlyHours = employeeHours > 0 ? employeeHours : configuredHours;
+
+  if (!Number.isFinite(monthlyHours) || monthlyHours <= 0) {
+    throw new AppError('La jornada mensual debe ser mayor a cero para calcular valor hora', {
+      code: 'NOMINA_JORNADA_INVALIDA',
+      statusCode: 422,
+    });
+  }
+
+  return monthlyHours;
+}
+
+function calcularIR(baseMensual, legalParameters, gastosPersonalesAnuales = 0) {
+  const limit = Number(legalParameters.payroll?.personalExpenseDeductionLimit ?? 0);
+  const deductibleExpenses = Math.min(
+    Math.max(0, Number(gastosPersonalesAnuales || 0)),
+    Math.max(0, limit)
+  );
+  const baseAnual = Math.max(0, (baseMensual * 12) - deductibleExpenses);
   const brackets = legalParameters.incomeTax;
   let annualTax = 0;
 
@@ -266,5 +304,7 @@ module.exports = {
   calcularEmpleado,
   calcularDiasTrabajados,
   calcularProvisionFondosReserva,
+  calcularValorHora,
+  getEmployeeMonthlyHours,
   calcularIR,
 };

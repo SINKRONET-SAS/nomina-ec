@@ -287,6 +287,8 @@ model Employee {
   cargo                 String              @default("") @db.VarChar(120)
   departamento          String              @default("") @db.VarChar(120)
   sueldoBrutoMensual    Decimal             @map("sueldo_bruto_mensual") @db.Decimal(12, 2)
+  jornadaHorasMensuales Decimal?            @map("jornada_horas_mensuales") @db.Decimal(6, 2)
+  gastosPersonalesAnuales Decimal           @default(0) @map("gastos_personales_anuales") @db.Decimal(12, 2)
   fechaIngreso          DateTime            @map("fecha_ingreso") @db.Date
   fechaSalida           DateTime?           @map("fecha_salida") @db.Date
   tipoContrato          String              @default("indefinido") @map("tipo_contrato") @db.VarChar(60)
