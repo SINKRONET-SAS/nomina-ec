@@ -55,6 +55,14 @@ function DescargarReportes() {
   const hoy = new Date();
   const [anio, setAnio] = useState(hoy.getFullYear());
   const [mes, setMes] = useState(hoy.getMonth() + 1);
+  const [reportCode, setReportCode] = useState('PAYROLL_DETAIL_TABULAR');
+  const [format, setFormat] = useState('xlsx');
+  const [filters, setFilters] = useState({
+    employeeId: '',
+    department: '',
+    position: '',
+    costCenter: '',
+  });
   const [cargando, setCargando] = useState('');
   const [rdepPrecheck, setRdepPrecheck] = useState(null);
   const [message, setMessage] = useState('');
@@ -110,6 +118,35 @@ function DescargarReportes() {
     } finally {
       setCargando('');
     }
+  };
+
+  const exportarReporteNomina = async () => {
+    setCargando('nomina-export');
+    setMessage('');
+    setError('');
+    try {
+      const response = await authenticatedApi.post('/reportes/nomina/exportar', {
+        anio,
+        mes,
+        reportCode,
+        format,
+        filters,
+      });
+      const url = response.data.reporte?.url;
+
+      if (url) {
+        downloadUrl(url, response.data.reporte?.fileName || `${reportCode}-${anio}-${mes}.${format}`);
+      }
+      setMessage(`Reporte de nomina generado: ${response.data.reporte?.totalFilas || 0} filas.`);
+    } catch (err) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Error al exportar reporte de nomina');
+    } finally {
+      setCargando('');
+    }
+  };
+
+  const updateFilter = (key, value) => {
+    setFilters((current) => ({ ...current, [key]: value }));
   };
 
   return (
@@ -172,6 +209,94 @@ function DescargarReportes() {
           );
         })}
       </div>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex items-start gap-3">
+            <FileSpreadsheet className="mt-1 h-5 w-5 text-teal-700" />
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950">Reportes internos de nomina</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Exporta resumen o detalle tabular con filtros por persona, departamento, cargo o centro de costo.
+              </p>
+            </div>
+          </div>
+          <button
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-60"
+            type="button"
+            disabled={cargando === 'nomina-export'}
+            onClick={exportarReporteNomina}
+          >
+            <Download className="h-4 w-4" />
+            {cargando === 'nomina-export' ? 'Exportando...' : 'Exportar'}
+          </button>
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Reporte</label>
+            <select
+              value={reportCode}
+              onChange={(event) => {
+                const nextReport = event.target.value;
+                setReportCode(nextReport);
+                if (nextReport === 'PAYROLL_DETAIL_TABULAR') setFormat('xlsx');
+              }}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+            >
+              <option value="PAYROLL_DETAIL_TABULAR">Detalle tabular</option>
+              <option value="PAYROLL_SUMMARY">Resumen de nomina</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Formato</label>
+            <select
+              value={format}
+              onChange={(event) => setFormat(event.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+            >
+              <option value="xlsx">Excel XLSX</option>
+              {reportCode === 'PAYROLL_SUMMARY' && <option value="pdf">PDF</option>}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Empleado ID</label>
+            <input
+              value={filters.employeeId}
+              onChange={(event) => updateFilter('employeeId', event.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+              placeholder="Opcional"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Departamento</label>
+            <input
+              value={filters.department}
+              onChange={(event) => updateFilter('department', event.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+              placeholder="Opcional"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Cargo</label>
+            <input
+              value={filters.position}
+              onChange={(event) => updateFilter('position', event.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+              placeholder="Opcional"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Centro de costo</label>
+            <input
+              value={filters.costCenter}
+              onChange={(event) => updateFilter('costCenter', event.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+              placeholder="Opcional"
+            />
+          </div>
+        </div>
+      </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

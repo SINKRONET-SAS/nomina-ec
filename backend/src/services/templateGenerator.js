@@ -111,6 +111,7 @@ function generarHTMLContrato(data) {
  */
 async function generarPDFDesdeHTML() {
   const pdfmake = require('pdfmake/build/pdfmake');
+  pdfmake.vfs = require('pdfmake/build/vfs_fonts');
 
   const docDefinition = {
     content: [

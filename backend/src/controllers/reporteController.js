@@ -4,6 +4,7 @@
 const { generarXML_RDEP, precheckRDEP } = require('../services/sriRdepGenerator');
 const { generarXML_SAE } = require('../services/iessSaeGenerator');
 const { generarArchivoBanco } = require('../services/bancoAebGenerator');
+const { generarReporteNomina } = require('../services/payrollReportService');
 const db = require('../config/database');
 const { assertCapability } = require('../services/planCapabilityService');
 
@@ -151,10 +152,52 @@ async function reporteAsistencia(req, res) {
   }
 }
 
+async function exportarNomina(req, res) {
+  try {
+    const { tenantId } = req;
+    const { anio, mes, reportCode, format, filters } = req.body;
+
+    if (!anio || !mes) {
+      return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
+    }
+
+    await assertCapability(tenantId, 'advancedReports', {
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+    });
+
+    const resultado = await generarReporteNomina({
+      tenantId,
+      anio,
+      mes,
+      reportCode,
+      format,
+      filters: filters || {},
+      context: {
+        correlationId: req.correlationId,
+        userId: req.usuarioId,
+        ipAddress: req.ip,
+      },
+    });
+
+    return res.json({ success: true, reporte: resultado, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[REPORTES] Error exportando nomina', {
+      code: err.code || 'REPORTE_NOMINA_EXPORT_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
+  }
+}
+
 module.exports = {
   generarRDEP,
   validarRDEP,
   generarSAE,
   generarArchivoBanco: generarArchivoBancoCtrl,
   reporteAsistencia,
+  exportarNomina,
 };
