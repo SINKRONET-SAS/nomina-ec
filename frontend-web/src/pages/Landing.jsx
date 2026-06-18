@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ClipboardCheck,
   FileSpreadsheet,
+  LogIn,
   ShieldCheck,
   UsersRound,
 } from 'lucide-react';
@@ -73,6 +74,11 @@ function Landing() {
             <Link className="secondary-button hidden sm:inline-flex" to="/privacidad">
               Privacidad
             </Link>
+            <Link className="secondary-button" to="/login">
+              <LogIn size={17} />
+              <span className="hidden sm:inline">Ingresar a la PWA</span>
+              <span className="sm:hidden">PWA</span>
+            </Link>
             <Link className="primary-button" to="/registro">
               Crear cuenta
             </Link>
@@ -95,6 +101,9 @@ function Landing() {
               sin pantallas paralelas ni datos reales en demos comerciales.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
+              <Link className="primary-button" to="/login">
+                Ingresar a la PWA <LogIn size={18} />
+              </Link>
               <Link className="primary-button" to="/registro">
                 Crear cuenta <ArrowRight size={18} />
               </Link>
