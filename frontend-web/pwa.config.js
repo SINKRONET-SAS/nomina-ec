@@ -13,6 +13,18 @@ export const pwaManifest = {
   categories: ['business', 'finance', 'productivity'],
   icons: [
     {
+      src: '/icon-192.png',
+      sizes: '192x192',
+      type: 'image/png',
+      purpose: 'any',
+    },
+    {
+      src: '/icon-512.png',
+      sizes: '512x512',
+      type: 'image/png',
+      purpose: 'any',
+    },
+    {
       src: '/icon.svg',
       sizes: '512x512',
       type: 'image/svg+xml',
@@ -78,7 +90,7 @@ export const pwaWorkbox = {
   skipWaiting: true,
   navigateFallback: '/index.html',
   navigateFallbackDenylist: [/^\/api\//],
-  globPatterns: ['**/*.{js,css,html,svg,ico,webmanifest}'],
+  globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,txt,xml}'],
   runtimeCaching: [
     {
       urlPattern: ({ url }) => url.pathname.startsWith('/api/'),

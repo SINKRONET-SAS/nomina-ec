@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
+import { formatDateTimeEC } from '../../utils/dateFormat';
 
 const TEMPLATE = [
   'identification;firstName;lastName;departmentCode;position;hireDate;salary;monthlyHours;annualPersonalExpenses;bankCode;bankAccount;accountType;contractType;email;phone',
@@ -208,7 +209,7 @@ function ImportPanel({ onImported }) {
                 <div>
                   <p className="text-sm font-semibold text-slate-900">{batch.source_name}</p>
                   <p className="text-xs text-slate-600">
-                    {batch.status} - {batch.employee_count} empleados activos - {new Date(batch.created_at).toLocaleString()}
+                    {batch.status} - {batch.employee_count} empleados activos - {formatDateTimeEC(batch.created_at)}
                   </p>
                 </div>
                 <button
@@ -346,7 +347,9 @@ function ListaEmpleados() {
                     <td className="px-6 py-4 text-sm">${Number(empleado.sueldo_bruto_mensual || 0).toFixed(2)}</td>
                     <td className="px-6 py-4 text-sm">
                       <div className="flex gap-2">
-                        <button className="text-teal-700 hover:text-teal-900" type="button"><Edit size={16} /></button>
+                        <Link className="text-teal-700 hover:text-teal-900" to={`/dashboard/empleados/${empleado.id}/editar`} title="Editar empleado">
+                          <Edit size={16} />
+                        </Link>
                         <Link className="text-red-600 hover:text-red-800" to={`/dashboard/empleados/${empleado.id}/terminar`}>
                           <UserX size={16} />
                         </Link>

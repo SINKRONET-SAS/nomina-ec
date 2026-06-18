@@ -1,7 +1,5 @@
-const jwt = require('jsonwebtoken');
 const db = require('../config/database');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
+const { signJwt, verifyJwt } = require('../config/jwt');
 
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -16,7 +14,7 @@ const authenticateToken = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = verifyJwt(token);
     const result = await db.query(
       'SELECT id, tenant_id, email, rol, activo, email_verificado_en FROM usuarios WHERE id = $1 AND activo = true',
       [decoded.userId]
@@ -82,14 +80,13 @@ const requireRole = (...roles) => {
 };
 
 const generateToken = (usuario) => {
-  return jwt.sign(
+  return signJwt(
     {
       userId: usuario.id,
       tenantId: usuario.tenant_id,
       email: usuario.email,
       rol: usuario.rol,
     },
-    JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
   );
 };

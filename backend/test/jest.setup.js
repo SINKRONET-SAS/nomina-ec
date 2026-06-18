@@ -1,3 +1,5 @@
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-with-at-least-32-chars';
+
 afterAll(async () => {
   try {
     const db = require('../src/config/database');

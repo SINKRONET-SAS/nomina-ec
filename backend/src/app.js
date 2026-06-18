@@ -24,7 +24,14 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const tenantResolver = require('./middleware/tenantResolver');
+const db = require('./config/database');
 app.use(tenantResolver);
+app.use((req, res, next) => {
+  db.runWithTenantContext({
+    tenantId: req.tenantId,
+    userId: req.userId || req.usuarioId,
+  }, next);
+});
 
 app.get('/health', (req, res) => {
   res.json({

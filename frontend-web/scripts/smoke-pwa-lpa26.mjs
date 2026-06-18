@@ -42,7 +42,7 @@ if (!manifest.shortcuts || manifest.shortcuts.length < 2) {
   fail('El manifest debe declarar shortcuts operativos.');
 }
 
-for (const asset of ['icon.svg', 'maskable-icon.svg', 'apple-touch-icon.svg', 'pwa-screenshot-wide.svg', 'pwa-screenshot-mobile.svg']) {
+for (const asset of ['icon.svg', 'icon-192.png', 'icon-512.png', 'maskable-icon.svg', 'apple-touch-icon.svg', 'pwa-screenshot-wide.svg', 'pwa-screenshot-mobile.svg', 'robots.txt', 'sitemap.xml']) {
   if (!existsSync(join(dist, asset))) {
     fail(`Asset PWA faltante en dist: ${asset}`);
   }

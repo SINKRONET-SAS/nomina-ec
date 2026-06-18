@@ -1,30 +1,21 @@
-import axios from 'axios';
-import { API_URL } from './apiBase';
+import { authenticatedApi } from './authenticatedApi';
 
-function authHeaders(token) {
-  return { headers: { Authorization: `Bearer ${token}` } };
-}
-
-export async function fetchConfigurationSummary(token) {
-  const response = await axios.get(`${API_URL}/configuracion/resumen`, authHeaders(token));
+export async function fetchConfigurationSummary() {
+  const response = await authenticatedApi.get('/configuracion/resumen');
   return response.data?.data;
 }
 
-export async function createConfigurationResource(token, resource, payload) {
-  const response = await axios.post(`${API_URL}/configuracion/${resource}`, payload, authHeaders(token));
+export async function createConfigurationResource(_token, resource, payload) {
+  const response = await authenticatedApi.post(`/configuracion/${resource}`, payload);
   return response.data?.data;
 }
 
-export async function loadMandatoryLegalParameters(token, year) {
-  const response = await axios.post(
-    `${API_URL}/configuracion/parametros-legales/obligatorios`,
-    { year },
-    authHeaders(token)
-  );
+export async function loadMandatoryLegalParameters(_token, year) {
+  const response = await authenticatedApi.post('/configuracion/parametros-legales/obligatorios', { year });
   return response.data?.data;
 }
 
-export async function completeOnboardingStep(token, stepCode, payload = {}) {
-  const response = await axios.post(`${API_URL}/configuracion/onboarding/${stepCode}`, payload, authHeaders(token));
+export async function completeOnboardingStep(_token, stepCode, payload = {}) {
+  const response = await authenticatedApi.post(`/configuracion/onboarding/${stepCode}`, payload);
   return response.data?.data;
 }

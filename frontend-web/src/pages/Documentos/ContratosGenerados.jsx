@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { downloadUrl } from '../../utils/downloadUrl';
+import { formatDateEC } from '../../utils/dateFormat';
 
 function ContratosGenerados() {
   const [descargandoId, setDescargandoId] = useState('');
@@ -60,10 +61,10 @@ function ContratosGenerados() {
                     <td className="px-6 py-4 text-sm">{doc.nombres} {doc.apellidos}</td>
                     <td className="px-6 py-4">
                       <span className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800">
-                        {doc.tipo_documento.replace('_', ' ')}
+                        {(doc.tipo_documento || 'contrato').replace(/_/g, ' ')}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm">{new Date(doc.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-sm">{formatDateEC(doc.created_at)}</td>
                     <td className="px-6 py-4">
                       <button
                         type="button"

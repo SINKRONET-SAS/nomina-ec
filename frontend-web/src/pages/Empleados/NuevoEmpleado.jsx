@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { ArrowLeft } from 'lucide-react';
 
 function NuevoEmpleado() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEdit = Boolean(id);
   const [formData, setFormData] = useState({
     cedula: '', nombres: '', apellidos: '', cargo: '',
     sueldo_bruto_mensual: '', jornada_horas_mensuales: '', gastos_personales_anuales: '',
@@ -13,6 +16,40 @@ function NuevoEmpleado() {
   });
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
+
+  const empleadoQuery = useQuery({
+    queryKey: ['empleado', id],
+    enabled: isEdit,
+    queryFn: async () => {
+      const response = await authenticatedApi.get(`/empleados/${id}`);
+      return response.data.empleado;
+    },
+  });
+
+  useEffect(() => {
+    const empleado = empleadoQuery.data;
+    if (!empleado) return;
+
+    setFormData({
+      cedula: empleado.cedula || '',
+      nombres: empleado.nombres || '',
+      apellidos: empleado.apellidos || '',
+      cargo: empleado.cargo || '',
+      sueldo_bruto_mensual: empleado.sueldo_bruto_mensual || '',
+      jornada_horas_mensuales: empleado.jornada_horas_mensuales || '',
+      gastos_personales_anuales: empleado.gastos_personales_anuales || '',
+      fecha_ingreso: empleado.fecha_ingreso ? String(empleado.fecha_ingreso).slice(0, 10) : '',
+      tipo_contrato: empleado.tipo_contrato || 'indefinido',
+      banco: empleado.banco || '',
+      cuenta_bancaria: '',
+    });
+  }, [empleadoQuery.data]);
+
+  useEffect(() => {
+    if (empleadoQuery.isError) {
+      setError(empleadoQuery.error?.response?.data?.error || 'No pudimos cargar el empleado.');
+    }
+  }, [empleadoQuery.isError, empleadoQuery.error]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -24,7 +61,12 @@ function NuevoEmpleado() {
     setCargando(true);
     
     try {
-      await authenticatedApi.post('/empleados', formData);
+      if (isEdit) {
+        const { cedula, cuenta_bancaria, ...payload } = formData;
+        await authenticatedApi.put(`/empleados/${id}`, payload);
+      } else {
+        await authenticatedApi.post('/empleados', formData);
+      }
       navigate('/empleados');
     } catch (err) {
       setError(err.response?.data?.error || 'Error al crear empleado');
@@ -39,7 +81,7 @@ function NuevoEmpleado() {
         <ArrowLeft size={20} className="mr-2" /> Volver
       </button>
       
-      <h1 className="text-2xl font-bold mb-6">Nuevo Empleado</h1>
+      <h1 className="text-2xl font-bold mb-6">{isEdit ? 'Editar Empleado' : 'Nuevo Empleado'}</h1>
       
       <div className="bg-white rounded-lg shadow p-6">
         {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
@@ -49,7 +91,7 @@ function NuevoEmpleado() {
             <div>
               <label className="block text-sm font-medium mb-1">Cédula *</label>
               <input type="text" name="cedula" value={formData.cedula} onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-lg" maxLength="10" required />
+                className="w-full px-3 py-2 border rounded-lg" maxLength="10" required disabled={isEdit} />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Nombres *</label>
@@ -129,7 +171,7 @@ function NuevoEmpleado() {
               className="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancelar</button>
             <button type="submit" disabled={cargando}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-              {cargando ? 'Guardando...' : 'Guardar Empleado'}
+              {cargando ? 'Guardando...' : isEdit ? 'Actualizar Empleado' : 'Guardar Empleado'}
             </button>
           </div>
         </form>

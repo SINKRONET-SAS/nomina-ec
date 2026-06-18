@@ -3,10 +3,13 @@
 // ============================================================
 const crypto = require('crypto');
 const fs = require('fs');
-const { Pool } = require('pg');
 require('dotenv').config();
 
 const databaseUrl = process.env.RLS_DATABASE_URL || process.env.DATABASE_URL;
+if (process.env.RLS_DATABASE_URL) {
+  process.env.DATABASE_URL = process.env.RLS_DATABASE_URL;
+}
+const db = require('../src/config/database');
 const tenantA = process.env.RLS_TENANT_A;
 const tenantB = process.env.RLS_TENANT_B;
 const employeeA = process.env.RLS_EMPLOYEE_A;
@@ -44,14 +47,8 @@ async function main() {
     .update(fs.readFileSync(__filename, 'utf8'), 'utf8')
     .digest('hex');
 
-  const pool = new Pool({
-    connectionString: databaseUrl,
-    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
-    max: 1,
-  });
-
   try {
-    const userResult = await pool.query(`
+    const userResult = await db.pool.query(`
       SELECT current_user AS usuario,
              COALESCE((SELECT usesuper FROM pg_user WHERE usename = current_user), false) AS superusuario
     `);
@@ -61,21 +58,18 @@ async function main() {
       throw new Error('La prueba RLS debe ejecutarse con usuario no superusuario');
     }
 
-    await pool.query('BEGIN');
-    await pool.query('SELECT set_config($1, $2, true)', ['app.current_tenant_id', tenantA]);
-    const visibleInTenantA = await pool.query(
-      'SELECT COUNT(*)::int AS total FROM empleados WHERE id = $1 AND tenant_id = $2',
-      [employeeA, tenantA],
+    const withoutContext = await db.query(
+      'SELECT COUNT(*)::int AS total FROM empleados WHERE id = $1',
+      [employeeA],
     );
-    await pool.query('ROLLBACK');
-
-    await pool.query('BEGIN');
-    await pool.query('SELECT set_config($1, $2, true)', ['app.current_tenant_id', tenantB]);
-    const visibleInTenantB = await pool.query(
-      'SELECT COUNT(*)::int AS total FROM empleados WHERE id = $1 AND tenant_id = $2',
-      [employeeA, tenantA],
-    );
-    await pool.query('ROLLBACK');
+    const visibleInTenantA = await db.runWithTenantContext({ tenantId: tenantA }, () => db.query(
+      'SELECT COUNT(*)::int AS total FROM empleados WHERE id = $1',
+      [employeeA],
+    ));
+    const visibleInTenantB = await db.runWithTenantContext({ tenantId: tenantB }, () => db.query(
+      'SELECT COUNT(*)::int AS total FROM empleados WHERE id = $1',
+      [employeeA],
+    ));
 
     if (visibleInTenantA.rows[0].total !== 1) {
       throw new Error('El empleado de tenant A no fue visible bajo contexto tenant A');
@@ -85,12 +79,18 @@ async function main() {
       throw new Error('RLS permitio visibilidad cruzada entre tenants');
     }
 
+    if (withoutContext.rows[0].total !== 0) {
+      throw new Error('RLS permitio leer empleados sin contexto tenant de aplicacion');
+    }
+
     console.log('[RLS] Verificacion Render aprobada', {
       usuario: userInfo.usuario,
       superusuario: userInfo.superusuario,
       scriptHash,
+      sinContextoVisible: withoutContext.rows[0].total,
       tenantAVisible: visibleInTenantA.rows[0].total,
       tenantBCruzadoVisible: visibleInTenantB.rows[0].total,
+      modo: 'app_db_query_tenant_context',
     });
   } catch (err) {
     console.error('[RLS] Verificacion Render fallida', {
@@ -103,7 +103,7 @@ async function main() {
     });
     process.exitCode = 1;
   } finally {
-    await pool.end();
+    await db.pool.end();
   }
 }
 

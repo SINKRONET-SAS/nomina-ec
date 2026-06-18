@@ -640,6 +640,190 @@ function IncomeTaxTableFields({ values, onFieldChange, onBracketChange, onAddBra
   );
 }
 
+function formatCurrency(value) {
+  if (value === null || typeof value === 'undefined' || value === '') return 'Sin limite';
+  return Number(value).toLocaleString('es-EC', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatRate(value) {
+  const rate = Number(value || 0);
+  return `${(rate * 100).toLocaleString('es-EC', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}%`;
+}
+
+function normalizeIncomeTaxBrackets(record) {
+  return Array.isArray(record?.value?.brackets) ? record.value.brackets : [];
+}
+
+function legalParameterValue(record) {
+  const value = record?.value || {};
+
+  if (record?.parameter_key === 'income_tax_table') {
+    return `${normalizeIncomeTaxBrackets(record).length} tramos`;
+  }
+
+  if (typeof value.amount !== 'undefined') {
+    if (String(record.unit || '').includes('porcentaje')) {
+      return formatRate(value.amount);
+    }
+    return `${formatCurrency(value.amount)} ${record.unit || ''}`.trim();
+  }
+
+  if (typeof value.rate !== 'undefined' || typeof value.paymentMonth !== 'undefined' || typeof value.startsAfterMonths !== 'undefined') {
+    return [
+      typeof value.rate !== 'undefined' ? `tasa ${formatRate(value.rate)}` : '',
+      typeof value.amount !== 'undefined' ? `base ${formatCurrency(value.amount)}` : '',
+      typeof value.paymentMonth !== 'undefined' ? `mes pago ${value.paymentMonth}` : '',
+      typeof value.startsAfterMonths !== 'undefined' ? `desde mes ${value.startsAfterMonths + 1}` : '',
+      value.region || '',
+      value.calculationBase || '',
+    ].filter(Boolean).join(' - ');
+  }
+
+  return JSON.stringify(value);
+}
+
+function labelLegalParameter(key) {
+  const labels = {
+    sbu: 'Salario basico unificado',
+    iess_aporte_personal: 'IESS personal',
+    iess_aporte_patronal: 'IESS patronal',
+    jornada_horas_mensuales: 'Horas mensuales valor hora',
+    jornada_maxima_semanal: 'Jornada maxima semanal',
+    provision_vacaciones: 'Provision vacaciones',
+    vacaciones_dias_anuales: 'Vacaciones anuales',
+    decimo_tercero: 'Decimo tercero',
+    decimo_cuarto_costa_galapagos: 'Decimo cuarto Costa/Galapagos',
+    decimo_cuarto_sierra_amazonia: 'Decimo cuarto Sierra/Amazonia',
+    fondo_reserva: 'Fondo de reserva',
+    income_tax_table: 'Tabla impuesto a la renta',
+    tabla_impuesto_renta: 'Tabla impuesto a la renta',
+  };
+
+  return labels[key] || key;
+}
+
+function latestLegalParameters(records) {
+  const byKey = new Map();
+
+  [...records]
+    .sort((a, b) => {
+      if (Number(b.period_year) !== Number(a.period_year)) return Number(b.period_year) - Number(a.period_year);
+      return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
+    })
+    .forEach((record) => {
+      if (!byKey.has(record.parameter_key)) {
+        byKey.set(record.parameter_key, record);
+      }
+    });
+
+  return [...byKey.values()];
+}
+
+function LegalParametersPreview({ records }) {
+  const parameters = latestLegalParameters(records);
+
+  if (parameters.length === 0) {
+    return (
+      <div className="mt-4 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
+        Carga los parametros obligatorios para ver aqui la matriz legal completa usada por el motor.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-md border border-slate-200">
+      <div className="border-b border-slate-200 bg-slate-50 px-3 py-2">
+        <p className="text-sm font-semibold text-slate-900">Parametros legales visibles</p>
+        <p className="mt-1 text-xs text-slate-500">Ultima version por codigo, con estado y fuente.</p>
+      </div>
+      <div className="max-h-[520px] overflow-auto">
+        <table className="w-full min-w-[680px] text-left text-xs">
+          <thead className="sticky top-0 bg-white text-slate-500 shadow-sm">
+            <tr>
+              <th className="px-3 py-2 font-semibold">Parametro</th>
+              <th className="px-3 py-2 font-semibold">Anio</th>
+              <th className="px-3 py-2 font-semibold">Valor usado</th>
+              <th className="px-3 py-2 font-semibold">Estado</th>
+              <th className="px-3 py-2 font-semibold">Fuente</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {parameters.map((record) => (
+              <tr key={record.id}>
+                <td className="px-3 py-2 font-semibold text-slate-800">{labelLegalParameter(record.parameter_key)}</td>
+                <td className="px-3 py-2 font-mono">{record.period_year}</td>
+                <td className="px-3 py-2 font-mono">{legalParameterValue(record)}</td>
+                <td className="px-3 py-2">{record.validation_status}</td>
+                <td className="px-3 py-2">{record.source_name || '-'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function IncomeTaxTablePreview({ records }) {
+  const latest = [...records].sort((a, b) => {
+    if (Number(b.period_year) !== Number(a.period_year)) return Number(b.period_year) - Number(a.period_year);
+    return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
+  })[0];
+  const brackets = normalizeIncomeTaxBrackets(latest);
+
+  if (!latest || brackets.length === 0) {
+    return (
+      <div className="mt-4 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
+        Carga o registra la tabla IR para verla completa aqui.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-md border border-slate-200">
+      <div className="border-b border-slate-200 bg-slate-50 px-3 py-2">
+        <p className="text-sm font-semibold text-slate-900">Tabla IR visible {latest.period_year}</p>
+        <p className="mt-1 text-xs text-slate-500">
+          {latest.validation_status} - {latest.source_name || 'sin fuente registrada'}
+        </p>
+      </div>
+      <div className="max-h-[420px] overflow-auto">
+        <table className="w-full min-w-[560px] text-left text-xs">
+          <thead className="sticky top-0 bg-white text-slate-500 shadow-sm">
+            <tr>
+              <th className="px-3 py-2 font-semibold">Fraccion basica</th>
+              <th className="px-3 py-2 font-semibold">Exceso hasta</th>
+              <th className="px-3 py-2 font-semibold">Impuesto</th>
+              <th className="px-3 py-2 font-semibold">%</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {brackets.map((bracket, index) => (
+              <tr key={`${latest.id}-${index}`}>
+                <td className="px-3 py-2 font-mono">{formatCurrency(bracket.from ?? bracket.fraccion_basica)}</td>
+                <td className="px-3 py-2 font-mono">{formatCurrency(bracket.to ?? bracket.exceso_hasta)}</td>
+                <td className="px-3 py-2 font-mono">{formatCurrency(bracket.baseTax ?? bracket.impuesto_fraccion_basica)}</td>
+                <td className="px-3 py-2 font-mono">{formatRate(bracket.rate ?? bracket.porcentaje)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {latest.notes && (
+        <p className="border-t border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
+          {latest.notes}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Parametrizacion() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
@@ -701,6 +885,7 @@ function Parametrizacion() {
   const activeValues = forms[activeDefinition.key];
   const completion = summary?.onboarding?.completionPercent || 0;
   const records = recordsForDefinition(summary, activeDefinition);
+  const legalRecords = summary?.resources?.legalParameters || [];
 
   const metrics = useMemo(() => ([
     ['Datos de empresa', countCatalog(summary, 'empresa_operativa')],
@@ -926,6 +1111,12 @@ function Parametrizacion() {
                 </div>
               ))}
             </div>
+            {activeDefinition.key === 'legal' && (
+              <LegalParametersPreview records={legalRecords} />
+            )}
+            {activeDefinition.customType === 'incomeTaxTable' && (
+              <IncomeTaxTablePreview records={records} />
+            )}
           </aside>
         </div>
       </section>

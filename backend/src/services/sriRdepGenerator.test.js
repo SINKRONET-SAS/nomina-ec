@@ -46,6 +46,8 @@ describe('sriRdepGenerator', () => {
     expect(result.ready).toBe(true);
     expect(result.totalEmpleados).toBe(1);
     expect(result.xsd.sha256).toHaveLength(64);
+    expect(result.xsd.rootName).toBe('rdep');
+    expect(result.xsd.validationMode).toBe('parsed_xsd_contract_v1');
     expect(result.checks.every((check) => check.passed)).toBe(true);
   });
 
@@ -60,7 +62,7 @@ describe('sriRdepGenerator', () => {
     expect(result.checks.find((check) => check.code === 'closed_payroll').passed).toBe(false);
   });
 
-  test('genera XML RDEP con validacion estructural', async () => {
+  test('genera XML RDEP con validacion contra XSD versionado', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [tenant] })
       .mockResolvedValueOnce({ rows: [nomina] })
@@ -72,13 +74,16 @@ describe('sriRdepGenerator', () => {
     expect(result.url).toBe('https://storage.example.com/rdep.xml');
     expect(result.totalEmpleados).toBe(1);
     expect(result.validation.valid).toBe(true);
-    expect(result.xmlString).toContain('rdep:anexoRelacionDependencia');
+    expect(result.validation.mode).toBe('parsed_xsd_contract_v1');
+    expect(result.xmlString).toContain('<rdep>');
+    expect(result.xmlString).toContain('<retRelDep>');
+    expect(result.xmlString).toContain('<datRetRelDep>');
     expect(s3Upload).toHaveBeenCalledTimes(1);
   });
 
-  test('rechaza XML sin trabajadores', () => {
-    const xml = '<?xml version="1.0" encoding="UTF-8"?><rdep:anexoRelacionDependencia><identificacion><ruc>1790012345001</ruc><razonSocial>EMPRESA</razonSocial><periodo>06/2026</periodo></identificacion></rdep:anexoRelacionDependencia>';
+  test('rechaza XML que no cumple el contrato real del XSD', () => {
+    const xml = '<?xml version="1.0" encoding="UTF-8"?><rdep><numRuc>1790012345001</numRuc><anio>2026</anio><retRelDep></retRelDep></rdep>';
 
-    expect(() => validateRdepXmlAgainstXsdContract(xml)).toThrow('validacion estructural');
+    expect(() => validateRdepXmlAgainstXsdContract(xml)).toThrow('validacion contra el XSD');
   });
 });

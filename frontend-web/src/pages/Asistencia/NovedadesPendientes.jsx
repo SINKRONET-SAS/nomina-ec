@@ -1,7 +1,8 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authenticatedApi } from '../../services/authenticatedApi';
-import { Check, X, Clock } from 'lucide-react';
+import { Check, X } from 'lucide-react';
+import { formatDateEC } from '../../utils/dateFormat';
 
 function NovedadesPendientes() {
   const queryClient = useQueryClient();
@@ -49,7 +50,7 @@ function NovedadesPendientes() {
                 novedades.map(nov => (
                   <tr key={nov.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm">{nov.nombres} {nov.apellidos}</td>
-                    <td className="px-6 py-4 text-sm">{new Date(nov.fecha).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-sm">{formatDateEC(nov.fecha)}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         nov.tipo_novedad === 'tardia' ? 'bg-yellow-100 text-yellow-800' :

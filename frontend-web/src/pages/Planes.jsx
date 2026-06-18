@@ -13,6 +13,7 @@ function formatPrice(plan) {
 function Planes() {
   const [planes, setPlanes] = useState([]);
   const [error, setError] = useState('');
+  const [capabilitiesError, setCapabilitiesError] = useState('');
   const [capabilities, setCapabilities] = useState(null);
   const [loadingPlan, setLoadingPlan] = useState('');
   const { token } = useAuth();
@@ -26,15 +27,19 @@ function Planes() {
 
   useEffect(() => {
     if (!token) return;
+    setCapabilitiesError('');
     fetchPlanCapabilities()
       .then(setCapabilities)
-      .catch((err) => console.error('[PLANES] No se pudieron cargar capacidades del plan actual', {
-        code: err.response?.data?.error || 'PLAN_CAPABILITIES_ERROR',
-        statusCode: err.response?.status || 500,
-        correlationId: err.response?.data?.correlationId || 'frontend-planes',
-        userId: null,
-        message: err.message,
-      }));
+      .catch((err) => {
+        console.error('[PLANES] No se pudieron cargar capacidades del plan actual', {
+          code: err.response?.data?.error || 'PLAN_CAPABILITIES_ERROR',
+          statusCode: err.response?.status || 500,
+          correlationId: err.response?.data?.correlationId || 'frontend-planes',
+          userId: null,
+          message: err.message,
+        });
+        setCapabilitiesError(extractApiError(err, 'No pudimos cargar las capacidades del plan activo.'));
+      });
   }, [token]);
 
   const handleCheckout = async (planId) => {
@@ -83,6 +88,7 @@ function Planes() {
         </div>
 
         {error && <div className="mt-6 status-error">{error}</div>}
+        {capabilitiesError && <div className="mt-6 status-error">{capabilitiesError}</div>}
         {capabilities && (
           <div className="mt-6 rounded-md border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
             Plan activo: <strong>{capabilities.planNombre}</strong>. Archivos bancarios: {capabilities.allowed?.bankFiles ? 'habilitados' : 'bloqueados'}.

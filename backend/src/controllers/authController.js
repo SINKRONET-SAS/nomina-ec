@@ -1,10 +1,8 @@
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const jwt = require('jsonwebtoken');
 const db = require('../config/database');
 const { generateToken } = require('../middleware/auth');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
+const { verifyJwt } = require('../config/jwt');
 
 function buildUserPayload(usuario) {
   return {
@@ -266,7 +264,7 @@ async function refreshToken(req, res, next) {
       });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = verifyJwt(token);
     const result = await db.query('SELECT * FROM usuarios WHERE id = $1 AND activo = true', [
       decoded.userId,
     ]);

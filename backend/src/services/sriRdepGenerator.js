@@ -11,6 +11,52 @@ const db = require('../config/database');
 const AppError = require('../utils/AppError');
 
 const RDEP_XSD_PATH = path.join(__dirname, '..', 'config', 'rdep', 'Esquema_RDEP_2023.xsd');
+const XSD_VALIDATION_MODE = 'parsed_xsd_contract_v1';
+
+function asArray(value) {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+function readElementName(node) {
+  return node?.['@_name'] || node?.['@name'];
+}
+
+function readElementType(node) {
+  return node?.['@_type'] || node?.['@type'];
+}
+
+function readMinOccurs(node) {
+  return node?.['@_minOccurs'] || node?.['@minOccurs'] || '1';
+}
+
+function getRdepXsdContract(content) {
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: '@_',
+  });
+  const schema = parser.parse(content)['xs:schema'];
+  const complexTypes = new Map();
+
+  asArray(schema?.['xs:complexType']).forEach((typeNode) => {
+    const name = typeNode['@_name'];
+    if (name) complexTypes.set(name, typeNode);
+  });
+
+  const rootElement = asArray(schema?.['xs:element']).find((element) => readElementName(element) === 'rdep');
+  if (!rootElement) {
+    throw new AppError('El XSD RDEP versionado no declara la raiz esperada rdep.', {
+      code: 'RDEP_XSD_ROOT_NOT_FOUND',
+      statusCode: 500,
+    });
+  }
+
+  return {
+    rootName: readElementName(rootElement),
+    rootType: readElementType(rootElement),
+    complexTypes,
+  };
+}
 
 function getRdepXsdMetadata() {
   if (!fs.existsSync(RDEP_XSD_PATH)) {
@@ -22,9 +68,13 @@ function getRdepXsdMetadata() {
   }
 
   const content = fs.readFileSync(RDEP_XSD_PATH, 'utf8');
+  const contract = getRdepXsdContract(content);
   return {
     path: RDEP_XSD_PATH,
     sha256: crypto.createHash('sha256').update(content, 'utf8').digest('hex'),
+    rootName: contract.rootName,
+    rootType: contract.rootType,
+    validationMode: XSD_VALIDATION_MODE,
   };
 }
 
@@ -90,49 +140,163 @@ async function precheckRDEP(tenantId, anio, mes) {
     checks,
     xsd: {
       sha256: xsd.sha256,
-      validationMode: 'structural_xsd_gate',
+      rootName: xsd.rootName,
+      validationMode: xsd.validationMode,
     },
   };
 }
 
+function validateElementValue(value, elementType, pathLabel, failures) {
+  if (value === undefined || value === null || value === '') {
+    failures.push(`Falta ${pathLabel}.`);
+    return;
+  }
+
+  const stringValue = String(value);
+  if (elementType === 'numRucTyp' && !/^\d{13}$/.test(stringValue)) {
+    failures.push(`${pathLabel} debe ser un RUC de 13 digitos.`);
+  }
+  if (elementType === 'anioTyp' && Number(stringValue) < 2004) {
+    failures.push(`${pathLabel} debe ser un anio valido para RDEP.`);
+  }
+  if (['numeroPositivoTyp', 'numeroPositivoGrandeTyp'].includes(elementType) && !/^\d+(\.\d{2})$/.test(stringValue)) {
+    failures.push(`${pathLabel} debe ser decimal positivo con dos decimales.`);
+  }
+  if (elementType === 'sisSalNetTyp' && !['1', '2'].includes(stringValue)) {
+    failures.push(`${pathLabel} debe ser 1 o 2 segun tabla C del RDEP.`);
+  }
+}
+
+function validateComplexType(xmlNode, typeName, contract, pathLabel, failures) {
+  const complexType = contract.complexTypes.get(typeName);
+  if (!complexType) return;
+
+  const children = asArray(complexType['xs:sequence']?.['xs:element']);
+  children.forEach((child) => {
+    const childName = readElementName(child);
+    const childType = readElementType(child);
+    const required = readMinOccurs(child) !== '0';
+    const childValue = xmlNode?.[childName];
+    const childPath = `${pathLabel}.${childName}`;
+
+    if ((childValue === undefined || childValue === null) && required) {
+      failures.push(`Falta ${childPath}.`);
+      return;
+    }
+    if (childValue === undefined || childValue === null) return;
+
+    if (contract.complexTypes.has(childType)) {
+      asArray(childValue).forEach((entry, index) => {
+        const indexedPath = Array.isArray(childValue) ? `${childPath}[${index + 1}]` : childPath;
+        validateComplexType(entry, childType, contract, indexedPath, failures);
+      });
+      return;
+    }
+
+    if (childType) {
+      validateElementValue(childValue, childType, childPath, failures);
+    }
+  });
+}
+
 function validateRdepXmlAgainstXsdContract(xmlString) {
+  const xsdContent = fs.readFileSync(RDEP_XSD_PATH, 'utf8');
   const xsd = getRdepXsdMetadata();
+  const contract = getRdepXsdContract(xsdContent);
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: '@',
+    parseTagValue: false,
   });
   const parsed = parser.parse(xmlString);
-  const root = parsed['rdep:anexoRelacionDependencia'];
+  const root = parsed[contract.rootName];
   const failures = [];
 
-  if (!root) failures.push('No existe raiz rdep:anexoRelacionDependencia.');
-  if (root && !root.identificacion?.ruc) failures.push('Falta identificacion.ruc.');
-  if (root && !root.identificacion?.razonSocial) failures.push('Falta identificacion.razonSocial.');
-  if (root && !root.identificacion?.periodo) failures.push('Falta identificacion.periodo.');
-  const trabajadores = root?.trabajadores?.trabajador;
-  const workerList = Array.isArray(trabajadores) ? trabajadores : (trabajadores ? [trabajadores] : []);
-  if (workerList.length === 0) failures.push('No existen trabajadores RDEP.');
-
-  workerList.forEach((worker, index) => {
-    if (!worker.identificacion) failures.push(`Trabajador ${index + 1}: falta identificacion.`);
-    if (!worker.apellidos) failures.push(`Trabajador ${index + 1}: faltan apellidos.`);
-    if (!worker.nombres) failures.push(`Trabajador ${index + 1}: faltan nombres.`);
-    if (Number.isNaN(Number(worker.ingresosGravados))) failures.push(`Trabajador ${index + 1}: ingresos gravados no numericos.`);
-  });
+  if (!root) failures.push(`No existe raiz ${contract.rootName} declarada en el XSD RDEP.`);
+  if (root) validateComplexType(root, contract.rootType, contract, contract.rootName, failures);
+  const retenciones = asArray(root?.retRelDep?.datRetRelDep);
+  if (root && retenciones.length === 0) failures.push('No existen registros retRelDep.datRetRelDep.');
 
   if (failures.length > 0) {
-    throw new AppError('El XML RDEP no supera la validacion estructural contra el contrato XSD versionado.', {
+    throw new AppError('El XML RDEP no supera la validacion contra el XSD versionado.', {
       code: 'RDEP_XSD_VALIDATION_FAILED',
       statusCode: 422,
-      details: { failures, xsdSha256: xsd.sha256 },
+      details: { failures, xsdSha256: xsd.sha256, validationMode: XSD_VALIDATION_MODE },
     });
   }
 
   return {
     valid: true,
-    mode: 'structural_xsd_gate',
+    mode: XSD_VALIDATION_MODE,
     xsdSha256: xsd.sha256,
+    xsdRoot: contract.rootName,
     checkedAt: new Date().toISOString(),
+  };
+}
+
+function money(value) {
+  return (Number.parseFloat(value || 0) || 0).toFixed(2);
+}
+
+function toXsdNameText(value) {
+  return String(value || 'NO REGISTRADO')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase()
+    .slice(0, 100) || 'NO REGISTRADO';
+}
+
+function buildRdepRecord(nomina) {
+  const ingresos = money(nomina.total_ingresos);
+  const aporteIess = money(nomina.aporte_iess_personal);
+  const impuestoRenta = money(nomina.impuesto_renta);
+
+  return {
+    empleado: {
+      benGalpg: 'NO',
+      tipIdRet: 'C',
+      idRet: nomina.cedula,
+      apellidoTrab: toXsdNameText(nomina.apellidos),
+      nombreTrab: toXsdNameText(nomina.nombres),
+      estab: '001',
+      residenciaTrab: '01',
+      paisResidencia: '593',
+      aplicaConvenio: 'NA',
+      tipoTrabajDiscap: '00',
+      porcentajeDiscap: 0,
+      tipIdDiscap: 'N',
+    },
+    suelSal: ingresos,
+    sobSuelComRemu: '0.00',
+    partUtil: '0.00',
+    intGrabGen: '0.00',
+    impRentEmpl: '0.00',
+    decimTer: '0.00',
+    decimCuar: '0.00',
+    fondoReserva: '0.00',
+    salarioDigno: '0.00',
+    otrosIngRenGrav: '0.00',
+    ingGravConEsteEmpl: ingresos,
+    sisSalNet: 1,
+    apoPerIess: aporteIess,
+    aporPerIessConOtrosEmpls: '0.00',
+    deducVivienda: '0.00',
+    deducSalud: '0.00',
+    deducEducartcult: '0.00',
+    deducAliement: '0.00',
+    deducVestim: '0.00',
+    exoDiscap: '0.00',
+    exoTerEd: '0.00',
+    basImp: money(Number.parseFloat(ingresos) - Number.parseFloat(aporteIess)),
+    impRentCaus: impuestoRenta,
+    rebajaGastosPersonales: '0.00',
+    impuestoRentaRebajaGastosPersonales: impuestoRenta,
+    valRetAsuOtrosEmpls: '0.00',
+    valImpAsuEsteEmpl: '0.00',
+    valRet: impuestoRenta,
   };
 }
 
@@ -147,34 +311,14 @@ async function generarXML_RDEP(tenantId, anio, mes) {
   }
   const { tenant, nominas } = await loadRdepData(tenantId, anio, mes);
 
-  const trabajadores = nominas.map((nomina) => ({
-    trabajador: {
-      tipoIdentificacion: 'C',
-      identificacion: nomina.cedula,
-      apellidos: nomina.apellidos,
-      nombres: nomina.nombres,
-      ingresosGravados: parseFloat(nomina.total_ingresos).toFixed(2),
-      aportePersonalIess: parseFloat(nomina.aporte_iess_personal).toFixed(2),
-      impuestoRentaRetenido: parseFloat(nomina.impuesto_renta).toFixed(2),
-    },
-  }));
-
   const rdep = {
-    'rdep:anexoRelacionDependencia': {
-      '@xmlns:rdep': 'http://www.sri.gob.ec/schema/RDEP',
-      '@xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-      identificacion: {
-        razonSocial: tenant.razon_social,
-        ruc: tenant.ruc,
-        periodo: `${String(mes).padStart(2, '0')}/${anio}`,
-        tipoAnexo: 'RDEP',
-      },
-      trabajadores,
-      resumen: {
-        totalTrabajadores: nominas.length,
-        totalIngresosGravados: nominas.reduce((sum, nomina) => sum + parseFloat(nomina.total_ingresos), 0).toFixed(2),
-        totalAportePersonalIess: nominas.reduce((sum, nomina) => sum + parseFloat(nomina.aporte_iess_personal), 0).toFixed(2),
-        totalImpuestoRentaRetenido: nominas.reduce((sum, nomina) => sum + parseFloat(nomina.impuesto_renta), 0).toFixed(2),
+    rdep: {
+      numRuc: tenant.ruc,
+      anio: Number(anio),
+      tipoEmpleador: 'PRIVADO_MIXTO',
+      enteSegSocial: 'IESS',
+      retRelDep: {
+        datRetRelDep: nominas.map(buildRdepRecord),
       },
     },
   };

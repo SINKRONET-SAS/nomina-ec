@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
+import { todayISOEC } from '../../utils/dateFormat';
 
 function TerminarEmpleado() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [causa, setCausa] = useState('');
-  const [fechaSalida, setFechaSalida] = useState(new Date().toISOString().slice(0, 10));
+  const [fechaSalida, setFechaSalida] = useState(todayISOEC());
   const [cargando, setCargando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState('');

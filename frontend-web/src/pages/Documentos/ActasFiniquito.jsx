@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { downloadUrl } from '../../utils/downloadUrl';
+import { formatDateEC } from '../../utils/dateFormat';
 
 function ActasFiniquito() {
   const [descargandoId, setDescargandoId] = useState('');
@@ -59,7 +60,7 @@ function ActasFiniquito() {
                   <tr key={doc.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm">{doc.nombres} {doc.apellidos}</td>
                     <td className="px-6 py-4 text-sm">{doc.cedula}</td>
-                    <td className="px-6 py-4 text-sm">{new Date(doc.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-sm">{formatDateEC(doc.created_at)}</td>
                     <td className="px-6 py-4">
                       <button
                         type="button"

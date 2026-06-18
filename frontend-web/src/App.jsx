@@ -105,6 +105,11 @@ function App() {
                   <NuevoEmpleado />
                 </ProtectedRoute>
               } />
+              <Route path="empleados/:id/editar" element={
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
+                  <NuevoEmpleado />
+                </ProtectedRoute>
+              } />
               <Route path="empleados/:id/terminar" element={
                 <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
                   <TerminarEmpleado />

@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const { verifyJwt } = require('../config/jwt');
 
 const publicPaths = new Set([
   '/health',
@@ -28,8 +29,7 @@ const tenantResolver = async (req, res, next) => {
   }
 
   try {
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-super-secret-jwt-key');
+    const decoded = verifyJwt(token);
 
     if (decoded.tenantId) {
       req.tenantId = decoded.tenantId;

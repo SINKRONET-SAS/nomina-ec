@@ -2,6 +2,7 @@
 // PLAN HAIKY - Configuracion de Base de Datos PostgreSQL
 // ============================================================
 const { Pool } = require('pg');
+const { AsyncLocalStorage } = require('async_hooks');
 require('dotenv').config();
 
 const poolConfig = process.env.DATABASE_URL
@@ -24,6 +25,7 @@ const pool = new Pool({
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
 });
+const tenantContextStorage = new AsyncLocalStorage();
 
 pool.on('connect', () => {
   if (process.env.NODE_ENV === 'development') {
@@ -42,7 +44,7 @@ pool.on('error', (err) => {
   process.exit(-1);
 });
 
-async function query(text, params) {
+async function runQueryOnPool(text, params) {
   const start = Date.now();
   const result = await pool.query(text, params);
   const duration = Date.now() - start;
@@ -56,6 +58,64 @@ async function query(text, params) {
   }
 
   return result;
+}
+
+async function runQueryWithTenantContext(context, text, params) {
+  const client = await pool.connect();
+  const start = Date.now();
+
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT set_config($1, $2, true)', ['app.current_tenant_id', context.tenantId]);
+
+    if (context.userId) {
+      await client.query('SELECT set_config($1, $2, true)', ['app.current_user_id', context.userId]);
+    }
+
+    const result = await client.query(text, params);
+    await client.query('COMMIT');
+
+    const duration = Date.now() - start;
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[DB] Query ejecutada con contexto tenant', {
+        text: text.substring(0, 100),
+        duration: `${duration}ms`,
+        rows: result.rowCount,
+        tenantId: context.tenantId,
+      });
+    }
+
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+async function query(text, params) {
+  const context = tenantContextStorage.getStore();
+  if (context?.tenantId) {
+    return runQueryWithTenantContext(context, text, params);
+  }
+
+  return runQueryOnPool(text, params);
+}
+
+function runWithTenantContext(context, callback) {
+  if (!context?.tenantId) {
+    return callback();
+  }
+
+  return tenantContextStorage.run({
+    tenantId: context.tenantId,
+    userId: context.userId || null,
+  }, callback);
+}
+
+function getTenantContext() {
+  return tenantContextStorage.getStore() || null;
 }
 
 async function getClient(tenantId, userId) {
@@ -97,6 +157,8 @@ async function migrate() {
 module.exports = {
   pool,
   query,
+  runWithTenantContext,
+  getTenantContext,
   getClient,
   commit,
   rollback,

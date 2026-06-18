@@ -266,7 +266,25 @@ async function actualizar(req, res) {
   try {
     const { id } = req.params;
     const { tenantId } = req;
-    const updates = req.body;
+    const allowedFields = new Set([
+      'nombres',
+      'apellidos',
+      'cargo',
+      'departamento',
+      'sueldo_bruto_mensual',
+      'jornada_horas_mensuales',
+      'gastos_personales_anuales',
+      'fecha_ingreso',
+      'tipo_contrato',
+      'banco',
+      'tipo_cuenta',
+      'direccion_domicilio',
+      'telefono',
+      'email_personal',
+    ]);
+    const updates = Object.fromEntries(
+      Object.entries(req.body || {}).filter(([key]) => allowedFields.has(key))
+    );
     
     // No permitir cambiar cédula
     delete updates.cedula;

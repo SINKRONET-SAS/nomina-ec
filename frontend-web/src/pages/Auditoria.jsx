@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ShieldCheck } from 'lucide-react';
 import { authenticatedApi } from '../services/authenticatedApi';
+import { formatDateTimeEC } from '../utils/dateFormat';
 
 function formatDate(value) {
-  if (!value) return '-';
-  return new Date(value).toLocaleString('es-EC');
+  return formatDateTimeEC(value);
 }
 
 function Auditoria() {

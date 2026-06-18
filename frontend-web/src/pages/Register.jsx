@@ -31,6 +31,12 @@ function Register() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
+
+    if (!form.acceptedTerms || !form.acceptedPrivacy || !form.acceptedDataProcessing) {
+      setError('Debes aceptar terminos, privacidad y tratamiento de datos personales para crear la cuenta.');
+      return;
+    }
+
     setLoading(true);
     try {
       const acceptedAt = new Date().toISOString();
@@ -147,15 +153,15 @@ function Register() {
 
           <div className="mt-6 space-y-3 rounded-md bg-slate-50 p-4">
             <label className="flex gap-3 text-sm text-slate-700">
-              <input className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600" type="checkbox" checked={form.acceptedTerms} onChange={(e) => update('acceptedTerms', e.target.checked)} />
+              <input className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600" type="checkbox" required checked={form.acceptedTerms} onChange={(e) => update('acceptedTerms', e.target.checked)} />
               <span>Acepto los términos de servicio de Nómina-Ec.</span>
             </label>
             <label className="flex gap-3 text-sm text-slate-700">
-              <input className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600" type="checkbox" checked={form.acceptedPrivacy} onChange={(e) => update('acceptedPrivacy', e.target.checked)} />
+              <input className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600" type="checkbox" required checked={form.acceptedPrivacy} onChange={(e) => update('acceptedPrivacy', e.target.checked)} />
               <span>Acepto la política de privacidad.</span>
             </label>
             <label className="flex gap-3 text-sm text-slate-700">
-              <input className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600" type="checkbox" checked={form.acceptedDataProcessing} onChange={(e) => update('acceptedDataProcessing', e.target.checked)} />
+              <input className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600" type="checkbox" required checked={form.acceptedDataProcessing} onChange={(e) => update('acceptedDataProcessing', e.target.checked)} />
               <span>Autorizo el tratamiento de datos personales laborales bajo la versión {LOPDP_VERSION}.</span>
             </label>
           </div>
