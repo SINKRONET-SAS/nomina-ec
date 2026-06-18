@@ -36,15 +36,15 @@
       "expo-secure-store"
     ],
     "extra": {
-      "eas": {
-        "projectId": "00000000-0000-0000-0000-000000000000"
-      },
       "apiBaseUrl": "https://api.nomina-ec.com/api",
       "privacyUrl": "https://nomina-ec.com/privacidad",
       "termsUrl": "https://nomina-ec.com/terminos",
       "supportUrl": "https://nomina-ec.com/soporte",
-      "accountDeletionUrl": "https://nomina-ec.com/eliminar-cuenta"
+      "accountDeletionUrl": "https://nomina-ec.com/eliminar-cuenta",
+      "eas": {
+        "projectId": "0f419acd-43c8-46d2-a962-2bce1112b194"
+      }
     },
-    "owner": "nomina-ec"
+    "owner": "sinkroniq_mobile"
   }
 }
