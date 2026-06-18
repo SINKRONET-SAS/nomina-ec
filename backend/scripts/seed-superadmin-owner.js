@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Seed seguro de SUPERADMIN y OWNER
+// PLAN HAIKY - Seed seguro de SUPERADMIN y OWNER demo opcional
 // ============================================================
 const bcrypt = require('bcryptjs');
 const { Client } = require('pg');
@@ -25,6 +25,10 @@ function requireEnv(name) {
   }
 
   return value;
+}
+
+function hasAllEnv(names) {
+  return names.every((name) => Boolean(process.env[name]));
 }
 
 async function upsertUser(client, user) {
@@ -56,6 +60,12 @@ async function main() {
       lastNames: process.env.SUPERADMIN_LAST_NAMES || 'HAIKY',
     });
 
+    const ownerEnvNames = ['OWNER_TENANT_RUC', 'OWNER_TENANT_RAZON_SOCIAL', 'OWNER_EMAIL', 'OWNER_PASSWORD'];
+    if (!hasAllEnv(ownerEnvNames)) {
+      console.log('[SEED] SUPERADMIN verificado. OWNER omitido: la empresa cliente debe registrarse desde la aplicacion.');
+      return;
+    }
+
     const tenantResult = await client.query(`
       INSERT INTO tenants (ruc, razon_social, nombre_comercial)
       VALUES ($1, $2, $3)
@@ -80,7 +90,7 @@ async function main() {
       lastNames: process.env.OWNER_LAST_NAMES || 'Tenant',
     });
 
-    console.log('[SEED] SUPERADMIN y OWNER verificados correctamente');
+    console.log('[SEED] SUPERADMIN y OWNER demo verificados correctamente');
   } finally {
     await client.end();
   }

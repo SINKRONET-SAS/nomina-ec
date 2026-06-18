@@ -16,14 +16,21 @@ Fecha: 2026-06-11
 - `POST /api/auth/register` ahora requiere token y rol `superadmin` u `owner`.
 - Las rutas `/api/*` de negocio requieren autenticacion JWT.
 - El resolver de tenant registra errores en lugar de fallar silenciosamente.
-- Se agrego `backend/scripts/seed-superadmin-owner.js` para crear SUPERADMIN y OWNER desde variables de entorno.
+- Se agrego `backend/scripts/seed-superadmin-owner.js` para crear el SUPERADMIN tecnico desde variables de entorno.
+- El OWNER y la empresa cliente deben crearse desde el flujo de registro de la aplicacion. El seed solo crea OWNER si se configuran variables demo opcionales.
 
-## Variables para seed
+## Variables para seed local
 
 - `SUPERADMIN_EMAIL`
 - `SUPERADMIN_PASSWORD`
+
+## Variables demo opcionales
+
+Estas variables no son necesarias para operar el sistema real. Solo sirven para crear un tenant owner de prueba despues de resetear la base local.
+
 - `OWNER_TENANT_RUC`
 - `OWNER_TENANT_RAZON_SOCIAL`
+- `OWNER_TENANT_NOMBRE_COMERCIAL`
 - `OWNER_EMAIL`
 - `OWNER_PASSWORD`
 
