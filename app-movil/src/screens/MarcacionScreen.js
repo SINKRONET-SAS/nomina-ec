@@ -18,6 +18,7 @@ export default function MarcacionScreen() {
 
   const puedeMarcarInicio = !ultimaMarcacion || ultimaMarcacion.tipo_marcacion === 'fin_jornada';
   const puedeMarcarFin = ultimaMarcacion && ultimaMarcacion.tipo_marcacion === 'inicio_jornada';
+  const zonaMarcacion = employee?.zona_marcacion;
 
   const statusStyle = useMemo(() => {
     if (status.type === 'error') return styles.statusError;
@@ -74,7 +75,11 @@ export default function MarcacionScreen() {
       });
       setUltimaMarcacion(response.data.marcacion);
       setEmployee(response.data.employee || employee);
-      setStatus({ type: 'success', text: `Marcacion registrada: ${tipo.replace(/_/g, ' ')}.` });
+      const zona = response.data.marcacion?.zonaMarcacion || response.data.employee?.zona_marcacion || zonaMarcacion;
+      setStatus({
+        type: 'success',
+        text: `Marcacion registrada: ${tipo.replace(/_/g, ' ')}.${zona?.nombre ? ` Zona: ${zona.nombre}.` : ''}`,
+      });
     } catch (err) {
       setStatus({ type: 'error', text: err.response?.data?.message || 'No pudimos registrar la marcacion.' });
     } finally {
@@ -100,6 +105,14 @@ export default function MarcacionScreen() {
         <Text style={styles.cardLabel}>Empleado</Text>
         <Text style={styles.employeeName}>{employee ? `${employee.nombres} ${employee.apellidos}` : 'Sin empleado vinculado'}</Text>
         <Text style={styles.cardDetail}>{employee?.cargo || 'Cargo no registrado'}</Text>
+        <Text style={styles.cardDetail}>
+          Zona: {zonaMarcacion ? `${zonaMarcacion.nombre} (${zonaMarcacion.codigo})` : 'Zona no asignada'}
+        </Text>
+        {zonaMarcacion ? (
+          <Text style={styles.cardDetail}>Radio autorizado: {zonaMarcacion.radio_metros} m</Text>
+        ) : (
+          <Text style={styles.warningText}>Solicita a RRHH vincular tu unidad organizativa a una zona de marcacion.</Text>
+        )}
       </View>
 
       <View style={[styles.status, statusStyle]}>
@@ -196,6 +209,12 @@ const styles = StyleSheet.create({
   cardDetail: {
     color: '#334155',
     fontSize: 14,
+  },
+  warningText: {
+    color: '#b45309',
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 8,
   },
   mono: {
     color: '#334155',

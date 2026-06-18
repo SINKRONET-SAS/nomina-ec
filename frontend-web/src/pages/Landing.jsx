@@ -16,8 +16,8 @@ import {
 const flow = [
   {
     icon: UsersRound,
-    title: 'Empleados y contratos',
-    text: 'Alta laboral, documentos, unidades y responsables desde una sola ficha operativa.',
+    title: 'Empleados, unidades y zonas',
+    text: 'Alta laboral, documentos y unidades organizativas vinculadas a zonas de marcacion.',
   },
   {
     icon: CalendarCheck2,
@@ -49,7 +49,7 @@ const flow = [
 const checklist = [
   'Parámetros legales versionados y trazables por periodo',
   'Políticas públicas de privacidad, soporte y eliminación de cuenta',
-  'Controles de acceso, auditoría y separación por empresa',
+  'Unidades organizativas conectadas a zonas de marcacion',
   'PWA operativa para acceso web y flujos de RRHH',
 ];
 
@@ -98,7 +98,7 @@ function Landing() {
             <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600">
               Nómina-Ec concentra la operación mensual de RRHH para empresas ecuatorianas:
               parametrización legal, empleados, asistencia, roles de pago, documentos,
-              archivo bancario, reportes RDEP/IESS y auditoría por usuario.
+              unidades con zona de marcacion, archivo bancario, reportes RDEP/IESS y auditoría por usuario.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link className="primary-button" to="/login">
@@ -134,7 +134,7 @@ function Landing() {
                 <div className="mt-4 space-y-4">
                   {[
                     ['Datos de empresa', 'configurado'],
-                    ['Banco y archivo plano', 'operativo'],
+                    ['Unidades y zonas', 'vinculadas'],
                     ['RDEP e IESS', 'trazable'],
                     ['Usuarios y roles', 'activo'],
                   ].map(([label, status]) => (
@@ -151,7 +151,7 @@ function Landing() {
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     ['Empleados', '84'],
-                    ['Novedades', '12'],
+                    ['Zonas activas', '8'],
                     ['Neto procesado', '$68.240'],
                     ['Reportes', 'RDEP/IESS'],
                   ].map(([label, value]) => (

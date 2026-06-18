@@ -36,6 +36,8 @@ export default function AutoservicioScreen() {
     );
   }
 
+  const zonaMarcacion = employee?.zona_marcacion;
+
   return (
     <View style={styles.container}>
       <Text style={styles.eyebrow}>Autoservicio</Text>
@@ -48,6 +50,9 @@ export default function AutoservicioScreen() {
         <Text style={styles.name}>{employee ? `${employee.nombres} ${employee.apellidos}` : 'Sin empleado vinculado'}</Text>
         <Text style={styles.detail}>{employee?.cedula || ''}</Text>
         <Text style={styles.detail}>{employee?.cargo || 'Cargo no registrado'} | {employee?.departamento || 'Departamento no registrado'}</Text>
+        <Text style={styles.detail}>
+          Zona marcacion: {zonaMarcacion ? `${zonaMarcacion.nombre} (${zonaMarcacion.codigo})` : 'No asignada'}
+        </Text>
       </View>
 
       <View style={styles.card}>

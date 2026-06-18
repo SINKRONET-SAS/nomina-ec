@@ -200,7 +200,7 @@ const formDefinitions = [
   {
     key: 'organizacion',
     title: 'Unidad organizativa',
-    description: 'Crea departamentos, areas, sucursales o centros de costo.',
+    description: 'Crea departamentos, areas, sucursales o centros de costo vinculados a una zona de marcacion.',
     icon: Network,
     resource: 'organizationUnits',
     stepCode: 'organizacion',
@@ -998,8 +998,8 @@ function Parametrizacion() {
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Configuracion de la empresa</p>
             <h1 className="mt-2 text-2xl font-semibold text-slate-950">Parametriza la nomina con datos visibles</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Ingresa parametros laborales, novedades, estructura, zonas y jornadas. Cada registro queda guardado
-              como configuracion revisable antes de usarlo en calculos productivos.
+              Ingresa parametros laborales, novedades, estructura, zonas y jornadas. Cada unidad organizativa debe
+              quedar vinculada a una zona de marcacion antes de usarse en asistencia productiva.
             </p>
           </div>
           <div className="rounded-md bg-teal-50 px-5 py-4 text-center">

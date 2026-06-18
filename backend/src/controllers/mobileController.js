@@ -1,5 +1,5 @@
 const db = require('../config/database');
-const { validarMarcacion } = require('../services/marcacionValidator');
+const { validarMarcacion, resolveWorkZoneForEmployee } = require('../services/marcacionValidator');
 
 async function resolveEmployee(req) {
   const result = await db.query(`
@@ -17,7 +17,18 @@ async function resolveEmployee(req) {
     throw err;
   }
 
-  return result.rows[0];
+  const employee = result.rows[0];
+  const workZone = await resolveWorkZoneForEmployee(employee.id, req.tenantId);
+
+  return {
+    ...employee,
+    zona_marcacion: workZone ? {
+      id: workZone.id,
+      codigo: workZone.code,
+      nombre: workZone.name,
+      radio_metros: workZone.radius_meters,
+    } : null,
+  };
 }
 
 async function perfil(req, res) {

@@ -16,9 +16,11 @@ async function validarMarcacion({
   permitirFueraPerimetro = false,
   motivoFueraPerimetro = '',
   ip,
+  ipAddress,
   correlationId,
   userId,
 }) {
+  const requestIp = ip || ipAddress || null;
   if (lat === undefined || lng === undefined || Number.isNaN(lat) || Number.isNaN(lng)) {
     throw new AppError('La geolocalizacion es obligatoria para registrar marcaciones', {
       code: 'GEOLOCALIZACION_REQUERIDA',
@@ -43,15 +45,18 @@ async function validarMarcacion({
   }
 
   const tenant = tenantResult.rows[0];
+  const workZone = await resolveWorkZoneForEmployee(empleadoId, tenantId);
   const configuredRadius = tenant.configuracion?.radio_permitido_metros;
-  const radioPermitido = Number(configuredRadius || tenant.radio_perimetro_metros || 100);
+  const radioPermitido = Number(workZone?.radius_meters || configuredRadius || tenant.radio_perimetro_metros || 100);
+  const referenceLat = workZone?.latitude || tenant.ubicacion_lat;
+  const referenceLng = workZone?.longitude || tenant.ubicacion_lng;
   let distancia = 0;
   let dentroPerimetro = true;
 
-  if (tenant.ubicacion_lat && tenant.ubicacion_lng) {
+  if (referenceLat && referenceLng) {
     distancia = calcularDistanciaHaversine(
-      Number(tenant.ubicacion_lat),
-      Number(tenant.ubicacion_lng),
+      Number(referenceLat),
+      Number(referenceLng),
       lat,
       lng
     );
@@ -124,9 +129,12 @@ async function validarMarcacion({
     lng,
     dentroPerimetro,
     distancia,
-    ip,
+    requestIp,
     JSON.stringify({
       radioPermitido,
+      workZoneId: workZone?.id || null,
+      workZoneName: workZone?.name || null,
+      perimeterSource: workZone ? 'organization_unit_work_zone' : 'tenant_default',
       permitirFueraPerimetro: Boolean(permitirFueraPerimetro),
       motivoFueraPerimetro: motivoFueraPerimetro || '',
     }),
@@ -148,7 +156,7 @@ async function validarMarcacion({
       distancia,
       permitirFueraPerimetro: Boolean(permitirFueraPerimetro),
     },
-    ipAddress: ip,
+    ipAddress: requestIp,
   });
 
   if (tipo === 'inicio_jornada' && dentroPerimetro) {
@@ -158,10 +166,42 @@ async function validarMarcacion({
   return {
     success: true,
     marcacionId,
+    tipo_marcacion: tipo,
+    timestamp: new Date().toISOString(),
     dentroPerimetro,
     distancia: distancia.toFixed(0),
+    zonaMarcacion: workZone ? {
+      id: workZone.id,
+      nombre: workZone.name,
+      codigo: workZone.code,
+      radioMetros: radioPermitido,
+    } : null,
     fotoUrl,
   };
+}
+
+async function resolveWorkZoneForEmployee(empleadoId, tenantId) {
+  const result = await db.query(`
+    SELECT wz.id, wz.code, wz.name, wz.latitude, wz.longitude, wz.radius_meters
+    FROM empleados e
+    JOIN organization_units ou
+      ON ou.tenant_id = e.tenant_id
+      AND ou.status = 'activo'
+      AND (
+        LOWER(ou.code) = LOWER(e.departamento)
+        OR LOWER(ou.name) = LOWER(e.departamento)
+      )
+    JOIN work_zones wz
+      ON wz.id = ou.work_zone_id
+      AND wz.tenant_id = e.tenant_id
+      AND wz.status = 'activo'
+    WHERE e.id = $1
+      AND e.tenant_id = $2
+    ORDER BY ou.updated_at DESC, ou.created_at DESC
+    LIMIT 1
+  `, [empleadoId, tenantId]);
+
+  return result.rows[0] || null;
 }
 
 function calcularDistanciaHaversine(lat1, lon1, lat2, lon2) {
@@ -217,4 +257,4 @@ async function generarNovedadTardia(empleadoId, tenantId, correlationId, userId)
   }
 }
 
-module.exports = { validarMarcacion, calcularDistanciaHaversine };
+module.exports = { validarMarcacion, calcularDistanciaHaversine, resolveWorkZoneForEmployee };
