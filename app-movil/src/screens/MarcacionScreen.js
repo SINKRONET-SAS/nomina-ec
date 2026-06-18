@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as Location from 'expo-location';
 import { mobileAPI } from '../services/api';
 
@@ -8,7 +8,7 @@ function formatMark(mark) {
   return `${String(mark.tipo_marcacion || '').replace(/_/g, ' ')} - ${new Date(mark.timestamp).toLocaleString('es-EC')}`;
 }
 
-export default function MarcacionScreen() {
+export default function MarcacionScreen({ onLogout }) {
   const [ubicacion, setUbicacion] = useState(null);
   const [employee, setEmployee] = useState(null);
   const [ultimaMarcacion, setUltimaMarcacion] = useState(null);
@@ -59,7 +59,6 @@ export default function MarcacionScreen() {
 
   useEffect(() => {
     cargarResumen();
-    obtenerUbicacion().catch(() => setStatus({ type: 'error', text: 'No pudimos obtener ubicacion.' }));
   }, []);
 
   const registrarMarcacion = async (tipo) => {
@@ -97,9 +96,16 @@ export default function MarcacionScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.eyebrow}>Asistencia movil</Text>
-      <Text style={styles.title}>Marcacion de jornada</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={styles.eyebrow}>Asistencia movil</Text>
+          <Text style={styles.title}>Marcacion de jornada</Text>
+        </View>
+        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+          <Text style={styles.logoutButtonText}>Salir</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.card}>
         <Text style={styles.cardLabel}>Empleado</Text>
@@ -152,7 +158,7 @@ export default function MarcacionScreen() {
         <Text style={styles.cardLabel}>Ultima marcacion</Text>
         <Text style={styles.cardDetail}>{formatMark(ultimaMarcacion)}</Text>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -169,8 +175,14 @@ const styles = StyleSheet.create({
   },
   container: {
     backgroundColor: '#f8fafc',
-    flex: 1,
+    flexGrow: 1,
     padding: 20,
+  },
+  headerRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 18,
   },
   eyebrow: {
     color: '#0f766e',
@@ -183,8 +195,20 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     fontSize: 26,
     fontWeight: '800',
-    marginBottom: 18,
     marginTop: 4,
+  },
+  logoutButton: {
+    alignItems: 'center',
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    borderWidth: 1,
+    minHeight: 38,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+  },
+  logoutButtonText: {
+    color: '#334155',
+    fontWeight: '700',
   },
   card: {
     backgroundColor: '#ffffff',

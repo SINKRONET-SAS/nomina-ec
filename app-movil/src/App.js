@@ -1,30 +1,13 @@
 ﻿// Nómina-Ec - App móvil (React Native + Expo)
 // App.js - Componente principal
 import React, { useState, useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 
 import LoginScreen from './screens/LoginScreen';
 import MarcacionScreen from './screens/MarcacionScreen';
-import MisMarcacionesScreen from './screens/MisMarcacionesScreen';
-import AutoservicioScreen from './screens/AutoservicioScreen';
-
-const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
-
-function MainTabs() {
-  return (
-    <Tab.Navigator screenOptions={{ headerTitleAlign: 'center' }}>
-      <Tab.Screen name="Asistencia" component={MarcacionScreen} />
-      <Tab.Screen name="Historial" component={MisMarcacionesScreen} />
-      <Tab.Screen name="Autoservicio" component={AutoservicioScreen} />
-    </Tab.Navigator>
-  );
-}
 
 export default function App() {
   const [token, setToken] = useState(null);
@@ -50,23 +33,35 @@ export default function App() {
     setToken(newToken);
   };
 
-  if (cargando) return null;
+  const handleLogout = async () => {
+    await SecureStore.deleteItemAsync('token');
+    setToken(null);
+  };
+
+  if (cargando) {
+    return (
+      <SafeAreaProvider>
+        <View style={styles.loading}>
+          <ActivityIndicator color="#0f766e" size="large" />
+        </View>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <StatusBar style="auto" />
-        <Stack.Navigator>
-          {token ? (
-            <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
-          ) : (
-            <Stack.Screen name="Login" options={{ headerShown: false }}>
-              {() => <LoginScreen onLogin={handleLogin} />}
-            </Stack.Screen>
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
+      <StatusBar style="auto" />
+      {token ? <MarcacionScreen onLogout={handleLogout} /> : <LoginScreen onLogin={handleLogin} />}
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    flex: 1,
+    justifyContent: 'center',
+  },
+});
 
