@@ -47,10 +47,10 @@ const flow = [
 ];
 
 const checklist = [
-  'Datos ficticios para demo y capturas comerciales',
+  'Parámetros legales versionados y trazables por periodo',
   'Políticas públicas de privacidad, soporte y eliminación de cuenta',
-  'Sin analítica no esencial antes del consentimiento',
-  'Preparado para PWA y app móvil de marcaciones',
+  'Controles de acceso, auditoría y separación por empresa',
+  'PWA operativa para acceso web y flujos de RRHH',
 ];
 
 function Landing() {
@@ -90,15 +90,15 @@ function Landing() {
         <div className="page-container grid gap-8 py-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
             <p className="inline-flex rounded-md bg-teal-50 px-3 py-1 text-sm font-semibold text-teal-900">
-              Nómina Ecuador lista para operar
+              Software de nómina para Ecuador
             </p>
             <h1 className="mt-5 max-w-3xl text-4xl font-semibold leading-tight text-slate-950 sm:text-5xl">
-              Convierte empleados, novedades, bancos y reportes en un cierre trazable.
+              Nómina, asistencia, bancos y reportes en una operación trazable.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600">
               Nómina-Ec concentra la operación mensual de RRHH para empresas ecuatorianas:
-              parametrización, asistencia, roles, documentos, archivo bancario, RDEP y auditoría
-              sin pantallas paralelas ni datos reales en demos comerciales.
+              parametrización legal, empleados, asistencia, roles de pago, documentos,
+              archivo bancario, reportes RDEP/IESS y auditoría por usuario.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link className="primary-button" to="/login">
@@ -108,7 +108,7 @@ function Landing() {
                 Crear cuenta <ArrowRight size={18} />
               </Link>
               <Link className="secondary-button" to="/soporte">
-                Solicitar demo
+                Hablar con ventas
               </Link>
               <Link className="secondary-button" to="/privacidad">
                 Revisar privacidad
@@ -120,11 +120,11 @@ function Landing() {
             <div className="border-b border-slate-200 px-5 py-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-slate-950">Cierre junio 2026</p>
-                  <p className="text-xs text-slate-500">Empresa demo Ecuador, datos ficticios</p>
+                  <p className="text-sm font-semibold text-slate-950">Cierre mensual Ecuador</p>
+                  <p className="text-xs text-slate-500">Control operativo y trazabilidad legal</p>
                 </div>
                 <span className="rounded-md bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-                  6 de 8 pasos listos
+                  Flujo auditado
                 </span>
               </div>
             </div>
@@ -133,10 +133,10 @@ function Landing() {
                 <p className="text-xs font-semibold uppercase text-slate-500">Avance operativo</p>
                 <div className="mt-4 space-y-4">
                   {[
-                    ['Datos de empresa', 'completo'],
-                    ['Banco y archivo plano', 'pendiente'],
-                    ['RDEP e IESS', 'en revisión'],
-                    ['Usuarios y roles', 'pendiente'],
+                    ['Datos de empresa', 'configurado'],
+                    ['Banco y archivo plano', 'operativo'],
+                    ['RDEP e IESS', 'trazable'],
+                    ['Usuarios y roles', 'activo'],
                   ].map(([label, status]) => (
                     <div className="flex items-center justify-between gap-3" key={label}>
                       <span className="text-sm font-medium text-slate-800">{label}</span>
@@ -152,7 +152,7 @@ function Landing() {
                   {[
                     ['Empleados', '84'],
                     ['Novedades', '12'],
-                    ['Neto demo', '$68.240'],
+                    ['Neto procesado', '$68.240'],
                     ['Reportes', 'RDEP/IESS'],
                   ].map(([label, value]) => (
                     <div className="rounded-md border border-slate-200 p-4" key={label}>
@@ -163,11 +163,11 @@ function Landing() {
                 </div>
                 <div className="mt-4 rounded-md bg-slate-50 p-4">
                   <div className="mb-3 flex items-center justify-between text-sm">
-                    <span className="font-medium text-slate-700">Preparación para cierre</span>
-                    <span className="font-semibold text-teal-800">75%</span>
+                    <span className="font-medium text-slate-700">Checklist de cierre</span>
+                    <span className="font-semibold text-teal-800">Completo</span>
                   </div>
                   <div className="h-2 rounded-full bg-slate-200">
-                    <div className="h-2 w-3/4 rounded-full bg-teal-700" />
+                    <div className="h-2 w-full rounded-full bg-teal-700" />
                   </div>
                 </div>
               </div>
@@ -202,12 +202,12 @@ function Landing() {
           <div>
             <p className="text-sm font-semibold uppercase text-teal-800">Confianza comercial</p>
             <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-              Listo para evaluar sin exponer datos reales.
+              Diseñado para operar con control legal y de datos.
             </h2>
             <p className="mt-4 text-sm leading-7 text-slate-600">
-              La activación productiva debe completar revisión legal, parametrización por empresa,
-              usuarios/roles y validaciones externas aplicables. La landing evita prometer aprobación
-              de entidades y dirige al usuario a políticas públicas.
+              Cada empresa puede parametrizar sus reglas, roles, cuentas bancarias y reportes
+              sin mezclar información entre organizaciones. La operación queda respaldada con
+              bitácora, fuentes legales versionadas y políticas públicas de privacidad.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">

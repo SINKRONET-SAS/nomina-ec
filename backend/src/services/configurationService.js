@@ -25,7 +25,7 @@ const RESOURCE_CONFIG = {
     table: 'legal_parameter_versions',
     tenantScoped: false,
     columns: ['country_code', 'region_code', 'period_year', 'parameter_key', 'value', 'unit', 'rounding_mode', 'validation_status', 'source_name', 'source_url', 'source_date', 'valid_from', 'valid_to', 'notes'],
-    orderBy: 'period_year DESC, parameter_key',
+    orderBy: 'period_year DESC, parameter_key, updated_at DESC',
   },
   noveltyTypes: {
     table: 'novelty_type_configs',
@@ -334,7 +334,8 @@ async function loadMandatoryLegalParameters(year, user, context = {}) {
         AND region_code = 'NACIONAL'
         AND period_year = $2
         AND parameter_key = $3
-        AND valid_from = CURRENT_DATE
+        AND valid_to IS NULL
+      ORDER BY valid_from DESC, updated_at DESC, created_at DESC
       LIMIT 1
     `, [tenantId, periodYear, payload.parameter_key]);
 
@@ -390,6 +391,49 @@ async function listResource(resource, user) {
   const params = [];
   let where = '';
 
+  if (config.table === 'legal_parameter_versions') {
+    if (user.rol === 'superadmin' && !tenantId) {
+      const result = await db.query(`
+        SELECT DISTINCT ON (
+          COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid),
+          country_code,
+          region_code,
+          period_year,
+          parameter_key
+        ) *
+        FROM legal_parameter_versions
+        WHERE valid_to IS NULL
+        ORDER BY
+          COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid),
+          country_code,
+          region_code,
+          period_year,
+          parameter_key,
+          valid_from DESC,
+          updated_at DESC,
+          created_at DESC
+      `);
+      return result.rows;
+    }
+
+    const result = await db.query(`
+      SELECT DISTINCT ON (country_code, region_code, period_year, parameter_key) *
+      FROM legal_parameter_versions
+      WHERE valid_to IS NULL
+        AND (tenant_id = $1 OR tenant_id IS NULL)
+      ORDER BY
+        country_code,
+        region_code,
+        period_year,
+        parameter_key,
+        tenant_id NULLS LAST,
+        valid_from DESC,
+        updated_at DESC,
+        created_at DESC
+    `, [tenantId]);
+    return result.rows;
+  }
+
   if (config.tenantScoped) {
     params.push(tenantId);
     where = 'WHERE tenant_id = $1';
@@ -438,6 +482,60 @@ async function createResource(resource, payload, user, context = {}) {
     }
     return value;
   });
+
+  if (config.table === 'legal_parameter_versions') {
+    const existing = await db.query(`
+      SELECT id
+      FROM legal_parameter_versions
+      WHERE COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid) = COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
+        AND country_code = $2
+        AND region_code = $3
+        AND period_year = $4
+        AND parameter_key = $5
+        AND valid_to IS NULL
+      ORDER BY valid_from DESC, updated_at DESC, created_at DESC
+      LIMIT 1
+    `, [
+      values.tenant_id || null,
+      values.country_code || 'EC',
+      values.region_code || 'NACIONAL',
+      Number(values.period_year),
+      values.parameter_key,
+    ]);
+
+    if (existing.rows.length > 0) {
+      const updateColumns = columns.filter((column) => column !== 'created_by');
+      const updateParams = updateColumns.map((column) => {
+        const value = values[column];
+        if (value && typeof value === 'object' && !(value instanceof Date)) {
+          return JSON.stringify(value);
+        }
+        return value;
+      });
+      updateParams.push(existing.rows[0].id);
+      const setClause = updateColumns.map((column, index) => `${column} = $${index + 1}`).join(', ');
+      const result = await db.query(
+        `UPDATE legal_parameter_versions
+         SET ${setClause}, updated_at = now()
+         WHERE id = $${updateParams.length}
+         RETURNING *`,
+        updateParams
+      );
+
+      await recordAudit({
+        tenantId,
+        userId: user.id,
+        correlationId: context.correlationId,
+        action: 'configuracion.actualizar_parametro_legal_activo',
+        entity: config.table,
+        entityId: result.rows[0].id,
+        newData: result.rows[0],
+        ipAddress: context.ipAddress,
+      });
+
+      return result.rows[0];
+    }
+  }
 
   const result = await db.query(
     `INSERT INTO ${config.table} (${columns.join(', ')})

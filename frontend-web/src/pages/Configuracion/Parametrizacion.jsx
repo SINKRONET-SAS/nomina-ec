@@ -871,7 +871,7 @@ function Parametrizacion() {
     mutationFn: () => loadMandatoryLegalParameters(token, mandatoryYear),
     onSuccess: (data) => {
       setError('');
-      setMessage(`Se cargaron ${data.count} parametros legales obligatorios para ${data.periodYear}. Revisalos antes de produccion.`);
+      setMessage(`Parametros legales vigentes para ${data.periodYear} actualizados: ${data.count}.`);
       setActiveForm('ir');
       queryClient.invalidateQueries({ queryKey: ['configuration-summary'] });
     },
@@ -1097,7 +1097,7 @@ function Parametrizacion() {
           </form>
 
           <aside className="rounded-md border border-slate-200 p-4">
-            <h3 className="font-semibold text-slate-950">Registros existentes</h3>
+            <h3 className="font-semibold text-slate-950">Registros vigentes</h3>
             <div className="mt-4 space-y-3">
               {records.length === 0 && (
                 <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
