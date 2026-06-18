@@ -266,31 +266,28 @@ async function actualizar(req, res) {
   try {
     const { id } = req.params;
     const { tenantId } = req;
-    const allowedFields = new Set([
-      'nombres',
-      'apellidos',
-      'cargo',
-      'departamento',
-      'sueldo_bruto_mensual',
-      'jornada_horas_mensuales',
-      'gastos_personales_anuales',
-      'fecha_ingreso',
-      'tipo_contrato',
-      'banco',
-      'tipo_cuenta',
-      'direccion_domicilio',
-      'telefono',
-      'email_personal',
-    ]);
-    const updates = Object.fromEntries(
-      Object.entries(req.body || {}).filter(([key]) => allowedFields.has(key))
-    );
-    
-    // No permitir cambiar cédula
-    delete updates.cedula;
-    
-    const fields = Object.keys(updates).map((key, i) => `${key} = $${i + 1}`).join(', ');
-    const values = Object.values(updates);
+    const updateColumns = {
+      nombres: 'nombres',
+      apellidos: 'apellidos',
+      cargo: 'cargo',
+      departamento: 'departamento',
+      sueldo_bruto_mensual: 'sueldo_bruto_mensual',
+      jornada_horas_mensuales: 'jornada_horas_mensuales',
+      gastos_personales_anuales: 'gastos_personales_anuales',
+      fecha_ingreso: 'fecha_ingreso',
+      tipo_contrato: 'tipo_contrato',
+      banco: 'banco',
+      cuenta_bancaria: 'cuenta_bancaria',
+      tipo_cuenta: 'tipo_cuenta',
+      direccion_domicilio: 'direccion_domicilio',
+      telefono: 'telefono',
+      email_personal: 'email_personal',
+    };
+    const entries = Object.entries(req.body || {}).filter(([key]) => (
+      Object.prototype.hasOwnProperty.call(updateColumns, key)
+    ));
+    const fields = entries.map(([key], i) => `${updateColumns[key]} = $${i + 1}`).join(', ');
+    const values = entries.map(([, value]) => value);
     
     if (values.length === 0) {
       return res.status(400).json({ error: 'No hay campos para actualizar' });

@@ -67,9 +67,9 @@ function NuevoEmpleado() {
       } else {
         await authenticatedApi.post('/empleados', formData);
       }
-      navigate('/empleados');
+      navigate('/dashboard/empleados');
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al crear empleado');
+      setError(err.response?.data?.error || (isEdit ? 'Error al actualizar empleado' : 'Error al crear empleado'));
     } finally {
       setCargando(false);
     }
