@@ -36,7 +36,7 @@ const RESOURCE_CONFIG = {
   organizationUnits: {
     table: 'organization_units',
     tenantScoped: true,
-    columns: ['parent_id', 'unit_type', 'code', 'name', 'description', 'cost_center_code', 'manager_user_id', 'status', 'valid_from', 'valid_to', 'metadata'],
+    columns: ['parent_id', 'unit_type', 'code', 'name', 'description', 'cost_center_code', 'manager_user_id', 'work_zone_id', 'status', 'valid_from', 'valid_to', 'metadata'],
     orderBy: 'unit_type, name',
   },
   workZones: {
@@ -181,6 +181,33 @@ function ensureWriteAllowed(user) {
     throw new AppError('No tiene permisos para administrar configuración.', {
       code: 'CONFIG_PERMISSION_DENIED',
       statusCode: 403,
+      userId: user.id,
+    });
+  }
+}
+
+async function ensureOrganizationUnitWorkZone(values, tenantId, user) {
+  if (!values.work_zone_id) {
+    throw new AppError('Cada unidad organizativa debe tener una zona de marcacion asociada.', {
+      code: 'ORGANIZATION_UNIT_WORK_ZONE_REQUIRED',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+
+  const result = await db.query(`
+    SELECT id
+    FROM work_zones
+    WHERE id = $1
+      AND tenant_id = $2
+      AND status = 'activo'
+    LIMIT 1
+  `, [values.work_zone_id, tenantId]);
+
+  if (result.rows.length === 0) {
+    throw new AppError('La zona de marcacion seleccionada no existe o no pertenece a esta empresa.', {
+      code: 'ORGANIZATION_UNIT_WORK_ZONE_INVALID',
+      statusCode: 400,
       userId: user.id,
     });
   }
@@ -465,6 +492,10 @@ async function createResource(resource, payload, user, context = {}) {
     values.tenant_id = tenantId;
   }
 
+  if (config.table === 'organization_units') {
+    await ensureOrganizationUnitWorkZone(values, tenantId, user);
+  }
+
   const columns = Object.keys(values);
   if (columns.length === 0) {
     throw new AppError('No hay datos de configuración para guardar.', {
@@ -590,6 +621,13 @@ async function updateResource(resource, id, payload, user, context = {}) {
       statusCode: 404,
       userId: user.id,
     });
+  }
+
+  if (config.table === 'organization_units') {
+    await ensureOrganizationUnitWorkZone({
+      ...previous.rows[0],
+      ...values,
+    }, previous.rows[0].tenant_id || user.tenantId, user);
   }
 
   const columns = Object.keys(values);

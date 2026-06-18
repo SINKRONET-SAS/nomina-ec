@@ -208,6 +208,7 @@ const formDefinitions = [
       { name: 'code', label: 'Codigo', placeholder: 'VENTAS', required: true },
       { name: 'name', label: 'Nombre', placeholder: 'Ventas', required: true },
       { name: 'unit_type', label: 'Tipo', type: 'select', options: ['departamento', 'area', 'sucursal', 'centro_costo'] },
+      { name: 'work_zone_id', label: 'Zona de marcacion', type: 'resourceSelect', resource: 'workZones', required: true },
       { name: 'cost_center_code', label: 'Centro de costo' },
       { name: 'description', label: 'Descripcion', type: 'textarea', wide: true },
     ],
@@ -215,6 +216,7 @@ const formDefinitions = [
       code: '',
       name: '',
       unit_type: 'departamento',
+      work_zone_id: '',
       cost_center_code: '',
       description: '',
     },
@@ -222,6 +224,7 @@ const formDefinitions = [
       code: values.code.trim().toUpperCase(),
       name: values.name.trim(),
       unit_type: values.unit_type,
+      work_zone_id: values.work_zone_id,
       cost_center_code: values.cost_center_code.trim(),
       description: values.description.trim(),
       status: 'activo',
@@ -419,6 +422,20 @@ function recordsForDefinition(summary, definition) {
   return records.filter((record) => record.catalog_type === definition.catalogType);
 }
 
+function optionsForField(summary, field) {
+  if (field.type !== 'resourceSelect') return [];
+  return (summary?.resources?.[field.resource] || []).filter((record) => record.status !== 'inactivo');
+}
+
+function recordMetaForDefinition(definition, record, summary) {
+  if (definition.key === 'organizacion') {
+    const zone = (summary?.resources?.workZones || []).find((item) => item.id === record.work_zone_id);
+    return `${record.code} - ${record.unit_type} - zona: ${zone?.name || 'sin zona'}`;
+  }
+
+  return definition.recordMeta(record, summary);
+}
+
 const stepFormMap = {
   empresa: 'empresa',
   legal: 'ir',
@@ -438,7 +455,7 @@ function buildInitialState() {
   return Object.fromEntries(formDefinitions.map((definition) => [definition.key, definition.initial]));
 }
 
-function Field({ field, value, onChange }) {
+function Field({ field, value, onChange, options = [] }) {
   const baseClass = 'mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100';
 
   if (field.type === 'textarea') {
@@ -462,6 +479,26 @@ function Field({ field, value, onChange }) {
         <select className={baseClass} value={value} onChange={(event) => onChange(field.name, event.target.value)}>
           {field.options.map((option) => (
             <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
+  if (field.type === 'resourceSelect') {
+    return (
+      <label>
+        <span className="text-sm font-medium text-slate-700">{field.label}</span>
+        <select
+          className={baseClass}
+          value={value}
+          onChange={(event) => onChange(field.name, event.target.value)}
+          required={field.required}
+          disabled={options.length === 0}
+        >
+          <option value="">{options.length === 0 ? 'Primero crea una zona de marcacion' : 'Selecciona una zona'}</option>
+          {options.map((option) => (
+            <option key={option.id} value={option.id}>{option.name} ({option.code})</option>
           ))}
         </select>
       </label>
@@ -1081,6 +1118,7 @@ function Parametrizacion() {
                     field={field}
                     value={activeValues[field.name]}
                     onChange={updateField}
+                    options={optionsForField(summary, field)}
                   />
                 ))}
               </div>
@@ -1107,7 +1145,7 @@ function Parametrizacion() {
               {records.slice(0, 6).map((record) => (
                 <div className="rounded-md bg-slate-50 px-3 py-2" key={record.id}>
                   <p className="text-sm font-semibold text-slate-900">{activeDefinition.recordLabel(record)}</p>
-                  <p className="mt-1 text-xs text-slate-500">{activeDefinition.recordMeta(record)}</p>
+                  <p className="mt-1 text-xs text-slate-500">{recordMetaForDefinition(activeDefinition, record, summary)}</p>
                 </div>
               ))}
             </div>
