@@ -4,7 +4,7 @@
 |-------|-------|
 | Plan | HAIKY-DIAGNOSTICO-V2-NOMINA-EC-2026 |
 | Codigo | DVN26 |
-| Estado | DVN26-01..09 ejecutadas localmente con bloqueo profesional IESS |
+| Estado | DVN26-01..09 ejecutadas localmente; E-01 IESS validado con fuente oficial |
 | Fase actual | DVN26-09 cerrada localmente |
 | Alcance | responder a 31 hallazgos del Diagnostico V2: calculos legales, procesos ocultos, pantallas decorativas, reportes, bancos, landing, PWA, mobile, multi-tenant y planes |
 | Fuente de requerimiento | `C:\proyectos web\sensible-easy-payroll-flow\src\docs\DIAGNOSTICO_V2_NOMINA_EC.md` |
@@ -24,7 +24,7 @@ DVN26 convierte el Diagnostico V2 en un plan Haiky ejecutable sobre el stack rea
 | Fase | Prioridad | Estado | Resumen |
 |------|-----------|--------|---------|
 | DVN26-00 | P0 | completed_documental | Baseline, matriz, prompts, contexto y AuditLock sin runtime. |
-| DVN26-01 | P0 | completed_local_with_professional_block | Parametros legales, IESS 9.45/9.95, gastos personales y tabla IR editable. |
+| DVN26-01 | P0 | completed_local_iess_validated | Parametros legales, IESS 9.45/11.15, gastos personales y tabla IR editable. |
 | DVN26-02 | P0 | completed_local | Motor unico de nomina: dias, fondo reserva, bonos, cerradas y errores por empleado. |
 | DVN26-03 | P0 | completed_by_stack_verification | Liquidacion, acta de finiquito, contrato PDF y DocumentoLegal. |
 | DVN26-04 | P1 | completed_local | Beneficios, cuotas y cierre idempotente. |
@@ -38,7 +38,7 @@ DVN26 convierte el Diagnostico V2 en un plan Haiky ejecutable sobre el stack rea
 
 - No iniciar runtime sin aprobacion explicita del prompt de fase.
 - No aplicar scripts Base44 literalmente; traducir a Express/PostgreSQL/React/Expo.
-- E-01 IESS queda bloqueado hasta validacion contable/laboral externa.
+- E-01 IESS queda validado con fuente oficial IESS: afiliado 9.45% y empleador 11.15%.
 - Toda mejora backend que afecte operacion debe quedar visible en frontend o mostrar bloqueo claro.
 - Commits esperados: `phase: DVN26-XX task: ...`.
 
@@ -65,7 +65,7 @@ Gates ejecutados:
 
 Bloqueo residual controlado:
 
-- IESS 9.45% vs 9.95% se mantiene bloqueado hasta validacion contable/laboral externa.
+- IESS 9.45% personal y 11.15% patronal queda cerrado con pagina oficial IESS `Servicios y prestaciones`.
 
 ---
 
@@ -314,7 +314,7 @@ Antes de modificar código runtime se debe leer `RULES.md` y validar `.vscode/Au
 - `SUPERADMIN` y `OWNER` tienen seed seguro por variables de entorno.
 - RLS existe en migración SQL y cuenta con runbook/script de verificación Render; falta ejecutarlo con usuario no superusuario de staging.
 - AWS SDK v2 fue reemplazado por AWS SDK v3 modular en S3.
-- Valores legales 2026 tienen IR SRI y SBU MDT reconfirmados; IESS y cierre profesional permanecen pendientes, con bloqueo productivo activo.
+- Valores legales 2026 tienen IR SRI, SBU MDT e IESS reconfirmados; otros parametros sensibles mantienen revision profesional antes de produccion.
 - La marca visible correcta del sistema es `Nómina-Ec`; `Plan HAIKY` queda reservado para metodología interna de planificación.
 - Existe PWA, landing, login, registro, recuperación de contraseña, planes y PayPhone/mock en primera versión.
 - Se realizó segunda pasada UI/UX para corregir pantalla en bruto y agregar CSS/Tailwind real.
@@ -383,7 +383,7 @@ El sistema debe permitir configuración por tenant, vigencia, fuente y rol para:
 
 - Ampliar el núcleo runtime de parametrización con integraciones completas en nómina, marcaciones, bancos y reportes.
 - Profundizar integración de novedades, jornadas y zonas con motor de nómina y marcaciones.
-- Validar aportes IESS Ecuador 2026 y revisión profesional antes de levantar el bloqueo productivo.
+- Mantener evidencia IESS 2026 y revisar casos especiales por regimen, sector o tipo de relacion antes de produccion.
 - Probar RLS en Render con usuario no superusuario y evidencia sin secretos.
 - Completar pruebas automatizadas de regresión para liquidación, RBAC, bancos y aislamiento tenant.
 - Validar PayPhone sandbox/oficial con webhook, firma, conciliación e idempotencia.

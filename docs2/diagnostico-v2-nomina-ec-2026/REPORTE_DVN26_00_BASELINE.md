@@ -19,7 +19,7 @@ Los scripts adjuntos pertenecen a un prototipo Base44/Deno y contienen mojibake.
 
 ## Riesgos iniciales
 
-- E-01 requiere validacion contable externa antes de fijar IESS 9.95% como productivo.
+- E-01 quedo superado en DVN26-09: fuente oficial IESS confirma 9.45% afiliado y 11.15% empleador.
 - Varios hallazgos ya pueden estar parcial o totalmente cerrados por planes CBN26, LPA26, HNBE26, PNE26, ONI26 y DCF26; cada fase DVN26 debe verificar contra codigo real.
 - Toda pantalla o proceso nuevo debe respetar la regla de exposicion frontend obligatoria.
 

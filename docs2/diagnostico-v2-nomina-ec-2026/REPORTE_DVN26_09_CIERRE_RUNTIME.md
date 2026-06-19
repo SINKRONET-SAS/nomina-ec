@@ -3,7 +3,7 @@
 Plan: `HAIKY-DIAGNOSTICO-V2-NOMINA-EC-2026`  
 Codigo: `DVN26`  
 Fecha: 2026-06-18  
-Estado: `completed_runtime_local_with_professional_iess_block`
+Estado: `completed_runtime_local_iess_validated`
 
 ## Alcance ejecutado
 
@@ -43,9 +43,11 @@ PostgreSQL local:
 | Expo Doctor | PASS, 21/21 |
 | Store readiness app | PASS |
 
-## Bloqueo profesional
+## Validacion IESS
 
-E-01 queda como bloqueo externo controlado: no se cambia el aporte IESS personal de 9.45% a 9.95% hasta recibir validacion contable/laboral formal con planilla IESS vigente y criterio aplicable por tipo de contrato/empleador.
+E-01 queda cerrado con fuente oficial IESS. La pagina `Servicios y prestaciones` del IESS confirma que al afiliado le corresponde aportar 9.45% de su sueldo o salario y al empleador 11.15% del salario del trabajador.
+
+Fuente: `https://www.iess.gob.ec/en/web/afiliado/servicios-y-prestaciones`.
 
 ## Rollback tecnico
 

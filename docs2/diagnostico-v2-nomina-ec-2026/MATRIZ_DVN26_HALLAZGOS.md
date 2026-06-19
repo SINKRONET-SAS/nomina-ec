@@ -7,7 +7,7 @@ Actualizacion runtime 2026-06-18: DVN26-01..09 fueron ejecutadas localmente con 
 
 | ID | Severidad | Hallazgo | Fase | Criterio de cierre |
 |----|-----------|----------|------|--------------------|
-| E-01 | P0 legal | IESS personal 9.45% vs 9.95% por seguro desempleo | DVN26-01 | Decision contable documentada; parametro versionado por tipo de contrato; bloqueo UI si pendiente. |
+| E-01 | P0 legal | IESS personal 9.45% vs 9.95% por seguro desempleo | DVN26-01 | Cerrado con fuente oficial IESS: afiliado 9.45%, empleador 11.15%. |
 | E-02 | P0 legal | Fondo de reserva Art. 196 CT | DVN26-02 | Calculo/provision visible, testeado y trazable por empleado elegible. |
 | E-03 | P0 legal | IR no deduce gastos personales SRI | DVN26-01 | Parametro y formulario de gastos personales con tope vigente y pruebas. |
 | E-04 | P0 legal | Tabla IR hardcodeada al guardar BD | DVN26-01 | Tabla IR editable/versionada; motor usa BD validada, no constantes aisladas. |
@@ -43,7 +43,7 @@ Actualizacion runtime 2026-06-18: DVN26-01..09 fueron ejecutadas localmente con 
 
 | Bloque | Estado | Evidencia |
 |--------|--------|-----------|
-| DVN26-01 parametros legales | Cerrado con bloqueo profesional E-01 | Tabla IR editable/versionada y gastos personales ya estaban integrados; IESS 9.45/9.95 sigue bloqueado hasta validacion contable/laboral externa. |
+| DVN26-01 parametros legales | Cerrado local con IESS validado | Tabla IR editable/versionada y gastos personales ya estaban integrados; IESS 9.45/11.15 confirmado con fuente oficial IESS. |
 | DVN26-02 motor de nomina | Cerrado local | `bono_desempeno` con `monto`, `period_id` y `periodo_nomina`; `total_ingresos` incluye bonos; tests de calculo y periodo pasan. |
 | DVN26-03 documentos legales | Cerrado por verificacion de stack | Contrato, finiquito, `DocumentoLegal` y tests de liquidacion existen en runtime actual. |
 | DVN26-04 beneficios/cuotas | Cerrado local | Cierre de nomina descuenta beneficios una sola vez por `periodo` y audita aplicados/omitidos. |

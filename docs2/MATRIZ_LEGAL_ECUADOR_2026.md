@@ -29,8 +29,8 @@ URLs base:
 | Parametro | Valor tecnico actual | Fuente requerida | Estado | Responsable |
 | --- | ---: | --- | --- | --- |
 | Salario basico unificado | 482.00 | Noticia oficial Ministerio del Trabajo, SBU 2026 USD 482 | validado_fuente_mdt | Contador / abogado laboral |
-| Aporte IESS personal | 0.0945 | Resolucion, ficha oficial IESS o norma vigente 2026; portal y consulta de resoluciones revisados sin evidencia directa suficiente | pendiente_validacion_oficial | Contador |
-| Aporte IESS patronal | 0.1115 | Resolucion, ficha oficial IESS o norma vigente 2026; portal y consulta de resoluciones revisados sin evidencia directa suficiente | pendiente_validacion_oficial | Contador |
+| Aporte IESS personal | 0.0945 | Pagina oficial IESS `Servicios y prestaciones`: afiliado 9.45% del sueldo o salario | validado_oficial_iess | Contador |
+| Aporte IESS patronal | 0.1115 | Pagina oficial IESS `Servicios y prestaciones`: empleador 11.15% del salario del trabajador | validado_oficial_iess | Contador |
 | Jornada maxima semanal | 40 | Codigo del Trabajo y normativa laboral vigente | pendiente_validacion_oficial | Abogado laboral |
 | Decimo cuarto Costa/Galapagos | Mes 3 | Codigo del Trabajo y calendario regional vigente | pendiente_validacion_oficial | Abogado laboral |
 | Decimo cuarto Sierra/Amazonia | Mes 8 | Codigo del Trabajo y calendario regional vigente | pendiente_validacion_oficial | Abogado laboral |
@@ -81,6 +81,8 @@ El servicio `legalParameterService` define `validado_oficial` como unico estado 
 
 ## Validacion IESS 2026
 
-El 2026-06-14 se realizo una revision legal/contable IESS sobre el portal oficial, la pagina de normativa y la consulta publica de resoluciones. La consulta publica indica fecha de actualizacion 9/6/2026 y permite busqueda por numero, status, materia, palabra clave y fecha. No se localizo en la vista disponible un documento directo que confirme como vigentes las tasas 9.45% personal y 11.15% patronal para trabajadores en relacion de dependencia del sector privado.
+El 2026-06-18 se verifico la pagina oficial IESS `Servicios y prestaciones`, donde se indica que al afiliado le corresponde aportar 9.45% de su sueldo o salario y al empleador 11.15% del salario del trabajador.
 
-Decision: los valores permanecen como referenciales tecnicos y no pueden ser promovidos a `validado_oficial` sin evidencia oficial especifica y aprobacion del contador responsable.
+Fuente: `https://www.iess.gob.ec/en/web/afiliado/servicios-y-prestaciones`.
+
+Decision: E-01 queda cerrado para los porcentajes base 9.45% personal y 11.15% patronal. Cualquier caso especial por regimen, sector o tipo de relacion debe parametrizarse aparte con su fuente especifica.

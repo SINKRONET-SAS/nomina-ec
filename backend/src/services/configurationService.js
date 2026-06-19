@@ -228,13 +228,19 @@ function legalParameterPayloadsFromBase(year) {
       parameter_key: 'iess_aporte_personal',
       value: { amount: Number(payroll.personalIessRate) },
       unit: 'porcentaje_decimal',
-      notes: 'Aporte personal IESS cargado como parametro obligatorio revisable.',
+      sourceName: 'IESS - Servicios y prestaciones',
+      sourceUrl: 'https://www.iess.gob.ec/en/web/afiliado/servicios-y-prestaciones',
+      validationStatus: 'validado_oficial',
+      notes: 'Aporte personal IESS confirmado por fuente oficial IESS: afiliado 9.45% del sueldo o salario.',
     },
     {
       parameter_key: 'iess_aporte_patronal',
       value: { amount: Number(payroll.employerIessRate) },
       unit: 'porcentaje_decimal',
-      notes: 'Aporte patronal IESS cargado como parametro obligatorio revisable.',
+      sourceName: 'IESS - Servicios y prestaciones',
+      sourceUrl: 'https://www.iess.gob.ec/en/web/afiliado/servicios-y-prestaciones',
+      validationStatus: 'validado_oficial',
+      notes: 'Aporte patronal IESS confirmado por fuente oficial IESS: empleador 11.15% del salario del trabajador.',
     },
     {
       parameter_key: 'jornada_horas_mensuales',
@@ -348,9 +354,12 @@ async function loadMandatoryLegalParameters(year, user, context = {}) {
       payload.parameter_key,
       JSON.stringify(payload.value),
       payload.unit,
-      `Parametros base Nomina-Ec ${periodYear}`,
-      'https://www.sri.gob.ec/formularios-e-instructivos1',
-      `${payload.notes} Validar contra fuente oficial vigente antes de produccion.`,
+      payload.sourceName || `Parametros base Nomina-Ec ${periodYear}`,
+      payload.sourceUrl || 'https://www.sri.gob.ec/formularios-e-instructivos1',
+      payload.validationStatus || 'pendiente_validacion_oficial',
+      payload.validationStatus === 'validado_oficial'
+        ? payload.notes
+        : `${payload.notes} Validar contra fuente oficial vigente antes de produccion.`,
       user.id,
     ];
     const existing = await db.query(`
@@ -373,10 +382,11 @@ async function loadMandatoryLegalParameters(year, user, context = {}) {
               unit = $5,
               source_name = $6,
               source_url = $7,
+              validation_status = $8,
               source_date = CURRENT_DATE,
-              notes = $8,
+              notes = $9,
               updated_at = now()
-          WHERE id = $10
+          WHERE id = $11
           RETURNING *
         `, [...params, existing.rows[0].id])
       : await db.query(`
@@ -385,7 +395,7 @@ async function loadMandatoryLegalParameters(year, user, context = {}) {
             rounding_mode, validation_status, source_name, source_url, source_date, notes, created_by
           )
           VALUES ($1, 'EC', 'NACIONAL', $2, $3, $4, $5, 'half_up_2',
-            'pendiente_validacion_oficial', $6, $7, CURRENT_DATE, $8, $9)
+            $8, $6, $7, CURRENT_DATE, $9, $10)
           RETURNING *
         `, params);
     rows.push(result.rows[0]);

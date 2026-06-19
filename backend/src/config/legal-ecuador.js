@@ -9,7 +9,8 @@ const LEGAL_PARAMETERS = {
       'Valores migrados desde docs/CUMPLIMIENTO_LEGAL.md.',
       'Tabla IR 2026 confirmada contra PDF SRI: Resolucion Nro. NAC-DGERCGC25-00000043, Segundo Suplemento del Registro Oficial No. 194, 30/12/2025.',
       'SBU 2026 confirmado en noticia oficial del Ministerio del Trabajo: USD 482.',
-      'IESS y otros parametros laborales requieren validacion final con abogado laboral y contador ecuatoriano antes de produccion.',
+      'Aportes IESS confirmados contra pagina oficial IESS Servicios y prestaciones: afiliado 9.45% y empleador 11.15%.',
+      'Otros parametros laborales requieren validacion final con abogado laboral y contador ecuatoriano antes de produccion.',
     ],
     payroll: {
       monthlyWorkHours: 240,

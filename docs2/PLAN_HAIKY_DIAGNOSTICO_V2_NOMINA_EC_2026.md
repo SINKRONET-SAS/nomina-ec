@@ -1,7 +1,7 @@
 # PLAN HAIKY DIAGNOSTICO V2 NOMINA-EC 2026
 
 Codigo: `DVN26`  
-Estado: `completed_runtime_local_with_professional_iess_block`  
+Estado: `completed_runtime_local_iess_validated`  
 Fecha: 2026-06-18  
 Fuente principal: `C:\proyectos web\sensible-easy-payroll-flow\src\docs\DIAGNOSTICO_V2_NOMINA_EC.md`  
 Scripts de referencia: `07_fix_nomina_calculos.js`, `08_backend_acta_finiquito_contrato.js`, `09_backend_contrato_trabajo.js`, `10_pwa_landing.js`, `11_fix_multitenant_reportes_planes.js`
@@ -31,7 +31,7 @@ DVN26-00 fue documental. El usuario aprobo ejecutar DVN26-01..09 en una sola pas
 | Fase | Prioridad | Objetivo | Runtime |
 |------|-----------|----------|---------|
 | DVN26-00 | P0 | Baseline documental, matriz, contexto, prompts y AuditLock | No |
-| DVN26-01 | P0 | Parametros legales oficiales, IESS 9.45/9.95 como decision bloqueante y tabla IR editable/versionada | Si |
+| DVN26-01 | P0 | Parametros legales oficiales, IESS 9.45/11.15 validado y tabla IR editable/versionada | Si |
 | DVN26-02 | P0 | Motor unico de nomina: dias proporcionales, fondo reserva, bonos, cerradas protegidas y cuotas | Si |
 | DVN26-03 | P0 | Liquidacion, acta de finiquito y contrato laboral PDF con DocumentoLegal y evidencia | Si |
 | DVN26-04 | P1 | Beneficios, cuotas y cierre de nomina idempotente con auditoria | Si |
@@ -43,7 +43,7 @@ DVN26-00 fue documental. El usuario aprobo ejecutar DVN26-01..09 en una sola pas
 
 ## Ejecucion runtime local 2026-06-18
 
-DVN26-01..09 quedaron ejecutadas localmente sobre el stack real. No se aplicaron scripts Base44/Deno literalmente; se tradujeron los criterios a Express, PostgreSQL/Prisma, React/Vite y Expo.
+DVN26-01..09 quedaron ejecutadas localmente sobre el stack real. No se aplicaron scripts Base44/Deno literalmente; se tradujeron los criterios a Express, PostgreSQL/Prisma, React/Vite y Expo. E-01 IESS quedo cerrado con fuente oficial IESS aportada y verificada el 2026-06-18.
 
 Cambios runtime principales:
 
@@ -69,7 +69,7 @@ Validaciones ejecutadas:
 
 ## Gobierno legal
 
-- E-01 no puede aplicarse como valor productivo hasta confirmar con contador/planilla IESS vigente si el aporte personal debe ser 9.45% o 9.95% por tipo de contrato y empleador. El runtime mantiene el bloqueo profesional y no cambia ese valor sin validacion externa.
+- E-01 queda validado con fuente oficial IESS: afiliado 9.45% y empleador 11.15% en la pagina `Servicios y prestaciones` del IESS.
 - Si el valor no esta confirmado, el runtime debe exponer bloqueo profesional claro y no prometer cumplimiento total.
 - Todo parametro legal debe tener vigencia, fuente, responsable, fecha de validacion y estado: `pendiente_validacion`, `validado_oficial`, `bloqueado`.
 

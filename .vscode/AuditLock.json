@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "plan": "HAIKY-DIAGNOSTICO-V2-NOMINA-EC-2026",
   "planCode": "DVN26",
-  "status": "completed_runtime_local_with_professional_iess_block",
+  "status": "completed_runtime_local_iess_validated",
   "phaseCompleted": "DVN26-09",
   "currentPhase": "DVN26-closed-local",
-  "updatedAt": "2026-06-18T21:05:00.000-05:00",
-  "summary": "DVN26-01..09 ejecutadas localmente con aprobacion explicita del usuario. Se corrigieron bonos de desempeno, marca de periodo en novedades, cierre idempotente de beneficios, CSV de reportes, ajustes landing/PWA y migracion PostgreSQL local. E-01 IESS queda bloqueado hasta validacion contable/laboral externa.",
+  "updatedAt": "2026-06-18T21:35:00.000-05:00",
+  "summary": "DVN26 queda actualizado con E-01 cerrado por fuente oficial IESS. La pagina Servicios y prestaciones confirma aporte afiliado 9.45% y empleador 11.15%; la carga obligatoria de parametros marca IESS como validado_oficial sin promover automaticamente otros rubros.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts del plan DVN26, cerrar artefactos de gobierno, aplicar migraciones, commit y push.",
-  "previousAuditLockHash": "856E2F1B61E186A782106293621ADC2CA361E7198EA36558AB11ADBA178B67BB",
+  "approvalSource": "Fuente oficial aportada por el usuario y verificada: https://www.iess.gob.ec/en/web/afiliado/servicios-y-prestaciones.",
+  "previousAuditLockHash": "50817210FA8A3B80C512246B99A3D8C5512F1D0EF5B0397A2755CC1EB6151857",
   "previousPlans": [
     {
       "plan": "HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026",
@@ -38,6 +38,8 @@
     "backend/src/services/monthlyPeriodService.js",
     "backend/src/services/monthlyPeriodService.test.js",
     "backend/src/services/payrollReportService.js",
+    "backend/src/config/legal-ecuador.js",
+    "backend/src/services/configurationService.js",
     "frontend-web/pwa.config.js",
     "frontend-web/src/pages/Landing.jsx",
     "frontend-web/src/pages/Nomina/CerrarMes.jsx",
@@ -113,6 +115,11 @@
       "gate": "DVN26-MOBILE-STORES",
       "status": "PASS",
       "detail": "npm.cmd run check:stores en app-movil."
+    },
+    {
+      "gate": "DVN26-IESS-OFFICIAL-SOURCE",
+      "status": "PASS",
+      "detail": "Pagina oficial IESS Servicios y prestaciones verificada: afiliado 9.45%, empleador 11.15%."
     }
   ],
   "fases": [
@@ -123,7 +130,7 @@
     },
     {
       "phase": "DVN26-01",
-      "status": "completed_local_with_professional_block",
+      "status": "completed_local_iess_validated",
       "task": "parametros legales, IESS, gastos personales y tabla IR"
     },
     {
@@ -168,10 +175,10 @@
     }
   ],
   "residualRisk": [
-    "E-01 IESS 9.45% vs 9.95% requiere validacion profesional antes de cambio productivo.",
+    "Casos especiales IESS por regimen, sector o tipo de relacion deben parametrizarse con fuente especifica si aplican.",
     "La publicacion productiva requiere smoke E2E con datos de prueba y backend activo.",
     "Los scripts adjuntos Base44/Deno quedan solo como referencia historica, no como fuente runtime."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "e526d14d3ef2d7564d47d20f134cd9c148e463f0655cf24f64bafd3bd58031f2"
+  "signature": "bd52c33d8ad0fed14a4347c81edc19e65c103149f1b541f0cfd7685ab6cd2ce8"
 }
