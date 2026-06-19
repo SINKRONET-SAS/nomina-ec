@@ -3,6 +3,10 @@ const crypto = require('crypto');
 const db = require('../config/database');
 const { generateToken } = require('../middleware/auth');
 const { verifyJwt } = require('../config/jwt');
+const {
+  sendEmailVerification,
+  sendPasswordReset,
+} = require('../services/communicationService');
 
 function buildUserPayload(usuario) {
   return {
@@ -119,8 +123,22 @@ async function register(req, res, next) {
       [tenantId, email, passwordHash, rol, nombres || '', apellidos || '']
     );
 
+    const verificationCode = generateVerificationCode();
+    await db.query(
+      `INSERT INTO email_verification_tokens (usuario_id, token_hash, expira_en)
+       VALUES ($1, $2, NOW() + INTERVAL '24 hours')`,
+      [result.rows[0].id, hashCode(verificationCode)]
+    );
+    const delivery = await sendEmailVerification({
+      to: result.rows[0].email,
+      code: verificationCode,
+      name: result.rows[0].nombres,
+      correlationId: req.correlationId,
+      userId: result.rows[0].id,
+    });
+
     const user = buildUserPayload(result.rows[0]);
-    return res.status(201).json({ success: true, usuario: user, user });
+    return res.status(201).json({ success: true, usuario: user, user, nextStep: 'email-verification', delivery });
   } catch (err) {
     return next(err);
   }
@@ -214,16 +232,13 @@ async function publicRegister(req, res, next) {
 
     await client.query('COMMIT');
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[AUTH] Código de verificación generado para desarrollo', {
-        code: 'AUTH_EMAIL_VERIFICATION_DEV_CODE',
-        statusCode: 200,
-        correlationId: req.correlationId,
-        userId: userResult.rows[0].id,
-        email,
-        verificationCode,
-      });
-    }
+    const delivery = await sendEmailVerification({
+      to: userResult.rows[0].email,
+      code: verificationCode,
+      name: userResult.rows[0].nombres,
+      correlationId: req.correlationId,
+      userId: userResult.rows[0].id,
+    });
 
     return res.status(201).json({
       success: true,
@@ -236,6 +251,7 @@ async function publicRegister(req, res, next) {
         nombreComercial: tenant.nombre_comercial,
       },
       nextStep: 'email-verification',
+      delivery,
     });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -307,7 +323,7 @@ async function forgotPassword(req, res, next) {
     }
 
     const result = await db.query(
-      'SELECT id, email FROM usuarios WHERE lower(email) = lower($1) AND activo = true ORDER BY created_at DESC LIMIT 1',
+      'SELECT id, email, nombres FROM usuarios WHERE lower(email) = lower($1) AND activo = true ORDER BY created_at DESC LIMIT 1',
       [email]
     );
 
@@ -319,16 +335,13 @@ async function forgotPassword(req, res, next) {
         [result.rows[0].id, hashCode(code)]
       );
 
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('[AUTH] Código de recuperación generado para desarrollo', {
-          code: 'AUTH_PASSWORD_RESET_DEV_CODE',
-          statusCode: 200,
-          correlationId: req.correlationId,
-          userId: result.rows[0].id,
-          email: result.rows[0].email,
-          resetCode: code,
-        });
-      }
+      await sendPasswordReset({
+        to: result.rows[0].email,
+        code,
+        name: result.rows[0].nombres,
+        correlationId: req.correlationId,
+        userId: result.rows[0].id,
+      });
     }
 
     return res.json({
@@ -401,7 +414,7 @@ async function requestEmailVerification(req, res, next) {
     }
 
     const result = await db.query(
-      'SELECT id, email FROM usuarios WHERE lower(email) = lower($1) AND activo = true ORDER BY created_at DESC LIMIT 1',
+      'SELECT id, email, nombres FROM usuarios WHERE lower(email) = lower($1) AND activo = true ORDER BY created_at DESC LIMIT 1',
       [email]
     );
 
@@ -413,16 +426,13 @@ async function requestEmailVerification(req, res, next) {
         [result.rows[0].id, hashCode(code)]
       );
 
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('[AUTH] Código de verificación generado para desarrollo', {
-          code: 'AUTH_EMAIL_VERIFICATION_DEV_CODE',
-          statusCode: 200,
-          correlationId: req.correlationId,
-          userId: result.rows[0].id,
-          email: result.rows[0].email,
-          verificationCode: code,
-        });
-      }
+      await sendEmailVerification({
+        to: result.rows[0].email,
+        code,
+        name: result.rows[0].nombres,
+        correlationId: req.correlationId,
+        userId: result.rows[0].id,
+      });
     }
 
     return res.json({

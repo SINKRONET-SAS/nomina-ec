@@ -18,6 +18,7 @@ import PaymentResult from './pages/PaymentResult';
 import LegalText from './pages/LegalText';
 import CookieConsent from './components/Privacy/CookieConsent';
 import Parametrizacion from './pages/Configuracion/Parametrizacion';
+import Comunicaciones from './pages/Configuracion/Comunicaciones';
 import Auditoria from './pages/Auditoria';
 import Dashboard from './pages/Dashboard';
 import LineaBaseOperativa from './pages/Operacion/LineaBaseOperativa';
@@ -164,6 +165,11 @@ function App() {
               <Route path="configuracion/parametrizacion" element={
                 <ProtectedRoute requiredRole={['superadmin', 'owner', 'admin_rrhh']}>
                   <Parametrizacion />
+                </ProtectedRoute>
+              } />
+              <Route path="configuracion/comunicaciones" element={
+                <ProtectedRoute requiredRole={['superadmin', 'owner', 'admin_rrhh']}>
+                  <Comunicaciones />
                 </ProtectedRoute>
               } />
               <Route path="auditoria" element={

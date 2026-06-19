@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const db = require('../config/database');
 const AppError = require('../utils/AppError');
 const { generateToken } = require('../middleware/auth');
+const { sendEmployeeInvite } = require('./communicationService');
 
 const INVITE_STATUS = Object.freeze({
   PENDING: 'PENDING_INVITE',
@@ -134,6 +135,7 @@ function employeeReadinessSelect(whereClause) {
       e.apellidos,
       e.cargo,
       e.departamento,
+      e.telefono,
       e.email_personal,
       e.jornada_horas_mensuales,
       ou.id AS organization_unit_id,
@@ -323,6 +325,7 @@ async function listEmployeeAppInvitations({ tenantId }) {
       cargo: row.cargo,
       departamento: row.departamento,
       emailPersonal: row.email_personal,
+      telefono: row.telefono,
     },
     readiness: buildReadiness(row, { requireEmail: true }),
     invite: row.invite_id ? {
@@ -421,7 +424,14 @@ async function createEmployeeInvitation({ tenantId, empleadoId, userId, correlat
     });
 
     await db.commit(client);
-    return invitePublicPayload(inviteResult.rows[0], code);
+    const invite = invitePublicPayload(inviteResult.rows[0], code);
+    invite.delivery = await sendEmployeeInvite({
+      employee,
+      invite,
+      correlationId,
+      userId,
+    });
+    return invite;
   } catch (err) {
     await db.rollback(client);
     throw err;
@@ -432,7 +442,7 @@ async function resendEmployeeInvitation({ tenantId, inviteId, userId, correlatio
   const client = await db.getClient(tenantId, userId);
   try {
     const existing = await client.query(`
-      SELECT i.*, e.nombres, e.departamento, e.email_personal
+      SELECT i.*, e.nombres, e.apellidos, e.departamento, e.email_personal, e.telefono
       FROM employee_app_invites i
       JOIN empleados e ON e.id = i.empleado_id AND e.tenant_id = i.tenant_id
       WHERE i.id = $1
@@ -494,7 +504,14 @@ async function resendEmployeeInvitation({ tenantId, inviteId, userId, correlatio
     });
 
     await db.commit(client);
-    return invitePublicPayload(updated.rows[0], code);
+    const invite = invitePublicPayload(updated.rows[0], code);
+    invite.delivery = await sendEmployeeInvite({
+      employee: existing.rows[0],
+      invite,
+      correlationId,
+      userId,
+    });
+    return invite;
   } catch (err) {
     await db.rollback(client);
     throw err;

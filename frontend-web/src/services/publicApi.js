@@ -37,6 +37,16 @@ export async function resetPassword(payload) {
   return response.data;
 }
 
+export async function requestEmailVerification(email) {
+  const response = await publicApi.post('/auth/email-verification/request', { email });
+  return response.data;
+}
+
+export async function confirmEmailVerification(payload) {
+  const response = await publicApi.post('/auth/email-verification/confirm', payload);
+  return response.data;
+}
+
 export async function startCheckout(token, planId) {
   const response = await publicApi.post(
     '/pagos/payment-methods/checkout-intent',

@@ -1,8 +1,8 @@
 // ============================================================
 // Nomina-Ec - Panel operativo de nomina
 // ============================================================
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
   AlertCircle,
@@ -15,6 +15,7 @@ import {
   FileText,
   Landmark,
   LockKeyhole,
+  Mail,
   Settings2,
   ShieldCheck,
   UserPlus,
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { authenticatedApi } from '../services/authenticatedApi';
+import { confirmEmailVerification, extractApiError, requestEmailVerification } from '../services/publicApi';
 import { operationalBaseline, statusStyles } from '../config/operationalBaseline';
 
 const monthNames = [
@@ -181,6 +183,78 @@ function Step({ done, icon: Icon, title, description, href, action }) {
   );
 }
 
+function EmailVerificationBanner({ email }) {
+  const [code, setCode] = useState('');
+  const statusQuery = useQuery({
+    queryKey: ['email-verification-status'],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/auth/email-verification/status');
+      return response.data?.data;
+    },
+    enabled: Boolean(email),
+    retry: false,
+  });
+
+  const confirmMutation = useMutation({
+    mutationFn: () => confirmEmailVerification({ email, code }),
+    onSuccess: () => statusQuery.refetch(),
+  });
+  const resendMutation = useMutation({
+    mutationFn: () => requestEmailVerification(email),
+  });
+
+  if (statusQuery.data?.verified) return null;
+
+  return (
+    <section className="rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-sm">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex gap-3">
+          <Mail className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+          <div>
+            <h2 className="font-semibold text-amber-950">Verifica el correo administrativo</h2>
+            <p className="mt-1 text-sm leading-6 text-amber-900">
+              Ingresa el codigo enviado a {email}. Este paso protege recuperacion de clave y notificaciones laborales.
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            className="min-h-10 rounded-md border border-amber-300 bg-white px-3 py-2 font-mono text-sm outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-100"
+            maxLength={6}
+            onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="Codigo"
+            value={code}
+          />
+          <button
+            className="inline-flex min-h-10 items-center justify-center rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300"
+            disabled={confirmMutation.isPending || code.length < 6}
+            onClick={() => confirmMutation.mutate()}
+            type="button"
+          >
+            Confirmar
+          </button>
+          <button
+            className="inline-flex min-h-10 items-center justify-center rounded-md border border-amber-300 bg-white px-4 text-sm font-semibold text-amber-900 disabled:opacity-60"
+            disabled={resendMutation.isPending}
+            onClick={() => resendMutation.mutate()}
+            type="button"
+          >
+            Reenviar
+          </button>
+        </div>
+      </div>
+      {(confirmMutation.isError || resendMutation.isError) && (
+        <p className="mt-3 text-sm font-semibold text-red-700">
+          {extractApiError(confirmMutation.error || resendMutation.error, 'No pudimos completar la verificacion.')}
+        </p>
+      )}
+      {resendMutation.isSuccess && (
+        <p className="mt-3 text-sm font-semibold text-amber-900">Si el correo existe, se envio un nuevo codigo.</p>
+      )}
+    </section>
+  );
+}
+
 function Dashboard() {
   const { usuario } = useAuth();
   const role = usuario?.rol;
@@ -248,6 +322,8 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <EmailVerificationBanner email={usuario?.email} />
+
       <section className="soft-panel p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>

@@ -1,16 +1,22 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026",
-  "planCode": "DIC26",
-  "status": "completed_runtime_local_residuals_closed",
-  "phaseCompleted": "DIC26-08",
-  "currentPhase": "DIC26-closed-local-residuals",
-  "updatedAt": "2026-06-19T14:06:37.929-05:00",
-  "summary": "DIC26 queda ejecutado localmente con residuales cerrados: diagnostico comercial/UX/calidad, oferta visible, accesos con ojo de clave, app movil asistencia, limpieza de permisos/dependencias, gate UTF-8 limpio, build Vite sin warning de chunk grande y npm audit limpio en web/backend/movil.",
+  "plan": "HAIKY-COMUNICACIONES-SMTP-WHATSAPP-2026",
+  "planCode": "CSW26",
+  "status": "completed_runtime_local",
+  "phaseCompleted": "CSW26-07",
+  "currentPhase": "CSW26-closed-local",
+  "updatedAt": "2026-06-19T14:29:11.725-05:00",
+  "summary": "CSW26 queda ejecutado localmente: servicio unico de comunicaciones SMTP/WhatsApp, registro y recuperacion conectados a SMTP, invitaciones de empleado por email y WhatsApp complementario, pantalla de estado Comunicaciones, variables Render/env y gates completos.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: diagnostico integral, diseno, UI/UX, oferta comercial visible, accesos, codigo muerto, bugs, importaciones, errores, mojibake, UTF-8, plan Haiky, ejecucion de prompts, cierre de gobierno. Solicitud posterior: corregir notas residuales de chunk Vite y vulnerabilidades Dependabot/npm audit; al final solo commit.",
-  "previousAuditLockHash": "D4BA29D2AA1FC48AF5B5075D425F71B3309A68C9A9AB211F9B2881715E657B5C",
+  "approvalSource": "Solicitud del usuario: diagnostico integral del servicio de email, implementar SMTP, verificacion de correo para registro de usuarios, recuperacion de clave, empleados y envio WhatsApp para activar la app u otras acciones requeridas; desplegar plan Haiky, ejecutar prompts, cerrar gobierno, commit y push.",
+  "previousAuditLockHash": "6FB12E91544263C02E85053558EF517C5101A4FD80E2C2F85C4E06B7F2B630D7",
   "previousPlans": [
+    {
+      "plan": "HAIKY-DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026",
+      "planCode": "DIC26",
+      "status": "completed_runtime_local_residuals_closed",
+      "phaseCompleted": "DIC26-08"
+    },
     {
       "plan": "HAIKY-EMPLEADOS-APP-ASISTENCIA-INVITACION-2026",
       "planCode": "EAA26",
@@ -39,152 +45,133 @@
   "filesModified": [
     ".vscode/AuditLock.json",
     "CODEX_CONTEXT.md",
-    "docs2/PLAN_HAIKY_DIAGNOSTICO_INTEGRAL_COMERCIAL_UI_CALIDAD_2026.md",
-    "docs2/diagnostico-integral-comercial-ui-calidad-2026/MATRIZ_DIC26_HALLAZGOS.md",
-    "docs2/diagnostico-integral-comercial-ui-calidad-2026/REPORTE_DIC26_01_DIAGNOSTICO.md",
-    "docs2/diagnostico-integral-comercial-ui-calidad-2026/REPORTE_DIC26_02_06_EJECUCION.md",
-    "docs2/diagnostico-integral-comercial-ui-calidad-2026/REPORTE_DIC26_07_QA_RELEASE.md",
-    "docs2/diagnostico-integral-comercial-ui-calidad-2026/REPORTE_DIC26_08_RESIDUALES_BUILD_DEPENDABOT.md",
-    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-00-baseline.md",
-    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-01-diagnostico.md",
-    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-02-oferta-landing.md",
-    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-03-accesos.md",
-    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-04-app-movil.md",
-    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-05-codigo-muerto.md",
-    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-06-utf8.md",
-    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-07-qa-release.md",
-    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-08-residuales-build-dependabot.md",
-    "frontend-web/src/pages/Landing.jsx",
-    "frontend-web/src/pages/Login.jsx",
-    "frontend-web/src/pages/Register.jsx",
-    "frontend-web/src/pages/ForgotPassword.jsx",
-    "frontend-web/src/App.jsx",
-    "frontend-web/src/context/AuthContext.jsx",
-    "frontend-web/src/components/Layout/Layout.jsx",
-    "app-movil/app.json",
-    "app-movil/package.json",
-    "app-movil/package-lock.json",
-    "app-movil/src/App.js",
-    "app-movil/src/screens/AutoservicioScreen.js",
-    "app-movil/src/screens/MisMarcacionesScreen.js",
-    "app-movil/src/services/geolocation.js",
-    "app-movil/src/services/camera.js",
-    "docs2/landing-pwa-app-store-2026/REPORTE_LPA26_01_DIAGNOSTICO.md",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_01_ENCODING.md",
+    "render.yaml",
+    "backend/.env.example",
     "backend/package.json",
     "backend/package-lock.json",
-    "frontend-web/package.json",
-    "frontend-web/package-lock.json",
-    "frontend-web/vite.config.js"
+    "backend/src/app.js",
+    "backend/src/controllers/authController.js",
+    "backend/src/controllers/communicationController.js",
+    "backend/src/services/communicationService.js",
+    "backend/src/services/communicationService.test.js",
+    "backend/src/services/employeeAppInviteService.js",
+    "frontend-web/src/App.jsx",
+    "frontend-web/src/components/Layout/Layout.jsx",
+    "frontend-web/src/pages/Configuracion/Comunicaciones.jsx",
+    "frontend-web/src/pages/Dashboard.jsx",
+    "frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
+    "frontend-web/src/services/publicApi.js",
+    "docs2/PLAN_HAIKY_COMUNICACIONES_SMTP_WHATSAPP_2026.md",
+    "docs2/comunicaciones-smtp-whatsapp-2026/MATRIZ_CSW26_HALLAZGOS.md",
+    "docs2/comunicaciones-smtp-whatsapp-2026/REPORTE_CSW26_07_CIERRE.md",
+    ".github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-00-baseline.md",
+    ".github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-01-servicio-comunicaciones.md",
+    ".github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-02-auth-email.md",
+    ".github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-03-empleados-whatsapp.md",
+    ".github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-04-frontend-operativo.md",
+    ".github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-05-entorno-render.md",
+    ".github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-06-qa.md",
+    ".github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-07-cierre.md"
   ],
   "validationChecks": [
     {
-      "gate": "DIC26-RULES-CONTEXT",
+      "gate": "CSW26-RULES-CONTEXT",
       "status": "PASS",
       "detail": "RULES.md, CODEX_CONTEXT.md, AuditLock y estado git leidos antes de modificar runtime."
     },
     {
-      "gate": "DIC26-AUDITLOCK-PREVIOUS",
+      "gate": "CSW26-AUDITLOCK-PREVIOUS",
       "status": "PASS",
-      "detail": "AuditLock previo leido y hash SHA256 F93D1EEB2D33E8F131C836DAFC2B4A38BC32222E0717695E4451E2E1C0F569BD registrado."
+      "detail": "AuditLock previo leido y hash SHA256 6FB12E91544263C02E85053558EF517C5101A4FD80E2C2F85C4E06B7F2B630D7 registrado."
     },
     {
-      "gate": "DIC26-FRONTEND-BUILD",
+      "gate": "CSW26-BACKEND-AUDIT",
       "status": "PASS",
-      "detail": "npm.cmd run build paso en frontend-web con Vite 7.3.5, PWA 1.3.0 y sin warning de chunk mayor a 500 kB; mayor JS runtime 221.95 kB."
+      "detail": "npm.cmd audit --audit-level=low paso en backend con 0 vulnerabilidades."
     },
     {
-      "gate": "DIC26-DEPENDABOT-AUDIT",
+      "gate": "CSW26-BACKEND-TESTS",
       "status": "PASS",
-      "detail": "npm.cmd audit --audit-level=low paso con 0 vulnerabilidades en frontend-web, backend y app-movil."
+      "detail": "npm.cmd test -- --runInBand paso en backend: 21 suites, 82 tests."
     },
     {
-      "gate": "DIC26-PWA-SMOKE",
+      "gate": "CSW26-FRONTEND-BUILD",
       "status": "PASS",
-      "detail": "npm.cmd run smoke:pwa paso en frontend-web: manifest, assets y service worker cumplen."
+      "detail": "npm.cmd run build paso en frontend-web con Vite 7.3.5 y PWA generada."
     },
     {
-      "gate": "DIC26-BACKEND-TESTS",
+      "gate": "CSW26-PWA-SMOKE",
       "status": "PASS",
-      "detail": "npm.cmd test -- --runInBand paso en backend: 20 suites, 78 tests."
+      "detail": "npm.cmd run smoke:pwa paso: manifest, assets y service worker cumplen."
     },
     {
-      "gate": "DIC26-APP-STORES",
+      "gate": "CSW26-PRISMA-VALIDATE",
+      "status": "PASS",
+      "detail": "npx.cmd prisma validate paso en backend."
+    },
+    {
+      "gate": "CSW26-APP-STORES",
       "status": "PASS",
       "detail": "npm.cmd run check:stores paso en app-movil."
     },
     {
-      "gate": "DIC26-EXPO-DOCTOR",
+      "gate": "CSW26-EXPO-DOCTOR",
       "status": "PASS",
-      "detail": "npm.cmd run doctor paso en app-movil con 21/21 checks. Primer intento bloqueo por EPERM en cache npm del sandbox y se repitio con permiso elevado."
+      "detail": "npm.cmd run doctor paso en app-movil con 21/21 checks."
     },
     {
-      "gate": "DIC26-NODE-CRON-API",
+      "gate": "CSW26-BACKEND-SYNTAX",
       "status": "PASS",
-      "detail": "node-cron 4.4.1 expone cron.schedule y src/config/cron-jobs.js pasa node --check."
-    },
-    {
-      "gate": "DIC26-UTF8-BOM-MOJIBAKE",
-      "status": "PASS",
-      "detail": "Gate Node final: UTF8_NO_BOM_NO_MOJIBAKE 295."
-    },
-    {
-      "gate": "DIC26-DEAD-DEPS",
-      "status": "PASS",
-      "detail": "rg no encontro expo-camera, CAMERA, NSCamera, services/camera, @react-navigation ni react-native-screens en app-movil tras limpieza."
+      "detail": "node --check paso en communicationService, communicationController, authController y employeeAppInviteService."
     }
   ],
   "fases": [
     {
-      "phase": "DIC26-00",
+      "phase": "CSW26-00",
       "status": "completed_documental",
-      "task": "baseline, reglas, contexto y candado"
+      "task": "baseline, diagnostico y matriz"
     },
     {
-      "phase": "DIC26-01",
+      "phase": "CSW26-01",
       "status": "completed_local",
-      "task": "diagnostico integral de rutas, pantallas, imports, dependencias y encoding"
+      "task": "servicio unico SMTP y WhatsApp"
     },
     {
-      "phase": "DIC26-02",
+      "phase": "CSW26-02",
       "status": "completed_local",
-      "task": "oferta comercial visible en landing"
+      "task": "auth, verificacion y recuperacion conectadas a SMTP"
     },
     {
-      "phase": "DIC26-03",
+      "phase": "CSW26-03",
       "status": "completed_local",
-      "task": "ojo de clave en accesos web"
+      "task": "invitaciones de empleados por email y WhatsApp complementario"
     },
     {
-      "phase": "DIC26-04",
+      "phase": "CSW26-04",
       "status": "completed_local",
-      "task": "app movil con marcar, historial y perfil"
+      "task": "frontend operativo de comunicaciones y verificacion"
     },
     {
-      "phase": "DIC26-05",
+      "phase": "CSW26-05",
       "status": "completed_local",
-      "task": "retiro de codigo muerto, permisos y dependencias moviles"
+      "task": "entorno local y Render"
     },
     {
-      "phase": "DIC26-06",
+      "phase": "CSW26-06",
       "status": "completed_local",
-      "task": "UTF-8 sin BOM y sin mojibake literal"
+      "task": "QA y gates"
     },
     {
-      "phase": "DIC26-07",
+      "phase": "CSW26-07",
       "status": "completed_local",
-      "task": "QA, evidencia, AuditLock, commit y push"
-    },
-    {
-      "phase": "DIC26-08",
-      "status": "completed_local",
-      "task": "residuales build Vite y Dependabot/npm audit cerrados con commit local sin push"
+      "task": "cierre de gobierno, commit y push"
     }
   ],
   "residualRisk": [
-    "La evidencia fotografica de marcacion queda fuera hasta disenar un flujo real de camara, consentimiento y almacenamiento.",
-    "El smoke visual en telefono con Expo Go debe repetirse en red local antes de demo comercial."
+    "Configurar credenciales SMTP reales fuera del repositorio.",
+    "Configurar WhatsApp Business Cloud API con token, phone number ID, version Graph API vigente y plantillas aprobadas.",
+    "Ejecutar prueba SMTP real desde la pantalla Comunicaciones antes de demo comercial."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "15b474cbfe529d145e68b6b20cb9a995550782627685023f11862314258337c8"
+  "signature": "5e7a92b5f4245c220a046d16ac3775b0d65807dc61eecf2d43a0ab81540f0968"
 }

@@ -71,6 +71,7 @@ app.use('/api/v1', externalApiRateLimit, authenticateExternalApi, externalApiRou
 app.use('/api', authenticateToken);
 
 const configurationController = require('./controllers/configurationController');
+const communicationController = require('./controllers/communicationController');
 app.get('/api/configuracion/resumen', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.summary);
 app.get('/api/configuracion/onboarding', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.onboarding);
 app.post('/api/configuracion/onboarding/:stepCode', requireRole('owner', 'admin_rrhh'), configurationController.completeOnboardingStep);
@@ -78,6 +79,8 @@ app.post('/api/configuracion/parametros-legales/obligatorios', requireRole('supe
 app.get('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.list);
 app.post('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.create);
 app.put('/api/configuracion/:resource/:id', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.update);
+app.get('/api/comunicaciones/status', requireRole('superadmin', 'owner', 'admin_rrhh'), communicationController.status);
+app.post('/api/comunicaciones/prueba-email', requireRole('superadmin', 'owner', 'admin_rrhh'), communicationController.testEmail);
 
 const integrationController = require('./controllers/integrationController');
 app.get('/api/integraciones/clientes', requireRole('superadmin', 'owner'), integrationController.listApiClients);

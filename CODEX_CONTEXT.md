@@ -1,3 +1,47 @@
+## Open Haiky Plan - HAIKY-COMUNICACIONES-SMTP-WHATSAPP-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-COMUNICACIONES-SMTP-WHATSAPP-2026 |
+| Codigo | CSW26 |
+| Estado | CSW26-00..07 ejecutadas localmente |
+| Fase actual | CSW26-07 cerrada localmente |
+| Alcance | comunicaciones transaccionales SMTP y WhatsApp para registro, verificacion de correo, recuperacion de clave e invitaciones de app de asistencia |
+| Plan doc | `docs2/PLAN_HAIKY_COMUNICACIONES_SMTP_WHATSAPP_2026.md` |
+| Matriz | `docs2/comunicaciones-smtp-whatsapp-2026/MATRIZ_CSW26_HALLAZGOS.md` |
+| Reporte | `docs2/comunicaciones-smtp-whatsapp-2026/REPORTE_CSW26_07_CIERRE.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Prompts | `.github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-{00..07}-*.md` |
+| RULES | `RULES.md` |
+
+### Resumen CSW26
+
+CSW26 implemento un servicio unico de comunicaciones para Nomina-Ec. SMTP queda como canal primario para verificacion de correo y recuperacion de clave; WhatsApp Business Cloud API queda como canal complementario para activar la app movil de asistencia con plantillas aprobadas.
+
+Runtime cerrado:
+
+- `communicationService` con SMTP, WhatsApp, estado sin secretos y prueba SMTP.
+- Registro publico e interno generan codigo de verificacion y lo envian por SMTP.
+- Recuperacion de clave envia codigo por SMTP sin exponer existencia de cuentas.
+- Invitaciones de empleados envian email y registran intento WhatsApp con estado por canal.
+- Dashboard permite confirmar y reenviar codigo de verificacion.
+- Pantalla `Comunicaciones` muestra SMTP/WhatsApp, variables faltantes, plantillas y prueba de email.
+
+Gates ejecutados:
+
+- `npm.cmd audit --audit-level=low` en `backend`: PASS, 0 vulnerabilidades.
+- `npm.cmd test -- --runInBand` en `backend`: PASS, 21 suites y 82 tests.
+- `npm.cmd run build` y `npm.cmd run smoke:pwa` en `frontend-web`: PASS.
+- `npx.cmd prisma validate` en `backend`: PASS.
+- `npm.cmd run check:stores` y `npm.cmd run doctor` en `app-movil`: PASS.
+
+Bloqueos externos:
+
+- Configurar credenciales SMTP reales fuera del repositorio.
+- Configurar token, phone number ID, version Graph API y plantillas WhatsApp aprobadas.
+
+---
+
 ## Open Haiky Plan - HAIKY-DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026
 
 | Campo | Valor |

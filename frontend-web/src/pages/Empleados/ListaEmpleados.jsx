@@ -276,6 +276,18 @@ function ImportPanel({ onImported }) {
   );
 }
 
+function deliveryText(delivery) {
+  const channel = delivery.channel === 'whatsapp' ? 'WhatsApp' : 'Email';
+  const labels = {
+    sent: 'enviado',
+    dev_logged: 'registrado en log de desarrollo',
+    not_configured: 'sin configurar',
+    skipped: delivery.reason === 'telefono_no_disponible' ? 'sin telefono' : 'omitido',
+    failed: 'fallo',
+  };
+  return `${channel}: ${labels[delivery.status] || delivery.status}`;
+}
+
 function ListaEmpleados() {
   const queryClient = useQueryClient();
   const [busqueda, setBusqueda] = useState('');
@@ -406,6 +418,22 @@ function ListaEmpleados() {
                 <p className="text-sm font-semibold text-emerald-950">Codigo de activacion generado</p>
                 <p className="mt-1 font-mono text-lg font-bold text-emerald-900">{lastInvite.code}</p>
                 <p className="mt-1 break-all text-xs text-emerald-800">{lastInvite.activationUrl}</p>
+                {Array.isArray(lastInvite.delivery) && lastInvite.delivery.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {lastInvite.delivery.map((item) => (
+                      <span
+                        className={`rounded-full border px-2 py-1 text-xs font-semibold ${
+                          item.status === 'sent' || item.status === 'dev_logged'
+                            ? 'border-emerald-200 bg-white text-emerald-800'
+                            : 'border-amber-200 bg-amber-50 text-amber-900'
+                        }`}
+                        key={`${item.channel}-${item.status}-${item.reason || ''}`}
+                      >
+                        {deliveryText(item)}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {lastInvite.copyError && <p className="mt-1 text-xs font-semibold text-red-700">{lastInvite.copyError}</p>}
                 {lastInvite.copied && <p className="mt-1 text-xs font-semibold text-emerald-800">Copiado al portapapeles.</p>}
               </div>
