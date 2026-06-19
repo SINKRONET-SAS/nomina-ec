@@ -6,6 +6,7 @@ const { dateInEcuador, ensurePayrollPeriodForDate } = require('./monthlyPeriodSe
 const { s3Upload } = require('../config/s3');
 const AppError = require('../utils/AppError');
 const { recordAudit } = require('./auditService');
+const { resolveAttendanceReadiness } = require('./employeeAppInviteService');
 
 async function validarMarcacion({
   empleadoId,
@@ -13,6 +14,7 @@ async function validarMarcacion({
   tipo,
   lat,
   lng,
+  accuracy = null,
   fotoBase64,
   permitirFueraPerimetro = false,
   motivoFueraPerimetro = '',
@@ -20,6 +22,7 @@ async function validarMarcacion({
   ipAddress,
   correlationId,
   userId,
+  source = 'web',
 }) {
   const requestIp = ip || ipAddress || null;
   if (lat === undefined || lng === undefined || Number.isNaN(lat) || Number.isNaN(lng)) {
@@ -46,13 +49,50 @@ async function validarMarcacion({
   }
 
   const tenant = tenantResult.rows[0];
-  const workZone = await resolveWorkZoneForEmployee(empleadoId, tenantId);
+  const readinessResult = await resolveAttendanceReadiness(empleadoId, tenantId);
+  const { readiness } = readinessResult;
+
+  if (!readiness.ready) {
+    throw new AppError('La asistencia no esta lista: RRHH debe completar unidad organizativa, zona y jornada.', {
+      code: 'ATTENDANCE_NOT_READY',
+      statusCode: 409,
+      correlationId,
+      userId,
+      details: {
+        empleadoId,
+        blockers: readiness.blockers,
+      },
+    });
+  }
+
+  const workZone = readiness.workZone;
+  const organizationUnit = readiness.organizationUnit;
+  const workShift = readiness.workShift;
   const configuredRadius = tenant.configuracion?.radio_permitido_metros;
-  const radioPermitido = Number(workZone?.radius_meters || configuredRadius || tenant.radio_perimetro_metros || 100);
+  const radioPermitido = Number(workZone?.radiusMeters || configuredRadius || tenant.radio_perimetro_metros || 100);
   const referenceLat = workZone?.latitude || tenant.ubicacion_lat;
   const referenceLng = workZone?.longitude || tenant.ubicacion_lng;
   let distancia = 0;
   let dentroPerimetro = true;
+  const accuracyValue = accuracy == null ? null : Number(accuracy);
+
+  if (
+    accuracyValue != null
+    && Number.isFinite(accuracyValue)
+    && workZone?.minAccuracyMeters
+    && accuracyValue > Number(workZone.minAccuracyMeters)
+  ) {
+    throw new AppError('La precision GPS no es suficiente para registrar asistencia en esta zona.', {
+      code: 'MARCACION_PRECISION_GPS_INSUFICIENTE',
+      statusCode: 409,
+      correlationId,
+      userId,
+      details: {
+        accuracyMeters: Math.round(accuracyValue),
+        minAccuracyMeters: workZone.minAccuracyMeters,
+      },
+    });
+  }
 
   if (referenceLat && referenceLng) {
     distancia = calcularDistanciaHaversine(
@@ -95,14 +135,16 @@ async function validarMarcacion({
   }
 
   if (tipo === 'inicio_jornada') {
+    const fechaOperacional = dateInEcuador(new Date());
     const ultima = await db.query(`
       SELECT tipo_marcacion
       FROM marcaciones
       WHERE empleado_id = $1
-        AND DATE(timestamp) = CURRENT_DATE
+        AND tenant_id = $2
+        AND operational_date = $3::date
       ORDER BY timestamp DESC
       LIMIT 1
-    `, [empleadoId]);
+    `, [empleadoId, tenantId, fechaOperacional]);
 
     if (ultima.rows.length > 0 && ultima.rows[0].tipo_marcacion === 'inicio_jornada') {
       throw new AppError('No se puede registrar un nuevo inicio sin un fin previo', {
@@ -114,28 +156,58 @@ async function validarMarcacion({
     }
   }
 
+  const fechaOperacional = dateInEcuador(new Date());
+  const period = await ensurePayrollPeriodForDate({ tenantId, userId, fecha: fechaOperacional });
+  if (period.status === 'closed') {
+    throw new AppError('No se puede registrar asistencia en un periodo de nomina cerrado.', {
+      code: 'ATTENDANCE_PERIOD_CLOSED',
+      statusCode: 422,
+      correlationId,
+      userId,
+      details: { periodoNomina: period.periodoNomina },
+    });
+  }
+
   const result = await db.query(`
     INSERT INTO marcaciones (
-      empleado_id, tenant_id, tipo_marcacion, timestamp,
-      foto_url, latitud, longitud, dentro_perimetro, distancia_metros, ip_address, metadata
+      empleado_id, tenant_id, period_id, operational_date, work_zone_id,
+      organization_unit_id, work_shift_id, tipo_marcacion, timestamp,
+      foto_url, latitud, longitud, accuracy_meters, dentro_perimetro,
+      distancia_metros, ip_address, source, audit_correlation_id, metadata
     )
-    VALUES ($1,$2,$3,NOW(),$4,$5,$6,$7,$8,$9,$10)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW(),$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
     RETURNING id
   `, [
     empleadoId,
     tenantId,
+    period.id,
+    fechaOperacional,
+    workZone?.id || null,
+    organizationUnit?.id || null,
+    workShift?.id || null,
     tipo,
     fotoUrl,
     lat,
     lng,
+    Number.isFinite(accuracyValue) ? accuracyValue : null,
     dentroPerimetro,
     distancia,
     requestIp,
+    source,
+    correlationId || null,
     JSON.stringify({
       radioPermitido,
       workZoneId: workZone?.id || null,
       workZoneName: workZone?.name || null,
-      perimeterSource: workZone ? 'organization_unit_work_zone' : 'tenant_default',
+      organizationUnitId: organizationUnit?.id || null,
+      organizationUnitName: organizationUnit?.name || null,
+      workShiftId: workShift?.id || null,
+      workShiftName: workShift?.name || null,
+      periodId: period.id,
+      periodoNomina: period.periodoNomina,
+      operationalDate: fechaOperacional,
+      accuracyMeters: Number.isFinite(accuracyValue) ? accuracyValue : null,
+      perimeterSource: 'organization_unit_work_zone',
       permitirFueraPerimetro: Boolean(permitirFueraPerimetro),
       motivoFueraPerimetro: motivoFueraPerimetro || '',
     }),
@@ -171,6 +243,8 @@ async function validarMarcacion({
     timestamp: new Date().toISOString(),
     dentroPerimetro,
     distancia: distancia.toFixed(0),
+    periodo_operacional: period.periodoNomina,
+    fecha_operacional: fechaOperacional,
     zonaMarcacion: workZone ? {
       id: workZone.id,
       nombre: workZone.name,
@@ -182,27 +256,17 @@ async function validarMarcacion({
 }
 
 async function resolveWorkZoneForEmployee(empleadoId, tenantId) {
-  const result = await db.query(`
-    SELECT wz.id, wz.code, wz.name, wz.latitude, wz.longitude, wz.radius_meters
-    FROM empleados e
-    JOIN organization_units ou
-      ON ou.tenant_id = e.tenant_id
-      AND ou.status = 'activo'
-      AND (
-        LOWER(ou.code) = LOWER(e.departamento)
-        OR LOWER(ou.name) = LOWER(e.departamento)
-      )
-    JOIN work_zones wz
-      ON wz.id = ou.work_zone_id
-      AND wz.tenant_id = e.tenant_id
-      AND wz.status = 'activo'
-    WHERE e.id = $1
-      AND e.tenant_id = $2
-    ORDER BY ou.updated_at DESC, ou.created_at DESC
-    LIMIT 1
-  `, [empleadoId, tenantId]);
-
-  return result.rows[0] || null;
+  const { readiness } = await resolveAttendanceReadiness(empleadoId, tenantId);
+  if (!readiness.workZone) return null;
+  return {
+    id: readiness.workZone.id,
+    code: readiness.workZone.code,
+    name: readiness.workZone.name,
+    latitude: readiness.workZone.latitude,
+    longitude: readiness.workZone.longitude,
+    radius_meters: readiness.workZone.radiusMeters,
+    min_accuracy_meters: readiness.workZone.minAccuracyMeters,
+  };
 }
 
 function calcularDistanciaHaversine(lat1, lon1, lat2, lon2) {

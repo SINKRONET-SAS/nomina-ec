@@ -5,7 +5,7 @@ import { mobileAPI } from '../services/api';
 
 function formatMark(mark) {
   if (!mark) return 'Sin marcaciones hoy';
-  return `${String(mark.tipo_marcacion || '').replace(/_/g, ' ')} - ${new Date(mark.timestamp).toLocaleString('es-EC')}`;
+  return `${String(mark.tipo_marcacion || '').replace(/_/g, ' ')} - ${new Date(mark.timestamp).toLocaleString('es-EC', { timeZone: 'America/Guayaquil' })}`;
 }
 
 export default function MarcacionScreen({ onLogout }) {
@@ -19,6 +19,9 @@ export default function MarcacionScreen({ onLogout }) {
   const puedeMarcarInicio = !ultimaMarcacion || ultimaMarcacion.tipo_marcacion === 'fin_jornada';
   const puedeMarcarFin = ultimaMarcacion && ultimaMarcacion.tipo_marcacion === 'inicio_jornada';
   const zonaMarcacion = employee?.zona_marcacion;
+  const readiness = employee?.readiness || {};
+  const attendanceReady = Boolean(readiness.ready);
+  const blockers = readiness.blockers || [];
 
   const statusStyle = useMemo(() => {
     if (status.type === 'error') return styles.statusError;
@@ -30,9 +33,14 @@ export default function MarcacionScreen({ onLogout }) {
     setLoading(true);
     try {
       const response = await mobileAPI.attendanceSummary();
-      setEmployee(response.data.employee);
+      const nextEmployee = response.data.employee;
+      setEmployee(nextEmployee);
       setUltimaMarcacion((response.data.marcaciones || [])[0] || null);
-      setStatus({ type: 'success', text: 'Asistencia sincronizada.' });
+      if (nextEmployee?.readiness?.ready) {
+        setStatus({ type: 'success', text: 'Asistencia sincronizada.' });
+      } else {
+        setStatus({ type: 'error', text: 'RRHH debe completar unidad, zona y jornada antes de marcar.' });
+      }
     } catch (err) {
       setStatus({ type: 'error', text: err.response?.data?.message || 'No pudimos cargar tu asistencia movil.' });
     } finally {
@@ -48,7 +56,7 @@ export default function MarcacionScreen({ onLogout }) {
     }
 
     const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-    const next = {
+      const next = {
       lat: location.coords.latitude,
       lng: location.coords.longitude,
       accuracy: location.coords.accuracy,
@@ -71,6 +79,7 @@ export default function MarcacionScreen({ onLogout }) {
         tipo,
         lat: currentLocation.lat,
         lng: currentLocation.lng,
+        accuracy: currentLocation.accuracy,
       });
       setUltimaMarcacion(response.data.marcacion);
       setEmployee(response.data.employee || employee);
@@ -114,11 +123,20 @@ export default function MarcacionScreen({ onLogout }) {
         <Text style={styles.cardDetail}>
           Zona: {zonaMarcacion ? `${zonaMarcacion.nombre} (${zonaMarcacion.codigo})` : 'Zona no asignada'}
         </Text>
+        <Text style={styles.cardDetail}>
+          Unidad: {employee?.unidad_organizativa ? `${employee.unidad_organizativa.nombre} (${employee.unidad_organizativa.codigo})` : 'Unidad no vinculada'}
+        </Text>
+        <Text style={styles.cardDetail}>
+          Jornada: {employee?.jornada ? `${employee.jornada.nombre} ${employee.jornada.inicio}-${employee.jornada.fin}` : 'Jornada no asignada'}
+        </Text>
         {zonaMarcacion ? (
-          <Text style={styles.cardDetail}>Radio autorizado: {zonaMarcacion.radio_metros} m</Text>
+          <Text style={styles.cardDetail}>Radio autorizado: {zonaMarcacion.radio_metros} m | Precision minima: {zonaMarcacion.precision_minima_metros || '-'} m</Text>
         ) : (
           <Text style={styles.warningText}>Solicita a RRHH vincular tu unidad organizativa a una zona de marcacion.</Text>
         )}
+        {!attendanceReady && blockers.length > 0 ? (
+          <Text style={styles.warningText}>Pendiente RRHH: {blockers.join(', ')}</Text>
+        ) : null}
       </View>
 
       <View style={[styles.status, statusStyle]}>
@@ -128,7 +146,7 @@ export default function MarcacionScreen({ onLogout }) {
       <View style={styles.card}>
         <Text style={styles.cardLabel}>Ubicacion actual</Text>
         {ubicacion ? (
-          <Text style={styles.mono}>Lat {ubicacion.lat.toFixed(6)} | Lng {ubicacion.lng.toFixed(6)}</Text>
+          <Text style={styles.mono}>Lat {ubicacion.lat.toFixed(6)} | Lng {ubicacion.lng.toFixed(6)} | Precision {Math.round(ubicacion.accuracy || 0)} m</Text>
         ) : (
           <Text style={styles.cardDetail}>Ubicacion pendiente</Text>
         )}
@@ -139,16 +157,16 @@ export default function MarcacionScreen({ onLogout }) {
 
       <View style={styles.actions}>
         <TouchableOpacity
-          disabled={!puedeMarcarInicio || submitting || !employee}
+          disabled={!puedeMarcarInicio || submitting || !employee || !attendanceReady}
           onPress={() => registrarMarcacion('inicio_jornada')}
-          style={[styles.primaryButton, styles.startButton, (!puedeMarcarInicio || submitting || !employee) && styles.disabledButton]}
+          style={[styles.primaryButton, styles.startButton, (!puedeMarcarInicio || submitting || !employee || !attendanceReady) && styles.disabledButton]}
         >
           <Text style={styles.primaryButtonText}>{submitting ? 'Procesando' : 'Iniciar jornada'}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          disabled={!puedeMarcarFin || submitting || !employee}
+          disabled={!puedeMarcarFin || submitting || !employee || !attendanceReady}
           onPress={() => registrarMarcacion('fin_jornada')}
-          style={[styles.primaryButton, styles.endButton, (!puedeMarcarFin || submitting || !employee) && styles.disabledButton]}
+          style={[styles.primaryButton, styles.endButton, (!puedeMarcarFin || submitting || !employee || !attendanceReady) && styles.disabledButton]}
         >
           <Text style={styles.primaryButtonText}>{submitting ? 'Procesando' : 'Finalizar jornada'}</Text>
         </TouchableOpacity>

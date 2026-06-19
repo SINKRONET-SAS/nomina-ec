@@ -44,6 +44,7 @@ app.get('/health', (req, res) => {
 });
 
 const authController = require('./controllers/authController');
+const employeeAppInviteController = require('./controllers/employeeAppInviteController');
 const { authenticateToken, requireRole } = require('./middleware/auth');
 const authRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 20, keyPrefix: 'auth' });
 app.post('/api/auth/login', authRateLimit, authController.login);
@@ -55,6 +56,7 @@ app.post('/api/auth/email-verification/request', authRateLimit, authController.r
 app.post('/api/auth/email-verification/resend', authRateLimit, authController.requestEmailVerification);
 app.post('/api/auth/email-verification/confirm', authRateLimit, authController.confirmEmailVerification);
 app.post('/api/auth/register', authRateLimit, authenticateToken, requireRole('superadmin', 'owner'), authController.register);
+app.post('/api/mobile/empleado/activar', authRateLimit, employeeAppInviteController.aceptarPublica);
 
 const paymentController = require('./controllers/paymentController');
 app.get('/api/pagos/planes', paymentController.listPublicPlans);
@@ -100,6 +102,9 @@ app.delete('/api/pagos/planes/:planId', requireRole('superadmin'), paymentContro
 
 const empleadoController = require('./controllers/empleadoController');
 app.get('/api/empleados', empleadoController.listar);
+app.get('/api/empleados/app-invitaciones', requireRole('owner', 'admin_rrhh'), employeeAppInviteController.listar);
+app.post('/api/empleados/app-invitaciones/:id/reenviar', requireRole('owner', 'admin_rrhh'), employeeAppInviteController.reenviar);
+app.post('/api/empleados/app-invitaciones/:id/revocar', requireRole('owner', 'admin_rrhh'), employeeAppInviteController.revocar);
 app.get('/api/empleados/importar/lotes', requireRole('owner', 'admin_rrhh'), empleadoController.listarLotesImportacion);
 app.post('/api/empleados/importar/preview', requireRole('owner', 'admin_rrhh'), empleadoController.previewImportacion);
 app.post('/api/empleados/importar/confirmar', requireRole('owner', 'admin_rrhh'), empleadoController.confirmarImportacion);
@@ -107,6 +112,7 @@ app.delete('/api/empleados/importar/lotes/:batchId', requireRole('owner', 'admin
 app.get('/api/empleados/:id', empleadoController.obtener);
 app.post('/api/empleados', requireRole('owner', 'admin_rrhh'), empleadoController.crear);
 app.put('/api/empleados/:id', requireRole('owner', 'admin_rrhh'), empleadoController.actualizar);
+app.post('/api/empleados/:id/app-invitacion', requireRole('owner', 'admin_rrhh'), employeeAppInviteController.crear);
 app.post('/api/empleados/:id/terminar', requireRole('owner', 'admin_rrhh'), empleadoController.terminar);
 
 const marcacionController = require('./controllers/marcacionController');
@@ -202,6 +208,17 @@ app.use((err, req, res, next) => {
     return res.status(401).json({
       error: 'NO_AUTORIZADO',
       message: 'Token invalido o expirado',
+      correlationId: correlation,
+    });
+  }
+
+  if (
+    err.message?.includes('JWT_SECRET')
+    || err.message?.includes('EMPLOYEE_INVITE_SECRET')
+  ) {
+    return res.status(503).json({
+      error: 'CONFIGURACION_SEGURIDAD_INCOMPLETA',
+      message: 'El servicio de autenticacion no esta configurado para emitir accesos. Contacta al administrador del sistema.',
       correlationId: correlation,
     });
   }

@@ -4,13 +4,18 @@ import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
   CheckCircle2,
+  Copy,
   Edit,
   FileSpreadsheet,
+  Link as LinkIcon,
   Plus,
   RotateCcw,
   Search,
+  Send,
+  Smartphone,
   Upload,
   UserX,
+  XCircle,
 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
@@ -274,6 +279,7 @@ function ImportPanel({ onImported }) {
 function ListaEmpleados() {
   const queryClient = useQueryClient();
   const [busqueda, setBusqueda] = useState('');
+  const [lastInvite, setLastInvite] = useState(null);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['empleados'],
@@ -283,10 +289,74 @@ function ListaEmpleados() {
     },
   });
 
+  const invitationsQuery = useQuery({
+    queryKey: ['employee-app-invitations'],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/empleados/app-invitaciones');
+      return response.data.employees || [];
+    },
+  });
+
+  const inviteMutation = useMutation({
+    mutationFn: async (employeeId) => {
+      const response = await authenticatedApi.post(`/empleados/${employeeId}/app-invitacion`);
+      return response.data.invite;
+    },
+    onSuccess: (invite) => {
+      setLastInvite(invite);
+      queryClient.invalidateQueries({ queryKey: ['employee-app-invitations'] });
+    },
+  });
+
+  const resendMutation = useMutation({
+    mutationFn: async (inviteId) => {
+      const response = await authenticatedApi.post(`/empleados/app-invitaciones/${inviteId}/reenviar`);
+      return response.data.invite;
+    },
+    onSuccess: (invite) => {
+      setLastInvite(invite);
+      queryClient.invalidateQueries({ queryKey: ['employee-app-invitations'] });
+    },
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: async (inviteId) => {
+      const response = await authenticatedApi.post(`/empleados/app-invitaciones/${inviteId}/revocar`);
+      return response.data.invite;
+    },
+    onSuccess: () => {
+      setLastInvite(null);
+      queryClient.invalidateQueries({ queryKey: ['employee-app-invitations'] });
+    },
+  });
+
   const empleados = data || [];
+  const activationRows = invitationsQuery.data || [];
+  const activationByEmployee = useMemo(() => new Map(
+    activationRows.map((item) => [item.empleado.id, item])
+  ), [activationRows]);
   const filtrados = useMemo(() => empleados.filter((empleado) => (
     `${empleado.nombres} ${empleado.apellidos} ${empleado.cedula}`.toLowerCase().includes(busqueda.toLowerCase())
   )), [empleados, busqueda]);
+  const activationMetrics = useMemo(() => {
+    const rows = activationRows;
+    return {
+      total: rows.length,
+      ready: rows.filter((item) => item.readiness?.ready).length,
+      active: rows.filter((item) => item.link?.status === 'ACTIVE').length,
+      blocked: rows.filter((item) => !item.readiness?.ready).length,
+      pending: rows.filter((item) => item.invite?.status === 'PENDING_INVITE').length,
+    };
+  }, [activationRows]);
+
+  const copyActivation = async (value) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setLastInvite((current) => current ? { ...current, copied: true, copyError: '' } : current);
+    } catch (err) {
+      setLastInvite((current) => current ? { ...current, copied: false, copyError: 'No pudimos copiar automaticamente. Selecciona el codigo manualmente.' } : current);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -301,6 +371,62 @@ function ListaEmpleados() {
       </div>
 
       <ImportPanel onImported={() => queryClient.invalidateQueries({ queryKey: ['empleados'] })} />
+
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <Smartphone className="h-5 w-5 text-teal-700" />
+              <h2 className="text-lg font-semibold text-slate-950">Activacion app de asistencia</h2>
+            </div>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+              Invita empleados activos para que activen la app movil y registren asistencia. La invitacion se bloquea si falta email, unidad organizativa, zona de marcacion o jornada.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-5">
+            {[
+              ['Empleados', activationMetrics.total],
+              ['Listos', activationMetrics.ready],
+              ['Activos', activationMetrics.active],
+              ['Pendientes', activationMetrics.pending],
+              ['Bloqueados', activationMetrics.blocked],
+            ].map(([label, value]) => (
+              <div className="rounded-md bg-slate-50 px-3 py-2" key={label}>
+                <p className="text-xs text-slate-500">{label}</p>
+                <p className="text-lg font-semibold text-slate-950">{value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {lastInvite?.code && (
+          <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-emerald-950">Codigo de activacion generado</p>
+                <p className="mt-1 font-mono text-lg font-bold text-emerald-900">{lastInvite.code}</p>
+                <p className="mt-1 break-all text-xs text-emerald-800">{lastInvite.activationUrl}</p>
+                {lastInvite.copyError && <p className="mt-1 text-xs font-semibold text-red-700">{lastInvite.copyError}</p>}
+                {lastInvite.copied && <p className="mt-1 text-xs font-semibold text-emerald-800">Copiado al portapapeles.</p>}
+              </div>
+              <button
+                className="inline-flex min-h-10 w-fit items-center gap-2 rounded-md border border-emerald-300 px-4 text-sm font-semibold text-emerald-900"
+                onClick={() => copyActivation(lastInvite.activationUrl || lastInvite.code)}
+                type="button"
+              >
+                <Copy className="h-4 w-4" />
+                Copiar link
+              </button>
+            </div>
+          </div>
+        )}
+
+        {(invitationsQuery.isError || inviteMutation.isError || resendMutation.isError || revokeMutation.isError) && (
+          <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+            {extractApiError(invitationsQuery.error || inviteMutation.error || resendMutation.error || revokeMutation.error, 'No pudimos gestionar invitaciones de app. Revisa la configuracion e intenta nuevamente.')}
+          </div>
+        )}
+      </section>
 
       {isError && (
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
@@ -323,40 +449,97 @@ function ListaEmpleados() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px]">
+          <table className="w-full min-w-[1060px]">
             <thead className="bg-slate-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">Cedula</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">Nombre</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">Cargo</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">Sueldo</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">App asistencia</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {isLoading ? (
-                <tr><td className="px-6 py-4 text-center text-sm text-slate-600" colSpan="5">Cargando empleados...</td></tr>
+                <tr><td className="px-6 py-4 text-center text-sm text-slate-600" colSpan="6">Cargando empleados...</td></tr>
               ) : filtrados.length === 0 ? (
-                <tr><td className="px-6 py-4 text-center text-sm text-slate-600" colSpan="5">No hay empleados para mostrar</td></tr>
+                <tr><td className="px-6 py-4 text-center text-sm text-slate-600" colSpan="6">No hay empleados para mostrar</td></tr>
               ) : (
-                filtrados.map((empleado) => (
-                  <tr className="hover:bg-slate-50" key={empleado.id}>
-                    <td className="px-6 py-4 text-sm">{empleado.cedula}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{empleado.nombres} {empleado.apellidos}</td>
-                    <td className="px-6 py-4 text-sm">{empleado.cargo || '-'}</td>
-                    <td className="px-6 py-4 text-sm">${Number(empleado.sueldo_bruto_mensual || 0).toFixed(2)}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <div className="flex gap-2">
-                        <Link className="text-teal-700 hover:text-teal-900" to={`/dashboard/empleados/${empleado.id}/editar`} title="Editar empleado">
-                          <Edit size={16} />
-                        </Link>
-                        <Link className="text-red-600 hover:text-red-800" to={`/dashboard/empleados/${empleado.id}/terminar`}>
-                          <UserX size={16} />
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                filtrados.map((empleado) => {
+                  const activation = activationByEmployee.get(empleado.id);
+                  const ready = activation?.readiness?.ready;
+                  const activeLink = activation?.link?.status === 'ACTIVE';
+                  const pendingInvite = activation?.invite?.status === 'PENDING_INVITE';
+                  const blockers = activation?.readiness?.blockers || [];
+                  return (
+                    <tr className="hover:bg-slate-50" key={empleado.id}>
+                      <td className="px-6 py-4 text-sm">{empleado.cedula}</td>
+                      <td className="px-6 py-4 text-sm font-medium text-slate-900">{empleado.nombres} {empleado.apellidos}</td>
+                      <td className="px-6 py-4 text-sm">{empleado.cargo || '-'}</td>
+                      <td className="px-6 py-4 text-sm">${Number(empleado.sueldo_bruto_mensual || 0).toFixed(2)}</td>
+                      <td className="px-6 py-4 text-sm">
+                        <div className="space-y-2">
+                          {activeLink ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800">
+                              <CheckCircle2 className="h-3.5 w-3.5" /> Activa
+                            </span>
+                          ) : pendingInvite ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">
+                              <Send className="h-3.5 w-3.5" /> Invitacion pendiente
+                            </span>
+                          ) : ready ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                              <Smartphone className="h-3.5 w-3.5" /> Lista para invitar
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-xs font-semibold text-red-800">
+                              <XCircle className="h-3.5 w-3.5" /> Bloqueada
+                            </span>
+                          )}
+                          {!ready && blockers.length > 0 && (
+                            <p className="max-w-[260px] text-xs text-red-700">{blockers.join(', ')}</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <div className="flex flex-wrap gap-2">
+                          <Link className="text-teal-700 hover:text-teal-900" to={`/dashboard/empleados/${empleado.id}/editar`} title="Editar empleado">
+                            <Edit size={16} />
+                          </Link>
+                          <Link className="text-red-600 hover:text-red-800" to={`/dashboard/empleados/${empleado.id}/terminar`} title="Terminar empleado">
+                            <UserX size={16} />
+                          </Link>
+                          {!activeLink && (
+                            <button
+                              className="inline-flex items-center gap-1 rounded-md border border-teal-200 px-2 py-1 text-xs font-semibold text-teal-800 disabled:cursor-not-allowed disabled:opacity-40"
+                              disabled={!ready || inviteMutation.isPending || resendMutation.isPending}
+                              onClick={() => (pendingInvite
+                                ? resendMutation.mutate(activation.invite.id)
+                                : inviteMutation.mutate(empleado.id))}
+                              title={ready ? 'Generar link de activacion' : 'Completa email, unidad, zona y jornada'}
+                              type="button"
+                            >
+                              {pendingInvite ? <RotateCcw className="h-3.5 w-3.5" /> : <LinkIcon className="h-3.5 w-3.5" />}
+                              {pendingInvite ? 'Reenviar' : 'Invitar'}
+                            </button>
+                          )}
+                          {pendingInvite && (
+                            <button
+                              className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-40"
+                              disabled={revokeMutation.isPending}
+                              onClick={() => revokeMutation.mutate(activation.invite.id)}
+                              type="button"
+                            >
+                              <XCircle className="h-3.5 w-3.5" />
+                              Revocar
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

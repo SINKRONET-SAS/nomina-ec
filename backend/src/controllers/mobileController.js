@@ -1,32 +1,48 @@
 const db = require('../config/database');
-const { validarMarcacion, resolveWorkZoneForEmployee } = require('../services/marcacionValidator');
+const { validarMarcacion } = require('../services/marcacionValidator');
+const {
+  resolveAttendanceReadiness,
+  resolveLinkedEmployee,
+} = require('../services/employeeAppInviteService');
 
 async function resolveEmployee(req) {
-  const result = await db.query(`
-    SELECT id, cedula, nombres, apellidos, cargo, departamento, email_personal
-    FROM empleados
-    WHERE tenant_id = $1
-      AND activo = true
-      AND LOWER(email_personal) = LOWER($2)
-    LIMIT 1
-  `, [req.tenantId, req.usuario.email]);
-
-  if (result.rows.length === 0) {
-    const err = new Error('No encontramos un empleado activo vinculado a este usuario movil.');
-    err.statusCode = 404;
-    throw err;
-  }
-
-  const employee = result.rows[0];
-  const workZone = await resolveWorkZoneForEmployee(employee.id, req.tenantId);
+  const { employee, linkSource } = await resolveLinkedEmployee({
+    tenantId: req.tenantId,
+    userId: req.usuarioId,
+    email: req.usuario.email,
+    role: req.usuario.rol,
+    requireExplicitLink: true,
+  });
+  const readinessResult = await resolveAttendanceReadiness(employee.id, req.tenantId);
+  const readiness = readinessResult.readiness;
+  const workZone = readiness.workZone;
+  const organizationUnit = readiness.organizationUnit;
+  const workShift = readiness.workShift;
 
   return {
     ...employee,
+    app_link_source: linkSource,
+    readiness,
     zona_marcacion: workZone ? {
       id: workZone.id,
       codigo: workZone.code,
       nombre: workZone.name,
-      radio_metros: workZone.radius_meters,
+      radio_metros: workZone.radiusMeters,
+      precision_minima_metros: workZone.minAccuracyMeters,
+    } : null,
+    unidad_organizativa: organizationUnit ? {
+      id: organizationUnit.id,
+      codigo: organizationUnit.code,
+      nombre: organizationUnit.name,
+      tipo: organizationUnit.type,
+    } : null,
+    jornada: workShift ? {
+      id: workShift.id,
+      codigo: workShift.code,
+      nombre: workShift.name,
+      inicio: workShift.startTime,
+      fin: workShift.endTime,
+      tolerancia_minutos: workShift.toleranceMinutes,
     } : null,
   };
 }
@@ -41,7 +57,7 @@ async function perfil(req, res) {
       correlationId: req.correlationId,
     });
   } catch (err) {
-    return res.status(err.statusCode || 500).json({ error: 'MOBILE_EMPLOYEE_NOT_FOUND', message: err.message, correlationId: req.correlationId });
+    return res.status(err.statusCode || 500).json({ error: err.code || 'MOBILE_EMPLOYEE_NOT_FOUND', message: err.message, details: err.details, correlationId: req.correlationId });
   }
 }
 
@@ -72,14 +88,14 @@ async function resumenAsistencia(req, res) {
       correlationId: req.correlationId,
     });
   } catch (err) {
-    return res.status(err.statusCode || 500).json({ error: 'MOBILE_ATTENDANCE_ERROR', message: err.message, correlationId: req.correlationId });
+    return res.status(err.statusCode || 500).json({ error: err.code || 'MOBILE_ATTENDANCE_ERROR', message: err.message, details: err.details, correlationId: req.correlationId });
   }
 }
 
 async function registrarMarcacionMovil(req, res) {
   try {
     const employee = await resolveEmployee(req);
-    const { tipo, lat, lng, fotoBase64, permitirFueraPerimetro, motivoFueraPerimetro } = req.body;
+    const { tipo, lat, lng, accuracy, fotoBase64, permitirFueraPerimetro, motivoFueraPerimetro } = req.body;
     if (!tipo || lat === undefined || lng === undefined) {
       return res.status(400).json({ error: 'MOBILE_MARK_REQUIRED_FIELDS', message: 'Tipo, latitud y longitud son requeridos.', correlationId: req.correlationId });
     }
@@ -90,17 +106,19 @@ async function registrarMarcacionMovil(req, res) {
       tipo,
       lat,
       lng,
+      accuracy,
       fotoBase64,
       permitirFueraPerimetro,
       motivoFueraPerimetro,
       ipAddress: req.ip,
       userId: req.usuarioId,
       correlationId: req.correlationId,
+      source: 'mobile',
     });
 
     return res.status(201).json({ success: true, marcacion, employee, correlationId: req.correlationId });
   } catch (err) {
-    return res.status(err.statusCode || 500).json({ error: 'MOBILE_MARK_ERROR', message: err.message, correlationId: req.correlationId });
+    return res.status(err.statusCode || 500).json({ error: err.code || 'MOBILE_MARK_ERROR', message: err.message, details: err.details, correlationId: req.correlationId });
   }
 }
 
@@ -118,7 +136,7 @@ async function rolPago(req, res) {
 
     return res.json({ success: true, employee, nomina: result.rows[0] || null, correlationId: req.correlationId });
   } catch (err) {
-    return res.status(err.statusCode || 500).json({ error: 'MOBILE_PAYROLL_ERROR', message: err.message, correlationId: req.correlationId });
+    return res.status(err.statusCode || 500).json({ error: err.code || 'MOBILE_PAYROLL_ERROR', message: err.message, details: err.details, correlationId: req.correlationId });
   }
 }
 

@@ -366,21 +366,76 @@ model AttendanceMark {
   id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   empleadoId      String             @map("empleado_id") @db.Uuid
   tenantId        String             @map("tenant_id") @db.Uuid
+  periodId        String?            @map("period_id") @db.Uuid
+  operationalDate DateTime?          @map("operational_date") @db.Date
+  workZoneId      String?            @map("work_zone_id") @db.Uuid
+  organizationUnitId String?         @map("organization_unit_id") @db.Uuid
+  workShiftId     String?            @map("work_shift_id") @db.Uuid
   tipoMarcacion   AttendanceMarkType @map("tipo_marcacion")
   timestamp       DateTime           @db.Timestamptz(6)
   latitud         Decimal?           @db.Decimal(10, 7)
   longitud        Decimal?           @db.Decimal(10, 7)
+  accuracyMeters  Decimal?           @map("accuracy_meters") @db.Decimal(10, 2)
   dentroPerimetro Boolean            @default(true) @map("dentro_perimetro")
   distanciaMetros Decimal            @default(0) @map("distancia_metros") @db.Decimal(10, 2)
   fotoUrl         String?            @map("foto_url")
   ipAddress       String?            @map("ip_address") @db.VarChar(80)
+  source          String             @default("web") @db.VarChar(40)
+  auditCorrelationId String?         @map("audit_correlation_id") @db.VarChar(120)
   metadata        Json               @default("{}")
   createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   empleado        Employee           @relation(fields: [empleadoId], references: [id])
   tenant          Tenant             @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId, empleadoId, timestamp])
+  @@index([tenantId, empleadoId, operationalDate])
+  @@index([tenantId, periodId, empleadoId])
+  @@index([tenantId, workZoneId, operationalDate])
   @@map("marcaciones")
+}
+
+model EmployeeAppInvite {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId             String    @map("tenant_id") @db.Uuid
+  empleadoId           String    @map("empleado_id") @db.Uuid
+  email                String    @default("") @db.VarChar(255)
+  inviteCodeHash       String    @map("invite_code_hash") @db.VarChar(128)
+  status               String    @default("PENDING_INVITE") @db.VarChar(30)
+  expiresAt            DateTime  @map("expires_at") @db.Timestamptz(6)
+  invitedByUserId      String?   @map("invited_by_user_id") @db.Uuid
+  inviteResendCount    Int       @default(0) @map("invite_resend_count")
+  acceptedAt           DateTime? @map("accepted_at") @db.Timestamptz(6)
+  acceptedByUserId     String?   @map("accepted_by_user_id") @db.Uuid
+  revokedAt            DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokedByUserId      String?   @map("revoked_by_user_id") @db.Uuid
+  privacyNoticeVersion String    @default("") @map("privacy_notice_version") @db.VarChar(40)
+  metadata             Json      @default("{}")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([tenantId, empleadoId, status])
+  @@index([tenantId, status, expiresAt])
+  @@map("employee_app_invites")
+}
+
+model EmployeeAppLink {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId             String    @map("tenant_id") @db.Uuid
+  empleadoId           String    @map("empleado_id") @db.Uuid
+  userId               String    @map("user_id") @db.Uuid
+  status               String    @default("ACTIVE") @db.VarChar(30)
+  activatedAt          DateTime  @default(now()) @map("activated_at") @db.Timestamptz(6)
+  disabledAt           DateTime? @map("disabled_at") @db.Timestamptz(6)
+  lastSeenAt           DateTime? @map("last_seen_at") @db.Timestamptz(6)
+  privacyNoticeVersion String    @default("") @map("privacy_notice_version") @db.VarChar(40)
+  consentSnapshot      Json      @default("{}") @map("consent_snapshot")
+  deviceHintHash       String?   @map("device_hint_hash") @db.VarChar(128)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([tenantId, empleadoId, status])
+  @@index([tenantId, userId, status])
+  @@map("employee_app_links")
 }
 
 model AttendanceNovelty {

@@ -1,3 +1,77 @@
+## Open Haiky Plan - HAIKY-EMPLEADOS-APP-ASISTENCIA-INVITACION-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-EMPLEADOS-APP-ASISTENCIA-INVITACION-2026 |
+| Codigo | EAA26 |
+| Estado | EAA26-01..08 ejecutadas localmente |
+| Fase actual | EAA26-08 cerrada localmente |
+| Alcance | invitacion, activacion y uso de app movil por empleados de una empresa para registrar asistencia |
+| Referencia funcional | `C:\proyectos web\sinkroniq-mobile` |
+| Plan doc | `docs2/PLAN_HAIKY_EMPLEADOS_APP_ASISTENCIA_INVITACION_2026.md` |
+| Matriz | `docs2/empleados-app-asistencia-invitacion-2026/MATRIZ_EAA26_REQUERIMIENTOS.md` |
+| Contrato | `docs2/empleados-app-asistencia-invitacion-2026/CONTRATO_EAA26_FLUJO_INVITACION_EMPLEADO.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Prompts | `.github/prompts/EMPLEADOS-APP-ASISTENCIA-INVITACION-2026-{00..08}-*.md` |
+| RULES | `RULES.md` |
+
+### Resumen EAA26
+
+EAA26 adapta el patron de referidos/invitaciones de `sinkroniq-mobile` a un flujo laboral de Nomina-Ec. El empleado no se registra como empresa ni como owner: activa su acceso movil contra una ficha `Empleado` ya creada por el tenant y queda habilitado para registrar asistencia solo si su configuracion laboral esta completa.
+
+La referencia usada no se copia literalmente. Se toman patrones de codigo unico, hash, expiracion, reenvio, revocacion, deep link, privacidad y estados; se traducen a Express/PostgreSQL/Prisma/React/Expo del repo actual.
+
+### Fases EAA26
+
+| Fase | Prioridad | Estado | Resumen |
+|------|-----------|--------|---------|
+| EAA26-00 | P0 | completed_documental | Baseline, plan, matriz, prompts, contexto y AuditLock sin runtime. |
+| EAA26-01 | P0 | completed_local | Auditoria comparativa: referidos/invitaciones de sinkroniq-mobile vs Nomina-Ec. |
+| EAA26-02 | P0 | completed_local | Modelo de datos: invitaciones de empleado, codigos hash, expiracion, estados e indices. |
+| EAA26-03 | P0 | completed_local | Backend: crear, reenviar, revocar, aceptar y auditar invitaciones. |
+| EAA26-04 | P0 | completed_local | Frontend OWNER/RRHH: panel de invitaciones, QR/link, estado y bloqueos. |
+| EAA26-05 | P0 | completed_local | App movil: activacion de empleado, ojo de clave, privacidad y enlace laboral. |
+| EAA26-06 | P0 | completed_local | Asistencia: readiness de unidad, zona, jornada, periodo y marcacion fail-closed. |
+| EAA26-07 | P1 | completed_by_contract | Notificaciones, deep links y soporte quedan contratados; operacion inicial por codigo/link manual. |
+| EAA26-08 | P0 | completed_local | QA, migraciones, rollback, evidencia y release gate Expo Go/build. |
+
+### Reglas EAA26
+
+- No iniciar runtime sin aprobacion explicita del prompt de fase.
+- No copiar codigo GrowPartner/staff invite literalmente; traducir el patron al dominio laboral de Nomina-Ec.
+- La fuente de verdad es `Empleado` + tenant; la app no puede autoasignar empresa.
+- No habilitar marcaciones si falta unidad organizativa, zona de marcacion, jornada o periodo operacional.
+- Cada unidad organizativa con asistencia debe tener zona de marcacion vigente o herencia explicita.
+- Invitaciones deben usar hash, expiracion, estado, auditoria, anti-enumeracion y consentimiento LOPDP.
+- Commits esperados: `phase: EAA26-XX task: ...`.
+
+### Ejecucion EAA26 2026-06-18
+
+Runtime cerrado:
+
+- Invitaciones de empleado con hash, expiracion, estados, reenvio, revocacion y aceptacion publica anti-enumeracion.
+- Vinculo `Usuario` + `Empleado` + tenant para que la app movil no cree empresas ni owners.
+- Panel RRHH visible en `ListaEmpleados` para emitir, reenviar y revocar accesos de asistencia.
+- App Expo Go con activacion de empleado, ojo de clave, consentimientos LOPDP y login/recuperacion.
+- Marcacion movil bloqueada si falta unidad organizativa, zona de marcacion, jornada, horas mensuales o periodo operacional abierto.
+- Marcaciones guardan periodo, fecha operacional Ecuador, zona, unidad, jornada, precision GPS, origen y correlacion.
+
+Gates ejecutados:
+
+- `npx.cmd prisma validate`: PASS.
+- `npx.cmd prisma migrate deploy`: PASS.
+- `npx.cmd prisma generate`: PASS.
+- `npm.cmd test -- --runInBand` en `backend`: PASS, 20 suites y 78 tests.
+- `npm.cmd run build` en `frontend-web`: PASS.
+- `npm.cmd run smoke:pwa` en `frontend-web`: PASS.
+- `npm.cmd run check:stores` y `npm.cmd run doctor` en `app-movil`: PASS.
+
+Pendiente externo:
+
+- Probar Expo Go en telefono contra backend LAN y definir canal real de envio de codigo/link.
+
+---
+
 ## Open Haiky Plan - HAIKY-DIAGNOSTICO-V2-NOMINA-EC-2026
 
 | Campo | Valor |

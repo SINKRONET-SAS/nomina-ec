@@ -11,6 +11,7 @@ const publicPaths = new Set([
   '/api/auth/email-verification/request',
   '/api/auth/email-verification/resend',
   '/api/auth/email-verification/confirm',
+  '/api/mobile/empleado/activar',
   '/api/pagos/planes',
   '/api/pagos/confirm',
   '/api/pagos/webhook',

@@ -1,18 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { API_URL, authAPI, paymentAPI } from '../services/api';
+import { API_URL, authAPI } from '../services/api';
 
-const initialRegister = {
-  razonSocial: '',
-  nombreComercial: '',
-  ruc: '',
-  nombres: '',
-  apellidos: '',
+const initialActivation = {
   email: '',
+  cedula: '',
+  inviteCode: '',
   password: '',
-  planId: 'TRIAL',
-  acceptedTerms: true,
-  acceptedPrivacy: true,
+  confirmPassword: '',
+  acceptedPrivacy: false,
+  lopdpConsent: false,
+  geolocationConsent: false,
 };
 
 function getErrorMessage(err, fallback) {
@@ -44,44 +42,87 @@ function PasswordInput({ value, onChangeText, placeholder, returnKeyType, onSubm
         value={value}
       />
       <TouchableOpacity
-        accessibilityLabel={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+        accessibilityLabel={visible ? 'Ocultar clave' : 'Mostrar clave'}
         onPress={() => setVisible((current) => !current)}
         style={styles.eyeButton}
       >
-        <Text style={styles.eyeText}>{visible ? 'Ocultar' : '👁 Ver'}</Text>
+        <Text style={styles.eyeText}>{visible ? 'Ocultar' : 'Ver'}</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
+function ConsentRow({ checked, label, onPress }) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={onPress}
+      style={[styles.consentRow, checked && styles.consentRowOn]}
+    >
+      <Text style={[styles.checkbox, checked && styles.checkboxOn]}>{checked ? 'OK' : ''}</Text>
+      <Text style={styles.consentText}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
 export default function LoginScreen({ onLogin }) {
-  const [mode, setMode] = useState('login');
+  const [mode, setMode] = useState('activar');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [resetCode, setResetCode] = useState('');
-  const [plans, setPlans] = useState([]);
-  const [registerForm, setRegisterForm] = useState(initialRegister);
+  const [activation, setActivation] = useState(initialActivation);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    paymentAPI.plans()
-      .then((response) => setPlans(response.data?.data || []))
-      .catch((err) => {
-        console.error('[MOBILE] No se pudieron cargar planes', {
-          code: err?.response?.data?.error || 'PLANES_LOAD_FAILED',
-          message: getErrorMessage(err, 'Error cargando planes.'),
-        });
-      });
-  }, []);
+  const updateActivation = (key, value) => {
+    setActivation((current) => ({ ...current, [key]: value }));
+  };
 
-  const updateRegister = (key, value) => {
-    setRegisterForm((current) => ({ ...current, [key]: value }));
+  const handleActivate = async () => {
+    const normalizedEmail = activation.email.trim().toLowerCase();
+    const code = activation.inviteCode.trim().toUpperCase();
+
+    if (!normalizedEmail || !code || !activation.password || !activation.confirmPassword) {
+      Alert.alert('Datos requeridos', 'Ingresa email, codigo, clave y confirmacion.');
+      return;
+    }
+
+    if (activation.password !== activation.confirmPassword) {
+      Alert.alert('Clave no coincide', 'La confirmacion debe ser igual a la clave.');
+      return;
+    }
+
+    if (!activation.acceptedPrivacy || !activation.lopdpConsent || !activation.geolocationConsent) {
+      Alert.alert('Consentimiento requerido', 'Acepta privacidad, tratamiento de datos y geolocalizacion para usar asistencia movil.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await authAPI.activateEmployee({
+        email: normalizedEmail,
+        cedula: activation.cedula.trim(),
+        inviteCode: code,
+        password: activation.password,
+        acceptedPrivacy: activation.acceptedPrivacy,
+        lopdpConsent: activation.lopdpConsent,
+        geolocationConsent: activation.geolocationConsent,
+      });
+      const token = getAuthToken(response);
+      if (!token) {
+        throw new Error('La activacion fue aceptada, pero el backend no devolvio token.');
+      }
+      await onLogin(token);
+    } catch (err) {
+      Alert.alert('No se pudo activar', getErrorMessage(err, 'Solicita a RRHH un codigo nuevo.'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogin = async () => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || !password) {
-      Alert.alert('Datos requeridos', 'Ingrese email y contraseña.');
+      Alert.alert('Datos requeridos', 'Ingrese email y clave.');
       return;
     }
 
@@ -94,31 +135,7 @@ export default function LoginScreen({ onLogin }) {
       }
       await onLogin(token);
     } catch (err) {
-      Alert.alert('No se pudo iniciar sesión', getErrorMessage(err, 'Credenciales inválidas.'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRegister = async () => {
-    if (!registerForm.razonSocial || !registerForm.email || !registerForm.password || !registerForm.nombres) {
-      Alert.alert('Datos requeridos', 'Complete empresa, nombres, email y contraseña.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await authAPI.publicRegister({
-        ...registerForm,
-        email: registerForm.email.trim().toLowerCase(),
-      });
-      const token = getAuthToken(response);
-      if (!token) {
-        throw new Error('La cuenta se creo, pero el backend no devolvio token de ingreso.');
-      }
-      await onLogin(token);
-    } catch (err) {
-      Alert.alert('No se pudo crear la cuenta', getErrorMessage(err, 'Revise los datos ingresados.'));
+      Alert.alert('No se pudo iniciar sesion', getErrorMessage(err, 'Credenciales invalidas.'));
     } finally {
       setLoading(false);
     }
@@ -127,7 +144,7 @@ export default function LoginScreen({ onLogin }) {
   const handleForgot = async () => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
-      Alert.alert('Email requerido', 'Ingrese su correo para solicitar recuperación.');
+      Alert.alert('Email requerido', 'Ingrese su correo para solicitar recuperacion.');
       return;
     }
 
@@ -137,7 +154,7 @@ export default function LoginScreen({ onLogin }) {
       Alert.alert('Solicitud registrada', response.data?.message || 'Revise su correo para continuar.');
       setMode('reset');
     } catch (err) {
-      Alert.alert('No se pudo solicitar recuperación', getErrorMessage(err, 'Intente nuevamente.'));
+      Alert.alert('No se pudo solicitar recuperacion', getErrorMessage(err, 'Intente nuevamente.'));
     } finally {
       setLoading(false);
     }
@@ -146,41 +163,100 @@ export default function LoginScreen({ onLogin }) {
   const handleReset = async () => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || !resetCode || !password) {
-      Alert.alert('Datos requeridos', 'Ingrese email, código y nueva contraseña.');
+      Alert.alert('Datos requeridos', 'Ingrese email, codigo y nueva clave.');
       return;
     }
 
     setLoading(true);
     try {
       const response = await authAPI.resetPassword({ email: normalizedEmail, code: resetCode, password });
-      Alert.alert('Contraseña actualizada', response.data?.message || 'Ya puede iniciar sesión.');
+      Alert.alert('Clave actualizada', response.data?.message || 'Ya puede iniciar sesion.');
       setMode('login');
     } catch (err) {
-      Alert.alert('No se pudo actualizar', getErrorMessage(err, 'Código inválido o expirado.'));
+      Alert.alert('No se pudo actualizar', getErrorMessage(err, 'Codigo invalido o expirado.'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.card}>
-        <Text style={styles.title}>Nómina-Ec</Text>
-        <Text style={styles.subtitle}>Marcaciones y nómina Ecuador</Text>
+        <Text style={styles.title}>Nomina-Ec</Text>
+        <Text style={styles.subtitle}>Asistencia movil para empleados</Text>
 
         <View style={styles.tabs}>
-          {['login', 'registro', 'recuperar'].map((item) => (
+          {['activar', 'login', 'recuperar'].map((item) => (
             <TouchableOpacity
               key={item}
-              style={[styles.tab, mode === item && styles.tabActive]}
               onPress={() => setMode(item)}
+              style={[styles.tab, mode === item && styles.tabActive]}
             >
               <Text style={[styles.tabText, mode === item && styles.tabTextActive]}>
-                {item === 'login' ? 'Login' : item === 'registro' ? 'Registro' : 'Clave'}
+                {item === 'activar' ? 'Activar' : item === 'login' ? 'Ingresar' : 'Clave'}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
+
+        {mode === 'activar' && (
+          <>
+            <Text style={styles.sectionTitle}>Activa tu acceso de empleado</Text>
+            <TextInput
+              autoCapitalize="none"
+              keyboardType="email-address"
+              onChangeText={(value) => updateActivation('email', value)}
+              placeholder="Email registrado por RRHH"
+              style={styles.input}
+              value={activation.email}
+            />
+            <TextInput
+              keyboardType="number-pad"
+              onChangeText={(value) => updateActivation('cedula', value)}
+              placeholder="Cedula opcional"
+              style={styles.input}
+              value={activation.cedula}
+            />
+            <TextInput
+              autoCapitalize="characters"
+              onChangeText={(value) => updateActivation('inviteCode', String(value || '').replace(/[^a-zA-Z0-9-]/g, '').toUpperCase())}
+              placeholder="Codigo de activacion"
+              style={styles.input}
+              value={activation.inviteCode}
+            />
+            <PasswordInput
+              onChangeText={(value) => updateActivation('password', value)}
+              placeholder="Crear clave"
+              returnKeyType="next"
+              value={activation.password}
+            />
+            <PasswordInput
+              onChangeText={(value) => updateActivation('confirmPassword', value)}
+              onSubmitEditing={handleActivate}
+              placeholder="Confirmar clave"
+              returnKeyType="go"
+              value={activation.confirmPassword}
+            />
+            <ConsentRow
+              checked={activation.acceptedPrivacy}
+              label="Acepto la politica de privacidad aplicable a la app de asistencia."
+              onPress={() => updateActivation('acceptedPrivacy', !activation.acceptedPrivacy)}
+            />
+            <ConsentRow
+              checked={activation.lopdpConsent}
+              label="Acepto el tratamiento de mis datos laborales para registrar asistencia."
+              onPress={() => updateActivation('lopdpConsent', !activation.lopdpConsent)}
+            />
+            <ConsentRow
+              checked={activation.geolocationConsent}
+              label="Acepto el uso de geolocalizacion durante cada marcacion."
+              onPress={() => updateActivation('geolocationConsent', !activation.geolocationConsent)}
+            />
+            <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleActivate} disabled={loading}>
+              <Text style={styles.buttonText}>{loading ? 'Activando...' : 'Activar y entrar'}</Text>
+            </TouchableOpacity>
+          </>
+        )}
 
         {mode === 'login' && (
           <>
@@ -188,7 +264,7 @@ export default function LoginScreen({ onLogin }) {
             <PasswordInput
               onChangeText={setPassword}
               onSubmitEditing={handleLogin}
-              placeholder="Contraseña"
+              placeholder="Clave"
               returnKeyType="go"
               value={password}
             />
@@ -198,35 +274,14 @@ export default function LoginScreen({ onLogin }) {
           </>
         )}
 
-        {mode === 'registro' && (
-          <>
-            <TextInput style={styles.input} placeholder="Razón social" value={registerForm.razonSocial} onChangeText={(value) => updateRegister('razonSocial', value)} />
-            <TextInput style={styles.input} placeholder="Nombre comercial" value={registerForm.nombreComercial} onChangeText={(value) => updateRegister('nombreComercial', value)} />
-            <TextInput style={styles.input} placeholder="RUC opcional" value={registerForm.ruc} onChangeText={(value) => updateRegister('ruc', value)} keyboardType="number-pad" />
-            <TextInput style={styles.input} placeholder="Nombres" value={registerForm.nombres} onChangeText={(value) => updateRegister('nombres', value)} />
-            <TextInput style={styles.input} placeholder="Apellidos" value={registerForm.apellidos} onChangeText={(value) => updateRegister('apellidos', value)} />
-            <TextInput style={styles.input} placeholder="Email" value={registerForm.email} onChangeText={(value) => updateRegister('email', value)} autoCapitalize="none" keyboardType="email-address" />
-            <PasswordInput
-              onChangeText={(value) => updateRegister('password', value)}
-              placeholder="Contraseña"
-              returnKeyType="done"
-              value={registerForm.password}
-            />
-            <Text style={styles.planHint}>Plan inicial: {plans.find((plan) => plan.id === registerForm.planId)?.nombre || registerForm.planId}</Text>
-            <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleRegister} disabled={loading}>
-              <Text style={styles.buttonText}>{loading ? 'Creando...' : 'Crear cuenta'}</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
         {mode === 'recuperar' && (
           <>
             <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
             <TouchableOpacity style={styles.secondaryButton} onPress={handleForgot} disabled={loading}>
-              <Text style={styles.secondaryButtonText}>Solicitar código</Text>
+              <Text style={styles.secondaryButtonText}>Solicitar codigo</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.linkButton} onPress={() => setMode('reset')}>
-              <Text style={styles.linkText}>Ya tengo un código</Text>
+              <Text style={styles.linkText}>Ya tengo un codigo</Text>
             </TouchableOpacity>
           </>
         )}
@@ -234,15 +289,15 @@ export default function LoginScreen({ onLogin }) {
         {mode === 'reset' && (
           <>
             <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
-            <TextInput style={styles.input} placeholder="Código" value={resetCode} onChangeText={setResetCode} keyboardType="number-pad" />
+            <TextInput style={styles.input} placeholder="Codigo" value={resetCode} onChangeText={setResetCode} keyboardType="number-pad" />
             <PasswordInput
               onChangeText={setPassword}
-              placeholder="Nueva contraseña"
+              placeholder="Nueva clave"
               returnKeyType="done"
               value={password}
             />
             <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleReset} disabled={loading}>
-              <Text style={styles.buttonText}>Actualizar contraseña</Text>
+              <Text style={styles.buttonText}>Actualizar clave</Text>
             </TouchableOpacity>
           </>
         )}
@@ -253,36 +308,36 @@ export default function LoginScreen({ onLogin }) {
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f0fdfa',
+    flexGrow: 1,
+    justifyContent: 'center',
     padding: 20,
   },
   card: {
-    width: '100%',
-    maxWidth: 420,
     backgroundColor: 'white',
     borderRadius: 12,
+    elevation: 3,
+    maxWidth: 420,
     padding: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
+    width: '100%',
   },
   title: {
+    color: '#0f766e',
     fontSize: 28,
     fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#0f766e',
     marginBottom: 5,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 14,
-    textAlign: 'center',
     color: '#6b7280',
+    fontSize: 14,
     marginBottom: 22,
+    textAlign: 'center',
   },
   tabs: {
     flexDirection: 'row',
@@ -290,11 +345,11 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   tab: {
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: '#f1f5f9',
-    alignItems: 'center',
   },
   tabActive: {
     backgroundColor: '#0f766e',
@@ -306,19 +361,25 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: 'white',
   },
+  sectionTitle: {
+    color: '#0f172a',
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 12,
+  },
   input: {
-    borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+    borderWidth: 1,
     fontSize: 16,
+    marginBottom: 12,
+    padding: 12,
   },
   passwordRow: {
     alignItems: 'center',
-    borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
+    borderWidth: 1,
     flexDirection: 'row',
     marginBottom: 12,
   },
@@ -342,17 +403,47 @@ const styles = StyleSheet.create({
     color: '#0f766e',
     fontWeight: '700',
   },
-  planHint: {
-    color: '#475569',
+  consentRow: {
+    alignItems: 'flex-start',
+    borderColor: '#e2e8f0',
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 10,
+    padding: 12,
+  },
+  consentRowOn: {
+    backgroundColor: '#ecfdf5',
+    borderColor: '#99f6e4',
+  },
+  checkbox: {
+    borderColor: '#94a3b8',
+    borderRadius: 4,
+    borderWidth: 1,
+    color: '#0f766e',
+    fontWeight: '900',
+    height: 20,
+    lineHeight: 18,
+    textAlign: 'center',
+    width: 20,
+  },
+  checkboxOn: {
+    backgroundColor: '#ccfbf1',
+    borderColor: '#0f766e',
+  },
+  consentText: {
+    color: '#334155',
+    flex: 1,
     fontSize: 13,
-    marginBottom: 12,
+    lineHeight: 18,
   },
   button: {
+    alignItems: 'center',
     backgroundColor: '#0f766e',
     borderRadius: 8,
-    padding: 15,
-    alignItems: 'center',
     marginTop: 4,
+    padding: 15,
   },
   buttonDisabled: {
     backgroundColor: '#99f6e4',
@@ -363,11 +454,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   secondaryButton: {
-    borderWidth: 1,
+    alignItems: 'center',
     borderColor: '#0f766e',
     borderRadius: 8,
+    borderWidth: 1,
     padding: 15,
-    alignItems: 'center',
   },
   secondaryButtonText: {
     color: '#0f766e',
@@ -375,12 +466,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   linkButton: {
-    padding: 14,
     alignItems: 'center',
+    padding: 14,
   },
   linkText: {
     color: '#0f766e',
     fontWeight: '600',
   },
 });
-

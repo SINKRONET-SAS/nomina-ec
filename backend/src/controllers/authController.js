@@ -209,6 +209,9 @@ async function publicRegister(req, res, next) {
       [userResult.rows[0].id, hashCode(verificationCode)]
     );
 
+    const token = generateToken(userResult.rows[0]);
+    const user = buildUserPayload(userResult.rows[0]);
+
     await client.query('COMMIT');
 
     if (process.env.NODE_ENV !== 'production') {
@@ -221,9 +224,6 @@ async function publicRegister(req, res, next) {
         verificationCode,
       });
     }
-
-    const token = generateToken(userResult.rows[0]);
-    const user = buildUserPayload(userResult.rows[0]);
 
     return res.status(201).json({
       success: true,

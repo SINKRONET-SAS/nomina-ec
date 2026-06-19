@@ -28,6 +28,7 @@ api.interceptors.response.use(
 
 export const authAPI = {
   login: (email, password) => api.post('/auth/login', { email, password }),
+  activateEmployee: (payload) => api.post('/mobile/empleado/activar', payload),
   publicRegister: (payload) => api.post('/auth/public-register', payload),
   forgotPassword: (email) => api.post('/auth/password/forgot', { email }),
   resetPassword: (payload) => api.post('/auth/password/reset', payload),
