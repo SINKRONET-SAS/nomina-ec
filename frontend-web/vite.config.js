@@ -44,5 +44,19 @@ export default defineConfig(({ mode }) => {
         '/api': buildApiProxy(proxyTarget),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return undefined;
+            if (id.includes('react') || id.includes('@tanstack/react-query')) return 'vendor-react';
+            if (id.includes('lucide-react')) return 'vendor-icons';
+            if (id.includes('axios')) return 'vendor-http';
+            if (id.includes('vite-plugin-pwa') || id.includes('workbox')) return 'vendor-pwa';
+            return 'vendor';
+          },
+        },
+      },
+    },
   };
 });

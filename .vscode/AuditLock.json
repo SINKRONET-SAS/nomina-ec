@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "plan": "HAIKY-DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026",
   "planCode": "DIC26",
-  "status": "completed_runtime_local",
-  "phaseCompleted": "DIC26-07",
-  "currentPhase": "DIC26-closed-local",
-  "updatedAt": "2026-06-19T09:04:01.289-05:00",
-  "summary": "DIC26 queda ejecutado localmente: diagnostico integral comercial/UX/calidad, oferta visible en landing, ojo de clave web, app movil con marcacion/historial/perfil, retiro de camara y navegacion movil no usada, y gate UTF-8/BOM/mojibake limpio.",
+  "status": "completed_runtime_local_residuals_closed",
+  "phaseCompleted": "DIC26-08",
+  "currentPhase": "DIC26-closed-local-residuals",
+  "updatedAt": "2026-06-19T14:06:37.929-05:00",
+  "summary": "DIC26 queda ejecutado localmente con residuales cerrados: diagnostico comercial/UX/calidad, oferta visible, accesos con ojo de clave, app movil asistencia, limpieza de permisos/dependencias, gate UTF-8 limpio, build Vite sin warning de chunk grande y npm audit limpio en web/backend/movil.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: diagnostico integral, diseno, UI/UX, oferta comercial visible, accesos, codigo muerto, bugs, importaciones, errores, mojibake, UTF-8, plan Haiky, ejecucion de prompts, cierre de gobierno, commit y push.",
-  "previousAuditLockHash": "F93D1EEB2D33E8F131C836DAFC2B4A38BC32222E0717695E4451E2E1C0F569BD",
+  "approvalSource": "Solicitud del usuario: diagnostico integral, diseno, UI/UX, oferta comercial visible, accesos, codigo muerto, bugs, importaciones, errores, mojibake, UTF-8, plan Haiky, ejecucion de prompts, cierre de gobierno. Solicitud posterior: corregir notas residuales de chunk Vite y vulnerabilidades Dependabot/npm audit; al final solo commit.",
+  "previousAuditLockHash": "D4BA29D2AA1FC48AF5B5075D425F71B3309A68C9A9AB211F9B2881715E657B5C",
   "previousPlans": [
     {
       "plan": "HAIKY-EMPLEADOS-APP-ASISTENCIA-INVITACION-2026",
@@ -44,6 +44,7 @@
     "docs2/diagnostico-integral-comercial-ui-calidad-2026/REPORTE_DIC26_01_DIAGNOSTICO.md",
     "docs2/diagnostico-integral-comercial-ui-calidad-2026/REPORTE_DIC26_02_06_EJECUCION.md",
     "docs2/diagnostico-integral-comercial-ui-calidad-2026/REPORTE_DIC26_07_QA_RELEASE.md",
+    "docs2/diagnostico-integral-comercial-ui-calidad-2026/REPORTE_DIC26_08_RESIDUALES_BUILD_DEPENDABOT.md",
     ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-00-baseline.md",
     ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-01-diagnostico.md",
     ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-02-oferta-landing.md",
@@ -52,6 +53,7 @@
     ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-05-codigo-muerto.md",
     ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-06-utf8.md",
     ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-07-qa-release.md",
+    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-08-residuales-build-dependabot.md",
     "frontend-web/src/pages/Landing.jsx",
     "frontend-web/src/pages/Login.jsx",
     "frontend-web/src/pages/Register.jsx",
@@ -68,7 +70,12 @@
     "app-movil/src/services/geolocation.js",
     "app-movil/src/services/camera.js",
     "docs2/landing-pwa-app-store-2026/REPORTE_LPA26_01_DIAGNOSTICO.md",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_01_ENCODING.md"
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_01_ENCODING.md",
+    "backend/package.json",
+    "backend/package-lock.json",
+    "frontend-web/package.json",
+    "frontend-web/package-lock.json",
+    "frontend-web/vite.config.js"
   ],
   "validationChecks": [
     {
@@ -84,7 +91,12 @@
     {
       "gate": "DIC26-FRONTEND-BUILD",
       "status": "PASS",
-      "detail": "npm.cmd run build paso en frontend-web. Vite mantiene warning no bloqueante de chunk mayor a 500 kB."
+      "detail": "npm.cmd run build paso en frontend-web con Vite 7.3.5, PWA 1.3.0 y sin warning de chunk mayor a 500 kB; mayor JS runtime 221.95 kB."
+    },
+    {
+      "gate": "DIC26-DEPENDABOT-AUDIT",
+      "status": "PASS",
+      "detail": "npm.cmd audit --audit-level=low paso con 0 vulnerabilidades en frontend-web, backend y app-movil."
     },
     {
       "gate": "DIC26-PWA-SMOKE",
@@ -105,6 +117,11 @@
       "gate": "DIC26-EXPO-DOCTOR",
       "status": "PASS",
       "detail": "npm.cmd run doctor paso en app-movil con 21/21 checks. Primer intento bloqueo por EPERM en cache npm del sandbox y se repitio con permiso elevado."
+    },
+    {
+      "gate": "DIC26-NODE-CRON-API",
+      "status": "PASS",
+      "detail": "node-cron 4.4.1 expone cron.schedule y src/config/cron-jobs.js pasa node --check."
     },
     {
       "gate": "DIC26-UTF8-BOM-MOJIBAKE",
@@ -157,13 +174,17 @@
       "phase": "DIC26-07",
       "status": "completed_local",
       "task": "QA, evidencia, AuditLock, commit y push"
+    },
+    {
+      "phase": "DIC26-08",
+      "status": "completed_local",
+      "task": "residuales build Vite y Dependabot/npm audit cerrados con commit local sin push"
     }
   ],
   "residualRisk": [
-    "Vite reporta chunk principal mayor a 500 kB; conviene code splitting posterior.",
     "La evidencia fotografica de marcacion queda fuera hasta disenar un flujo real de camara, consentimiento y almacenamiento.",
     "El smoke visual en telefono con Expo Go debe repetirse en red local antes de demo comercial."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "75f73f38a4ed282b46b8a7e771cf553a25ec88b0f424da34c3575bdcf0598366"
+  "signature": "15b474cbfe529d145e68b6b20cb9a995550782627685023f11862314258337c8"
 }

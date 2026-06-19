@@ -4,13 +4,13 @@
 |-------|-------|
 | Plan | HAIKY-DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026 |
 | Codigo | DIC26 |
-| Estado | DIC26-00..07 ejecutadas localmente |
-| Fase actual | DIC26-07 cerrada localmente |
+| Estado | DIC26-00..08 ejecutadas localmente |
+| Fase actual | DIC26-08 cerrada localmente |
 | Alcance | diagnostico integral de diseno, UI/UX, oferta comercial visible, accesos, codigo muerto, bugs, importaciones, errores, mojibake y UTF-8 |
 | Plan doc | `docs2/PLAN_HAIKY_DIAGNOSTICO_INTEGRAL_COMERCIAL_UI_CALIDAD_2026.md` |
 | Matriz | `docs2/diagnostico-integral-comercial-ui-calidad-2026/MATRIZ_DIC26_HALLAZGOS.md` |
 | AuditLock | `.vscode/AuditLock.json` |
-| Prompts | `.github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-{00..07}-*.md` |
+| Prompts | `.github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-{00..08}-*.md` |
 | RULES | `RULES.md` |
 
 ### Resumen DIC26
@@ -29,6 +29,7 @@ DIC26 ejecuto una pasada integral de confianza comercial y calidad sobre Nomina-
 | DIC26-05 | P1 | completed_local | Codigo muerto/dependencias/permisos: retiro de camara y navegacion movil no usada. |
 | DIC26-06 | P0 | completed_local | UTF-8 sin BOM y cero mojibake literal en archivos auditados. |
 | DIC26-07 | P0 | completed_local | QA, evidencia, AuditLock, commit y push. |
+| DIC26-08 | P0 | completed_local | Residuales cerrados: Vite chunk y Dependabot/npm audit. |
 
 ### Ejecucion DIC26 2026-06-19
 
@@ -39,6 +40,7 @@ Runtime cerrado:
 - App movil con tabs simples para marcar asistencia, revisar historial y ver perfil.
 - Retirados `expo-camera`, permisos de camara y dependencias de navegacion no usadas.
 - Limpieza global de BOM y mojibake literal en archivos auditados.
+- Cierre posterior de warning Vite chunk mayor a 500 kB y vulnerabilidades Dependabot/npm audit en web, backend y movil.
 
 Gates esperados:
 
@@ -46,6 +48,7 @@ Gates esperados:
 - `npm.cmd test -- --runInBand` en `backend`.
 - `npm.cmd run check:stores` y `npm.cmd run doctor` en `app-movil`.
 - Gate Node UTF-8/BOM/mojibake.
+- `npm.cmd audit --audit-level=low` en `frontend-web`, `backend` y `app-movil`.
 
 ---
 

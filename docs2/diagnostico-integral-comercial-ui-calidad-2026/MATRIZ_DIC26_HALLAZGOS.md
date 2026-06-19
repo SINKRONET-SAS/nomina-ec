@@ -12,6 +12,8 @@
 | DIC-H08 | Baja | Reportes historicos contenian ejemplos literales de mojibake | Dos reportes `docs2` activaban falsos positivos | Reescribir ejemplos sin secuencias corruptas literales. |
 | DIC-H09 | Baja | Historial movil usaba timezone del dispositivo | `MisMarcacionesScreen` formateaba timestamp sin America/Guayaquil | Formatear historial con `America/Guayaquil`. |
 | DIC-H10 | Baja | Autoservicio movil calculaba periodo con zona del dispositivo | `new Date()` local para periodo actual | Calcular periodo con `America/Guayaquil`. |
+| DIC-H11 | Media | Build Vite mantenia warning de chunk mayor a 500 kB | Build productivo advertia sobre chunk grande tras DIC26-07 | Agregar `manualChunks` para separar React, HTTP, iconos y vendor. |
+| DIC-H12 | Alta | Dependabot/npm audit reportaba vulnerabilidades en paquetes web, backend y movil | `npm audit` marcaba Vite/esbuild/form-data, fast-xml-parser, node-cron, uuid y js-yaml | Actualizar versiones seguras y overrides transitivos; validar audit en los tres workspaces. |
 
 ## Criterio de cierre
 
@@ -20,4 +22,5 @@
 - Store readiness y Expo doctor pasan.
 - Gate UTF-8/BOM/mojibake pasa.
 - No queda permiso de camara ni dependencia movil retirada.
-- Commit y push en rama activa.
+- `npm audit --audit-level=low` pasa en web, backend y movil.
+- Commit local en rama activa.

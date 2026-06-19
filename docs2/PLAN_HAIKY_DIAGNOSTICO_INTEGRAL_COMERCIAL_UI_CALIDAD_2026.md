@@ -4,13 +4,13 @@
 |-------|-------|
 | Plan | HAIKY-DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026 |
 | Codigo | DIC26 |
-| Estado | DIC26-00..07 ejecutadas localmente |
-| Fase actual | DIC26-07 cerrada localmente |
+| Estado | DIC26-00..08 ejecutadas localmente |
+| Fase actual | DIC26-08 cerrada localmente |
 | Alcance | diagnostico integral de diseno, UI/UX, oferta comercial visible, accesos, codigo muerto, bugs, importaciones, errores, mojibake y UTF-8 |
 | Repo objetivo | `C:\proyectos web\nuevo_nomina` |
 | Matriz | `docs2/diagnostico-integral-comercial-ui-calidad-2026/MATRIZ_DIC26_HALLAZGOS.md` |
 | AuditLock | `.vscode/AuditLock.json` |
-| Prompts | `.github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-{00..07}-*.md` |
+| Prompts | `.github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-{00..08}-*.md` |
 | RULES | `RULES.md` |
 
 ## Objetivo
@@ -31,6 +31,7 @@ El plan evita cambios cosmeticos sin impacto. Cada hallazgo se clasifica por rie
 | DIC26-05 | P1 | completed_local | Codigo muerto/dependencias/permisos: retiro de camara y navegacion movil no usada. |
 | DIC26-06 | P0 | completed_local | UTF-8 sin BOM y cero mojibake literal en archivos auditados. |
 | DIC26-07 | P0 | completed_local | QA, evidencia, AuditLock, commit y push. |
+| DIC26-08 | P0 | completed_local | Cierre de residuales: chunks Vite y vulnerabilidades Dependabot/npm audit. |
 
 ## Reglas DIC26
 
@@ -48,3 +49,5 @@ El plan evita cambios cosmeticos sin impacto. Cada hallazgo se clasifica por rie
 - App movil con tabs simples: marcar, historial y perfil.
 - Retirados `expo-camera`, permisos de camara y dependencias de navegacion no usadas.
 - Gate global UTF-8/BOM/mojibake ejecutado y limpio.
+- Warning de chunk Vite cerrado con `manualChunks`; mayor chunk runtime queda bajo 500 kB.
+- `npm audit --audit-level=low` queda limpio en `frontend-web`, `backend` y `app-movil`.
