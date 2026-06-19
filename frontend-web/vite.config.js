@@ -23,6 +23,8 @@ export default defineConfig(({ mode }) => {
         includeAssets: [
           'favicon.svg',
           'icon.svg',
+          'icon-192.png',
+          'icon-512.png',
           'maskable-icon.svg',
           'apple-touch-icon.svg',
           'pwa-screenshot-wide.svg',

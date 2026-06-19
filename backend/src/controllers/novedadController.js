@@ -2,6 +2,7 @@
 // PLAN HAIKY - Controlador de Novedades
 // ============================================================
 const db = require('../config/database');
+const { ensurePayrollPeriodForDate } = require('../services/monthlyPeriodService');
 
 async function listar(req, res) {
   try {
@@ -61,18 +62,27 @@ async function listarPendientes(req, res) {
 async function crear(req, res) {
   try {
     const { tenantId, usuarioId } = req;
-    const { empleadoId, fecha, tipoNovedad, minutos, justificacion } = req.body;
+    const { empleadoId, fecha, tipoNovedad, minutos, monto, justificacion } = req.body;
     
     if (!empleadoId || !fecha || !tipoNovedad) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
     }
     
+    const montoNovedad = normalizeAmount(monto);
+    if (tipoNovedad === 'bono_desempeno' && montoNovedad <= 0) {
+      return res.status(422).json({ error: 'El bono de desempeno requiere un monto mayor a cero' });
+    }
+    const period = await ensurePayrollPeriodForDate({ tenantId, userId: usuarioId, fecha });
+    if (period.status === 'closed') {
+      return res.status(422).json({ error: 'No se puede registrar novedades en un periodo cerrado' });
+    }
+
     const result = await db.query(`
       INSERT INTO novedades_asistencia (
-        empleado_id, tenant_id, fecha, tipo_novedad, minutos, justificacion
-      ) VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING id, empleado_id, fecha, tipo_novedad, minutos, estado
-    `, [empleadoId, tenantId, fecha, tipoNovedad, minutos || 0, justificacion || '']);
+        empleado_id, tenant_id, period_id, periodo_nomina, fecha, tipo_novedad, minutos, monto, justificacion
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING id, empleado_id, fecha, tipo_novedad, minutos, monto, estado
+    `, [empleadoId, tenantId, period.id, period.periodoNomina, fecha, tipoNovedad, minutos || 0, montoNovedad, justificacion || '']);
     
     res.status(201).json({ success: true, novedad: result.rows[0] });
   } catch (err) {
@@ -126,6 +136,11 @@ async function rechazar(req, res) {
     console.error('[NOVEDADES] Error:', err);
     res.status(500).json({ error: 'Error interno' });
   }
+}
+
+function normalizeAmount(value) {
+  const amount = Number(value || 0);
+  return Number.isFinite(amount) && amount >= 0 ? Math.round(amount * 100) / 100 : 0;
 }
 
 module.exports = { listar, listarPendientes, crear, aprobar, rechazar };

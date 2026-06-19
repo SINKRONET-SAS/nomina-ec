@@ -3,6 +3,8 @@
 Fuente: `DIAGNOSTICO_V2_NOMINA_EC.md` del prototipo `sensible-easy-payroll-flow`.  
 Estado: matriz de planificacion; no implica que cada hallazgo siga abierto en el runtime actual. Cada fase debe verificar contra codigo real antes de tocar archivos.
 
+Actualizacion runtime 2026-06-18: DVN26-01..09 fueron ejecutadas localmente con validaciones tecnicas. La matriz queda como trazabilidad de origen; el cierre real esta resumido al final del documento.
+
 | ID | Severidad | Hallazgo | Fase | Criterio de cierre |
 |----|-----------|----------|------|--------------------|
 | E-01 | P0 legal | IESS personal 9.45% vs 9.95% por seguro desempleo | DVN26-01 | Decision contable documentada; parametro versionado por tipo de contrato; bloqueo UI si pendiente. |
@@ -36,3 +38,17 @@ Estado: matriz de planificacion; no implica que cada hallazgo siga abierto en el
 | T-02 | P1 SEO/PWA | `index.html` generico | DVN26-08 | Metas, OG, robots/sitemap y assets reales. |
 | T-03 | P0 tenant | Filtros `empresa_id` ausentes | DVN26-07 | Consultas por tenant con RLS/verificacion. |
 | T-04 | P1 errores | Errores silenciosos en calculo masivo | DVN26-02 | Resultado por empleado, errores estructurados y UI de fallos. |
+
+## Estado de cierre runtime local
+
+| Bloque | Estado | Evidencia |
+|--------|--------|-----------|
+| DVN26-01 parametros legales | Cerrado con bloqueo profesional E-01 | Tabla IR editable/versionada y gastos personales ya estaban integrados; IESS 9.45/9.95 sigue bloqueado hasta validacion contable/laboral externa. |
+| DVN26-02 motor de nomina | Cerrado local | `bono_desempeno` con `monto`, `period_id` y `periodo_nomina`; `total_ingresos` incluye bonos; tests de calculo y periodo pasan. |
+| DVN26-03 documentos legales | Cerrado por verificacion de stack | Contrato, finiquito, `DocumentoLegal` y tests de liquidacion existen en runtime actual. |
+| DVN26-04 beneficios/cuotas | Cerrado local | Cierre de nomina descuenta beneficios una sola vez por `periodo` y audita aplicados/omitidos. |
+| DVN26-05 procesos visibles | Cerrado por verificacion de stack | Auditoria, documentos y procesos operativos existen; crons de novedades ahora sellan periodo. |
+| DVN26-06 reportes/bancos | Cerrado local | Reportes de nomina soportan XLSX, PDF resumen y CSV con filtros por persona/estructura; bancos ya tienen generador perfilado. |
+| DVN26-07 multi-tenant/planes | Cerrado por verificacion de stack | Servicios revisados mantienen `tenant_id`; reportes usan `assertCapability` fail-closed. |
+| DVN26-08 landing/PWA/mobile | Cerrado local | Landing sin mensajes de demo/ficticio, PWA con PNG 192/512 y smoke PASS; app Expo enfocada en marcacion y Expo Doctor PASS. |
+| DVN26-09 QA/release | Cerrado local | Prisma validate/migrate/generate, node --check, tests dirigidos, build web, smoke PWA y Expo Doctor ejecutados. |

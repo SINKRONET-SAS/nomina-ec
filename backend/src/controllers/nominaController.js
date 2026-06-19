@@ -218,29 +218,60 @@ async function cerrarMes(req, res) {
       RETURNING id, detalle_calculo
     `, [tenantId, anio, mes]);
 
+    const periodo = `${Number(anio)}-${String(Number(mes)).padStart(2, '0')}`;
+    let beneficiosAplicados = 0;
+    let beneficiosOmitidos = 0;
+
     for (const row of result.rows) {
       const benefits = Array.isArray(row.detalle_calculo?.beneficiosDescontados)
         ? row.detalle_calculo.beneficiosDescontados
         : [];
       for (const benefit of benefits) {
-        await db.query(`
+        const amount = Number(benefit.amount || 0);
+        if (!Number.isFinite(amount) || amount <= 0) {
+          beneficiosOmitidos += 1;
+          continue;
+        }
+
+        const descuento = {
+          periodo,
+          anio: Number(anio),
+          mes: Number(mes),
+          nominaId: row.id,
+          monto: amount,
+        };
+        const updateResult = await db.query(`
           UPDATE beneficios_empleados
           SET saldo_pendiente = GREATEST(0, saldo_pendiente - $3::numeric),
               estado = CASE
                 WHEN GREATEST(0, saldo_pendiente - $3::numeric) = 0 THEN 'descontado'
                 ELSE estado
               END,
-              metadata = COALESCE(metadata, '{}'::jsonb) || $4::jsonb,
+              metadata = jsonb_set(
+                COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('ultimoDescuento', $4::jsonb),
+                '{descuentosNomina}',
+                COALESCE(metadata->'descuentosNomina', '[]'::jsonb) || $5::jsonb,
+                true
+              ),
               updated_at = NOW()
           WHERE id = $1
             AND tenant_id = $2
             AND estado = 'aprobado'
+            AND NOT (COALESCE(metadata->'descuentosNomina', '[]'::jsonb) @> $6::jsonb)
+          RETURNING id
         `, [
           benefit.id,
           tenantId,
-          Number(benefit.amount || 0),
-          JSON.stringify({ ultimoDescuento: { anio, mes, nominaId: row.id, monto: Number(benefit.amount || 0) } }),
+          amount,
+          JSON.stringify(descuento),
+          JSON.stringify([descuento]),
+          JSON.stringify([{ periodo }]),
         ]);
+        if (updateResult.rows.length > 0) {
+          beneficiosAplicados += 1;
+        } else {
+          beneficiosOmitidos += 1;
+        }
       }
     }
 
@@ -258,7 +289,7 @@ async function cerrarMes(req, res) {
       correlationId: req.correlationId,
       action: 'cerrar_nomina',
       entity: 'nominas',
-      newData: { anio, mes, total: result.rows.length },
+      newData: { anio, mes, total: result.rows.length, beneficiosAplicados, beneficiosOmitidos },
       ipAddress: req.ip,
     });
 
@@ -266,6 +297,8 @@ async function cerrarMes(req, res) {
       success: true,
       mensaje: `${result.rows.length} nominas cerradas`,
       total: result.rows.length,
+      beneficiosAplicados,
+      beneficiosOmitidos,
       correlationId: req.correlationId,
     });
   } catch (err) {

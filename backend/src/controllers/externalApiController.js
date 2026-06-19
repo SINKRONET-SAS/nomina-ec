@@ -2,6 +2,7 @@ const db = require('../config/database');
 const { validarMarcacion } = require('../services/marcacionValidator');
 const { recordAudit } = require('../services/auditService');
 const { persistExternalIdempotency } = require('../middleware/externalApiIdempotency');
+const { ensurePayrollPeriodForDate } = require('../services/monthlyPeriodService');
 
 async function sendApiResponse(req, res, statusCode, payload) {
   const body = {
@@ -86,7 +87,7 @@ async function createAttendanceMark(req, res) {
 
 async function createNovelty(req, res) {
   try {
-    const { empleadoId, tipoNovedad, fecha, minutos, motivo } = req.body;
+    const { empleadoId, tipoNovedad, fecha, minutos, monto, motivo } = req.body;
     if (!empleadoId || !tipoNovedad || !fecha) {
       return res.status(400).json({ error: 'API_NOVELTY_REQUIRED_FIELDS', message: 'empleadoId, tipoNovedad y fecha son requeridos.', correlationId: req.correlationId });
     }
@@ -96,11 +97,30 @@ async function createNovelty(req, res) {
       return res.status(404).json({ error: 'API_EMPLOYEE_NOT_FOUND', message: 'Empleado no encontrado para este tenant.', correlationId: req.correlationId });
     }
 
+    const amount = normalizeAmount(monto);
+    if (tipoNovedad === 'bono_desempeno' && amount <= 0) {
+      return res.status(422).json({
+        error: 'API_NOVELTY_AMOUNT_REQUIRED',
+        message: 'El bono de desempeno requiere un monto mayor a cero.',
+        correlationId: req.correlationId,
+      });
+    }
+    const period = await ensurePayrollPeriodForDate({ tenantId: req.tenantId, userId: null, fecha });
+    if (period.status === 'closed') {
+      return res.status(422).json({
+        error: 'API_PERIOD_CLOSED',
+        message: 'No se puede registrar novedades en un periodo cerrado.',
+        correlationId: req.correlationId,
+      });
+    }
+
     const result = await db.query(`
-      INSERT INTO novedades_asistencia (tenant_id, empleado_id, tipo_novedad, fecha, minutos, motivo, estado)
-      VALUES ($1,$2,$3,$4,$5,$6,'pendiente')
+      INSERT INTO novedades_asistencia (
+        tenant_id, empleado_id, period_id, periodo_nomina, tipo_novedad, fecha, minutos, monto, justificacion, estado
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pendiente')
       RETURNING *
-    `, [req.tenantId, empleadoId, tipoNovedad, fecha, Number(minutos || 0), motivo || 'Carga API v1']);
+    `, [req.tenantId, empleadoId, period.id, period.periodoNomina, tipoNovedad, fecha, Number(minutos || 0), amount, motivo || 'Carga API v1']);
 
     await recordAudit({
       tenantId: req.tenantId,
@@ -165,6 +185,11 @@ function apiInfo(req, res) {
     },
     correlationId: req.correlationId,
   });
+}
+
+function normalizeAmount(value) {
+  const amount = Number(value || 0);
+  return Number.isFinite(amount) && amount >= 0 ? Math.round(amount * 100) / 100 : 0;
 }
 
 module.exports = {

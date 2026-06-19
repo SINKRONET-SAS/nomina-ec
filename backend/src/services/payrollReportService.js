@@ -11,6 +11,7 @@ const { recordAudit } = require('./auditService');
 
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const PDF_MIME = 'application/pdf';
+const CSV_MIME = 'text/csv; charset=utf-8';
 
 const REPORT_TYPES = {
   PAYROLL_SUMMARY: 'summary',
@@ -20,6 +21,7 @@ const REPORT_TYPES = {
 const FORMAT_MIME = {
   xlsx: XLSX_MIME,
   pdf: PDF_MIME,
+  csv: CSV_MIME,
 };
 
 async function generarReporteNomina({
@@ -55,7 +57,9 @@ async function generarReporteNomina({
   const tenant = await getTenant(tenantId);
   const buffer = normalizedFormat === 'pdf'
     ? await buildSummaryPdf({ tenant, anio, mes, rows, filters, context })
-    : await buildWorkbook({ tenant, anio, mes, rows, reportCode: normalizedReportCode, filters, context });
+    : normalizedFormat === 'csv'
+      ? buildCsv({ anio, mes, rows, reportCode: normalizedReportCode })
+      : await buildWorkbook({ tenant, anio, mes, rows, reportCode: normalizedReportCode, filters, context });
 
   const scopeSuffix = buildScopeSuffix(filters);
   const fileName = `${normalizedReportCode}_${anio}${String(mes).padStart(2, '0')}${scopeSuffix}.${normalizedFormat}`;
@@ -168,36 +172,7 @@ async function buildWorkbook({ tenant, anio, mes, rows, reportCode, filters, con
   sheet.views = [{ state: 'frozen', ySplit: 1 }];
 
   rows.forEach((row) => {
-    const detail = normalizeDetail(row.detalle_calculo);
-    sheet.addRow({
-      periodo: `${String(mes).padStart(2, '0')}/${anio}`,
-      cedula: row.cedula,
-      empleado: `${row.apellidos} ${row.nombres}`.trim(),
-      departamento: row.departamento,
-      cargo: row.cargo,
-      unidad: row.unidad_nombre,
-      centroCosto: row.centro_costo,
-      estado: row.estado,
-      diasTrabajados: Number(row.dias_trabajados || 0),
-      sueldoBruto: numberValue(row.sueldo_bruto),
-      extras50: numberValue(row.horas_extras_50),
-      extras100: numberValue(row.horas_extras_100),
-      totalIngresos: numberValue(row.total_ingresos),
-      aporteIess: numberValue(row.aporte_iess_personal),
-      impuestoRenta: numberValue(row.impuesto_renta),
-      anticipos: numberValue(row.anticipos),
-      prestamos: numberValue(row.prestamos),
-      descuentoFaltas: numberValue(detail.descuentoFaltas),
-      totalDeducciones: numberValue(row.total_deducciones),
-      netoRecibir: numberValue(row.neto_recibir),
-      aportePatronal: numberValue(detail.aportePatronal),
-      decimoTercero: numberValue(detail.provisionDecimoTercero),
-      decimoCuarto: numberValue(detail.provisionDecimoCuarto),
-      vacaciones: numberValue(detail.provisionVacaciones),
-      fondosReserva: numberValue(detail.provisionFondosReserva),
-      costoEmpleador: numberValue(detail.costoEmpleador),
-      fuenteLegal: detail.fuenteLegal || '',
-    });
+    sheet.addRow(mapRowForExport(row, anio, mes));
   });
 
   sheet.getRow(1).font = { bold: true };
@@ -230,6 +205,59 @@ async function buildWorkbook({ tenant, anio, mes, rows, reportCode, filters, con
   return workbook.xlsx.writeBuffer();
 }
 
+function buildCsv({ anio, mes, rows, reportCode }) {
+  const columns = getWorkbookColumns(reportCode);
+  const header = columns.map((column) => column.header);
+  const lines = [
+    header.map(csvCell).join(','),
+    ...rows.map((row) => {
+      const exportRow = mapRowForExport(row, anio, mes);
+      return columns.map((column) => csvCell(exportRow[column.key])).join(',');
+    }),
+  ];
+
+  return Buffer.from(`\ufeff${lines.join('\r\n')}`, 'utf8');
+}
+
+function mapRowForExport(row, anio, mes) {
+  const detail = normalizeDetail(row.detalle_calculo);
+  return {
+    periodo: `${String(mes).padStart(2, '0')}/${anio}`,
+    cedula: row.cedula,
+    empleado: `${row.apellidos} ${row.nombres}`.trim(),
+    departamento: row.departamento,
+    cargo: row.cargo,
+    unidad: row.unidad_nombre,
+    centroCosto: row.centro_costo,
+    estado: row.estado,
+    diasTrabajados: Number(row.dias_trabajados || 0),
+    sueldoBruto: numberValue(row.sueldo_bruto),
+    extras50: numberValue(row.horas_extras_50),
+    extras100: numberValue(row.horas_extras_100),
+    bonosDesempeno: numberValue(detail.bonosDesempeno),
+    totalIngresos: numberValue(row.total_ingresos),
+    aporteIess: numberValue(row.aporte_iess_personal),
+    impuestoRenta: numberValue(row.impuesto_renta),
+    anticipos: numberValue(row.anticipos),
+    prestamos: numberValue(row.prestamos),
+    descuentoFaltas: numberValue(detail.descuentoFaltas),
+    totalDeducciones: numberValue(row.total_deducciones),
+    netoRecibir: numberValue(row.neto_recibir),
+    aportePatronal: numberValue(detail.aportePatronal),
+    decimoTercero: numberValue(detail.provisionDecimoTercero),
+    decimoCuarto: numberValue(detail.provisionDecimoCuarto),
+    vacaciones: numberValue(detail.provisionVacaciones),
+    fondosReserva: numberValue(detail.provisionFondosReserva),
+    costoEmpleador: numberValue(detail.costoEmpleador),
+    fuenteLegal: detail.fuenteLegal || '',
+  };
+}
+
+function csvCell(value) {
+  const normalized = value === null || value === undefined ? '' : String(value);
+  return `"${normalized.replace(/"/g, '""')}"`;
+}
+
 function getWorkbookColumns(reportCode) {
   const base = [
     { header: 'Periodo', key: 'periodo', width: 12 },
@@ -256,6 +284,7 @@ function getWorkbookColumns(reportCode) {
     { header: 'Sueldo bruto/proporcional', key: 'sueldoBruto', width: 22, style: { numFmt: '$#,##0.00' } },
     { header: 'Horas extra 50%', key: 'extras50', width: 16, style: { numFmt: '$#,##0.00' } },
     { header: 'Horas extra 100%', key: 'extras100', width: 17, style: { numFmt: '$#,##0.00' } },
+    { header: 'Bonos desempeno', key: 'bonosDesempeno', width: 17, style: { numFmt: '$#,##0.00' } },
     base[9],
     { header: 'IESS personal', key: 'aporteIess', width: 16, style: { numFmt: '$#,##0.00' } },
     { header: 'Impuesto renta', key: 'impuestoRenta', width: 16, style: { numFmt: '$#,##0.00' } },

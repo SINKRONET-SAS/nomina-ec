@@ -4,8 +4,8 @@
 |-------|-------|
 | Plan | HAIKY-DIAGNOSTICO-V2-NOMINA-EC-2026 |
 | Codigo | DVN26 |
-| Estado | DVN26-00 desplegada documentalmente; runtime pendiente de aprobacion por fase |
-| Fase actual | DVN26-00 baseline documental |
+| Estado | DVN26-01..09 ejecutadas localmente con bloqueo profesional IESS |
+| Fase actual | DVN26-09 cerrada localmente |
 | Alcance | responder a 31 hallazgos del Diagnostico V2: calculos legales, procesos ocultos, pantallas decorativas, reportes, bancos, landing, PWA, mobile, multi-tenant y planes |
 | Fuente de requerimiento | `C:\proyectos web\sensible-easy-payroll-flow\src\docs\DIAGNOSTICO_V2_NOMINA_EC.md` |
 | Scripts referencia | `07_fix_nomina_calculos.js`, `08_backend_acta_finiquito_contrato.js`, `09_backend_contrato_trabajo.js`, `10_pwa_landing.js`, `11_fix_multitenant_reportes_planes.js` |
@@ -24,15 +24,15 @@ DVN26 convierte el Diagnostico V2 en un plan Haiky ejecutable sobre el stack rea
 | Fase | Prioridad | Estado | Resumen |
 |------|-----------|--------|---------|
 | DVN26-00 | P0 | completed_documental | Baseline, matriz, prompts, contexto y AuditLock sin runtime. |
-| DVN26-01 | P0 | pending_approval | Parametros legales, IESS 9.45/9.95, gastos personales y tabla IR editable. |
-| DVN26-02 | P0 | pending_approval | Motor unico de nomina: dias, fondo reserva, bonos, cerradas y errores por empleado. |
-| DVN26-03 | P0 | pending_approval | Liquidacion, acta de finiquito, contrato PDF y DocumentoLegal. |
-| DVN26-04 | P1 | pending_approval | Beneficios, cuotas y cierre idempotente. |
-| DVN26-05 | P1 | pending_approval | Procesos backend visibles: crons, auditoria, equipos y documentos. |
-| DVN26-06 | P1 | pending_approval | Bancos y reportes exportables Excel/PDF/CSV por persona y estructura. |
-| DVN26-07 | P0 | pending_approval | Multi-tenant real, filtros obligatorios y planes fail-closed. |
-| DVN26-08 | P1 | pending_approval | Landing, PWA y app movil enfocada en asistencia. |
-| DVN26-09 | P0 | pending_approval | QA, rollback, evidencia y release gate. |
+| DVN26-01 | P0 | completed_local_with_professional_block | Parametros legales, IESS 9.45/9.95, gastos personales y tabla IR editable. |
+| DVN26-02 | P0 | completed_local | Motor unico de nomina: dias, fondo reserva, bonos, cerradas y errores por empleado. |
+| DVN26-03 | P0 | completed_by_stack_verification | Liquidacion, acta de finiquito, contrato PDF y DocumentoLegal. |
+| DVN26-04 | P1 | completed_local | Beneficios, cuotas y cierre idempotente. |
+| DVN26-05 | P1 | completed_local | Procesos backend visibles: crons, auditoria, equipos y documentos. |
+| DVN26-06 | P1 | completed_local | Bancos y reportes exportables Excel/PDF/CSV por persona y estructura. |
+| DVN26-07 | P0 | completed_by_stack_verification | Multi-tenant real, filtros obligatorios y planes fail-closed. |
+| DVN26-08 | P1 | completed_local | Landing, PWA y app movil enfocada en asistencia. |
+| DVN26-09 | P0 | completed_local | QA, rollback, evidencia y release gate. |
 
 ### Reglas DVN26
 
@@ -41,6 +41,31 @@ DVN26 convierte el Diagnostico V2 en un plan Haiky ejecutable sobre el stack rea
 - E-01 IESS queda bloqueado hasta validacion contable/laboral externa.
 - Toda mejora backend que afecte operacion debe quedar visible en frontend o mostrar bloqueo claro.
 - Commits esperados: `phase: DVN26-XX task: ...`.
+
+### Ejecucion DVN26 2026-06-18
+
+Runtime cerrado:
+
+- Novedades con `period_id`, `periodo_nomina` y `monto`.
+- `bono_desempeno` entra al motor de nomina como ingreso auditable.
+- Cierre de beneficios idempotente por periodo.
+- Reportes de nomina exportan XLSX/PDF/CSV por persona y estructura.
+- Landing/PWA sin mensajes de demo/ficticio y con assets PNG 192/512.
+- Migracion `20260618133000_dvn26_bonus_novelty_amount` aplicada en PostgreSQL local.
+
+Gates ejecutados:
+
+- `npx.cmd prisma validate`: PASS.
+- `npx.cmd prisma migrate deploy`: PASS.
+- `npx.cmd prisma generate`: PASS.
+- `npm.cmd test -- --runInBand`: PASS, 19 suites, 74 tests.
+- `npm.cmd run smoke:pwa`: PASS.
+- `npm.cmd run doctor` en `app-movil`: PASS, 21/21.
+- `npm.cmd run check:stores` en `app-movil`: PASS.
+
+Bloqueo residual controlado:
+
+- IESS 9.45% vs 9.95% se mantiene bloqueado hasta validacion contable/laboral externa.
 
 ---
 

@@ -28,6 +28,7 @@ enum AttendanceNoveltyType {
   salida_temprana
   hora_extra_50
   hora_extra_100
+  bono_desempeno
 }
 
 enum ApprovalStatus {
@@ -386,9 +387,12 @@ model AttendanceNovelty {
   id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   empleadoId     String                @map("empleado_id") @db.Uuid
   tenantId       String                @map("tenant_id") @db.Uuid
+  periodId       String?               @map("period_id") @db.Uuid
+  periodoNomina  String                @default("") @map("periodo_nomina") @db.VarChar(7)
   fecha          DateTime              @db.Date
   tipoNovedad    AttendanceNoveltyType @map("tipo_novedad")
   minutos        Int                   @default(0)
+  monto          Decimal               @default(0) @db.Decimal(12, 2)
   justificacion  String                @default("")
   estado         ApprovalStatus        @default(pendiente)
   aprobadoPor    String?               @map("aprobado_por") @db.Uuid
@@ -397,11 +401,14 @@ model AttendanceNovelty {
   updatedAt      DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   empleado       Employee              @relation(fields: [empleadoId], references: [id])
   tenant         Tenant                @relation(fields: [tenantId], references: [id])
+  payrollPeriod  PayrollPeriod?        @relation(fields: [periodId], references: [id], onDelete: SetNull)
   noveltyBatchId String?               @map("novelty_batch_id") @db.Uuid
   noveltyBatch   NoveltyBatch?         @relation(fields: [noveltyBatchId], references: [id], onDelete: SetNull)
 
   @@unique([empleadoId, fecha, tipoNovedad])
   @@index([tenantId, estado])
+  @@index([tenantId, periodId])
+  @@index([tenantId, periodoNomina])
   @@index([tenantId, noveltyBatchId])
   @@map("novedades_asistencia")
 }
@@ -421,6 +428,7 @@ model PayrollPeriod {
   updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   noveltyBatches NoveltyBatch[]
+  attendanceNovelties AttendanceNovelty[]
 
   @@unique([tenantId, anio, mes])
   @@index([tenantId, status])
@@ -436,6 +444,7 @@ model NoveltyBatch {
   tipoNovedad    AttendanceNoveltyType @map("tipo_novedad")
   fecha          DateTime              @db.Date
   minutos        Int                   @default(0)
+  monto          Decimal               @default(0) @db.Decimal(12, 2)
   justificacion  String                @default("")
   status         String                @default("procesando") @db.VarChar(30)
   idempotencyKey String?               @map("idempotency_key") @db.VarChar(160)

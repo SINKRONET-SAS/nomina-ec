@@ -1,7 +1,7 @@
 # PLAN HAIKY DIAGNOSTICO V2 NOMINA-EC 2026
 
 Codigo: `DVN26`  
-Estado: `baseline_documental_creado`  
+Estado: `completed_runtime_local_with_professional_iess_block`  
 Fecha: 2026-06-18  
 Fuente principal: `C:\proyectos web\sensible-easy-payroll-flow\src\docs\DIAGNOSTICO_V2_NOMINA_EC.md`  
 Scripts de referencia: `07_fix_nomina_calculos.js`, `08_backend_acta_finiquito_contrato.js`, `09_backend_contrato_trabajo.js`, `10_pwa_landing.js`, `11_fix_multitenant_reportes_planes.js`
@@ -12,7 +12,7 @@ Cerrar los 31 hallazgos del Diagnostico V2 sin copiar la arquitectura Base44/Den
 
 ## Regla de arranque
 
-DVN26-00 es documental. No modifica runtime. Las fases DVN26-01 en adelante requieren aprobacion explicita por prompt, AuditLock valido y commit con formato:
+DVN26-00 fue documental. El usuario aprobo ejecutar DVN26-01..09 en una sola pasada el 2026-06-18. Las fases runtime se ejecutaron sobre codigo real con AuditLock valido y commit con formato:
 
 `phase: DVN26-XX task: <descripcion>`
 
@@ -41,9 +41,35 @@ DVN26-00 es documental. No modifica runtime. Las fases DVN26-01 en adelante requ
 | DVN26-08 | P1 | Landing, PWA y app movil enfocadas en confianza y marcacion de asistencia | Si |
 | DVN26-09 | P0 | QA, regresion, rollback, evidencia legal/contable y release gate | Si |
 
+## Ejecucion runtime local 2026-06-18
+
+DVN26-01..09 quedaron ejecutadas localmente sobre el stack real. No se aplicaron scripts Base44/Deno literalmente; se tradujeron los criterios a Express, PostgreSQL/Prisma, React/Vite y Expo.
+
+Cambios runtime principales:
+
+- Novedades de nomina incorporan `period_id`, `periodo_nomina` (`YYYY-MM`) y `monto` para trazabilidad por periodo.
+- Se agrego `bono_desempeno` como novedad aprobable; el motor de nomina suma su monto a `total_ingresos`, base IESS, decimos y provisiones.
+- Los lotes de novedades, la carga manual, la API externa, atrasos automaticos y cron de faltas registran periodo explicito.
+- El cierre de nomina descuenta beneficios de forma idempotente por periodo y guarda `metadata.descuentosNomina`.
+- Los reportes internos exportan Excel, PDF resumen y CSV por persona/estructura, con columna de bonos.
+- Landing/PWA se ajustaron para ingreso visible, sin textos de demo/ficticio ni metricas inventadas, y con PNG 192/512 incluidos.
+- PostgreSQL local recibio la migracion `20260618133000_dvn26_bonus_novelty_amount`.
+
+Validaciones ejecutadas:
+
+- `npx.cmd prisma validate`: PASS.
+- `npx.cmd prisma migrate deploy`: PASS, migracion DVN26 aplicada en `plan_haiky`.
+- `npx.cmd prisma generate`: PASS.
+- `node --check` en servicios/controladores tocados: PASS.
+- `npm.cmd test -- --runInBand`: PASS, 19 suites, 74 tests.
+- `npm.cmd run build` en `frontend-web`: PASS.
+- `npm.cmd run smoke:pwa` en `frontend-web`: PASS.
+- `npm.cmd run doctor` en `app-movil`: PASS, Expo Doctor 21/21.
+- `npm.cmd run check:stores` en `app-movil`: PASS.
+
 ## Gobierno legal
 
-- E-01 no puede aplicarse como valor productivo hasta confirmar con contador/planilla IESS vigente si el aporte personal debe ser 9.45% o 9.95% por tipo de contrato y empleador.
+- E-01 no puede aplicarse como valor productivo hasta confirmar con contador/planilla IESS vigente si el aporte personal debe ser 9.45% o 9.95% por tipo de contrato y empleador. El runtime mantiene el bloqueo profesional y no cambia ese valor sin validacion externa.
 - Si el valor no esta confirmado, el runtime debe exponer bloqueo profesional claro y no prometer cumplimiento total.
 - Todo parametro legal debe tener vigencia, fuente, responsable, fecha de validacion y estado: `pendiente_validacion`, `validado_oficial`, `bloqueado`.
 
@@ -70,6 +96,7 @@ DVN26-00 es documental. No modifica runtime. Las fases DVN26-01 en adelante requ
 - Este plan maestro.
 - `docs2/diagnostico-v2-nomina-ec-2026/MATRIZ_DVN26_HALLAZGOS.md`.
 - `docs2/diagnostico-v2-nomina-ec-2026/REPORTE_DVN26_00_BASELINE.md`.
+- `docs2/diagnostico-v2-nomina-ec-2026/REPORTE_DVN26_09_CIERRE_RUNTIME.md`.
 - Prompts `.github/prompts/DIAGNOSTICO-V2-NOMINA-EC-2026-00..09-*.md`.
 - Actualizacion de `CODEX_CONTEXT.md`.
 - Actualizacion firmada de `.vscode/AuditLock.json`.

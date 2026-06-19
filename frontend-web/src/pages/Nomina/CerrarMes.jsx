@@ -18,6 +18,7 @@ const NOVELTY_TYPES = [
   { value: 'atraso', label: 'Atraso' },
   { value: 'salida_temprana', label: 'Salida temprana' },
   { value: 'falta', label: 'Falta' },
+  { value: 'bono_desempeno', label: 'Bono desempeno' },
 ];
 
 const SCOPE_TYPES = [
@@ -45,6 +46,7 @@ function CerrarMes() {
     tipoNovedad: 'hora_extra_50',
     fecha: `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-01`,
     minutos: 60,
+    monto: '',
     justificacion: 'Lote mensual de novedades',
   });
 
@@ -123,7 +125,8 @@ function CerrarMes() {
   };
 
   const scopeNeedsValue = batchForm.scopeType !== 'company';
-  const canCreateBatch = !scopeNeedsValue || batchForm.scopeValue;
+  const requiresAmount = batchForm.tipoNovedad === 'bono_desempeno';
+  const canCreateBatch = (!scopeNeedsValue || batchForm.scopeValue) && (!requiresAmount || Number(batchForm.monto) > 0);
   const currentError = openMutation.error || batchMutation.error || calculateMutation.error || closeMutation.error || periodQuery.error;
 
   return (
@@ -215,7 +218,7 @@ function CerrarMes() {
           <Layers className="h-5 w-5 text-teal-700" />
           <h2 className="text-lg font-semibold text-slate-950">Lote de novedades</h2>
         </div>
-        <div className="mt-4 grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+        <div className="mt-4 grid gap-4 md:grid-cols-3 xl:grid-cols-7">
           <label className="text-sm font-semibold text-slate-700">
             Alcance
             <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" onChange={(event) => {
@@ -249,7 +252,18 @@ function CerrarMes() {
           </label>
           <label className="text-sm font-semibold text-slate-700">
             Novedad
-            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" onChange={(event) => updateBatch('tipoNovedad', event.target.value)} value={batchForm.tipoNovedad}>
+            <select
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+              onChange={(event) => {
+                const nextType = event.target.value;
+                setBatchForm((current) => ({
+                  ...current,
+                  tipoNovedad: nextType,
+                  minutos: nextType === 'bono_desempeno' ? 0 : current.minutos || 60,
+                }));
+              }}
+              value={batchForm.tipoNovedad}
+            >
               {NOVELTY_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
             </select>
           </label>
@@ -259,7 +273,11 @@ function CerrarMes() {
           </label>
           <label className="text-sm font-semibold text-slate-700">
             Minutos
-            <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" min="0" onChange={(event) => updateBatch('minutos', Number(event.target.value))} type="number" value={batchForm.minutos} />
+            <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" disabled={requiresAmount} min="0" onChange={(event) => updateBatch('minutos', Number(event.target.value))} type="number" value={batchForm.minutos} />
+          </label>
+          <label className="text-sm font-semibold text-slate-700">
+            Monto USD
+            <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" min="0" onChange={(event) => updateBatch('monto', event.target.value)} step="0.01" type="number" value={batchForm.monto} />
           </label>
           <button className="mt-6 inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={!period || !canCreateBatch || batchMutation.isPending} onClick={() => batchMutation.mutate()} type="button">
             <CheckCircle className="h-4 w-4" />
@@ -344,6 +362,7 @@ function CerrarMes() {
                   <th className="px-4 py-3 text-left">Alcance</th>
                   <th className="px-4 py-3 text-left">Novedad</th>
                   <th className="px-4 py-3 text-left">Fecha</th>
+                  <th className="px-4 py-3 text-right">Monto</th>
                   <th className="px-4 py-3 text-right">Empleados</th>
                   <th className="px-4 py-3 text-right">Creadas</th>
                 </tr>
@@ -354,6 +373,7 @@ function CerrarMes() {
                     <td className="px-4 py-3">{batch.scope_type} {batch.scope_value}</td>
                     <td className="px-4 py-3">{batch.tipo_novedad}</td>
                     <td className="px-4 py-3">{String(batch.fecha).slice(0, 10)}</td>
+                    <td className="px-4 py-3 text-right">${Number(batch.monto || 0).toFixed(2)}</td>
                     <td className="px-4 py-3 text-right">{batch.total_empleados}</td>
                     <td className="px-4 py-3 text-right">{batch.total_creadas}</td>
                   </tr>

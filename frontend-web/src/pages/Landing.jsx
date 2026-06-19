@@ -150,9 +150,9 @@ function Landing() {
               <div className="p-5">
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    ['Empleados', '84'],
-                    ['Zonas activas', '8'],
-                    ['Neto procesado', '$68.240'],
+                    ['Plantilla', 'Por empresa'],
+                    ['Zonas activas', 'Por unidad'],
+                    ['Neto a pagar', 'Por periodo'],
                     ['Reportes', 'RDEP/IESS'],
                   ].map(([label, value]) => (
                     <div className="rounded-md border border-slate-200 p-4" key={label}>

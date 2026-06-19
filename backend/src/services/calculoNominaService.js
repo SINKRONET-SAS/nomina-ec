@@ -55,7 +55,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes) {
   const payrollParameters = legalParameters.payroll;
 
   const novedades = await db.query(`
-    SELECT tipo_novedad, SUM(minutos) as total_minutos
+    SELECT tipo_novedad, SUM(minutos) as total_minutos, SUM(monto) as total_monto
     FROM novedades_asistencia
     WHERE empleado_id = $1
       AND EXTRACT(YEAR FROM fecha) = $2
@@ -66,17 +66,21 @@ async function calcularEmpleado(emp, tenantId, anio, mes) {
 
   const noveltyByType = {};
   novedades.rows.forEach((novedad) => {
-    noveltyByType[novedad.tipo_novedad] = Number.parseInt(novedad.total_minutos, 10) || 0;
+    noveltyByType[novedad.tipo_novedad] = {
+      minutes: Number.parseInt(novedad.total_minutos, 10) || 0,
+      amount: roundMoney(Number.parseFloat(novedad.total_monto || 0)),
+    };
   });
 
   const diasTrabajados = calcularDiasTrabajados(emp.fecha_ingreso, anio, mes);
   const sueldo = Number.parseFloat(emp.sueldo_bruto_mensual);
   const sueldoProporcional = roundMoney((sueldo * diasTrabajados) / 30);
   const valorHora = calcularValorHora(emp, payrollParameters);
-  const extras50 = (noveltyByType.hora_extra_50 || 0) / 60;
-  const extras100 = (noveltyByType.hora_extra_100 || 0) / 60;
+  const extras50 = (noveltyByType.hora_extra_50?.minutes || 0) / 60;
+  const extras100 = (noveltyByType.hora_extra_100?.minutes || 0) / 60;
   const montoExtras50 = roundMoney(extras50 * valorHora * 1.5);
   const montoExtras100 = roundMoney(extras100 * valorHora * 2);
+  const bonosDesempeno = roundMoney(noveltyByType.bono_desempeno?.amount || 0);
 
   const faltas = await db.query(`
     SELECT COUNT(*) as total
@@ -89,7 +93,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes) {
   `, [emp.id, anio, mes]);
   const descuentoFaltas = roundMoney((Number.parseInt(faltas.rows[0].total, 10) || 0) * valorHora * payrollParameters.dailyMaxHours);
 
-  const totalIngresos = roundMoney(sueldoProporcional + montoExtras50 + montoExtras100);
+  const totalIngresos = roundMoney(sueldoProporcional + montoExtras50 + montoExtras100 + bonosDesempeno);
   const aporteIess = roundMoney(totalIngresos * payrollParameters.personalIessRate);
   const aportePatronal = roundMoney(totalIngresos * payrollParameters.employerIessRate);
   const baseImponible = roundMoney(totalIngresos - aporteIess);
@@ -134,6 +138,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes) {
     extras100,
     montoExtras50,
     montoExtras100,
+    bonosDesempeno,
     descuentoFaltas,
     aporteIess,
     aportePatronal,

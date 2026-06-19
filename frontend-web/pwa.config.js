@@ -49,7 +49,7 @@ export const pwaManifest = {
       sizes: '1280x720',
       type: 'image/svg+xml',
       form_factor: 'wide',
-      label: 'Panel operativo de Nómina-Ec con datos ficticios',
+      label: 'Panel operativo de Nómina-Ec para cierre mensual',
     },
     {
       src: '/pwa-screenshot-mobile.svg',

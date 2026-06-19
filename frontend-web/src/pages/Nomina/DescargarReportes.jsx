@@ -240,7 +240,7 @@ function DescargarReportes() {
               onChange={(event) => {
                 const nextReport = event.target.value;
                 setReportCode(nextReport);
-                if (nextReport === 'PAYROLL_DETAIL_TABULAR') setFormat('xlsx');
+                if (nextReport === 'PAYROLL_DETAIL_TABULAR' && format === 'pdf') setFormat('xlsx');
               }}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
             >
@@ -256,6 +256,7 @@ function DescargarReportes() {
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
             >
               <option value="xlsx">Excel XLSX</option>
+              <option value="csv">CSV</option>
               {reportCode === 'PAYROLL_SUMMARY' && <option value="pdf">PDF</option>}
             </select>
           </div>

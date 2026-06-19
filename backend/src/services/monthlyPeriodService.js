@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const db = require('../config/database');
 const { recordAudit } = require('./auditService');
 
-const VALID_NOVELTY_TYPES = new Set(['falta', 'atraso', 'salida_temprana', 'hora_extra_50', 'hora_extra_100']);
+const VALID_NOVELTY_TYPES = new Set(['falta', 'atraso', 'salida_temprana', 'hora_extra_50', 'hora_extra_100', 'bono_desempeno']);
 const VALID_SCOPE_TYPES = new Set(['company', 'department', 'position', 'employee']);
 
 function validatePeriod(anio, mes) {
@@ -27,6 +27,63 @@ function normalizeDate(anio, mes, value) {
     throw new Error('La fecha de novedad debe pertenecer al periodo abierto.');
   }
   return date;
+}
+
+function formatPeriodMarker(anio, mes) {
+  return `${Number(anio)}-${String(Number(mes)).padStart(2, '0')}`;
+}
+
+function extractPeriodFromDate(value) {
+  const date = String(value || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw new Error('Fecha de novedad invalida. Usa YYYY-MM-DD.');
+  }
+  const anio = Number(date.slice(0, 4));
+  const mes = Number(date.slice(5, 7));
+  return { anio, mes, periodoNomina: formatPeriodMarker(anio, mes), fecha: date };
+}
+
+function dateInEcuador(value = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Guayaquil',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(value);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function todayInEcuador() {
+  return dateInEcuador(new Date());
+}
+
+async function ensurePayrollPeriodForDate({ tenantId, userId, fecha }) {
+  const period = extractPeriodFromDate(fecha);
+  const result = await db.query(`
+    WITH inserted AS (
+      INSERT INTO payroll_periods (tenant_id, anio, mes, status, opened_by)
+      VALUES ($1,$2,$3,'open',$4)
+      ON CONFLICT (tenant_id, anio, mes) DO NOTHING
+      RETURNING id, status
+    )
+    SELECT id, status FROM inserted
+    UNION ALL
+    SELECT id, status
+    FROM payroll_periods
+    WHERE tenant_id = $1 AND anio = $2 AND mes = $3
+    LIMIT 1
+  `, [tenantId, period.anio, period.mes, userId || null]);
+
+  if (result.rows.length === 0) {
+    throw new Error('No se pudo resolver el periodo de la novedad.');
+  }
+
+  return {
+    id: result.rows[0].id,
+    status: result.rows[0].status,
+    ...period,
+  };
 }
 
 function makeIdempotencyKey(payload) {
@@ -89,7 +146,7 @@ async function getPayrollPeriodState({ tenantId, anio, mes }) {
   `, [tenantId, periodInput.anio, periodInput.mes]);
 
   const batches = await db.query(`
-    SELECT id, scope_type, scope_value, tipo_novedad, fecha, minutos, status,
+    SELECT id, scope_type, scope_value, tipo_novedad, fecha, minutos, monto, status,
       total_empleados, total_creadas, created_at
     FROM novelty_batches
     WHERE tenant_id = $1
@@ -146,9 +203,11 @@ async function createNoveltyBatch({
   const scopeValue = String(payload.scopeValue || '').trim();
   const tipoNovedad = String(payload.tipoNovedad || '');
   const minutos = Math.max(0, Math.round(Number(payload.minutos || 0)));
+  const monto = roundAmount(payload.monto);
   const justificacion = String(payload.justificacion || 'Lote mensual').trim();
   const fecha = normalizeDate(anio, mes, payload.fecha);
-  const idempotencyKey = payload.idempotencyKey || makeIdempotencyKey({ tenantId, anio, mes, scopeType, scopeValue, tipoNovedad, minutos, fecha, justificacion });
+  const periodoNomina = formatPeriodMarker(anio, mes);
+  const idempotencyKey = payload.idempotencyKey || makeIdempotencyKey({ tenantId, anio, mes, scopeType, scopeValue, tipoNovedad, minutos, monto, fecha, justificacion });
 
   if (!VALID_SCOPE_TYPES.has(scopeType)) {
     throw new Error('Alcance de lote invalido.');
@@ -158,6 +217,9 @@ async function createNoveltyBatch({
   }
   if (!VALID_NOVELTY_TYPES.has(tipoNovedad)) {
     throw new Error('Tipo de novedad invalido.');
+  }
+  if (tipoNovedad === 'bono_desempeno' && monto <= 0) {
+    throw new Error('El bono de desempeno requiere un monto mayor a cero.');
   }
 
   const existing = await db.query(`
@@ -188,9 +250,9 @@ async function createNoveltyBatch({
     const batch = await client.query(`
       INSERT INTO novelty_batches (
         tenant_id, period_id, scope_type, scope_value, tipo_novedad, fecha,
-        minutos, justificacion, idempotency_key, total_empleados, created_by
+        minutos, monto, justificacion, idempotency_key, total_empleados, created_by
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
       RETURNING id
     `, [
       tenantId,
@@ -200,6 +262,7 @@ async function createNoveltyBatch({
       tipoNovedad,
       fecha,
       minutos,
+      monto,
       justificacion,
       idempotencyKey,
       employees.length,
@@ -211,12 +274,12 @@ async function createNoveltyBatch({
     for (const employee of employees) {
       const inserted = await client.query(`
         INSERT INTO novedades_asistencia (
-          empleado_id, tenant_id, fecha, tipo_novedad, minutos, justificacion, novelty_batch_id
+          empleado_id, tenant_id, period_id, periodo_nomina, fecha, tipo_novedad, minutos, monto, justificacion, novelty_batch_id
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
         ON CONFLICT (empleado_id, fecha, tipo_novedad) DO NOTHING
         RETURNING id
-      `, [employee.id, tenantId, fecha, tipoNovedad, minutos, justificacion, batchId]);
+      `, [employee.id, tenantId, period.rows[0].id, periodoNomina, fecha, tipoNovedad, minutos, monto, justificacion, batchId]);
       created += inserted.rows.length;
     }
 
@@ -245,7 +308,7 @@ async function createNoveltyBatch({
       action: 'nomina.novedades.batch.create',
       entity: 'novelty_batches',
       entityId: batchId,
-      newData: { anio, mes, scopeType, scopeValue, tipoNovedad, totalEmployees: employees.length, created },
+      newData: { anio, mes, scopeType, scopeValue, tipoNovedad, minutos, monto, totalEmployees: employees.length, created },
       ipAddress,
     });
 
@@ -256,10 +319,23 @@ async function createNoveltyBatch({
   }
 }
 
+function roundAmount(value) {
+  const amount = Number(value || 0);
+  if (!Number.isFinite(amount) || amount < 0) {
+    throw new Error('El monto de la novedad debe ser un numero positivo.');
+  }
+  return Math.round(amount * 100) / 100;
+}
+
 module.exports = {
   buildEmployeeQuery,
   createNoveltyBatch,
+  dateInEcuador,
+  ensurePayrollPeriodForDate,
+  extractPeriodFromDate,
+  formatPeriodMarker,
   getPayrollPeriodState,
   openPayrollPeriod,
+  todayInEcuador,
   validatePeriod,
 };

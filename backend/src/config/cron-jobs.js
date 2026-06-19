@@ -3,6 +3,7 @@
 // ============================================================
 const cron = require('node-cron');
 const { calcularNominaMensual } = require('../services/calculoNominaService');
+const { ensurePayrollPeriodForDate, todayInEcuador } = require('../services/monthlyPeriodService');
 const db = require('../config/database');
 
 function iniciarCronJobs() {
@@ -58,6 +59,19 @@ async function verificarMarcacionesFaltantes() {
   const tenants = await db.query('SELECT id FROM tenants WHERE activo = true');
 
   for (const tenant of tenants.rows) {
+    const fechaNovedad = todayInEcuador();
+    const period = await ensurePayrollPeriodForDate({ tenantId: tenant.id, userId: null, fecha: fechaNovedad });
+    if (period.status === 'closed') {
+      console.error('[CRON] Marcaciones faltantes omitidas por periodo cerrado', {
+        code: 'CRON_NOVEDAD_PERIODO_CERRADO',
+        statusCode: 422,
+        correlationId: process.env.CORRELATION_ID || 'cron-marcaciones-faltantes',
+        userId: null,
+        tenantId: tenant.id,
+        periodoNomina: period.periodoNomina,
+      });
+      continue;
+    }
     const empleados = await db.query(`
       SELECT e.id
       FROM empleados e
@@ -75,10 +89,12 @@ async function verificarMarcacionesFaltantes() {
 
     for (const empleado of empleados.rows) {
       await db.query(`
-        INSERT INTO novedades_asistencia (empleado_id, tenant_id, fecha, tipo_novedad, justificacion, estado)
-        VALUES ($1,$2,CURRENT_DATE,'falta','No registro marcacion de entrada','pendiente')
+        INSERT INTO novedades_asistencia (
+          empleado_id, tenant_id, period_id, periodo_nomina, fecha, tipo_novedad, justificacion, estado
+        )
+        VALUES ($1,$2,$3,$4,$5,'falta','No registro marcacion de entrada','pendiente')
         ON CONFLICT DO NOTHING
-      `, [empleado.id, tenant.id]);
+      `, [empleado.id, tenant.id, period.id, period.periodoNomina, fechaNovedad]);
     }
 
     console.log(`[CRON] Marcaciones faltantes tenant ${tenant.id}: ${empleados.rows.length}`);

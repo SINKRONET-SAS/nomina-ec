@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "plan": "HAIKY-DIAGNOSTICO-V2-NOMINA-EC-2026",
   "planCode": "DVN26",
-  "status": "baseline_documental_creado",
-  "phaseCompleted": "DVN26-00",
-  "currentPhase": "DVN26-01-pending-approval",
-  "updatedAt": "2026-06-18T00:00:00.000-05:00",
-  "summary": "DVN26-00 despliega plan Haiky documental para responder a los 31 hallazgos del Diagnostico V2. No modifica runtime. Los scripts Base44 adjuntos quedan como referencia funcional y no como parche directo.",
+  "status": "completed_runtime_local_with_professional_iess_block",
+  "phaseCompleted": "DVN26-09",
+  "currentPhase": "DVN26-closed-local",
+  "updatedAt": "2026-06-18T21:05:00.000-05:00",
+  "summary": "DVN26-01..09 ejecutadas localmente con aprobacion explicita del usuario. Se corrigieron bonos de desempeno, marca de periodo en novedades, cierre idempotente de beneficios, CSV de reportes, ajustes landing/PWA y migracion PostgreSQL local. E-01 IESS queda bloqueado hasta validacion contable/laboral externa.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: desplegar plan Haiky en docs2, CODEX_CONTEXT.md, AuditLock.json y prompts por fases en base a RULES.md, usando DIAGNOSTICO_V2_NOMINA_EC.md y scripts 07..11 como referencia.",
-  "previousAuditLockHash": "e0e6ad420b21123d92431416a75da453fc104c497c93184861dca82825f335f1",
+  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts del plan DVN26, cerrar artefactos de gobierno, aplicar migraciones, commit y push.",
+  "previousAuditLockHash": "856E2F1B61E186A782106293621ADC2CA361E7198EA36558AB11ADBA178B67BB",
   "previousPlans": [
     {
       "plan": "HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026",
@@ -27,9 +27,26 @@
   "filesModified": [
     ".vscode/AuditLock.json",
     "CODEX_CONTEXT.md",
+    "backend/prisma/schema.prisma",
+    "backend/prisma/migrations/20260618133000_dvn26_bonus_novelty_amount/migration.sql",
+    "backend/src/config/cron-jobs.js",
+    "backend/src/controllers/externalApiController.js",
+    "backend/src/controllers/nominaController.js",
+    "backend/src/controllers/novedadController.js",
+    "backend/src/services/calculoNominaService.js",
+    "backend/src/services/marcacionValidator.js",
+    "backend/src/services/monthlyPeriodService.js",
+    "backend/src/services/monthlyPeriodService.test.js",
+    "backend/src/services/payrollReportService.js",
+    "frontend-web/pwa.config.js",
+    "frontend-web/src/pages/Landing.jsx",
+    "frontend-web/src/pages/Nomina/CerrarMes.jsx",
+    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
+    "frontend-web/vite.config.js",
     "docs2/PLAN_HAIKY_DIAGNOSTICO_V2_NOMINA_EC_2026.md",
     "docs2/diagnostico-v2-nomina-ec-2026/MATRIZ_DVN26_HALLAZGOS.md",
     "docs2/diagnostico-v2-nomina-ec-2026/REPORTE_DVN26_00_BASELINE.md",
+    "docs2/diagnostico-v2-nomina-ec-2026/REPORTE_DVN26_09_CIERRE_RUNTIME.md",
     ".github/prompts/DIAGNOSTICO-V2-NOMINA-EC-2026-00-baseline.md",
     ".github/prompts/DIAGNOSTICO-V2-NOMINA-EC-2026-01-parametros-legales-iess-ir.md",
     ".github/prompts/DIAGNOSTICO-V2-NOMINA-EC-2026-02-motor-nomina-calculos.md",
@@ -45,27 +62,57 @@
     {
       "gate": "DVN26-RULES-READ",
       "status": "PASS",
-      "detail": "RULES.md leido; exige UTF-8, cero fallos silenciosos, AuditLock, orden por fases y exposicion frontend."
+      "detail": "RULES.md leido antes de runtime; se mantiene AuditLock y cero fallos silenciosos."
     },
     {
       "gate": "DVN26-AUDITLOCK-PREVIOUS",
       "status": "PASS",
-      "detail": "AuditLock previo DCF26-12 leido y hash SHA256 registrado."
+      "detail": "AuditLock previo leido y hash SHA256 856E2F1B61E186A782106293621ADC2CA361E7198EA36558AB11ADBA178B67BB registrado."
     },
     {
-      "gate": "DVN26-DIAGNOSTICO-V2-READ",
-      "status": "PASS_WITH_ENCODING_RISK",
-      "detail": "DIAGNOSTICO_V2_NOMINA_EC.md leido desde prototipo; contiene mojibake, por lo que se transcribio como matriz ASCII segura."
-    },
-    {
-      "gate": "DVN26-SCRIPTS-REFERENCE-READ",
-      "status": "PASS_WITH_STACK_MAPPING",
-      "detail": "Scripts 07..11 leidos; se documentan como referencia Base44/Deno, no como runtime aplicable directo."
-    },
-    {
-      "gate": "DVN26-RUNTIME-CHANGES",
+      "gate": "DVN26-PRISMA-VALIDATE",
       "status": "PASS",
-      "detail": "DVN26-00 no modifica backend, frontend-web ni app-movil."
+      "detail": "npx.cmd prisma validate."
+    },
+    {
+      "gate": "DVN26-PRISMA-MIGRATE-DEPLOY",
+      "status": "PASS",
+      "detail": "Migracion 20260618133000_dvn26_bonus_novelty_amount aplicada en PostgreSQL local plan_haiky."
+    },
+    {
+      "gate": "DVN26-PRISMA-GENERATE",
+      "status": "PASS",
+      "detail": "Prisma Client regenerado con Prisma 6.19.3."
+    },
+    {
+      "gate": "DVN26-BACKEND-SYNTAX",
+      "status": "PASS",
+      "detail": "node --check en servicios y controladores modificados."
+    },
+    {
+      "gate": "DVN26-BACKEND-TESTS",
+      "status": "PASS",
+      "detail": "npm.cmd test -- --runInBand; 19 suites, 74 tests."
+    },
+    {
+      "gate": "DVN26-FRONTEND-BUILD",
+      "status": "PASS",
+      "detail": "npm.cmd run build en frontend-web."
+    },
+    {
+      "gate": "DVN26-PWA-SMOKE",
+      "status": "PASS",
+      "detail": "npm.cmd run smoke:pwa; manifest, assets y service worker cumplen smoke LPA26."
+    },
+    {
+      "gate": "DVN26-MOBILE-DOCTOR",
+      "status": "PASS",
+      "detail": "npm.cmd run doctor en app-movil; Expo Doctor 21/21 checks passed."
+    },
+    {
+      "gate": "DVN26-MOBILE-STORES",
+      "status": "PASS",
+      "detail": "npm.cmd run check:stores en app-movil."
     }
   ],
   "fases": [
@@ -76,55 +123,55 @@
     },
     {
       "phase": "DVN26-01",
-      "status": "pending_approval",
+      "status": "completed_local_with_professional_block",
       "task": "parametros legales, IESS, gastos personales y tabla IR"
     },
     {
       "phase": "DVN26-02",
-      "status": "pending_approval",
+      "status": "completed_local",
       "task": "motor unico de nomina y calculos"
     },
     {
       "phase": "DVN26-03",
-      "status": "pending_approval",
+      "status": "completed_by_stack_verification",
       "task": "liquidacion y documentos legales PDF"
     },
     {
       "phase": "DVN26-04",
-      "status": "pending_approval",
+      "status": "completed_local",
       "task": "beneficios, cuotas y cierre idempotente"
     },
     {
       "phase": "DVN26-05",
-      "status": "pending_approval",
+      "status": "completed_local",
       "task": "procesos backend visibles"
     },
     {
       "phase": "DVN26-06",
-      "status": "pending_approval",
+      "status": "completed_local",
       "task": "bancos y reportes exportables"
     },
     {
       "phase": "DVN26-07",
-      "status": "pending_approval",
+      "status": "completed_by_stack_verification",
       "task": "multi-tenant real y planes"
     },
     {
       "phase": "DVN26-08",
-      "status": "pending_approval",
+      "status": "completed_local",
       "task": "landing, PWA y app movil"
     },
     {
       "phase": "DVN26-09",
-      "status": "pending_approval",
+      "status": "completed_local",
       "task": "QA, rollback y release gate"
     }
   ],
   "residualRisk": [
     "E-01 IESS 9.45% vs 9.95% requiere validacion profesional antes de cambio productivo.",
-    "El diagnostico fuente pertenece al prototipo Base44 y debe verificarse contra el runtime actual antes de implementar.",
-    "Los scripts adjuntos contienen mojibake y dependencias Deno/Base44 no compatibles con el stack real."
+    "La publicacion productiva requiere smoke E2E con datos de prueba y backend activo.",
+    "Los scripts adjuntos Base44/Deno quedan solo como referencia historica, no como fuente runtime."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "6830266d76198b24533ba11c4a1dea42090a0d9630e61803d8daa6f5c5ad8323"
+  "signature": "e526d14d3ef2d7564d47d20f134cd9c148e463f0655cf24f64bafd3bd58031f2"
 }

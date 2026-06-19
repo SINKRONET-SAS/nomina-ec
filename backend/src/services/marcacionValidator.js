@@ -2,6 +2,7 @@
 // PLAN HAIKY - Validador de Marcaciones con GPS
 // ============================================================
 const db = require('../config/database');
+const { dateInEcuador, ensurePayrollPeriodForDate } = require('./monthlyPeriodService');
 const { s3Upload } = require('../config/s3');
 const AppError = require('../utils/AppError');
 const { recordAudit } = require('./auditService');
@@ -249,11 +250,24 @@ async function generarNovedadTardia(empleadoId, tenantId, correlationId, userId)
 
   if (fechaMarcacion > horaLimite) {
     const minutosAtraso = Math.round((fechaMarcacion - horaLimite) / 60000);
+    const fechaNovedad = dateInEcuador(fechaMarcacion);
+    const period = await ensurePayrollPeriodForDate({ tenantId, userId, fecha: fechaNovedad });
+    if (period.status === 'closed') {
+      console.error('[NOVEDAD] Periodo cerrado para atraso automatico', {
+        code: 'NOVEDAD_PERIODO_CERRADO',
+        statusCode: 422,
+        correlationId,
+        userId,
+        empleadoId,
+        periodoNomina: period.periodoNomina,
+      });
+      return;
+    }
     await db.query(`
-      INSERT INTO novedades_asistencia (empleado_id, tenant_id, fecha, tipo_novedad, minutos, estado)
-      VALUES ($1,$2,CURRENT_DATE,'atraso',$3,'pendiente')
+      INSERT INTO novedades_asistencia (empleado_id, tenant_id, period_id, periodo_nomina, fecha, tipo_novedad, minutos, estado)
+      VALUES ($1,$2,$3,$4,$5,'atraso',$6,'pendiente')
       ON CONFLICT DO NOTHING
-    `, [empleadoId, tenantId, minutosAtraso]);
+    `, [empleadoId, tenantId, period.id, period.periodoNomina, fechaNovedad, minutosAtraso]);
   }
 }
 
