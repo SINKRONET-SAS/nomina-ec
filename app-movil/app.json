@@ -15,7 +15,6 @@
       "buildNumber": "1",
       "supportsTablet": false,
       "infoPlist": {
-        "NSCameraUsageDescription": "Nómina-Ec usa la cámara solo cuando la empresa exige evidencia de marcación.",
         "NSLocationWhenInUseUsageDescription": "Nómina-Ec usa ubicación aproximada durante la marcación de asistencia."
       }
     },
@@ -27,7 +26,6 @@
         "backgroundColor": "#0f766e"
       },
       "permissions": [
-        "CAMERA",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
       ]

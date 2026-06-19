@@ -53,6 +53,30 @@ const checklist = [
   'PWA operativa para acceso web y flujos de RRHH',
 ];
 
+const commercialOffer = [
+  {
+    name: 'Prueba operativa',
+    price: '$0',
+    description: 'Activa empresa, usuarios, empleados y asistencia para validar el cierre mensual.',
+    action: 'Empezar prueba',
+    to: '/registro?plan=TRIAL',
+  },
+  {
+    name: 'PYME Ecuador',
+    price: 'Desde planes mensuales',
+    description: 'Roles, bancos, reportes, documentos y auditoría para equipos de RRHH en crecimiento.',
+    action: 'Ver planes',
+    to: '/precios',
+  },
+  {
+    name: 'Corporativo',
+    price: 'Contrato',
+    description: 'Multiempresa, soporte, parametrización y acompañamiento para operación regulada.',
+    action: 'Hablar con ventas',
+    to: '/soporte',
+  },
+];
+
 function Landing() {
   return (
     <main className="app-shell bg-white">
@@ -172,6 +196,32 @@ function Landing() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-slate-200 bg-white">
+        <div className="page-container py-10">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold uppercase text-teal-800">Oferta comercial</p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950">Empieza pequeño y escala sin cambiar de sistema</h2>
+            </div>
+            <Link className="text-sm font-semibold text-teal-800" to="/precios">
+              Comparar capacidades
+            </Link>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {commercialOffer.map((offer) => (
+              <article className="rounded-lg border border-slate-200 bg-slate-50 p-5" key={offer.name}>
+                <h3 className="text-lg font-semibold text-slate-950">{offer.name}</h3>
+                <p className="mt-3 text-2xl font-semibold text-teal-800">{offer.price}</p>
+                <p className="mt-3 min-h-20 text-sm leading-6 text-slate-600">{offer.description}</p>
+                <Link className="mt-5 inline-flex min-h-10 items-center justify-center rounded-md bg-teal-700 px-4 text-sm font-semibold text-white" to={offer.to}>
+                  {offer.action}
+                </Link>
+              </article>
+            ))}
           </div>
         </div>
       </section>

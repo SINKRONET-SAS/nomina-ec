@@ -1,16 +1,22 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-EMPLEADOS-APP-ASISTENCIA-INVITACION-2026",
-  "planCode": "EAA26",
+  "plan": "HAIKY-DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026",
+  "planCode": "DIC26",
   "status": "completed_runtime_local",
-  "phaseCompleted": "EAA26-08",
-  "currentPhase": "EAA26-closed-local",
-  "updatedAt": "2026-06-18T22:26:00.000-05:00",
-  "summary": "EAA26 queda ejecutado localmente: invitaciones seguras de empleados, activacion movil Expo Go, panel RRHH, vinculo usuario-empleado, readiness de asistencia, marcaciones con periodo operacional y registro publico corregido para JWT local.",
+  "phaseCompleted": "DIC26-07",
+  "currentPhase": "DIC26-closed-local",
+  "updatedAt": "2026-06-19T09:04:01.289-05:00",
+  "summary": "DIC26 queda ejecutado localmente: diagnostico integral comercial/UX/calidad, oferta visible en landing, ojo de clave web, app movil con marcacion/historial/perfil, retiro de camara y navegacion movil no usada, y gate UTF-8/BOM/mojibake limpio.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts del plan HAIKY-EMPLEADOS-APP-ASISTENCIA-INVITACION-2026 y corregir app para asistencia con ojo de clave.",
-  "previousAuditLockHash": "418F83B065250E6B3460BE139B884DBD8666109DFE80482DF5BE1D10802A3235",
+  "approvalSource": "Solicitud del usuario: diagnostico integral, diseno, UI/UX, oferta comercial visible, accesos, codigo muerto, bugs, importaciones, errores, mojibake, UTF-8, plan Haiky, ejecucion de prompts, cierre de gobierno, commit y push.",
+  "previousAuditLockHash": "F93D1EEB2D33E8F131C836DAFC2B4A38BC32222E0717695E4451E2E1C0F569BD",
   "previousPlans": [
+    {
+      "plan": "HAIKY-EMPLEADOS-APP-ASISTENCIA-INVITACION-2026",
+      "planCode": "EAA26",
+      "status": "completed_runtime_local",
+      "phaseCompleted": "EAA26-08"
+    },
     {
       "plan": "HAIKY-DIAGNOSTICO-V2-NOMINA-EC-2026",
       "planCode": "DVN26",
@@ -30,176 +36,134 @@
       "phaseCompleted": "LPA26-08"
     }
   ],
-  "referenceRead": [
-    "C:/proyectos web/sinkroniq-mobile/backend/src/services/growPartnerService.js",
-    "C:/proyectos web/sinkroniq-mobile/backend/src/services/auth/teamMembershipService.js",
-    "C:/proyectos web/sinkroniq-mobile/backend/src/services/auth/staffAccountService.js",
-    "C:/proyectos web/sinkroniq-mobile/mobile/src/screens/AcceptStaffInviteScreen.js",
-    "C:/proyectos web/sinkroniq-mobile/mobile/App.js",
-    "C:/proyectos web/sinkroniq-mobile/backend/prisma/migrations/20260308103000_staff_invites_compliance/migration.sql"
-  ],
   "filesModified": [
     ".vscode/AuditLock.json",
     "CODEX_CONTEXT.md",
-    "docs2/PLAN_HAIKY_EMPLEADOS_APP_ASISTENCIA_INVITACION_2026.md",
-    "docs2/empleados-app-asistencia-invitacion-2026/MATRIZ_EAA26_REQUERIMIENTOS.md",
-    "docs2/empleados-app-asistencia-invitacion-2026/CONTRATO_EAA26_FLUJO_INVITACION_EMPLEADO.md",
-    "docs2/empleados-app-asistencia-invitacion-2026/REPORTE_EAA26_00_BASELINE.md",
-    "docs2/empleados-app-asistencia-invitacion-2026/REPORTE_EAA26_01_AUDITORIA_REFERENCIA.md",
-    "docs2/empleados-app-asistencia-invitacion-2026/REPORTE_EAA26_02_03_MODELO_BACKEND.md",
-    "docs2/empleados-app-asistencia-invitacion-2026/REPORTE_EAA26_04_05_WEB_MOBILE.md",
-    "docs2/empleados-app-asistencia-invitacion-2026/REPORTE_EAA26_06_08_QA_RELEASE.md",
-    ".github/prompts/EMPLEADOS-APP-ASISTENCIA-INVITACION-2026-00-baseline.md",
-    ".github/prompts/EMPLEADOS-APP-ASISTENCIA-INVITACION-2026-01-auditoria-referencia.md",
-    ".github/prompts/EMPLEADOS-APP-ASISTENCIA-INVITACION-2026-02-modelo-datos-indices.md",
-    ".github/prompts/EMPLEADOS-APP-ASISTENCIA-INVITACION-2026-03-backend-invitaciones.md",
-    ".github/prompts/EMPLEADOS-APP-ASISTENCIA-INVITACION-2026-04-frontend-rrhh.md",
-    ".github/prompts/EMPLEADOS-APP-ASISTENCIA-INVITACION-2026-05-mobile-activacion.md",
-    ".github/prompts/EMPLEADOS-APP-ASISTENCIA-INVITACION-2026-06-asistencia-readiness.md",
-    ".github/prompts/EMPLEADOS-APP-ASISTENCIA-INVITACION-2026-07-notificaciones-metricas.md",
-    ".github/prompts/EMPLEADOS-APP-ASISTENCIA-INVITACION-2026-08-qa-release.md",
-    "backend/prisma/schema.prisma",
-    "backend/prisma/migrations/20260618223000_eaa26_employee_app_invites/migration.sql",
-    "backend/.env.example",
-    "backend/src/app.js",
-    "backend/src/controllers/authController.js",
-    "backend/src/controllers/employeeAppInviteController.js",
-    "backend/src/controllers/mobileController.js",
-    "backend/src/controllers/mobileController.test.js",
-    "backend/src/middleware/tenantResolver.js",
-    "backend/src/services/employeeAppInviteService.js",
-    "backend/src/services/employeeAppInviteService.test.js",
-    "backend/src/services/marcacionValidator.js",
-    "frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
-    "app-movil/src/services/api.js",
-    "app-movil/src/screens/LoginScreen.js",
-    "app-movil/src/screens/MarcacionScreen.js"
+    "docs2/PLAN_HAIKY_DIAGNOSTICO_INTEGRAL_COMERCIAL_UI_CALIDAD_2026.md",
+    "docs2/diagnostico-integral-comercial-ui-calidad-2026/MATRIZ_DIC26_HALLAZGOS.md",
+    "docs2/diagnostico-integral-comercial-ui-calidad-2026/REPORTE_DIC26_01_DIAGNOSTICO.md",
+    "docs2/diagnostico-integral-comercial-ui-calidad-2026/REPORTE_DIC26_02_06_EJECUCION.md",
+    "docs2/diagnostico-integral-comercial-ui-calidad-2026/REPORTE_DIC26_07_QA_RELEASE.md",
+    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-00-baseline.md",
+    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-01-diagnostico.md",
+    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-02-oferta-landing.md",
+    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-03-accesos.md",
+    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-04-app-movil.md",
+    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-05-codigo-muerto.md",
+    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-06-utf8.md",
+    ".github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-07-qa-release.md",
+    "frontend-web/src/pages/Landing.jsx",
+    "frontend-web/src/pages/Login.jsx",
+    "frontend-web/src/pages/Register.jsx",
+    "frontend-web/src/pages/ForgotPassword.jsx",
+    "frontend-web/src/App.jsx",
+    "frontend-web/src/context/AuthContext.jsx",
+    "frontend-web/src/components/Layout/Layout.jsx",
+    "app-movil/app.json",
+    "app-movil/package.json",
+    "app-movil/package-lock.json",
+    "app-movil/src/App.js",
+    "app-movil/src/screens/AutoservicioScreen.js",
+    "app-movil/src/screens/MisMarcacionesScreen.js",
+    "app-movil/src/services/geolocation.js",
+    "app-movil/src/services/camera.js",
+    "docs2/landing-pwa-app-store-2026/REPORTE_LPA26_01_DIAGNOSTICO.md",
+    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_01_ENCODING.md"
   ],
   "validationChecks": [
     {
-      "gate": "EAA26-RULES-READ",
+      "gate": "DIC26-RULES-CONTEXT",
       "status": "PASS",
-      "detail": "RULES.md fue leido antes de modificar runtime y el plan quedo registrado en CODEX_CONTEXT.md."
+      "detail": "RULES.md, CODEX_CONTEXT.md, AuditLock y estado git leidos antes de modificar runtime."
     },
     {
-      "gate": "EAA26-AUDITLOCK-PREVIOUS",
+      "gate": "DIC26-AUDITLOCK-PREVIOUS",
       "status": "PASS",
-      "detail": "AuditLock previo leido y hash SHA256 418F83B065250E6B3460BE139B884DBD8666109DFE80482DF5BE1D10802A3235 registrado."
+      "detail": "AuditLock previo leido y hash SHA256 F93D1EEB2D33E8F131C836DAFC2B4A38BC32222E0717695E4451E2E1C0F569BD registrado."
     },
     {
-      "gate": "EAA26-REFERENCE-SINKRONIQ",
+      "gate": "DIC26-FRONTEND-BUILD",
       "status": "PASS",
-      "detail": "Se revisaron patrones de GrowPartner, staff invite, team membership, mobile accept invite y migracion de invitacion."
+      "detail": "npm.cmd run build paso en frontend-web. Vite mantiene warning no bloqueante de chunk mayor a 500 kB."
     },
     {
-      "gate": "EAA26-SYNTAX",
+      "gate": "DIC26-PWA-SMOKE",
       "status": "PASS",
-      "detail": "node --check paso en employeeAppInviteService, employeeAppInviteController, mobileController, marcacionValidator y app.js."
+      "detail": "npm.cmd run smoke:pwa paso en frontend-web: manifest, assets y service worker cumplen."
     },
     {
-      "gate": "EAA26-PRISMA-VALIDATE",
-      "status": "PASS",
-      "detail": "npx.cmd prisma validate paso en backend."
-    },
-    {
-      "gate": "EAA26-MIGRATE-DEPLOY",
-      "status": "PASS",
-      "detail": "npx.cmd prisma migrate deploy aplico 20260618223000_eaa26_employee_app_invites en PostgreSQL local."
-    },
-    {
-      "gate": "EAA26-PRISMA-GENERATE",
-      "status": "PASS",
-      "detail": "npx.cmd prisma generate paso en backend."
-    },
-    {
-      "gate": "EAA26-BACKEND-TESTS",
+      "gate": "DIC26-BACKEND-TESTS",
       "status": "PASS",
       "detail": "npm.cmd test -- --runInBand paso en backend: 20 suites, 78 tests."
     },
     {
-      "gate": "EAA26-DB-LIST-SMOKE",
-      "status": "PASS",
-      "detail": "listEmployeeAppInvitations ejecuto contra PostgreSQL local con tenant real sin error SQL."
-    },
-    {
-      "gate": "EAA26-PUBLIC-REGISTER-SMOKE",
-      "status": "PASS",
-      "detail": "POST /api/auth/public-register paso contra backend local: success true, nextStep email-verification y token emitido."
-    },
-    {
-      "gate": "EAA26-FRONTEND-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build paso en frontend-web."
-    },
-    {
-      "gate": "EAA26-PWA-SMOKE",
-      "status": "PASS",
-      "detail": "npm.cmd run smoke:pwa paso en frontend-web."
-    },
-    {
-      "gate": "EAA26-MOBILE-STORES",
+      "gate": "DIC26-APP-STORES",
       "status": "PASS",
       "detail": "npm.cmd run check:stores paso en app-movil."
     },
     {
-      "gate": "EAA26-MOBILE-DOCTOR",
+      "gate": "DIC26-EXPO-DOCTOR",
       "status": "PASS",
-      "detail": "npm.cmd run doctor paso en app-movil con 21/21 checks."
+      "detail": "npm.cmd run doctor paso en app-movil con 21/21 checks. Primer intento bloqueo por EPERM en cache npm del sandbox y se repitio con permiso elevado."
+    },
+    {
+      "gate": "DIC26-UTF8-BOM-MOJIBAKE",
+      "status": "PASS",
+      "detail": "Gate Node final: UTF8_NO_BOM_NO_MOJIBAKE 295."
+    },
+    {
+      "gate": "DIC26-DEAD-DEPS",
+      "status": "PASS",
+      "detail": "rg no encontro expo-camera, CAMERA, NSCamera, services/camera, @react-navigation ni react-native-screens en app-movil tras limpieza."
     }
   ],
   "fases": [
     {
-      "phase": "EAA26-00",
+      "phase": "DIC26-00",
       "status": "completed_documental",
-      "task": "baseline documental, plan, matriz, prompts, contexto y AuditLock"
+      "task": "baseline, reglas, contexto y candado"
     },
     {
-      "phase": "EAA26-01",
+      "phase": "DIC26-01",
       "status": "completed_local",
-      "task": "auditoria comparativa referencia sinkroniq-mobile vs Nomina-Ec"
+      "task": "diagnostico integral de rutas, pantallas, imports, dependencias y encoding"
     },
     {
-      "phase": "EAA26-02",
+      "phase": "DIC26-02",
       "status": "completed_local",
-      "task": "modelo de datos e indices de invitaciones y vinculos"
+      "task": "oferta comercial visible en landing"
     },
     {
-      "phase": "EAA26-03",
+      "phase": "DIC26-03",
       "status": "completed_local",
-      "task": "backend de invitaciones, aceptacion y auditoria"
+      "task": "ojo de clave en accesos web"
     },
     {
-      "phase": "EAA26-04",
+      "phase": "DIC26-04",
       "status": "completed_local",
-      "task": "frontend RRHH para invitaciones de app"
+      "task": "app movil con marcar, historial y perfil"
     },
     {
-      "phase": "EAA26-05",
+      "phase": "DIC26-05",
       "status": "completed_local",
-      "task": "app movil con activacion de empleado, ojo de clave y consentimientos"
+      "task": "retiro de codigo muerto, permisos y dependencias moviles"
     },
     {
-      "phase": "EAA26-06",
+      "phase": "DIC26-06",
       "status": "completed_local",
-      "task": "readiness de asistencia con unidad, zona, jornada y periodo"
+      "task": "UTF-8 sin BOM y sin mojibake literal"
     },
     {
-      "phase": "EAA26-07",
-      "status": "completed_by_contract",
-      "task": "notificaciones/deep links contratados; operacion inicial por codigo/link manual"
-    },
-    {
-      "phase": "EAA26-08",
+      "phase": "DIC26-07",
       "status": "completed_local",
-      "task": "QA, migraciones, rollback y release gate Expo Go"
+      "task": "QA, evidencia, AuditLock, commit y push"
     }
   ],
   "residualRisk": [
-    "El canal real de entrega de invitaciones debe definirse: email, QR impreso, WhatsApp manual o canal interno.",
-    "Deep link de tienda queda pendiente hasta contar con build publicada o configuracion EAS real.",
-    "Debe repetirse smoke manual en telefono con Expo Go, backend LAN y datos de empresa de prueba.",
-    "La politica de soporte/recuperacion para empleados debe cerrarse antes de operar con clientes reales."
+    "Vite reporta chunk principal mayor a 500 kB; conviene code splitting posterior.",
+    "La evidencia fotografica de marcacion queda fuera hasta disenar un flujo real de camara, consentimiento y almacenamiento.",
+    "El smoke visual en telefono con Expo Go debe repetirse en red local antes de demo comercial."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "0da3fbb42d56c527302bb08ee99ae744e0e7d41dc27fe2359cc6a395ffdfd5b0"
+  "signature": "75f73f38a4ed282b46b8a7e771cf553a25ec88b0f424da34c3575bdcf0598366"
 }

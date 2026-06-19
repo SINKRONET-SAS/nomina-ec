@@ -1,3 +1,54 @@
+## Open Haiky Plan - HAIKY-DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026 |
+| Codigo | DIC26 |
+| Estado | DIC26-00..07 ejecutadas localmente |
+| Fase actual | DIC26-07 cerrada localmente |
+| Alcance | diagnostico integral de diseno, UI/UX, oferta comercial visible, accesos, codigo muerto, bugs, importaciones, errores, mojibake y UTF-8 |
+| Plan doc | `docs2/PLAN_HAIKY_DIAGNOSTICO_INTEGRAL_COMERCIAL_UI_CALIDAD_2026.md` |
+| Matriz | `docs2/diagnostico-integral-comercial-ui-calidad-2026/MATRIZ_DIC26_HALLAZGOS.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Prompts | `.github/prompts/DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026-{00..07}-*.md` |
+| RULES | `RULES.md` |
+
+### Resumen DIC26
+
+DIC26 ejecuto una pasada integral de confianza comercial y calidad sobre Nomina-Ec. El foco fue que la oferta se entienda antes de contratar, que los accesos no generen friccion, que la app movil exponga la asistencia real, que no existan permisos/dependencias muertas y que el repositorio quede limpio de BOM/mojibake literal.
+
+### Fases DIC26
+
+| Fase | Prioridad | Estado | Resumen |
+|------|-----------|--------|---------|
+| DIC26-00 | P0 | completed_documental | Baseline, reglas, contexto, candado y alcance. |
+| DIC26-01 | P0 | completed_local | Diagnostico integral de rutas, pantallas, logs, imports, dependencias y encoding. |
+| DIC26-02 | P0 | completed_local | Oferta comercial visible en landing y reduccion de friccion publica. |
+| DIC26-03 | P0 | completed_local | Accesos web: ojo de clave en login, registro y recuperacion. |
+| DIC26-04 | P0 | completed_local | App movil enfocada en asistencia: marcacion, historial y perfil visibles. |
+| DIC26-05 | P1 | completed_local | Codigo muerto/dependencias/permisos: retiro de camara y navegacion movil no usada. |
+| DIC26-06 | P0 | completed_local | UTF-8 sin BOM y cero mojibake literal en archivos auditados. |
+| DIC26-07 | P0 | completed_local | QA, evidencia, AuditLock, commit y push. |
+
+### Ejecucion DIC26 2026-06-19
+
+Runtime cerrado:
+
+- Landing publica con bloque de oferta comercial visible: prueba, PYME y corporativo.
+- Login, registro y recuperacion web con mostrar/ocultar contrasena.
+- App movil con tabs simples para marcar asistencia, revisar historial y ver perfil.
+- Retirados `expo-camera`, permisos de camara y dependencias de navegacion no usadas.
+- Limpieza global de BOM y mojibake literal en archivos auditados.
+
+Gates esperados:
+
+- `npm.cmd run build` en `frontend-web`.
+- `npm.cmd test -- --runInBand` en `backend`.
+- `npm.cmd run check:stores` y `npm.cmd run doctor` en `app-movil`.
+- Gate Node UTF-8/BOM/mojibake.
+
+---
+
 ## Open Haiky Plan - HAIKY-EMPLEADOS-APP-ASISTENCIA-INVITACION-2026
 
 | Campo | Valor |

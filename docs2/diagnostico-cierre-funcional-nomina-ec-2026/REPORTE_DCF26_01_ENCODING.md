@@ -11,7 +11,7 @@ Se revisaron archivos runtime y metadatos con lectura UTF-8 desde Node. La conso
 Comando ejecutado:
 
 ```powershell
-node -e "const fs=require('fs'); const cp=require('child_process'); const files=cp.execSync('rg --files backend/src frontend-web/src app-movil/src backend/package.json frontend-web/package.json app-movil/package.json',{encoding:'utf8'}).trim().split(/\r?\n/); const bad=[]; for (const f of files) { const s=fs.readFileSync(f,'utf8'); if (/NÃ|Ã³|Ã±|Ã¡|Ã©|Ãí|Ãº|Â/.test(s)) bad.push(f); } console.log(bad.length ? bad.join('\n') : 'OK_UTF8_RUNTIME');"
+node -e "const fs=require('fs'); const cp=require('child_process'); const files=cp.execSync('rg --files backend/src frontend-web/src app-movil/src backend/package.json frontend-web/package.json app-movil/package.json',{encoding:'utf8'}).trim().split(/\r?\n/); const bad=[]; const mojibakePattern=new RegExp('[\\u00C3\\u00C2\\uFFFD]'); for (const f of files) { const s=fs.readFileSync(f,'utf8'); if (mojibakePattern.test(s)) bad.push(f); } console.log(bad.length ? bad.join('\n') : 'OK_UTF8_RUNTIME');"
 ```
 
 Salida:

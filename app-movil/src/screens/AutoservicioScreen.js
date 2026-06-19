@@ -2,8 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { mobileAPI } from '../services/api';
 
+function currentPeriodEC() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Guayaquil',
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+  };
+}
+
 export default function AutoservicioScreen() {
-  const today = new Date();
+  const period = currentPeriodEC();
   const [employee, setEmployee] = useState(null);
   const [nomina, setNomina] = useState(null);
   const [error, setError] = useState('');
@@ -14,7 +27,7 @@ export default function AutoservicioScreen() {
       try {
         const [profile, payroll] = await Promise.all([
           mobileAPI.me(),
-          mobileAPI.payroll(today.getFullYear(), today.getMonth() + 1),
+          mobileAPI.payroll(period.year, period.month),
         ]);
         setEmployee(profile.data.employee);
         setNomina(payroll.data.nomina);

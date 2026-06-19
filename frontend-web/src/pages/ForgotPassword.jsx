@@ -1,6 +1,6 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Building2, KeyRound, Mail } from 'lucide-react';
+import { ArrowRight, Building2, Eye, EyeOff, KeyRound, Mail } from 'lucide-react';
 import { extractApiError, forgotPassword, resetPassword } from '../services/publicApi';
 
 function ForgotPassword() {
@@ -9,6 +9,7 @@ function ForgotPassword() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loadingRequest, setLoadingRequest] = useState(false);
   const [loadingReset, setLoadingReset] = useState(false);
 
@@ -81,7 +82,25 @@ function ForgotPassword() {
             </label>
             <label className="space-y-2">
               <span className="auth-label">Nueva contraseña</span>
-              <input className="auth-input" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+              <div className="relative">
+                <input
+                  className="auth-input pr-10"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                  onClick={() => setShowPassword((current) => !current)}
+                  title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  type="button"
+                >
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              </div>
             </label>
             <button className="primary-button w-full" disabled={loadingReset}>
               {loadingReset ? 'Actualizando...' : 'Actualizar contraseña'}

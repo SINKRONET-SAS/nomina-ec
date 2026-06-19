@@ -52,7 +52,7 @@ La fase LPA26-01 queda cerrada como diagnostico previo a runtime. Se valido el A
 
 ## Brechas P0
 
-- Mojibake visible en landing, PWA, legales, registro y app movil (`NÃ³mina`, `PolÃ­tica`, `sesiÃ³n`, etc.).
+- Mojibake visible en landing, PWA, legales, registro y app movil. Los ejemplos literales se retiraron de este reporte para que los gates automaticos detecten secuencias corruptas reales sin falsos positivos documentales.
 - Landing actual comunica operacion general, pero no muestra el flujo completo de valor Ecuador: empleados, novedades, roles, cierre, bancos, RDEP/IESS, documentos y auditoria.
 - No hay configuracion store-ready en app movil.
 - Politica de privacidad y terminos son demasiado generales para LOPDP.

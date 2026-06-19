@@ -9,7 +9,7 @@ function MarkItem({ item }) {
         <Text style={styles.tipo}>{String(item.tipo_marcacion || '').replace(/_/g, ' ').toUpperCase()}</Text>
         <Text style={styles.badge}>{item.dentro_perimetro === false ? 'FUERA' : 'VALIDA'}</Text>
       </View>
-      <Text style={styles.fecha}>{new Date(item.timestamp).toLocaleString('es-EC')}</Text>
+      <Text style={styles.fecha}>{new Date(item.timestamp).toLocaleString('es-EC', { timeZone: 'America/Guayaquil' })}</Text>
       <Text style={styles.detail}>Distancia: {Number(item.distancia_metros || 0).toFixed(0)} m</Text>
     </View>
   );

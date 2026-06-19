@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Building2, CheckCircle2, LockKeyhole, Mail, UserRound } from 'lucide-react';
+import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, UserRound } from 'lucide-react';
 import { extractApiError, publicRegister } from '../services/publicApi';
 import { useAuth } from '../context/AuthContext';
 
@@ -23,6 +23,7 @@ function Register() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { setSessionFromPayload } = useAuth();
   const navigate = useNavigate();
 
@@ -146,7 +147,23 @@ function Register() {
               <span className="auth-label">Contraseña</span>
               <div className="relative">
                 <LockKeyhole className="pointer-events-none absolute left-3 top-3 h-5 w-5 text-slate-400" />
-                <input className="auth-input pl-10" type="password" required minLength={8} value={form.password} onChange={(e) => update('password', e.target.value)} />
+                <input
+                  className="auth-input px-10"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={8}
+                  value={form.password}
+                  onChange={(e) => update('password', e.target.value)}
+                />
+                <button
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                  onClick={() => setShowPassword((current) => !current)}
+                  title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  type="button"
+                >
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
               </div>
             </label>
           </div>
