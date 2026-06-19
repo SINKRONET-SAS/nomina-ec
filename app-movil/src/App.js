@@ -29,6 +29,9 @@ export default function App() {
   };
 
   const handleLogin = async (newToken) => {
+    if (!newToken || typeof newToken !== 'string') {
+      throw new Error('La respuesta de autenticacion no incluyo un token valido.');
+    }
     await SecureStore.setItemAsync('token', newToken);
     setToken(newToken);
   };

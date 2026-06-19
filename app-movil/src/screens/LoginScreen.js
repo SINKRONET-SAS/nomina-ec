@@ -1,6 +1,6 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { authAPI, paymentAPI } from '../services/api';
+import { API_URL, authAPI, paymentAPI } from '../services/api';
 
 const initialRegister = {
   razonSocial: '',
@@ -16,7 +16,42 @@ const initialRegister = {
 };
 
 function getErrorMessage(err, fallback) {
+  if (!err?.response && err?.message === 'Network Error') {
+    return `No se pudo conectar con ${API_URL}. En Expo Go usa la IP local de tu PC en EXPO_PUBLIC_API_URL.`;
+  }
   return err?.response?.data?.message || err?.response?.data?.error || err?.message || fallback;
+}
+
+function getAuthToken(response) {
+  return response?.data?.token || response?.data?.data?.token || response?.data?.accessToken || '';
+}
+
+function PasswordInput({ value, onChangeText, placeholder, returnKeyType, onSubmitEditing }) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <View style={styles.passwordRow}>
+      <TextInput
+        autoCapitalize="none"
+        autoCorrect={false}
+        onChangeText={onChangeText}
+        onSubmitEditing={onSubmitEditing}
+        placeholder={placeholder}
+        returnKeyType={returnKeyType}
+        secureTextEntry={!visible}
+        style={styles.passwordInput}
+        textContentType="password"
+        value={value}
+      />
+      <TouchableOpacity
+        accessibilityLabel={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+        onPress={() => setVisible((current) => !current)}
+        style={styles.eyeButton}
+      >
+        <Text style={styles.eyeText}>{visible ? 'Ocultar' : '👁 Ver'}</Text>
+      </TouchableOpacity>
+    </View>
+  );
 }
 
 export default function LoginScreen({ onLogin }) {
@@ -44,15 +79,20 @@ export default function LoginScreen({ onLogin }) {
   };
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password) {
       Alert.alert('Datos requeridos', 'Ingrese email y contraseña.');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await authAPI.login(email, password);
-      onLogin(response.data.token);
+      const response = await authAPI.login(normalizedEmail, password);
+      const token = getAuthToken(response);
+      if (!token) {
+        throw new Error('El backend autentico la solicitud pero no devolvio token.');
+      }
+      await onLogin(token);
     } catch (err) {
       Alert.alert('No se pudo iniciar sesión', getErrorMessage(err, 'Credenciales inválidas.'));
     } finally {
@@ -68,8 +108,15 @@ export default function LoginScreen({ onLogin }) {
 
     setLoading(true);
     try {
-      const response = await authAPI.publicRegister(registerForm);
-      onLogin(response.data.token);
+      const response = await authAPI.publicRegister({
+        ...registerForm,
+        email: registerForm.email.trim().toLowerCase(),
+      });
+      const token = getAuthToken(response);
+      if (!token) {
+        throw new Error('La cuenta se creo, pero el backend no devolvio token de ingreso.');
+      }
+      await onLogin(token);
     } catch (err) {
       Alert.alert('No se pudo crear la cuenta', getErrorMessage(err, 'Revise los datos ingresados.'));
     } finally {
@@ -78,14 +125,15 @@ export default function LoginScreen({ onLogin }) {
   };
 
   const handleForgot = async () => {
-    if (!email) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
       Alert.alert('Email requerido', 'Ingrese su correo para solicitar recuperación.');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await authAPI.forgotPassword(email);
+      const response = await authAPI.forgotPassword(normalizedEmail);
       Alert.alert('Solicitud registrada', response.data?.message || 'Revise su correo para continuar.');
       setMode('reset');
     } catch (err) {
@@ -96,14 +144,15 @@ export default function LoginScreen({ onLogin }) {
   };
 
   const handleReset = async () => {
-    if (!email || !resetCode || !password) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !resetCode || !password) {
       Alert.alert('Datos requeridos', 'Ingrese email, código y nueva contraseña.');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await authAPI.resetPassword({ email, code: resetCode, password });
+      const response = await authAPI.resetPassword({ email: normalizedEmail, code: resetCode, password });
       Alert.alert('Contraseña actualizada', response.data?.message || 'Ya puede iniciar sesión.');
       setMode('login');
     } catch (err) {
@@ -136,7 +185,13 @@ export default function LoginScreen({ onLogin }) {
         {mode === 'login' && (
           <>
             <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
-            <TextInput style={styles.input} placeholder="Contraseña" value={password} onChangeText={setPassword} secureTextEntry />
+            <PasswordInput
+              onChangeText={setPassword}
+              onSubmitEditing={handleLogin}
+              placeholder="Contraseña"
+              returnKeyType="go"
+              value={password}
+            />
             <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleLogin} disabled={loading}>
               <Text style={styles.buttonText}>{loading ? 'Ingresando...' : 'Ingresar'}</Text>
             </TouchableOpacity>
@@ -151,7 +206,12 @@ export default function LoginScreen({ onLogin }) {
             <TextInput style={styles.input} placeholder="Nombres" value={registerForm.nombres} onChangeText={(value) => updateRegister('nombres', value)} />
             <TextInput style={styles.input} placeholder="Apellidos" value={registerForm.apellidos} onChangeText={(value) => updateRegister('apellidos', value)} />
             <TextInput style={styles.input} placeholder="Email" value={registerForm.email} onChangeText={(value) => updateRegister('email', value)} autoCapitalize="none" keyboardType="email-address" />
-            <TextInput style={styles.input} placeholder="Contraseña" value={registerForm.password} onChangeText={(value) => updateRegister('password', value)} secureTextEntry />
+            <PasswordInput
+              onChangeText={(value) => updateRegister('password', value)}
+              placeholder="Contraseña"
+              returnKeyType="done"
+              value={registerForm.password}
+            />
             <Text style={styles.planHint}>Plan inicial: {plans.find((plan) => plan.id === registerForm.planId)?.nombre || registerForm.planId}</Text>
             <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleRegister} disabled={loading}>
               <Text style={styles.buttonText}>{loading ? 'Creando...' : 'Crear cuenta'}</Text>
@@ -175,7 +235,12 @@ export default function LoginScreen({ onLogin }) {
           <>
             <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
             <TextInput style={styles.input} placeholder="Código" value={resetCode} onChangeText={setResetCode} keyboardType="number-pad" />
-            <TextInput style={styles.input} placeholder="Nueva contraseña" value={password} onChangeText={setPassword} secureTextEntry />
+            <PasswordInput
+              onChangeText={setPassword}
+              placeholder="Nueva contraseña"
+              returnKeyType="done"
+              value={password}
+            />
             <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleReset} disabled={loading}>
               <Text style={styles.buttonText}>Actualizar contraseña</Text>
             </TouchableOpacity>
@@ -248,6 +313,34 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
     fontSize: 16,
+  },
+  passwordRow: {
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: 16,
+    minHeight: 48,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  eyeButton: {
+    alignItems: 'center',
+    borderLeftColor: '#e2e8f0',
+    borderLeftWidth: 1,
+    justifyContent: 'center',
+    minHeight: 48,
+    minWidth: 76,
+    paddingHorizontal: 12,
+  },
+  eyeText: {
+    color: '#0f766e',
+    fontWeight: '700',
   },
   planHint: {
     color: '#475569',
