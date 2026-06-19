@@ -1,3 +1,49 @@
+## Open Haiky Plan - HAIKY-DIAGNOSTICO-V2-NOMINA-EC-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-DIAGNOSTICO-V2-NOMINA-EC-2026 |
+| Codigo | DVN26 |
+| Estado | DVN26-00 desplegada documentalmente; runtime pendiente de aprobacion por fase |
+| Fase actual | DVN26-00 baseline documental |
+| Alcance | responder a 31 hallazgos del Diagnostico V2: calculos legales, procesos ocultos, pantallas decorativas, reportes, bancos, landing, PWA, mobile, multi-tenant y planes |
+| Fuente de requerimiento | `C:\proyectos web\sensible-easy-payroll-flow\src\docs\DIAGNOSTICO_V2_NOMINA_EC.md` |
+| Scripts referencia | `07_fix_nomina_calculos.js`, `08_backend_acta_finiquito_contrato.js`, `09_backend_contrato_trabajo.js`, `10_pwa_landing.js`, `11_fix_multitenant_reportes_planes.js` |
+| Plan doc | `docs2/PLAN_HAIKY_DIAGNOSTICO_V2_NOMINA_EC_2026.md` |
+| Matriz | `docs2/diagnostico-v2-nomina-ec-2026/MATRIZ_DVN26_HALLAZGOS.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Prompts | `.github/prompts/DIAGNOSTICO-V2-NOMINA-EC-2026-{00..09}-*.md` |
+| RULES | `RULES.md` |
+
+### Resumen DVN26
+
+DVN26 convierte el Diagnostico V2 en un plan Haiky ejecutable sobre el stack real de Nomina-Ec. Los scripts adjuntos provienen del prototipo Base44/Deno y se usan como referencia funcional, no como parches directos. La ejecucion debe verificar cada hallazgo contra codigo real antes de modificar runtime.
+
+### Fases DVN26
+
+| Fase | Prioridad | Estado | Resumen |
+|------|-----------|--------|---------|
+| DVN26-00 | P0 | completed_documental | Baseline, matriz, prompts, contexto y AuditLock sin runtime. |
+| DVN26-01 | P0 | pending_approval | Parametros legales, IESS 9.45/9.95, gastos personales y tabla IR editable. |
+| DVN26-02 | P0 | pending_approval | Motor unico de nomina: dias, fondo reserva, bonos, cerradas y errores por empleado. |
+| DVN26-03 | P0 | pending_approval | Liquidacion, acta de finiquito, contrato PDF y DocumentoLegal. |
+| DVN26-04 | P1 | pending_approval | Beneficios, cuotas y cierre idempotente. |
+| DVN26-05 | P1 | pending_approval | Procesos backend visibles: crons, auditoria, equipos y documentos. |
+| DVN26-06 | P1 | pending_approval | Bancos y reportes exportables Excel/PDF/CSV por persona y estructura. |
+| DVN26-07 | P0 | pending_approval | Multi-tenant real, filtros obligatorios y planes fail-closed. |
+| DVN26-08 | P1 | pending_approval | Landing, PWA y app movil enfocada en asistencia. |
+| DVN26-09 | P0 | pending_approval | QA, rollback, evidencia y release gate. |
+
+### Reglas DVN26
+
+- No iniciar runtime sin aprobacion explicita del prompt de fase.
+- No aplicar scripts Base44 literalmente; traducir a Express/PostgreSQL/React/Expo.
+- E-01 IESS queda bloqueado hasta validacion contable/laboral externa.
+- Toda mejora backend que afecte operacion debe quedar visible en frontend o mostrar bloqueo claro.
+- Commits esperados: `phase: DVN26-XX task: ...`.
+
+---
+
 ## Open Haiky Plan - HAIKY-CIERRE-BRECHAS-NOMINA-EC-DIAGNOSTICO-2026
 
 | Campo | Valor |

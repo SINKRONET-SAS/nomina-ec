@@ -1,470 +1,130 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026",
-  "planCode": "DCF26",
-  "status": "completed_local_with_external_blocks",
-  "phaseCompleted": "DCF26-12",
-  "currentPhase": "DCF26-completed",
-  "updatedAt": "2026-06-16T01:35:00.000-05:00",
-  "summary": "DCF26-12 cierre final: QA completo, reversa segura de carga masiva, archivo de Qwen_python, plan/matriz actualizados, runbook DEMO y bloqueos externos controlados.",
+  "plan": "HAIKY-DIAGNOSTICO-V2-NOMINA-EC-2026",
+  "planCode": "DVN26",
+  "status": "baseline_documental_creado",
+  "phaseCompleted": "DVN26-00",
+  "currentPhase": "DVN26-01-pending-approval",
+  "updatedAt": "2026-06-18T00:00:00.000-05:00",
+  "summary": "DVN26-00 despliega plan Haiky documental para responder a los 31 hallazgos del Diagnostico V2. No modifica runtime. Los scripts Base44 adjuntos quedan como referencia funcional y no como parche directo.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: actuar como consultor, diagnosticar bugs, funcionalidad, codigo muerto, promesas no cumplidas y pantallas sin funcionalidad real; generar plan Haiky, contexto, AuditLock y prompts por fases.",
-  "previousAuditLockHash": "6b17ba1419fe7660c305bef7d9c7f8bd5292e734c09614ae674b71c8116d6b4c",
+  "approvalSource": "Solicitud del usuario: desplegar plan Haiky en docs2, CODEX_CONTEXT.md, AuditLock.json y prompts por fases en base a RULES.md, usando DIAGNOSTICO_V2_NOMINA_EC.md y scripts 07..11 como referencia.",
+  "previousAuditLockHash": "e0e6ad420b21123d92431416a75da453fc104c497c93184861dca82825f335f1",
   "previousPlans": [
     {
-      "plan": "HAIKY-CIERRE-BRECHAS-NOMINA-EC-DIAGNOSTICO-2026",
-      "planCode": "CBN26",
-      "status": "executed_local_with_residual_risks",
-      "phaseCompleted": "CBN26-10"
+      "plan": "HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026",
+      "planCode": "DCF26",
+      "status": "completed_local_with_external_blocks",
+      "phaseCompleted": "DCF26-12"
     },
     {
-      "plan": "HAIKY-OPERACION-NOMINA-EC-INTEGRAL-2026",
-      "planCode": "ONI26",
-      "status": "functional_mandatory_social_benefits_completed",
-      "phaseCompleted": "ONI26-FUNC-03"
+      "plan": "HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026",
+      "planCode": "LPA26",
+      "status": "completed_with_external_blocks",
+      "phaseCompleted": "LPA26-08"
     }
   ],
   "filesModified": [
     ".vscode/AuditLock.json",
     "CODEX_CONTEXT.md",
-    "docs2/PLAN_HAIKY_DIAGNOSTICO_CIERRE_FUNCIONAL_NOMINA_EC_2026.md",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_01_DIAGNOSTICO_CONSULTIVO.md",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/MATRIZ_DCF26_HALLAZGOS.md",
-    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-00-baseline.md",
-    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-01-encoding-mensajes-base.md",
-    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-02-operacion-real.md",
-    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-03-bancos-owner-generador.md",
-    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-04-rdep-xsd-runtime.md",
-    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-05-retirar-ats-nomina.md",
-    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-06-api-v1-integracion.md",
-    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-07-carga-masiva-empleados.md",
-    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-08-apertura-mes-lotes.md",
-    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-09-superadmin-sin-duplicidad.md",
-    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-10-mobile-asistencia-autoservicio.md",
-    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-11-humanizacion-uiux.md",
-    ".github/prompts/DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026-12-qa-limpieza-release.md",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_01_ENCODING.md",
-    "frontend-web/src/pages/Operacion/OperacionIntegral.jsx",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_02_OPERACION_REAL.md",
-    "backend/src/services/bancoAebGenerator.js",
-    "backend/src/services/bancoAebGenerator.test.js",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_03_BANCOS_OWNER_GENERADOR.md",
-    "backend/src/services/sriRdepGenerator.js",
-    "backend/src/services/sriRdepGenerator.test.js",
-    "backend/src/controllers/reporteController.js",
-    "backend/src/app.js",
-    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_04_RDEP_XSD_RUNTIME.md",
-    "backend/src/services/sriAtsGenerator.js",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_05_RETIRAR_ATS_NOMINA.md",
-    "backend/prisma/migrations/20260615220000_dcf26_api_v1/migration.sql",
-    "backend/prisma/schema.prisma",
-    "backend/src/middleware/externalApiAuth.js",
-    "backend/src/middleware/externalApiAuth.test.js",
-    "backend/src/middleware/externalApiIdempotency.js",
-    "backend/src/middleware/externalApiIdempotency.test.js",
-    "backend/src/controllers/externalApiController.js",
-    "backend/src/controllers/integrationController.js",
-    "backend/src/controllers/integrationController.test.js",
-    "backend/src/routes/externalApiRoutes.js",
-    "frontend-web/src/services/integracionesApi.js",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_06_API_V1_INTEGRACION.md",
-    "backend/prisma/migrations/20260615224500_dcf26_employee_import_batches/migration.sql",
-    "backend/src/services/employeeImportService.js",
-    "backend/src/services/employeeImportService.test.js",
-    "frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_07_CARGA_MASIVA_EMPLEADOS.md",
-    "backend/prisma/migrations/20260615233000_dcf26_payroll_periods_batches/migration.sql",
-    "backend/src/services/monthlyPeriodService.js",
-    "backend/src/services/monthlyPeriodService.test.js",
-    "frontend-web/src/pages/Nomina/CerrarMes.jsx",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_08_APERTURA_MES_LOTES.md",
-    "backend/prisma/migrations/20260616000500_dcf26_support_incidents/migration.sql",
-    "backend/src/services/superadminService.js",
-    "backend/src/services/superadminService.test.js",
-    "backend/src/controllers/superadminController.js",
-    "frontend-web/src/services/superadminApi.js",
-    "frontend-web/src/pages/PlanesGestion.jsx",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_09_SUPERADMIN_SIN_DUPLICIDAD.md",
-    "backend/src/controllers/mobileController.js",
-    "backend/src/controllers/mobileController.test.js",
-    "app-movil/src/App.js",
-    "app-movil/src/screens/MarcacionScreen.js",
-    "app-movil/src/screens/MisMarcacionesScreen.js",
-    "app-movil/src/screens/AutoservicioScreen.js",
-    "app-movil/src/services/api.js",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_10_MOBILE_ASISTENCIA_AUTOSERVICIO.md",
-    "frontend-web/src/utils/downloadUrl.js",
-    "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
-    "frontend-web/src/pages/Documentos/ActasFiniquito.jsx",
-    "frontend-web/src/pages/Empleados/TerminarEmpleado.jsx",
-    "frontend-web/src/pages/Nomina/RolesPagos.jsx",
-    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_11_HUMANIZACION_UIUX.md",
-    "backend/src/services/employeeImportService.js",
-    "backend/src/controllers/empleadoController.js",
-    "backend/src/app.js",
-    "backend/src/services/employeeImportService.test.js",
-    "frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
-    "docs2/archive/qwen-python-20260616/README.md",
-    "docs2/archive/qwen-python-20260616/Qwen_python_20260610_*.py",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/RUNBOOK_DCF26_12_E2E_DEMO.md",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/REPORTE_DCF26_12_QA_LIMPIEZA_RELEASE.md",
-    "docs2/PLAN_HAIKY_DIAGNOSTICO_CIERRE_FUNCIONAL_NOMINA_EC_2026.md",
-    "docs2/diagnostico-cierre-funcional-nomina-ec-2026/MATRIZ_DCF26_HALLAZGOS.md",
-    "CODEX_CONTEXT.md"
+    "docs2/PLAN_HAIKY_DIAGNOSTICO_V2_NOMINA_EC_2026.md",
+    "docs2/diagnostico-v2-nomina-ec-2026/MATRIZ_DVN26_HALLAZGOS.md",
+    "docs2/diagnostico-v2-nomina-ec-2026/REPORTE_DVN26_00_BASELINE.md",
+    ".github/prompts/DIAGNOSTICO-V2-NOMINA-EC-2026-00-baseline.md",
+    ".github/prompts/DIAGNOSTICO-V2-NOMINA-EC-2026-01-parametros-legales-iess-ir.md",
+    ".github/prompts/DIAGNOSTICO-V2-NOMINA-EC-2026-02-motor-nomina-calculos.md",
+    ".github/prompts/DIAGNOSTICO-V2-NOMINA-EC-2026-03-liquidacion-documentos-legales.md",
+    ".github/prompts/DIAGNOSTICO-V2-NOMINA-EC-2026-04-beneficios-cuotas-cierre.md",
+    ".github/prompts/DIAGNOSTICO-V2-NOMINA-EC-2026-05-procesos-backend-visibles.md",
+    ".github/prompts/DIAGNOSTICO-V2-NOMINA-EC-2026-06-bancos-reportes-exportables.md",
+    ".github/prompts/DIAGNOSTICO-V2-NOMINA-EC-2026-07-multitenant-planes.md",
+    ".github/prompts/DIAGNOSTICO-V2-NOMINA-EC-2026-08-landing-pwa-mobile.md",
+    ".github/prompts/DIAGNOSTICO-V2-NOMINA-EC-2026-09-qa-release.md"
   ],
   "validationChecks": [
     {
-      "gate": "DCF26-RULES-READ",
+      "gate": "DVN26-RULES-READ",
       "status": "PASS",
-      "detail": "RULES.md leido; incluye exposicion frontend obligatoria."
+      "detail": "RULES.md leido; exige UTF-8, cero fallos silenciosos, AuditLock, orden por fases y exposicion frontend."
     },
     {
-      "gate": "DCF26-BACKEND-TESTS",
-      "status": "PASS_WITH_SLOWNESS",
-      "detail": "npm.cmd test -- --runInBand: 9 suites, 22 tests, 182.121 s; bancoAebGenerator.test.js 166.267 s."
-    },
-    {
-      "gate": "DCF26-FRONTEND-BUILD",
+      "gate": "DVN26-AUDITLOCK-PREVIOUS",
       "status": "PASS",
-      "detail": "npm.cmd run build: Vite build y PWA generados."
+      "detail": "AuditLock previo DCF26-12 leido y hash SHA256 registrado."
     },
     {
-      "gate": "DCF26-PRISMA-VALIDATE",
+      "gate": "DVN26-DIAGNOSTICO-V2-READ",
+      "status": "PASS_WITH_ENCODING_RISK",
+      "detail": "DIAGNOSTICO_V2_NOMINA_EC.md leido desde prototipo; contiene mojibake, por lo que se transcribio como matriz ASCII segura."
+    },
+    {
+      "gate": "DVN26-SCRIPTS-REFERENCE-READ",
+      "status": "PASS_WITH_STACK_MAPPING",
+      "detail": "Scripts 07..11 leidos; se documentan como referencia Base44/Deno, no como runtime aplicable directo."
+    },
+    {
+      "gate": "DVN26-RUNTIME-CHANGES",
       "status": "PASS",
-      "detail": "npx.cmd prisma validate: schema valido."
-    },
-    {
-      "gate": "DCF26-MOBILE-STORES",
-      "status": "PASS",
-      "detail": "npm.cmd run check:stores: identificadores, URLs y assets verificados."
-    },
-    {
-      "gate": "DCF26-STATIC-DIAGNOSTIC",
-      "status": "FINDINGS",
-      "detail": "Se detectaron catalogos genericos, ATS backend, RDEP sin XSD runtime, API v1 no expuesta, alerts/window.open, mojibake y artefactos Qwen_python."
-    },
-    {
-      "gate": "DCF26-01-UTF8-RUNTIME",
-      "status": "PASS",
-      "detail": "Node scan sobre backend/src, frontend-web/src, app-movil/src y package.json devolvio OK_UTF8_RUNTIME."
-    },
-    {
-      "gate": "DCF26-01-RUNTIME-CHURN",
-      "status": "PASS",
-      "detail": "No se modifico runtime porque el encoding real ya estaba correcto."
-    },
-    {
-      "gate": "DCF26-02-FRONTEND-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web paso con OperacionIntegral reemplazada."
-    },
-    {
-      "gate": "DCF26-02-NO-GENERIC-CATALOG",
-      "status": "PASS",
-      "detail": "rg no encontro createConfigurationResource, configuration_catalogs, JSON.stringify(record.payload), Guardar configuracion ni operationalModules en OperacionIntegral."
-    },
-    {
-      "gate": "DCF26-03-BANK-TEST",
-      "status": "PASS",
-      "detail": "npm.cmd test -- bancoAebGenerator.test.js --runInBand: 5 tests; cubre perfil tenant y fallback."
-    },
-    {
-      "gate": "DCF26-03-NODE-CHECK",
-      "status": "PASS",
-      "detail": "node --check src/services/bancoAebGenerator.js."
-    },
-    {
-      "gate": "DCF26-04-RDEP-TEST",
-      "status": "PASS",
-      "detail": "npm.cmd test -- sriRdepGenerator.test.js --runInBand: 4 tests."
-    },
-    {
-      "gate": "DCF26-04-NODE-CHECK",
-      "status": "PASS",
-      "detail": "node --check src/services/sriRdepGenerator.js y src/controllers/reporteController.js."
-    },
-    {
-      "gate": "DCF26-04-FRONTEND-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web."
-    },
-    {
-      "gate": "DCF26-05-ATS-RUNTIME-CLEAN",
-      "status": "PASS",
-      "detail": "rg reportes/ats|generarATS|generarXML_ATS|sriAtsGenerator en runtime sin coincidencias."
-    },
-    {
-      "gate": "DCF26-05-REPORTS-TEST",
-      "status": "PASS",
-      "detail": "npm.cmd test -- sriRdepGenerator.test.js iessSaeGenerator.test.js bancoAebGenerator.test.js --runInBand: 10 tests."
-    },
-    {
-      "gate": "DCF26-06-PRISMA-VALIDATE",
-      "status": "PASS",
-      "detail": "npx.cmd prisma validate en backend."
-    },
-    {
-      "gate": "DCF26-06-NODE-CHECK",
-      "status": "PASS",
-      "detail": "node --check app, rutas, controladores y middlewares de API v1."
-    },
-    {
-      "gate": "DCF26-06-API-TESTS",
-      "status": "PASS",
-      "detail": "npm.cmd test -- externalApiAuth.test.js externalApiIdempotency.test.js integrationController.test.js --runInBand: 3 suites, 14 tests."
-    },
-    {
-      "gate": "DCF26-06-FRONTEND-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web con panel Clientes API v1 visible."
-    },
-    {
-      "gate": "DCF26-06-DIFF-CHECK",
-      "status": "PASS",
-      "detail": "git diff --check sin errores; solo avisos CRLF esperados en Windows."
-    },
-    {
-      "gate": "DCF26-07-PRISMA-VALIDATE",
-      "status": "PASS",
-      "detail": "npx.cmd prisma validate en backend."
-    },
-    {
-      "gate": "DCF26-07-NODE-CHECK",
-      "status": "PASS",
-      "detail": "node --check employeeImportService, empleadoController y app."
-    },
-    {
-      "gate": "DCF26-07-IMPORT-TESTS",
-      "status": "PASS",
-      "detail": "npm.cmd test -- employeeImportService.test.js --runInBand: 1 suite, 5 tests."
-    },
-    {
-      "gate": "DCF26-07-FRONTEND-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web con carga masiva visible."
-    },
-    {
-      "gate": "DCF26-07-BROWSER",
-      "status": "SKIPPED_TOOL_UNAVAILABLE",
-      "detail": "Browser plugin intento conectar iab, pero el navegador integrado no estuvo disponible en esta sesion."
-    },
-    {
-      "gate": "DCF26-08-PRISMA-VALIDATE",
-      "status": "PASS",
-      "detail": "npx.cmd prisma validate en backend."
-    },
-    {
-      "gate": "DCF26-08-NODE-CHECK",
-      "status": "PASS",
-      "detail": "node --check monthlyPeriodService, nominaController y app."
-    },
-    {
-      "gate": "DCF26-08-PERIOD-TESTS",
-      "status": "PASS",
-      "detail": "npm.cmd test -- monthlyPeriodService.test.js --runInBand: 1 suite, 4 tests."
-    },
-    {
-      "gate": "DCF26-08-FRONTEND-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web con pantalla mensual visible."
-    },
-    {
-      "gate": "DCF26-09-PRISMA-VALIDATE",
-      "status": "PASS",
-      "detail": "npx.cmd prisma validate en backend."
-    },
-    {
-      "gate": "DCF26-09-NODE-CHECK",
-      "status": "PASS",
-      "detail": "node --check superadminService, superadminController y app."
-    },
-    {
-      "gate": "DCF26-09-SUPERADMIN-TESTS",
-      "status": "PASS",
-      "detail": "npm.cmd test -- superadminService.test.js --runInBand: 1 suite, 3 tests."
-    },
-    {
-      "gate": "DCF26-09-FRONTEND-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web con consola SUPERADMIN visible."
-    },
-    {
-      "gate": "DCF26-10-NODE-CHECK",
-      "status": "PASS",
-      "detail": "node --check mobileController y app."
-    },
-    {
-      "gate": "DCF26-10-MOBILE-TESTS",
-      "status": "PASS",
-      "detail": "npm.cmd test -- mobileController.test.js --runInBand: 1 suite, 2 tests."
-    },
-    {
-      "gate": "DCF26-10-STORE-READINESS",
-      "status": "PASS",
-      "detail": "npm.cmd run check:stores en app-movil."
-    },
-    {
-      "gate": "DCF26-10-MOBILE-JSX-PARSE",
-      "status": "PASS",
-      "detail": "Parse JSX con @babel/parser sobre app-movil/src: MOBILE_JSX_PARSE_OK."
-    },
-    {
-      "gate": "DCF26-11-FRONTEND-NO-NATIVE-POPUPS",
-      "status": "PASS",
-      "detail": "rg -n \"alert\\\\(|confirm\\\\(|window\\\\.open\" frontend-web\\\\src sin coincidencias."
-    },
-    {
-      "gate": "DCF26-11-FRONTEND-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web; Vite build y PWA generados."
-    },
-    {
-      "gate": "DCF26-11-DIFF-CHECK",
-      "status": "PASS",
-      "detail": "git diff --check sin errores; solo avisos CRLF esperados en Windows."
-    },
-    {
-      "gate": "DCF26-11-BROWSER",
-      "status": "SKIPPED_TOOL_UNAVAILABLE",
-      "detail": "El controlador del navegador integrado no quedo disponible en esta sesion."
-    },
-    {
-      "gate": "DCF26-12-BACKEND-TESTS",
-      "status": "PASS",
-      "detail": "npm.cmd test -- --runInBand: 17 suites, 60 tests, 4.472 s."
-    },
-    {
-      "gate": "DCF26-12-EMPLOYEE-IMPORT-ROLLBACK-TESTS",
-      "status": "PASS",
-      "detail": "npm.cmd test -- employeeImportService.test.js --runInBand: 8 tests; cubre listado y reversa segura/bloqueada."
-    },
-    {
-      "gate": "DCF26-12-NODE-CHECK",
-      "status": "PASS",
-      "detail": "node --check employeeImportService.js, empleadoController.js y app.js."
-    },
-    {
-      "gate": "DCF26-12-FRONTEND-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web con historial y reversa de lotes visible."
-    },
-    {
-      "gate": "DCF26-12-PRISMA-VALIDATE",
-      "status": "PASS",
-      "detail": "npx.cmd prisma validate en backend."
-    },
-    {
-      "gate": "DCF26-12-MOBILE-STORES",
-      "status": "PASS",
-      "detail": "npm.cmd run check:stores en app-movil."
-    },
-    {
-      "gate": "DCF26-12-MOBILE-JSX-PARSE",
-      "status": "PASS",
-      "detail": "Parse JSX sobre app-movil/src: MOBILE_JSX_PARSE_OK."
-    },
-    {
-      "gate": "DCF26-12-ATS-RUNTIME-CLEAN",
-      "status": "PASS",
-      "detail": "rg reportes/ats|generarATS|generarXML_ATS|sriAtsGenerator en runtime sin coincidencias."
-    },
-    {
-      "gate": "DCF26-12-NO-NATIVE-POPUPS",
-      "status": "PASS",
-      "detail": "rg alert|confirm|window.open en frontend-web/src sin coincidencias."
-    },
-    {
-      "gate": "DCF26-12-QWEN-ARCHIVE",
-      "status": "PASS",
-      "detail": "39 archivos Qwen_python_*.py movidos a docs2/archive/qwen-python-20260616; raiz docs2 devuelve 0."
-    },
-    {
-      "gate": "DCF26-12-DIFF-CHECK",
-      "status": "PASS",
-      "detail": "git diff --check sin errores; solo avisos CRLF esperados en Windows."
-    },
-    {
-      "gate": "DCF26-12-BROWSER",
-      "status": "SKIPPED_TOOL_UNAVAILABLE",
-      "detail": "Smoke visual queda reproducible en RUNBOOK_DCF26_12_E2E_DEMO.md porque el controlador del navegador integrado no estuvo disponible."
+      "detail": "DVN26-00 no modifica backend, frontend-web ni app-movil."
     }
   ],
   "fases": [
     {
-      "phase": "DCF26-00",
-      "status": "completed",
-      "task": "baseline consultiva y plan de cierre funcional"
+      "phase": "DVN26-00",
+      "status": "completed_documental",
+      "task": "baseline documental, matriz, prompts, contexto y AuditLock"
     },
     {
-      "phase": "DCF26-01",
-      "status": "completed",
-      "task": "encoding y mensajes base UTF-8"
+      "phase": "DVN26-01",
+      "status": "pending_approval",
+      "task": "parametros legales, IESS, gastos personales y tabla IR"
     },
     {
-      "phase": "DCF26-02",
-      "status": "completed",
-      "task": "operacion integral real sin catalogos genericos P0"
+      "phase": "DVN26-02",
+      "status": "pending_approval",
+      "task": "motor unico de nomina y calculos"
     },
     {
-      "phase": "DCF26-03",
-      "status": "completed",
-      "task": "bancos OWNER conectados al generador"
+      "phase": "DVN26-03",
+      "status": "pending_approval",
+      "task": "liquidacion y documentos legales PDF"
     },
     {
-      "phase": "DCF26-04",
-      "status": "completed",
-      "task": "RDEP con XSD validation runtime"
+      "phase": "DVN26-04",
+      "status": "pending_approval",
+      "task": "beneficios, cuotas y cierre idempotente"
     },
     {
-      "phase": "DCF26-05",
-      "status": "completed",
-      "task": "retirar ATS del flujo de nomina"
+      "phase": "DVN26-05",
+      "status": "pending_approval",
+      "task": "procesos backend visibles"
     },
     {
-      "phase": "DCF26-06",
-      "status": "completed",
-      "task": "API v1 de integracion"
+      "phase": "DVN26-06",
+      "status": "pending_approval",
+      "task": "bancos y reportes exportables"
     },
     {
-      "phase": "DCF26-07",
-      "status": "completed",
-      "task": "carga masiva de empleados real"
+      "phase": "DVN26-07",
+      "status": "pending_approval",
+      "task": "multi-tenant real y planes"
     },
     {
-      "phase": "DCF26-08",
-      "status": "completed",
-      "task": "apertura de mes y lotes de novedades"
+      "phase": "DVN26-08",
+      "status": "pending_approval",
+      "task": "landing, PWA y app movil"
     },
     {
-      "phase": "DCF26-09",
-      "status": "completed",
-      "task": "SUPERADMIN sin duplicidad"
-    },
-    {
-      "phase": "DCF26-10",
-      "status": "completed",
-      "task": "mobile asistencia y autoservicio"
-    },
-    {
-      "phase": "DCF26-11",
-      "status": "completed",
-      "task": "humanizacion UI/UX"
-    },
-    {
-      "phase": "DCF26-12",
-      "status": "completed",
-      "task": "QA, limpieza y release anti-churn"
+      "phase": "DVN26-09",
+      "status": "pending_approval",
+      "task": "QA, rollback y release gate"
     }
   ],
   "residualRisk": [
-    "Validacion legal, tributaria y laboral profesional para RDEP, bancos, IESS y parametros antes de produccion.",
-    "API v1 requiere rate limit compartido y prueba de idempotencia en staging multi-instancia.",
-    "Google Play, Apple Developer, EAS, certificados y URLs productivas reales siguen como bloqueos externos.",
-    "La app movil resuelve empleado por email_personal; reemplazar con relacion formal usuario-empleado queda como backlog UEM-01.",
-    "Smoke visual con navegador y capturas queda pendiente por herramienta no disponible; usar RUNBOOK_DCF26_12_E2E_DEMO.md."
+    "E-01 IESS 9.45% vs 9.95% requiere validacion profesional antes de cambio productivo.",
+    "El diagnostico fuente pertenece al prototipo Base44 y debe verificarse contra el runtime actual antes de implementar.",
+    "Los scripts adjuntos contienen mojibake y dependencias Deno/Base44 no compatibles con el stack real."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "6b4d484bb6113bd9413eac33027d42b458d8beaac5ad69b656f8c0d4452c4aed"
+  "signature": "6830266d76198b24533ba11c4a1dea42090a0d9630e61803d8daa6f5c5ad8323"
 }
