@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { CheckCircle2, Mail, MessageCircle, Send, Settings2, XCircle } from 'lucide-react';
+import { CheckCircle2, History, Mail, MessageCircle, Send, Settings2, ShieldCheck, XCircle } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 import { useAuth } from '../../context/AuthContext';
@@ -74,6 +74,15 @@ function TemplateStatus({ label, enabled }) {
   );
 }
 
+function formatDateTime(value) {
+  if (!value) return '-';
+  return new Intl.DateTimeFormat('es-EC', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'America/Guayaquil',
+  }).format(new Date(value));
+}
+
 function Comunicaciones() {
   const { usuario } = useAuth();
   const [testEmail, setTestEmail] = useState(usuario?.email || '');
@@ -83,6 +92,14 @@ function Comunicaciones() {
     queryFn: async () => {
       const response = await authenticatedApi.get('/comunicaciones/status');
       return response.data?.data;
+    },
+  });
+
+  const eventsQuery = useQuery({
+    queryKey: ['communications-events'],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/comunicaciones/eventos?limit=25');
+      return response.data?.data || [];
     },
   });
 
@@ -96,6 +113,8 @@ function Comunicaciones() {
   const status = statusQuery.data || {};
   const email = status.email || {};
   const whatsapp = status.whatsapp || {};
+  const compliance = status.compliance || {};
+  const events = eventsQuery.data || [];
 
   return (
     <div className="space-y-6">
@@ -199,6 +218,70 @@ function Comunicaciones() {
             <TemplateStatus label="Recuperacion de clave" enabled={whatsapp.templates?.passwordReset} />
             <TemplateStatus label="Verificacion de correo" enabled={whatsapp.templates?.emailVerification} />
             <TemplateStatus label="Prueba de sistema" enabled={whatsapp.templates?.systemTest} />
+          </div>
+        </article>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+        <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="h-5 w-5 text-teal-700" />
+            <h2 className="font-semibold text-slate-950">Proteccion de datos</h2>
+          </div>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            El registro operativo conserva evidencia minima de envio sin guardar codigos, contenido ni destinatarios en claro.
+          </p>
+          <dl className="mt-4 grid gap-3 text-sm">
+            <Definition label="Contenido de mensajes" value={compliance.storesMessageContent ? 'almacenado' : 'no almacenado'} />
+            <Definition label="Codigos de verificacion" value={compliance.storesVerificationCodes ? 'almacenados' : 'solo hash operativo'} />
+            <Definition label="Retencion eventos" value={`${compliance.eventRetentionDays || 365} dias`} />
+            <Definition label="Base de control" value={compliance.legalBasis || 'LOPDP_EC'} />
+          </dl>
+        </article>
+
+        <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <History className="h-5 w-5 text-teal-700" />
+              <h2 className="font-semibold text-slate-950">Historial reciente</h2>
+            </div>
+            <button
+              className="inline-flex min-h-9 items-center justify-center rounded-md border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:border-teal-300"
+              onClick={() => eventsQuery.refetch()}
+              type="button"
+            >
+              Actualizar
+            </button>
+          </div>
+          {eventsQuery.isError && (
+            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+              {extractApiError(eventsQuery.error, 'No pudimos cargar el historial de comunicaciones.')}
+            </div>
+          )}
+          {!eventsQuery.isLoading && events.length === 0 && (
+            <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              Aun no hay eventos registrados para este alcance.
+            </p>
+          )}
+          <div className="grid gap-2">
+            {events.map((event) => (
+              <div className="rounded-md border border-slate-100 bg-slate-50 px-3 py-2" key={event.id}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold uppercase text-slate-700">
+                      {event.channel}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-950">{event.template}</span>
+                    <span className="text-xs text-slate-500">{event.recipientHint || 'sin destinatario visible'}</span>
+                  </div>
+                  <span className="text-xs font-semibold text-teal-800">{event.status}</span>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
+                  <span>{formatDateTime(event.createdAt)}</span>
+                  <span>Retencion: {formatDateTime(event.retentionUntil)}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </article>
       </section>

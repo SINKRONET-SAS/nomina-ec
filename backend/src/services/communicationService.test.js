@@ -1,17 +1,24 @@
 describe('communicationService', () => {
   let createTransportMock;
   let sendMailMock;
+  let recordCommunicationEventMock;
 
   function loadService(env = {}) {
     jest.resetModules();
     createTransportMock = jest.fn();
     sendMailMock = jest.fn();
+    recordCommunicationEventMock = jest.fn().mockResolvedValue({ id: 'event-1' });
     jest.doMock('nodemailer', () => ({
       createTransport: createTransportMock,
+    }));
+    jest.doMock('./communicationAuditService', () => ({
+      recordCommunicationEvent: recordCommunicationEventMock,
     }));
 
     process.env.NODE_ENV = env.NODE_ENV || 'test';
     [
+      'COMMUNICATION_RETENTION_DAYS',
+      'COMMUNICATION_EVENT_HASH_SECRET',
       'SMTP_ENABLED',
       'SMTP_HOST',
       'SMTP_PORT',
@@ -40,6 +47,7 @@ describe('communicationService', () => {
   afterEach(() => {
     delete global.fetch;
     jest.dontMock('nodemailer');
+    jest.dontMock('./communicationAuditService');
   });
 
   test('registra entrega de desarrollo cuando SMTP no esta configurado', async () => {
@@ -54,6 +62,12 @@ describe('communicationService', () => {
 
     expect(result.status).toBe('dev_logged');
     expect(createTransportMock).not.toHaveBeenCalled();
+    expect(recordCommunicationEventMock).toHaveBeenCalledWith(expect.objectContaining({
+      channel: 'email',
+      template: 'email_verification',
+      status: 'dev_logged',
+      recipient: 'owner@example.com',
+    }));
   });
 
   test('envia correo SMTP con remitente configurado', async () => {
@@ -89,6 +103,16 @@ describe('communicationService', () => {
       disableFileAccess: true,
       disableUrlAccess: true,
     }));
+    expect(recordCommunicationEventMock).toHaveBeenCalledWith(expect.objectContaining({
+      channel: 'email',
+      template: 'password_reset',
+      status: 'sent',
+      recipient: 'usuario@example.com',
+      metadata: expect.objectContaining({
+        purpose: 'recuperacion_clave',
+        flow: 'auth_password_reset',
+      }),
+    }));
   });
 
   test('envia plantilla WhatsApp con telefono ecuatoriano normalizado', async () => {
@@ -119,6 +143,11 @@ describe('communicationService', () => {
     const payload = JSON.parse(request.body);
     expect(payload.to).toBe('593999999999');
     expect(payload.template.name).toBe('nomina_ec_employee_invite');
+    expect(recordCommunicationEventMock).toHaveBeenCalledWith(expect.objectContaining({
+      channel: 'whatsapp',
+      status: 'sent',
+      recipient: '593999999999',
+    }));
   });
 
   test('expone estado de configuracion sin secretos', () => {
@@ -137,5 +166,11 @@ describe('communicationService', () => {
       'WHATSAPP_PHONE_NUMBER_ID',
       'WHATSAPP_GRAPH_API_VERSION',
     ]));
+    expect(status.compliance).toMatchObject({
+      dataMinimization: true,
+      storesMessageContent: false,
+      storesVerificationCodes: false,
+      eventRetentionDays: 365,
+    });
   });
 });

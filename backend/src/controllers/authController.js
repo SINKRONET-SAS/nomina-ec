@@ -135,6 +135,7 @@ async function register(req, res, next) {
       name: result.rows[0].nombres,
       correlationId: req.correlationId,
       userId: result.rows[0].id,
+      tenantId: result.rows[0].tenant_id,
     });
 
     const user = buildUserPayload(result.rows[0]);
@@ -238,6 +239,7 @@ async function publicRegister(req, res, next) {
       name: userResult.rows[0].nombres,
       correlationId: req.correlationId,
       userId: userResult.rows[0].id,
+      tenantId: tenant.id,
     });
 
     return res.status(201).json({
@@ -323,7 +325,7 @@ async function forgotPassword(req, res, next) {
     }
 
     const result = await db.query(
-      'SELECT id, email, nombres FROM usuarios WHERE lower(email) = lower($1) AND activo = true ORDER BY created_at DESC LIMIT 1',
+      'SELECT id, tenant_id, email, nombres FROM usuarios WHERE lower(email) = lower($1) AND activo = true ORDER BY created_at DESC LIMIT 1',
       [email]
     );
 
@@ -341,6 +343,7 @@ async function forgotPassword(req, res, next) {
         name: result.rows[0].nombres,
         correlationId: req.correlationId,
         userId: result.rows[0].id,
+        tenantId: result.rows[0].tenant_id,
       });
     }
 
@@ -414,7 +417,7 @@ async function requestEmailVerification(req, res, next) {
     }
 
     const result = await db.query(
-      'SELECT id, email, nombres FROM usuarios WHERE lower(email) = lower($1) AND activo = true ORDER BY created_at DESC LIMIT 1',
+      'SELECT id, tenant_id, email, nombres FROM usuarios WHERE lower(email) = lower($1) AND activo = true ORDER BY created_at DESC LIMIT 1',
       [email]
     );
 
@@ -432,6 +435,7 @@ async function requestEmailVerification(req, res, next) {
         name: result.rows[0].nombres,
         correlationId: req.correlationId,
         userId: result.rows[0].id,
+        tenantId: result.rows[0].tenant_id,
       });
     }
 

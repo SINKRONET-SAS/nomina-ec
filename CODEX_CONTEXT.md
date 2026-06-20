@@ -1,3 +1,41 @@
+## Open Haiky Plan - HAIKY-COMUNICACIONES-EMAIL-SMTP-LEGAL-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-COMUNICACIONES-EMAIL-SMTP-LEGAL-2026 |
+| Codigo | CES26 |
+| Estado | CES26-00..06 ejecutadas localmente |
+| Fase actual | CES26-06 cerrada localmente |
+| Alcance | diagnostico integral y cierre operativo/legal del servicio SMTP: verificacion de correo, recuperacion de clave, empleados, proteccion de datos y evidencia LOPDP |
+| Plan doc | `docs2/PLAN_HAIKY_COMUNICACIONES_EMAIL_SMTP_LEGAL_2026.md` |
+| Matriz | `docs2/comunicaciones-email-smtp-legal-2026/MATRIZ_CES26_HALLAZGOS.md` |
+| Runbook | `docs2/comunicaciones-email-smtp-legal-2026/RUNBOOK_CES26_SMTP_LOPDP.md` |
+| Reporte | `docs2/comunicaciones-email-smtp-legal-2026/REPORTE_CES26_06_CIERRE.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Prompts | `.github/prompts/COMUNICACIONES-EMAIL-SMTP-LEGAL-2026-{00..06}-*.md` |
+| RULES | `RULES.md` |
+
+### Resumen CES26
+
+CES26 extiende CSW26 sin duplicarlo. SMTP ya estaba conectado a verificacion de correo, recuperacion de clave e invitaciones de app; el cierre actual agrega evidencia legal-operativa con `communication_events`, hash HMAC de destinatarios, retencion configurable, RLS, historial visible en PWA y runbook LOPDP. No se guardan codigos, cuerpos de correo, telefonos ni emails completos.
+
+Runtime cerrado:
+
+- Migracion `20260620103000_ces26_communication_events` aplicada localmente.
+- `communicationAuditService` registra eventos minimizados por canal, plantilla, estado, finalidad, tenant, usuario y correlacion.
+- `communicationService` audita SMTP/WhatsApp en verificacion, recuperacion, invitaciones y prueba SMTP.
+- Pantalla `Comunicaciones` muestra proteccion de datos, retencion e historial reciente.
+- `.env.example` y `render.yaml` incluyen `COMMUNICATION_RETENTION_DAYS` y `COMMUNICATION_EVENT_HASH_SECRET`.
+
+Bloqueos externos:
+
+- Configurar credenciales SMTP reales fuera del repositorio.
+- Definir `COMMUNICATION_EVENT_HASH_SECRET` productivo en Render.
+- Ejecutar prueba SMTP real desde PWA con correo controlado.
+- Revision profesional LOPDP antes de prometer cumplimiento legal total.
+
+---
+
 ## Open Haiky Plan - HAIKY-COMUNICACIONES-SMTP-WHATSAPP-2026
 
 | Campo | Valor |

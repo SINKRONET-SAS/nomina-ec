@@ -1,16 +1,22 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-COMUNICACIONES-SMTP-WHATSAPP-2026",
-  "planCode": "CSW26",
+  "plan": "HAIKY-COMUNICACIONES-EMAIL-SMTP-LEGAL-2026",
+  "planCode": "CES26",
   "status": "completed_runtime_local",
-  "phaseCompleted": "CSW26-07",
-  "currentPhase": "CSW26-closed-local",
-  "updatedAt": "2026-06-19T14:29:11.725-05:00",
-  "summary": "CSW26 queda ejecutado localmente: servicio unico de comunicaciones SMTP/WhatsApp, registro y recuperacion conectados a SMTP, invitaciones de empleado por email y WhatsApp complementario, pantalla de estado Comunicaciones, variables Render/env y gates completos.",
+  "phaseCompleted": "CES26-06",
+  "currentPhase": "CES26-closed-local",
+  "updatedAt": "2026-06-20T13:38:58.0877031-05:00",
+  "summary": "CES26 queda ejecutado localmente: SMTP ya estaba conectado por CSW26 y ahora cuenta con evidencia legal-operativa minimizada, tabla communication_events con RLS, retencion configurable, historial visible en PWA y variables de entorno completas para Render/local.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: diagnostico integral del servicio de email, implementar SMTP, verificacion de correo para registro de usuarios, recuperacion de clave, empleados y envio WhatsApp para activar la app u otras acciones requeridas; desplegar plan Haiky, ejecutar prompts, cerrar gobierno, commit y push.",
-  "previousAuditLockHash": "6FB12E91544263C02E85053558EF517C5101A4FD80E2C2F85C4E06B7F2B630D7",
+  "approvalSource": "Solicitud del usuario: diagnostico integral del servicio de email, SMTP, verificacion de correo, recuperacion de clave, empleados, proteccion de datos y cumplimiento legal; desplegar plan Haiky, ejecutar prompts, cerrar gobierno, commit y push.",
+  "previousAuditLockHash": "113f39bbcbddaf95136c9f9f77f283812f523664d0232d1b42406d415940ebc0",
   "previousPlans": [
+    {
+      "plan": "HAIKY-COMUNICACIONES-SMTP-WHATSAPP-2026",
+      "planCode": "CSW26",
+      "status": "completed_runtime_local",
+      "phaseCompleted": "CSW26-07"
+    },
     {
       "plan": "HAIKY-DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026",
       "planCode": "DIC26",
@@ -22,24 +28,6 @@
       "planCode": "EAA26",
       "status": "completed_runtime_local",
       "phaseCompleted": "EAA26-08"
-    },
-    {
-      "plan": "HAIKY-DIAGNOSTICO-V2-NOMINA-EC-2026",
-      "planCode": "DVN26",
-      "status": "completed_runtime_local_iess_validated",
-      "phaseCompleted": "DVN26-09"
-    },
-    {
-      "plan": "HAIKY-DIAGNOSTICO-CIERRE-FUNCIONAL-NOMINA-EC-2026",
-      "planCode": "DCF26",
-      "status": "completed_local_with_external_blocks",
-      "phaseCompleted": "DCF26-12"
-    },
-    {
-      "plan": "HAIKY-LANDING-PWA-APP-STORE-NOMINA-EC-2026",
-      "planCode": "LPA26",
-      "status": "completed_with_external_blocks",
-      "phaseCompleted": "LPA26-08"
     }
   ],
   "filesModified": [
@@ -47,131 +35,140 @@
     "CODEX_CONTEXT.md",
     "render.yaml",
     "backend/.env.example",
-    "backend/package.json",
-    "backend/package-lock.json",
+    "frontend-web/.env.example",
+    "app-movil/.env.example",
+    "backend/prisma/schema.prisma",
+    "backend/prisma/migrations/20260620103000_ces26_communication_events/migration.sql",
     "backend/src/app.js",
     "backend/src/controllers/authController.js",
     "backend/src/controllers/communicationController.js",
+    "backend/src/services/communicationAuditService.js",
+    "backend/src/services/communicationAuditService.test.js",
     "backend/src/services/communicationService.js",
     "backend/src/services/communicationService.test.js",
-    "backend/src/services/employeeAppInviteService.js",
-    "frontend-web/src/App.jsx",
-    "frontend-web/src/components/Layout/Layout.jsx",
     "frontend-web/src/pages/Configuracion/Comunicaciones.jsx",
-    "frontend-web/src/pages/Dashboard.jsx",
-    "frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
-    "frontend-web/src/services/publicApi.js",
-    "docs2/PLAN_HAIKY_COMUNICACIONES_SMTP_WHATSAPP_2026.md",
-    "docs2/comunicaciones-smtp-whatsapp-2026/MATRIZ_CSW26_HALLAZGOS.md",
-    "docs2/comunicaciones-smtp-whatsapp-2026/REPORTE_CSW26_07_CIERRE.md",
-    ".github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-00-baseline.md",
-    ".github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-01-servicio-comunicaciones.md",
-    ".github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-02-auth-email.md",
-    ".github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-03-empleados-whatsapp.md",
-    ".github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-04-frontend-operativo.md",
-    ".github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-05-entorno-render.md",
-    ".github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-06-qa.md",
-    ".github/prompts/COMUNICACIONES-SMTP-WHATSAPP-2026-07-cierre.md"
+    "docs2/PLAN_HAIKY_COMUNICACIONES_EMAIL_SMTP_LEGAL_2026.md",
+    "docs2/comunicaciones-email-smtp-legal-2026/MATRIZ_CES26_HALLAZGOS.md",
+    "docs2/comunicaciones-email-smtp-legal-2026/RUNBOOK_CES26_SMTP_LOPDP.md",
+    "docs2/comunicaciones-email-smtp-legal-2026/REPORTE_CES26_06_CIERRE.md",
+    ".github/prompts/COMUNICACIONES-EMAIL-SMTP-LEGAL-2026-00-baseline.md",
+    ".github/prompts/COMUNICACIONES-EMAIL-SMTP-LEGAL-2026-01-modelo-evidencia.md",
+    ".github/prompts/COMUNICACIONES-EMAIL-SMTP-LEGAL-2026-02-servicio-auditoria.md",
+    ".github/prompts/COMUNICACIONES-EMAIL-SMTP-LEGAL-2026-03-flujos-auth-empleados.md",
+    ".github/prompts/COMUNICACIONES-EMAIL-SMTP-LEGAL-2026-04-frontend-operativo.md",
+    ".github/prompts/COMUNICACIONES-EMAIL-SMTP-LEGAL-2026-05-entorno-runbook.md",
+    ".github/prompts/COMUNICACIONES-EMAIL-SMTP-LEGAL-2026-06-qa-cierre.md"
   ],
   "validationChecks": [
     {
-      "gate": "CSW26-RULES-CONTEXT",
+      "gate": "CES26-RULES-CONTEXT",
       "status": "PASS",
       "detail": "RULES.md, CODEX_CONTEXT.md, AuditLock y estado git leidos antes de modificar runtime."
     },
     {
-      "gate": "CSW26-AUDITLOCK-PREVIOUS",
+      "gate": "CES26-LEGAL-SOURCE",
       "status": "PASS",
-      "detail": "AuditLock previo leido y hash SHA256 6FB12E91544263C02E85053558EF517C5101A4FD80E2C2F85C4E06B7F2B630D7 registrado."
+      "detail": "Base LOPDP verificada con PDF oficial MINTEL/Registro Oficial No. 459 del 2021-05-26."
     },
     {
-      "gate": "CSW26-BACKEND-AUDIT",
-      "status": "PASS",
-      "detail": "npm.cmd audit --audit-level=low paso en backend con 0 vulnerabilidades."
-    },
-    {
-      "gate": "CSW26-BACKEND-TESTS",
-      "status": "PASS",
-      "detail": "npm.cmd test -- --runInBand paso en backend: 21 suites, 82 tests."
-    },
-    {
-      "gate": "CSW26-FRONTEND-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build paso en frontend-web con Vite 7.3.5 y PWA generada."
-    },
-    {
-      "gate": "CSW26-PWA-SMOKE",
-      "status": "PASS",
-      "detail": "npm.cmd run smoke:pwa paso: manifest, assets y service worker cumplen."
-    },
-    {
-      "gate": "CSW26-PRISMA-VALIDATE",
+      "gate": "CES26-PRISMA-VALIDATE",
       "status": "PASS",
       "detail": "npx.cmd prisma validate paso en backend."
     },
     {
-      "gate": "CSW26-APP-STORES",
+      "gate": "CES26-MIGRATE-DEPLOY",
+      "status": "PASS",
+      "detail": "npx.cmd prisma migrate deploy aplico 20260620103000_ces26_communication_events en PostgreSQL local."
+    },
+    {
+      "gate": "CES26-PRISMA-GENERATE",
+      "status": "PASS",
+      "detail": "npx.cmd prisma generate paso en backend."
+    },
+    {
+      "gate": "CES26-BACKEND-SYNTAX",
+      "status": "PASS",
+      "detail": "node --check paso en communicationService, communicationAuditService, communicationController y authController."
+    },
+    {
+      "gate": "CES26-BACKEND-TESTS",
+      "status": "PASS",
+      "detail": "npm.cmd test -- --runInBand paso en backend: 22 suites, 84 tests."
+    },
+    {
+      "gate": "CES26-FRONTEND-BUILD",
+      "status": "PASS",
+      "detail": "npm.cmd run build paso en frontend-web."
+    },
+    {
+      "gate": "CES26-PWA-SMOKE",
+      "status": "PASS",
+      "detail": "npm.cmd run smoke:pwa paso: manifest, assets y service worker cumplen."
+    },
+    {
+      "gate": "CES26-APP-STORES",
       "status": "PASS",
       "detail": "npm.cmd run check:stores paso en app-movil."
     },
     {
-      "gate": "CSW26-EXPO-DOCTOR",
+      "gate": "CES26-BACKEND-AUDIT",
       "status": "PASS",
-      "detail": "npm.cmd run doctor paso en app-movil con 21/21 checks."
+      "detail": "npm.cmd audit --audit-level=low paso en backend con 0 vulnerabilidades."
     },
     {
-      "gate": "CSW26-BACKEND-SYNTAX",
+      "gate": "CES26-ENV-COVERAGE",
       "status": "PASS",
-      "detail": "node --check paso en communicationService, communicationController, authController y employeeAppInviteService."
+      "detail": "ENV_COVERAGE_OK used=70 declared=77."
+    },
+    {
+      "gate": "CES26-ENCODING",
+      "status": "PASS",
+      "detail": "UTF8_NO_BOM_NO_MOJIBAKE_OK en 22 archivos modificados."
     }
   ],
   "fases": [
     {
-      "phase": "CSW26-00",
+      "phase": "CES26-00",
       "status": "completed_documental",
-      "task": "baseline, diagnostico y matriz"
+      "task": "baseline y diagnostico"
     },
     {
-      "phase": "CSW26-01",
+      "phase": "CES26-01",
       "status": "completed_local",
-      "task": "servicio unico SMTP y WhatsApp"
+      "task": "modelo de evidencia communication_events"
     },
     {
-      "phase": "CSW26-02",
+      "phase": "CES26-02",
       "status": "completed_local",
-      "task": "auth, verificacion y recuperacion conectadas a SMTP"
+      "task": "servicio de auditoria minimizada"
     },
     {
-      "phase": "CSW26-03",
+      "phase": "CES26-03",
       "status": "completed_local",
-      "task": "invitaciones de empleados por email y WhatsApp complementario"
+      "task": "flujos auth y empleados etiquetados"
     },
     {
-      "phase": "CSW26-04",
+      "phase": "CES26-04",
       "status": "completed_local",
-      "task": "frontend operativo de comunicaciones y verificacion"
+      "task": "frontend operativo de comunicaciones legales"
     },
     {
-      "phase": "CSW26-05",
+      "phase": "CES26-05",
       "status": "completed_local",
-      "task": "entorno local y Render"
+      "task": "entorno y runbook SMTP LOPDP"
     },
     {
-      "phase": "CSW26-06",
+      "phase": "CES26-06",
       "status": "completed_local",
-      "task": "QA y gates"
-    },
-    {
-      "phase": "CSW26-07",
-      "status": "completed_local",
-      "task": "cierre de gobierno, commit y push"
+      "task": "QA, gobierno, commit y push"
     }
   ],
   "residualRisk": [
     "Configurar credenciales SMTP reales fuera del repositorio.",
-    "Configurar WhatsApp Business Cloud API con token, phone number ID, version Graph API vigente y plantillas aprobadas.",
-    "Ejecutar prueba SMTP real desde la pantalla Comunicaciones antes de demo comercial."
+    "Configurar COMMUNICATION_EVENT_HASH_SECRET productivo en Render.",
+    "Ejecutar prueba SMTP real desde la pantalla Comunicaciones con correo controlado.",
+    "Revision profesional LOPDP antes de prometer cumplimiento legal total."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "5e7a92b5f4245c220a046d16ac3775b0d65807dc61eecf2d43a0ab81540f0968"
+  "signature": "e5b89492cd490c567816a6a00197dbba3cf17744d3654e84f20357a5f56942c0"
 }

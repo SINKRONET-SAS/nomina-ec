@@ -80,6 +80,7 @@ app.get('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admi
 app.post('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.create);
 app.put('/api/configuracion/:resource/:id', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.update);
 app.get('/api/comunicaciones/status', requireRole('superadmin', 'owner', 'admin_rrhh'), communicationController.status);
+app.get('/api/comunicaciones/eventos', requireRole('superadmin', 'owner', 'admin_rrhh'), communicationController.events);
 app.post('/api/comunicaciones/prueba-email', requireRole('superadmin', 'owner', 'admin_rrhh'), communicationController.testEmail);
 
 const integrationController = require('./controllers/integrationController');

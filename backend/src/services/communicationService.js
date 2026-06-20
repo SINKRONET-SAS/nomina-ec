@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const AppError = require('../utils/AppError');
+const { recordCommunicationEvent } = require('./communicationAuditService');
 
 const EMAIL_FROM_NAME = process.env.SMTP_FROM_NAME || 'Nomina-Ec';
 const DEFAULT_WHATSAPP_LANGUAGE = process.env.WHATSAPP_TEMPLATE_LANGUAGE || 'es';
@@ -114,6 +115,7 @@ function getWhatsAppConfig() {
 function communicationStatus() {
   const email = getEmailConfig();
   const whatsapp = getWhatsAppConfig();
+  const retentionDays = Number.parseInt(process.env.COMMUNICATION_RETENTION_DAYS || '365', 10);
 
   return {
     email: {
@@ -144,6 +146,13 @@ function communicationStatus() {
       emailVerification: ['email'],
       passwordReset: ['email'],
       employeeAppInvite: ['email', 'whatsapp'],
+    },
+    compliance: {
+      dataMinimization: true,
+      storesMessageContent: false,
+      storesVerificationCodes: false,
+      eventRetentionDays: Number.isFinite(retentionDays) && retentionDays > 0 ? retentionDays : 365,
+      legalBasis: 'LOPDP_EC_registro_recuperacion_comunicaciones_laborales',
     },
   };
 }
@@ -198,7 +207,43 @@ function devDelivery(channel, template, payload = {}) {
   };
 }
 
-async function sendEmail({ to, subject, text, html, template, correlationId, userId, required = false }) {
+async function auditDelivery(result, event = {}) {
+  await recordCommunicationEvent({
+    tenantId: event.tenantId,
+    userId: event.userId,
+    correlationId: event.correlationId,
+    channel: result.channel,
+    provider: result.provider,
+    template: result.template || event.template,
+    status: result.status,
+    recipient: event.recipient,
+    messageId: result.messageId,
+    metadata: {
+      purpose: event.purpose,
+      flow: event.flow,
+      required: event.required,
+      configured: result.configured,
+      reason: result.reason,
+      error: result.error,
+      missing: result.missing,
+    },
+  });
+  return result;
+}
+
+async function sendEmail({
+  to,
+  subject,
+  text,
+  html,
+  template,
+  correlationId,
+  userId,
+  tenantId,
+  purpose,
+  flow,
+  required = false,
+}) {
   const config = getEmailConfig();
   let recipient = '';
 
@@ -206,19 +251,22 @@ async function sendEmail({ to, subject, text, html, template, correlationId, use
     recipient = normalizeEmail(to);
   } catch (err) {
     if (required) throw err;
-    return {
+    return auditDelivery({
       channel: 'email',
       provider: 'smtp',
       status: 'skipped',
       configured: config.configured,
       template,
       reason: 'email_invalido',
-    };
+    }, { tenantId, userId, correlationId, recipient: to, purpose, flow, required });
   }
 
   if (!config.configured) {
     if (process.env.NODE_ENV !== 'production') {
-      return devDelivery('email', template, { correlationId, userId, to: recipient });
+      return auditDelivery(
+        devDelivery('email', template, { correlationId, userId, to: recipient }),
+        { tenantId, userId, correlationId, recipient, purpose, flow, required }
+      );
     }
 
     const result = {
@@ -229,6 +277,8 @@ async function sendEmail({ to, subject, text, html, template, correlationId, use
       template,
       missing: config.missing,
     };
+
+    await auditDelivery(result, { tenantId, userId, correlationId, recipient, purpose, flow, required });
 
     if (required) {
       throw new AppError('SMTP no esta configurado para enviar correos transaccionales.', {
@@ -256,14 +306,14 @@ async function sendEmail({ to, subject, text, html, template, correlationId, use
       disableUrlAccess: true,
     });
 
-    return {
+    return auditDelivery({
       channel: 'email',
       provider: 'smtp',
       status: 'sent',
       configured: true,
       template,
       messageId: info.messageId || null,
-    };
+    }, { tenantId, userId, correlationId, recipient, purpose, flow, required });
   } catch (err) {
     console.error('[COMUNICACIONES] Error enviando email SMTP', {
       code: err.code || 'COMM_SMTP_SEND_ERROR',
@@ -275,6 +325,16 @@ async function sendEmail({ to, subject, text, html, template, correlationId, use
       template,
     });
 
+    const result = {
+      channel: 'email',
+      provider: 'smtp',
+      status: 'failed',
+      configured: true,
+      template,
+      error: err.code || 'COMM_SMTP_SEND_ERROR',
+    };
+    await auditDelivery(result, { tenantId, userId, correlationId, recipient, purpose, flow, required });
+
     if (required) {
       throw new AppError('No pudimos enviar el correo transaccional.', {
         code: 'COMM_SMTP_SEND_ERROR',
@@ -283,45 +343,51 @@ async function sendEmail({ to, subject, text, html, template, correlationId, use
       });
     }
 
-    return {
-      channel: 'email',
-      provider: 'smtp',
-      status: 'failed',
-      configured: true,
-      template,
-      error: err.code || 'COMM_SMTP_SEND_ERROR',
-    };
+    return result;
   }
 }
 
-async function sendWhatsAppTemplate({ to, templateName, variables = [], correlationId, userId, template }) {
+async function sendWhatsAppTemplate({
+  to,
+  templateName,
+  variables = [],
+  correlationId,
+  userId,
+  tenantId,
+  template,
+  purpose,
+  flow,
+}) {
   const config = getWhatsAppConfig();
   const phone = normalizePhone(to);
 
   if (!phone || !templateName) {
-    return {
+    return auditDelivery({
       channel: 'whatsapp',
       provider: 'whatsapp_cloud_api',
       status: 'skipped',
       configured: config.configured,
       template,
       reason: !phone ? 'telefono_no_disponible' : 'template_no_configurado',
-    };
+    }, { tenantId, userId, correlationId, recipient: phone || to, purpose, flow });
   }
 
   if (!config.configured) {
     if (process.env.NODE_ENV !== 'production') {
-      return devDelivery('whatsapp', template, { correlationId, userId, to: phone });
+      return auditDelivery(
+        devDelivery('whatsapp', template, { correlationId, userId, to: phone }),
+        { tenantId, userId, correlationId, recipient: phone, purpose, flow }
+      );
     }
 
-    return {
+    return auditDelivery({
       channel: 'whatsapp',
       provider: 'whatsapp_cloud_api',
       status: 'not_configured',
       configured: false,
       template,
       missing: config.missing,
-    };
+    }, { tenantId, userId, correlationId, recipient: phone, purpose, flow });
   }
 
   const url = `${config.apiBaseUrl}/${config.graphApiVersion}/${config.phoneNumberId}/messages`;
@@ -364,14 +430,14 @@ async function sendWhatsAppTemplate({ to, templateName, variables = [], correlat
       });
     }
 
-    return {
+    return auditDelivery({
       channel: 'whatsapp',
       provider: 'whatsapp_cloud_api',
       status: 'sent',
       configured: true,
       template,
       messageId: data?.messages?.[0]?.id || null,
-    };
+    }, { tenantId, userId, correlationId, recipient: phone, purpose, flow });
   } catch (err) {
     console.error('[COMUNICACIONES] Error enviando WhatsApp', {
       code: err.code || 'COMM_WHATSAPP_SEND_ERROR',
@@ -383,14 +449,14 @@ async function sendWhatsAppTemplate({ to, templateName, variables = [], correlat
       template,
     });
 
-    return {
+    return auditDelivery({
       channel: 'whatsapp',
       provider: 'whatsapp_cloud_api',
       status: 'failed',
       configured: config.configured,
       template,
       error: err.code || 'COMM_WHATSAPP_SEND_ERROR',
-    };
+    }, { tenantId, userId, correlationId, recipient: phone, purpose, flow });
   }
 }
 
@@ -421,7 +487,7 @@ function employeeInviteEmailTemplate({ employeeName, code, activationUrl, expire
   };
 }
 
-async function sendEmailVerification({ to, code, name, correlationId, userId }) {
+async function sendEmailVerification({ to, code, name, correlationId, userId, tenantId }) {
   const content = verificationEmailTemplate({ code, name });
   return sendEmail({
     to,
@@ -429,10 +495,13 @@ async function sendEmailVerification({ to, code, name, correlationId, userId }) 
     template: 'email_verification',
     correlationId,
     userId,
+    tenantId,
+    purpose: 'verificacion_correo',
+    flow: 'registro_usuario',
   });
 }
 
-async function sendPasswordReset({ to, code, name, correlationId, userId }) {
+async function sendPasswordReset({ to, code, name, correlationId, userId, tenantId }) {
   const content = resetEmailTemplate({ code, name });
   return sendEmail({
     to,
@@ -440,11 +509,15 @@ async function sendPasswordReset({ to, code, name, correlationId, userId }) {
     template: 'password_reset',
     correlationId,
     userId,
+    tenantId,
+    purpose: 'recuperacion_clave',
+    flow: 'auth_password_reset',
   });
 }
 
 async function sendEmployeeInvite({ employee, invite, correlationId, userId }) {
   const name = [employee?.nombres, employee?.apellidos].filter(Boolean).join(' ') || 'empleado';
+  const tenantId = employee?.tenant_id || employee?.tenantId || invite?.tenantId || null;
   const content = employeeInviteEmailTemplate({
     employeeName: name,
     code: invite.code,
@@ -460,6 +533,9 @@ async function sendEmployeeInvite({ employee, invite, correlationId, userId }) {
     template: 'employee_app_invite',
     correlationId,
     userId,
+    tenantId,
+    purpose: 'activacion_app_asistencia',
+    flow: 'empleado_invitacion_app',
   }));
 
   results.push(await sendWhatsAppTemplate({
@@ -469,12 +545,15 @@ async function sendEmployeeInvite({ employee, invite, correlationId, userId }) {
     template: 'employee_app_invite',
     correlationId,
     userId,
+    tenantId,
+    purpose: 'activacion_app_asistencia',
+    flow: 'empleado_invitacion_app',
   }));
 
   return results;
 }
 
-async function sendTestEmail({ to, correlationId, userId }) {
+async function sendTestEmail({ to, correlationId, userId, tenantId }) {
   return sendEmail({
     to,
     subject: 'Prueba SMTP Nomina-Ec',
@@ -483,6 +562,9 @@ async function sendTestEmail({ to, correlationId, userId }) {
     template: 'smtp_test',
     correlationId,
     userId,
+    tenantId,
+    purpose: 'prueba_operativa_smtp',
+    flow: 'configuracion_comunicaciones',
     required: true,
   });
 }

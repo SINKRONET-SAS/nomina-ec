@@ -32,6 +32,10 @@ services:
         sync: false
       - key: SMTP_ENABLED
         sync: false
+      - key: COMMUNICATION_RETENTION_DAYS
+        value: "365"
+      - key: COMMUNICATION_EVENT_HASH_SECRET
+        sync: false
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
