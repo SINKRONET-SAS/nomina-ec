@@ -64,8 +64,11 @@ app.use('/api', authenticateToken);
 
 const configurationController = require('./controllers/configurationController');
 const communicationController = require('./controllers/communicationController');
+const ecuadorCatalogController = require('./controllers/ecuadorCatalogController');
 app.get('/api/configuracion/resumen', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.summary);
 app.get('/api/configuracion/onboarding', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.onboarding);
+app.get('/api/catalogos/ecuador/provincias', requireRole('superadmin', 'owner', 'admin_rrhh'), ecuadorCatalogController.provincias);
+app.get('/api/catalogos/ecuador/ciudades', requireRole('superadmin', 'owner', 'admin_rrhh'), ecuadorCatalogController.ciudades);
 app.post('/api/configuracion/onboarding/:stepCode', requireRole('owner', 'admin_rrhh'), configurationController.completeOnboardingStep);
 app.post('/api/configuracion/parametros-legales/obligatorios', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.loadMandatoryLegalParameters);
 app.get('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.list);

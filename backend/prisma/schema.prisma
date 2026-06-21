@@ -67,6 +67,7 @@ model Tenant {
   metodosPago            PaymentMethod[]
   transaccionesPago      PaymentTransaction[]
   empleados              Employee[]
+  cargasFamiliares       EmployeeFamilyDependent[]
   nominas                Payroll[]
   marcaciones            AttendanceMark[]
   novedades              AttendanceNovelty[]
@@ -288,6 +289,7 @@ model Employee {
   cedula                  String                 @unique @db.VarChar(10)
   nombres                 String                 @db.VarChar(120)
   apellidos               String                 @db.VarChar(120)
+  fechaNacimiento         DateTime?              @map("fecha_nacimiento") @db.Date
   cargo                   String                 @default("") @db.VarChar(120)
   departamento            String                 @default("") @db.VarChar(120)
   unidadOrganizativaCodigo String                @default("") @map("unidad_organizativa_codigo") @db.VarChar(80)
@@ -304,6 +306,8 @@ model Employee {
   banco                   String                 @default("") @db.VarChar(80)
   tipoCuenta              String                 @default("") @map("tipo_cuenta") @db.VarChar(40)
   direccionDomicilio      String                 @default("") @map("direccion_domicilio")
+  provinciaCodigo         String                 @default("") @map("provincia_codigo") @db.VarChar(10)
+  ciudadCodigo            String                 @default("") @map("ciudad_codigo") @db.VarChar(10)
   ciudadDomicilio         String                 @default("") @map("ciudad_domicilio") @db.VarChar(80)
   provinciaDomicilio      String                 @default("") @map("provincia_domicilio") @db.VarChar(80)
   estadoCivil             String                 @default("") @map("estado_civil") @db.VarChar(30)
@@ -322,6 +326,7 @@ model Employee {
   documentos              LegalDocument[]
   actasEquipos            EquipmentDeliveryAct[]
   beneficios              EmployeeBenefit[]
+  cargasFamiliaresDetalle EmployeeFamilyDependent[]
   importBatch             EmployeeImportBatch?   @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, activo])
@@ -372,6 +377,28 @@ model EmployeeBenefit {
   @@index([tenantId, estado])
   @@index([empleadoId, anioInicio, mesInicio])
   @@map("beneficios_empleados")
+}
+
+model EmployeeFamilyDependent {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId               String   @map("tenant_id") @db.Uuid
+  employeeId             String   @map("employee_id") @db.Uuid
+  nombres                String   @db.VarChar(120)
+  apellidos              String   @default("") @db.VarChar(120)
+  identificacion         String   @default("") @db.VarChar(20)
+  parentesco             String   @db.VarChar(40)
+  fechaNacimiento        DateTime? @map("fecha_nacimiento") @db.Date
+  discapacidad           Boolean  @default(false)
+  porcentajeDiscapacidad Decimal? @map("porcentaje_discapacidad") @db.Decimal(5, 2)
+  documentoUrl           String   @default("") @map("documento_url")
+  metadata               Json     @default("{}")
+  activo                 Boolean  @default(true)
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant                 Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee               Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("employee_family_dependents")
 }
 
 model AttendanceMark {
@@ -686,6 +713,26 @@ model BankProfile {
 
   @@unique([tenantId, bancoCodigo])
   @@map("perfiles_bancarios")
+}
+
+model EcuadorProvince {
+  code   String        @id @db.VarChar(10)
+  name   String        @db.VarChar(120)
+  region String        @default("") @db.VarChar(40)
+  active Boolean       @default(true)
+  cities EcuadorCity[]
+
+  @@map("ecuador_provinces")
+}
+
+model EcuadorCity {
+  code         String          @id @db.VarChar(10)
+  provinceCode String         @map("province_code") @db.VarChar(10)
+  name         String         @db.VarChar(160)
+  active       Boolean        @default(true)
+  province     EcuadorProvince @relation(fields: [provinceCode], references: [code])
+
+  @@map("ecuador_cities")
 }
 
 model BankFieldMapping {

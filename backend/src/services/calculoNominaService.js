@@ -36,11 +36,15 @@ async function calcularNominaMensual(tenantId, anio, mes) {
   });
 
   const empleados = await db.query(`
-    SELECT *
-    FROM empleados
-    WHERE tenant_id = $1
-      AND activo = true
-      AND fecha_ingreso <= $2
+    SELECT e.*, ws.weekly_hours AS jornada_weekly_hours
+    FROM empleados e
+    LEFT JOIN work_shifts ws
+      ON ws.tenant_id = e.tenant_id
+      AND ws.code = e.jornada_codigo
+      AND ws.status = 'activo'
+    WHERE e.tenant_id = $1
+      AND e.activo = true
+      AND e.fecha_ingreso <= $2
   `, [tenantId, `${anio}-${String(mes).padStart(2, '0')}-01`]);
 
   const resultados = [];
@@ -292,9 +296,12 @@ function calcularValorHora(emp, payrollParameters = {}) {
 }
 
 function getEmployeeMonthlyHours(emp = {}, payrollParameters = {}) {
+  const weeklyHours = Number.parseFloat(emp.jornada_weekly_hours || emp.weekly_hours || 0);
   const employeeHours = Number.parseFloat(emp.jornada_horas_mensuales || 0);
   const configuredHours = Number.parseFloat(payrollParameters.monthlyWorkHours || 0);
-  const monthlyHours = employeeHours > 0 ? employeeHours : configuredHours;
+  const monthlyHours = weeklyHours > 0
+    ? roundMoney((weeklyHours * 52) / 12)
+    : (employeeHours > 0 ? employeeHours : configuredHours);
 
   if (!Number.isFinite(monthlyHours) || monthlyHours <= 0) {
     throw new AppError('La jornada mensual debe ser mayor a cero para calcular valor hora', {

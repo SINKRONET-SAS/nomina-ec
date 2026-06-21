@@ -42,6 +42,16 @@ describe('calculoNominaService', () => {
     }, { monthlyWorkHours: 240 })).toBe(5);
   });
 
+  test('calcula valor hora desde jornada parametrizada cuando existe codigo de jornada', () => {
+    expect(calcularValorHora({
+      sueldo_bruto_mensual: 866.67,
+      jornada_codigo: 'ORDINARIA_40',
+      jornada_weekly_hours: 40,
+      jornada_horas_mensuales: 240,
+      tipo_contrato: 'indefinido',
+    }, { monthlyWorkHours: 240 })).toBeCloseTo(5, 2);
+  });
+
   test('contrato por hora usa sueldo como valor hora', () => {
     expect(calcularValorHora({
       sueldo_bruto_mensual: 12.5,

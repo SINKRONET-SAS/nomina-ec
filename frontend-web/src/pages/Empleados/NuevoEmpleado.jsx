@@ -8,6 +8,7 @@ const initialForm = {
   cedula: '',
   nombres: '',
   apellidos: '',
+  fecha_nacimiento: '',
   cargo: '',
   departamento: '',
   unidad_organizativa_codigo: '',
@@ -21,6 +22,8 @@ const initialForm = {
   estado_civil: '',
   cargas_familiares: 0,
   direccion_domicilio: '',
+  provincia_codigo: '',
+  ciudad_codigo: '',
   ciudad_domicilio: '',
   provincia_domicilio: '',
   telefono: '',
@@ -30,7 +33,35 @@ const initialForm = {
   tipo_cuenta: '',
   cuenta_bancaria: '',
   region_decimo_cuarto: 'sierra_amazonia',
+  dependientes: [],
 };
+
+const MIN_EMPLOYEE_AGE = 18;
+const OLDER_ADULT_AGE = 65;
+
+function calculateAge(fechaNacimiento) {
+  if (!fechaNacimiento) return null;
+  const birthDate = new Date(`${fechaNacimiento}T00:00:00`);
+  if (Number.isNaN(birthDate.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDelta = today.getMonth() - birthDate.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birthDate.getDate())) age -= 1;
+  return age;
+}
+
+const emptyDependent = () => ({
+  nombres: '',
+  apellidos: '',
+  identificacion: '',
+  parentesco: 'hijo',
+  fecha_nacimiento: '',
+  discapacidad: false,
+  porcentaje_discapacidad: '',
+  documento_base64: '',
+  documento_nombre: '',
+  documento_mime_type: '',
+});
 
 function normalizeEmpleado(empleado) {
   return {
@@ -38,6 +69,7 @@ function normalizeEmpleado(empleado) {
     cedula: empleado.cedula || '',
     nombres: empleado.nombres || '',
     apellidos: empleado.apellidos || '',
+    fecha_nacimiento: empleado.fecha_nacimiento ? String(empleado.fecha_nacimiento).slice(0, 10) : '',
     cargo: empleado.cargo || '',
     departamento: empleado.departamento || '',
     unidad_organizativa_codigo: empleado.unidad_organizativa_codigo || '',
@@ -51,6 +83,8 @@ function normalizeEmpleado(empleado) {
     estado_civil: empleado.estado_civil || '',
     cargas_familiares: empleado.cargas_familiares || 0,
     direccion_domicilio: empleado.direccion_domicilio || '',
+    provincia_codigo: empleado.provincia_codigo || '',
+    ciudad_codigo: empleado.ciudad_codigo || '',
     ciudad_domicilio: empleado.ciudad_domicilio || '',
     provincia_domicilio: empleado.provincia_domicilio || '',
     telefono: empleado.telefono || '',
@@ -60,6 +94,18 @@ function normalizeEmpleado(empleado) {
     tipo_cuenta: empleado.tipo_cuenta || '',
     cuenta_bancaria: '',
     region_decimo_cuarto: empleado.region_decimo_cuarto || 'sierra_amazonia',
+    dependientes: (empleado.dependientes || []).map((dependent) => ({
+      nombres: dependent.nombres || '',
+      apellidos: dependent.apellidos || '',
+      identificacion: dependent.identificacion || '',
+      parentesco: dependent.parentesco || 'hijo',
+      fecha_nacimiento: dependent.fecha_nacimiento ? String(dependent.fecha_nacimiento).slice(0, 10) : '',
+      discapacidad: Boolean(dependent.discapacidad),
+      porcentaje_discapacidad: dependent.porcentaje_discapacidad || '',
+      documento_base64: '',
+      documento_nombre: dependent.documento_url ? 'Documento cargado' : '',
+      documento_mime_type: '',
+    })),
   };
 }
 
@@ -160,6 +206,28 @@ function NuevoEmpleado() {
   const activeWorkShifts = (workShiftsQuery.data || []).filter((item) => item.status !== 'inactivo');
   const activeOrganizationUnits = (organizationUnitsQuery.data || []).filter((item) => item.status !== 'inactivo');
   const activeWorkZones = (workZonesQuery.data || []).filter((item) => item.status !== 'inactivo');
+  const provincesQuery = useQuery({
+    queryKey: ['catalogos', 'ecuador', 'provincias'],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/catalogos/ecuador/provincias');
+      return response.data.data || [];
+    },
+  });
+  const citiesQuery = useQuery({
+    queryKey: ['catalogos', 'ecuador', 'ciudades', formData.provincia_codigo],
+    enabled: Boolean(formData.provincia_codigo),
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/catalogos/ecuador/ciudades', {
+        params: { provinceCode: formData.provincia_codigo },
+      });
+      return response.data.data || [];
+    },
+  });
+  const provinces = provincesQuery.data || [];
+  const cities = citiesQuery.data || [];
+  const employeeAge = calculateAge(formData.fecha_nacimiento);
+  const isMinor = employeeAge !== null && employeeAge < MIN_EMPLOYEE_AGE;
+  const isOlderAdult = employeeAge !== null && employeeAge >= OLDER_ADULT_AGE;
 
   useEffect(() => {
     if (empleadoQuery.data) setFormData(normalizeEmpleado(empleadoQuery.data));
@@ -172,28 +240,62 @@ function NuevoEmpleado() {
   }, [empleadoQuery.isError, empleadoQuery.error]);
 
   const handleChange = (event) => {
-    setFormData((current) => ({ ...current, [event.target.name]: event.target.value }));
+    const { name, value } = event.target;
+    setFormData((current) => {
+      if (name !== 'cargas_familiares') return { ...current, [name]: value };
+      const count = Math.max(0, Number(value || 0));
+      const dependientes = [...current.dependientes];
+      while (dependientes.length < count) dependientes.push(emptyDependent());
+      return { ...current, cargas_familiares: count, dependientes: dependientes.slice(0, count) };
+    });
+  };
+
+  const handleDependentChange = (index, field, value) => {
+    setFormData((current) => ({
+      ...current,
+      dependientes: current.dependientes.map((dependent, currentIndex) => (
+        currentIndex === index ? { ...dependent, [field]: value } : dependent
+      )),
+    }));
+  };
+
+  const handleDependentFile = async (index, file) => {
+    if (!file) return;
+    const contenidoBase64 = await fileToBase64(file);
+    setFormData((current) => ({
+      ...current,
+      dependientes: current.dependientes.map((dependent, currentIndex) => (
+        currentIndex === index
+          ? {
+              ...dependent,
+              documento_base64: contenidoBase64,
+              documento_nombre: file.name,
+              documento_mime_type: file.type,
+            }
+          : dependent
+      )),
+    }));
   };
 
   const buildCreatePayload = () => ({
     cedula: formData.cedula,
     nombres: formData.nombres,
     apellidos: formData.apellidos,
+    fecha_nacimiento: formData.fecha_nacimiento,
     cargo: formData.cargo,
     departamento: formData.departamento,
     unidad_organizativa_codigo: formData.unidad_organizativa_codigo,
     jornada_codigo: formData.jornada_codigo,
     zona_marcacion_codigo: formData.zona_marcacion_codigo,
     sueldo_bruto_mensual: formData.sueldo_bruto_mensual,
-    jornada_horas_mensuales: formData.jornada_horas_mensuales,
     gastos_personales_anuales: formData.gastos_personales_anuales,
     fecha_ingreso: formData.fecha_ingreso,
     tipo_contrato: formData.tipo_contrato,
     estado_civil: formData.estado_civil,
     cargas_familiares: Number(formData.cargas_familiares || 0),
     direccion: formData.direccion_domicilio,
-    ciudad: formData.ciudad_domicilio,
-    provincia: formData.provincia_domicilio,
+    provincia_codigo: formData.provincia_codigo,
+    ciudad_codigo: formData.ciudad_codigo,
     telefono: formData.telefono,
     email: formData.email_personal,
     forma_pago: formData.forma_pago,
@@ -201,11 +303,13 @@ function NuevoEmpleado() {
     tipo_cuenta: formData.tipo_cuenta,
     cuenta_bancaria: formData.cuenta_bancaria,
     region_decimo_cuarto: formData.region_decimo_cuarto,
+    dependientes: formData.dependientes,
   });
 
   const buildUpdatePayload = () => {
     const { cedula, ...payload } = formData;
     if (!payload.cuenta_bancaria) delete payload.cuenta_bancaria;
+    delete payload.jornada_horas_mensuales;
     payload.cargas_familiares = Number(payload.cargas_familiares || 0);
     return payload;
   };
@@ -288,6 +392,10 @@ function NuevoEmpleado() {
           <Field disabled={isEdit} label="Cedula" maxLength="10" name="cedula" onChange={handleChange} required value={formData.cedula} />
           <Field label="Nombres" name="nombres" onChange={handleChange} required value={formData.nombres} />
           <Field label="Apellidos" name="apellidos" onChange={handleChange} required value={formData.apellidos} />
+          <Field label="Fecha de nacimiento" name="fecha_nacimiento" onChange={handleChange} required type="date" value={formData.fecha_nacimiento} />
+          <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            Edad calculada: <strong>{employeeAge === null ? 'pendiente' : `${employeeAge} anios`}</strong>
+          </div>
           <Field label="Telefono" name="telefono" onChange={handleChange} value={formData.telefono} />
           <Field label="Correo personal" name="email_personal" onChange={handleChange} type="email" value={formData.email_personal} />
           <Field label="Estado civil" name="estado_civil" onChange={handleChange} value={formData.estado_civil}>
@@ -301,15 +409,76 @@ function NuevoEmpleado() {
             </select>
           </Field>
           <Field label="Cargas familiares" min="0" name="cargas_familiares" onChange={handleChange} type="number" value={formData.cargas_familiares} />
+          {isMinor && (
+            <div className="md:col-span-2 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              Este flujo bloquea contratacion de menores de edad. Requiere modulo especial de autorizaciones antes de registrar una ficha laboral.
+            </div>
+          )}
+          {isOlderAdult && (
+            <div className="md:col-span-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+              Trabajador adulto mayor: revisar beneficios, retenciones e implicaciones de impuesto a la renta aplicables.
+            </div>
+          )}
         </Section>
+
+        {Number(formData.cargas_familiares || 0) > 0 && (
+          <Section title="Cargas familiares" description="Registra los datos y documentos de soporte para efectos laborales y de impuesto a la renta.">
+            <div className="md:col-span-2 space-y-4">
+              {formData.dependientes.map((dependent, index) => (
+                <div className="grid grid-cols-1 gap-3 rounded-md border border-slate-200 p-4 md:grid-cols-2" key={index}>
+                  <h3 className="text-sm font-semibold text-slate-900 md:col-span-2">Carga familiar {index + 1}</h3>
+                  <Field label="Nombres" name={`dependiente-${index}-nombres`} onChange={(event) => handleDependentChange(index, 'nombres', event.target.value)} required value={dependent.nombres} />
+                  <Field label="Apellidos" name={`dependiente-${index}-apellidos`} onChange={(event) => handleDependentChange(index, 'apellidos', event.target.value)} value={dependent.apellidos} />
+                  <Field label="Identificacion" name={`dependiente-${index}-identificacion`} onChange={(event) => handleDependentChange(index, 'identificacion', event.target.value)} value={dependent.identificacion} />
+                  <Field label="Parentesco" name={`dependiente-${index}-parentesco`} onChange={(event) => handleDependentChange(index, 'parentesco', event.target.value)} value={dependent.parentesco}>
+                    <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" onChange={(event) => handleDependentChange(index, 'parentesco', event.target.value)} value={dependent.parentesco}>
+                      <option value="hijo">Hijo/a</option>
+                      <option value="conyuge">Conyuge</option>
+                      <option value="union_hecho">Pareja en union de hecho</option>
+                      <option value="padre_madre">Padre/Madre</option>
+                      <option value="otro">Otro permitido</option>
+                    </select>
+                  </Field>
+                  <Field label="Fecha de nacimiento" name={`dependiente-${index}-fecha`} onChange={(event) => handleDependentChange(index, 'fecha_nacimiento', event.target.value)} type="date" value={dependent.fecha_nacimiento} />
+                  <label className="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700">
+                    <input checked={dependent.discapacidad} onChange={(event) => handleDependentChange(index, 'discapacidad', event.target.checked)} type="checkbox" />
+                    Discapacidad
+                  </label>
+                  {dependent.discapacidad && (
+                    <Field label="Porcentaje discapacidad" min="0" name={`dependiente-${index}-porcentaje`} onChange={(event) => handleDependentChange(index, 'porcentaje_discapacidad', event.target.value)} step="0.01" type="number" value={dependent.porcentaje_discapacidad} />
+                  )}
+                  <label className="block md:col-span-2">
+                    <span className="text-sm font-medium text-slate-700">Documento legal de soporte</span>
+                    <input accept="application/pdf,image/jpeg,image/png" className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" onChange={(event) => handleDependentFile(index, event.target.files?.[0])} type="file" />
+                    {dependent.documento_nombre && <p className="mt-1 text-xs text-slate-500">{dependent.documento_nombre}</p>}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
 
         <Section title="Domicilio" description="Ubicacion declarada por el trabajador para documentos laborales y contacto.">
           <label className="block md:col-span-2">
             <span className="text-sm font-medium text-slate-700">Domicilio</span>
             <textarea className="mt-1 min-h-20 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="direccion_domicilio" onChange={handleChange} value={formData.direccion_domicilio} />
           </label>
-          <Field label="Ciudad" name="ciudad_domicilio" onChange={handleChange} value={formData.ciudad_domicilio} />
-          <Field label="Provincia" name="provincia_domicilio" onChange={handleChange} value={formData.provincia_domicilio} />
+          <Field label="Provincia" name="provincia_codigo" onChange={(event) => setFormData((current) => ({ ...current, provincia_codigo: event.target.value, ciudad_codigo: '' }))} required value={formData.provincia_codigo}>
+            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="provincia_codigo" onChange={(event) => setFormData((current) => ({ ...current, provincia_codigo: event.target.value, ciudad_codigo: '' }))} required value={formData.provincia_codigo}>
+              <option value="">{provincesQuery.isLoading ? 'Cargando provincias...' : 'Seleccionar provincia...'}</option>
+              {provinces.map((province) => (
+                <option key={province.code} value={province.code}>{province.code} - {province.name}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Ciudad / canton" name="ciudad_codigo" onChange={handleChange} required value={formData.ciudad_codigo}>
+            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" disabled={!formData.provincia_codigo} name="ciudad_codigo" onChange={handleChange} required value={formData.ciudad_codigo}>
+              <option value="">{citiesQuery.isLoading ? 'Cargando ciudades...' : 'Seleccionar ciudad...'}</option>
+              {cities.map((city) => (
+                <option key={city.code} value={city.code}>{city.code} - {city.name}</option>
+              ))}
+            </select>
+          </Field>
         </Section>
 
         <Section title="Relacion laboral" description="Datos base para nomina, beneficios, contratos y reportes.">
@@ -340,7 +509,6 @@ function NuevoEmpleado() {
             </select>
           </Field>
           <Field label="Sueldo bruto" name="sueldo_bruto_mensual" onChange={handleChange} required step="0.01" type="number" value={formData.sueldo_bruto_mensual} />
-          <Field label="Jornada mensual (horas)" min="1" name="jornada_horas_mensuales" onChange={handleChange} placeholder="240 por defecto" step="0.01" type="number" value={formData.jornada_horas_mensuales} />
           <Field label="Gastos personales anuales SRI" min="0" name="gastos_personales_anuales" onChange={handleChange} placeholder="0.00" step="0.01" type="number" value={formData.gastos_personales_anuales} />
           <Field label="Fecha de ingreso" name="fecha_ingreso" onChange={handleChange} required type="date" value={formData.fecha_ingreso} />
           <Field label="Tipo de contrato" name="tipo_contrato" onChange={handleChange} value={formData.tipo_contrato}>
@@ -417,7 +585,7 @@ function NuevoEmpleado() {
 
         <div className="flex justify-end gap-4 pt-2">
           <button className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => navigate(-1)} type="button">Cancelar</button>
-          <button className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50" disabled={cargando} type="submit">
+          <button className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50" disabled={cargando || isMinor} type="submit">
             {cargando ? 'Guardando...' : isEdit ? 'Actualizar ficha' : 'Guardar trabajador'}
           </button>
         </div>
