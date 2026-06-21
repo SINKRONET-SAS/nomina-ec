@@ -2,46 +2,80 @@
   "schemaVersion": 1,
   "plan": "HAIKY-DIAGNOSTICO-V3-NOMINA-EC-2026",
   "planCode": "DV3N26",
-  "status": "completed_documental",
-  "phaseCompleted": "DV3N26-00",
-  "currentPhase": "DV3N26-01-pending-approval",
-  "updatedAt": "2026-06-21T22:12:32.161Z",
-  "summary": "DV3N26-00 generado documentalmente: plan, matriz, runbook, baseline, prompts y contexto. Runtime pendiente de aprobacion explicita por fase.",
+  "status": "completed_runtime_local",
+  "phaseCompleted": "DV3N26-08",
+  "currentPhase": "DV3N26-closed-local",
+  "updatedAt": "2026-06-21T22:30:44.363Z",
+  "summary": "DV3N26-01..08 ejecutadas localmente: bancos cerrada/pagada, vacaciones Art. 69, reporte contable, LOPDP existente verificada, cifrado AES-256-GCM, PWA offline segura, SUT/MDT visible y QA global.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario para desplegar Diagnostico V3 como plan Haiky documental.",
-  "previousAuditLockHash": "81a972e22383e2bcae7b4208208b17d0daab215e171b59f42dc512c90764cb30",
+  "approvalSource": "Solicitud del usuario: Ejecutar todos los prompts de acuerdo a DV3N26 y AIV50.",
+  "previousAuditLockHash": "6baefd3e102d7ac5b5094226de7b4507b944d7072fe64a33e4483b6ade4245a8",
   "filesModified": [
-    "docs2/PLAN_HAIKY_DIAGNOSTICO_V3_NOMINA_EC_2026.md",
-    "docs2/diagnostico-v3-nomina-ec-2026/MATRIZ_DV3N26_HALLAZGOS.md",
-    "docs2/diagnostico-v3-nomina-ec-2026/RUNBOOK_DV3N26_QA_CIERRE.md",
-    "docs2/diagnostico-v3-nomina-ec-2026/REPORTE_DV3N26_00_BASELINE.md",
-    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-00-baseline.md",
-    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-01-bancos-cierre-nomina.md",
-    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-02-legal-vacaciones-fondo-reserva.md",
-    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-03-reportes-contabilidad-consolidado.md",
-    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-04-lopdp-privacidad-consentimiento.md",
-    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-05-cifrado-cuentas-bancarias.md",
-    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-06-pwa-offline-manifest.md",
-    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-07-sut-mdt-integracion-controlada.md",
-    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-08-qa-cierre.md",
     "CODEX_CONTEXT.md",
+    "backend/src/controllers/empleadoController.js",
+    "backend/src/services/bancoAebGenerator.js",
+    "backend/src/services/bancoAebGenerator.test.js",
+    "backend/src/services/employeeImportService.js",
+    "backend/src/services/liquidacionService.js",
+    "backend/src/services/liquidacionService.test.js",
+    "backend/src/services/payrollReportService.js",
+    "docs2/PLAN_HAIKY_DIAGNOSTICO_V3_NOMINA_EC_2026.md",
+    "frontend-web/pwa.config.js",
+    "frontend-web/src/main.jsx",
+    "frontend-web/src/pages/Documentos/ActasFiniquito.jsx",
+    "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
+    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
+    "backend/src/services/bankAccountCrypto.js",
+    "backend/src/services/bankAccountCrypto.test.js",
+    "backend/src/services/payrollReportService.test.js",
+    "docs2/diagnostico-v3-nomina-ec-2026/REPORTE_DV3N26_08_CIERRE_RUNTIME.md",
     ".vscode/AuditLock.json"
   ],
   "validationChecks": [
     {
       "gate": "DV3N26-RULES-CONTEXT",
       "status": "PASS",
-      "detail": "RULES.md, diagnostico V3, script V3 y estructura docs2 revisados antes de escribir."
+      "detail": "RULES.md, CODEX_CONTEXT.md, AuditLock y matriz DV3N26 releidos antes de runtime."
     },
     {
-      "gate": "DV3N26-DOCUMENTAL-ONLY",
+      "gate": "DV3N26-PRISMA-VALIDATE",
       "status": "PASS",
-      "detail": "No se modifico runtime en DV3N26-00."
+      "detail": "npx.cmd prisma validate en backend."
+    },
+    {
+      "gate": "DV3N26-BACKEND-JEST",
+      "status": "PASS",
+      "detail": "npm.cmd test -- --runInBand: 26 suites, 98 tests."
+    },
+    {
+      "gate": "DV3N26-FRONTEND-BUILD",
+      "status": "PASS",
+      "detail": "npm.cmd run build en frontend-web."
+    },
+    {
+      "gate": "DV3N26-PWA-SMOKE",
+      "status": "PASS",
+      "detail": "npm.cmd run smoke:pwa en frontend-web."
+    },
+    {
+      "gate": "DV3N26-MOBILE-STORES",
+      "status": "PASS",
+      "detail": "npm.cmd run check:stores en app-movil."
+    },
+    {
+      "gate": "DV3N26-MOBILE-DOCTOR",
+      "status": "PASS",
+      "detail": "npm.cmd run doctor en app-movil: 18/18 checks."
+    },
+    {
+      "gate": "DV3N26-DIFF-CHECK",
+      "status": "PASS",
+      "detail": "git diff --check sin errores; solo advertencias CRLF."
     },
     {
       "gate": "DV3N26-UTF8-NO-BOM",
       "status": "PASS",
-      "detail": "Archivos .md/.json generados en UTF-8 sin BOM por fs.writeFileSync utf8."
+      "detail": "15 archivos .js/.jsx/.md/.json modificados o nuevos validados sin BOM."
     }
   ],
   "fases": [
@@ -51,42 +85,42 @@
     },
     {
       "phase": "DV3N26-01",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "DV3N26-02",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "DV3N26-03",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "DV3N26-04",
-      "status": "pending_approval"
+      "status": "completed_by_existing_runtime"
     },
     {
       "phase": "DV3N26-05",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "DV3N26-06",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "DV3N26-07",
-      "status": "pending_approval"
+      "status": "completed_local_with_external_block"
     },
     {
       "phase": "DV3N26-08",
-      "status": "pending_approval"
+      "status": "completed_local"
     }
   ],
   "residualRisk": [
     "Revision profesional legal/contable/LOPDP requerida antes de produccion.",
-    "Fuente V3 contiene referencias Base44/Deno y mojibake; se debe verificar contra stack real antes de aplicar fixes.",
-    "SUT/MDT requiere fuente oficial, credenciales o flujo manual controlado antes de prometer integracion."
+    "BANK_ACCOUNT_ENCRYPTION_KEY productiva debe configurarse fuera del repositorio antes de usar cuentas bancarias reales.",
+    "SUT/MDT queda como control visible/manual hasta contar con fuente tecnica, credenciales o API oficial verificable."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "2827e6e91817a6dcb84c6cdcc16da4eb60ed473e0900b671e657ba84eb0e0c49"
+  "signature": "ac651ad35f666fef517ddb4481e70930300bd1c8bde267855d763949fe6b1331"
 }

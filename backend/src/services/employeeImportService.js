@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const db = require('../config/database');
 const { recordAudit } = require('./auditService');
+const { encryptBankAccount: encryptBankAccountValue } = require('./bankAccountCrypto');
 const { validarCedula } = require('../utils/validarCedula');
 
 const HEADER_ALIASES = {
@@ -272,13 +273,8 @@ function batchFingerprint(payload) {
   return crypto.createHash('sha256').update(String(payload.rawText || JSON.stringify(payload.rows || []))).digest('hex');
 }
 
-async function encryptBankAccount(client, account) {
-  if (!account) return null;
-  const result = await client.query(
-    'SELECT pgp_sym_encrypt($1, $2) as cifrado',
-    [account, process.env.BANK_ACCOUNT_ENCRYPTION_KEY || 'change-this-local-bank-key']
-  );
-  return result.rows[0].cifrado;
+async function encryptBankAccount(_client, account) {
+  return encryptBankAccountValue(account);
 }
 
 async function commitEmployeeImport({ tenantId, userId, correlationId, ipAddress, payload }) {

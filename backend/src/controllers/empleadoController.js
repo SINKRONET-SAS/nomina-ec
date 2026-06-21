@@ -3,6 +3,7 @@
 // ============================================================
 const db = require('../config/database');
 const { validarCedula } = require('../utils/validarCedula');
+const { encryptBankAccount } = require('../services/bankAccountCrypto');
 const { generarContrato } = require('../services/templateGenerator');
 const {
   commitEmployeeImport,
@@ -81,14 +82,10 @@ async function crear(req, res) {
       return res.status(400).json({ error: 'La cédula ya está registrada' });
     }
     
-    // Cifrar cuenta bancaria
+    // Cifrar cuenta bancaria con AES-256-GCM antes de persistir.
     let cuentaCifrada = null;
     if (cuenta_bancaria) {
-      const cifrado = await db.query(
-        'SELECT pgp_sym_encrypt($1, $2) as cifrado',
-        [cuenta_bancaria, process.env.BANK_ACCOUNT_ENCRYPTION_KEY || 'change-this-local-bank-key']
-      );
-      cuentaCifrada = cifrado.rows[0].cifrado;
+      cuentaCifrada = encryptBankAccount(cuenta_bancaria);
     }
     
     // Crear empleado
@@ -127,8 +124,14 @@ async function crear(req, res) {
     
     res.status(201).json({ success: true, empleado });
   } catch (err) {
-    console.error('[EMPLEADOS] Error:', err);
-    res.status(500).json({ error: 'Error interno: ' + err.message });
+    console.error('[EMPLEADOS] Error creando empleado', {
+      code: err.code || 'EMPLEADO_CREATE_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    res.status(err.statusCode || 500).json({ error: err.code || 'EMPLEADO_CREATE_ERROR', message: err.message, correlationId: req.correlationId });
   }
 }
 

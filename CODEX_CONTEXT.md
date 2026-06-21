@@ -7,8 +7,8 @@
 |-------|-------|
 | Plan | HAIKY-DIAGNOSTICO-V3-NOMINA-EC-2026 |
 | Codigo | DV3N26 |
-| Estado | DV3N26-00 documental generado; runtime pendiente de aprobacion por fase |
-| Fase actual | DV3N26-01 pendiente de aprobacion explicita |
+| Estado | DV3N26-00..08 ejecutadas localmente |
+| Fase actual | DV3N26-08 cerrada localmente |
 | Fuente diagnostico | `C:\proyectos web\sensible-easy-payroll-flow\src\docs\DIAGNOSTICO_V3_NOMINA_EC.md` |
 | Scripts referencia | `C:\proyectos web\sensible-easy-payroll-flow\src\docs\scripts\12_fixes_v3.js` |
 | Plan doc | `docs2/PLAN_HAIKY_DIAGNOSTICO_V3_NOMINA_EC_2026.md` |
@@ -22,7 +22,7 @@
 
 DV3N26 convierte el Diagnostico V3 de Nomina-Ec en un plan Haiky ejecutable. La fuente declara fixes de bancos, vacaciones Art. 69 CT, fondo de reserva Art. 196 CT, reportes, selectores de anio, importaciones muertas, nomina consolidada, contabilidad, manifest/lang y pendientes LOPDP/offline/cifrado/SUT. En el repo real todo debe verificarse contra Express/PostgreSQL/Prisma/React/Vite/Expo antes de modificar runtime.
 
-Regla operativa: `12_fixes_v3.js` es referencia, no parche directo. Cada fase funcional requiere aprobacion explicita, pruebas, exposicion UI cuando aplique y AuditLock firmado.
+Regla operativa: `12_fixes_v3.js` es referencia, no parche directo. DV3N26-01..08 quedaron ejecutadas localmente: bancos cerrada/pagada, vacaciones Art. 69, reporte contable, PWA offline segura, cifrado bancario AES-256-GCM y aviso SUT/MDT visible. Bloqueos externos: revision legal/contable, clave productiva BANK_ACCOUNT_ENCRYPTION_KEY y confirmacion oficial SUT/MDT.
 ## Open Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026
 
 | Campo | Valor |

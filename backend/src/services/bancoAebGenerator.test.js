@@ -3,7 +3,7 @@ jest.mock('../config/database', () => ({
 }));
 
 const db = require('../config/database');
-const { getBankProfile, getBankProfileForTenant, validateBankRows } = require('./bancoAebGenerator');
+const { generarArchivoBanco, getBankProfile, getBankProfileForTenant, validateBankRows } = require('./bancoAebGenerator');
 
 describe('bancoAebGenerator', () => {
   beforeEach(() => {
@@ -57,6 +57,10 @@ describe('bancoAebGenerator', () => {
 
     expect(profile.source).toBe('static');
     expect(profile.bankCode).toBe('2011');
+  });
+
+  test('filtra nominas cerradas y pagadas para archivo bancario', () => {
+    expect(generarArchivoBanco.toString()).toContain("n.estado IN ('cerrada', 'pagada')");
   });
 
   test('valida conteo de registros bancarios', () => {

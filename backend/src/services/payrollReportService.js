@@ -16,6 +16,7 @@ const CSV_MIME = 'text/csv; charset=utf-8';
 const REPORT_TYPES = {
   PAYROLL_SUMMARY: 'summary',
   PAYROLL_DETAIL_TABULAR: 'detail',
+  PAYROLL_ACCOUNTING_ENTRIES: 'accounting',
 };
 
 const FORMAT_MIME = {
@@ -44,8 +45,8 @@ async function generarReporteNomina({
     throw new Error(`Formato de reporte no soportado: ${format}`);
   }
 
-  if (normalizedReportCode === 'PAYROLL_DETAIL_TABULAR' && normalizedFormat === 'pdf') {
-    throw new Error('PAYROLL_DETAIL_TABULAR se exporta como XLSX para mantener formato tabular auditable');
+  if (['PAYROLL_DETAIL_TABULAR', 'PAYROLL_ACCOUNTING_ENTRIES'].includes(normalizedReportCode) && normalizedFormat === 'pdf') {
+    throw new Error(`${normalizedReportCode} se exporta como XLSX o CSV para mantener formato tabular auditable`);
   }
 
   const rows = await getPayrollRows(tenantId, Number(anio), Number(mes), filters);
@@ -171,8 +172,8 @@ async function buildWorkbook({ tenant, anio, mes, rows, reportCode, filters, con
   sheet.columns = getWorkbookColumns(reportCode);
   sheet.views = [{ state: 'frozen', ySplit: 1 }];
 
-  rows.forEach((row) => {
-    sheet.addRow(mapRowForExport(row, anio, mes));
+  rowsForReport(rows, reportCode, anio, mes).forEach((row) => {
+    sheet.addRow(row);
   });
 
   sheet.getRow(1).font = { bold: true };
@@ -211,12 +212,20 @@ function buildCsv({ anio, mes, rows, reportCode }) {
   const lines = [
     header.map(csvCell).join(','),
     ...rows.map((row) => {
-      const exportRow = mapRowForExport(row, anio, mes);
-      return columns.map((column) => csvCell(exportRow[column.key])).join(',');
+      return rowsForReport([row], reportCode, anio, mes)
+        .map((exportRow) => columns.map((column) => csvCell(exportRow[column.key])).join(','))
+        .join('\r\n');
     }),
   ];
 
   return Buffer.from(`\ufeff${lines.join('\r\n')}`, 'utf8');
+}
+
+function rowsForReport(rows, reportCode, anio, mes) {
+  if (reportCode === 'PAYROLL_ACCOUNTING_ENTRIES') {
+    return rows.flatMap((row) => mapAccountingEntries(row, anio, mes));
+  }
+  return rows.map((row) => mapRowForExport(row, anio, mes));
 }
 
 function mapRowForExport(row, anio, mes) {
@@ -253,12 +262,67 @@ function mapRowForExport(row, anio, mes) {
   };
 }
 
+function mapAccountingEntries(row, anio, mes) {
+  const detail = normalizeDetail(row.detalle_calculo);
+  const periodo = String(mes).padStart(2, '0') + '/' + anio;
+  const empleado = `${row.apellidos} ${row.nombres}`.trim();
+  const totalIngresos = numberValue(row.total_ingresos);
+  const neto = numberValue(row.neto_recibir);
+  const aporteIess = numberValue(row.aporte_iess_personal);
+  const impuestoRenta = numberValue(row.impuesto_renta);
+  const otrosDescuentos = numberValue(row.anticipos) + numberValue(row.prestamos) + numberValue(detail.descuentoFaltas);
+  const costoPatronal = numberValue(detail.aportePatronal)
+    + numberValue(detail.provisionDecimoTercero)
+    + numberValue(detail.provisionDecimoCuarto)
+    + numberValue(detail.provisionVacaciones)
+    + numberValue(detail.provisionFondosReserva);
+
+  return [
+    accountingRow(periodo, 'DEVENGAMIENTO', '510101', 'Sueldos y salarios', totalIngresos, 0, empleado, row.cedula),
+    accountingRow(periodo, 'DEVENGAMIENTO', '510201', 'Costo patronal y provisiones', costoPatronal, 0, empleado, row.cedula),
+    accountingRow(periodo, 'DEVENGAMIENTO', '210101', 'Nomina por pagar', 0, neto, empleado, row.cedula),
+    accountingRow(periodo, 'DEVENGAMIENTO', '210201', 'IESS personal por pagar', 0, aporteIess, empleado, row.cedula),
+    accountingRow(periodo, 'DEVENGAMIENTO', '210202', 'Impuesto a la renta por pagar', 0, impuestoRenta, empleado, row.cedula),
+    accountingRow(periodo, 'DEVENGAMIENTO', '210203', 'Descuentos y beneficios por cobrar', 0, otrosDescuentos, empleado, row.cedula),
+    accountingRow(periodo, 'DEVENGAMIENTO', '210301', 'IESS patronal y provisiones por pagar', 0, costoPatronal, empleado, row.cedula),
+    accountingRow(periodo, 'PAGO', '210101', 'Nomina por pagar', neto, 0, empleado, row.cedula),
+    accountingRow(periodo, 'PAGO', '110201', 'Bancos', 0, neto, empleado, row.cedula),
+  ].filter((entry) => entry.debe > 0 || entry.haber > 0);
+}
+
+function accountingRow(periodo, asiento, cuenta, nombreCuenta, debe, haber, empleado, cedula) {
+  return {
+    periodo,
+    asiento,
+    cuenta,
+    nombreCuenta,
+    debe: numberValue(debe),
+    haber: numberValue(haber),
+    empleado,
+    cedula,
+    referencia: `${asiento}-${cedula}-${periodo.replace('/', '')}`,
+  };
+}
 function csvCell(value) {
   const normalized = value === null || value === undefined ? '' : String(value);
   return `"${normalized.replace(/"/g, '""')}"`;
 }
 
 function getWorkbookColumns(reportCode) {
+  if (reportCode === 'PAYROLL_ACCOUNTING_ENTRIES') {
+    return [
+      { header: 'Periodo', key: 'periodo', width: 12 },
+      { header: 'Asiento', key: 'asiento', width: 18 },
+      { header: 'Cuenta', key: 'cuenta', width: 12 },
+      { header: 'Nombre cuenta', key: 'nombreCuenta', width: 32 },
+      { header: 'Debe', key: 'debe', width: 14, style: { numFmt: '$#,##0.00' } },
+      { header: 'Haber', key: 'haber', width: 14, style: { numFmt: '$#,##0.00' } },
+      { header: 'Empleado', key: 'empleado', width: 36 },
+      { header: 'Cedula', key: 'cedula', width: 14 },
+      { header: 'Referencia', key: 'referencia', width: 28 },
+    ];
+  }
+
   const base = [
     { header: 'Periodo', key: 'periodo', width: 12 },
     { header: 'Cedula', key: 'cedula', width: 14 },
@@ -332,6 +396,7 @@ async function buildSummaryPdf({ tenant, anio, mes, rows, filters, context }) {
           metric('Total ingresos', money(summary.totalIngresos)),
           metric('Total deducciones', money(summary.totalDeducciones)),
           metric('Neto a pagar', money(summary.netoRecibir)),
+          metric('Fondos reserva', money(summary.fondosReserva)),
         ],
         columnGap: 8,
         margin: [0, 0, 0, 14],
@@ -398,6 +463,7 @@ function summarizeRows(rows) {
     summary.totalDeducciones += numberValue(row.total_deducciones);
     summary.netoRecibir += numberValue(row.neto_recibir);
     summary.costoEmpleador += numberValue(detail.costoEmpleador);
+    summary.fondosReserva += numberValue(detail.provisionFondosReserva);
     return summary;
   }, {
     totalEmpleados: 0,
@@ -405,6 +471,7 @@ function summarizeRows(rows) {
     totalDeducciones: 0,
     netoRecibir: 0,
     costoEmpleador: 0,
+    fondosReserva: 0,
   });
 }
 
@@ -450,4 +517,5 @@ module.exports = {
   getPayrollRows,
   summarizeRows,
   REPORT_TYPES,
+  rowsForReport,
 };

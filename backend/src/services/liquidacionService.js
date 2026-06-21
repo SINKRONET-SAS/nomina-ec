@@ -35,7 +35,8 @@ async function calcularLiquidacion(empleadoId, tenantId, causaTerminacion, optio
   const diasDecimoCuarto = Math.min(diasServicio % 365, 365);
   const decimoTercero = roundMoney(sueldo * (diasDecimoTercero / 360));
   const decimoCuarto = roundMoney(legalParameters.payroll.unifiedBaseSalary * (diasDecimoCuarto / 365));
-  const vacaciones = roundMoney(sueldo * (diasServicio / 30) / 24);
+  const vacationDays = calcularDiasVacacionesPendientes(fechaIngreso, fechaSalida, legalParameters.payroll);
+  const vacaciones = roundMoney(sueldoDiario * vacationDays.totalDays);
   const fondoReserva = calcularFondoReservaLiquidacion(fechaIngreso, fechaSalida, sueldo, legalParameters.payroll);
   const indemnizacion = calcularIndemnizacionDespidoIntempestivo(sueldo, aniosServicio, causaTerminacion);
   const desahucio = calcularDesahucio(sueldo, aniosServicio, causaTerminacion);
@@ -64,6 +65,9 @@ async function calcularLiquidacion(empleadoId, tenantId, causaTerminacion, optio
       diasDecimoCuarto,
       fechaSalida: fechaSalida.toISOString().slice(0, 10),
       indemnizacionMaxMeses: 25,
+      vacacionesDiasBase: vacationDays.baseDays,
+      vacacionesDiasAdicionales: vacationDays.additionalDays,
+      vacacionesDiasTotal: vacationDays.totalDays,
     },
   };
 
@@ -82,6 +86,23 @@ async function calcularLiquidacion(empleadoId, tenantId, causaTerminacion, optio
     aniosServicio: aniosServicio.toFixed(2),
     liquidacion,
     actaUrl,
+  };
+}
+
+function calcularDiasVacacionesPendientes(fechaIngreso, fechaSalida, payrollParameters = {}) {
+  const annualVacationDays = Number(payrollParameters.vacationDaysPerYear ?? 15);
+  const extraAfterYears = Number(payrollParameters.vacationAdditionalAfterYears ?? 5);
+  const extraDaysPerYear = Number(payrollParameters.vacationAdditionalDaysPerYear ?? 1);
+  const days = Math.max(0, Math.floor((fechaSalida - fechaIngreso) / 86400000) + 1);
+  const years = days / 365.25;
+  const completedYears = Math.floor(years);
+  const baseDays = years * annualVacationDays;
+  const additionalDays = Math.max(0, completedYears - extraAfterYears) * extraDaysPerYear;
+
+  return {
+    baseDays,
+    additionalDays,
+    totalDays: baseDays + additionalDays,
   };
 }
 
@@ -143,6 +164,7 @@ module.exports = {
   calcularLiquidacion,
   verificarDevolucionEquipos,
   calcularDiasDecimoTercero,
+  calcularDiasVacacionesPendientes,
   calcularIndemnizacionDespidoIntempestivo,
   calcularDesahucio,
   calcularFondoReservaLiquidacion,

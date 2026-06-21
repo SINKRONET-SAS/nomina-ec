@@ -217,7 +217,7 @@ function DescargarReportes() {
             <div>
               <h2 className="text-lg font-semibold text-slate-950">Reportes internos de nomina</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Exporta resumen o detalle tabular con filtros por persona, departamento, cargo o centro de costo.
+                Exporta resumen, detalle tabular o asientos contables de devengamiento y pago con filtros por persona, departamento, cargo o centro de costo.
               </p>
             </div>
           </div>
@@ -240,12 +240,13 @@ function DescargarReportes() {
               onChange={(event) => {
                 const nextReport = event.target.value;
                 setReportCode(nextReport);
-                if (nextReport === 'PAYROLL_DETAIL_TABULAR' && format === 'pdf') setFormat('xlsx');
+                if (['PAYROLL_DETAIL_TABULAR', 'PAYROLL_ACCOUNTING_ENTRIES'].includes(nextReport) && format === 'pdf') setFormat('xlsx');
               }}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
             >
               <option value="PAYROLL_DETAIL_TABULAR">Detalle tabular</option>
               <option value="PAYROLL_SUMMARY">Resumen de nomina</option>
+              <option value="PAYROLL_ACCOUNTING_ENTRIES">Asientos contables</option>
             </select>
           </div>
           <div>

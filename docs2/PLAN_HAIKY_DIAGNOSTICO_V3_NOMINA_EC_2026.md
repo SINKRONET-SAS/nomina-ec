@@ -4,8 +4,8 @@
 |-------|-------|
 | Plan | HAIKY-DIAGNOSTICO-V3-NOMINA-EC-2026 |
 | Codigo | DV3N26 |
-| Estado | DV3N26-00 documental generado; runtime pendiente de aprobacion por fase |
-| Fase actual | DV3N26-01 pendiente de aprobacion explicita |
+| Estado | DV3N26-00..08 ejecutadas localmente |
+| Fase actual | DV3N26-08 cerrada localmente |
 | Alcance | cierre definitivo de hallazgos Diagnostico V3 sobre nomina, liquidacion, bancos, reportes, PWA/offline, LOPDP, cifrado bancario, contabilidad, SUT/MDT y QA |
 | Repo objetivo | `C:\proyectos web\nuevo_nomina` |
 | Fuente diagnostico | `C:\proyectos web\sensible-easy-payroll-flow\src\docs\DIAGNOSTICO_V3_NOMINA_EC.md` |
@@ -30,14 +30,14 @@ El diagnostico V3 declara 9 bugs funcionales corregidos, 7 importaciones muertas
 | Fase | Prioridad | Estado inicial | Resumen |
 |------|-----------|----------------|---------|
 | DV3N26-00 | P0 | completed_documental | Baseline documental, matriz, prompts, contexto y AuditLock sin tocar runtime. |
-| DV3N26-01 | P0 | pending_approval | Bancos y cierre de nomina: confirmar que archivos bancarios solo usan nominas cerradas/pagadas y que recalculo no altera pagadas. |
-| DV3N26-02 | P0 | pending_approval | Legal laboral: Art. 69 vacaciones, Art. 196 fondo de reserva en rol PDF, reportes y provisiones con pruebas. |
-| DV3N26-03 | P1 | pending_approval | Reporteria y modulos: rol consolidado PDF, contabilidad/asientos NIC, export CSV/XLSX y navegacion visible. |
-| DV3N26-04 | P0 | pending_approval | LOPDP: privacidad/terminos/banner/consentimiento, minimizacion, evidencia visible y bloqueo profesional si falta politica. |
-| DV3N26-05 | P0 | pending_approval | Cifrado AES-256-GCM de cuentas bancarias, rotacion/rollback, migracion segura y cero exposicion en logs/UI. |
-| DV3N26-06 | P1 | pending_approval | PWA offline: manifest/lang/service worker con estrategia segura para assets y NetworkOnly/API fail-closed. |
-| DV3N26-07 | P1 | pending_approval | Integraciones Ecuador: SUT/MDT como flujo controlado, enlaces/estado de registro y bloqueo hasta credenciales/API oficiales. |
-| DV3N26-08 | P0 | pending_approval | Limpieza, QA integral, AuditLock, reporte de cierre, commit y push. |
+| DV3N26-01 | P0 | completed_local | Bancos y cierre de nomina: confirmar que archivos bancarios solo usan nominas cerradas/pagadas y que recalculo no altera pagadas. |
+| DV3N26-02 | P0 | completed_local | Legal laboral: Art. 69 vacaciones, Art. 196 fondo de reserva en rol PDF, reportes y provisiones con pruebas. |
+| DV3N26-03 | P1 | completed_local | Reporteria y modulos: rol consolidado PDF, contabilidad/asientos NIC, export CSV/XLSX y navegacion visible. |
+| DV3N26-04 | P0 | completed_by_existing_runtime | LOPDP: privacidad/terminos/banner/consentimiento, minimizacion, evidencia visible y bloqueo profesional si falta politica. |
+| DV3N26-05 | P0 | completed_local | Cifrado AES-256-GCM de cuentas bancarias, rotacion/rollback, migracion segura y cero exposicion en logs/UI. |
+| DV3N26-06 | P1 | completed_local | PWA offline: manifest/lang/service worker con estrategia segura para assets y NetworkOnly/API fail-closed. |
+| DV3N26-07 | P1 | completed_local_with_external_block | Integraciones Ecuador: SUT/MDT como flujo controlado, enlaces/estado de registro y bloqueo hasta credenciales/API oficiales. |
+| DV3N26-08 | P0 | completed_local | Limpieza, QA integral, AuditLock, reporte de cierre, commit y push. |
 
 ## Reglas DV3N26
 
@@ -73,3 +73,7 @@ El diagnostico V3 declara 9 bugs funcionales corregidos, 7 importaciones muertas
 - Gate UTF-8 sin BOM para `.js`, `.jsx`, `.md`, `.json` modificados.
 - Revision manual de rutas/navegacion afectadas.
 - AuditLock firmado por fase.
+
+## Ejecucion DV3N26 2026-06-21
+
+Runtime cerrado localmente. Ver reporte: `docs2/diagnostico-v3-nomina-ec-2026/REPORTE_DV3N26_08_CIERRE_RUNTIME.md`.

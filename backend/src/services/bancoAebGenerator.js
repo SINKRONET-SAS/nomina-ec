@@ -8,6 +8,7 @@ const db = require('../config/database');
 const bankProfiles = require('../config/bank-file-profiles.json');
 const { roundMoney, toMoneyString } = require('../utils/money');
 const { recordAudit } = require('./auditService');
+const { decryptBankAccount } = require('./bankAccountCrypto');
 
 async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', context = {}) {
   const profile = await getBankProfileForTenant(tenantId, banco);
@@ -19,19 +20,19 @@ async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', con
 
   const nominasResult = await db.query(`
     SELECT e.cedula, e.nombres, e.apellidos, e.cuenta_bancaria_cifrada,
-      e.banco, e.tipo_cuenta, n.neto_recibir
+      e.banco, e.tipo_cuenta, n.neto_recibir, n.estado
     FROM nominas n
     JOIN empleados e ON n.empleado_id = e.id
     WHERE n.tenant_id = $1
       AND n.anio = $2
       AND n.mes = $3
-      AND n.estado = 'cerrada'
+      AND n.estado IN ('cerrada', 'pagada')
       AND e.cuenta_bancaria_cifrada IS NOT NULL
     ORDER BY e.apellidos, e.nombres
   `, [tenantId, anio, mes]);
 
   if (nominasResult.rows.length === 0) {
-    throw new Error('No hay nominas cerradas con cuenta bancaria para el periodo');
+    throw new Error('No hay nominas cerradas o pagadas con cuenta bancaria para el periodo');
   }
 
   const rows = [];
@@ -129,6 +130,7 @@ async function generateReviewWorkbook(rows, tenantId, anio, mes) {
     { header: 'Banco', key: 'banco', width: 15 },
     { header: 'Cuenta', key: 'cuenta', width: 15 },
     { header: 'Monto', key: 'monto', width: 12 },
+    { header: 'Estado nomina', key: 'estado', width: 16 },
   ];
 
   rows.forEach((row) => {
@@ -138,6 +140,7 @@ async function generateReviewWorkbook(rows, tenantId, anio, mes) {
       banco: row.banco,
       cuenta: '****',
       monto: Number.parseFloat(row.neto_recibir),
+      estado: row.estado,
     });
   });
 
@@ -251,21 +254,6 @@ async function getBankProfileForTenant(tenantId, banco) {
   return normalizeTenantBankProfile(result.rows[0], key);
 }
 
-async function decryptBankAccount(encryptedAccount) {
-  const encryptionKey = process.env.BANK_ACCOUNT_ENCRYPTION_KEY || 'change-this-local-bank-key';
-  const result = await db.query(
-    'SELECT pgp_sym_decrypt($1::bytea, $2) as cuenta',
-    [encryptedAccount, encryptionKey]
-  );
-  const account = result.rows[0]?.cuenta;
-
-  if (!account) {
-    throw new Error('No se pudo descifrar la cuenta bancaria');
-  }
-
-  return account.replace(/\D/g, '');
-}
-
 function formatAmount(value, profile) {
   return toMoneyString(value).replace('.', profile.decimalSeparator);
 }
@@ -286,5 +274,6 @@ module.exports = {
   generarArchivoBanco,
   getBankProfile,
   getBankProfileForTenant,
+  decryptBankAccount,
   validateBankRows,
 };
