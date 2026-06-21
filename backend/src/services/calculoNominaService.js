@@ -11,6 +11,19 @@ const {
 } = require('./legalParameterService');
 const { getApprovedDeductions } = require('./beneficioEmpleadoService');
 
+const FOURTEENTH_REGION_PARAMETERS = {
+  costa_galapagos: 'decimo_cuarto_costa_galapagos',
+  sierra_amazonia: 'decimo_cuarto_sierra_amazonia',
+};
+
+function resolveFourteenthSalaryRegion(value) {
+  const regionCode = String(value || 'sierra_amazonia').trim().toLowerCase();
+  return {
+    regionCode: FOURTEENTH_REGION_PARAMETERS[regionCode] ? regionCode : 'sierra_amazonia',
+    parameterKey: FOURTEENTH_REGION_PARAMETERS[regionCode] || FOURTEENTH_REGION_PARAMETERS.sierra_amazonia,
+  };
+}
+
 async function calcularNominaMensual(tenantId, anio, mes) {
   validarPeriodoNomina(anio, mes);
   console.log(`[NOMINA] Calculando ${mes}/${anio} para tenant ${tenantId}`);
@@ -112,6 +125,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     Number.parseFloat(emp.gastos_personales_anuales || 0)
   );
   const provisionDecimoTercero = roundMoney(totalIngresos * (payrollParameters.thirteenthSalaryProvisionRate ?? (1 / 12)));
+  const fourteenthSalaryRegion = resolveFourteenthSalaryRegion(emp.region_decimo_cuarto);
   const provisionDecimoCuarto = roundMoney(payrollParameters.unifiedBaseSalary * (payrollParameters.fourteenthSalaryProvisionRate ?? (1 / 12)));
   const provisionVacaciones = roundMoney(totalIngresos * payrollParameters.vacationProvisionRate);
   const provisionFondosReserva = calcularProvisionFondosReserva(emp.fecha_ingreso, totalIngresos, anio, mes, payrollParameters);
@@ -142,6 +156,9 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     sueldoProporcional,
     valorHora: roundMoney(valorHora),
     jornadaHorasMensuales: getEmployeeMonthlyHours(emp, payrollParameters),
+    jornadaCodigo: emp.jornada_codigo || '',
+    unidadOrganizativaCodigo: emp.unidad_organizativa_codigo || '',
+    zonaMarcacionCodigo: emp.zona_marcacion_codigo || '',
     gastosPersonalesAnuales: roundMoney(Number.parseFloat(emp.gastos_personales_anuales || 0)),
     extras50,
     extras100,
@@ -155,6 +172,8 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     impuestoRenta,
     provisionDecimoTercero,
     provisionDecimoCuarto,
+    decimoCuartoRegion: fourteenthSalaryRegion.regionCode,
+    decimoCuartoParameterKey: fourteenthSalaryRegion.parameterKey,
     provisionVacaciones,
     provisionFondosReserva,
     costoEmpleador,
@@ -321,4 +340,5 @@ module.exports = {
   calcularValorHora,
   getEmployeeMonthlyHours,
   calcularIR,
+  resolveFourteenthSalaryRegion,
 };

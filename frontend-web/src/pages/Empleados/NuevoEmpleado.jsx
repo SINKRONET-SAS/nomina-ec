@@ -10,6 +10,9 @@ const initialForm = {
   apellidos: '',
   cargo: '',
   departamento: '',
+  unidad_organizativa_codigo: '',
+  jornada_codigo: '',
+  zona_marcacion_codigo: '',
   sueldo_bruto_mensual: '',
   jornada_horas_mensuales: '',
   gastos_personales_anuales: '',
@@ -26,6 +29,7 @@ const initialForm = {
   banco: '',
   tipo_cuenta: '',
   cuenta_bancaria: '',
+  region_decimo_cuarto: 'sierra_amazonia',
 };
 
 function normalizeEmpleado(empleado) {
@@ -36,6 +40,9 @@ function normalizeEmpleado(empleado) {
     apellidos: empleado.apellidos || '',
     cargo: empleado.cargo || '',
     departamento: empleado.departamento || '',
+    unidad_organizativa_codigo: empleado.unidad_organizativa_codigo || '',
+    jornada_codigo: empleado.jornada_codigo || '',
+    zona_marcacion_codigo: empleado.zona_marcacion_codigo || '',
     sueldo_bruto_mensual: empleado.sueldo_bruto_mensual || '',
     jornada_horas_mensuales: empleado.jornada_horas_mensuales || '',
     gastos_personales_anuales: empleado.gastos_personales_anuales || '',
@@ -52,6 +59,7 @@ function normalizeEmpleado(empleado) {
     banco: empleado.banco || '',
     tipo_cuenta: empleado.tipo_cuenta || '',
     cuenta_bancaria: '',
+    region_decimo_cuarto: empleado.region_decimo_cuarto || 'sierra_amazonia',
   };
 }
 
@@ -118,6 +126,41 @@ function NuevoEmpleado() {
     },
   });
 
+  const bankProfilesQuery = useQuery({
+    queryKey: ['configuracion', 'bankProfiles'],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/configuracion/bankProfiles');
+      return response.data.data || [];
+    },
+  });
+
+  const activeBankProfiles = (bankProfilesQuery.data || []).filter((profile) => profile.activo !== false);
+
+  const workShiftsQuery = useQuery({
+    queryKey: ['configuracion', 'workShifts'],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/configuracion/workShifts');
+      return response.data.data || [];
+    },
+  });
+  const organizationUnitsQuery = useQuery({
+    queryKey: ['configuracion', 'organizationUnits'],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/configuracion/organizationUnits');
+      return response.data.data || [];
+    },
+  });
+  const workZonesQuery = useQuery({
+    queryKey: ['configuracion', 'workZones'],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/configuracion/workZones');
+      return response.data.data || [];
+    },
+  });
+  const activeWorkShifts = (workShiftsQuery.data || []).filter((item) => item.status !== 'inactivo');
+  const activeOrganizationUnits = (organizationUnitsQuery.data || []).filter((item) => item.status !== 'inactivo');
+  const activeWorkZones = (workZonesQuery.data || []).filter((item) => item.status !== 'inactivo');
+
   useEffect(() => {
     if (empleadoQuery.data) setFormData(normalizeEmpleado(empleadoQuery.data));
   }, [empleadoQuery.data]);
@@ -138,6 +181,9 @@ function NuevoEmpleado() {
     apellidos: formData.apellidos,
     cargo: formData.cargo,
     departamento: formData.departamento,
+    unidad_organizativa_codigo: formData.unidad_organizativa_codigo,
+    jornada_codigo: formData.jornada_codigo,
+    zona_marcacion_codigo: formData.zona_marcacion_codigo,
     sueldo_bruto_mensual: formData.sueldo_bruto_mensual,
     jornada_horas_mensuales: formData.jornada_horas_mensuales,
     gastos_personales_anuales: formData.gastos_personales_anuales,
@@ -154,6 +200,7 @@ function NuevoEmpleado() {
     banco: formData.banco,
     tipo_cuenta: formData.tipo_cuenta,
     cuenta_bancaria: formData.cuenta_bancaria,
+    region_decimo_cuarto: formData.region_decimo_cuarto,
   });
 
   const buildUpdatePayload = () => {
@@ -229,7 +276,7 @@ function NuevoEmpleado() {
       <div>
         <h1 className="text-2xl font-bold text-slate-950">{isEdit ? 'Editar ficha del trabajador' : 'Nuevo trabajador'}</h1>
         <p className="mt-2 text-sm text-slate-600">
-          La cuenta bancaria registrada aqui pertenece al trabajador y se cifra como dato personal. La cuenta bancaria del cliente se configura por separado en Parametrizacion.
+          La cuenta bancaria registrada aqui pertenece al trabajador y se cifra como dato personal. La cuenta bancaria del cliente se configura por separado en Parametrizacion. Banco y parametros legales se guardan como codigos controlados.
         </p>
       </div>
 
@@ -268,6 +315,30 @@ function NuevoEmpleado() {
         <Section title="Relacion laboral" description="Datos base para nomina, beneficios, contratos y reportes.">
           <Field label="Cargo" name="cargo" onChange={handleChange} value={formData.cargo} />
           <Field label="Departamento o unidad" name="departamento" onChange={handleChange} value={formData.departamento} />
+          <Field label="Unidad organizativa" name="unidad_organizativa_codigo" onChange={handleChange} value={formData.unidad_organizativa_codigo}>
+            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="unidad_organizativa_codigo" onChange={handleChange} value={formData.unidad_organizativa_codigo}>
+              <option value="">{organizationUnitsQuery.isLoading ? 'Cargando unidades...' : 'Seleccionar unidad parametrizada...'}</option>
+              {activeOrganizationUnits.map((unit) => (
+                <option key={unit.id || unit.code} value={unit.code}>{unit.code} - {unit.name}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Codigo de jornada" name="jornada_codigo" onChange={handleChange} required value={formData.jornada_codigo}>
+            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="jornada_codigo" onChange={handleChange} required value={formData.jornada_codigo}>
+              <option value="">{workShiftsQuery.isLoading ? 'Cargando jornadas...' : 'Seleccionar jornada parametrizada...'}</option>
+              {activeWorkShifts.map((shift) => (
+                <option key={shift.id || shift.code} value={shift.code}>{shift.code} - {shift.name}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Zona de marcacion" name="zona_marcacion_codigo" onChange={handleChange} value={formData.zona_marcacion_codigo}>
+            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="zona_marcacion_codigo" onChange={handleChange} value={formData.zona_marcacion_codigo}>
+              <option value="">{workZonesQuery.isLoading ? 'Cargando zonas...' : 'Seleccionar zona parametrizada...'}</option>
+              {activeWorkZones.map((zone) => (
+                <option key={zone.id || zone.code} value={zone.code}>{zone.code} - {zone.name}</option>
+              ))}
+            </select>
+          </Field>
           <Field label="Sueldo bruto" name="sueldo_bruto_mensual" onChange={handleChange} required step="0.01" type="number" value={formData.sueldo_bruto_mensual} />
           <Field label="Jornada mensual (horas)" min="1" name="jornada_horas_mensuales" onChange={handleChange} placeholder="240 por defecto" step="0.01" type="number" value={formData.jornada_horas_mensuales} />
           <Field label="Gastos personales anuales SRI" min="0" name="gastos_personales_anuales" onChange={handleChange} placeholder="0.00" step="0.01" type="number" value={formData.gastos_personales_anuales} />
@@ -280,6 +351,15 @@ function NuevoEmpleado() {
               <option value="hora">Por hora</option>
             </select>
           </Field>
+          <Field label="Region para decimo cuarto" name="region_decimo_cuarto" onChange={handleChange} required value={formData.region_decimo_cuarto}>
+            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="region_decimo_cuarto" onChange={handleChange} required value={formData.region_decimo_cuarto}>
+              <option value="sierra_amazonia">Sierra / Amazonia</option>
+              <option value="costa_galapagos">Costa / Galapagos</option>
+            </select>
+          </Field>
+          <div className="md:col-span-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            Este codigo enlaza la ficha con el parametro legal de decimo cuarto correspondiente. No se calcula por texto libre.
+          </div>
         </Section>
 
         <Section title="Datos de pago del trabajador" description="Entidad y cuenta del trabajador. La entidad debe estar autorizada por la autoridad de control financiero aplicable.">
@@ -290,7 +370,16 @@ function NuevoEmpleado() {
               <option value="efectivo">Efectivo autorizado</option>
             </select>
           </Field>
-          <Field label="Entidad bancaria o financiera del trabajador" name="banco" onChange={handleChange} placeholder="Ej. Banco Pichincha, cooperativa autorizada..." value={formData.banco} />
+          <Field label="Entidad bancaria o financiera del trabajador" name="banco" onChange={handleChange} required={formData.forma_pago === 'transferencia'} value={formData.banco}>
+            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="banco" onChange={handleChange} required={formData.forma_pago === 'transferencia'} value={formData.banco}>
+              <option value="">{bankProfilesQuery.isLoading ? 'Cargando bancos...' : 'Seleccionar banco parametrizado...'}</option>
+              {activeBankProfiles.map((profile) => (
+                <option key={profile.id || profile.banco_codigo} value={profile.banco_codigo}>
+                  {profile.banco_codigo} - {profile.banco_nombre}
+                </option>
+              ))}
+            </select>
+          </Field>
           <Field label="Tipo de cuenta" name="tipo_cuenta" onChange={handleChange} value={formData.tipo_cuenta}>
             <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="tipo_cuenta" onChange={handleChange} value={formData.tipo_cuenta}>
               <option value="">Seleccionar...</option>
@@ -303,8 +392,13 @@ function NuevoEmpleado() {
           <Field label={isEdit ? 'Nueva cuenta del trabajador' : 'Numero de cuenta del trabajador'} name="cuenta_bancaria" onChange={handleChange} placeholder={isEdit ? 'Dejar vacio para conservar la actual' : ''} value={formData.cuenta_bancaria} />
           <div className="md:col-span-2 flex gap-3 rounded-md border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-950">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>Esta cuenta pertenece al trabajador y se guarda cifrada. No corresponde a la cuenta bancaria pagadora del cliente/empresa.</p>
+            <p>Esta cuenta pertenece al trabajador y se guarda cifrada. El banco sale de perfiles bancarios y su homologacion de campos. No corresponde a la cuenta pagadora del cliente/empresa.</p>
           </div>
+          {activeBankProfiles.length === 0 && (
+            <div className="md:col-span-2 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              Configura al menos un perfil bancario en Parametrizacion antes de registrar cuentas por transferencia.
+            </div>
+          )}
         </Section>
 
         {isEdit && (

@@ -73,6 +73,7 @@ model Tenant {
   documentos             LegalDocument[]
   parametrosLegales      LegalParameter[]
   perfilesBancarios      BankProfile[]
+  homologacionesBancarias BankFieldMapping[]
   configurationCatalogs  ConfigurationCatalog[]
   legalParameterVersions LegalParameterVersion[]
   noveltyTypeConfigs     NoveltyTypeConfig[]
@@ -289,6 +290,9 @@ model Employee {
   apellidos               String                 @db.VarChar(120)
   cargo                   String                 @default("") @db.VarChar(120)
   departamento            String                 @default("") @db.VarChar(120)
+  unidadOrganizativaCodigo String                @default("") @map("unidad_organizativa_codigo") @db.VarChar(80)
+  jornadaCodigo           String                 @default("") @map("jornada_codigo") @db.VarChar(80)
+  zonaMarcacionCodigo     String                 @default("") @map("zona_marcacion_codigo") @db.VarChar(80)
   sueldoBrutoMensual      Decimal                @map("sueldo_bruto_mensual") @db.Decimal(12, 2)
   jornadaHorasMensuales   Decimal?               @map("jornada_horas_mensuales") @db.Decimal(6, 2)
   gastosPersonalesAnuales Decimal                @default(0) @map("gastos_personales_anuales") @db.Decimal(12, 2)
@@ -305,6 +309,7 @@ model Employee {
   estadoCivil             String                 @default("") @map("estado_civil") @db.VarChar(30)
   cargasFamiliares        Int                    @default(0) @map("cargas_familiares")
   formaPago               String                 @default("transferencia") @map("forma_pago") @db.VarChar(30)
+  regionDecimoCuarto      String                 @default("sierra_amazonia") @map("region_decimo_cuarto") @db.VarChar(40)
   telefono                String                 @default("") @db.VarChar(40)
   emailPersonal           String                 @default("") @map("email_personal") @db.VarChar(255)
   activo                  Boolean                @default(true)
@@ -677,9 +682,29 @@ model BankProfile {
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   tenant         Tenant?  @relation(fields: [tenantId], references: [id])
+  fieldMappings  BankFieldMapping[]
 
   @@unique([tenantId, bancoCodigo])
   @@map("perfiles_bancarios")
+}
+
+model BankFieldMapping {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String?      @map("tenant_id") @db.Uuid
+  bankProfileId  String?      @map("bank_profile_id") @db.Uuid
+  bancoCodigo    String       @map("banco_codigo") @db.VarChar(20)
+  canonicalField String       @map("canonical_field") @db.VarChar(80)
+  bankFieldName  String       @map("bank_field_name") @db.VarChar(120)
+  position       Int
+  formatter      String       @default("") @db.VarChar(80)
+  required       Boolean      @default(true)
+  metadata       Json         @default("{}")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant         Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bankProfile    BankProfile? @relation(fields: [bankProfileId], references: [id], onDelete: Cascade)
+
+  @@map("bank_field_mappings")
 }
 
 model ConfigurationCatalog {

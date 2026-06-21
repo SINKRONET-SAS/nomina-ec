@@ -37,7 +37,7 @@ async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', con
 
   const rows = [];
   if (profile.includeHeader) {
-    rows.push(profile.fields.map((field) => field.toUpperCase()));
+    rows.push(profile.headerLabels || profile.fields.map((field) => field.toUpperCase()));
   }
 
   let totalPagos = 0;
@@ -49,21 +49,22 @@ async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', con
     if (!bankProfileCache.has(rowBankKey)) {
       bankProfileCache.set(rowBankKey, await getBankProfileForTenant(tenantId, payroll.banco || banco));
     }
-    const bancoCodigo = bankProfileCache.get(rowBankKey).bankCode;
+    const rowProfile = bankProfileCache.get(rowBankKey);
+    const bancoCodigo = rowProfile.bankCode;
     const monto = roundMoney(Number.parseFloat(payroll.neto_recibir));
+    const paymentValues = buildPaymentValues({
+      payroll,
+      cuenta,
+      monto,
+      bancoCodigo,
+      tenantId,
+      anio,
+      mes,
+      index,
+      profile: rowProfile,
+    });
 
-    rows.push([
-      '1',
-      bancoCodigo.padStart(4, '0'),
-      '00',
-      cuenta.padStart(profile.accountLength, '0'),
-      payroll.cedula,
-      `${payroll.apellidos} ${payroll.nombres}`.substring(0, 40),
-      `NOMINA ${String(mes).padStart(2, '0')}/${anio}`.substring(0, 40),
-      `${anio}${String(mes).padStart(2, '0')}28`,
-      formatAmount(monto, profile),
-      `NOM${tenantId.substring(0, 8)}${String(index + 1).padStart(4, '0')}`,
-    ]);
+    rows.push(rowProfile.fields.map((field) => paymentValues[field] ?? ''));
 
     totalPagos = roundMoney(totalPagos + monto);
   }
@@ -228,6 +229,28 @@ function normalizeTenantBankProfile(row, requestedBank) {
     includeTrailer: Boolean(row.include_trailer),
     accountLength: Number(fieldMap.accountLength || fallbackProfile?.accountLength || 10),
     fields,
+    headerLabels: null,
+  };
+}
+
+function applyBankFieldMappings(profile, mappings = []) {
+  if (!Array.isArray(mappings) || mappings.length === 0) {
+    return profile;
+  }
+
+  const orderedMappings = [...mappings].sort((a, b) => Number(a.position) - Number(b.position));
+  return {
+    ...profile,
+    fields: orderedMappings.map((mapping) => mapping.canonical_field),
+    headerLabels: orderedMappings.map((mapping) => mapping.bank_field_name),
+    fieldMappings: orderedMappings.map((mapping) => ({
+      canonicalField: mapping.canonical_field,
+      bankFieldName: mapping.bank_field_name,
+      position: Number(mapping.position),
+      formatter: mapping.formatter || '',
+      required: Boolean(mapping.required),
+      metadata: mapping.metadata || {},
+    })),
   };
 }
 
@@ -251,7 +274,52 @@ async function getBankProfileForTenant(tenantId, banco) {
     return getBankProfile(key);
   }
 
-  return normalizeTenantBankProfile(result.rows[0], key);
+  const profile = normalizeTenantBankProfile(result.rows[0], key);
+  const mappings = await loadBankFieldMappings(tenantId, result.rows[0], profile);
+  return applyBankFieldMappings(profile, mappings);
+}
+
+async function loadBankFieldMappings(tenantId, profileRow, profile) {
+  const result = await db.query(`
+    SELECT *
+    FROM bank_field_mappings
+    WHERE (tenant_id = $1 OR tenant_id IS NULL)
+      AND (
+        bank_profile_id = $2
+        OR UPPER(banco_codigo) = $3
+        OR UPPER(banco_codigo) = $4
+      )
+    ORDER BY CASE WHEN tenant_id = $1 THEN 0 ELSE 1 END, position ASC
+  `, [
+    tenantId,
+    profileRow.id,
+    normalizeBankKey(profileRow.banco_codigo),
+    normalizeBankKey(profile.profileKey),
+  ]);
+
+  const byField = new Map();
+  for (const row of result.rows) {
+    if (!byField.has(row.canonical_field)) {
+      byField.set(row.canonical_field, row);
+    }
+  }
+  return [...byField.values()].sort((a, b) => Number(a.position) - Number(b.position));
+}
+
+function buildPaymentValues({ payroll, cuenta, monto, bancoCodigo, tenantId, anio, mes, index, profile }) {
+  return {
+    tipoRegistro: '1',
+    bancoCodigo: bancoCodigo.padStart(4, '0'),
+    oficina: '00',
+    digitoControl: '00',
+    cuenta: cuenta.padStart(profile.accountLength, '0'),
+    cedula: payroll.cedula,
+    nombre: `${payroll.apellidos} ${payroll.nombres}`.substring(0, 40),
+    concepto: `NOMINA ${String(mes).padStart(2, '0')}/${anio}`.substring(0, 40),
+    fechaOperacion: `${anio}${String(mes).padStart(2, '0')}28`,
+    importe: formatAmount(monto, profile),
+    referencia: `NOM${tenantId.substring(0, 8)}${String(index + 1).padStart(4, '0')}`,
+  };
 }
 
 function formatAmount(value, profile) {

@@ -39,7 +39,7 @@ describe('bancoAebGenerator', () => {
           },
         },
       ],
-    });
+    }).mockResolvedValueOnce({ rows: [] });
 
     const profile = await getBankProfileForTenant('tenant-1', 'PICHINCHA');
 
@@ -49,6 +49,36 @@ describe('bancoAebGenerator', () => {
     expect(profile.encoding).toBe('latin1');
     expect(profile.accountLength).toBe(12);
     expect(profile.fields).toEqual(['tipoRegistro', 'cuenta', 'importe']);
+  });
+
+  test('aplica homologacion de campos bancarios por perfil', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 'perfil-tenant-1',
+          tenant_id: 'tenant-1',
+          banco_codigo: 'PICHINCHA',
+          banco_nombre: 'PICHINCHA',
+          delimiter: ',',
+          encoding: 'utf8',
+          date_format: 'YYYYMMDD',
+          include_header: true,
+          include_trailer: true,
+          field_map: { profile: 'PICHINCHA', bankCode: '2011' },
+        },
+      ],
+    }).mockResolvedValueOnce({
+      rows: [
+        { canonical_field: 'cedula', bank_field_name: 'IDENTIFICACION', position: 1, required: true, metadata: {} },
+        { canonical_field: 'cuenta', bank_field_name: 'CTA_BENEFICIARIO', position: 2, required: true, metadata: {} },
+        { canonical_field: 'importe', bank_field_name: 'VALOR', position: 3, required: true, metadata: {} },
+      ],
+    });
+
+    const profile = await getBankProfileForTenant('tenant-1', 'PICHINCHA');
+
+    expect(profile.fields).toEqual(['cedula', 'cuenta', 'importe']);
+    expect(profile.headerLabels).toEqual(['IDENTIFICACION', 'CTA_BENEFICIARIO', 'VALOR']);
   });
 
   test('usa perfil inicial si el tenant no tiene configuracion', async () => {

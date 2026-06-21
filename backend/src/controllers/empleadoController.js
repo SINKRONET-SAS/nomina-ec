@@ -4,6 +4,7 @@
 const db = require('../config/database');
 const { validarCedula } = require('../utils/validarCedula');
 const { encryptBankAccount } = require('../services/bankAccountCrypto');
+const { getBankProfileForTenant } = require('../services/bancoAebGenerator');
 const { generarContrato } = require('../services/templateGenerator');
 const {
   commitEmployeeImport,
@@ -11,6 +12,58 @@ const {
   previewEmployeeImport,
   rollbackEmployeeImport,
 } = require('../services/employeeImportService');
+
+const FOURTEENTH_REGION_PARAMETERS = {
+  costa_galapagos: 'decimo_cuarto_costa_galapagos',
+  sierra_amazonia: 'decimo_cuarto_sierra_amazonia',
+};
+
+function normalizeFourteenthRegion(value) {
+  const normalized = String(value || 'sierra_amazonia').trim().toLowerCase();
+  return FOURTEENTH_REGION_PARAMETERS[normalized] ? normalized : null;
+}
+
+async function resolveEmployeeBankCode(tenantId, formaPago, banco) {
+  const paymentMethod = String(formaPago || 'transferencia').trim().toLowerCase();
+  const bankCode = String(banco || '').trim().toUpperCase();
+
+  if (paymentMethod !== 'transferencia') {
+    return bankCode;
+  }
+
+  if (!bankCode) {
+    const err = new Error('Selecciona una entidad bancaria configurada para el trabajador.');
+    err.code = 'EMPLEADO_BANCO_REQUERIDO';
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const profile = await getBankProfileForTenant(tenantId, bankCode);
+  return profile.profileKey || bankCode;
+}
+
+async function resolveConfiguredCode(tenantId, table, code, label, errorCode) {
+  const normalized = String(code || '').trim().toUpperCase();
+  if (!normalized) return '';
+
+  const result = await db.query(`
+    SELECT code
+    FROM ${table}
+    WHERE tenant_id = $1
+      AND UPPER(code) = $2
+      AND status = 'activo'
+    LIMIT 1
+  `, [tenantId, normalized]);
+
+  if (result.rows.length === 0) {
+    const err = new Error(`${label} no existe o no esta activo en parametrizacion.`);
+    err.code = errorCode;
+    err.statusCode = 400;
+    throw err;
+  }
+
+  return result.rows[0].code;
+}
 
 async function listar(req, res) {
   try {
@@ -60,7 +113,9 @@ async function crear(req, res) {
       cedula, nombres, apellidos, cargo, departamento,
       sueldo_bruto_mensual, fecha_ingreso, tipo_contrato,
       jornada_horas_mensuales, gastos_personales_anuales,
-      cuenta_bancaria, banco, tipo_cuenta, forma_pago, direccion, ciudad, provincia, estado_civil, cargas_familiares, telefono, email
+      cuenta_bancaria, banco, tipo_cuenta, forma_pago, region_decimo_cuarto,
+      jornada_codigo, unidad_organizativa_codigo, zona_marcacion_codigo,
+      direccion, ciudad, provincia, estado_civil, cargas_familiares, telefono, email
     } = req.body;
     
     // Validaciones
@@ -71,6 +126,20 @@ async function crear(req, res) {
     if (!nombres || !apellidos || !sueldo_bruto_mensual || !fecha_ingreso) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
     }
+
+    const normalizedRegion = normalizeFourteenthRegion(region_decimo_cuarto);
+    if (!normalizedRegion) {
+      return res.status(400).json({
+        error: 'REGION_DECIMO_CUARTO_INVALIDA',
+        message: 'Selecciona Costa/Galapagos o Sierra/Amazonia para calcular decimo cuarto.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const normalizedBankCode = await resolveEmployeeBankCode(tenantId, forma_pago, banco);
+    const normalizedWorkShiftCode = await resolveConfiguredCode(tenantId, 'work_shifts', jornada_codigo, 'La jornada', 'EMPLEADO_JORNADA_INVALIDA');
+    const normalizedOrgUnitCode = await resolveConfiguredCode(tenantId, 'organization_units', unidad_organizativa_codigo, 'La unidad organizativa', 'EMPLEADO_UNIDAD_INVALIDA');
+    const normalizedWorkZoneCode = await resolveConfiguredCode(tenantId, 'work_zones', zona_marcacion_codigo, 'La zona de marcacion', 'EMPLEADO_ZONA_INVALIDA');
     
     // Verificar que la cedula no exista
     const existe = await db.query(
@@ -92,20 +161,24 @@ async function crear(req, res) {
     const result = await db.query(`
       INSERT INTO empleados (
         tenant_id, cedula, nombres, apellidos, cargo, departamento,
+        unidad_organizativa_codigo, jornada_codigo, zona_marcacion_codigo,
         sueldo_bruto_mensual, jornada_horas_mensuales, gastos_personales_anuales,
         fecha_ingreso, tipo_contrato,
         cuenta_bancaria_cifrada, banco, tipo_cuenta, forma_pago,
+        region_decimo_cuarto,
         direccion_domicilio, ciudad_domicilio, provincia_domicilio, estado_civil, cargas_familiares, telefono, email_personal
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)
       RETURNING id, cedula, nombres, apellidos, cargo, sueldo_bruto_mensual,
-        jornada_horas_mensuales, gastos_personales_anuales, fecha_ingreso, tipo_contrato
+        jornada_horas_mensuales, gastos_personales_anuales, fecha_ingreso, tipo_contrato, banco, region_decimo_cuarto,
+        unidad_organizativa_codigo, jornada_codigo, zona_marcacion_codigo
     `, [
       tenantId, cedula, nombres, apellidos, cargo || '', departamento || '',
+      normalizedOrgUnitCode, normalizedWorkShiftCode, normalizedWorkZoneCode,
       sueldo_bruto_mensual,
       jornada_horas_mensuales || null,
       gastos_personales_anuales || 0,
       fecha_ingreso, tipo_contrato || 'indefinido',
-      cuentaCifrada, banco || '', tipo_cuenta || '', forma_pago || 'transferencia',
+      cuentaCifrada, normalizedBankCode, tipo_cuenta || '', forma_pago || 'transferencia', normalizedRegion,
       direccion || '', ciudad || '', provincia || '', estado_civil || '', Number(cargas_familiares || 0), telefono || '', email || ''
     ]);
     
@@ -274,6 +347,9 @@ async function actualizar(req, res) {
       apellidos: 'apellidos',
       cargo: 'cargo',
       departamento: 'departamento',
+      unidad_organizativa_codigo: 'unidad_organizativa_codigo',
+      jornada_codigo: 'jornada_codigo',
+      zona_marcacion_codigo: 'zona_marcacion_codigo',
       sueldo_bruto_mensual: 'sueldo_bruto_mensual',
       jornada_horas_mensuales: 'jornada_horas_mensuales',
       gastos_personales_anuales: 'gastos_personales_anuales',
@@ -282,6 +358,7 @@ async function actualizar(req, res) {
       banco: 'banco',
       tipo_cuenta: 'tipo_cuenta',
       forma_pago: 'forma_pago',
+      region_decimo_cuarto: 'region_decimo_cuarto',
       direccion_domicilio: 'direccion_domicilio',
       ciudad_domicilio: 'ciudad_domicilio',
       provincia_domicilio: 'provincia_domicilio',
@@ -295,6 +372,32 @@ async function actualizar(req, res) {
       body.cuenta_bancaria_cifrada = body.cuenta_bancaria ? encryptBankAccount(body.cuenta_bancaria) : null;
       delete body.cuenta_bancaria;
       updateColumns.cuenta_bancaria_cifrada = 'cuenta_bancaria_cifrada';
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'region_decimo_cuarto')) {
+      body.region_decimo_cuarto = normalizeFourteenthRegion(body.region_decimo_cuarto);
+      if (!body.region_decimo_cuarto) {
+        return res.status(400).json({
+          error: 'REGION_DECIMO_CUARTO_INVALIDA',
+          message: 'Selecciona Costa/Galapagos o Sierra/Amazonia para calcular decimo cuarto.',
+          correlationId: req.correlationId,
+        });
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'banco') || Object.prototype.hasOwnProperty.call(body, 'forma_pago')) {
+      body.banco = await resolveEmployeeBankCode(
+        tenantId,
+        body.forma_pago || req.body.forma_pago,
+        Object.prototype.hasOwnProperty.call(body, 'banco') ? body.banco : ''
+      );
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'jornada_codigo')) {
+      body.jornada_codigo = await resolveConfiguredCode(tenantId, 'work_shifts', body.jornada_codigo, 'La jornada', 'EMPLEADO_JORNADA_INVALIDA');
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'unidad_organizativa_codigo')) {
+      body.unidad_organizativa_codigo = await resolveConfiguredCode(tenantId, 'organization_units', body.unidad_organizativa_codigo, 'La unidad organizativa', 'EMPLEADO_UNIDAD_INVALIDA');
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'zona_marcacion_codigo')) {
+      body.zona_marcacion_codigo = await resolveConfiguredCode(tenantId, 'work_zones', body.zona_marcacion_codigo, 'La zona de marcacion', 'EMPLEADO_ZONA_INVALIDA');
     }
     if (Object.prototype.hasOwnProperty.call(body, 'cargas_familiares')) {
       body.cargas_familiares = Number(body.cargas_familiares || 0);

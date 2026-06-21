@@ -58,6 +58,13 @@ const RESOURCE_CONFIG = {
     columns: ['banco_codigo', 'banco_nombre', 'delimiter', 'encoding', 'date_format', 'include_header', 'include_trailer', 'field_map', 'activo'],
     orderBy: 'banco_nombre',
   },
+  bankFieldMappings: {
+    table: 'bank_field_mappings',
+    tenantScoped: false,
+    supportsCreatedBy: false,
+    columns: ['bank_profile_id', 'banco_codigo', 'canonical_field', 'bank_field_name', 'position', 'formatter', 'required', 'metadata'],
+    orderBy: 'banco_codigo, position',
+  },
 };
 
 function getResourceConfig(resource) {
@@ -785,6 +792,7 @@ async function getConfigurationSummary(user) {
       { code: 'jornada_zona', label: 'Jornada y zona configuradas', passed: resources.workShifts.length > 0 && resources.workZones.length > 0 },
       { code: 'novedades', label: 'Tipos de novedades configurados', passed: resources.noveltyTypes.length > 0 },
       { code: 'bancos', label: 'Perfil bancario disponible', passed: resources.bankProfiles.length > 0 },
+      { code: 'homologacion_bancaria', label: 'Homologacion bancaria configurada', passed: resources.bankFieldMappings.length > 0 },
     ],
   };
 }

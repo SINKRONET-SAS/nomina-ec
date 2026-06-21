@@ -3,6 +3,7 @@ const {
   calcularIR,
   calcularProvisionFondosReserva,
   calcularValorHora,
+  resolveFourteenthSalaryRegion,
 } = require('./calculoNominaService');
 const { getLegalParameters } = require('../config/legal-ecuador');
 const {
@@ -48,12 +49,23 @@ describe('calculoNominaService', () => {
     }, { monthlyWorkHours: 240 })).toBe(12.5);
   });
 
-  test('no provisiona fondos de reserva antes del primer año laboral', () => {
+  test('no provisiona fondos de reserva antes del primer anio laboral', () => {
     expect(calcularProvisionFondosReserva('2026-02-01', 600, 2026, 6)).toBe(0);
   });
 
-  test('provisiona fondos de reserva despues del primer año laboral', () => {
+  test('provisiona fondos de reserva despues del primer anio laboral', () => {
     expect(calcularProvisionFondosReserva('2024-01-01', 600, 2026, 6)).toBe(50);
+  });
+
+  test('resuelve parametro regional de decimo cuarto desde la ficha del empleado', () => {
+    expect(resolveFourteenthSalaryRegion('costa_galapagos')).toEqual({
+      regionCode: 'costa_galapagos',
+      parameterKey: 'decimo_cuarto_costa_galapagos',
+    });
+    expect(resolveFourteenthSalaryRegion('sierra_amazonia')).toEqual({
+      regionCode: 'sierra_amazonia',
+      parameterKey: 'decimo_cuarto_sierra_amazonia',
+    });
   });
 
   test('bloquea calculos productivos con parametros legales pendientes', () => {
