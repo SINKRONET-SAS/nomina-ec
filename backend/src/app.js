@@ -43,19 +43,11 @@ app.get('/health', (req, res) => {
   });
 });
 
-const authController = require('./controllers/authController');
 const employeeAppInviteController = require('./controllers/employeeAppInviteController');
+const createAuthRoutes = require('./routes/authRoutes');
 const { authenticateToken, requireRole } = require('./middleware/auth');
-const authRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 20, keyPrefix: 'auth' });
-app.post('/api/auth/login', authRateLimit, authController.login);
-app.post('/api/auth/refresh', authController.refreshToken);
-app.post('/api/auth/public-register', authRateLimit, authController.publicRegister);
-app.post('/api/auth/password/forgot', authRateLimit, authController.forgotPassword);
-app.post('/api/auth/password/reset', authRateLimit, authController.resetPassword);
-app.post('/api/auth/email-verification/request', authRateLimit, authController.requestEmailVerification);
-app.post('/api/auth/email-verification/resend', authRateLimit, authController.requestEmailVerification);
-app.post('/api/auth/email-verification/confirm', authRateLimit, authController.confirmEmailVerification);
-app.post('/api/auth/register', authRateLimit, authenticateToken, requireRole('superadmin', 'owner'), authController.register);
+const authRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, keyPrefix: 'auth' });
+app.use('/api/auth', createAuthRoutes({ authRateLimit }));
 app.post('/api/mobile/empleado/activar', authRateLimit, employeeAppInviteController.aceptarPublica);
 
 const paymentController = require('./controllers/paymentController');
@@ -92,7 +84,6 @@ app.get('/api/superadmin/overview', requireRole('superadmin'), superadminControl
 app.post('/api/superadmin/incidencias', requireRole('superadmin'), superadminController.createSupportIncident);
 app.put('/api/superadmin/incidencias/:id', requireRole('superadmin'), superadminController.updateSupportIncident);
 
-app.get('/api/auth/email-verification/status', authController.emailVerificationStatus);
 app.get('/api/pagos/status', paymentController.subscriptionStatus);
 app.get('/api/pagos/payment-methods', paymentController.listPaymentMethods);
 app.get('/api/pagos/payment-methods/capabilities', paymentController.paymentCapabilities);

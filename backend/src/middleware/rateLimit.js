@@ -7,7 +7,7 @@ function createRateLimiter({ windowMs, max, keyPrefix }) {
 
   return (req, res, next) => {
     const now = Date.now();
-    const key = `${keyPrefix}:${req.ip}`;
+    const key = `${keyPrefix}:${req.ip}:${req.path}`;
     const current = hits.get(key) || { count: 0, resetAt: now + windowMs };
 
     if (now > current.resetAt) {
@@ -19,10 +19,13 @@ function createRateLimiter({ windowMs, max, keyPrefix }) {
     hits.set(key, current);
 
     if (current.count > max) {
+      const retryAfterSeconds = Math.max(1, Math.ceil((current.resetAt - now) / 1000));
+      res.set('Retry-After', String(retryAfterSeconds));
       return res.status(429).json({
         error: 'RATE_LIMIT_EXCEDIDO',
         message: 'Demasiados intentos. Intente nuevamente mas tarde.',
         correlationId: req.correlationId,
+        retryAfterSeconds,
       });
     }
 

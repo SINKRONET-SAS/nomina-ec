@@ -8,6 +8,8 @@ const {
   sendPasswordReset,
 } = require('../services/communicationService');
 
+const OWNER_LOPDP_VERSION = 'LOPDP-2026-06';
+
 function buildUserPayload(usuario) {
   return {
     id: usuario.id,
@@ -28,6 +30,39 @@ function generateVerificationCode() {
   return String(crypto.randomInt(100000, 999999));
 }
 
+function hasAcceptedLopdpConsent(value) {
+  if (value === true) return true;
+  if (!value || typeof value !== 'object') return false;
+  return Boolean(value.acceptedDataProcessing || value.lopdpConsent || value.accepted);
+}
+
+async function insertConsentAudit(queryable, { tenantId, userId, consent, ipAddress, correlationId }) {
+  await queryable.query(`
+    INSERT INTO audit_logs (
+      tenant_id, user_id, correlation_id, accion, entidad, entidad_id,
+      datos_anteriores, datos_nuevos, ip_address, metadata
+    )
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+  `, [
+    tenantId,
+    userId,
+    correlationId || 'registro-publico',
+    'lopdp.consent.owner.register',
+    'usuarios',
+    userId,
+    JSON.stringify({}),
+    JSON.stringify({ accepted: true, version: consent?.version || OWNER_LOPDP_VERSION }),
+    ipAddress || null,
+    JSON.stringify({
+      source: 'public-register',
+      acceptedAt: consent?.acceptedAt || new Date().toISOString(),
+      acceptedTerms: Boolean(consent?.acceptedTerms),
+      acceptedPrivacy: Boolean(consent?.acceptedPrivacy),
+      acceptedDataProcessing: hasAcceptedLopdpConsent(consent),
+    }),
+  ]);
+}
+
 async function login(req, res, next) {
   try {
     const { email, password } = req.body;
@@ -41,7 +76,11 @@ async function login(req, res, next) {
     }
 
     const result = await db.query(
-      'SELECT * FROM usuarios WHERE lower(email) = lower($1) AND activo = true ORDER BY created_at DESC LIMIT 1',
+      `SELECT id, tenant_id, email, rol, nombres, apellidos, password_hash, activo, email_verificado_en, created_at
+       FROM usuarios
+       WHERE lower(email) = lower($1) AND activo = true
+       ORDER BY created_at DESC
+       LIMIT 1`,
       [email]
     );
 
@@ -171,7 +210,7 @@ async function publicRegister(req, res, next) {
       });
     }
 
-    if (!acceptedTerms || !acceptedPrivacy) {
+    if (!acceptedTerms || !acceptedPrivacy || !hasAcceptedLopdpConsent(lopdpConsent)) {
       return res.status(400).json({
         error: 'REGISTRO_CONSENTIMIENTO_REQUERIDO',
         message: 'Debe aceptar términos y política de privacidad.',
@@ -194,6 +233,7 @@ async function publicRegister(req, res, next) {
           acceptedTerms: true,
           acceptedPrivacy: true,
           lopdpConsent: lopdpConsent || null,
+          lopdpConsentVersion: lopdpConsent?.version || OWNER_LOPDP_VERSION,
           lopdpConsentRecordedAt: new Date().toISOString(),
         }),
       ]
@@ -207,6 +247,14 @@ async function publicRegister(req, res, next) {
        RETURNING *`,
       [tenant.id, email, passwordHash, nombres, apellidos || '']
     );
+
+    await insertConsentAudit(client, {
+      tenantId: tenant.id,
+      userId: userResult.rows[0].id,
+      consent: lopdpConsent,
+      ipAddress: req.ip,
+      correlationId: req.correlationId,
+    });
 
     const requestedPlan = String(planId || 'TRIAL').trim().toUpperCase();
     const planCheck = await client.query(
@@ -283,9 +331,12 @@ async function refreshToken(req, res, next) {
     }
 
     const decoded = verifyJwt(token);
-    const result = await db.query('SELECT * FROM usuarios WHERE id = $1 AND activo = true', [
-      decoded.userId,
-    ]);
+    const result = await db.query(
+      `SELECT id, tenant_id, email, rol, nombres, apellidos, password_hash, activo, email_verificado_en, created_at
+       FROM usuarios
+       WHERE id = $1 AND activo = true`,
+      [decoded.userId]
+    );
 
     if (result.rows.length === 0) {
       return res.status(401).json({

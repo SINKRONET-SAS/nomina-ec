@@ -8,6 +8,61 @@ const AppError = require('../utils/AppError');
 const { recordAudit } = require('./auditService');
 const { resolveAttendanceReadiness } = require('./employeeAppInviteService');
 
+const MAX_FOTO_BASE64_BYTES = Number.parseInt(process.env.MARCACION_FOTO_MAX_BYTES || String(2 * 1024 * 1024), 10);
+const MIME_BY_SIGNATURE = [
+  { contentType: 'image/jpeg', extension: 'jpg', matches: (buffer) => buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[buffer.length - 2] === 0xff && buffer[buffer.length - 1] === 0xd9 },
+  { contentType: 'image/png', extension: 'png', matches: (buffer) => buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47 },
+  { contentType: 'image/webp', extension: 'webp', matches: (buffer) => buffer.slice(0, 4).toString('ascii') === 'RIFF' && buffer.slice(8, 12).toString('ascii') === 'WEBP' },
+];
+
+function validateFotoBase64(fotoBase64, { correlationId, userId } = {}) {
+  if (!fotoBase64) return null;
+  const raw = String(fotoBase64).trim();
+  const dataUri = raw.match(/^data:(image\/(?:jpeg|jpg|png|webp));base64,(.+)$/i);
+  const payload = dataUri ? dataUri[2] : raw;
+
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(payload) || payload.length % 4 !== 0) {
+    throw new AppError('La foto enviada no tiene un formato base64 valido.', {
+      code: 'MARCACION_FOTO_BASE64_INVALIDA',
+      statusCode: 422,
+      correlationId,
+      userId,
+    });
+  }
+
+  const buffer = Buffer.from(payload, 'base64');
+  if (buffer.length === 0 || buffer.length > MAX_FOTO_BASE64_BYTES) {
+    throw new AppError('La foto supera el tamano permitido para marcacion.', {
+      code: 'MARCACION_FOTO_TAMANO_INVALIDO',
+      statusCode: 413,
+      correlationId,
+      userId,
+      details: { maxBytes: MAX_FOTO_BASE64_BYTES, receivedBytes: buffer.length },
+    });
+  }
+
+  const detected = MIME_BY_SIGNATURE.find((item) => item.matches(buffer));
+  if (!detected) {
+    throw new AppError('La foto debe ser JPG, PNG o WEBP.', {
+      code: 'MARCACION_FOTO_TIPO_INVALIDO',
+      statusCode: 422,
+      correlationId,
+      userId,
+    });
+  }
+
+  if (dataUri && dataUri[1].toLowerCase().replace('jpg', 'jpeg') !== detected.contentType) {
+    throw new AppError('El tipo MIME de la foto no coincide con su contenido.', {
+      code: 'MARCACION_FOTO_MIME_INCONSISTENTE',
+      statusCode: 422,
+      correlationId,
+      userId,
+    });
+  }
+
+  return { buffer, contentType: detected.contentType, extension: detected.extension };
+}
+
 async function validarMarcacion({
   empleadoId,
   tenantId,
@@ -128,10 +183,10 @@ async function validarMarcacion({
   }
 
   let fotoUrl = null;
-  if (fotoBase64) {
-    const fotoBuffer = Buffer.from(fotoBase64, 'base64');
-    const key = `marcaciones/${tenantId}/${empleadoId}/${Date.now()}.jpg`;
-    fotoUrl = await s3Upload(fotoBuffer, key, 'image/jpeg');
+  const validatedPhoto = validateFotoBase64(fotoBase64, { correlationId, userId });
+  if (validatedPhoto) {
+    const key = `marcaciones/${tenantId}/${empleadoId}/${Date.now()}.${validatedPhoto.extension}`;
+    fotoUrl = await s3Upload(validatedPhoto.buffer, key, validatedPhoto.contentType);
   }
 
   if (tipo === 'inicio_jornada') {
@@ -335,4 +390,4 @@ async function generarNovedadTardia(empleadoId, tenantId, correlationId, userId)
   }
 }
 
-module.exports = { validarMarcacion, calcularDistanciaHaversine, resolveWorkZoneForEmployee };
+module.exports = { validarMarcacion, calcularDistanciaHaversine, resolveWorkZoneForEmployee, validateFotoBase64 };

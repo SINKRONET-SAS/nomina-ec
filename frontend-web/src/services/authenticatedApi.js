@@ -16,3 +16,19 @@ authenticatedApi.interceptors.request.use((config) => {
 
   return config;
 });
+
+authenticatedApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('usuario');
+      if (window.location.pathname !== '/login') {
+        window.dispatchEvent(new CustomEvent('nomina-auth-expired'));
+        window.location.assign('/login');
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);

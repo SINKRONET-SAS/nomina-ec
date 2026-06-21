@@ -22,11 +22,11 @@ async function getLegalParametersForTenant(tenantId, year) {
   `, [year, tenantId]);
 
   if (result.rows.length === 0) {
-    return mergeVersionedParameters(getLegalParameters(year), versionedParameters);
+    return withLegalSourceMetadata(mergeVersionedParameters(getLegalParameters(year), versionedParameters), versionedParameters, null, year, tenantId);
   }
 
   const row = result.rows[0];
-  return mergeVersionedParameters({
+  const legacyParameters = {
     sourceStatus: row.fuente,
     payroll: {
       monthlyWorkHours: 240,
@@ -47,7 +47,29 @@ async function getLegalParametersForTenant(tenantId, year) {
       dailyMaxHours: 8,
     },
     incomeTax: row.tabla_impuesto_renta,
-  }, versionedParameters);
+  };
+  const merged = mergeVersionedParameters(legacyParameters, versionedParameters);
+  const divergences = detectLegalParameterDivergence(legacyParameters, merged, versionedParameters);
+  if (divergences.length > 0) {
+    console.error('[LEGAL] Divergencia entre parametros legales versionados y tabla legado', {
+      code: 'LEGAL_PARAMETERS_DIVERGENCE',
+      statusCode: 409,
+      correlationId: process.env.CORRELATION_ID || 'legal-parameters',
+      tenantId,
+      year,
+      divergences,
+    });
+    if (requiresOfficialLegalValidation()) {
+      throw new AppError('Existen divergencias entre fuentes legales. Unifica parametros antes de calcular nomina.', {
+        code: 'LEGAL_PARAMETERS_DIVERGENCE',
+        statusCode: 409,
+        correlationId: process.env.CORRELATION_ID || 'legal-parameters',
+        details: { year, tenantId, divergences },
+      });
+    }
+  }
+
+  return withLegalSourceMetadata(merged, versionedParameters, row, year, tenantId);
 }
 
 async function getVersionedLegalParametersForTenant(tenantId, year) {
@@ -167,6 +189,49 @@ function mergeVersionedParameters(baseParameters, versionedParameters) {
   };
 }
 
+function withLegalSourceMetadata(parameters, versionedParameters, legacyRow, year, tenantId) {
+  const versionedRows = Object.values(versionedParameters).filter(Boolean);
+  return {
+    ...parameters,
+    legalSource: {
+      sourceOfTruth: versionedRows.length > 0 ? 'legal_parameter_versions' : (legacyRow ? 'parametros_legales' : 'config/legal-ecuador.js'),
+      year,
+      tenantId: tenantId || null,
+      versionedParameters: versionedRows.map((row) => ({
+        key: row.parameter_key,
+        status: row.validation_status,
+        sourceName: row.source_name || '',
+        sourceUrl: row.source_url || '',
+      })),
+      legacyFallbackUsed: versionedRows.length === 0 && Boolean(legacyRow),
+    },
+  };
+}
+
+function detectLegalParameterDivergence(baseParameters, mergedParameters, versionedParameters) {
+  if (Object.keys(versionedParameters || {}).length === 0) return [];
+  const checks = [
+    ['sbu', 'payroll.unifiedBaseSalary'],
+    ['iess_aporte_personal', 'payroll.personalIessRate'],
+    ['iess_aporte_patronal', 'payroll.employerIessRate'],
+    ['jornada_maxima_semanal', 'payroll.weeklyMaxHours'],
+  ];
+
+  return checks.reduce((items, [key, itemPath]) => {
+    if (!versionedParameters[key]) return items;
+    const legacyValue = getByPath(baseParameters, itemPath);
+    const mergedValue = getByPath(mergedParameters, itemPath);
+    if (legacyValue == null || mergedValue == null) return items;
+    if (Math.abs(Number(legacyValue) - Number(mergedValue)) > 0.000001) {
+      items.push({ key, legacyValue: Number(legacyValue), versionedValue: Number(mergedValue) });
+    }
+    return items;
+  }, []);
+}
+
+function getByPath(value, itemPath) {
+  return itemPath.split('.').reduce((current, key) => current?.[key], value);
+}
 function requiresOfficialLegalValidation() {
   return process.env.NODE_ENV === 'production' || process.env.REQUIRE_VALIDATED_LEGAL_PARAMETERS === 'true';
 }
@@ -205,4 +270,6 @@ module.exports = {
   assertLegalParametersReadyForProduction,
   VALIDATED_SOURCE_STATUS,
   PENDING_SOURCE_STATUS,
+  detectLegalParameterDivergence,
+  mergeVersionedParameters,
 };

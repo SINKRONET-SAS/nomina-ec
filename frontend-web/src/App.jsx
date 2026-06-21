@@ -16,6 +16,7 @@ import Planes from './pages/Planes';
 import PlanesGestion from './pages/PlanesGestion';
 import PaymentResult from './pages/PaymentResult';
 import LegalText from './pages/LegalText';
+import NotFound from './pages/NotFound';
 import CookieConsent from './components/Privacy/CookieConsent';
 import Parametrizacion from './pages/Configuracion/Parametrizacion';
 import Comunicaciones from './pages/Configuracion/Comunicaciones';
@@ -185,7 +186,7 @@ function App() {
             </Route>
             
             {/* 404 */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
           <CookieConsent />
         </Router>

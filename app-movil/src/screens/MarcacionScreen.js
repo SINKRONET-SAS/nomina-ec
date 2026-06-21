@@ -13,6 +13,7 @@ export default function MarcacionScreen({ onLogout }) {
   const [employee, setEmployee] = useState(null);
   const [ultimaMarcacion, setUltimaMarcacion] = useState(null);
   const [status, setStatus] = useState({ type: 'info', text: 'Preparando asistencia movil.' });
+  const [permissionStatus, setPermissionStatus] = useState('checking');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -22,12 +23,34 @@ export default function MarcacionScreen({ onLogout }) {
   const readiness = employee?.readiness || {};
   const attendanceReady = Boolean(readiness.ready);
   const blockers = readiness.blockers || [];
+  const gpsReady = permissionStatus === 'granted';
+  const markBlocked = submitting || !employee || !attendanceReady || !gpsReady;
 
   const statusStyle = useMemo(() => {
     if (status.type === 'error') return styles.statusError;
     if (status.type === 'success') return styles.statusSuccess;
     return styles.statusInfo;
   }, [status.type]);
+
+  const verificarPermisoUbicacion = async () => {
+    setPermissionStatus('checking');
+    const current = await Location.getForegroundPermissionsAsync();
+    if (current.status === 'granted') {
+      setPermissionStatus('granted');
+      return true;
+    }
+
+    const requested = await Location.requestForegroundPermissionsAsync();
+    if (requested.status !== 'granted') {
+      setPermissionStatus('denied');
+      setUbicacion(null);
+      setStatus({ type: 'error', text: 'Activa el permiso GPS para registrar asistencia. La marcacion queda bloqueada por privacidad y control laboral.' });
+      return false;
+    }
+
+    setPermissionStatus('granted');
+    return true;
+  };
 
   const cargarResumen = async () => {
     setLoading(true);
@@ -49,14 +72,11 @@ export default function MarcacionScreen({ onLogout }) {
   };
 
   const obtenerUbicacion = async () => {
-    const { status: permission } = await Location.requestForegroundPermissionsAsync();
-    if (permission !== 'granted') {
-      setStatus({ type: 'error', text: 'Activa el permiso de ubicacion para registrar asistencia.' });
-      return null;
-    }
+    const allowed = await verificarPermisoUbicacion();
+    if (!allowed) return null;
 
     const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      const next = {
+    const next = {
       lat: location.coords.latitude,
       lng: location.coords.longitude,
       accuracy: location.coords.accuracy,
@@ -66,6 +86,7 @@ export default function MarcacionScreen({ onLogout }) {
   };
 
   useEffect(() => {
+    verificarPermisoUbicacion();
     cargarResumen();
   }, []);
 
@@ -89,7 +110,11 @@ export default function MarcacionScreen({ onLogout }) {
         text: `Marcacion registrada: ${tipo.replace(/_/g, ' ')}.${zona?.nombre ? ` Zona: ${zona.nombre}.` : ''}`,
       });
     } catch (err) {
-      setStatus({ type: 'error', text: err.response?.data?.message || 'No pudimos registrar la marcacion.' });
+      const details = err.response?.data?.details;
+      const detailText = details?.distanciaMetros
+        ? ` Distancia: ${details.distanciaMetros} m de ${details.radioPermitidoMetros} m permitidos.`
+        : '';
+      setStatus({ type: 'error', text: `${err.response?.data?.message || 'No pudimos registrar la marcacion.'}${detailText}` });
     } finally {
       setSubmitting(false);
     }
@@ -144,29 +169,32 @@ export default function MarcacionScreen({ onLogout }) {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardLabel}>Ubicacion actual</Text>
+        <Text style={styles.cardLabel}>GPS y ubicacion actual</Text>
+        <Text style={gpsReady ? styles.cardDetail : styles.warningText}>
+          Permiso GPS: {permissionStatus === 'checking' ? 'verificando' : (gpsReady ? 'activo' : 'bloqueado')}
+        </Text>
         {ubicacion ? (
           <Text style={styles.mono}>Lat {ubicacion.lat.toFixed(6)} | Lng {ubicacion.lng.toFixed(6)} | Precision {Math.round(ubicacion.accuracy || 0)} m</Text>
         ) : (
           <Text style={styles.cardDetail}>Ubicacion pendiente</Text>
         )}
         <TouchableOpacity style={styles.secondaryButton} onPress={obtenerUbicacion}>
-          <Text style={styles.secondaryButtonText}>Actualizar ubicacion</Text>
+          <Text style={styles.secondaryButtonText}>{gpsReady ? 'Actualizar ubicacion' : 'Reintentar permiso GPS'}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.actions}>
         <TouchableOpacity
-          disabled={!puedeMarcarInicio || submitting || !employee || !attendanceReady}
+          disabled={!puedeMarcarInicio || markBlocked}
           onPress={() => registrarMarcacion('inicio_jornada')}
-          style={[styles.primaryButton, styles.startButton, (!puedeMarcarInicio || submitting || !employee || !attendanceReady) && styles.disabledButton]}
+          style={[styles.primaryButton, styles.startButton, (!puedeMarcarInicio || markBlocked) && styles.disabledButton]}
         >
           <Text style={styles.primaryButtonText}>{submitting ? 'Procesando' : 'Iniciar jornada'}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          disabled={!puedeMarcarFin || submitting || !employee || !attendanceReady}
+          disabled={!puedeMarcarFin || markBlocked}
           onPress={() => registrarMarcacion('fin_jornada')}
-          style={[styles.primaryButton, styles.endButton, (!puedeMarcarFin || submitting || !employee || !attendanceReady) && styles.disabledButton]}
+          style={[styles.primaryButton, styles.endButton, (!puedeMarcarFin || markBlocked) && styles.disabledButton]}
         >
           <Text style={styles.primaryButtonText}>{submitting ? 'Procesando' : 'Finalizar jornada'}</Text>
         </TouchableOpacity>

@@ -15,6 +15,13 @@ async function calcularNominaMensual(tenantId, anio, mes) {
   validarPeriodoNomina(anio, mes);
   console.log(`[NOMINA] Calculando ${mes}/${anio} para tenant ${tenantId}`);
 
+  const legalParameters = await getLegalParametersForTenant(tenantId, anio);
+  assertLegalParametersReadyForProduction(legalParameters, {
+    year: anio,
+    tenantId,
+    operation: 'calculo_nomina',
+  });
+
   const empleados = await db.query(`
     SELECT *
     FROM empleados
@@ -27,7 +34,7 @@ async function calcularNominaMensual(tenantId, anio, mes) {
 
   for (const emp of empleados.rows) {
     try {
-      const resultado = await calcularEmpleado(emp, tenantId, anio, mes);
+      const resultado = await calcularEmpleado(emp, tenantId, anio, mes, legalParameters);
       resultados.push(resultado);
     } catch (err) {
       console.error('[NOMINA] Error calculando empleado', {
@@ -45,13 +52,15 @@ async function calcularNominaMensual(tenantId, anio, mes) {
   return { success: true, total: empleados.rows.length, resultados };
 }
 
-async function calcularEmpleado(emp, tenantId, anio, mes) {
-  const legalParameters = await getLegalParametersForTenant(tenantId, anio);
-  assertLegalParametersReadyForProduction(legalParameters, {
-    year: anio,
-    tenantId,
-    operation: 'calculo_nomina',
-  });
+async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParameters = null) {
+  const legalParameters = preloadedLegalParameters || await getLegalParametersForTenant(tenantId, anio);
+  if (!preloadedLegalParameters) {
+    assertLegalParametersReadyForProduction(legalParameters, {
+      year: anio,
+      tenantId,
+      operation: 'calculo_nomina',
+    });
+  }
   const payrollParameters = legalParameters.payroll;
 
   const novedades = await db.query(`

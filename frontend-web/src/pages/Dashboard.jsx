@@ -18,6 +18,7 @@ import {
   Mail,
   Settings2,
   ShieldCheck,
+  Smartphone,
   UserPlus,
   Users,
 } from 'lucide-react';
@@ -316,6 +317,11 @@ function Dashboard() {
       tone: 'bg-amber-50 text-amber-700',
     },
   ];
+  const aiv50Controls = [
+    { icon: ShieldCheck, label: 'Auth protegida', detail: 'Login y recuperacion limitados por ruta/IP con mensajes anti-enumeracion.' },
+    { icon: Settings2, label: 'Parametros legales', detail: 'Calculo bloqueable si las fuentes oficiales no estan validadas o divergen.' },
+    { icon: Smartphone, label: 'Marcacion movil', detail: 'GPS requerido al cargar y foto validada antes de almacenar evidencia.' },
+  ];
   const baselineHighlights = operationalBaseline.filter((item) => (
     ['empresa', 'bancos', 'usuarios', 'rdep', 'superadmin', 'api'].includes(item.code)
   ));
@@ -412,6 +418,22 @@ function Dashboard() {
         </div>
       </section>
 
+
+      <section className="soft-panel p-6">
+        <div className="mb-4 flex items-center gap-3">
+          <ShieldCheck className="h-5 w-5 text-teal-700" />
+          <h2 className="text-lg font-semibold text-slate-950">Controles AIV50 activos</h2>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          {aiv50Controls.map((control) => (
+            <div className="rounded-md border border-slate-200 p-4" key={control.label}>
+              <control.icon className="h-5 w-5 text-teal-700" />
+              <p className="mt-3 font-semibold text-slate-950">{control.label}</p>
+              <p className="mt-2 text-sm leading-5 text-slate-600">{control.detail}</p>
+            </div>
+          ))}
+        </div>
+      </section>
       <section className="grid gap-4 xl:grid-cols-[1.35fr_0.85fr]">
         <div className="soft-panel p-6">
           <div className="mb-4 flex items-center gap-3">

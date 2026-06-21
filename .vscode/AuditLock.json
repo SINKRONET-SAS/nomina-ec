@@ -1,174 +1,138 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-COMUNICACIONES-EMAIL-SMTP-LEGAL-2026",
-  "planCode": "CES26",
+  "plan": "HAIKY-AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026",
+  "planCode": "AIV50",
   "status": "completed_runtime_local",
-  "phaseCompleted": "CES26-06",
-  "currentPhase": "CES26-closed-local",
-  "updatedAt": "2026-06-20T13:38:58.0877031-05:00",
-  "summary": "CES26 queda ejecutado localmente: SMTP ya estaba conectado por CSW26 y ahora cuenta con evidencia legal-operativa minimizada, tabla communication_events con RLS, retencion configurable, historial visible en PWA y variables de entorno completas para Render/local.",
+  "phaseCompleted": "AIV50-08",
+  "currentPhase": "AIV50-closed-local",
+  "updatedAt": "2026-06-21T15:36:00.202Z",
+  "summary": "AIV50-01..08 ejecutadas localmente: nomina sin N+1 legal, auth/rate/foto endurecidos, parametros legales con divergencia controlada, mobile GPS fail-closed, PWA visible y limpieza verificada.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: diagnostico integral del servicio de email, SMTP, verificacion de correo, recuperacion de clave, empleados, proteccion de datos y cumplimiento legal; desplegar plan Haiky, ejecutar prompts, cerrar gobierno, commit y push.",
-  "previousAuditLockHash": "113f39bbcbddaf95136c9f9f77f283812f523664d0232d1b42406d415940ebc0",
-  "previousPlans": [
-    {
-      "plan": "HAIKY-COMUNICACIONES-SMTP-WHATSAPP-2026",
-      "planCode": "CSW26",
-      "status": "completed_runtime_local",
-      "phaseCompleted": "CSW26-07"
-    },
-    {
-      "plan": "HAIKY-DIAGNOSTICO-INTEGRAL-COMERCIAL-UI-CALIDAD-2026",
-      "planCode": "DIC26",
-      "status": "completed_runtime_local_residuals_closed",
-      "phaseCompleted": "DIC26-08"
-    },
-    {
-      "plan": "HAIKY-EMPLEADOS-APP-ASISTENCIA-INVITACION-2026",
-      "planCode": "EAA26",
-      "status": "completed_runtime_local",
-      "phaseCompleted": "EAA26-08"
-    }
-  ],
+  "approvalSource": "Solicitud del usuario: Ejecutar todos los prompts de acuerdo al plan HAIKY-AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026.",
+  "previousAuditLockHash": "7856433da75cf288ba23e78104d305363e52516f865ebe2f75a5e4f81c7cb905",
   "filesModified": [
     ".vscode/AuditLock.json",
     "CODEX_CONTEXT.md",
-    "render.yaml",
-    "backend/.env.example",
-    "frontend-web/.env.example",
-    "app-movil/.env.example",
-    "backend/prisma/schema.prisma",
-    "backend/prisma/migrations/20260620103000_ces26_communication_events/migration.sql",
+    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-00-baseline.md",
+    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-01-nomina-n1.md",
+    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-02-auth-foto-seguridad.md",
+    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-03-parametros-legales.md",
+    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-04-mobile-gps-marcacion.md",
+    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-05-lopdp-biometria.md",
+    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-06-frontend-pwa.md",
+    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-07-arquitectura-deuda.md",
+    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-08-limpieza-qa-cierre.md",
+    "app-movil/src/screens/MarcacionScreen.js",
     "backend/src/app.js",
     "backend/src/controllers/authController.js",
-    "backend/src/controllers/communicationController.js",
-    "backend/src/services/communicationAuditService.js",
-    "backend/src/services/communicationAuditService.test.js",
-    "backend/src/services/communicationService.js",
-    "backend/src/services/communicationService.test.js",
-    "frontend-web/src/pages/Configuracion/Comunicaciones.jsx",
-    "docs2/PLAN_HAIKY_COMUNICACIONES_EMAIL_SMTP_LEGAL_2026.md",
-    "docs2/comunicaciones-email-smtp-legal-2026/MATRIZ_CES26_HALLAZGOS.md",
-    "docs2/comunicaciones-email-smtp-legal-2026/RUNBOOK_CES26_SMTP_LOPDP.md",
-    "docs2/comunicaciones-email-smtp-legal-2026/REPORTE_CES26_06_CIERRE.md",
-    ".github/prompts/COMUNICACIONES-EMAIL-SMTP-LEGAL-2026-00-baseline.md",
-    ".github/prompts/COMUNICACIONES-EMAIL-SMTP-LEGAL-2026-01-modelo-evidencia.md",
-    ".github/prompts/COMUNICACIONES-EMAIL-SMTP-LEGAL-2026-02-servicio-auditoria.md",
-    ".github/prompts/COMUNICACIONES-EMAIL-SMTP-LEGAL-2026-03-flujos-auth-empleados.md",
-    ".github/prompts/COMUNICACIONES-EMAIL-SMTP-LEGAL-2026-04-frontend-operativo.md",
-    ".github/prompts/COMUNICACIONES-EMAIL-SMTP-LEGAL-2026-05-entorno-runbook.md",
-    ".github/prompts/COMUNICACIONES-EMAIL-SMTP-LEGAL-2026-06-qa-cierre.md"
+    "backend/src/middleware/rateLimit.js",
+    "backend/src/routes/authRoutes.js",
+    "backend/src/services/calculoNominaService.js",
+    "backend/src/services/calculoNominaService.batch.test.js",
+    "backend/src/services/legalParameterService.js",
+    "backend/src/services/legalParameterService.test.js",
+    "backend/src/services/marcacionValidator.js",
+    "backend/src/services/marcacionValidator.test.js",
+    "docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V50_NOMINA_EC_2026.md",
+    "docs2/auditoria-integral-v50-nomina-ec-2026/MATRIZ_AIV50_HALLAZGOS.md",
+    "docs2/auditoria-integral-v50-nomina-ec-2026/REPORTE_AIV50_00_BASELINE.md",
+    "docs2/auditoria-integral-v50-nomina-ec-2026/REPORTE_AIV50_08_CIERRE_RUNTIME.md",
+    "docs2/auditoria-integral-v50-nomina-ec-2026/RUNBOOK_AIV50_QA_CIERRE.md",
+    "frontend-web/src/App.jsx",
+    "frontend-web/src/pages/Dashboard.jsx",
+    "frontend-web/src/pages/NotFound.jsx",
+    "frontend-web/src/services/authenticatedApi.js"
   ],
   "validationChecks": [
     {
-      "gate": "CES26-RULES-CONTEXT",
+      "gate": "AIV50-RULES-CONTEXT",
       "status": "PASS",
-      "detail": "RULES.md, CODEX_CONTEXT.md, AuditLock y estado git leidos antes de modificar runtime."
+      "detail": "RULES.md, CODEX_CONTEXT.md, AuditLock, matriz y prompts releidos antes de runtime."
     },
     {
-      "gate": "CES26-LEGAL-SOURCE",
+      "gate": "AIV50-PRISMA-VALIDATE",
       "status": "PASS",
-      "detail": "Base LOPDP verificada con PDF oficial MINTEL/Registro Oficial No. 459 del 2021-05-26."
+      "detail": "npx.cmd prisma validate en backend."
     },
     {
-      "gate": "CES26-PRISMA-VALIDATE",
+      "gate": "AIV50-BACKEND-JEST",
       "status": "PASS",
-      "detail": "npx.cmd prisma validate paso en backend."
+      "detail": "npm.cmd test -- --runInBand: 24 suites, 89 tests."
     },
     {
-      "gate": "CES26-MIGRATE-DEPLOY",
+      "gate": "AIV50-FRONTEND-BUILD",
       "status": "PASS",
-      "detail": "npx.cmd prisma migrate deploy aplico 20260620103000_ces26_communication_events en PostgreSQL local."
+      "detail": "npm.cmd run build en frontend-web."
     },
     {
-      "gate": "CES26-PRISMA-GENERATE",
+      "gate": "AIV50-PWA-SMOKE",
       "status": "PASS",
-      "detail": "npx.cmd prisma generate paso en backend."
+      "detail": "npm.cmd run smoke:pwa en frontend-web."
     },
     {
-      "gate": "CES26-BACKEND-SYNTAX",
+      "gate": "AIV50-MOBILE-STORES",
       "status": "PASS",
-      "detail": "node --check paso en communicationService, communicationAuditService, communicationController y authController."
+      "detail": "npm.cmd run check:stores en app-movil."
     },
     {
-      "gate": "CES26-BACKEND-TESTS",
+      "gate": "AIV50-MOBILE-DOCTOR",
       "status": "PASS",
-      "detail": "npm.cmd test -- --runInBand paso en backend: 22 suites, 84 tests."
+      "detail": "npm.cmd run doctor en app-movil: 21/21 checks."
     },
     {
-      "gate": "CES26-FRONTEND-BUILD",
+      "gate": "AIV50-DIFF-CHECK",
       "status": "PASS",
-      "detail": "npm.cmd run build paso en frontend-web."
+      "detail": "git diff --check sin errores; solo advertencias CRLF."
     },
     {
-      "gate": "CES26-PWA-SMOKE",
+      "gate": "AIV50-UTF8-NO-BOM",
       "status": "PASS",
-      "detail": "npm.cmd run smoke:pwa paso: manifest, assets y service worker cumplen."
-    },
-    {
-      "gate": "CES26-APP-STORES",
-      "status": "PASS",
-      "detail": "npm.cmd run check:stores paso en app-movil."
-    },
-    {
-      "gate": "CES26-BACKEND-AUDIT",
-      "status": "PASS",
-      "detail": "npm.cmd audit --audit-level=low paso en backend con 0 vulnerabilidades."
-    },
-    {
-      "gate": "CES26-ENV-COVERAGE",
-      "status": "PASS",
-      "detail": "ENV_COVERAGE_OK used=70 declared=77."
-    },
-    {
-      "gate": "CES26-ENCODING",
-      "status": "PASS",
-      "detail": "UTF8_NO_BOM_NO_MOJIBAKE_OK en 22 archivos modificados."
+      "detail": "Archivos .js/.jsx/.json/.md modificados validados sin BOM."
     }
   ],
   "fases": [
     {
-      "phase": "CES26-00",
-      "status": "completed_documental",
-      "task": "baseline y diagnostico"
+      "phase": "AIV50-00",
+      "status": "completed_documental"
     },
     {
-      "phase": "CES26-01",
-      "status": "completed_local",
-      "task": "modelo de evidencia communication_events"
+      "phase": "AIV50-01",
+      "status": "completed_local"
     },
     {
-      "phase": "CES26-02",
-      "status": "completed_local",
-      "task": "servicio de auditoria minimizada"
+      "phase": "AIV50-02",
+      "status": "completed_local"
     },
     {
-      "phase": "CES26-03",
-      "status": "completed_local",
-      "task": "flujos auth y empleados etiquetados"
+      "phase": "AIV50-03",
+      "status": "completed_local"
     },
     {
-      "phase": "CES26-04",
-      "status": "completed_local",
-      "task": "frontend operativo de comunicaciones legales"
+      "phase": "AIV50-04",
+      "status": "completed_local"
     },
     {
-      "phase": "CES26-05",
-      "status": "completed_local",
-      "task": "entorno y runbook SMTP LOPDP"
+      "phase": "AIV50-05",
+      "status": "completed_local"
     },
     {
-      "phase": "CES26-06",
-      "status": "completed_local",
-      "task": "QA, gobierno, commit y push"
+      "phase": "AIV50-06",
+      "status": "completed_local"
+    },
+    {
+      "phase": "AIV50-07",
+      "status": "completed_local"
+    },
+    {
+      "phase": "AIV50-08",
+      "status": "completed_local"
     }
   ],
   "residualRisk": [
-    "Configurar credenciales SMTP reales fuera del repositorio.",
-    "Configurar COMMUNICATION_EVENT_HASH_SECRET productivo en Render.",
-    "Ejecutar prueba SMTP real desde la pantalla Comunicaciones con correo controlado.",
-    "Revision profesional LOPDP antes de prometer cumplimiento legal total."
+    "Revision profesional legal/contable/LOPDP requerida antes de produccion.",
+    "IESS mantiene 9.45% personal y 11.15% patronal segun contexto vigente; divergencias versionadas se bloquean o registran.",
+    "No se eliminaron tests ni AutoservicioScreen porque el codigo real los usa o el runner los ejecuta."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "e5b89492cd490c567816a6a00197dbba3cf17744d3654e84f20357a5f56942c0"
+  "signature": "7339a77418da53aa84852b152337951596f5e092e93fbb7947311932f488fe44"
 }

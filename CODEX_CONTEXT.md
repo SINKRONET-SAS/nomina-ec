@@ -1,3 +1,28 @@
+## Open Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026 |
+| Codigo | AIV50 |
+| Estado | AIV50-00..08 ejecutadas localmente |
+| Fase actual | AIV50-08 cerrada localmente |
+| Alcance | cierre definitivo de hallazgos Auditoria Integral V50 en backend, legal Ecuador, mobile, PWA/frontend, deuda tecnica y eliminaciones controladas |
+| Fuente de auditoria | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\AuditoriaIntegral2026V50.jsx` y `src/pages/v50/v50data.jsx` |
+| Plan doc | `docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V50_NOMINA_EC_2026.md` |
+| Matriz | `docs2/auditoria-integral-v50-nomina-ec-2026/MATRIZ_AIV50_HALLAZGOS.md` |
+| Runbook | `docs2/auditoria-integral-v50-nomina-ec-2026/RUNBOOK_AIV50_QA_CIERRE.md` |
+| Reporte cierre | `docs2/auditoria-integral-v50-nomina-ec-2026/REPORTE_AIV50_08_CIERRE_RUNTIME.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Prompts | `.github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-{00..08}-*.md` |
+| RULES | `RULES.md` |
+
+### Resumen AIV50
+
+AIV50 quedo ejecutado localmente sobre Nomina-Ec. Se cerraron los P0 de nomina, auth, foto, parametros legales y marcacion movil; tambien se expuso el avance operativo en PWA y se verifico que `AutoservicioScreen.js` no era codigo muerto porque esta registrado en la tab `Perfil` de la app movil.
+
+Gates ejecutados: Prisma validate, Jest backend, build/smoke PWA, check:stores, Expo doctor, diff check y UTF-8 sin BOM. La validacion profesional legal/contable/LOPDP sigue como bloqueo externo antes de produccion.
+
+---
 ## Open Haiky Plan - HAIKY-COMUNICACIONES-EMAIL-SMTP-LEGAL-2026
 
 | Campo | Valor |
