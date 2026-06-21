@@ -60,26 +60,26 @@ async function crear(req, res) {
       cedula, nombres, apellidos, cargo, departamento,
       sueldo_bruto_mensual, fecha_ingreso, tipo_contrato,
       jornada_horas_mensuales, gastos_personales_anuales,
-      cuenta_bancaria, banco, tipo_cuenta, direccion, telefono, email
+      cuenta_bancaria, banco, tipo_cuenta, forma_pago, direccion, ciudad, provincia, estado_civil, cargas_familiares, telefono, email
     } = req.body;
     
     // Validaciones
     if (!validarCedula(cedula)) {
-      return res.status(400).json({ error: 'Cédula inválida' });
+      return res.status(400).json({ error: 'Cedula invalida' });
     }
     
     if (!nombres || !apellidos || !sueldo_bruto_mensual || !fecha_ingreso) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
     }
     
-    // Verificar que la cédula no exista
+    // Verificar que la cedula no exista
     const existe = await db.query(
       'SELECT id FROM empleados WHERE cedula = $1',
       [cedula]
     );
     
     if (existe.rows.length > 0) {
-      return res.status(400).json({ error: 'La cédula ya está registrada' });
+      return res.status(400).json({ error: 'La cedula ya esta registrada' });
     }
     
     // Cifrar cuenta bancaria con AES-256-GCM antes de persistir.
@@ -94,9 +94,9 @@ async function crear(req, res) {
         tenant_id, cedula, nombres, apellidos, cargo, departamento,
         sueldo_bruto_mensual, jornada_horas_mensuales, gastos_personales_anuales,
         fecha_ingreso, tipo_contrato,
-        cuenta_bancaria_cifrada, banco, tipo_cuenta,
-        direccion_domicilio, telefono, email_personal
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+        cuenta_bancaria_cifrada, banco, tipo_cuenta, forma_pago,
+        direccion_domicilio, ciudad_domicilio, provincia_domicilio, estado_civil, cargas_familiares, telefono, email_personal
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
       RETURNING id, cedula, nombres, apellidos, cargo, sueldo_bruto_mensual,
         jornada_horas_mensuales, gastos_personales_anuales, fecha_ingreso, tipo_contrato
     `, [
@@ -105,13 +105,13 @@ async function crear(req, res) {
       jornada_horas_mensuales || null,
       gastos_personales_anuales || 0,
       fecha_ingreso, tipo_contrato || 'indefinido',
-      cuentaCifrada, banco || '', tipo_cuenta || '',
-      direccion || '', telefono || '', email || ''
+      cuentaCifrada, banco || '', tipo_cuenta || '', forma_pago || 'transferencia',
+      direccion || '', ciudad || '', provincia || '', estado_civil || '', Number(cargas_familiares || 0), telefono || '', email || ''
     ]);
     
     const empleado = result.rows[0];
     
-    // Generar contrato automáticamente
+    // Generar contrato automaticamente
     const tenant = await db.query('SELECT * FROM tenants WHERE id = $1', [tenantId]);
     if (tenant.rows.length > 0) {
       try {
@@ -280,13 +280,26 @@ async function actualizar(req, res) {
       fecha_ingreso: 'fecha_ingreso',
       tipo_contrato: 'tipo_contrato',
       banco: 'banco',
-      cuenta_bancaria: 'cuenta_bancaria',
       tipo_cuenta: 'tipo_cuenta',
+      forma_pago: 'forma_pago',
       direccion_domicilio: 'direccion_domicilio',
+      ciudad_domicilio: 'ciudad_domicilio',
+      provincia_domicilio: 'provincia_domicilio',
+      estado_civil: 'estado_civil',
+      cargas_familiares: 'cargas_familiares',
       telefono: 'telefono',
       email_personal: 'email_personal',
     };
-    const entries = Object.entries(req.body || {}).filter(([key]) => (
+    const body = { ...(req.body || {}) };
+    if (Object.prototype.hasOwnProperty.call(body, 'cuenta_bancaria')) {
+      body.cuenta_bancaria_cifrada = body.cuenta_bancaria ? encryptBankAccount(body.cuenta_bancaria) : null;
+      delete body.cuenta_bancaria;
+      updateColumns.cuenta_bancaria_cifrada = 'cuenta_bancaria_cifrada';
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'cargas_familiares')) {
+      body.cargas_familiares = Number(body.cargas_familiares || 0);
+    }
+    const entries = Object.entries(body).filter(([key]) => (
       Object.prototype.hasOwnProperty.call(updateColumns, key)
     ));
     const fields = entries.map(([key], i) => `${updateColumns[key]} = $${i + 1}`).join(', ');
@@ -308,8 +321,14 @@ async function actualizar(req, res) {
     
     res.json({ success: true, empleado: result.rows[0] });
   } catch (err) {
-    console.error('[EMPLEADOS] Error:', err);
-    res.status(500).json({ error: 'Error interno' });
+    console.error('[EMPLEADOS] Error actualizando empleado', {
+      code: err.code || 'EMPLEADO_UPDATE_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    res.status(err.statusCode || 500).json({ error: err.code || 'EMPLEADO_UPDATE_ERROR', message: err.message, correlationId: req.correlationId });
   }
 }
 
@@ -320,10 +339,10 @@ async function terminar(req, res) {
     const { causa, fecha_salida } = req.body;
     
     if (!causa) {
-      return res.status(400).json({ error: 'Causa de terminación requerida' });
+      return res.status(400).json({ error: 'Causa de terminacion requerida' });
     }
     
-    // Calcular liquidación
+    // Calcular liquidacion
     const { calcularLiquidacion } = require('../services/liquidacionService');
     const liquidacion = await calcularLiquidacion(id, tenantId, causa, { fechaSalida: fecha_salida });
     

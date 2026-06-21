@@ -4,6 +4,7 @@
 const db = require('../config/database');
 const { generarContrato } = require('../services/templateGenerator');
 const { calcularLiquidacion } = require('../services/liquidacionService');
+const { s3Upload } = require('../config/s3');
 
 async function generarContratoCtrl(req, res) {
   try {
@@ -66,6 +67,65 @@ async function generarFiniquito(req, res) {
       return res.status(403).json({ error: err.message, correlationId: req.correlationId });
     }
     res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
+  }
+}
+
+async function adjuntarDocumento(req, res) {
+  try {
+    const { empleadoId, tipoDocumento = 'contrato', nombreArchivo = 'contrato-firmado.pdf', mimeType = 'application/pdf', contenidoBase64 } = req.body || {};
+    const { tenantId } = req;
+
+    if (!empleadoId || !contenidoBase64) {
+      return res.status(400).json({ error: 'empleadoId y contenidoBase64 son requeridos', correlationId: req.correlationId });
+    }
+
+    if (mimeType !== 'application/pdf') {
+      return res.status(400).json({ error: 'Solo se permiten documentos PDF firmados.', correlationId: req.correlationId });
+    }
+
+    const employee = await db.query('SELECT id, cedula FROM empleados WHERE id = $1 AND tenant_id = $2', [empleadoId, tenantId]);
+    if (employee.rows.length === 0) {
+      return res.status(404).json({ error: 'Empleado no encontrado', correlationId: req.correlationId });
+    }
+
+    const cleanBase64 = String(contenidoBase64).replace(/^data:application\/pdf;base64,/, '');
+    const buffer = Buffer.from(cleanBase64, 'base64');
+    if (buffer.length === 0 || buffer.length > 8 * 1024 * 1024) {
+      return res.status(400).json({ error: 'El PDF firmado debe pesar hasta 8 MB.', correlationId: req.correlationId });
+    }
+
+    const safeName = String(nombreArchivo || 'contrato-firmado.pdf').replace(/[^a-zA-Z0-9_.-]/g, '_').slice(0, 120);
+    const key = 'documentos/' + tenantId + '/' + empleadoId + '/firmados/' + Date.now() + '_' + safeName;
+    const url = await s3Upload(buffer, key, mimeType);
+
+    const result = await db.query(`
+      INSERT INTO documentos_legales (tenant_id, empleado_id, tipo_documento, documento_url, metadata, firmado)
+      VALUES ($1, $2, $3, $4, $5, true)
+      RETURNING *
+    `, [
+      tenantId,
+      empleadoId,
+      tipoDocumento,
+      url,
+      JSON.stringify({
+        source: 'adjunto_manual_rrhh',
+        fileName: safeName,
+        mimeType,
+        storageKey: key,
+        uploadedBy: req.usuarioId || null,
+      }),
+    ]);
+
+    return res.status(201).json({ success: true, documento: result.rows[0], correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[DOCUMENTOS] Error adjuntando documento firmado', {
+      code: err.code || 'DOCUMENTO_ADJUNTO_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({ error: err.code || 'DOCUMENTO_ADJUNTO_ERROR', message: err.message, correlationId: req.correlationId });
   }
 }
 
@@ -138,6 +198,6 @@ module.exports = {
   generarContrato: generarContratoCtrl,
   generarFiniquito,
   listar,
-  descargar
+  descargar,
+  adjuntarDocumento
 };
-
