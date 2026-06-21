@@ -1,138 +1,92 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026",
-  "planCode": "AIV50",
-  "status": "completed_runtime_local",
-  "phaseCompleted": "AIV50-08",
-  "currentPhase": "AIV50-closed-local",
-  "updatedAt": "2026-06-21T15:36:00.202Z",
-  "summary": "AIV50-01..08 ejecutadas localmente: nomina sin N+1 legal, auth/rate/foto endurecidos, parametros legales con divergencia controlada, mobile GPS fail-closed, PWA visible y limpieza verificada.",
+  "plan": "HAIKY-DIAGNOSTICO-V3-NOMINA-EC-2026",
+  "planCode": "DV3N26",
+  "status": "completed_documental",
+  "phaseCompleted": "DV3N26-00",
+  "currentPhase": "DV3N26-01-pending-approval",
+  "updatedAt": "2026-06-21T22:12:32.161Z",
+  "summary": "DV3N26-00 generado documentalmente: plan, matriz, runbook, baseline, prompts y contexto. Runtime pendiente de aprobacion explicita por fase.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: Ejecutar todos los prompts de acuerdo al plan HAIKY-AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026.",
-  "previousAuditLockHash": "7856433da75cf288ba23e78104d305363e52516f865ebe2f75a5e4f81c7cb905",
+  "approvalSource": "Solicitud del usuario para desplegar Diagnostico V3 como plan Haiky documental.",
+  "previousAuditLockHash": "81a972e22383e2bcae7b4208208b17d0daab215e171b59f42dc512c90764cb30",
   "filesModified": [
-    ".vscode/AuditLock.json",
+    "docs2/PLAN_HAIKY_DIAGNOSTICO_V3_NOMINA_EC_2026.md",
+    "docs2/diagnostico-v3-nomina-ec-2026/MATRIZ_DV3N26_HALLAZGOS.md",
+    "docs2/diagnostico-v3-nomina-ec-2026/RUNBOOK_DV3N26_QA_CIERRE.md",
+    "docs2/diagnostico-v3-nomina-ec-2026/REPORTE_DV3N26_00_BASELINE.md",
+    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-00-baseline.md",
+    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-01-bancos-cierre-nomina.md",
+    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-02-legal-vacaciones-fondo-reserva.md",
+    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-03-reportes-contabilidad-consolidado.md",
+    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-04-lopdp-privacidad-consentimiento.md",
+    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-05-cifrado-cuentas-bancarias.md",
+    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-06-pwa-offline-manifest.md",
+    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-07-sut-mdt-integracion-controlada.md",
+    ".github/prompts/DIAGNOSTICO-V3-NOMINA-EC-2026-08-qa-cierre.md",
     "CODEX_CONTEXT.md",
-    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-00-baseline.md",
-    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-01-nomina-n1.md",
-    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-02-auth-foto-seguridad.md",
-    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-03-parametros-legales.md",
-    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-04-mobile-gps-marcacion.md",
-    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-05-lopdp-biometria.md",
-    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-06-frontend-pwa.md",
-    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-07-arquitectura-deuda.md",
-    ".github/prompts/AUDITORIA-INTEGRAL-V50-NOMINA-EC-2026-08-limpieza-qa-cierre.md",
-    "app-movil/src/screens/MarcacionScreen.js",
-    "backend/src/app.js",
-    "backend/src/controllers/authController.js",
-    "backend/src/middleware/rateLimit.js",
-    "backend/src/routes/authRoutes.js",
-    "backend/src/services/calculoNominaService.js",
-    "backend/src/services/calculoNominaService.batch.test.js",
-    "backend/src/services/legalParameterService.js",
-    "backend/src/services/legalParameterService.test.js",
-    "backend/src/services/marcacionValidator.js",
-    "backend/src/services/marcacionValidator.test.js",
-    "docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V50_NOMINA_EC_2026.md",
-    "docs2/auditoria-integral-v50-nomina-ec-2026/MATRIZ_AIV50_HALLAZGOS.md",
-    "docs2/auditoria-integral-v50-nomina-ec-2026/REPORTE_AIV50_00_BASELINE.md",
-    "docs2/auditoria-integral-v50-nomina-ec-2026/REPORTE_AIV50_08_CIERRE_RUNTIME.md",
-    "docs2/auditoria-integral-v50-nomina-ec-2026/RUNBOOK_AIV50_QA_CIERRE.md",
-    "frontend-web/src/App.jsx",
-    "frontend-web/src/pages/Dashboard.jsx",
-    "frontend-web/src/pages/NotFound.jsx",
-    "frontend-web/src/services/authenticatedApi.js"
+    ".vscode/AuditLock.json"
   ],
   "validationChecks": [
     {
-      "gate": "AIV50-RULES-CONTEXT",
+      "gate": "DV3N26-RULES-CONTEXT",
       "status": "PASS",
-      "detail": "RULES.md, CODEX_CONTEXT.md, AuditLock, matriz y prompts releidos antes de runtime."
+      "detail": "RULES.md, diagnostico V3, script V3 y estructura docs2 revisados antes de escribir."
     },
     {
-      "gate": "AIV50-PRISMA-VALIDATE",
+      "gate": "DV3N26-DOCUMENTAL-ONLY",
       "status": "PASS",
-      "detail": "npx.cmd prisma validate en backend."
+      "detail": "No se modifico runtime en DV3N26-00."
     },
     {
-      "gate": "AIV50-BACKEND-JEST",
+      "gate": "DV3N26-UTF8-NO-BOM",
       "status": "PASS",
-      "detail": "npm.cmd test -- --runInBand: 24 suites, 89 tests."
-    },
-    {
-      "gate": "AIV50-FRONTEND-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web."
-    },
-    {
-      "gate": "AIV50-PWA-SMOKE",
-      "status": "PASS",
-      "detail": "npm.cmd run smoke:pwa en frontend-web."
-    },
-    {
-      "gate": "AIV50-MOBILE-STORES",
-      "status": "PASS",
-      "detail": "npm.cmd run check:stores en app-movil."
-    },
-    {
-      "gate": "AIV50-MOBILE-DOCTOR",
-      "status": "PASS",
-      "detail": "npm.cmd run doctor en app-movil: 21/21 checks."
-    },
-    {
-      "gate": "AIV50-DIFF-CHECK",
-      "status": "PASS",
-      "detail": "git diff --check sin errores; solo advertencias CRLF."
-    },
-    {
-      "gate": "AIV50-UTF8-NO-BOM",
-      "status": "PASS",
-      "detail": "Archivos .js/.jsx/.json/.md modificados validados sin BOM."
+      "detail": "Archivos .md/.json generados en UTF-8 sin BOM por fs.writeFileSync utf8."
     }
   ],
   "fases": [
     {
-      "phase": "AIV50-00",
+      "phase": "DV3N26-00",
       "status": "completed_documental"
     },
     {
-      "phase": "AIV50-01",
-      "status": "completed_local"
+      "phase": "DV3N26-01",
+      "status": "pending_approval"
     },
     {
-      "phase": "AIV50-02",
-      "status": "completed_local"
+      "phase": "DV3N26-02",
+      "status": "pending_approval"
     },
     {
-      "phase": "AIV50-03",
-      "status": "completed_local"
+      "phase": "DV3N26-03",
+      "status": "pending_approval"
     },
     {
-      "phase": "AIV50-04",
-      "status": "completed_local"
+      "phase": "DV3N26-04",
+      "status": "pending_approval"
     },
     {
-      "phase": "AIV50-05",
-      "status": "completed_local"
+      "phase": "DV3N26-05",
+      "status": "pending_approval"
     },
     {
-      "phase": "AIV50-06",
-      "status": "completed_local"
+      "phase": "DV3N26-06",
+      "status": "pending_approval"
     },
     {
-      "phase": "AIV50-07",
-      "status": "completed_local"
+      "phase": "DV3N26-07",
+      "status": "pending_approval"
     },
     {
-      "phase": "AIV50-08",
-      "status": "completed_local"
+      "phase": "DV3N26-08",
+      "status": "pending_approval"
     }
   ],
   "residualRisk": [
     "Revision profesional legal/contable/LOPDP requerida antes de produccion.",
-    "IESS mantiene 9.45% personal y 11.15% patronal segun contexto vigente; divergencias versionadas se bloquean o registran.",
-    "No se eliminaron tests ni AutoservicioScreen porque el codigo real los usa o el runner los ejecuta."
+    "Fuente V3 contiene referencias Base44/Deno y mojibake; se debe verificar contra stack real antes de aplicar fixes.",
+    "SUT/MDT requiere fuente oficial, credenciales o flujo manual controlado antes de prometer integracion."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "7339a77418da53aa84852b152337951596f5e092e93fbb7947311932f488fe44"
+  "signature": "2827e6e91817a6dcb84c6cdcc16da4eb60ed473e0900b671e657ba84eb0e0c49"
 }
