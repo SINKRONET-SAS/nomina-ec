@@ -5,13 +5,14 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const libxml = require('libxmljs2');
 const { XMLBuilder, XMLParser } = require('fast-xml-parser');
 const { s3Upload } = require('../config/s3');
 const db = require('../config/database');
 const AppError = require('../utils/AppError');
 
 const RDEP_XSD_PATH = path.join(__dirname, '..', 'config', 'rdep', 'Esquema_RDEP_2023.xsd');
-const XSD_VALIDATION_MODE = 'parsed_xsd_contract_v1';
+const XSD_VALIDATION_MODE = 'xsd_schema_validation';
 
 function asArray(value) {
   if (!value) return [];
@@ -58,6 +59,8 @@ function getRdepXsdContract(content) {
   };
 }
 
+let xsdDocCache = null;
+
 function getRdepXsdMetadata() {
   if (!fs.existsSync(RDEP_XSD_PATH)) {
     throw new AppError('No se encontro el esquema XSD RDEP versionado.', {
@@ -71,11 +74,19 @@ function getRdepXsdMetadata() {
   const contract = getRdepXsdContract(content);
   return {
     path: RDEP_XSD_PATH,
+    content,
     sha256: crypto.createHash('sha256').update(content, 'utf8').digest('hex'),
     rootName: contract.rootName,
     rootType: contract.rootType,
     validationMode: XSD_VALIDATION_MODE,
   };
+}
+
+function getRdepXsdDoc() {
+  if (xsdDocCache) return xsdDocCache;
+  const xsd = getRdepXsdMetadata();
+  xsdDocCache = libxml.parseXml(xsd.content, { baseUrl: RDEP_XSD_PATH });
+  return xsdDocCache;
 }
 
 async function loadRdepData(tenantId, anio, mes) {
@@ -146,79 +157,26 @@ async function precheckRDEP(tenantId, anio, mes) {
   };
 }
 
-function validateElementValue(value, elementType, pathLabel, failures) {
-  if (value === undefined || value === null || value === '') {
-    failures.push(`Falta ${pathLabel}.`);
-    return;
-  }
-
-  const stringValue = String(value);
-  if (elementType === 'numRucTyp' && !/^\d{13}$/.test(stringValue)) {
-    failures.push(`${pathLabel} debe ser un RUC de 13 digitos.`);
-  }
-  if (elementType === 'anioTyp' && Number(stringValue) < 2004) {
-    failures.push(`${pathLabel} debe ser un anio valido para RDEP.`);
-  }
-  if (['numeroPositivoTyp', 'numeroPositivoGrandeTyp'].includes(elementType) && !/^\d+(\.\d{2})$/.test(stringValue)) {
-    failures.push(`${pathLabel} debe ser decimal positivo con dos decimales.`);
-  }
-  if (elementType === 'sisSalNetTyp' && !['1', '2'].includes(stringValue)) {
-    failures.push(`${pathLabel} debe ser 1 o 2 segun tabla C del RDEP.`);
-  }
-}
-
-function validateComplexType(xmlNode, typeName, contract, pathLabel, failures) {
-  const complexType = contract.complexTypes.get(typeName);
-  if (!complexType) return;
-
-  const children = asArray(complexType['xs:sequence']?.['xs:element']);
-  children.forEach((child) => {
-    const childName = readElementName(child);
-    const childType = readElementType(child);
-    const required = readMinOccurs(child) !== '0';
-    const childValue = xmlNode?.[childName];
-    const childPath = `${pathLabel}.${childName}`;
-
-    if ((childValue === undefined || childValue === null) && required) {
-      failures.push(`Falta ${childPath}.`);
-      return;
-    }
-    if (childValue === undefined || childValue === null) return;
-
-    if (contract.complexTypes.has(childType)) {
-      asArray(childValue).forEach((entry, index) => {
-        const indexedPath = Array.isArray(childValue) ? `${childPath}[${index + 1}]` : childPath;
-        validateComplexType(entry, childType, contract, indexedPath, failures);
-      });
-      return;
-    }
-
-    if (childType) {
-      validateElementValue(childValue, childType, childPath, failures);
-    }
-  });
-}
-
 function validateRdepXmlAgainstXsdContract(xmlString) {
-  const xsdContent = fs.readFileSync(RDEP_XSD_PATH, 'utf8');
   const xsd = getRdepXsdMetadata();
-  const contract = getRdepXsdContract(xsdContent);
-  const parser = new XMLParser({
-    ignoreAttributes: false,
-    attributeNamePrefix: '@',
-    parseTagValue: false,
-  });
-  const parsed = parser.parse(xmlString);
-  const root = parsed[contract.rootName];
-  const failures = [];
+  const xsdDoc = getRdepXsdDoc();
+  let xmlDoc;
 
-  if (!root) failures.push(`No existe raiz ${contract.rootName} declarada en el XSD RDEP.`);
-  if (root) validateComplexType(root, contract.rootType, contract, contract.rootName, failures);
-  const retenciones = asArray(root?.retRelDep?.datRetRelDep);
-  if (root && retenciones.length === 0) failures.push('No existen registros retRelDep.datRetRelDep.');
+  try {
+    xmlDoc = libxml.parseXml(xmlString);
+  } catch (error) {
+    throw new AppError('El XML RDEP no pudo parsearse para validacion XSD oficial del SRI.', {
+      code: 'RDEP_XSD_VALIDATION_FAILED',
+      statusCode: 422,
+      details: { failures: [error.message], xsdSha256: xsd.sha256, validationMode: XSD_VALIDATION_MODE },
+    });
+  }
 
-  if (failures.length > 0) {
-    throw new AppError('El XML RDEP no supera la validacion contra el XSD versionado.', {
+  const valid = xmlDoc.validate(xsdDoc);
+
+  if (!valid) {
+    const failures = xmlDoc.validationErrors.map((err) => err.message.trim());
+    throw new AppError('El XML RDEP no supera la validacion contra el esquema XSD oficial del SRI.', {
       code: 'RDEP_XSD_VALIDATION_FAILED',
       statusCode: 422,
       details: { failures, xsdSha256: xsd.sha256, validationMode: XSD_VALIDATION_MODE },
@@ -229,7 +187,7 @@ function validateRdepXmlAgainstXsdContract(xmlString) {
     valid: true,
     mode: XSD_VALIDATION_MODE,
     xsdSha256: xsd.sha256,
-    xsdRoot: contract.rootName,
+    xsdRoot: xsd.rootName,
     checkedAt: new Date().toISOString(),
   };
 }
