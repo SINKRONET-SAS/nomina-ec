@@ -29,14 +29,13 @@ async function calcularLiquidacion(empleadoId, tenantId, causaTerminacion, optio
   const sueldo = Number.parseFloat(emp.sueldo_bruto_mensual);
   const diasServicio = Math.max(0, Math.floor((fechaSalida - fechaIngreso) / 86400000) + 1);
   const aniosServicio = diasServicio / 365.25;
-  const mesesServicio = Math.floor(aniosServicio * 12);
   const sueldoDiario = sueldo / 30;
   const sueldoPendiente = roundMoney(sueldoDiario * fechaSalida.getDate());
   const diasDecimoTercero = calcularDiasDecimoTercero(fechaIngreso, fechaSalida);
   const diasDecimoCuarto = Math.min(diasServicio % 365, 365);
   const decimoTercero = roundMoney(sueldo * (diasDecimoTercero / 360));
   const decimoCuarto = roundMoney(legalParameters.payroll.unifiedBaseSalary * (diasDecimoCuarto / 365));
-  const vacaciones = roundMoney(sueldo * mesesServicio / 24);
+  const vacaciones = roundMoney(sueldo * (diasServicio / 30) / 24);
   const fondoReserva = calcularFondoReservaLiquidacion(fechaIngreso, fechaSalida, sueldo, legalParameters.payroll);
   const indemnizacion = calcularIndemnizacionDespidoIntempestivo(sueldo, aniosServicio, causaTerminacion);
   const desahucio = calcularDesahucio(sueldo, aniosServicio, causaTerminacion);
