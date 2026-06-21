@@ -25,6 +25,16 @@ import {
 } from '../../services/configurationApi';
 import { extractApiError } from '../../services/publicApi';
 
+const workDayOptions = [
+  { value: 'monday', label: 'Lunes' },
+  { value: 'tuesday', label: 'Martes' },
+  { value: 'wednesday', label: 'Miercoles' },
+  { value: 'thursday', label: 'Jueves' },
+  { value: 'friday', label: 'Viernes' },
+  { value: 'saturday', label: 'Sabado' },
+  { value: 'sunday', label: 'Domingo' },
+];
+
 const formDefinitions = [
   {
     key: 'empresa',
@@ -200,7 +210,7 @@ const formDefinitions = [
   {
     key: 'organizacion',
     title: 'Unidad organizativa',
-    description: 'Crea departamentos, areas, sucursales o centros de costo vinculados a una zona de marcacion.',
+    description: 'Crea departamentos, areas, sucursales o centros de costo vinculados a zona de marcacion y jornada base.',
     icon: Network,
     resource: 'organizationUnits',
     stepCode: 'organizacion',
@@ -208,7 +218,8 @@ const formDefinitions = [
       { name: 'code', label: 'Codigo', placeholder: 'VENTAS', required: true },
       { name: 'name', label: 'Nombre', placeholder: 'Ventas', required: true },
       { name: 'unit_type', label: 'Tipo', type: 'select', options: ['departamento', 'area', 'sucursal', 'centro_costo'] },
-      { name: 'work_zone_id', label: 'Zona de marcacion', type: 'resourceSelect', resource: 'workZones', required: true },
+      { name: 'work_zone_id', label: 'Zona de marcacion', type: 'resourceSelect', resource: 'workZones', required: true, emptyLabel: 'Primero crea una zona de marcacion', selectLabel: 'Selecciona una zona' },
+      { name: 'work_shift_id', label: 'Jornada base', type: 'resourceSelect', resource: 'workShifts', required: true, emptyLabel: 'Primero crea una jornada base', selectLabel: 'Selecciona una jornada' },
       { name: 'cost_center_code', label: 'Centro de costo' },
       { name: 'description', label: 'Descripcion', type: 'textarea', wide: true },
     ],
@@ -217,6 +228,7 @@ const formDefinitions = [
       name: '',
       unit_type: 'departamento',
       work_zone_id: '',
+      work_shift_id: '',
       cost_center_code: '',
       description: '',
     },
@@ -226,6 +238,7 @@ const formDefinitions = [
       unit_type: values.unit_type,
       work_zone_id: values.work_zone_id,
       cost_center_code: values.cost_center_code.trim(),
+      metadata: { workShiftId: values.work_shift_id },
       description: values.description.trim(),
       status: 'activo',
     }),
@@ -271,7 +284,7 @@ const formDefinitions = [
   {
     key: 'jornada',
     title: 'Jornada base',
-    description: 'Configura horarios, tolerancias y horas semanales de trabajo.',
+    description: 'Configura varias jornadas por OWNER: lunes a viernes, martes a sabado u otra distribucion operativa autorizada.',
     icon: TimerReset,
     resource: 'workShifts',
     stepCode: 'jornadas',
@@ -280,6 +293,7 @@ const formDefinitions = [
       { name: 'name', label: 'Nombre', placeholder: 'Ordinaria 8 horas', required: true },
       { name: 'shift_type', label: 'Tipo', type: 'select', options: ['ordinaria', 'rotativa', 'nocturna', 'parcial'] },
       { name: 'weekly_hours', label: 'Horas semanales', type: 'number', step: '0.5', required: true },
+      { name: 'work_days', label: 'Dias laborables', type: 'multiCheckbox', options: workDayOptions, wide: true },
       { name: 'start_time', label: 'Inicio', type: 'time', required: true },
       { name: 'end_time', label: 'Fin', type: 'time', required: true },
       { name: 'break_minutes', label: 'Descanso min.', type: 'number', required: true },
@@ -290,6 +304,7 @@ const formDefinitions = [
       name: '',
       shift_type: 'ordinaria',
       weekly_hours: 40,
+      work_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
       start_time: '08:00',
       end_time: '17:00',
       break_minutes: 60,
@@ -304,6 +319,11 @@ const formDefinitions = [
       end_time: values.end_time,
       break_minutes: Number(values.break_minutes),
       tolerance_minutes: Number(values.tolerance_minutes),
+      calendar_rules: {
+        workDays: values.work_days || [],
+        requiresMdtAuthorizationReview: true,
+        legalNotice: 'La distribucion de jornada debe revisarse frente a la normativa laboral ecuatoriana y, cuando aplique, contar con autorizacion del Ministerio del Trabajo antes de operar.',
+      },
       status: 'activo',
     }),
     recordLabel: (record) => record.name,
@@ -402,6 +422,14 @@ const formDefinitions = [
   },
 ];
 
+function formatWorkDays(days = []) {
+  if (!Array.isArray(days) || days.length === 0) return 'dias no definidos';
+  const labels = workDayOptions
+    .filter((option) => days.includes(option.value))
+    .map((option) => option.label);
+  return labels.length > 0 ? labels.join(', ') : 'dias no definidos';
+}
+
 function countResources(summary, key) {
   return summary?.resources?.[key]?.length || 0;
 }
@@ -430,7 +458,8 @@ function optionsForField(summary, field) {
 function recordMetaForDefinition(definition, record, summary) {
   if (definition.key === 'organizacion') {
     const zone = (summary?.resources?.workZones || []).find((item) => item.id === record.work_zone_id);
-    return `${record.code} - ${record.unit_type} - zona: ${zone?.name || 'sin zona'}`;
+    const shift = (summary?.resources?.workShifts || []).find((item) => item.id === record.metadata?.workShiftId);
+    return `${record.code} - ${record.unit_type} - zona: ${zone?.name || 'sin zona'} - jornada: ${shift?.name || 'sin jornada'}`;
   }
 
   return definition.recordMeta(record, summary);
@@ -496,12 +525,39 @@ function Field({ field, value, onChange, options = [] }) {
           required={field.required}
           disabled={options.length === 0}
         >
-          <option value="">{options.length === 0 ? 'Primero crea una zona de marcacion' : 'Selecciona una zona'}</option>
+          <option value="">{options.length === 0 ? field.emptyLabel || 'Primero crea un registro' : field.selectLabel || 'Selecciona una opcion'}</option>
           {options.map((option) => (
             <option key={option.id} value={option.id}>{option.name} ({option.code})</option>
           ))}
         </select>
       </label>
+    );
+  }
+
+  if (field.type === 'multiCheckbox') {
+    const selected = Array.isArray(value) ? value : [];
+    return (
+      <fieldset className={field.wide ? 'md:col-span-2' : ''}>
+        <legend className="text-sm font-medium text-slate-700">{field.label}</legend>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {field.options.map((option) => (
+            <label className="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700" key={option.value}>
+              <input
+                className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-700"
+                type="checkbox"
+                checked={selected.includes(option.value)}
+                onChange={(event) => {
+                  const next = event.target.checked
+                    ? [...selected, option.value]
+                    : selected.filter((item) => item !== option.value);
+                  onChange(field.name, next);
+                }}
+              />
+              <span>{option.label}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
     );
   }
 
@@ -1099,6 +1155,16 @@ function Parametrizacion() {
               <h3 className="font-semibold text-slate-950">{activeDefinition.title}</h3>
               <p className="mt-1 text-sm text-slate-600">{activeDefinition.description}</p>
             </div>
+
+
+            {activeDefinition.key === 'jornada' && (
+              <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
+                <p className="font-semibold">Revision legal de jornada requerida</p>
+                <p className="mt-1">
+                  Puedes configurar varias jornadas en el mismo OWNER y asignarlas luego a cada unidad organizativa: lunes a viernes, martes a sabado u otra distribucion operativa. Antes de aplicarlas, valida que la jornada cumpla limites laborales ecuatorianos y, cuando corresponda por jornada especial, nocturna, rotativa, suplementaria, extraordinaria o distribucion excepcional, obten la autorizacion o registro aplicable ante el Ministerio del Trabajo.
+                </p>
+              </div>
+            )}
 
             {activeDefinition.customType === 'incomeTaxTable' ? (
               <div className="mt-5">

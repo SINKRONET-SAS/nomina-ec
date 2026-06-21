@@ -2,6 +2,7 @@ process.env.EMPLOYEE_INVITE_SECRET = process.env.EMPLOYEE_INVITE_SECRET || 'test
 
 const {
   buildReadiness,
+  employeeReadinessSelect,
   hashInviteCode,
   normalizeInviteCode,
 } = require('./employeeAppInviteService');
@@ -35,6 +36,14 @@ describe('employeeAppInviteService', () => {
     ]));
   });
 
+  test('employeeReadinessSelect resuelve jornada por unidad y evita ambiguedad multi-jornada', () => {
+    const sql = employeeReadinessSelect('WHERE e.id = $1');
+
+    expect(sql).toContain("ws.id::text = ou.metadata->>'workShiftId'");
+    expect(sql).toContain('SELECT COUNT(*)');
+    expect(sql).toContain(') = 1');
+  });
+
   test('buildReadiness aprueba empleado con unidad, zona y jornada', () => {
     const readiness = buildReadiness({
       departamento: 'ADM',
@@ -54,10 +63,16 @@ describe('employeeAppInviteService', () => {
       start_time: '08:00',
       end_time: '17:00',
       tolerance_minutes: 10,
+      calendar_rules: {
+        workDays: ['monday', 'tuesday'],
+        legalNotice: 'Validar autorizacion MDT cuando aplique.',
+      },
     }, { requireEmail: true });
 
     expect(readiness.ready).toBe(true);
     expect(readiness.workZone.name).toBe('Matriz');
     expect(readiness.workShift.startTime).toBe('08:00');
+    expect(readiness.workShift.workDays).toEqual(['monday', 'tuesday']);
+    expect(readiness.workShift.legalNotice).toContain('MDT');
   });
 });

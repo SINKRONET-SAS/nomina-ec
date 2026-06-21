@@ -121,6 +121,9 @@ function buildReadiness(row = {}, { requireEmail = false } = {}) {
       startTime: row.start_time,
       endTime: row.end_time,
       toleranceMinutes: Number(row.tolerance_minutes || 0),
+      calendarRules: row.calendar_rules || {},
+      workDays: Array.isArray(row.calendar_rules?.workDays) ? row.calendar_rules.workDays : [],
+      legalNotice: row.calendar_rules?.legalNotice || null,
     } : null,
   };
 }
@@ -155,7 +158,8 @@ function employeeReadinessSelect(whereClause) {
       ws.name AS work_shift_name,
       ws.start_time,
       ws.end_time,
-      ws.tolerance_minutes
+      ws.tolerance_minutes,
+      ws.calendar_rules
     FROM empleados e
     LEFT JOIN LATERAL (
       SELECT ou.*
@@ -182,7 +186,23 @@ function employeeReadinessSelect(whereClause) {
       WHERE ws.tenant_id = e.tenant_id
         AND ws.status = 'activo'
         AND (ws.valid_to IS NULL OR ws.valid_to >= CURRENT_DATE)
-      ORDER BY ws.updated_at DESC, ws.created_at DESC
+        AND (
+          ws.id::text = ou.metadata->>'workShiftId'
+          OR (
+            COALESCE(ou.metadata->>'workShiftId', '') = ''
+            AND (
+              SELECT COUNT(*)
+              FROM work_shifts ws_count
+              WHERE ws_count.tenant_id = e.tenant_id
+                AND ws_count.status = 'activo'
+                AND (ws_count.valid_to IS NULL OR ws_count.valid_to >= CURRENT_DATE)
+            ) = 1
+          )
+        )
+      ORDER BY
+        CASE WHEN ws.id::text = ou.metadata->>'workShiftId' THEN 0 ELSE 1 END,
+        ws.updated_at DESC,
+        ws.created_at DESC
       LIMIT 1
     ) ws ON true
     ${whereClause}
@@ -806,6 +826,7 @@ module.exports = {
   acceptEmployeeInvitation,
   buildReadiness,
   createEmployeeInvitation,
+  employeeReadinessSelect,
   hashInviteCode,
   listEmployeeAppInvitations,
   normalizeInviteCode,

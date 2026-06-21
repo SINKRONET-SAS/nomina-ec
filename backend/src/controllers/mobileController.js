@@ -43,6 +43,8 @@ async function resolveEmployee(req) {
       inicio: workShift.startTime,
       fin: workShift.endTime,
       tolerancia_minutos: workShift.toleranceMinutes,
+      dias_laborables: workShift.workDays,
+      aviso_legal: workShift.legalNotice,
     } : null,
   };
 }
