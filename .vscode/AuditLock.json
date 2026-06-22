@@ -1,126 +1,92 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-DIAGNOSTICO-V3-NOMINA-EC-2026",
-  "planCode": "DV3N26",
-  "status": "completed_runtime_local",
-  "phaseCompleted": "DV3N26-08",
-  "currentPhase": "DV3N26-closed-local",
-  "updatedAt": "2026-06-21T22:30:44.363Z",
-  "summary": "DV3N26-01..08 ejecutadas localmente: bancos cerrada/pagada, vacaciones Art. 69, reporte contable, LOPDP existente verificada, cifrado AES-256-GCM, PWA offline segura, SUT/MDT visible y QA global.",
+  "plan": "HAIKY-DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026",
+  "planCode": "DCEN26",
+  "status": "completed_documental",
+  "phaseCompleted": "DCEN26-00",
+  "currentPhase": "DCEN26-01-pending-explicit-approval",
+  "updatedAt": "2026-06-22T00:58:01.846Z",
+  "summary": "DCEN26-00 generado documentalmente: plan Haiky, matriz, runbook, reporte baseline, prompts por fase y contexto para empresa demo comercial totalmente configurada sin tocar runtime.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: Ejecutar todos los prompts de acuerdo a DV3N26 y AIV50.",
-  "previousAuditLockHash": "6baefd3e102d7ac5b5094226de7b4507b944d7072fe64a33e4483b6ade4245a8",
+  "approvalSource": "Solicitud del usuario: generar plan Haiky para empresa demo comercial con 4 usuarios, 30 empleados, asistencias, Quito/Guayaquil y cierre de nomina 5 meses 2026.",
+  "previousAuditLockHash": "ac651ad35f666fef517ddb4481e70930300bd1c8bde267855d763949fe6b1331",
   "filesModified": [
     "CODEX_CONTEXT.md",
-    "backend/src/controllers/empleadoController.js",
-    "backend/src/services/bancoAebGenerator.js",
-    "backend/src/services/bancoAebGenerator.test.js",
-    "backend/src/services/employeeImportService.js",
-    "backend/src/services/liquidacionService.js",
-    "backend/src/services/liquidacionService.test.js",
-    "backend/src/services/payrollReportService.js",
-    "docs2/PLAN_HAIKY_DIAGNOSTICO_V3_NOMINA_EC_2026.md",
-    "frontend-web/pwa.config.js",
-    "frontend-web/src/main.jsx",
-    "frontend-web/src/pages/Documentos/ActasFiniquito.jsx",
-    "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
-    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
-    "backend/src/services/bankAccountCrypto.js",
-    "backend/src/services/bankAccountCrypto.test.js",
-    "backend/src/services/payrollReportService.test.js",
-    "docs2/diagnostico-v3-nomina-ec-2026/REPORTE_DV3N26_08_CIERRE_RUNTIME.md",
-    ".vscode/AuditLock.json"
+    ".vscode/AuditLock.json",
+    "docs2/PLAN_HAIKY_DEMO_COMERCIAL_EMPRESA_NOMINA_EC_2026.md",
+    "docs2/demo-comercial-empresa-nomina-ec-2026/MATRIZ_DCEN26_REQUERIMIENTOS.md",
+    "docs2/demo-comercial-empresa-nomina-ec-2026/RUNBOOK_DCEN26_DEMO_COMERCIAL.md",
+    "docs2/demo-comercial-empresa-nomina-ec-2026/REPORTE_DCEN26_00_BASELINE.md",
+    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-00-baseline.md",
+    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-01-diagnostico-runtime.md",
+    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-02-tenant-usuarios.md",
+    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-03-parametrizacion-demo.md",
+    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-04-estructura-zonas.md",
+    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-05-empleados-30.md",
+    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-06-asistencia-mes.md",
+    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-07-nomina-5-meses.md",
+    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-08-qa-release-demo.md"
   ],
   "validationChecks": [
     {
-      "gate": "DV3N26-RULES-CONTEXT",
+      "gate": "DCEN26-RULES-CONTEXT",
       "status": "PASS",
-      "detail": "RULES.md, CODEX_CONTEXT.md, AuditLock y matriz DV3N26 releidos antes de runtime."
+      "detail": "RULES.md, CODEX_CONTEXT.md y AuditLock leidos antes de generar la linea documental."
     },
     {
-      "gate": "DV3N26-PRISMA-VALIDATE",
+      "gate": "DCEN26-DOCUMENTAL-ONLY",
       "status": "PASS",
-      "detail": "npx.cmd prisma validate en backend."
+      "detail": "No se tocaron runtime, base de datos, seeds ni pantallas."
     },
     {
-      "gate": "DV3N26-BACKEND-JEST",
+      "gate": "DCEN26-PROMPTS",
       "status": "PASS",
-      "detail": "npm.cmd test -- --runInBand: 26 suites, 98 tests."
-    },
-    {
-      "gate": "DV3N26-FRONTEND-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web."
-    },
-    {
-      "gate": "DV3N26-PWA-SMOKE",
-      "status": "PASS",
-      "detail": "npm.cmd run smoke:pwa en frontend-web."
-    },
-    {
-      "gate": "DV3N26-MOBILE-STORES",
-      "status": "PASS",
-      "detail": "npm.cmd run check:stores en app-movil."
-    },
-    {
-      "gate": "DV3N26-MOBILE-DOCTOR",
-      "status": "PASS",
-      "detail": "npm.cmd run doctor en app-movil: 18/18 checks."
-    },
-    {
-      "gate": "DV3N26-DIFF-CHECK",
-      "status": "PASS",
-      "detail": "git diff --check sin errores; solo advertencias CRLF."
-    },
-    {
-      "gate": "DV3N26-UTF8-NO-BOM",
-      "status": "PASS",
-      "detail": "15 archivos .js/.jsx/.md/.json modificados o nuevos validados sin BOM."
+      "detail": "Prompts 00..08 generados con aprobacion por fase y commits esperados."
     }
   ],
   "fases": [
     {
-      "phase": "DV3N26-00",
+      "phase": "DCEN26-00",
       "status": "completed_documental"
     },
     {
-      "phase": "DV3N26-01",
-      "status": "completed_local"
+      "phase": "DCEN26-01",
+      "status": "pending_approval"
     },
     {
-      "phase": "DV3N26-02",
-      "status": "completed_local"
+      "phase": "DCEN26-02",
+      "status": "pending_approval"
     },
     {
-      "phase": "DV3N26-03",
-      "status": "completed_local"
+      "phase": "DCEN26-03",
+      "status": "pending_approval"
     },
     {
-      "phase": "DV3N26-04",
-      "status": "completed_by_existing_runtime"
+      "phase": "DCEN26-04",
+      "status": "pending_approval"
     },
     {
-      "phase": "DV3N26-05",
-      "status": "completed_local"
+      "phase": "DCEN26-05",
+      "status": "pending_approval"
     },
     {
-      "phase": "DV3N26-06",
-      "status": "completed_local"
+      "phase": "DCEN26-06",
+      "status": "pending_approval"
     },
     {
-      "phase": "DV3N26-07",
-      "status": "completed_local_with_external_block"
+      "phase": "DCEN26-07",
+      "status": "pending_approval"
     },
     {
-      "phase": "DV3N26-08",
-      "status": "completed_local"
+      "phase": "DCEN26-08",
+      "status": "pending_approval"
     }
   ],
   "residualRisk": [
-    "Revision profesional legal/contable/LOPDP requerida antes de produccion.",
-    "BANK_ACCOUNT_ENCRYPTION_KEY productiva debe configurarse fuera del repositorio antes de usar cuentas bancarias reales.",
-    "SUT/MDT queda como control visible/manual hasta contar con fuente tecnica, credenciales o API oficial verificable."
+    "DCEN26 aun no crea datos demo ni valida runtime; requiere aprobacion explicita desde DCEN26-01.",
+    "La demo debe bloquear datos reales, credenciales reales y archivos bancarios productivos.",
+    "El reset demo debe implementarse con guardas de tenant demo antes de ejecutar cualquier eliminacion."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "ac651ad35f666fef517ddb4481e70930300bd1c8bde267855d763949fe6b1331"
+  "signature": "20a76f92a45d2a949bfd7c08390508a73c35be06dc9d5377a666dbdf0168eb04"
 }

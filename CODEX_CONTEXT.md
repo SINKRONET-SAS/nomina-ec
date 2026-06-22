@@ -1,6 +1,30 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026 |
+| Codigo | DCEN26 |
+| Estado | DCEN26-00 generado documentalmente; runtime pendiente de aprobacion por fase |
+| Fase actual | DCEN26-01 pendiente de aprobacion explicita |
+| Alcance | empresa demo comercial totalmente configurada con 4 usuarios, 30 empleados ficticios, estructura Quito/Guayaquil, zonas, asistencias de un mes, smoke data y cierre de nomina de 5 meses 2026 |
+| Plan doc | `docs2/PLAN_HAIKY_DEMO_COMERCIAL_EMPRESA_NOMINA_EC_2026.md` |
+| Matriz | `docs2/demo-comercial-empresa-nomina-ec-2026/MATRIZ_DCEN26_REQUERIMIENTOS.md` |
+| Runbook | `docs2/demo-comercial-empresa-nomina-ec-2026/RUNBOOK_DCEN26_DEMO_COMERCIAL.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Prompts | `.github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-{00..08}-*.md` |
+| RULES | `RULES.md` |
+
+### Resumen DCEN26
+
+DCEN26 convierte el requerimiento de empresa demo comercial en una linea Haiky ejecutable. La demo debe quedar aislada por tenant, marcada como demo, idempotente, reversible y sin datos reales. Incluye usuarios, empleados completos, parametros legales/operativos, bancos ficticios, homologacion, estructura Quito/Guayaquil, zonas con coordenadas publicas/ficticias, asistencia de un mes y cinco cierres de nomina 2026.
+
+Regla operativa: DCEN26-00 no toca runtime. DCEN26-01 debe diagnosticar modelos, seeds, rutas, pantallas y riesgos antes de sembrar datos. Ninguna fase posterior puede crear datos demo si no valida aislamiento tenant, idempotencia, rollback y ausencia de datos reales.
+
+---
+
 ## Open Haiky Plan - HAIKY-DIAGNOSTICO-V3-NOMINA-EC-2026
 
 | Campo | Valor |
