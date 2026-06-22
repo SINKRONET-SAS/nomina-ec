@@ -69,7 +69,7 @@ function Layout() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="app-shell">
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-200 ease-in-out`}>
         <div className="flex items-center justify-between h-16 px-6 border-b">
@@ -152,7 +152,7 @@ function Layout() {
         </header>
 
         {/* Page content */}
-        <main className="p-6">
+        <main className="mx-auto w-full max-w-7xl p-4 sm:p-6">
           <Outlet />
         </main>
       </div>

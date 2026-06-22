@@ -522,14 +522,15 @@ function buildInitialState() {
 }
 
 function Field({ field, value, onChange, options = [] }) {
-  const baseClass = 'mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100';
+  const baseClass = 'form-control';
+  const fieldClass = field.wide ? 'form-field-full' : 'form-field-third';
 
   if (field.type === 'textarea') {
     return (
-      <label className={field.wide ? 'md:col-span-2' : ''}>
+      <label className={fieldClass}>
         <span className="text-sm font-medium text-slate-700">{field.label}</span>
         <textarea
-          className={`${baseClass} min-h-20`}
+          className="form-textarea"
           value={value}
           onChange={(event) => onChange(field.name, event.target.value)}
           placeholder={field.placeholder}
@@ -540,7 +541,7 @@ function Field({ field, value, onChange, options = [] }) {
 
   if (field.type === 'select') {
     return (
-      <label>
+      <label className={fieldClass}>
         <span className="text-sm font-medium text-slate-700">{field.label}</span>
         <select className={baseClass} value={value} onChange={(event) => onChange(field.name, event.target.value)}>
           {field.options.map((option) => (
@@ -553,7 +554,7 @@ function Field({ field, value, onChange, options = [] }) {
 
   if (field.type === 'resourceSelect') {
     return (
-      <label>
+      <label className={fieldClass}>
         <span className="text-sm font-medium text-slate-700">{field.label}</span>
         <select
           className={baseClass}
@@ -574,7 +575,7 @@ function Field({ field, value, onChange, options = [] }) {
   if (field.type === 'multiCheckbox') {
     const selected = Array.isArray(value) ? value : [];
     return (
-      <fieldset className={field.wide ? 'md:col-span-2' : ''}>
+      <fieldset className={field.wide ? 'form-field-full' : 'form-field-third'}>
         <legend className="text-sm font-medium text-slate-700">{field.label}</legend>
         <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {field.options.map((option) => (
@@ -600,7 +601,7 @@ function Field({ field, value, onChange, options = [] }) {
 
   if (field.type === 'checkbox') {
     return (
-      <label className="flex min-h-[70px] items-center gap-3 rounded-md border border-slate-200 px-3 py-2">
+      <label className="form-field-third flex h-10 items-center gap-3 self-end rounded-md border border-slate-200 px-3 text-sm">
         <input
           className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-700"
           type="checkbox"
@@ -613,7 +614,7 @@ function Field({ field, value, onChange, options = [] }) {
   }
 
   return (
-    <label>
+    <label className={fieldClass}>
       <span className="text-sm font-medium text-slate-700">{field.label}</span>
       <input
         className={baseClass}
@@ -629,12 +630,12 @@ function Field({ field, value, onChange, options = [] }) {
 }
 
 function IncomeTaxTableFields({ values, onFieldChange, onBracketChange, onAddBracket, onRemoveBracket }) {
-  const inputClass = 'mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100';
+  const inputClass = 'form-control';
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-4 md:grid-cols-2">
-        <label>
+      <div className="form-grid">
+        <label className="form-field-third">
           <span className="text-sm font-medium text-slate-700">Anio fiscal</span>
           <input
             className={inputClass}
@@ -644,7 +645,7 @@ function IncomeTaxTableFields({ values, onFieldChange, onBracketChange, onAddBra
             required
           />
         </label>
-        <label>
+        <label className="form-field-third">
           <span className="text-sm font-medium text-slate-700">Fuente oficial</span>
           <input
             className={inputClass}
@@ -653,7 +654,7 @@ function IncomeTaxTableFields({ values, onFieldChange, onBracketChange, onAddBra
             placeholder="SRI"
           />
         </label>
-        <label>
+        <label className="form-field-third">
           <span className="text-sm font-medium text-slate-700">URL de respaldo</span>
           <input
             className={inputClass}
@@ -663,7 +664,7 @@ function IncomeTaxTableFields({ values, onFieldChange, onBracketChange, onAddBra
             placeholder="https://www.sri.gob.ec/..."
           />
         </label>
-        <label>
+        <label className="form-field-third">
           <span className="text-sm font-medium text-slate-700">Fecha de fuente</span>
           <input
             className={inputClass}
@@ -760,7 +761,7 @@ function IncomeTaxTableFields({ values, onFieldChange, onBracketChange, onAddBra
       <label className="block">
         <span className="text-sm font-medium text-slate-700">Notas de revision</span>
         <textarea
-          className={`${inputClass} min-h-20`}
+          className="form-textarea"
           value={values.notes}
           onChange={(event) => onFieldChange('notes', event.target.value)}
           placeholder="Resolucion, ejercicio fiscal, observaciones de validacion..."
@@ -1085,7 +1086,7 @@ function Parametrizacion() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Configuracion de la empresa</p>
@@ -1155,7 +1156,7 @@ function Parametrizacion() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <Settings2 className="h-6 w-6 text-teal-700" />
@@ -1214,7 +1215,7 @@ function Parametrizacion() {
                 />
               </div>
             ) : (
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <div className="form-grid mt-5">
                 {activeDefinition.fields.map((field) => (
                   <Field
                     key={field.name}
@@ -1262,7 +1263,7 @@ function Parametrizacion() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="text-lg font-semibold text-slate-950">Avance operativo</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {(summary?.onboarding?.steps || []).map((step) => (

@@ -118,13 +118,20 @@ function fileToBase64(file) {
   });
 }
 
-function Field({ label, name, value, onChange, type = 'text', required = false, placeholder = '', children, disabled = false, min, step, maxLength }) {
+const CONTROL_CLASS = 'form-control';
+const FILE_CONTROL_CLASS = 'form-file';
+const TEXTAREA_CLASS = 'form-textarea';
+const FIELD_HALF = 'form-field-half';
+const FIELD_THIRD = 'form-field-third';
+const FIELD_FULL = 'form-field-full';
+
+function Field({ label, name, value, onChange, type = 'text', required = false, placeholder = '', children, disabled = false, min, step, maxLength, className = FIELD_HALF }) {
   return (
-    <label className="block">
+    <label className={`block ${className}`}>
       <span className="text-sm font-medium text-slate-700">{label}{required ? ' *' : ''}</span>
       {children || (
         <input
-          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+          className={CONTROL_CLASS}
           disabled={disabled}
           maxLength={maxLength}
           min={min}
@@ -143,12 +150,12 @@ function Field({ label, name, value, onChange, type = 'text', required = false, 
 
 function Section({ title, description, children }) {
   return (
-    <section className="rounded-md border border-slate-200 p-4">
+    <section className="form-section">
       <div className="mb-4">
         <h2 className="text-base font-semibold text-slate-950">{title}</h2>
         {description && <p className="mt-1 text-sm text-slate-600">{description}</p>}
       </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">{children}</div>
+      <div className="form-grid">{children}</div>
     </section>
   );
 }
@@ -387,19 +394,19 @@ function NuevoEmpleado() {
       {message && <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}
       {error && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
 
-      <form onSubmit={handleSubmit} className="space-y-5 rounded-lg bg-white p-6 shadow">
+      <form onSubmit={handleSubmit} className="max-w-7xl space-y-5 rounded-lg bg-white p-5 shadow sm:p-6">
         <Section title="Identificacion y contacto" description="Datos personales relevantes para la relacion laboral y comunicaciones.">
-          <Field disabled={isEdit} label="Cedula" maxLength="10" name="cedula" onChange={handleChange} required value={formData.cedula} />
-          <Field label="Nombres" name="nombres" onChange={handleChange} required value={formData.nombres} />
-          <Field label="Apellidos" name="apellidos" onChange={handleChange} required value={formData.apellidos} />
-          <Field label="Fecha de nacimiento" name="fecha_nacimiento" onChange={handleChange} required type="date" value={formData.fecha_nacimiento} />
-          <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <Field className={FIELD_THIRD} disabled={isEdit} label="Cedula" maxLength="10" name="cedula" onChange={handleChange} required value={formData.cedula} />
+          <Field className={FIELD_THIRD} label="Nombres" name="nombres" onChange={handleChange} required value={formData.nombres} />
+          <Field className={FIELD_THIRD} label="Apellidos" name="apellidos" onChange={handleChange} required value={formData.apellidos} />
+          <Field className={FIELD_THIRD} label="Fecha de nacimiento" name="fecha_nacimiento" onChange={handleChange} required type="date" value={formData.fecha_nacimiento} />
+          <div className="md:col-span-1 lg:col-span-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
             Edad calculada: <strong>{employeeAge === null ? 'pendiente' : `${employeeAge} anios`}</strong>
           </div>
-          <Field label="Telefono" name="telefono" onChange={handleChange} value={formData.telefono} />
-          <Field label="Correo personal" name="email_personal" onChange={handleChange} type="email" value={formData.email_personal} />
-          <Field label="Estado civil" name="estado_civil" onChange={handleChange} value={formData.estado_civil}>
-            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="estado_civil" onChange={handleChange} value={formData.estado_civil}>
+          <Field className={FIELD_THIRD} label="Telefono" name="telefono" onChange={handleChange} value={formData.telefono} />
+          <Field className={FIELD_HALF} label="Correo personal" name="email_personal" onChange={handleChange} type="email" value={formData.email_personal} />
+          <Field className={FIELD_THIRD} label="Estado civil" name="estado_civil" onChange={handleChange} value={formData.estado_civil}>
+            <select className={CONTROL_CLASS} name="estado_civil" onChange={handleChange} value={formData.estado_civil}>
               <option value="">Seleccionar...</option>
               <option value="soltero">Soltero/a</option>
               <option value="casado">Casado/a</option>
@@ -408,14 +415,14 @@ function NuevoEmpleado() {
               <option value="viudo">Viudo/a</option>
             </select>
           </Field>
-          <Field label="Cargas familiares" min="0" name="cargas_familiares" onChange={handleChange} type="number" value={formData.cargas_familiares} />
+          <Field className={FIELD_THIRD} label="Cargas familiares" min="0" name="cargas_familiares" onChange={handleChange} type="number" value={formData.cargas_familiares} />
           {isMinor && (
-            <div className="md:col-span-2 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <div className={`${FIELD_FULL} rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800`}>
               Este flujo bloquea contratacion de menores de edad. Requiere modulo especial de autorizaciones antes de registrar una ficha laboral.
             </div>
           )}
           {isOlderAdult && (
-            <div className="md:col-span-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            <div className={`${FIELD_FULL} rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950`}>
               Trabajador adulto mayor: revisar beneficios, retenciones e implicaciones de impuesto a la renta aplicables.
             </div>
           )}
@@ -423,15 +430,15 @@ function NuevoEmpleado() {
 
         {Number(formData.cargas_familiares || 0) > 0 && (
           <Section title="Cargas familiares" description="Registra los datos y documentos de soporte para efectos laborales y de impuesto a la renta.">
-            <div className="md:col-span-2 space-y-4">
+            <div className={`${FIELD_FULL} space-y-4`}>
               {formData.dependientes.map((dependent, index) => (
-                <div className="grid grid-cols-1 gap-3 rounded-md border border-slate-200 p-4 md:grid-cols-2" key={index}>
-                  <h3 className="text-sm font-semibold text-slate-900 md:col-span-2">Carga familiar {index + 1}</h3>
-                  <Field label="Nombres" name={`dependiente-${index}-nombres`} onChange={(event) => handleDependentChange(index, 'nombres', event.target.value)} required value={dependent.nombres} />
-                  <Field label="Apellidos" name={`dependiente-${index}-apellidos`} onChange={(event) => handleDependentChange(index, 'apellidos', event.target.value)} value={dependent.apellidos} />
-                  <Field label="Identificacion" name={`dependiente-${index}-identificacion`} onChange={(event) => handleDependentChange(index, 'identificacion', event.target.value)} value={dependent.identificacion} />
-                  <Field label="Parentesco" name={`dependiente-${index}-parentesco`} onChange={(event) => handleDependentChange(index, 'parentesco', event.target.value)} value={dependent.parentesco}>
-                    <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" onChange={(event) => handleDependentChange(index, 'parentesco', event.target.value)} value={dependent.parentesco}>
+                <div className="grid grid-cols-1 gap-3 rounded-md border border-slate-200 p-4 md:grid-cols-2 lg:grid-cols-12" key={index}>
+                  <h3 className={FIELD_FULL + ' text-sm font-semibold text-slate-900'}>Carga familiar {index + 1}</h3>
+                  <Field className="lg:col-span-4" label="Nombres" name={`dependiente-${index}-nombres`} onChange={(event) => handleDependentChange(index, 'nombres', event.target.value)} required value={dependent.nombres} />
+                  <Field className="lg:col-span-4" label="Apellidos" name={`dependiente-${index}-apellidos`} onChange={(event) => handleDependentChange(index, 'apellidos', event.target.value)} value={dependent.apellidos} />
+                  <Field className="lg:col-span-4" label="Identificacion" name={`dependiente-${index}-identificacion`} onChange={(event) => handleDependentChange(index, 'identificacion', event.target.value)} value={dependent.identificacion} />
+                  <Field className="lg:col-span-4" label="Parentesco" name={`dependiente-${index}-parentesco`} onChange={(event) => handleDependentChange(index, 'parentesco', event.target.value)} value={dependent.parentesco}>
+                    <select className={CONTROL_CLASS} onChange={(event) => handleDependentChange(index, 'parentesco', event.target.value)} value={dependent.parentesco}>
                       <option value="hijo">Hijo/a</option>
                       <option value="conyuge">Conyuge</option>
                       <option value="union_hecho">Pareja en union de hecho</option>
@@ -439,17 +446,17 @@ function NuevoEmpleado() {
                       <option value="otro">Otro permitido</option>
                     </select>
                   </Field>
-                  <Field label="Fecha de nacimiento" name={`dependiente-${index}-fecha`} onChange={(event) => handleDependentChange(index, 'fecha_nacimiento', event.target.value)} type="date" value={dependent.fecha_nacimiento} />
-                  <label className="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700">
+                  <Field className="lg:col-span-4" label="Fecha de nacimiento" name={`dependiente-${index}-fecha`} onChange={(event) => handleDependentChange(index, 'fecha_nacimiento', event.target.value)} type="date" value={dependent.fecha_nacimiento} />
+                  <label className="flex h-10 items-center gap-2 self-end rounded-md border border-slate-200 px-3 text-sm text-slate-700 lg:col-span-4">
                     <input checked={dependent.discapacidad} onChange={(event) => handleDependentChange(index, 'discapacidad', event.target.checked)} type="checkbox" />
                     Discapacidad
                   </label>
                   {dependent.discapacidad && (
-                    <Field label="Porcentaje discapacidad" min="0" name={`dependiente-${index}-porcentaje`} onChange={(event) => handleDependentChange(index, 'porcentaje_discapacidad', event.target.value)} step="0.01" type="number" value={dependent.porcentaje_discapacidad} />
+                    <Field className="lg:col-span-4" label="Porcentaje discapacidad" min="0" name={`dependiente-${index}-porcentaje`} onChange={(event) => handleDependentChange(index, 'porcentaje_discapacidad', event.target.value)} step="0.01" type="number" value={dependent.porcentaje_discapacidad} />
                   )}
-                  <label className="block md:col-span-2">
+                  <label className={`block ${FIELD_FULL}`}>
                     <span className="text-sm font-medium text-slate-700">Documento legal de soporte</span>
-                    <input accept="application/pdf,image/jpeg,image/png" className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" onChange={(event) => handleDependentFile(index, event.target.files?.[0])} type="file" />
+                    <input accept="application/pdf,image/jpeg,image/png" className={FILE_CONTROL_CLASS} onChange={(event) => handleDependentFile(index, event.target.files?.[0])} type="file" />
                     {dependent.documento_nombre && <p className="mt-1 text-xs text-slate-500">{dependent.documento_nombre}</p>}
                   </label>
                 </div>
@@ -459,12 +466,12 @@ function NuevoEmpleado() {
         )}
 
         <Section title="Domicilio" description="Ubicacion declarada por el trabajador para documentos laborales y contacto.">
-          <label className="block md:col-span-2">
+          <label className={`block ${FIELD_FULL}`}>
             <span className="text-sm font-medium text-slate-700">Domicilio</span>
-            <textarea className="mt-1 min-h-20 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="direccion_domicilio" onChange={handleChange} value={formData.direccion_domicilio} />
+            <textarea className={TEXTAREA_CLASS} name="direccion_domicilio" onChange={handleChange} value={formData.direccion_domicilio} />
           </label>
           <Field label="Provincia" name="provincia_codigo" onChange={(event) => setFormData((current) => ({ ...current, provincia_codigo: event.target.value, ciudad_codigo: '' }))} required value={formData.provincia_codigo}>
-            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="provincia_codigo" onChange={(event) => setFormData((current) => ({ ...current, provincia_codigo: event.target.value, ciudad_codigo: '' }))} required value={formData.provincia_codigo}>
+            <select className={CONTROL_CLASS} name="provincia_codigo" onChange={(event) => setFormData((current) => ({ ...current, provincia_codigo: event.target.value, ciudad_codigo: '' }))} required value={formData.provincia_codigo}>
               <option value="">{provincesQuery.isLoading ? 'Cargando provincias...' : 'Seleccionar provincia...'}</option>
               {provinces.map((province) => (
                 <option key={province.code} value={province.code}>{province.code} - {province.name}</option>
@@ -472,7 +479,7 @@ function NuevoEmpleado() {
             </select>
           </Field>
           <Field label="Ciudad / canton" name="ciudad_codigo" onChange={handleChange} required value={formData.ciudad_codigo}>
-            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" disabled={!formData.provincia_codigo} name="ciudad_codigo" onChange={handleChange} required value={formData.ciudad_codigo}>
+            <select className={CONTROL_CLASS} disabled={!formData.provincia_codigo} name="ciudad_codigo" onChange={handleChange} required value={formData.ciudad_codigo}>
               <option value="">{citiesQuery.isLoading ? 'Cargando ciudades...' : 'Seleccionar ciudad...'}</option>
               {cities.map((city) => (
                 <option key={city.code} value={city.code}>{city.code} - {city.name}</option>
@@ -485,7 +492,7 @@ function NuevoEmpleado() {
           <Field label="Cargo" name="cargo" onChange={handleChange} value={formData.cargo} />
           <Field label="Departamento o unidad" name="departamento" onChange={handleChange} value={formData.departamento} />
           <Field label="Unidad organizativa" name="unidad_organizativa_codigo" onChange={handleChange} value={formData.unidad_organizativa_codigo}>
-            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="unidad_organizativa_codigo" onChange={handleChange} value={formData.unidad_organizativa_codigo}>
+            <select className={CONTROL_CLASS} name="unidad_organizativa_codigo" onChange={handleChange} value={formData.unidad_organizativa_codigo}>
               <option value="">{organizationUnitsQuery.isLoading ? 'Cargando unidades...' : 'Seleccionar unidad parametrizada...'}</option>
               {activeOrganizationUnits.map((unit) => (
                 <option key={unit.id || unit.code} value={unit.code}>{unit.code} - {unit.name}</option>
@@ -493,7 +500,7 @@ function NuevoEmpleado() {
             </select>
           </Field>
           <Field label="Codigo de jornada" name="jornada_codigo" onChange={handleChange} required value={formData.jornada_codigo}>
-            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="jornada_codigo" onChange={handleChange} required value={formData.jornada_codigo}>
+            <select className={CONTROL_CLASS} name="jornada_codigo" onChange={handleChange} required value={formData.jornada_codigo}>
               <option value="">{workShiftsQuery.isLoading ? 'Cargando jornadas...' : 'Seleccionar jornada parametrizada...'}</option>
               {activeWorkShifts.map((shift) => (
                 <option key={shift.id || shift.code} value={shift.code}>{shift.code} - {shift.name}</option>
@@ -501,7 +508,7 @@ function NuevoEmpleado() {
             </select>
           </Field>
           <Field label="Zona de marcacion" name="zona_marcacion_codigo" onChange={handleChange} value={formData.zona_marcacion_codigo}>
-            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="zona_marcacion_codigo" onChange={handleChange} value={formData.zona_marcacion_codigo}>
+            <select className={CONTROL_CLASS} name="zona_marcacion_codigo" onChange={handleChange} value={formData.zona_marcacion_codigo}>
               <option value="">{workZonesQuery.isLoading ? 'Cargando zonas...' : 'Seleccionar zona parametrizada...'}</option>
               {activeWorkZones.map((zone) => (
                 <option key={zone.id || zone.code} value={zone.code}>{zone.code} - {zone.name}</option>
@@ -512,7 +519,7 @@ function NuevoEmpleado() {
           <Field label="Gastos personales anuales SRI" min="0" name="gastos_personales_anuales" onChange={handleChange} placeholder="0.00" step="0.01" type="number" value={formData.gastos_personales_anuales} />
           <Field label="Fecha de ingreso" name="fecha_ingreso" onChange={handleChange} required type="date" value={formData.fecha_ingreso} />
           <Field label="Tipo de contrato" name="tipo_contrato" onChange={handleChange} value={formData.tipo_contrato}>
-            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="tipo_contrato" onChange={handleChange} value={formData.tipo_contrato}>
+            <select className={CONTROL_CLASS} name="tipo_contrato" onChange={handleChange} value={formData.tipo_contrato}>
               <option value="indefinido">Indefinido</option>
               <option value="ocasional">Ocasional</option>
               <option value="obra">Obra o faena</option>
@@ -520,26 +527,26 @@ function NuevoEmpleado() {
             </select>
           </Field>
           <Field label="Region para decimo cuarto" name="region_decimo_cuarto" onChange={handleChange} required value={formData.region_decimo_cuarto}>
-            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="region_decimo_cuarto" onChange={handleChange} required value={formData.region_decimo_cuarto}>
+            <select className={CONTROL_CLASS} name="region_decimo_cuarto" onChange={handleChange} required value={formData.region_decimo_cuarto}>
               <option value="sierra_amazonia">Sierra / Amazonia</option>
               <option value="costa_galapagos">Costa / Galapagos</option>
             </select>
           </Field>
-          <div className="md:col-span-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          <div className={`${FIELD_FULL} rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950`}>
             Este codigo enlaza la ficha con el parametro legal de decimo cuarto correspondiente. No se calcula por texto libre.
           </div>
         </Section>
 
         <Section title="Datos de pago del trabajador" description="Entidad y cuenta del trabajador. La entidad debe estar autorizada por la autoridad de control financiero aplicable.">
           <Field label="Forma de pago" name="forma_pago" onChange={handleChange} value={formData.forma_pago}>
-            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="forma_pago" onChange={handleChange} value={formData.forma_pago}>
+            <select className={CONTROL_CLASS} name="forma_pago" onChange={handleChange} value={formData.forma_pago}>
               <option value="transferencia">Transferencia bancaria</option>
               <option value="cheque">Cheque</option>
               <option value="efectivo">Efectivo autorizado</option>
             </select>
           </Field>
           <Field label="Entidad bancaria o financiera del trabajador" name="banco" onChange={handleChange} required={formData.forma_pago === 'transferencia'} value={formData.banco}>
-            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="banco" onChange={handleChange} required={formData.forma_pago === 'transferencia'} value={formData.banco}>
+            <select className={CONTROL_CLASS} name="banco" onChange={handleChange} required={formData.forma_pago === 'transferencia'} value={formData.banco}>
               <option value="">{bankProfilesQuery.isLoading ? 'Cargando bancos...' : 'Seleccionar banco parametrizado...'}</option>
               {activeBankProfiles.map((profile) => (
                 <option key={profile.id || profile.banco_codigo} value={profile.banco_codigo}>
@@ -549,7 +556,7 @@ function NuevoEmpleado() {
             </select>
           </Field>
           <Field label="Tipo de cuenta" name="tipo_cuenta" onChange={handleChange} value={formData.tipo_cuenta}>
-            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" name="tipo_cuenta" onChange={handleChange} value={formData.tipo_cuenta}>
+            <select className={CONTROL_CLASS} name="tipo_cuenta" onChange={handleChange} value={formData.tipo_cuenta}>
               <option value="">Seleccionar...</option>
               <option value="AHORROS">Ahorros</option>
               <option value="CORRIENTE">Corriente</option>
@@ -558,12 +565,12 @@ function NuevoEmpleado() {
             </select>
           </Field>
           <Field label={isEdit ? 'Nueva cuenta del trabajador' : 'Numero de cuenta del trabajador'} name="cuenta_bancaria" onChange={handleChange} placeholder={isEdit ? 'Dejar vacio para conservar la actual' : ''} value={formData.cuenta_bancaria} />
-          <div className="md:col-span-2 flex gap-3 rounded-md border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-950">
+          <div className={`${FIELD_FULL} flex gap-3 rounded-md border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-950`}>
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
             <p>Esta cuenta pertenece al trabajador y se guarda cifrada. El banco sale de perfiles bancarios y su homologacion de campos. No corresponde a la cuenta pagadora del cliente/empresa.</p>
           </div>
           {activeBankProfiles.length === 0 && (
-            <div className="md:col-span-2 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <div className={`${FIELD_FULL} rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800`}>
               Configura al menos un perfil bancario en Parametrizacion antes de registrar cuentas por transferencia.
             </div>
           )}
@@ -573,7 +580,7 @@ function NuevoEmpleado() {
           <Section title="Gestion posterior" description="Despues de crear la ficha puedes adjuntar contrato firmado y registrar novedades de nomina.">
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Contrato firmado en PDF</span>
-              <input accept="application/pdf" className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" disabled={uploading} onChange={handleSignedContract} type="file" />
+              <input accept="application/pdf" className={FILE_CONTROL_CLASS} disabled={uploading} onChange={handleSignedContract} type="file" />
             </label>
             <div className="flex flex-wrap items-end gap-3">
               <Link className="inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" to="/dashboard/documentos/contratos"><FileUp className="h-4 w-4" />Ver contratos</Link>
