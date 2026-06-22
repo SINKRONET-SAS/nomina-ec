@@ -4,8 +4,8 @@
 |-------|-------|
 | Plan | HAIKY-DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026 |
 | Codigo | DCEN26 |
-| Estado | DCEN26-00 documental generado; runtime pendiente de aprobacion por fase |
-| Fase actual | DCEN26-01 pendiente de aprobacion explicita |
+| Estado | DCEN26-00..08 ejecutadas localmente |
+| Fase actual | DCEN26-08 cerrada localmente |
 | Alcance | empresa demo comercial totalmente configurada con usuarios, 30 empleados ficticios, estructura Quito/Guayaquil, zonas, asistencias de un mes, smoke data y cierre de nomina de 5 meses 2026 |
 | Repo objetivo | `C:\proyectos web\nuevo_nomina` |
 | Matriz | `docs2/demo-comercial-empresa-nomina-ec-2026/MATRIZ_DCEN26_REQUERIMIENTOS.md` |
@@ -41,14 +41,34 @@ La demo no puede usar datos personales reales ni credenciales reutilizables. Tod
 | Fase | Prioridad | Estado inicial | Resumen |
 |------|-----------|----------------|---------|
 | DCEN26-00 | P0 | completed_documental | Baseline documental, matriz, runbook, prompts, contexto y AuditLock sin tocar runtime. |
-| DCEN26-01 | P0 | pending_approval | Diagnostico del runtime actual: modelos, seeds existentes, rutas, factories, datos demo previos y riesgos de duplicidad. |
-| DCEN26-02 | P0 | pending_approval | Tenant/empresa demo y 4 usuarios: SUPERADMIN observador, OWNER, RRHH y supervisor/empleado demo con RBAC visible. |
-| DCEN26-03 | P0 | pending_approval | Parametrizacion demo completa: legales 2026, bancos ficticios, homologacion bancaria, tipos de novedades, jornadas y catalogos Ecuador. |
-| DCEN26-04 | P0 | pending_approval | Estructura Quito/Guayaquil: unidades organizativas, centros de costo, zonas de marcacion con coordenadas y jornadas asignadas. |
-| DCEN26-05 | P0 | pending_approval | 30 empleados ficticios completos con fechas de ingreso 2015-2026, datos personales, pago, contrato demo y asignaciones operativas. |
-| DCEN26-06 | P0 | pending_approval | Asistencia de un mes: marcaciones, novedades, permisos, atrasos, fuera de zona y evidencias smoke. |
-| DCEN26-07 | P0 | pending_approval | Cierre de nomina de 5 meses 2026: apertura, calculo, cierre, roles, reportes, bancos y contabilidad demo. |
-| DCEN26-08 | P0 | pending_approval | QA comercial end-to-end, reset demo, capturas/runbook, AuditLock, commit y push. |
+| DCEN26-01 | P0 | completed_local | Diagnostico del runtime actual: modelos, seeds existentes, rutas, factories, datos demo previos y riesgos de duplicidad. |
+| DCEN26-02 | P0 | completed_local | Tenant/empresa demo y 4 usuarios: SUPERADMIN observador, OWNER, RRHH y supervisor/empleado demo con RBAC visible. |
+| DCEN26-03 | P0 | completed_local | Parametrizacion demo completa: legales 2026, bancos ficticios, homologacion bancaria, tipos de novedades, jornadas y catalogos Ecuador. |
+| DCEN26-04 | P0 | completed_local | Estructura Quito/Guayaquil: unidades organizativas, centros de costo, zonas de marcacion con coordenadas y jornadas asignadas. |
+| DCEN26-05 | P0 | completed_local | 30 empleados ficticios completos con fechas de ingreso 2015-2026, datos personales, pago, contrato demo y asignaciones operativas. |
+| DCEN26-06 | P0 | completed_local | Asistencia de un mes: marcaciones, novedades, permisos, atrasos, fuera de zona y evidencias smoke. |
+| DCEN26-07 | P0 | completed_local | Cierre de nomina de 5 meses 2026: apertura, calculo, cierre, roles, reportes, bancos y contabilidad demo. |
+| DCEN26-08 | P0 | completed_local | QA comercial end-to-end, reset demo, runbook, AuditLock, commit y push. |
+
+## Ejecucion runtime 2026-06-22
+
+DCEN26 quedo implementado como seed idempotente en `backend/scripts/seed-demo-commercial.js`, con comandos formales en `backend/package.json`:
+
+- `npm.cmd run seed:demo`: reconstruye la empresa demo solo si el tenant existente esta marcado como `demo` y `demoCode=DCEN26`.
+- `npm.cmd run seed:demo:verify`: valida los conteos minimos de la demo sin modificar datos.
+- `npm.cmd run seed:demo:reset`: elimina solo el tenant demo DCEN26 y sus dependencias, bloqueando cualquier tenant no demo.
+
+Conteos verificados localmente:
+
+- 1 tenant demo: `EMPRESA DEMO NOMINA EC S.A.` con RUC ficticio de demo.
+- 4 usuarios demo y credenciales temporales en `backend/.demo-credentials.json` ignorado por git.
+- 30 empleados ficticios con cedulas validas de demo, fechas de nacimiento, ingresos entre 2015 y 2026, domicilio, provincia/ciudad, unidad, zona, jornada, region de decimo cuarto y pago ficticio cifrado.
+- 6 unidades Quito/Guayaquil, 2 zonas de marcacion con coordenadas publicas/ficticias y 2 jornadas parametrizadas.
+- 20 cargas familiares demo, contratos demo y vinculo app para usuario empleado.
+- 1.284 marcaciones de mayo 2026 y 101 novedades para casos normales, atrasos, permisos, faltas y fuera de zona.
+- 5 periodos 2026 cerrados y 150 roles cerrados con URLs `demo://` para rol y archivo bancario demo.
+
+`BANK_ACCOUNT_ENCRYPTION_KEY` queda sin valor en `backend/.env` por decision operativa local. El seed usa una clave demo efimera en memoria si no hay clave bancaria valida y no escribe secretos reales al repositorio.
 
 ## Entregables esperados
 

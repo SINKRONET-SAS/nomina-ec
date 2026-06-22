@@ -10,6 +10,8 @@ build/
 .env
 .env.*
 !.env.example
+.demo-credentials*.json
+backend/.demo-credentials*.json
 
 # Logs y cache
 *.log

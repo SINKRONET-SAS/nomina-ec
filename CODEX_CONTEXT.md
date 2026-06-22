@@ -7,8 +7,8 @@
 |-------|-------|
 | Plan | HAIKY-DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026 |
 | Codigo | DCEN26 |
-| Estado | DCEN26-00 generado documentalmente; runtime pendiente de aprobacion por fase |
-| Fase actual | DCEN26-01 pendiente de aprobacion explicita |
+| Estado | DCEN26-00..08 ejecutadas localmente |
+| Fase actual | DCEN26-08 cerrada localmente |
 | Alcance | empresa demo comercial totalmente configurada con 4 usuarios, 30 empleados ficticios, estructura Quito/Guayaquil, zonas, asistencias de un mes, smoke data y cierre de nomina de 5 meses 2026 |
 | Plan doc | `docs2/PLAN_HAIKY_DEMO_COMERCIAL_EMPRESA_NOMINA_EC_2026.md` |
 | Matriz | `docs2/demo-comercial-empresa-nomina-ec-2026/MATRIZ_DCEN26_REQUERIMIENTOS.md` |
@@ -22,6 +22,14 @@
 DCEN26 convierte el requerimiento de empresa demo comercial en una linea Haiky ejecutable. La demo debe quedar aislada por tenant, marcada como demo, idempotente, reversible y sin datos reales. Incluye usuarios, empleados completos, parametros legales/operativos, bancos ficticios, homologacion, estructura Quito/Guayaquil, zonas con coordenadas publicas/ficticias, asistencia de un mes y cinco cierres de nomina 2026.
 
 Regla operativa: DCEN26-00 no toca runtime. DCEN26-01 debe diagnosticar modelos, seeds, rutas, pantallas y riesgos antes de sembrar datos. Ninguna fase posterior puede crear datos demo si no valida aislamiento tenant, idempotencia, rollback y ausencia de datos reales.
+
+Runtime cerrado el 2026-06-22:
+
+- Seed idempotente `backend/scripts/seed-demo-commercial.js`.
+- Comandos `npm.cmd run seed:demo`, `npm.cmd run seed:demo:verify` y `npm.cmd run seed:demo:reset`.
+- Demo local verificada con 1 tenant, 4 usuarios, 30 empleados, 20 cargas familiares, 6 unidades, 2 zonas, 2 jornadas, 1.284 marcaciones, 101 novedades, 5 periodos 2026 cerrados y 150 roles cerrados.
+- Credenciales locales en `backend/.demo-credentials.json`, ignoradas por git.
+- `BANK_ACCOUNT_ENCRYPTION_KEY` queda sin valor en `backend/.env`; el seed usa clave demo efimera en memoria si no hay clave valida.
 
 ---
 

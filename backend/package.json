@@ -8,6 +8,9 @@
     "dev": "nodemon src/app.js",
     "db:migrate": "node src/config/migrate.js",
     "seed:admins": "node scripts/seed-superadmin-owner.js",
+    "seed:demo": "node scripts/seed-demo-commercial.js seed",
+    "seed:demo:verify": "node scripts/seed-demo-commercial.js verify",
+    "seed:demo:reset": "node scripts/seed-demo-commercial.js reset",
     "cron:start": "node src/config/cron-jobs.js",
     "verify:rls:render": "node scripts/verify-rls-render.js",
     "test": "jest"

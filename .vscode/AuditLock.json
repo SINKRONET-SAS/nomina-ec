@@ -2,46 +2,69 @@
   "schemaVersion": 1,
   "plan": "HAIKY-DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026",
   "planCode": "DCEN26",
-  "status": "completed_documental",
-  "phaseCompleted": "DCEN26-00",
-  "currentPhase": "DCEN26-01-pending-explicit-approval",
-  "updatedAt": "2026-06-22T00:58:01.846Z",
-  "summary": "DCEN26-00 generado documentalmente: plan Haiky, matriz, runbook, reporte baseline, prompts por fase y contexto para empresa demo comercial totalmente configurada sin tocar runtime.",
+  "status": "completed_runtime_local",
+  "phaseCompleted": "DCEN26-08",
+  "currentPhase": "DCEN26-08-closed-local",
+  "updatedAt": "2026-06-22T01:35:21.5083744Z",
+  "summary": "DCEN26-01..08 ejecutadas localmente: seed demo comercial idempotente, tenant demo, 4 usuarios, 30 empleados, estructura Quito/Guayaquil, zonas, jornadas, asistencias de mayo 2026, novedades, 5 cierres de nomina 2026 y verificacion de conteos.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: generar plan Haiky para empresa demo comercial con 4 usuarios, 30 empleados, asistencias, Quito/Guayaquil y cierre de nomina 5 meses 2026.",
-  "previousAuditLockHash": "ac651ad35f666fef517ddb4481e70930300bd1c8bde267855d763949fe6b1331",
+  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts del plan DCEN26 y dejar empresa demo comercial totalmente configurada.",
+  "previousAuditLockHash": "20a76f92a45d2a949bfd7c08390508a73c35be06dc9d5377a666dbdf0168eb04",
   "filesModified": [
+    ".gitignore",
     "CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
+    "backend/package.json",
+    "backend/scripts/seed-demo-commercial.js",
     "docs2/PLAN_HAIKY_DEMO_COMERCIAL_EMPRESA_NOMINA_EC_2026.md",
     "docs2/demo-comercial-empresa-nomina-ec-2026/MATRIZ_DCEN26_REQUERIMIENTOS.md",
     "docs2/demo-comercial-empresa-nomina-ec-2026/RUNBOOK_DCEN26_DEMO_COMERCIAL.md",
-    "docs2/demo-comercial-empresa-nomina-ec-2026/REPORTE_DCEN26_00_BASELINE.md",
-    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-00-baseline.md",
-    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-01-diagnostico-runtime.md",
-    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-02-tenant-usuarios.md",
-    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-03-parametrizacion-demo.md",
-    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-04-estructura-zonas.md",
-    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-05-empleados-30.md",
-    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-06-asistencia-mes.md",
-    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-07-nomina-5-meses.md",
-    ".github/prompts/DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026-08-qa-release-demo.md"
+    "docs2/demo-comercial-empresa-nomina-ec-2026/REPORTE_DCEN26_08_CIERRE_RUNTIME.md"
+  ],
+  "runtimeArtifactsIgnored": [
+    "backend/.env",
+    "backend/.demo-credentials.json"
   ],
   "validationChecks": [
     {
       "gate": "DCEN26-RULES-CONTEXT",
       "status": "PASS",
-      "detail": "RULES.md, CODEX_CONTEXT.md y AuditLock leidos antes de generar la linea documental."
+      "detail": "RULES.md, CODEX_CONTEXT.md, AuditLock, plan y prompts leidos antes de tocar runtime."
     },
     {
-      "gate": "DCEN26-DOCUMENTAL-ONLY",
+      "gate": "DCEN26-SYNTAX",
       "status": "PASS",
-      "detail": "No se tocaron runtime, base de datos, seeds ni pantallas."
+      "detail": "node -c backend/scripts/seed-demo-commercial.js."
     },
     {
-      "gate": "DCEN26-PROMPTS",
+      "gate": "DCEN26-PRISMA",
       "status": "PASS",
-      "detail": "Prompts 00..08 generados con aprobacion por fase y commits esperados."
+      "detail": "npx.cmd prisma validate en backend."
+    },
+    {
+      "gate": "DCEN26-SEED",
+      "status": "PASS",
+      "detail": "npm.cmd run seed:demo reconstruyo y verifico la demo."
+    },
+    {
+      "gate": "DCEN26-SEED-VERIFY",
+      "status": "PASS",
+      "detail": "npm.cmd run seed:demo:verify confirmo 1 tenant, 4 usuarios, 30 empleados, 1284 marcaciones, 5 periodos y 150 roles cerrados."
+    },
+    {
+      "gate": "DCEN26-BACKEND-TESTS",
+      "status": "PASS",
+      "detail": "npm.cmd test -- --runInBand en backend: 27 suites y 105 tests."
+    },
+    {
+      "gate": "DCEN26-FRONTEND-BUILD",
+      "status": "PASS",
+      "detail": "npm.cmd run build en frontend-web."
+    },
+    {
+      "gate": "DCEN26-PWA-SMOKE",
+      "status": "PASS",
+      "detail": "npm.cmd run smoke:pwa en frontend-web."
     }
   ],
   "fases": [
@@ -51,42 +74,42 @@
     },
     {
       "phase": "DCEN26-01",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "DCEN26-02",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "DCEN26-03",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "DCEN26-04",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "DCEN26-05",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "DCEN26-06",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "DCEN26-07",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "DCEN26-08",
-      "status": "pending_approval"
+      "status": "completed_local"
     }
   ],
   "residualRisk": [
-    "DCEN26 aun no crea datos demo ni valida runtime; requiere aprobacion explicita desde DCEN26-01.",
-    "La demo debe bloquear datos reales, credenciales reales y archivos bancarios productivos.",
-    "El reset demo debe implementarse con guardas de tenant demo antes de ejecutar cualquier eliminacion."
+    "Ejecutar smoke visual manual en PWA antes de presentacion externa.",
+    "Rotar credenciales demo por ambiente si se comparte la demo.",
+    "No ejecutar seed:demo:reset al cierre si la demo debe quedar disponible."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "20a76f92a45d2a949bfd7c08390508a73c35be06dc9d5377a666dbdf0168eb04"
+  "signature": "35d6a11596cf484a1a9a85a71aabbd8082ae1968efe356896d7aac663dfef05a"
 }

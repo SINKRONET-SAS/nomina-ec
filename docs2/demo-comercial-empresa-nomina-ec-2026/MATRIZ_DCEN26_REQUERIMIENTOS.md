@@ -24,3 +24,20 @@
 - Guayaquil: sucursal comercial/logistica ficticia y coordenadas de referencia publica.
 - Asistencia: un mes completo con suficiente variacion para mostrar aprobaciones y novedades.
 - Nomina: enero a mayo 2026 o cinco meses definidos por la fase, con cierre reproducible.
+
+## Estado runtime 2026-06-22
+
+| ID | Estado | Evidencia |
+|----|--------|-----------|
+| DCEN26-R01 | Cerrado local | Tenant demo DCEN26 creado con bandera `demo` y reset protegido. |
+| DCEN26-R02 | Cerrado local | 4 usuarios demo creados; credenciales en `backend/.demo-credentials.json` ignorado por git. |
+| DCEN26-R03 | Cerrado local | Parametros legales 2026, perfil bancario demo, homologacion bancaria, novedades y jornadas creados. |
+| DCEN26-R04 | Cerrado local | 6 unidades Quito/Guayaquil con centros de costo y jerarquia demo. |
+| DCEN26-R05 | Cerrado local | 2 zonas de marcacion con coordenadas publicas/ficticias y radios demo. |
+| DCEN26-R06 | Cerrado local | 30 empleados ficticios completos, con 20 cargas familiares y contratos `demo://`. |
+| DCEN26-R07 | Cerrado local | 1.284 marcaciones de mayo 2026 y 101 novedades. |
+| DCEN26-R08 | Cerrado local | 5 periodos 2026 cerrados y 150 roles cerrados. |
+| DCEN26-R09 | Cerrado local | Roles y archivos bancarios marcados con URLs `demo://`, sin carga productiva accidental. |
+| DCEN26-R10 | Cerrado local | Datos suficientes para PWA: dashboard, empleados, asistencia, nomina y reportes. |
+| DCEN26-R11 | Cerrado local | Datos ficticios, tenant marcado demo, cuentas cifradas con clave demo efimera local. |
+| DCEN26-R12 | Cerrado local | `seed:demo` re-ejecutado y `seed:demo:verify` aprobado; `seed:demo:reset` disponible. |
