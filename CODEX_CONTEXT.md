@@ -31,6 +31,17 @@ Runtime cerrado el 2026-06-22:
 - Credenciales locales en `backend/.demo-credentials.json`, ignoradas por git.
 - `BANK_ACCOUNT_ENCRYPTION_KEY` queda sin valor en `backend/.env`; el seed usa clave demo efimera en memoria si no hay clave valida.
 
+Reejecucion local 2026-06-22:
+
+- Evidencia: `docs2/demo-comercial-empresa-nomina-ec-2026/REPORTE_DCEN26_REEJECUCION_2026_06_22.md`.
+- `npx.cmd prisma validate` en `backend`: PASS.
+- `npm.cmd run seed:demo` en `backend`: PASS.
+- `npm.cmd run seed:demo:verify` en `backend`: PASS.
+- `npm.cmd test -- --runInBand` en `backend`: PASS, 27 suites y 105 tests.
+- `npm.cmd run smoke:pwa` en `frontend-web`: PASS.
+- `npm.cmd run check:stores` en `app-movil`: PASS.
+- Conteos confirmados: 1 tenant demo DCEN26, 4 usuarios, 30 empleados, 20 cargas familiares, 6 unidades, 2 zonas, 2 jornadas, 1.284 marcaciones, 101 novedades, 5 periodos 2026 cerrados, 150 roles cerrados y 1 perfil bancario demo.
+
 ---
 
 ## Open Haiky Plan - HAIKY-DIAGNOSTICO-V3-NOMINA-EC-2026
@@ -868,3 +879,93 @@ Regla operativa DCF26:
 - Ninguna fase puede cerrarse si solo deja documentos o catalogos genericos.
 - Toda fase de runtime debe exponer frontend, importaciones, pantalla o accion visible, endpoint/servicio, prueba y evidencia.
 - Cada fase requiere AuditLock firmado y commit `phase: DCF26-XX task: ...`.
+
+---
+
+## E2E26 - Diagnostico end-to-end y correccion definitiva Nomina-Ec
+
+Plan: `HAIKY-DIAGNOSTICO-E2E-CORRECCION-DEFINITIVA-NOMINA-EC-2026`.
+
+Estado: E2E26-01..09 ejecutadas localmente. Runtime cerrado con demo comercial resembrada.
+
+Fuente:
+
+- `G:\ARVIEDO\Diagnostico_E2E.docx`
+
+Alcance:
+
+- Registro publico, tenant, owner, correo verificado y consentimiento LOPDP.
+- Estado operacional minimo antes de nomina.
+- Login tenant-aware y ambiguedad por email multi-tenant.
+- Ficha de empleado preliminar/operativa, cedula por tenant, cifrado bancario y auditoria laboral.
+- Invitaciones app empleado con expiracion, reenvio, revocacion y tablero RRHH.
+- Asistencia movil con readiness fail-closed, GPS/foto/almuerzo alineados con README/API/app.
+- Novedades con periodo, lote, granularidad y bloqueo de pendientes.
+- Calculo transaccional con estado `calculation_failed` si hay errores por empleado.
+- Cierre atomico con roles PDF, beneficios/deducciones y preclose gate.
+- Reapertura controlada con reverso o rectificacion auditable.
+- Scripts E2E de diagnostico, expiracion de invitaciones, pre-cierre y riesgo de reapertura.
+
+Artefactos:
+
+- `docs2/PLAN_HAIKY_DIAGNOSTICO_E2E_CORRECCION_DEFINITIVA_NOMINA_EC_2026.md`
+- `docs2/diagnostico-e2e-correccion-definitiva-nomina-ec-2026/MATRIZ_E2E26_HALLAZGOS.md`
+- `docs2/diagnostico-e2e-correccion-definitiva-nomina-ec-2026/REPORTE_E2E26_00_BASELINE.md`
+- `docs2/diagnostico-e2e-correccion-definitiva-nomina-ec-2026/RUNBOOK_E2E26_CORRECCION_DEFINITIVA.md`
+- `.github/prompts/DIAGNOSTICO-E2E-CORRECCION-DEFINITIVA-NOMINA-EC-2026-00..09-*.md`
+- `.vscode/AuditLock.json`
+
+Fases:
+
+- E2E26-00: baseline documental.
+- E2E26-01: estado operacional del tenant.
+- E2E26-02: identidad y login tenant-aware.
+- E2E26-03: empleados y ficha operativa.
+- E2E26-04: invitaciones app y comunicaciones.
+- E2E26-05: asistencia movil y coherencia funcional.
+- E2E26-06: novedades por periodo y lotes.
+- E2E26-07: calculo transaccional.
+- E2E26-08: cierre atomico, roles y reapertura controlada.
+- E2E26-09: QA y release gate E2E.
+
+Reglas operativas E2E26:
+
+- No tocar runtime antes de aprobacion explicita de fase.
+- No aplicar scripts del diagnostico literalmente; adaptarlos al schema real y servicios existentes.
+- Todo bloqueo operativo debe quedar visible en PWA/app.
+- No cerrar nomina con errores por empleado, novedades pendientes, empleados sin nomina valida o roles requeridos faltantes.
+- No llamar inmutable a una nomina que puede reabrirse; usar reapertura controlada con auditoria/reverso.
+- Cada fase requiere AuditLock firmado y commit `phase: E2E26-XX task: ...`.
+
+### Ejecucion E2E26 2026-06-22
+
+Runtime cerrado:
+
+- `seed:demo:reset` fue ejecutado primero; como el comando elimina el tenant demo DCEN26, se reconstruyo despues con `seed:demo` y se verifico con `seed:demo:verify`.
+- Migracion `20260622164000_e2e26_employee_cedula_by_tenant` aplicada localmente; `empleados.cedula` deja de ser unica global y pasa a `tenant_id + cedula`.
+- Login web/app queda tenant-aware: si el mismo correo existe en varias empresas con clave valida, no selecciona una al azar y solicita RUC.
+- Importacion/alta de empleados valida cedulas duplicadas por tenant.
+- Invitaciones app expiran automaticamente al listar/reintentar, con metadata `expiredBy: E2E26`.
+- Asistencia movil expone inicio/fin de almuerzo y el backend valida secuencia diaria de marcacion.
+- Calculo de nomina ejecuta prechequeo E2E26 y deja `payroll_periods.status = calculation_failed` si existen errores por empleado.
+- Cierre de nomina exige preclose gate: periodo calculado, novedades sin pendientes, empleados activos con nomina borrador y fichas operativas.
+- Reapertura exige periodo cerrado, motivo minimo y registra `lastReopen` en `payroll_periods.summary`.
+- PWA de cierre muestra blockers/warnings del prechequeo para que el usuario sepa que corregir.
+
+Gates ejecutados:
+
+- `npx.cmd prisma validate` en `backend`: PASS.
+- `npx.cmd prisma migrate deploy` en `backend`: PASS.
+- `npm.cmd run seed:demo:reset` en `backend`: PASS, elimino 1 tenant demo.
+- `npm.cmd run seed:demo` en `backend`: PASS, demo reconstruida.
+- `npm.cmd run seed:demo:verify` en `backend`: PASS, 1 tenant, 4 usuarios, 30 empleados, 1.284 marcaciones, 101 novedades, 5 periodos cerrados y 150 roles cerrados.
+- `npm.cmd test -- --runInBand` en `backend`: PASS, 27 suites y 105 tests.
+- `npm.cmd run smoke:pwa` en `frontend-web`: PASS.
+- `npm.cmd run check:stores` en `app-movil`: PASS.
+- `npm.cmd run doctor` en `app-movil`: PASS, 18/18 checks.
+
+Riesgos residuales controlados:
+
+- Roles PDF productivos siguen dependiendo del generador/almacenamiento real; el prechequeo avisa si faltan.
+- La captura de foto movil no se agrego para no introducir dependencia de camara en Expo Go; el backend conserva soporte `fotoBase64`.
+- Revision legal/contable/LOPDP profesional sigue requerida antes de produccion.

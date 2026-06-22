@@ -563,11 +563,11 @@ async function insertEmployeeImportBatch(client, tenantId, ownerId) {
   return result.rows[0].id;
 }
 
-async function ensureUniqueCedula(client, preferred, provinceCode, offset) {
+async function ensureUniqueCedula(client, tenantId, preferred, provinceCode, offset) {
   let candidate = preferred;
   let sequence = 930000 + offset;
   for (let attempt = 0; attempt < 100; attempt += 1) {
-    const exists = await client.query('SELECT id FROM empleados WHERE cedula = $1', [candidate]);
+    const exists = await client.query('SELECT id FROM empleados WHERE tenant_id = $1 AND cedula = $2', [tenantId, candidate]);
     if (exists.rows.length === 0) return candidate;
     candidate = generateCedula(Number(provinceCode), sequence + attempt);
   }
@@ -577,7 +577,7 @@ async function ensureUniqueCedula(client, preferred, provinceCode, offset) {
 async function insertEmployees(client, tenantId, users, units, importBatchId) {
   const employees = [];
   for (const employee of buildEmployees()) {
-    const cedula = await ensureUniqueCedula(client, employee.cedula, employee.provinciaCodigo, employee.index);
+    const cedula = await ensureUniqueCedula(client, tenantId, employee.cedula, employee.provinciaCodigo, employee.index);
     const account = encryptBankAccount(employee.cuenta);
     const row = await client.query(`
       INSERT INTO empleados (

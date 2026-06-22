@@ -1,115 +1,155 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026",
-  "planCode": "DCEN26",
+  "plan": "HAIKY-DIAGNOSTICO-E2E-CORRECCION-DEFINITIVA-NOMINA-EC-2026",
+  "planCode": "E2E26",
   "status": "completed_runtime_local",
-  "phaseCompleted": "DCEN26-08",
-  "currentPhase": "DCEN26-08-closed-local",
-  "updatedAt": "2026-06-22T01:35:21.5083744Z",
-  "summary": "DCEN26-01..08 ejecutadas localmente: seed demo comercial idempotente, tenant demo, 4 usuarios, 30 empleados, estructura Quito/Guayaquil, zonas, jornadas, asistencias de mayo 2026, novedades, 5 cierres de nomina 2026 y verificacion de conteos.",
+  "phaseCompleted": "E2E26-09",
+  "currentPhase": "E2E26-09-closed-local",
+  "updatedAt": "2026-06-22T23:29:30.0415152Z",
+  "summary": "E2E26 ejecutado localmente: cedula por tenant, login tenant-aware, prechequeo operativo de nomina, calculation_failed, preclose gate, reapertura controlada, expiracion de invitaciones, almuerzo movil y demo comercial reconstruida tras reset.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts del plan DCEN26 y dejar empresa demo comercial totalmente configurada.",
-  "previousAuditLockHash": "20a76f92a45d2a949bfd7c08390508a73c35be06dc9d5377a666dbdf0168eb04",
+  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts de acuerdo al plan E2E26 y ejecutar seed:demo:reset.",
+  "previousAuditLockHash": "2ae78cd8f5c08cdf77ec1350919847a82b58a0edde715dfeb936c19eccd7111f",
   "filesModified": [
-    ".gitignore",
     "CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "backend/package.json",
+    "backend/prisma/schema.prisma",
+    "backend/prisma/migrations/20260622164000_e2e26_employee_cedula_by_tenant/migration.sql",
     "backend/scripts/seed-demo-commercial.js",
-    "docs2/PLAN_HAIKY_DEMO_COMERCIAL_EMPRESA_NOMINA_EC_2026.md",
-    "docs2/demo-comercial-empresa-nomina-ec-2026/MATRIZ_DCEN26_REQUERIMIENTOS.md",
-    "docs2/demo-comercial-empresa-nomina-ec-2026/RUNBOOK_DCEN26_DEMO_COMERCIAL.md",
-    "docs2/demo-comercial-empresa-nomina-ec-2026/REPORTE_DCEN26_08_CIERRE_RUNTIME.md"
+    "backend/src/controllers/authController.js",
+    "backend/src/controllers/empleadoController.js",
+    "backend/src/controllers/nominaController.js",
+    "backend/src/services/employeeAppInviteService.js",
+    "backend/src/services/employeeImportService.js",
+    "backend/src/services/marcacionValidator.js",
+    "backend/src/services/operationalReadinessService.js",
+    "frontend-web/src/context/AuthContext.jsx",
+    "frontend-web/src/pages/Login.jsx",
+    "frontend-web/src/pages/Nomina/CerrarMes.jsx",
+    "app-movil/src/services/api.js",
+    "app-movil/src/screens/LoginScreen.js",
+    "app-movil/src/screens/MarcacionScreen.js",
+    "docs2/PLAN_HAIKY_DIAGNOSTICO_E2E_CORRECCION_DEFINITIVA_NOMINA_EC_2026.md",
+    "docs2/diagnostico-e2e-correccion-definitiva-nomina-ec-2026/MATRIZ_E2E26_HALLAZGOS.md",
+    "docs2/diagnostico-e2e-correccion-definitiva-nomina-ec-2026/RUNBOOK_E2E26_CORRECCION_DEFINITIVA.md",
+    "docs2/diagnostico-e2e-correccion-definitiva-nomina-ec-2026/REPORTE_E2E26_09_CIERRE_RUNTIME.md"
   ],
   "runtimeArtifactsIgnored": [
     "backend/.env",
-    "backend/.demo-credentials.json"
+    "backend/.demo-credentials.json",
+    "frontend-web/dist",
+    "app-movil/.expo"
   ],
   "validationChecks": [
     {
-      "gate": "DCEN26-RULES-CONTEXT",
-      "status": "PASS",
-      "detail": "RULES.md, CODEX_CONTEXT.md, AuditLock, plan y prompts leidos antes de tocar runtime."
-    },
-    {
-      "gate": "DCEN26-SYNTAX",
-      "status": "PASS",
-      "detail": "node -c backend/scripts/seed-demo-commercial.js."
-    },
-    {
-      "gate": "DCEN26-PRISMA",
+      "gate": "E2E26-PRISMA-VALIDATE",
       "status": "PASS",
       "detail": "npx.cmd prisma validate en backend."
     },
     {
-      "gate": "DCEN26-SEED",
+      "gate": "E2E26-PRISMA-MIGRATE-DEPLOY",
+      "status": "PASS",
+      "detail": "npx.cmd prisma migrate deploy aplico 20260622164000_e2e26_employee_cedula_by_tenant."
+    },
+    {
+      "gate": "E2E26-DEMO-RESET",
+      "status": "PASS",
+      "detail": "npm.cmd run seed:demo:reset elimino 1 tenant demo DCEN26."
+    },
+    {
+      "gate": "E2E26-DEMO-SEED",
       "status": "PASS",
       "detail": "npm.cmd run seed:demo reconstruyo y verifico la demo."
     },
     {
-      "gate": "DCEN26-SEED-VERIFY",
+      "gate": "E2E26-DEMO-VERIFY",
       "status": "PASS",
-      "detail": "npm.cmd run seed:demo:verify confirmo 1 tenant, 4 usuarios, 30 empleados, 1284 marcaciones, 5 periodos y 150 roles cerrados."
+      "detail": "npm.cmd run seed:demo:verify confirmo 1 tenant, 4 usuarios, 30 empleados, 1284 marcaciones, 101 novedades, 5 periodos y 150 roles cerrados."
     },
     {
-      "gate": "DCEN26-BACKEND-TESTS",
+      "gate": "E2E26-BACKEND-TESTS",
       "status": "PASS",
-      "detail": "npm.cmd test -- --runInBand en backend: 27 suites y 105 tests."
+      "detail": "npm.cmd test -- --runInBand en backend: 27 suites y 105 tests; repetido tras endurecer correo verificado."
     },
     {
-      "gate": "DCEN26-FRONTEND-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web."
-    },
-    {
-      "gate": "DCEN26-PWA-SMOKE",
+      "gate": "E2E26-PWA-SMOKE",
       "status": "PASS",
       "detail": "npm.cmd run smoke:pwa en frontend-web."
+    },
+    {
+      "gate": "E2E26-APP-STORES",
+      "status": "PASS",
+      "detail": "npm.cmd run check:stores en app-movil."
+    },
+    {
+      "gate": "E2E26-EXPO-DOCTOR",
+      "status": "PASS",
+      "detail": "npm.cmd run doctor en app-movil: 18/18 checks passed."
     }
   ],
+  "demoCounts": {
+    "tenantId": "a8f9cd5d-6a1f-44bd-8ea5-ff7296a4419a",
+    "tenants": 1,
+    "users": 4,
+    "employees": 30,
+    "dependents": 20,
+    "zones": 2,
+    "units": 6,
+    "shifts": 2,
+    "marks": 1284,
+    "novelties": 101,
+    "closedPeriods": 5,
+    "closedPayrolls": 150,
+    "bankProfiles": 1
+  },
   "fases": [
     {
-      "phase": "DCEN26-00",
+      "phase": "E2E26-00",
       "status": "completed_documental"
     },
     {
-      "phase": "DCEN26-01",
+      "phase": "E2E26-01",
       "status": "completed_local"
     },
     {
-      "phase": "DCEN26-02",
+      "phase": "E2E26-02",
       "status": "completed_local"
     },
     {
-      "phase": "DCEN26-03",
+      "phase": "E2E26-03",
       "status": "completed_local"
     },
     {
-      "phase": "DCEN26-04",
+      "phase": "E2E26-04",
       "status": "completed_local"
     },
     {
-      "phase": "DCEN26-05",
+      "phase": "E2E26-05",
       "status": "completed_local"
     },
     {
-      "phase": "DCEN26-06",
+      "phase": "E2E26-06",
       "status": "completed_local"
     },
     {
-      "phase": "DCEN26-07",
+      "phase": "E2E26-07",
       "status": "completed_local"
     },
     {
-      "phase": "DCEN26-08",
+      "phase": "E2E26-08",
+      "status": "completed_local_with_pdf_warning"
+    },
+    {
+      "phase": "E2E26-09",
       "status": "completed_local"
     }
   ],
   "residualRisk": [
-    "Ejecutar smoke visual manual en PWA antes de presentacion externa.",
-    "Rotar credenciales demo por ambiente si se comparte la demo.",
-    "No ejecutar seed:demo:reset al cierre si la demo debe quedar disponible."
+    "Roles PDF productivos siguen dependiendo de generacion y almacenamiento real; E2E26 deja warning operativo si faltan.",
+    "La captura de foto movil no se agrego para no introducir dependencia de camara en Expo Go; backend conserva soporte fotoBase64.",
+    "Reversos contables de beneficios ante reapertura requieren contrato contable productivo.",
+    "Revision profesional legal, contable y LOPDP requerida antes de produccion."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "35d6a11596cf484a1a9a85a71aabbd8082ae1968efe356896d7aac663dfef05a"
+  "signature": "3715d6d241f6d5ad26a9beb5589d9ecad81298b767e969e5ea064fb395bd09b2"
 }

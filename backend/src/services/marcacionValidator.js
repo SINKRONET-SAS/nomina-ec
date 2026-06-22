@@ -9,6 +9,13 @@ const { recordAudit } = require('./auditService');
 const { resolveAttendanceReadiness } = require('./employeeAppInviteService');
 
 const MAX_FOTO_BASE64_BYTES = Number.parseInt(process.env.MARCACION_FOTO_MAX_BYTES || String(2 * 1024 * 1024), 10);
+const VALID_MARK_TYPES = new Set(['inicio_jornada', 'inicio_almuerzo', 'fin_almuerzo', 'fin_jornada']);
+const ALLOWED_NEXT_MARKS = {
+  inicio_jornada: new Set(['inicio_almuerzo', 'fin_jornada']),
+  inicio_almuerzo: new Set(['fin_almuerzo']),
+  fin_almuerzo: new Set(['fin_jornada']),
+  fin_jornada: new Set([]),
+};
 const MIME_BY_SIGNATURE = [
   { contentType: 'image/jpeg', extension: 'jpg', matches: (buffer) => buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[buffer.length - 2] === 0xff && buffer[buffer.length - 1] === 0xd9 },
   { contentType: 'image/png', extension: 'png', matches: (buffer) => buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47 },
@@ -80,6 +87,15 @@ async function validarMarcacion({
   source = 'web',
 }) {
   const requestIp = ip || ipAddress || null;
+  if (!VALID_MARK_TYPES.has(tipo)) {
+    throw new AppError('Tipo de marcacion invalido.', {
+      code: 'MARCACION_TIPO_INVALIDO',
+      statusCode: 422,
+      correlationId,
+      userId,
+    });
+  }
+
   if (lat === undefined || lng === undefined || Number.isNaN(lat) || Number.isNaN(lng)) {
     throw new AppError('La geolocalizacion es obligatoria para registrar marcaciones', {
       code: 'GEOLOCALIZACION_REQUERIDA',
@@ -189,29 +205,38 @@ async function validarMarcacion({
     fotoUrl = await s3Upload(validatedPhoto.buffer, key, validatedPhoto.contentType);
   }
 
-  if (tipo === 'inicio_jornada') {
-    const fechaOperacional = dateInEcuador(new Date());
-    const ultima = await db.query(`
-      SELECT tipo_marcacion
-      FROM marcaciones
-      WHERE empleado_id = $1
-        AND tenant_id = $2
-        AND operational_date = $3::date
-      ORDER BY timestamp DESC
-      LIMIT 1
-    `, [empleadoId, tenantId, fechaOperacional]);
+  const fechaOperacional = dateInEcuador(new Date());
+  const ultima = await db.query(`
+    SELECT tipo_marcacion
+    FROM marcaciones
+    WHERE empleado_id = $1
+      AND tenant_id = $2
+      AND operational_date = $3::date
+    ORDER BY timestamp DESC
+    LIMIT 1
+  `, [empleadoId, tenantId, fechaOperacional]);
 
-    if (ultima.rows.length > 0 && ultima.rows[0].tipo_marcacion === 'inicio_jornada') {
-      throw new AppError('No se puede registrar un nuevo inicio sin un fin previo', {
-        code: 'SECUENCIA_MARCACION_INVALIDA',
-        statusCode: 409,
-        correlationId,
-        userId,
-      });
-    }
+  const ultimoTipo = ultima.rows[0]?.tipo_marcacion || null;
+  if (!ultimoTipo && tipo !== 'inicio_jornada') {
+    throw new AppError('La primera marcacion del dia debe ser inicio de jornada.', {
+      code: 'SECUENCIA_MARCACION_INVALIDA',
+      statusCode: 409,
+      correlationId,
+      userId,
+      details: { tipoSolicitado: tipo },
+    });
   }
 
-  const fechaOperacional = dateInEcuador(new Date());
+  if (ultimoTipo && !ALLOWED_NEXT_MARKS[ultimoTipo]?.has(tipo)) {
+    throw new AppError('La secuencia de marcacion no es valida para la jornada actual.', {
+      code: 'SECUENCIA_MARCACION_INVALIDA',
+      statusCode: 409,
+      correlationId,
+      userId,
+      details: { ultimoTipo, tipoSolicitado: tipo },
+    });
+  }
+
   const period = await ensurePayrollPeriodForDate({ tenantId, userId, fecha: fechaOperacional });
   if (period.status === 'closed') {
     throw new AppError('No se puede registrar asistencia en un periodo de nomina cerrado.', {

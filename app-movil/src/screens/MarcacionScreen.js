@@ -17,8 +17,11 @@ export default function MarcacionScreen({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  const puedeMarcarInicio = !ultimaMarcacion || ultimaMarcacion.tipo_marcacion === 'fin_jornada';
-  const puedeMarcarFin = ultimaMarcacion && ultimaMarcacion.tipo_marcacion === 'inicio_jornada';
+  const ultimoTipo = ultimaMarcacion?.tipo_marcacion || '';
+  const puedeMarcarInicio = !ultimaMarcacion || ultimoTipo === 'fin_jornada';
+  const puedeIniciarAlmuerzo = ultimoTipo === 'inicio_jornada' || ultimoTipo === 'fin_almuerzo';
+  const puedeFinalizarAlmuerzo = ultimoTipo === 'inicio_almuerzo';
+  const puedeMarcarFin = ultimoTipo === 'inicio_jornada' || ultimoTipo === 'fin_almuerzo';
   const zonaMarcacion = employee?.zona_marcacion;
   const readiness = employee?.readiness || {};
   const attendanceReady = Boolean(readiness.ready);
@@ -192,6 +195,20 @@ export default function MarcacionScreen({ onLogout }) {
           <Text style={styles.primaryButtonText}>{submitting ? 'Procesando' : 'Iniciar jornada'}</Text>
         </TouchableOpacity>
         <TouchableOpacity
+          disabled={!puedeIniciarAlmuerzo || markBlocked}
+          onPress={() => registrarMarcacion('inicio_almuerzo')}
+          style={[styles.primaryButton, styles.lunchStartButton, (!puedeIniciarAlmuerzo || markBlocked) && styles.disabledButton]}
+        >
+          <Text style={styles.primaryButtonText}>{submitting ? 'Procesando' : 'Iniciar almuerzo'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          disabled={!puedeFinalizarAlmuerzo || markBlocked}
+          onPress={() => registrarMarcacion('fin_almuerzo')}
+          style={[styles.primaryButton, styles.lunchEndButton, (!puedeFinalizarAlmuerzo || markBlocked) && styles.disabledButton]}
+        >
+          <Text style={styles.primaryButtonText}>{submitting ? 'Procesando' : 'Finalizar almuerzo'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           disabled={!puedeMarcarFin || markBlocked}
           onPress={() => registrarMarcacion('fin_jornada')}
           style={[styles.primaryButton, styles.endButton, (!puedeMarcarFin || markBlocked) && styles.disabledButton]}
@@ -325,6 +342,12 @@ const styles = StyleSheet.create({
   },
   endButton: {
     backgroundColor: '#b91c1c',
+  },
+  lunchStartButton: {
+    backgroundColor: '#0369a1',
+  },
+  lunchEndButton: {
+    backgroundColor: '#0f766e',
   },
   disabledButton: {
     backgroundColor: '#cbd5e1',

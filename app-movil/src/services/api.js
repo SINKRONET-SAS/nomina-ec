@@ -27,7 +27,13 @@ api.interceptors.response.use(
 );
 
 export const authAPI = {
-  login: (email, password) => api.post('/auth/login', { email, password }),
+  login: (email, password, tenantRuc = '') => {
+    const payload = { email, password };
+    if (String(tenantRuc || '').trim()) {
+      payload.tenantRuc = String(tenantRuc).trim();
+    }
+    return api.post('/auth/login', payload);
+  },
   activateEmployee: (payload) => api.post('/mobile/empleado/activar', payload),
   publicRegister: (payload) => api.post('/auth/public-register', payload),
   forgotPassword: (email) => api.post('/auth/password/forgot', { email }),

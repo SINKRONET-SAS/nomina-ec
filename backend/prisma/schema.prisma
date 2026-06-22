@@ -286,7 +286,7 @@ model SupportIncident {
 model Employee {
   id                      String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId                String                 @map("tenant_id") @db.Uuid
-  cedula                  String                 @unique @db.VarChar(10)
+  cedula                  String                 @db.VarChar(10)
   nombres                 String                 @db.VarChar(120)
   apellidos               String                 @db.VarChar(120)
   fechaNacimiento         DateTime?              @map("fecha_nacimiento") @db.Date
@@ -331,6 +331,7 @@ model Employee {
 
   @@index([tenantId, activo])
   @@index([tenantId, importBatchId])
+  @@unique([tenantId, cedula])
   @@map("empleados")
 }
 

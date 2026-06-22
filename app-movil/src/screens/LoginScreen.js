@@ -68,6 +68,7 @@ function ConsentRow({ checked, label, onPress }) {
 export default function LoginScreen({ onLogin }) {
   const [mode, setMode] = useState('activar');
   const [email, setEmail] = useState('');
+  const [tenantRuc, setTenantRuc] = useState('');
   const [password, setPassword] = useState('');
   const [resetCode, setResetCode] = useState('');
   const [activation, setActivation] = useState(initialActivation);
@@ -128,7 +129,7 @@ export default function LoginScreen({ onLogin }) {
 
     setLoading(true);
     try {
-      const response = await authAPI.login(normalizedEmail, password);
+      const response = await authAPI.login(normalizedEmail, password, tenantRuc);
       const token = getAuthToken(response);
       if (!token) {
         throw new Error('El backend autentico la solicitud pero no devolvio token.');
@@ -261,6 +262,13 @@ export default function LoginScreen({ onLogin }) {
         {mode === 'login' && (
           <>
             <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+            <TextInput
+              keyboardType="number-pad"
+              onChangeText={(value) => setTenantRuc(String(value || '').replace(/\D/g, '').slice(0, 13))}
+              placeholder="RUC de empresa (opcional)"
+              style={styles.input}
+              value={tenantRuc}
+            />
             <PasswordInput
               onChangeText={setPassword}
               onSubmitEditing={handleLogin}

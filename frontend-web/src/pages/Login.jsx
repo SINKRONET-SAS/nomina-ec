@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 
 function Login() {
   const [email, setEmail] = useState('');
+  const [tenantRuc, setTenantRuc] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -21,7 +22,7 @@ function Login() {
     setCargando(true);
 
     try {
-      await login(email, password);
+      await login(email, password, tenantRuc);
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || err.error || 'Error al iniciar sesión');
@@ -106,6 +107,23 @@ function Login() {
                     placeholder="propietario@empresa.com"
                     autoComplete="email"
                     required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="auth-label" htmlFor="tenantRuc">RUC de empresa</label>
+                <div className="relative">
+                  <Building2 className="pointer-events-none absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                  <input
+                    id="tenantRuc"
+                    type="text"
+                    value={tenantRuc}
+                    onChange={(e) => setTenantRuc(e.target.value.replace(/\D/g, '').slice(0, 13))}
+                    className="auth-input pl-10"
+                    placeholder="Opcional si tu correo esta en varias empresas"
+                    autoComplete="organization"
+                    inputMode="numeric"
                   />
                 </div>
               </div>

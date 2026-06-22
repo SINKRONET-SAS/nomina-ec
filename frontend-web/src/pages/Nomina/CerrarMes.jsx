@@ -32,6 +32,10 @@ function summarize(rows = []) {
   return rows.reduce((memo, row) => ({ ...memo, [row.estado || row.status]: row.total }), {});
 }
 
+function precheckDetails(error) {
+  return error?.response?.data?.details || null;
+}
+
 function CerrarMes() {
   const queryClient = useQueryClient();
   const hoy = new Date();
@@ -128,6 +132,7 @@ function CerrarMes() {
   const requiresAmount = batchForm.tipoNovedad === 'bono_desempeno';
   const canCreateBatch = (!scopeNeedsValue || batchForm.scopeValue) && (!requiresAmount || Number(batchForm.monto) > 0);
   const currentError = openMutation.error || batchMutation.error || calculateMutation.error || closeMutation.error || periodQuery.error;
+  const currentPrecheck = precheckDetails(currentError);
 
   return (
     <div className="space-y-6">
@@ -160,6 +165,20 @@ function CerrarMes() {
       {(message || currentError) && (
         <div className={`rounded-md border px-4 py-3 text-sm font-medium ${currentError ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
           {currentError ? extractApiError(currentError, 'No pudimos completar la accion. Revisa el periodo e intenta nuevamente.') : message.text}
+          {currentPrecheck?.blockers?.length > 0 && (
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-xs font-semibold">
+              {currentPrecheck.blockers.map((blocker) => (
+                <li key={blocker.code}>{blocker.message}</li>
+              ))}
+            </ul>
+          )}
+          {currentPrecheck?.warnings?.length > 0 && (
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-amber-900">
+              {currentPrecheck.warnings.map((warning) => (
+                <li key={warning.code}>{warning.message}</li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 

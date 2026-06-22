@@ -140,6 +140,11 @@ function employeeReadinessSelect(whereClause) {
       e.departamento,
       e.telefono,
       e.email_personal,
+      e.fecha_ingreso,
+      e.sueldo_bruto_mensual,
+      e.unidad_organizativa_codigo,
+      e.jornada_codigo,
+      e.zona_marcacion_codigo,
       e.jornada_horas_mensuales,
       ou.id AS organization_unit_id,
       ou.code AS organization_unit_code,
@@ -168,6 +173,10 @@ function employeeReadinessSelect(whereClause) {
         AND ou.status = 'activo'
         AND (ou.valid_to IS NULL OR ou.valid_to >= CURRENT_DATE)
         AND (
+          LOWER(ou.code) = LOWER(NULLIF(e.unidad_organizativa_codigo, ''))
+          OR LOWER(ou.name) = LOWER(NULLIF(e.unidad_organizativa_codigo, ''))
+          OR LOWER(ou.cost_center_code) = LOWER(NULLIF(e.unidad_organizativa_codigo, ''))
+          OR
           LOWER(ou.code) = LOWER(e.departamento)
           OR LOWER(ou.name) = LOWER(e.departamento)
           OR LOWER(ou.cost_center_code) = LOWER(e.departamento)
@@ -175,11 +184,23 @@ function employeeReadinessSelect(whereClause) {
       ORDER BY ou.updated_at DESC, ou.created_at DESC
       LIMIT 1
     ) ou ON true
-    LEFT JOIN work_zones wz
-      ON wz.id = ou.work_zone_id
-      AND wz.tenant_id = e.tenant_id
-      AND wz.status = 'activo'
-      AND (wz.valid_to IS NULL OR wz.valid_to >= CURRENT_DATE)
+    LEFT JOIN LATERAL (
+      SELECT wz.*
+      FROM work_zones wz
+      WHERE wz.tenant_id = e.tenant_id
+        AND wz.status = 'activo'
+        AND (wz.valid_to IS NULL OR wz.valid_to >= CURRENT_DATE)
+        AND (
+          wz.id = ou.work_zone_id
+          OR LOWER(wz.code) = LOWER(NULLIF(e.zona_marcacion_codigo, ''))
+          OR LOWER(wz.name) = LOWER(NULLIF(e.zona_marcacion_codigo, ''))
+        )
+      ORDER BY
+        CASE WHEN wz.id = ou.work_zone_id THEN 0 ELSE 1 END,
+        wz.updated_at DESC,
+        wz.created_at DESC
+      LIMIT 1
+    ) wz ON true
     LEFT JOIN LATERAL (
       SELECT ws.*
       FROM work_shifts ws
@@ -188,8 +209,11 @@ function employeeReadinessSelect(whereClause) {
         AND (ws.valid_to IS NULL OR ws.valid_to >= CURRENT_DATE)
         AND (
           ws.id::text = ou.metadata->>'workShiftId'
+          OR LOWER(ws.code) = LOWER(NULLIF(e.jornada_codigo, ''))
+          OR LOWER(ws.name) = LOWER(NULLIF(e.jornada_codigo, ''))
           OR (
             COALESCE(ou.metadata->>'workShiftId', '') = ''
+            AND COALESCE(NULLIF(e.jornada_codigo, ''), '') = ''
             AND (
               SELECT COUNT(*)
               FROM work_shifts ws_count
@@ -295,6 +319,8 @@ async function insertAudit(queryable, {
 }
 
 async function listEmployeeAppInvitations({ tenantId }) {
+  await expirePendingEmployeeInvites({ tenantId });
+
   const result = await db.query(`
     WITH latest_invite AS (
       SELECT DISTINCT ON (tenant_id, empleado_id)
@@ -365,6 +391,28 @@ async function listEmployeeAppInvitations({ tenantId }) {
       lastSeenAt: row.link_last_seen_at,
     } : null,
   }));
+}
+
+async function expirePendingEmployeeInvites({ tenantId, queryable = db } = {}) {
+  const params = [INVITE_STATUS.EXPIRED, INVITE_STATUS.PENDING];
+  let whereTenant = '';
+  if (tenantId) {
+    params.push(tenantId);
+    whereTenant = `AND tenant_id = $${params.length}`;
+  }
+
+  const result = await queryable.query(`
+    UPDATE employee_app_invites
+    SET status = $1,
+        updated_at = NOW(),
+        metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('expiredBy', 'E2E26')
+    WHERE status = $2
+      AND expires_at <= NOW()
+      ${whereTenant}
+    RETURNING id, tenant_id, empleado_id
+  `, params);
+
+  return result.rows;
 }
 
 async function generateUniqueInviteCode(queryable, employee) {
@@ -461,6 +509,8 @@ async function createEmployeeInvitation({ tenantId, empleadoId, userId, correlat
 async function resendEmployeeInvitation({ tenantId, inviteId, userId, correlationId, ipAddress }) {
   const client = await db.getClient(tenantId, userId);
   try {
+    await expirePendingEmployeeInvites({ tenantId, queryable: client });
+
     const existing = await client.query(`
       SELECT i.*, e.nombres, e.apellidos, e.departamento, e.email_personal, e.telefono
       FROM employee_app_invites i
@@ -827,6 +877,7 @@ module.exports = {
   buildReadiness,
   createEmployeeInvitation,
   employeeReadinessSelect,
+  expirePendingEmployeeInvites,
   hashInviteCode,
   listEmployeeAppInvitations,
   normalizeInviteCode,

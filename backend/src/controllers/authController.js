@@ -36,6 +36,20 @@ function hasAcceptedLopdpConsent(value) {
   return Boolean(value.acceptedDataProcessing || value.lopdpConsent || value.accepted);
 }
 
+function normalizeTenantHint(body = {}) {
+  const tenantId = String(body.tenantId || '').trim();
+  const tenantRuc = String(body.tenantRuc || body.ruc || '').replace(/\D/g, '');
+  return { tenantId, tenantRuc };
+}
+
+function publicTenantChoice(row) {
+  return {
+    tenantId: row.tenant_id,
+    ruc: row.tenant_ruc || null,
+    razonSocial: row.tenant_razon_social || null,
+  };
+}
+
 async function insertConsentAudit(queryable, { tenantId, userId, consent, ipAddress, correlationId }) {
   await queryable.query(`
     INSERT INTO audit_logs (
@@ -66,6 +80,7 @@ async function insertConsentAudit(queryable, { tenantId, userId, consent, ipAddr
 async function login(req, res, next) {
   try {
     const { email, password } = req.body;
+    const tenantHint = normalizeTenantHint(req.body);
 
     if (!email || !password) {
       return res.status(400).json({
@@ -75,13 +90,30 @@ async function login(req, res, next) {
       });
     }
 
+    const params = [email];
+    const tenantFilters = [];
+    if (tenantHint.tenantId) {
+      params.push(tenantHint.tenantId);
+      tenantFilters.push(`u.tenant_id = $${params.length}`);
+    }
+    if (tenantHint.tenantRuc) {
+      params.push(tenantHint.tenantRuc);
+      tenantFilters.push(`regexp_replace(COALESCE(t.ruc, ''), '\\D', '', 'g') = $${params.length}`);
+    }
+
     const result = await db.query(
-      `SELECT id, tenant_id, email, rol, nombres, apellidos, password_hash, activo, email_verificado_en, created_at
-       FROM usuarios
-       WHERE lower(email) = lower($1) AND activo = true
-       ORDER BY created_at DESC
-       LIMIT 1`,
-      [email]
+      `SELECT
+         u.id, u.tenant_id, u.email, u.rol, u.nombres, u.apellidos,
+         u.password_hash, u.activo, u.email_verificado_en, u.created_at,
+         t.ruc AS tenant_ruc,
+         t.razon_social AS tenant_razon_social
+       FROM usuarios u
+       LEFT JOIN tenants t ON t.id = u.tenant_id
+       WHERE lower(u.email) = lower($1)
+         AND u.activo = true
+         ${tenantFilters.length > 0 ? `AND ${tenantFilters.join(' AND ')}` : ''}
+       ORDER BY u.created_at DESC`,
+      params
     );
 
     if (result.rows.length === 0) {
@@ -92,9 +124,14 @@ async function login(req, res, next) {
       });
     }
 
-    const usuario = result.rows[0];
-    const validPassword = await bcrypt.compare(password, usuario.password_hash);
-    if (!validPassword) {
+    const matchingUsers = [];
+    for (const row of result.rows) {
+      if (await bcrypt.compare(password, row.password_hash)) {
+        matchingUsers.push(row);
+      }
+    }
+
+    if (matchingUsers.length === 0) {
       return res.status(401).json({
         error: 'AUTH_CREDENCIALES_INVALIDAS',
         message: 'Credenciales inválidas.',
@@ -102,6 +139,16 @@ async function login(req, res, next) {
       });
     }
 
+    if (matchingUsers.length > 1 && !tenantHint.tenantId && !tenantHint.tenantRuc) {
+      return res.status(409).json({
+        error: 'AUTH_TENANT_REQUIRED',
+        message: 'Este correo existe en mas de una empresa. Ingresa el RUC de la empresa para continuar.',
+        tenants: matchingUsers.map(publicTenantChoice),
+        correlationId: req.correlationId,
+      });
+    }
+
+    const usuario = matchingUsers[0];
     await db.query('UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = $1', [usuario.id]);
 
     const token = generateToken(usuario);

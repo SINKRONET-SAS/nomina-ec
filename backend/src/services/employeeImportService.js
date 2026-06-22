@@ -252,9 +252,17 @@ function summarizePreview(previewRows) {
   };
 }
 
-async function getExistingCedulas(rows) {
+async function getExistingCedulas(rows, tenantId = null) {
   const cedulas = [...new Set(rows.map((row) => row.identification).filter(Boolean))];
   if (cedulas.length === 0) return new Set();
+
+  if (tenantId) {
+    const result = await db.query(
+      'SELECT cedula FROM empleados WHERE tenant_id = $1 AND cedula = ANY($2::text[])',
+      [tenantId, cedulas]
+    );
+    return new Set(result.rows.map((row) => row.cedula));
+  }
 
   const result = await db.query(
     'SELECT cedula FROM empleados WHERE cedula = ANY($1::text[])',
@@ -263,9 +271,9 @@ async function getExistingCedulas(rows) {
   return new Set(result.rows.map((row) => row.cedula));
 }
 
-async function previewEmployeeImport(payload) {
+async function previewEmployeeImport(payload, tenantId = null) {
   const rows = parseEmployeeImport(payload);
-  const existingCedulas = await getExistingCedulas(rows);
+  const existingCedulas = await getExistingCedulas(rows, tenantId);
   return summarizePreview(buildPreviewRows(rows, existingCedulas));
 }
 
@@ -279,7 +287,7 @@ async function encryptBankAccount(_client, account) {
 
 async function commitEmployeeImport({ tenantId, userId, correlationId, ipAddress, payload }) {
   const rows = parseEmployeeImport(payload);
-  const existingCedulas = await getExistingCedulas(rows);
+  const existingCedulas = await getExistingCedulas(rows, tenantId);
   const previewRows = buildPreviewRows(rows, existingCedulas);
   const preview = summarizePreview(previewRows);
 

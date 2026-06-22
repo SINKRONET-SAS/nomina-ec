@@ -4,6 +4,7 @@
 const db = require('../config/database');
 const { calcularNominaMensual } = require('../services/calculoNominaService');
 const { recordAudit } = require('../services/auditService');
+const { assertTenantPayrollReady } = require('../services/operationalReadinessService');
 const {
   createNoveltyBatch,
   getPayrollPeriodState,
@@ -19,15 +20,69 @@ async function calcularMes(req, res) {
       return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
     }
 
-    const resultado = await calcularNominaMensual(tenantId, Number(anio), Number(mes));
+    const anioNumber = Number(anio);
+    const mesNumber = Number(mes);
+    const readiness = await assertTenantPayrollReady({
+      tenantId,
+      anio: anioNumber,
+      mes: mesNumber,
+      mode: 'calculation',
+    });
+
+    const resultado = await calcularNominaMensual(tenantId, anioNumber, mesNumber);
+    const erroresDetalle = Array.isArray(resultado.resultados)
+      ? resultado.resultados.filter((row) => row.error)
+      : [];
+
+    if (erroresDetalle.length > 0) {
+      await db.query(`
+        UPDATE payroll_periods
+        SET status = 'calculation_failed',
+            calculated_at = NOW(),
+            summary = COALESCE(summary, '{}'::jsonb) || jsonb_build_object(
+              'lastCalculation', jsonb_build_object(
+                'status', 'failed',
+                'errores', $4::jsonb,
+                'totalErrores', $5::int,
+                'correlationId', $6::text,
+                'at', NOW()
+              )
+            ),
+            updated_at = NOW()
+        WHERE tenant_id = $1 AND anio = $2 AND mes = $3
+      `, [tenantId, anioNumber, mesNumber, JSON.stringify(erroresDetalle), erroresDetalle.length, req.correlationId || null]);
+
+      return res.status(422).json({
+        success: false,
+        error: 'NOMINA_CALCULATION_FAILED',
+        message: 'La nomina tiene errores por empleado. Corrige los bloqueos y recalcula antes de cerrar.',
+        resultado: {
+          ...resultado,
+          exitosos: resultado.resultados.length - erroresDetalle.length,
+          errores: erroresDetalle.length,
+          erroresDetalle,
+        },
+        readiness,
+        correlationId: req.correlationId,
+      });
+    }
+
     await db.query(`
       UPDATE payroll_periods
-      SET status = CASE WHEN status IN ('open', 'novelties_loaded') THEN 'calculated' ELSE status END,
+      SET status = CASE WHEN status IN ('open', 'novelties_loaded', 'reopened', 'calculation_failed') THEN 'calculated' ELSE status END,
           calculated_at = NOW(),
+          summary = COALESCE(summary, '{}'::jsonb) || jsonb_build_object(
+            'lastCalculation', jsonb_build_object(
+              'status', 'calculated',
+              'total', $4::int,
+              'correlationId', $5::text,
+              'at', NOW()
+            )
+          ),
           updated_at = NOW()
       WHERE tenant_id = $1 AND anio = $2 AND mes = $3
-    `, [tenantId, Number(anio), Number(mes)]);
-    res.json({ success: true, resultado, correlationId: req.correlationId });
+    `, [tenantId, anioNumber, mesNumber, resultado.total || 0, req.correlationId || null]);
+    res.json({ success: true, resultado, readiness, correlationId: req.correlationId });
   } catch (err) {
     console.error('[NOMINA] Error calculando mes', {
       code: err.code || 'NOMINA_CALCULO_ERROR',
@@ -36,7 +91,12 @@ async function calcularMes(req, res) {
       userId: req.usuarioId || null,
       message: err.message,
     });
-    res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
+    res.status(err.statusCode || 500).json({
+      error: err.code || 'NOMINA_CALCULO_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
   }
 }
 
@@ -211,12 +271,21 @@ async function cerrarMes(req, res) {
       return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
     }
 
+    const anioNumber = Number(anio);
+    const mesNumber = Number(mes);
+    const readiness = await assertTenantPayrollReady({
+      tenantId,
+      anio: anioNumber,
+      mes: mesNumber,
+      mode: 'close',
+    });
+
     const result = await db.query(`
       UPDATE nominas
       SET estado = 'cerrada', cerrado_en = NOW(), updated_at = NOW()
       WHERE tenant_id = $1 AND anio = $2 AND mes = $3 AND estado = 'borrador'
       RETURNING id, detalle_calculo
-    `, [tenantId, anio, mes]);
+    `, [tenantId, anioNumber, mesNumber]);
 
     const periodo = `${Number(anio)}-${String(Number(mes)).padStart(2, '0')}`;
     let beneficiosAplicados = 0;
@@ -279,9 +348,18 @@ async function cerrarMes(req, res) {
       UPDATE payroll_periods
       SET status = 'closed',
           closed_at = NOW(),
+          summary = COALESCE(summary, '{}'::jsonb) || jsonb_build_object(
+            'lastClose', jsonb_build_object(
+              'total', $4::int,
+              'beneficiosAplicados', $5::int,
+              'beneficiosOmitidos', $6::int,
+              'correlationId', $7::text,
+              'at', NOW()
+            )
+          ),
           updated_at = NOW()
       WHERE tenant_id = $1 AND anio = $2 AND mes = $3
-    `, [tenantId, Number(anio), Number(mes)]);
+    `, [tenantId, anioNumber, mesNumber, result.rows.length, beneficiosAplicados, beneficiosOmitidos, req.correlationId || null]);
 
     await recordAudit({
       tenantId,
@@ -299,6 +377,7 @@ async function cerrarMes(req, res) {
       total: result.rows.length,
       beneficiosAplicados,
       beneficiosOmitidos,
+      readiness,
       correlationId: req.correlationId,
     });
   } catch (err) {
@@ -309,7 +388,12 @@ async function cerrarMes(req, res) {
       userId: req.usuarioId || null,
       message: err.message,
     });
-    res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
+    res.status(err.statusCode || 500).json({
+      error: err.code || 'NOMINA_CIERRE_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
   }
 }
 
@@ -329,6 +413,21 @@ async function reabrirMes(req, res) {
       });
     }
 
+    const period = await db.query(`
+      SELECT status
+      FROM payroll_periods
+      WHERE tenant_id = $1 AND anio = $2 AND mes = $3
+      LIMIT 1
+    `, [tenantId, Number(anio), Number(mes)]);
+
+    if (period.rows[0]?.status !== 'closed') {
+      return res.status(409).json({
+        error: 'NOMINA_REAPERTURA_ESTADO_INVALIDO',
+        message: 'Solo una nomina cerrada puede entrar a reapertura controlada.',
+        correlationId: req.correlationId,
+      });
+    }
+
     const result = await db.query(`
       UPDATE nominas
       SET estado = 'borrador', cerrado_en = NULL, updated_at = NOW()
@@ -340,9 +439,17 @@ async function reabrirMes(req, res) {
       UPDATE payroll_periods
       SET status = 'reopened',
           closed_at = NULL,
+          summary = COALESCE(summary, '{}'::jsonb) || jsonb_build_object(
+            'lastReopen', jsonb_build_object(
+              'motivo', $4::text,
+              'total', $5::int,
+              'correlationId', $6::text,
+              'at', NOW()
+            )
+          ),
           updated_at = NOW()
       WHERE tenant_id = $1 AND anio = $2 AND mes = $3
-    `, [tenantId, Number(anio), Number(mes)]);
+    `, [tenantId, Number(anio), Number(mes), String(motivo).trim(), result.rows.length, req.correlationId || null]);
 
     await recordAudit({
       tenantId,
@@ -356,7 +463,7 @@ async function reabrirMes(req, res) {
 
     res.json({
       success: true,
-      mensaje: `${result.rows.length} nominas reabiertas`,
+      mensaje: `${result.rows.length} nominas en reapertura controlada`,
       total: result.rows.length,
       correlationId: req.correlationId,
     });
@@ -368,7 +475,12 @@ async function reabrirMes(req, res) {
       userId: req.usuarioId || null,
       message: err.message,
     });
-    res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
+    res.status(err.statusCode || 500).json({
+      error: err.code || 'NOMINA_REAPERTURA_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
   }
 }
 

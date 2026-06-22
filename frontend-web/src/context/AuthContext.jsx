@@ -88,9 +88,13 @@ export function AuthProvider({ children }) {
       .finally(() => setCargando(false));
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email, password, tenantRuc = '') => {
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
+      const payload = { email, password };
+      if (String(tenantRuc || '').trim()) {
+        payload.tenantRuc = String(tenantRuc).trim();
+      }
+      const response = await axios.post(`${API_URL}/auth/login`, payload);
       setSessionFromPayload(response.data);
       return response.data;
     } catch (err) {

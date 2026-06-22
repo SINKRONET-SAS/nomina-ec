@@ -313,10 +313,10 @@ async function crear(req, res) {
     const normalizedWorkZoneCode = await resolveConfiguredCode(tenantId, 'work_zones', zona_marcacion_codigo, 'La zona de marcacion', 'EMPLEADO_ZONA_INVALIDA');
     const location = await resolveLocationCodes(provincia_codigo, ciudad_codigo);
     
-    // Verificar que la cedula no exista
+    // Verificar que la cedula no exista dentro del tenant actual.
     const existe = await db.query(
-      'SELECT id FROM empleados WHERE cedula = $1',
-      [cedula]
+      'SELECT id FROM empleados WHERE tenant_id = $1 AND cedula = $2',
+      [tenantId, cedula]
     );
     
     if (existe.rows.length > 0) {
@@ -387,7 +387,7 @@ async function crear(req, res) {
 
 async function previewImportacion(req, res) {
   try {
-    const preview = await previewEmployeeImport(req.body || {});
+    const preview = await previewEmployeeImport(req.body || {}, req.tenantId);
     return res.json({ success: true, preview, correlationId: req.correlationId });
   } catch (err) {
     console.error('[EMPLEADOS] Error prevalidando importacion', {
