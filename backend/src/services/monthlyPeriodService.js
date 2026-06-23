@@ -171,7 +171,23 @@ function buildEmployeeQuery(scopeType, scopeValue) {
     return { where: 'AND departamento = $2', params: [scopeValue] };
   }
   if (scopeType === 'position') {
-    return { where: 'AND cargo = $2', params: [scopeValue] };
+    return {
+      where: `AND (
+        position_id::text = $2
+        OR position_id IN (
+          SELECT id
+          FROM job_positions
+          WHERE tenant_id = $1
+            AND (
+              id::text = $2
+              OR UPPER(code) = UPPER($2)
+              OR UPPER(name) = UPPER($2)
+            )
+        )
+        OR UPPER(cargo) = UPPER($2)
+      )`,
+      params: [scopeValue],
+    };
   }
   if (scopeType === 'employee') {
     return { where: 'AND id = $2', params: [scopeValue] };

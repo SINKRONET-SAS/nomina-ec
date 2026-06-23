@@ -2,36 +2,35 @@
   "schemaVersion": 1,
   "plan": "HAIKY-CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026",
   "planCode": "CRS26",
-  "status": "empleados_importacion_local",
-  "phaseCompleted": "CRS26-05",
-  "currentPhase": "CRS26-05-empleados-importacion",
-  "updatedAt": "2026-06-22T20:58:44.6115250-05:00",
-  "summary": "CRS26-05 conecto empleados e importacion con job_positions, validando sueldo contra rango y conservando empleados.cargo como snapshot historico.",
+  "status": "consumidores_nomina_reportes_local",
+  "phaseCompleted": "CRS26-06",
+  "currentPhase": "CRS26-06-nomina-reportes-novedades",
+  "updatedAt": "2026-06-22T21:03:02.6356286-05:00",
+  "summary": "CRS26-06 conecto novedades por cargo, reportes de nomina y listado de nominas con job_positions y fallback historico a empleados.cargo.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts CRS26.",
-  "previousAuditLockHash": "86F6D2E4E3502B8FEA2DADD2C64ACABB537CDC0CB28DD8277BFC786CD0643E28",
+  "previousAuditLockHash": "98EE3E474DAE86CD85CDA033048F2A0C7F4A3812995554B5E8FBCA2FEBDF3D00",
   "filesModified": [
     "CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "backend/src/controllers/empleadoController.js",
-    "backend/src/services/employeeImportService.js",
-    "backend/src/services/employeeImportService.test.js",
-    "frontend-web/src/pages/Empleados/NuevoEmpleado.jsx",
-    "docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_05_EMPLEADOS_IMPORTACION.md"
+    "backend/src/controllers/nominaController.js",
+    "backend/src/services/monthlyPeriodService.js",
+    "backend/src/services/monthlyPeriodService.test.js",
+    "backend/src/services/payrollReportService.js",
+    "backend/src/services/payrollReportService.test.js",
+    "docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_06_NOMINA_REPORTES_NOVEDADES.md"
   ],
-  "runtimeArtifactsIgnored": [
-    "frontend-web/dist"
-  ],
+  "runtimeArtifactsIgnored": [],
   "validationChecks": [
     {
-      "gate": "CRS26-05-BACKEND-TESTS",
+      "gate": "CRS26-06-BACKEND-TESTS",
       "status": "PASS",
-      "detail": "npm.cmd test -- empleadoController.test.js employeeImportService.test.js en backend: 2 suites, 11 tests."
+      "detail": "npm.cmd test -- monthlyPeriodService.test.js payrollReportService.test.js en backend: 2 suites, 10 tests."
     },
     {
-      "gate": "CRS26-05-FRONTEND-BUILD",
+      "gate": "CRS26-06-NOMINA-CONTROLLER-SYNTAX",
       "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web: built in 5.99s y PWA generated."
+      "detail": "node --check backend/src/controllers/nominaController.js."
     }
   ],
   "fases": [
@@ -61,7 +60,7 @@
     },
     {
       "phase": "CRS26-06",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "CRS26-07",
@@ -69,9 +68,9 @@
     }
   ],
   "residualRisk": [
-    "Reportes, novedades y nomina pendientes de compatibilidad historica completa en CRS26-06.",
-    "QA integral, migraciones y release gate pendientes en CRS26-07."
+    "QA integral, migraciones y release gate pendientes en CRS26-07.",
+    "Validacion visual con demo comercial pendiente."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "47D432CA82906A4407DCF276555CC8D200906B623AE2AD966653E5DF63C76F71"
+  "signature": "8AE7D4332E67FA704E3401951C8D4D5BCCB1B911F73A650239AD5E0ED0D82BD7"
 }

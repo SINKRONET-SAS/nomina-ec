@@ -41,6 +41,14 @@ describe('monthlyPeriodService', () => {
     });
   });
 
+  test('buildEmployeeQuery soporta cargo real e historico', () => {
+    const query = buildEmployeeQuery('position', 'ANALISTA');
+    expect(query.where).toContain('job_positions');
+    expect(query.where).toContain('position_id');
+    expect(query.where).toContain('UPPER(cargo)');
+    expect(query.params).toEqual(['ANALISTA']);
+  });
+
   test('extractPeriodFromDate marca periodo YYYY-MM', () => {
     expect(extractPeriodFromDate('2026-06-15')).toEqual({
       anio: 2026,

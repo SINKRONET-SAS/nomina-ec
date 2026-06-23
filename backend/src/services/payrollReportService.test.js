@@ -1,6 +1,28 @@
 const { rowsForReport } = require('./payrollReportService');
 
 describe('payrollReportService accounting entries', () => {
+  test('mapea codigo de cargo en reporte tabular', () => {
+    const rows = rowsForReport([
+      {
+        anio: 2026,
+        mes: 6,
+        cedula: '0102030405',
+        nombres: 'Ana',
+        apellidos: 'Demo',
+        departamento: 'RRHH',
+        cargo: 'Analista RRHH',
+        cargo_codigo: 'ANALISTA_RRHH',
+        estado: 'borrador',
+        detalle_calculo: {},
+      },
+    ], 'PAYROLL_DETAIL_TABULAR', 2026, 6);
+
+    expect(rows[0]).toMatchObject({
+      cargo: 'Analista RRHH',
+      cargoCodigo: 'ANALISTA_RRHH',
+    });
+  });
+
   test('genera asientos contables balanceados de devengamiento y pago', () => {
     const rows = rowsForReport([
       {

@@ -111,7 +111,7 @@ async function getPayrollRows(tenantId, anio, mes, filters = {}) {
 
   addFilter(where, params, 'n.empleado_id', filters.employeeId);
   addFilter(where, params, 'e.departamento', filters.department);
-  addFilter(where, params, 'e.cargo', filters.position);
+  addPositionFilter(where, params, filters.position);
   addFilter(where, params, "COALESCE(ou.cost_center_code, e.departamento, '')", filters.costCenter);
 
   const result = await db.query(`
@@ -136,7 +136,10 @@ async function getPayrollRows(tenantId, anio, mes, filters = {}) {
       e.cedula,
       e.nombres,
       e.apellidos,
-      e.cargo,
+      COALESCE(jp.name, e.cargo) AS cargo,
+      jp.code AS cargo_codigo,
+      jp.salary_min AS cargo_salary_min,
+      jp.salary_max AS cargo_salary_max,
       e.departamento,
       COALESCE(ou.code, '') AS unidad_codigo,
       COALESCE(ou.name, e.departamento, '') AS unidad_nombre,
@@ -144,10 +147,19 @@ async function getPayrollRows(tenantId, anio, mes, filters = {}) {
       COALESCE(ou.cost_center_code, '') AS centro_costo
     FROM nominas n
     JOIN empleados e ON e.id = n.empleado_id
+    LEFT JOIN job_positions jp
+      ON jp.id = e.position_id
+     AND jp.tenant_id = e.tenant_id
     LEFT JOIN organization_units ou
       ON ou.tenant_id = e.tenant_id
       AND ou.status = 'activo'
-      AND (ou.code = e.departamento OR ou.name = e.departamento OR ou.cost_center_code = e.departamento)
+      AND (
+        ou.id = jp.organization_unit_id
+        OR ou.code = e.unidad_organizativa_codigo
+        OR ou.code = e.departamento
+        OR ou.name = e.departamento
+        OR ou.cost_center_code = e.departamento
+      )
     WHERE ${where.join(' AND ')}
     ORDER BY e.departamento, e.apellidos, e.nombres
   `, params);
@@ -160,6 +172,18 @@ function addFilter(where, params, column, value) {
   if (!normalized) return;
   params.push(normalized);
   where.push(`${column} = $${params.length}`);
+}
+
+function addPositionFilter(where, params, value) {
+  const normalized = String(value || '').trim();
+  if (!normalized) return;
+  params.push(normalized);
+  where.push(`(
+    jp.id::text = $${params.length}
+    OR UPPER(jp.code) = UPPER($${params.length})
+    OR UPPER(jp.name) = UPPER($${params.length})
+    OR UPPER(e.cargo) = UPPER($${params.length})
+  )`);
 }
 
 async function buildWorkbook({ tenant, anio, mes, rows, reportCode, filters, context }) {
@@ -236,6 +260,7 @@ function mapRowForExport(row, anio, mes) {
     empleado: `${row.apellidos} ${row.nombres}`.trim(),
     departamento: row.departamento,
     cargo: row.cargo,
+    cargoCodigo: row.cargo_codigo || '',
     unidad: row.unidad_nombre,
     centroCosto: row.centro_costo,
     estado: row.estado,
@@ -328,6 +353,7 @@ function getWorkbookColumns(reportCode) {
     { header: 'Cedula', key: 'cedula', width: 14 },
     { header: 'Empleado', key: 'empleado', width: 36 },
     { header: 'Departamento', key: 'departamento', width: 20 },
+    { header: 'Codigo cargo', key: 'cargoCodigo', width: 16 },
     { header: 'Cargo', key: 'cargo', width: 24 },
     { header: 'Unidad organizativa', key: 'unidad', width: 26 },
     { header: 'Centro costo', key: 'centroCosto', width: 16 },
@@ -344,25 +370,25 @@ function getWorkbookColumns(reportCode) {
   }
 
   return [
-    ...base.slice(0, 9),
+    ...base.slice(0, 10),
     { header: 'Sueldo bruto/proporcional', key: 'sueldoBruto', width: 22, style: { numFmt: '$#,##0.00' } },
     { header: 'Horas extra 50%', key: 'extras50', width: 16, style: { numFmt: '$#,##0.00' } },
     { header: 'Horas extra 100%', key: 'extras100', width: 17, style: { numFmt: '$#,##0.00' } },
     { header: 'Bonos desempeno', key: 'bonosDesempeno', width: 17, style: { numFmt: '$#,##0.00' } },
-    base[9],
+    base[10],
     { header: 'IESS personal', key: 'aporteIess', width: 16, style: { numFmt: '$#,##0.00' } },
     { header: 'Impuesto renta', key: 'impuestoRenta', width: 16, style: { numFmt: '$#,##0.00' } },
     { header: 'Anticipos', key: 'anticipos', width: 14, style: { numFmt: '$#,##0.00' } },
     { header: 'Prestamos', key: 'prestamos', width: 14, style: { numFmt: '$#,##0.00' } },
     { header: 'Descuento faltas', key: 'descuentoFaltas', width: 17, style: { numFmt: '$#,##0.00' } },
-    base[10],
     base[11],
+    base[12],
     { header: 'IESS patronal', key: 'aportePatronal', width: 16, style: { numFmt: '$#,##0.00' } },
     { header: 'Provision decimo tercero', key: 'decimoTercero', width: 24, style: { numFmt: '$#,##0.00' } },
     { header: 'Provision decimo cuarto', key: 'decimoCuarto', width: 23, style: { numFmt: '$#,##0.00' } },
     { header: 'Provision vacaciones', key: 'vacaciones', width: 20, style: { numFmt: '$#,##0.00' } },
     { header: 'Fondos reserva', key: 'fondosReserva', width: 17, style: { numFmt: '$#,##0.00' } },
-    base[12],
+    base[13],
     { header: 'Fuente legal', key: 'fuenteLegal', width: 30 },
   ];
 }

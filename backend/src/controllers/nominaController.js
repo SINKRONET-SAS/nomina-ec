@@ -173,9 +173,12 @@ async function listarPorPeriodo(req, res) {
     const { anio, mes } = req.params;
     const { tenantId } = req;
     const result = await db.query(`
-      SELECT n.*, e.nombres, e.apellidos, e.cedula, e.cargo
+      SELECT n.*, e.nombres, e.apellidos, e.cedula, COALESCE(jp.name, e.cargo) AS cargo, jp.code AS cargo_codigo
       FROM nominas n
       JOIN empleados e ON n.empleado_id = e.id
+      LEFT JOIN job_positions jp
+        ON jp.id = e.position_id
+       AND jp.tenant_id = e.tenant_id
       WHERE n.tenant_id = $1 AND n.anio = $2 AND n.mes = $3
       ORDER BY e.apellidos, e.nombres
     `, [tenantId, anio, mes]);
