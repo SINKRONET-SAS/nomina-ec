@@ -1,6 +1,52 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026 |
+| Codigo | CRS26 |
+| Estado | CRS26-00 desplegada documentalmente; runtime pendiente de aprobacion por fase |
+| Fase actual | CRS26-00 baseline documental |
+| Alcance | crear cargos/puestos con rango salarial, vigencia y consumo de estructura organizativa; asignar empleados a cargos desde catalogo real |
+| Requerimiento fuente | "Se requiere crear cargos con un rango salarial y que consuman la estructura organizativa; el empleado debe ser asignado a un cargo o puesto llamando a la tabla de cargos." |
+| Plan doc | `docs2/PLAN_HAIKY_CARGOS_RANGOS_SALARIALES_ESTRUCTURA_2026.md` |
+| Matriz | `docs2/cargos-rangos-salariales-estructura-2026/MATRIZ_CRS26_REQUERIMIENTOS.md` |
+| Contrato | `docs2/cargos-rangos-salariales-estructura-2026/CONTRATO_CRS26_CARGOS_RANGOS_SALARIALES.md` |
+| Reporte baseline | `docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_00_BASELINE.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Prompts | `.github/prompts/CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026-{00..07}-*.md` |
+| RULES | `RULES.md` |
+
+### Resumen CRS26
+
+CRS26 convierte `empleados.cargo` de texto libre en una entidad gobernada por tenant que consume `organization_units`, define rango salarial minimo/maximo, vigencia, estado y reglas de eliminacion por consumo. El empleado debe asignarse a un cargo desde tabla real en alta, edicion e importacion, con validacion de sueldo contra rango y continuidad historica para nominas/reportes/documentos existentes.
+
+### Fases CRS26
+
+| Fase | Prioridad | Estado | Resumen |
+|------|-----------|--------|---------|
+| CRS26-00 | P0 | completed_documental | Baseline, matriz, contrato, prompts, contexto y AuditLock sin runtime. |
+| CRS26-01 | P0 | pending_approval | Diagnostico runtime de usos de cargo/position en empleados, importacion, nomina, novedades, reportes y documentos. |
+| CRS26-02 | P0 | pending_approval | Modelo de datos, migracion, indices, relacion con estructura organizativa, vigencia e historial. |
+| CRS26-03 | P0 | pending_approval | Backend CRUD de cargos, validaciones de rango, bloqueos de eliminacion y auditoria. |
+| CRS26-04 | P0 | pending_approval | Frontend parametrizacion: cargos y puestos con crear, editar, inactivar y eliminar si no hay consumos. |
+| CRS26-05 | P0 | pending_approval | Empleados e importacion consumen tabla de cargos; sueldo validado contra rango. |
+| CRS26-06 | P1 | pending_approval | Nomina, novedades, reportes y documentos consumen cargo real con compatibilidad historica. |
+| CRS26-07 | P0 | pending_approval | QA, migraciones, rollback, evidencia y release gate. |
+
+### Reglas CRS26
+
+- No iniciar runtime sin aprobacion explicita del prompt de fase.
+- No crear otro catalogo decorativo: cargos debe integrarse con empleados, importacion, nomina, novedades y reportes.
+- No permitir nuevos empleados con cargo escrito manualmente despues de CRS26-05.
+- No eliminar cargos con consumos; inactivar cuando exista historico.
+- Validar sueldo contra rango salarial del cargo y registrar excepciones solo si CRS26-02 lo aprueba.
+- Commits esperados: `phase: CRS26-XX task: ...`.
+
+---
+
 ## Open Haiky Plan - HAIKY-DEMO-COMERCIAL-EMPRESA-NOMINA-EC-2026
 
 | Campo | Valor |
