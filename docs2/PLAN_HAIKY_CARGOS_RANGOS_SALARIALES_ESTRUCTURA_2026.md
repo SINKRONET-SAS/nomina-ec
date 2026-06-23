@@ -4,14 +4,15 @@
 |-------|-------|
 | Plan | HAIKY-CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026 |
 | Codigo | CRS26 |
-| Estado | CRS26-00 desplegada documentalmente; runtime pendiente de aprobacion por fase |
-| Fase actual | CRS26-00 baseline documental |
+| Estado | CRS26-00..07 ejecutadas localmente |
+| Fase actual | CRS26-07 cerrada localmente |
 | Alcance | crear cargos/puestos con rango salarial, vigencia y consumo de estructura organizativa; asignar empleados a cargos desde catalogo real |
 | Requerimiento fuente | "Se requiere crear cargos con un rango salarial y que consuman la estructura organizativa; el empleado debe ser asignado a un cargo o puesto llamando a la tabla de cargos." |
 | Repo objetivo | `C:\proyectos web\nuevo_nomina` |
 | Matriz | `docs2/cargos-rangos-salariales-estructura-2026/MATRIZ_CRS26_REQUERIMIENTOS.md` |
 | Contrato | `docs2/cargos-rangos-salariales-estructura-2026/CONTRATO_CRS26_CARGOS_RANGOS_SALARIALES.md` |
 | Reporte baseline | `docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_00_BASELINE.md` |
+| Reporte cierre | `docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_07_CIERRE_QA.md` |
 | AuditLock | `.vscode/AuditLock.json` |
 | Prompts | `.github/prompts/CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026-{00..07}-*.md` |
 | RULES | `RULES.md` |
@@ -51,13 +52,13 @@ El plan evita crear otro catalogo decorativo. La tabla de cargos debe consumir `
 | Fase | Prioridad | Estado inicial | Resumen |
 |------|-----------|----------------|---------|
 | CRS26-00 | P0 | completed_documental | Baseline documental, matriz, contrato, prompts, contexto y AuditLock sin tocar runtime. |
-| CRS26-01 | P0 | pending_approval | Diagnostico runtime: esquema, controladores, importacion, reportes, nomina, demo y riesgos de migracion. |
-| CRS26-02 | P0 | pending_approval | Modelo de datos y migracion: tabla de cargos, relacion con estructura organizativa, indices, RLS, vigencia e historial. |
-| CRS26-03 | P0 | pending_approval | Backend: CRUD de cargos, validaciones de rango salarial, bloqueos de eliminacion y auditoria. |
-| CRS26-04 | P0 | pending_approval | Frontend parametrizacion: pantalla de cargos con crear, editar, inactivar, eliminar si no hay consumos y filtros por unidad. |
-| CRS26-05 | P0 | pending_approval | Empleados: alta, edicion, lista e importacion consumen tabla de cargos; sueldo validado contra rango. |
-| CRS26-06 | P1 | pending_approval | Nomina, documentos, novedades y reportes consumen cargo real y mantienen compatibilidad historica. |
-| CRS26-07 | P0 | pending_approval | QA, migraciones, seed/demo, rollback, evidencia, AuditLock y release gate. |
+| CRS26-01 | P0 | completed_local | Diagnostico runtime: esquema, controladores, importacion, reportes, nomina, demo y riesgos de migracion. |
+| CRS26-02 | P0 | completed_local | Modelo de datos y migracion: tabla de cargos, relacion con estructura organizativa, indices, RLS, vigencia e historial. |
+| CRS26-03 | P0 | completed_local | Backend: CRUD de cargos, validaciones de rango salarial, bloqueos de eliminacion y auditoria. |
+| CRS26-04 | P0 | completed_local | Frontend parametrizacion: pantalla de cargos con crear, editar, inactivar, eliminar si no hay consumos y filtros por unidad. |
+| CRS26-05 | P0 | completed_local | Empleados: alta, edicion, lista e importacion consumen tabla de cargos; sueldo validado contra rango. |
+| CRS26-06 | P1 | completed_local | Nomina, documentos, novedades y reportes consumen cargo real y mantienen compatibilidad historica. |
+| CRS26-07 | P0 | completed_local | QA, migraciones, seed/demo, rollback, evidencia, AuditLock y release gate. |
 
 ## Entregables esperados
 
@@ -82,10 +83,16 @@ El plan evita crear otro catalogo decorativo. La tabla de cargos debe consumir `
 - Gate UTF-8 sin BOM para `.js`, `.jsx`, `.md`, `.json` modificados.
 - AuditLock firmado por fase.
 
-## Riesgos y decisiones pendientes
+## Cierre local CRS26
 
-- Definir si sueldo fuera de rango bloquea siempre o permite excepcion aprobada con motivo y auditoria.
-- Decidir nombre fisico: `job_positions`, `cargos` o `positions`; se recomienda ingles en codigo y etiquetas en espanol.
-- Migrar empleados existentes sin perder etiqueta historica `cargo`.
-- Ajustar scopes de novedades por cargo para usar `position_id` sin romper lotes historicos por string.
-- Evitar que rangos salariales se presenten como recomendacion legal; son politica interna de la empresa.
+- Nombre fisico definido: `job_positions`.
+- Politica definida: sueldo fuera de rango bloquea alta, edicion e importacion.
+- Empleados existentes migrados localmente con backfill: 12 cargos y 30 empleados enlazados.
+- Scopes de novedades por cargo aceptan `position_id`, codigo, nombre y snapshot historico.
+- Reportes tabulares exportan codigo de cargo y cargo real.
+- Gates finales: Prisma validate, migrate deploy, backend tests completos, build PWA y smoke DB local.
+
+## Riesgos residuales
+
+- Validacion visual con usuarios reales antes de demo comercial.
+- Si el negocio requiere excepciones salariales, crear fase futura con aprobacion y auditoria explicita.

@@ -2,35 +2,49 @@
   "schemaVersion": 1,
   "plan": "HAIKY-CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026",
   "planCode": "CRS26",
-  "status": "consumidores_nomina_reportes_local",
-  "phaseCompleted": "CRS26-06",
-  "currentPhase": "CRS26-06-nomina-reportes-novedades",
-  "updatedAt": "2026-06-22T21:03:02.6356286-05:00",
-  "summary": "CRS26-06 conecto novedades por cargo, reportes de nomina y listado de nominas con job_positions y fallback historico a empleados.cargo.",
+  "status": "closed_local",
+  "phaseCompleted": "CRS26-07",
+  "currentPhase": "CRS26-07-cierre-qa",
+  "updatedAt": "2026-06-22T21:06:35.4782688-05:00",
+  "summary": "CRS26-00..07 cerradas localmente: cargos con rango salarial, estructura organizativa, empleados, importacion, nomina, novedades, reportes y QA final.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts CRS26.",
-  "previousAuditLockHash": "98EE3E474DAE86CD85CDA033048F2A0C7F4A3812995554B5E8FBCA2FEBDF3D00",
+  "previousAuditLockHash": "534BFE6ABF7244C3EAD5FC1D0C11004EB2854E8B03B5EC2E8EE14F6D45792C1B",
   "filesModified": [
     "CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "backend/src/controllers/nominaController.js",
-    "backend/src/services/monthlyPeriodService.js",
-    "backend/src/services/monthlyPeriodService.test.js",
-    "backend/src/services/payrollReportService.js",
-    "backend/src/services/payrollReportService.test.js",
-    "docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_06_NOMINA_REPORTES_NOVEDADES.md"
+    "docs2/PLAN_HAIKY_CARGOS_RANGOS_SALARIALES_ESTRUCTURA_2026.md",
+    "docs2/cargos-rangos-salariales-estructura-2026/MATRIZ_CRS26_REQUERIMIENTOS.md",
+    "docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_07_CIERRE_QA.md"
   ],
-  "runtimeArtifactsIgnored": [],
+  "runtimeArtifactsIgnored": [
+    "frontend-web/dist"
+  ],
   "validationChecks": [
     {
-      "gate": "CRS26-06-BACKEND-TESTS",
+      "gate": "CRS26-07-PRISMA-VALIDATE",
       "status": "PASS",
-      "detail": "npm.cmd test -- monthlyPeriodService.test.js payrollReportService.test.js en backend: 2 suites, 10 tests."
+      "detail": "npx.cmd prisma validate en backend."
     },
     {
-      "gate": "CRS26-06-NOMINA-CONTROLLER-SYNTAX",
+      "gate": "CRS26-07-MIGRATE-DEPLOY",
       "status": "PASS",
-      "detail": "node --check backend/src/controllers/nominaController.js."
+      "detail": "npx.cmd prisma migrate deploy en backend: no pending migrations."
+    },
+    {
+      "gate": "CRS26-07-BACKEND-TESTS",
+      "status": "PASS",
+      "detail": "npm.cmd test -- --runInBand en backend: 28 suites, 114 tests."
+    },
+    {
+      "gate": "CRS26-07-FRONTEND-BUILD",
+      "status": "PASS",
+      "detail": "npm.cmd run build en frontend-web: PWA generated."
+    },
+    {
+      "gate": "CRS26-07-DB-SMOKE",
+      "status": "PASS",
+      "detail": "jobPositions=12, linkedEmployees=30 en PostgreSQL local."
     }
   ],
   "fases": [
@@ -64,13 +78,13 @@
     },
     {
       "phase": "CRS26-07",
-      "status": "pending_approval"
+      "status": "completed_local"
     }
   ],
   "residualRisk": [
-    "QA integral, migraciones y release gate pendientes en CRS26-07.",
-    "Validacion visual con demo comercial pendiente."
+    "Validacion visual con usuarios reales antes de demo comercial.",
+    "Excepciones salariales futuras requieren politica auditable separada."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "8AE7D4332E67FA704E3401951C8D4D5BCCB1B911F73A650239AD5E0ED0D82BD7"
+  "signature": "834B62F6FCF95A8907556E1A539E11A9B47F82C4057FBD63179A1B6F6E09FF44"
 }
