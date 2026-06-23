@@ -127,7 +127,7 @@ function PlanesGestion() {
     }),
     onSuccess: () => {
       setError('');
-      setMessage('Incidencia registrada para seguimiento SUPERADMIN.');
+      setMessage('Incidencia registrada para seguimiento administrativo.');
       setIncidentDraft({ tenantId: '', title: '', severity: 'media', description: '' });
       queryClient.invalidateQueries({ queryKey: ['superadmin-overview'] });
     },
@@ -296,16 +296,16 @@ function PlanesGestion() {
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-teal-700" />
-              <h2 className="text-lg font-semibold text-slate-950">Owners, contratos e incidencias</h2>
+              <h2 className="text-lg font-semibold text-slate-950">Empresas, contratos e incidencias</h2>
             </div>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Supervisa owners y contratos desde tablas reales de tenants, suscripciones, planes e incidencias. No usa catalogos paralelos de configuracion.
+              Supervisa empresas, contratos, suscripciones, planes e incidencias desde un solo panel administrativo.
             </p>
           </div>
 
           {overviewQuery.isError && (
             <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-              {extractApiError(overviewQuery.error, 'No pudimos cargar la consola SUPERADMIN.')}
+              {extractApiError(overviewQuery.error, 'No pudimos cargar la consola administrativa.')}
             </div>
           )}
 
@@ -316,21 +316,21 @@ function PlanesGestion() {
               <p className="mt-1 text-sm text-slate-600">Activos {overviewQuery.data?.plans?.activos || 0} | Publicos {overviewQuery.data?.plans?.publicos || 0}</p>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold uppercase text-slate-500">Owners</p>
+              <p className="text-sm font-semibold uppercase text-slate-500">Empresas</p>
               <p className="mt-2 text-3xl font-semibold text-slate-950">{overviewQuery.data?.owners?.length || 0}</p>
-              <p className="mt-1 text-sm text-slate-600">Tenants visibles para supervision contractual.</p>
+              <p className="mt-1 text-sm text-slate-600">Empresas visibles para supervision contractual.</p>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-sm font-semibold uppercase text-slate-500">Incidencias abiertas</p>
               <p className="mt-2 text-3xl font-semibold text-slate-950">{(overviewQuery.data?.incidents || []).filter((item) => item.status !== 'cerrada').length}</p>
-              <p className="mt-1 text-sm text-slate-600">Seguimiento operativo sin tocar nomina del tenant.</p>
+              <p className="mt-1 text-sm text-slate-600">Seguimiento operativo sin modificar la nomina de la empresa.</p>
             </div>
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
             <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-200 px-5 py-4">
-                <h3 className="font-semibold text-slate-950">Owners y contratos</h3>
+                <h3 className="font-semibold text-slate-950">Empresas y contratos</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[860px] text-sm">

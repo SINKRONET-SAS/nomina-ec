@@ -54,6 +54,20 @@ async function update(req, res, next) {
   }
 }
 
+async function remove(req, res, next) {
+  try {
+    const data = await configurationService.deleteResource(
+      req.params.resource,
+      req.params.id,
+      req.usuario,
+      requestContext(req)
+    );
+    return res.json({ data, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function onboarding(req, res, next) {
   try {
     const data = await configurationService.getOnboardingStatus(req.usuario);
@@ -95,6 +109,7 @@ module.exports = {
   list,
   create,
   update,
+  remove,
   onboarding,
   completeOnboardingStep,
   loadMandatoryLegalParameters,

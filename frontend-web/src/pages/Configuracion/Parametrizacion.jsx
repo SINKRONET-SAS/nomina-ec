@@ -6,6 +6,7 @@ import {
   Circle,
   CreditCard,
   Download,
+  Edit3,
   MapPin,
   Network,
   Plus,
@@ -15,13 +16,16 @@ import {
   TimerReset,
   Trash2,
   UserCog,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
   completeOnboardingStep,
   createConfigurationResource,
+  deleteConfigurationResource,
   fetchConfigurationSummary,
   loadMandatoryLegalParameters,
+  updateConfigurationResource,
 } from '../../services/configurationApi';
 import { extractApiError } from '../../services/publicApi';
 
@@ -34,6 +38,15 @@ const workDayOptions = [
   { value: 'saturday', label: 'Sabado' },
   { value: 'sunday', label: 'Domingo' },
 ];
+
+function parseStructuredValue(text, fallback) {
+  if (!String(text || '').trim()) return fallback;
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    throw new Error('El valor estructurado JSON no es valido.');
+  }
+}
 
 const formDefinitions = [
   {
@@ -98,6 +111,7 @@ const formDefinitions = [
       { name: 'unit', label: 'Unidad', placeholder: 'USD, porcentaje, tabla', required: true },
       { name: 'source_name', label: 'Fuente oficial', placeholder: 'SRI, IESS, MDT...' },
       { name: 'source_url', label: 'URL de respaldo', type: 'url' },
+      { name: 'value_json', label: 'Valor estructurado JSON (si se llena tiene prioridad)', type: 'textarea', wide: true },
       { name: 'notes', label: 'Notas', type: 'textarea', wide: true },
     ],
     initial: {
@@ -107,6 +121,7 @@ const formDefinitions = [
       unit: 'USD',
       source_name: '',
       source_url: '',
+      value_json: '',
       notes: '',
     },
     buildPayload: (values) => ({
@@ -114,7 +129,7 @@ const formDefinitions = [
       region_code: 'NACIONAL',
       period_year: Number(values.period_year),
       parameter_key: values.parameter_key.trim(),
-      value: { amount: Number(values.amount) },
+      value: parseStructuredValue(values.value_json, { amount: Number(values.amount) }),
       unit: values.unit.trim(),
       validation_status: 'pendiente_validacion_oficial',
       source_name: values.source_name.trim(),
@@ -284,7 +299,7 @@ const formDefinitions = [
   {
     key: 'jornada',
     title: 'Jornada base',
-    description: 'Configura varias jornadas por OWNER: lunes a viernes, martes a sabado u otra distribucion operativa autorizada.',
+    description: 'Configura varias jornadas por empresa: lunes a viernes, martes a sabado u otra distribucion operativa autorizada.',
     icon: TimerReset,
     resource: 'workShifts',
     stepCode: 'jornadas',
@@ -518,7 +533,144 @@ function configurationLoadMessage(err) {
 }
 
 function buildInitialState() {
-  return Object.fromEntries(formDefinitions.map((definition) => [definition.key, definition.initial]));
+  return Object.fromEntries(formDefinitions.map((definition) => [definition.key, cloneFormValues(definition.initial)]));
+}
+
+function cloneFormValues(values) {
+  return JSON.parse(JSON.stringify(values));
+}
+
+function dateInputValue(value) {
+  if (!value) return '';
+  return String(value).slice(0, 10);
+}
+
+function jsonText(value) {
+  if (!value || typeof value !== 'object') return '';
+  return JSON.stringify(value, null, 2);
+}
+
+function formValuesFromRecord(definition, record) {
+  const payload = record.payload || {};
+  const fieldMap = record.field_map || {};
+  const metadata = record.metadata || {};
+  const value = record.value || {};
+
+  switch (definition.key) {
+    case 'empresa':
+      return {
+        ruc: payload.ruc || record.code || '',
+        razon_social: payload.razonSocial || record.name || '',
+        nombre_comercial: payload.nombreComercial || record.description || '',
+        representante_legal: payload.representanteLegal || '',
+        email: payload.email || '',
+        telefono: payload.telefono || '',
+        ciudad: payload.ciudad || '',
+        direccion: payload.direccion || '',
+      };
+    case 'legal':
+      return {
+        parameter_key: record.parameter_key || '',
+        period_year: record.period_year || new Date().getFullYear(),
+        amount: String(value.amount ?? value.rate ?? 0),
+        unit: record.unit || 'USD',
+        source_name: record.source_name || '',
+        source_url: record.source_url || '',
+        value_json: jsonText(value),
+        notes: record.notes || '',
+      };
+    case 'ir':
+      return {
+        period_year: record.period_year || new Date().getFullYear(),
+        source_name: record.source_name || 'SRI',
+        source_url: record.source_url || '',
+        source_date: dateInputValue(record.source_date),
+        notes: record.notes || '',
+        brackets: normalizeIncomeTaxBrackets(record).map((bracket) => ({
+          from: String(bracket.from ?? bracket.fraccion_basica ?? 0),
+          to: bracket.to === null || typeof bracket.to === 'undefined'
+            ? ''
+            : String(bracket.to ?? bracket.exceso_hasta ?? ''),
+          baseTax: String(bracket.baseTax ?? bracket.impuesto_fraccion_basica ?? 0),
+          rate: String(bracket.rate ?? bracket.porcentaje ?? 0),
+        })),
+      };
+    case 'novedad':
+      return {
+        code: record.code || '',
+        name: record.name || '',
+        category: record.category || 'ajuste',
+        payroll_impact: record.payroll_impact || 'informativo',
+        affects_iess: Boolean(record.affects_iess),
+        affects_income_tax: Boolean(record.affects_income_tax),
+        requires_evidence: Boolean(record.requires_evidence),
+        description: record.description || '',
+      };
+    case 'organizacion':
+      return {
+        code: record.code || '',
+        name: record.name || '',
+        unit_type: record.unit_type || 'departamento',
+        work_zone_id: record.work_zone_id || '',
+        work_shift_id: metadata.workShiftId || '',
+        cost_center_code: record.cost_center_code || '',
+        description: record.description || '',
+      };
+    case 'zona':
+      return {
+        code: record.code || '',
+        name: record.name || '',
+        latitude: String(record.latitude ?? ''),
+        longitude: String(record.longitude ?? ''),
+        radius_meters: record.radius_meters ?? 100,
+        requires_photo: Boolean(record.requires_photo),
+      };
+    case 'jornada':
+      return {
+        code: record.code || '',
+        name: record.name || '',
+        shift_type: record.shift_type || 'ordinaria',
+        weekly_hours: record.weekly_hours ?? 40,
+        work_days: Array.isArray(record.calendar_rules?.workDays) ? record.calendar_rules.workDays : [],
+        start_time: record.start_time || '08:00',
+        end_time: record.end_time || '17:00',
+        break_minutes: record.break_minutes ?? 60,
+        tolerance_minutes: record.tolerance_minutes ?? 10,
+      };
+    case 'banco':
+      return {
+        banco_codigo: record.banco_codigo || '',
+        banco_nombre: record.banco_nombre || '',
+        delimiter: record.delimiter || ';',
+        encoding: record.encoding || 'utf8',
+        date_format: record.date_format || 'YYYYMMDD',
+        include_header: Boolean(record.include_header),
+        include_trailer: Boolean(record.include_trailer),
+        account_field: fieldMap.cuenta || 'cuentaBancaria',
+        amount_field: fieldMap.valor || 'netoRecibir',
+      };
+    case 'homologacion_banco':
+      return {
+        banco_codigo: record.banco_codigo || '',
+        canonical_field: record.canonical_field || 'cuenta',
+        bank_field_name: record.bank_field_name || '',
+        position: record.position || 1,
+        formatter: record.formatter || '',
+        required: Boolean(record.required),
+      };
+    case 'usuarios':
+      return {
+        code: record.code || 'MATRIZ_RRHH',
+        name: record.name || 'Matriz de roles RRHH',
+        owner_email: payload.ownerEmail || '',
+        admin_email: payload.adminRrhhEmail || '',
+        supervisor_enabled: Boolean(payload.supervisorEnabled),
+        employee_access: payload.employeeAccess || 'marcaciones_y_roles',
+        notes: record.description || '',
+      };
+    default:
+      return cloneFormValues(definition.initial);
+  }
 }
 
 function Field({ field, value, onChange, options = [] }) {
@@ -961,6 +1113,8 @@ function Parametrizacion() {
   const [activeForm, setActiveForm] = useState(formDefinitions[0].key);
   const [forms, setForms] = useState(buildInitialState);
   const [mandatoryYear, setMandatoryYear] = useState(new Date().getFullYear());
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
@@ -976,20 +1130,24 @@ function Parametrizacion() {
     retry: false,
   });
 
-  const createMutation = useMutation({
-    mutationFn: async ({ definition, values }) => {
+  const saveMutation = useMutation({
+    mutationFn: async ({ definition, values, record }) => {
       const payload = definition.buildPayload(values);
-      const record = await createConfigurationResource(token, definition.resource, payload);
+      const savedRecord = record
+        ? await updateConfigurationResource(token, definition.resource, record.id, payload)
+        : await createConfigurationResource(token, definition.resource, payload);
       await completeOnboardingStep(token, definition.stepCode, {
-        notes: `${definition.title} creado desde parametrizacion.`,
-        evidence: { recordId: record.id, resource: definition.resource },
+        notes: `${definition.title} ${record ? 'actualizado' : 'creado'} desde parametrizacion.`,
+        evidence: { recordId: savedRecord.id, resource: definition.resource },
       });
-      return { record, definition };
+      return { record: savedRecord, definition, mode: record ? 'actualizado' : 'guardado' };
     },
-    onSuccess: ({ definition }) => {
+    onSuccess: ({ definition, mode }) => {
       setError('');
-      setMessage(`${definition.title} guardado. Puedes ingresar otro registro cuando lo necesites.`);
-      setForms((current) => ({ ...current, [definition.key]: definition.initial }));
+      setMessage(`${definition.title} ${mode}.`);
+      setForms((current) => ({ ...current, [definition.key]: cloneFormValues(definition.initial) }));
+      setEditingRecord(null);
+      setPendingDeleteId('');
       queryClient.invalidateQueries({ queryKey: ['configuration-summary'] });
     },
     onError: (err) => {
@@ -998,12 +1156,30 @@ function Parametrizacion() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: ({ definition, record }) => deleteConfigurationResource(token, definition.resource, record.id),
+    onSuccess: (_data, { definition, record }) => {
+      setError('');
+      setMessage(`${definition.title} eliminado.`);
+      setPendingDeleteId('');
+      if (editingRecord?.id === record.id) {
+        setEditingRecord(null);
+        setForms((current) => ({ ...current, [definition.key]: cloneFormValues(definition.initial) }));
+      }
+      queryClient.invalidateQueries({ queryKey: ['configuration-summary'] });
+    },
+    onError: (err) => {
+      setMessage('');
+      setError(extractApiError(err, 'No pudimos eliminar el registro. Verifica si ya tiene consumos operativos.'));
+    },
+  });
+
   const loadMandatoryMutation = useMutation({
     mutationFn: () => loadMandatoryLegalParameters(token, mandatoryYear),
     onSuccess: (data) => {
       setError('');
       setMessage(`Parametros legales vigentes para ${data.periodYear} actualizados: ${data.count}.`);
-      setActiveForm('ir');
+      selectForm('ir');
       queryClient.invalidateQueries({ queryKey: ['configuration-summary'] });
     },
     onError: (err) => {
@@ -1014,6 +1190,7 @@ function Parametrizacion() {
 
   const activeDefinition = formDefinitions.find((definition) => definition.key === activeForm) || formDefinitions[0];
   const activeValues = forms[activeDefinition.key];
+  const isEditingActiveRecord = editingRecord?.definitionKey === activeDefinition.key;
   const completion = summary?.onboarding?.completionPercent || 0;
   const records = recordsForDefinition(summary, activeDefinition);
   const legalRecords = summary?.resources?.legalParameters || [];
@@ -1076,12 +1253,53 @@ function Parametrizacion() {
 
   function submitForm(event) {
     event.preventDefault();
-    createMutation.mutate({ definition: activeDefinition, values: activeValues });
+    saveMutation.mutate({
+      definition: activeDefinition,
+      values: activeValues,
+      record: isEditingActiveRecord ? editingRecord : null,
+    });
+  }
+
+  function selectForm(definitionKey) {
+    setActiveForm(definitionKey);
+    setEditingRecord(null);
+    setPendingDeleteId('');
+  }
+
+  function startEdit(definition, record) {
+    setActiveForm(definition.key);
+    setEditingRecord({ ...record, definitionKey: definition.key });
+    setPendingDeleteId('');
+    setError('');
+    setMessage('');
+    setForms((current) => ({
+      ...current,
+      [definition.key]: formValuesFromRecord(definition, record),
+    }));
+  }
+
+  function cancelEdit() {
+    setEditingRecord(null);
+    setPendingDeleteId('');
+    setForms((current) => ({
+      ...current,
+      [activeDefinition.key]: cloneFormValues(activeDefinition.initial),
+    }));
+  }
+
+  function requestDelete(recordId) {
+    setPendingDeleteId(recordId);
+    setMessage('');
+    setError('');
+  }
+
+  function confirmDelete(definition, record) {
+    deleteMutation.mutate({ definition, record });
   }
 
   function openStepForm(stepCode) {
     const formKey = stepFormMap[stepCode];
-    if (formKey) setActiveForm(formKey);
+    if (formKey) selectForm(formKey);
   }
 
   return (
@@ -1178,7 +1396,7 @@ function Parametrizacion() {
                 }`}
                 key={definition.key}
                 type="button"
-                onClick={() => setActiveForm(definition.key)}
+                onClick={() => selectForm(definition.key)}
               >
                 <Icon className="h-4 w-4" />
                 {definition.title}
@@ -1189,9 +1407,23 @@ function Parametrizacion() {
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
           <form className="rounded-md border border-slate-200 p-4" onSubmit={submitForm}>
-            <div>
-              <h3 className="font-semibold text-slate-950">{activeDefinition.title}</h3>
-              <p className="mt-1 text-sm text-slate-600">{activeDefinition.description}</p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 className="font-semibold text-slate-950">
+                  {isEditingActiveRecord ? `Editar ${activeDefinition.title}` : activeDefinition.title}
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">{activeDefinition.description}</p>
+              </div>
+              {isEditingActiveRecord && (
+                <button
+                  className="inline-flex min-h-9 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:border-teal-300"
+                  type="button"
+                  onClick={cancelEdit}
+                >
+                  <X className="h-4 w-4" />
+                  Cancelar
+                </button>
+              )}
             </div>
 
 
@@ -1199,7 +1431,7 @@ function Parametrizacion() {
               <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
                 <p className="font-semibold">Revision legal de jornada requerida</p>
                 <p className="mt-1">
-                  Puedes configurar varias jornadas en el mismo OWNER y asignarlas luego a cada unidad organizativa: lunes a viernes, martes a sabado u otra distribucion operativa. Antes de aplicarlas, valida que la jornada cumpla limites laborales ecuatorianos y, cuando corresponda por jornada especial, nocturna, rotativa, suplementaria, extraordinaria o distribucion excepcional, obten la autorizacion o registro aplicable ante el Ministerio del Trabajo.
+                  Puedes configurar varias jornadas en la misma empresa y asignarlas luego a cada unidad organizativa: lunes a viernes, martes a sabado u otra distribucion operativa. Antes de aplicarlas, valida que la jornada cumpla limites laborales ecuatorianos y, cuando corresponda por jornada especial, nocturna, rotativa, suplementaria, extraordinaria o distribucion excepcional, obten la autorizacion o registro aplicable ante el Ministerio del Trabajo.
                 </p>
               </div>
             )}
@@ -1230,11 +1462,13 @@ function Parametrizacion() {
 
             <button
               className="mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60"
-              disabled={createMutation.isPending}
+              disabled={saveMutation.isPending}
               type="submit"
             >
-              <Plus className="h-4 w-4" />
-              {createMutation.isPending ? 'Guardando...' : 'Guardar parametro'}
+              {isEditingActiveRecord ? <Edit3 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {saveMutation.isPending
+                ? 'Guardando...'
+                : (isEditingActiveRecord ? 'Actualizar parametro' : 'Guardar parametro')}
             </button>
           </form>
 
@@ -1246,10 +1480,53 @@ function Parametrizacion() {
                   Aun no hay registros en esta categoria.
                 </p>
               )}
-              {records.slice(0, 6).map((record) => (
+              {records.slice(0, 12).map((record) => (
                 <div className="rounded-md bg-slate-50 px-3 py-2" key={record.id}>
-                  <p className="text-sm font-semibold text-slate-900">{activeDefinition.recordLabel(record)}</p>
-                  <p className="mt-1 text-xs text-slate-500">{recordMetaForDefinition(activeDefinition, record, summary)}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-900">{activeDefinition.recordLabel(record)}</p>
+                      <p className="mt-1 text-xs text-slate-500">{recordMetaForDefinition(activeDefinition, record, summary)}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-teal-700 hover:border-teal-300"
+                        type="button"
+                        onClick={() => startEdit(activeDefinition, record)}
+                        title="Editar registro"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </button>
+                      {pendingDeleteId === record.id ? (
+                        <>
+                          <button
+                            className="inline-flex min-h-8 items-center rounded-md border border-red-200 bg-white px-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                            type="button"
+                            disabled={deleteMutation.isPending}
+                            onClick={() => confirmDelete(activeDefinition, record)}
+                          >
+                            Eliminar
+                          </button>
+                          <button
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:border-slate-300"
+                            type="button"
+                            onClick={() => setPendingDeleteId('')}
+                            title="Cancelar eliminacion"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:text-red-700"
+                          type="button"
+                          onClick={() => requestDelete(record.id)}
+                          title="Eliminar si no tiene consumos"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

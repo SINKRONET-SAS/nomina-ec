@@ -34,13 +34,16 @@ const API_SCOPE_OPTIONS = [
   { value: 'payroll.read', label: 'Nomina' },
 ];
 
+function scopeLabel(value) {
+  return API_SCOPE_OPTIONS.find((option) => option.value === value)?.label || value;
+}
+
 const MODULES = [
   {
     key: 'empresa',
     title: 'Datos de empresa',
     icon: Building2,
-    owner: 'OWNER',
-    phase: 'DCF26-02',
+    owner: 'Empresa',
     href: '/dashboard/configuracion/parametrizacion',
     action: 'Configurar empresa',
     ready: ({ counts }) => counts.empresa > 0,
@@ -51,8 +54,7 @@ const MODULES = [
     key: 'legal',
     title: 'Parametros legales',
     icon: Landmark,
-    owner: 'OWNER',
-    phase: 'DCF26-02',
+    owner: 'Empresa',
     href: '/dashboard/configuracion/parametrizacion',
     action: 'Cargar parametros',
     ready: ({ counts }) => counts.legalParameters > 0,
@@ -63,95 +65,87 @@ const MODULES = [
     key: 'bancos',
     title: 'Banco y archivo plano',
     icon: Banknote,
-    owner: 'OWNER',
-    phase: 'DCF26-03',
+    owner: 'Empresa',
     href: '/dashboard/configuracion/parametrizacion',
     action: 'Configurar banco',
     ready: ({ counts }) => counts.bankProfiles > 0,
-    activeDescription: 'Perfil bancario registrado; DCF26-03 conectara este perfil al generador de archivo.',
-    pendingDescription: 'Configura al menos un banco y su estructura base. La conexion al generador se cierra en DCF26-03.',
+    activeDescription: 'Perfil bancario registrado para preparar pagos y archivos bancarios.',
+    pendingDescription: 'Configura al menos un banco y su estructura base para preparar pagos.',
   },
   {
     key: 'usuarios',
     title: 'Usuarios y roles',
     icon: UserCog,
-    owner: 'OWNER',
-    phase: 'DCF26-02',
+    owner: 'Empresa',
     href: '/dashboard/configuracion/parametrizacion',
     action: 'Configurar accesos',
     ready: ({ counts }) => counts.usuarios > 0,
     activeDescription: 'Matriz inicial de usuarios y roles registrada para trazabilidad operativa.',
-    pendingDescription: 'Define OWNER, administrador RRHH, supervisor, acceso empleado y segregacion de funciones.',
+    pendingDescription: 'Define administrador, RRHH, supervisor y accesos de empleado segun responsabilidad.',
   },
   {
     key: 'rdep',
-    title: 'RDEP SRI',
+    title: 'Reportes para entidades',
     icon: FileCode2,
-    owner: 'OWNER',
-    phase: 'DCF26-04',
+    owner: 'Empresa',
     href: '/dashboard/nomina/reportes',
     action: 'Abrir reportes',
     ready: () => false,
     blocked: true,
     activeDescription: '',
-    pendingDescription: 'Generacion visible existe, pero el cierre productivo requiere precheck y validacion XSD runtime.',
+    pendingDescription: 'Completa y revisa los datos antes de generar reportes para entidades.',
   },
   {
     key: 'superadmin',
-    title: 'SUPERADMIN',
+    title: 'Planes y soporte',
     icon: ShieldCheck,
-    owner: 'SUPERADMIN',
-    phase: 'DCF26-09',
+    owner: 'Soporte',
     href: '/dashboard/planes',
     action: 'Gestionar planes',
     ready: () => true,
     gatedByRole: 'superadmin',
-    activeDescription: 'Planes, owners/contratos e incidencias se supervisan con tablas reales y endpoints SUPERADMIN.',
-    pendingDescription: 'Requiere rol SUPERADMIN para ver planes, contratos de owners e incidencias.',
+    activeDescription: 'Planes, contratos e incidencias se supervisan desde un panel administrativo.',
+    pendingDescription: 'Requiere permisos administrativos para ver planes, contratos e incidencias.',
   },
   {
     key: 'api',
-    title: 'API de integracion',
+    title: 'Integraciones',
     icon: KeyRound,
-    owner: 'SUPERADMIN',
-    phase: 'DCF26-06',
+    owner: 'Soporte',
     href: '#api-v1-clientes',
     action: 'Gestionar clientes',
     ready: ({ counts }) => counts.apiClients > 0,
     gatedByRoles: ['owner', 'superadmin'],
-    activeDescription: 'API v1 expuesta con clientes, scopes, autenticacion por API key, rate limit e idempotencia.',
-    pendingDescription: 'Crea al menos un cliente API con scopes minimos para integrar asistencia, novedades o consulta de nomina.',
+    activeDescription: 'Integraciones externas activas con permisos definidos y trazabilidad.',
+    pendingDescription: 'Crea al menos una credencial de integracion para conectar sistemas externos.',
   },
   {
     key: 'asistencia',
-    title: 'Asistencia manual y APP',
+    title: 'Asistencia',
     icon: CalendarClock,
-    owner: 'OWNER',
-    phase: 'DCF26-10',
+    owner: 'Empresa',
     href: '/dashboard/asistencia/reporte',
     action: 'Revisar asistencia',
     ready: ({ counts }) => counts.workZones > 0 && counts.workShifts > 0,
-    activeDescription: 'Zonas y jornadas estan configuradas; la app movil se profundiza en DCF26-10.',
+    activeDescription: 'Zonas y jornadas estan configuradas para registrar asistencia.',
     pendingDescription: 'Configura zonas de marcacion y jornadas antes de usar asistencia productiva.',
   },
   {
     key: 'apertura',
-    title: 'Apertura de mes y lotes',
+    title: 'Periodo y novedades',
     icon: Workflow,
-    owner: 'OWNER',
-    phase: 'DCF26-08',
+    owner: 'Empresa',
     href: '/dashboard/nomina/cerrar',
     action: 'Abrir periodo',
     ready: () => true,
-    activeDescription: 'Periodo mensual, lotes de novedades por alcance, calculo y cierre se operan desde una pantalla visible.',
+    activeDescription: 'Periodo mensual, novedades, calculo y cierre se operan desde pantallas visibles.',
     pendingDescription: 'Abre el periodo antes de cargar novedades y calcular roles.',
   },
   {
     key: 'carga',
     title: 'Carga masiva de empleados',
     icon: Upload,
-    owner: 'OWNER',
-    phase: 'DCF26-07',
+    owner: 'Empresa',
     href: '/dashboard/empleados',
     action: 'Importar empleados',
     ready: () => true,
@@ -162,20 +156,18 @@ const MODULES = [
     key: 'reportes',
     title: 'Reportes PDF y Excel',
     icon: FileSpreadsheet,
-    owner: 'OWNER',
-    phase: 'DCF26-11',
+    owner: 'Empresa',
     href: '/dashboard/nomina/reportes',
     action: 'Generar reportes',
     ready: ({ counts }) => counts.legalParameters > 0,
-    activeDescription: 'Reportes institucionales visibles; DCF26-04/11 completan validaciones y mejor experiencia.',
+    activeDescription: 'Reportes institucionales visibles para revisar y descargar.',
     pendingDescription: 'Completa parametros legales antes de generar reportes oficiales o bancarios.',
   },
   {
     key: 'dashboard',
     title: 'Dashboard y headcount',
     icon: Gauge,
-    owner: 'OWNER',
-    phase: 'DCF26-02',
+    owner: 'Empresa',
     href: '/dashboard',
     action: 'Ver dashboard',
     ready: ({ completion }) => completion > 0,
@@ -184,16 +176,15 @@ const MODULES = [
   },
   {
     key: 'mensajes',
-    title: 'Mensajes claros',
+    title: 'Mensajes y ayuda',
     icon: MessageSquare,
-    owner: 'PLATAFORMA',
-    phase: 'DCF26-11',
+    owner: 'Soporte',
     href: null,
-    action: 'Pendiente DCF26-11',
+    action: 'Revisar mensajes',
     ready: () => false,
     blocked: true,
     activeDescription: '',
-    pendingDescription: 'Se retiraran alerts y se expondran estados accionables en DCF26-11.',
+    pendingDescription: 'Los mensajes deben explicar que ocurrio y que accion tomar.',
   },
 ];
 
@@ -235,7 +226,7 @@ function moduleState(module, context, role) {
 
   if (module.blocked) {
     return {
-      label: `Pendiente ${module.phase}`,
+      label: 'Requiere revision',
       tone: 'border-amber-200 bg-amber-50 text-amber-900',
       icon: AlertTriangle,
       description: module.pendingDescription,
@@ -312,21 +303,21 @@ function ApiClientsPanel({ clients = [], createMutation, canManage }) {
         <div>
           <div className="flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-teal-700" />
-            <h2 className="text-lg font-semibold text-slate-950">Clientes API v1</h2>
+            <h2 className="text-lg font-semibold text-slate-950">Integraciones externas</h2>
           </div>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Crea credenciales para integrar sistemas externos sin exponer usuarios finales. Cada cliente queda limitado
-            por scopes, rate limit, auditoria e idempotencia en escrituras.
+            Crea credenciales para sistemas externos autorizados sin exponer usuarios finales. Cada credencial queda
+            limitada por permisos, volumen de uso y trazabilidad.
           </p>
         </div>
         <span className="inline-flex w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-          /api/v1 disponible
+          Disponible
         </span>
       </div>
 
       {!canManage && (
         <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-          Esta seccion requiere rol OWNER o SUPERADMIN para administrar integraciones.
+          Esta seccion requiere permisos administrativos para administrar integraciones.
         </div>
       )}
 
@@ -346,7 +337,7 @@ function ApiClientsPanel({ clients = [], createMutation, canManage }) {
             />
 
             <fieldset className="mt-4">
-              <legend className="text-sm font-semibold text-slate-800">Scopes permitidos</legend>
+              <legend className="text-sm font-semibold text-slate-800">Permisos permitidos</legend>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {API_SCOPE_OPTIONS.map((option) => (
                   <label className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700" key={option.value}>
@@ -357,7 +348,6 @@ function ApiClientsPanel({ clients = [], createMutation, canManage }) {
                       type="checkbox"
                     />
                     <span>{option.label}</span>
-                    <span className="ml-auto text-xs text-slate-500">{option.value}</span>
                   </label>
                 ))}
               </div>
@@ -365,7 +355,7 @@ function ApiClientsPanel({ clients = [], createMutation, canManage }) {
 
             {createMutation.isError && (
               <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
-                {extractApiError(createMutation.error, 'No pudimos crear el cliente API. Revisa los datos e intenta nuevamente.')}
+                {extractApiError(createMutation.error, 'No pudimos crear la integracion. Revisa los datos e intenta nuevamente.')}
               </div>
             )}
 
@@ -375,7 +365,7 @@ function ApiClientsPanel({ clients = [], createMutation, canManage }) {
               type="submit"
             >
               <Plus className="h-4 w-4" />
-              {createMutation.isPending ? 'Creando cliente' : 'Crear cliente API'}
+              {createMutation.isPending ? 'Creando integracion' : 'Crear integracion'}
             </button>
           </form>
 
@@ -384,7 +374,7 @@ function ApiClientsPanel({ clients = [], createMutation, canManage }) {
             <div className="mt-3 space-y-2">
               {clients.length === 0 && (
                 <p className="rounded-md bg-slate-50 px-3 py-3 text-sm text-slate-600">
-                  Todavia no hay clientes API para este tenant.
+                  Todavia no hay integraciones externas para esta empresa.
                 </p>
               )}
               {clients.map((client) => (
@@ -393,10 +383,10 @@ function ApiClientsPanel({ clients = [], createMutation, canManage }) {
                     <p className="font-semibold text-slate-900">{client.name}</p>
                     <span className="text-xs font-semibold text-teal-700">{client.active ? 'activo' : 'inactivo'}</span>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">Rate limit: {client.rate_limit_per_minute || 60}/min</p>
+                  <p className="mt-1 text-xs text-slate-500">Uso permitido: {client.rate_limit_per_minute || 60}/min</p>
                   <div className="mt-2 flex flex-wrap gap-1">
                     {(client.scopes || []).map((scope) => (
-                      <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-600" key={scope}>{scope}</span>
+                      <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-600" key={scope}>{scopeLabel(scope)}</span>
                     ))}
                   </div>
                 </div>
@@ -408,7 +398,7 @@ function ApiClientsPanel({ clients = [], createMutation, canManage }) {
 
       {createdKey && (
         <div className="mt-5 rounded-md border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm font-semibold text-amber-900">API key creada. Se muestra una sola vez.</p>
+          <p className="text-sm font-semibold text-amber-900">Clave de integracion creada. Se muestra una sola vez.</p>
           <div className="mt-3 flex flex-col gap-2 md:flex-row md:items-center">
             <code className="min-h-10 flex-1 overflow-auto rounded-md bg-white px-3 py-2 text-sm text-slate-800">{createdKey}</code>
             <button className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white" onClick={copyKey} type="button">
@@ -475,11 +465,11 @@ function OperacionIntegral() {
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">DCF26 cierre funcional</p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Centro de operacion integral</h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Centro de trabajo</p>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Operaciones de Nomina-Ec</h1>
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
-              Esta vista ya no guarda configuraciones genericas. Cada modulo abre un flujo real existente
-              o muestra el bloqueo de fase que impide declararlo operativo.
+              Accede a las configuraciones y flujos que sostienen empleados, asistencia, nomina,
+              reportes e integraciones.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[520px]">
@@ -492,7 +482,7 @@ function OperacionIntegral() {
               <p className="mt-1 text-2xl font-semibold text-amber-900">{isLoading ? '...' : blockedCount}</p>
             </div>
             <div className="rounded-md bg-teal-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase text-teal-700">Onboarding</p>
+              <p className="text-xs font-semibold uppercase text-teal-700">Configuracion</p>
               <p className="mt-1 text-2xl font-semibold text-teal-900">{isLoading ? '...' : `${completion}%`}</p>
             </div>
           </div>
@@ -507,7 +497,7 @@ function OperacionIntegral() {
 
       <section className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
         <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-950">Checks que alimentan la operacion</h2>
+          <h2 className="text-lg font-semibold text-slate-950">Estado de configuracion</h2>
           <div className="mt-4 space-y-3">
             <ReadinessBar value={completion} />
             <div className="grid gap-2 text-sm">
@@ -515,7 +505,7 @@ function OperacionIntegral() {
               <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Parametros legales</span><strong>{counts.legalParameters}</strong></p>
               <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Bancos</span><strong>{counts.bankProfiles}</strong></p>
               <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Usuarios y roles</span><strong>{counts.usuarios}</strong></p>
-              <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Clientes API</span><strong>{counts.apiClients}</strong></p>
+              <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Integraciones</span><strong>{counts.apiClients}</strong></p>
               <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Zonas / jornadas</span><strong>{counts.workZones}/{counts.workShifts}</strong></p>
             </div>
           </div>
@@ -539,7 +529,6 @@ function OperacionIntegral() {
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="font-semibold text-slate-950">{module.title}</h3>
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">{module.owner}</span>
                       </div>
                       <p className="mt-2 text-sm leading-6 text-slate-600">{module.state.description}</p>
                     </div>
@@ -550,7 +539,7 @@ function OperacionIntegral() {
                   </span>
                 </div>
                 <div className="mt-5 flex items-center justify-between gap-3">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{module.phase}</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Flujo operativo</span>
                   {actionDisabled ? (
                     <span className="inline-flex min-h-10 items-center rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-500">
                       {module.action}

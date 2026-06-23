@@ -305,9 +305,9 @@ function DescargarReportes() {
           <div className="flex items-start gap-3">
             <ShieldCheck className="mt-1 h-5 w-5 text-teal-700" />
             <div>
-              <h2 className="text-lg font-semibold text-slate-950">Precheck RDEP</h2>
+              <h2 className="text-lg font-semibold text-slate-950">Revision del reporte para entidades</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Valida datos del empleador, nomina cerrada y XSD versionado antes de generar el XML.
+                Revisa datos del empleador, nomina cerrada y plantilla vigente antes de generar el archivo.
               </p>
             </div>
           </div>
@@ -318,7 +318,7 @@ function DescargarReportes() {
             onClick={validarRdep}
           >
             <ShieldCheck className="h-4 w-4" />
-            {cargando === 'rdep-precheck' ? 'Validando...' : 'Validar RDEP'}
+            {cargando === 'rdep-precheck' ? 'Validando...' : 'Validar reporte'}
           </button>
         </div>
 
@@ -334,7 +334,7 @@ function DescargarReportes() {
               </div>
             ))}
             <div className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-700 lg:col-span-2">
-              XSD SHA-256: <span className="font-mono text-xs">{rdepPrecheck.xsd?.sha256}</span>
+              Verificacion tecnica: <span className="font-mono text-xs">{rdepPrecheck.xsd?.sha256}</span>
             </div>
           </div>
         )}

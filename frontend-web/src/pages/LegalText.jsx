@@ -26,7 +26,7 @@ const content = {
       ['Uso autorizado', 'El servicio debe usarse para operaciones laborales legítimas y con usuarios autorizados por la empresa.'],
       ['Configuración', 'Antes de producción se deben completar datos de empresa, usuarios y roles, bancos, archivo plano, parámetros legales y políticas aplicables.'],
       ['Limitaciones', 'Nómina-Ec no garantiza aprobación automática de entidades públicas ni reemplaza asesoría legal, laboral, tributaria o de protección de datos.'],
-      ['Pagos y planes', 'Los planes comerciales, periodos de prueba y pagos se rigen por la oferta vigente y las condiciones aceptadas por el OWNER.'],
+      ['Pagos y planes', 'Los planes comerciales, periodos de prueba y pagos se rigen por la oferta vigente y las condiciones aceptadas por la empresa contratante.'],
       ['Suspensión', 'El servicio puede restringirse por incumplimiento contractual, uso indebido, riesgo de seguridad, plan vencido o mandato legal.'],
     ],
   },

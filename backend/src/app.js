@@ -74,6 +74,7 @@ app.post('/api/configuracion/parametros-legales/obligatorios', requireRole('supe
 app.get('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.list);
 app.post('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.create);
 app.put('/api/configuracion/:resource/:id', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.update);
+app.delete('/api/configuracion/:resource/:id', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.remove);
 app.get('/api/comunicaciones/status', requireRole('superadmin', 'owner', 'admin_rrhh'), communicationController.status);
 app.get('/api/comunicaciones/eventos', requireRole('superadmin', 'owner', 'admin_rrhh'), communicationController.events);
 app.post('/api/comunicaciones/prueba-email', requireRole('superadmin', 'owner', 'admin_rrhh'), communicationController.testEmail);

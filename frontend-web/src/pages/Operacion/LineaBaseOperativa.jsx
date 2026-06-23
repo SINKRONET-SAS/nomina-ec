@@ -16,33 +16,33 @@ function groupByOwner(items) {
 function LineaBaseOperativa() {
   const grouped = groupByOwner(operationalBaseline);
   const visibleCount = operationalBaseline.filter((item) => item.status === 'visible').length;
-  const contractCount = operationalBaseline.filter((item) => item.status === 'contract').length;
-  const blockedCount = operationalBaseline.filter((item) => item.status === 'blocked').length;
+  const configurationCount = operationalBaseline.filter((item) => item.owner === 'Configuracion').length;
+  const monthlyCount = operationalBaseline.filter((item) => item.owner === 'Operacion mensual').length;
 
   return (
     <div className="space-y-6">
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Linea base operativa</p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Avance visible de Nomina-Ec</h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Configuracion operativa</p>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Checklist para operar Nomina-Ec</h1>
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
-              Esta vista muestra lo que quedo preparado para operar: procesos visibles en la app, contratos listos
-              para implementar y bloqueos que dependen de fuentes externas o validacion profesional.
+              Revisa que la empresa, los empleados, la asistencia, la nomina y los reportes tengan la informacion
+              necesaria antes de cerrar el periodo.
             </p>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="rounded-md bg-emerald-50 px-4 py-3">
               <p className="text-2xl font-semibold text-emerald-800">{visibleCount}</p>
-              <p className="text-xs font-medium text-emerald-900">visibles</p>
+              <p className="text-xs font-medium text-emerald-900">items</p>
             </div>
             <div className="rounded-md bg-blue-50 px-4 py-3">
-              <p className="text-2xl font-semibold text-blue-800">{contractCount}</p>
-              <p className="text-xs font-medium text-blue-900">contratos</p>
+              <p className="text-2xl font-semibold text-blue-800">{configurationCount}</p>
+              <p className="text-xs font-medium text-blue-900">configuracion</p>
             </div>
             <div className="rounded-md bg-amber-50 px-4 py-3">
-              <p className="text-2xl font-semibold text-amber-900">{blockedCount}</p>
-              <p className="text-xs font-medium text-amber-950">bloqueos</p>
+              <p className="text-2xl font-semibold text-amber-900">{monthlyCount}</p>
+              <p className="text-xs font-medium text-amber-950">operacion</p>
             </div>
           </div>
         </div>
@@ -51,24 +51,24 @@ function LineaBaseOperativa() {
       <section className="grid gap-4 lg:grid-cols-3">
         <Link className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-300" to="/dashboard/configuracion/parametrizacion">
           <Settings2 className="h-6 w-6 text-teal-700" />
-          <h2 className="mt-3 font-semibold text-slate-950">Parametrizar ahora</h2>
+          <h2 className="mt-3 font-semibold text-slate-950">Revisar configuracion</h2>
           <p className="mt-1 text-sm text-slate-600">Empresa, parametros, bancos, usuarios, roles, jornadas y zonas.</p>
         </Link>
         <Link className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-300" to="/dashboard/operacion/integral">
           <CheckCircle2 className="h-6 w-6 text-teal-700" />
-          <h2 className="mt-3 font-semibold text-slate-950">Operar el plan</h2>
-          <p className="mt-1 text-sm text-slate-600">Formularios reales para cada modulo ONI26 con registros persistentes.</p>
+          <h2 className="mt-3 font-semibold text-slate-950">Ver centro de trabajo</h2>
+          <p className="mt-1 text-sm text-slate-600">Accesos directos a los flujos usados por RRHH y administracion.</p>
         </Link>
         <Link className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-300" to="/dashboard/nomina/reportes">
           <FileText className="h-6 w-6 text-teal-700" />
-          <h2 className="mt-3 font-semibold text-slate-950">Reportes oficiales</h2>
-          <p className="mt-1 text-sm text-slate-600">RDEP, IESS, archivo bancario y otros requerimientos por entidad.</p>
+          <h2 className="mt-3 font-semibold text-slate-950">Reportes y pagos</h2>
+          <p className="mt-1 text-sm text-slate-600">Roles, reportes para entidades y archivo bancario cuando corresponda.</p>
         </Link>
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-5">
           <AlertCircle className="h-6 w-6 text-amber-700" />
-          <h2 className="mt-3 font-semibold text-amber-950">No todo debe activarse aun</h2>
+          <h2 className="mt-3 font-semibold text-amber-950">Revisa antes de cerrar</h2>
           <p className="mt-1 text-sm leading-6 text-amber-900">
-            RDEP, bancos y API externa requieren validacion vigente antes de uso productivo.
+            Los parametros laborales, las novedades pendientes y los datos bancarios deben estar completos.
           </p>
         </div>
       </section>

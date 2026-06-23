@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { ClipboardList, LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Mail, Settings2, LogOut, Menu, ShieldCheck, Workflow, X } from 'lucide-react';
+import { LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Mail, Settings2, LogOut, Menu, ShieldCheck, X } from 'lucide-react';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -13,9 +13,7 @@ function Layout() {
   const navigate = useNavigate();
 
   const menuItems = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado'] },
-    { path: '/dashboard/operacion/base', icon: ClipboardList, label: 'Línea base', roles: ['superadmin', 'owner', 'admin_rrhh'] },
-    { path: '/dashboard/operacion/integral', icon: Workflow, label: 'Operación integral', roles: ['superadmin', 'owner', 'admin_rrhh'] },
+    { path: '/dashboard', icon: LayoutDashboard, label: 'Inicio', roles: ['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado'] },
     {
       label: 'Empleados',
       icon: Users,
@@ -57,8 +55,8 @@ function Layout() {
     { path: '/dashboard/configuracion/parametrizacion', icon: Settings2, label: 'Parametrización', roles: ['superadmin', 'owner', 'admin_rrhh'] },
     { path: '/dashboard/configuracion/comunicaciones', icon: Mail, label: 'Comunicaciones', roles: ['superadmin', 'owner', 'admin_rrhh'] },
     { path: '/dashboard/auditoria', icon: ShieldCheck, label: 'Auditoría', roles: ['superadmin', 'owner'] },
-    { path: '/dashboard/planes', icon: CreditCard, label: 'Gestion de planes', roles: ['superadmin'] },
-    { path: '/precios', icon: CreditCard, label: 'Planes publicos', roles: ['superadmin', 'owner'] },
+    { path: '/dashboard/planes', icon: CreditCard, label: 'Planes y clientes', roles: ['superadmin'] },
+    { path: '/precios', icon: CreditCard, label: 'Planes', roles: ['superadmin', 'owner'] },
   ];
 
   const handleLogout = () => {
@@ -71,15 +69,15 @@ function Layout() {
   return (
     <div className="app-shell">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-200 ease-in-out`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b">
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 transform flex-col bg-white shadow-lg ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-200 ease-in-out lg:translate-x-0`}>
+        <div className="flex h-16 shrink-0 items-center justify-between border-b px-6">
           <h1 className="text-xl font-bold text-teal-700">Nómina-Ec</h1>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden">
             <X size={20} />
           </button>
         </div>
         
-        <nav className="mt-6 px-3">
+        <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
           {menuItems.map((item, idx) => {
             if (!item.roles.includes(usuario?.rol)) return null;
             
@@ -122,7 +120,7 @@ function Layout() {
           })}
         </nav>
         
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
+        <div className="shrink-0 border-t bg-white p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium">{usuario?.nombres}</p>

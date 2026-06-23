@@ -687,6 +687,211 @@ async function updateResource(resource, id, payload, user, context = {}) {
   return result.rows[0];
 }
 
+async function countUsage(label, sql, params) {
+  const result = await db.query(sql, params);
+  return {
+    label,
+    count: Number(result.rows[0]?.count || 0),
+  };
+}
+
+async function usageChecksForResource(config, record) {
+  const tenantId = record.tenant_id || null;
+  const code = record.code || record.banco_codigo || record.parameter_key || '';
+
+  if (config.table === 'legal_parameter_versions') {
+    return [
+      await countUsage(
+        'nominas',
+        'SELECT COUNT(*)::int AS count FROM nominas WHERE anio = $1 AND ($2::uuid IS NULL OR tenant_id = $2)',
+        [Number(record.period_year), tenantId]
+      ),
+    ];
+  }
+
+  if (config.table === 'novelty_type_configs') {
+    return [
+      await countUsage(
+        'novedades_asistencia',
+        'SELECT COUNT(*)::int AS count FROM novedades_asistencia WHERE ($1::uuid IS NULL OR tenant_id = $1) AND LOWER(tipo_novedad::text) = LOWER($2)',
+        [tenantId, code]
+      ),
+      await countUsage(
+        'novelty_batches',
+        'SELECT COUNT(*)::int AS count FROM novelty_batches WHERE ($1::uuid IS NULL OR tenant_id = $1) AND LOWER(tipo_novedad::text) = LOWER($2)',
+        [tenantId, code]
+      ),
+    ];
+  }
+
+  if (config.table === 'organization_units') {
+    return [
+      await countUsage(
+        'empleados',
+        'SELECT COUNT(*)::int AS count FROM empleados WHERE tenant_id = $1 AND LOWER(unidad_organizativa_codigo) = LOWER($2)',
+        [tenantId, code]
+      ),
+      await countUsage(
+        'marcaciones',
+        'SELECT COUNT(*)::int AS count FROM marcaciones WHERE tenant_id = $1 AND organization_unit_id = $2',
+        [tenantId, record.id]
+      ),
+      await countUsage(
+        'unidades_hijas',
+        'SELECT COUNT(*)::int AS count FROM organization_units WHERE tenant_id = $1 AND parent_id = $2',
+        [tenantId, record.id]
+      ),
+    ];
+  }
+
+  if (config.table === 'work_zones') {
+    return [
+      await countUsage(
+        'organization_units',
+        'SELECT COUNT(*)::int AS count FROM organization_units WHERE tenant_id = $1 AND work_zone_id = $2',
+        [tenantId, record.id]
+      ),
+      await countUsage(
+        'empleados',
+        'SELECT COUNT(*)::int AS count FROM empleados WHERE tenant_id = $1 AND LOWER(zona_marcacion_codigo) = LOWER($2)',
+        [tenantId, code]
+      ),
+      await countUsage(
+        'marcaciones',
+        'SELECT COUNT(*)::int AS count FROM marcaciones WHERE tenant_id = $1 AND work_zone_id = $2',
+        [tenantId, record.id]
+      ),
+    ];
+  }
+
+  if (config.table === 'work_shifts') {
+    return [
+      await countUsage(
+        'empleados',
+        'SELECT COUNT(*)::int AS count FROM empleados WHERE tenant_id = $1 AND LOWER(jornada_codigo) = LOWER($2)',
+        [tenantId, code]
+      ),
+      await countUsage(
+        'organization_units',
+        `SELECT COUNT(*)::int AS count
+         FROM organization_units
+         WHERE tenant_id = $1
+           AND (
+             metadata->>'workShiftId' = $2
+             OR LOWER(COALESCE(metadata->>'workShiftCode', '')) = LOWER($3)
+           )`,
+        [tenantId, record.id, code]
+      ),
+      await countUsage(
+        'marcaciones',
+        'SELECT COUNT(*)::int AS count FROM marcaciones WHERE tenant_id = $1 AND work_shift_id = $2',
+        [tenantId, record.id]
+      ),
+    ];
+  }
+
+  if (config.table === 'perfiles_bancarios') {
+    return [
+      await countUsage(
+        'empleados',
+        'SELECT COUNT(*)::int AS count FROM empleados WHERE ($1::uuid IS NULL OR tenant_id = $1) AND UPPER(banco) = UPPER($2)',
+        [tenantId, code]
+      ),
+      await countUsage(
+        'bank_field_mappings',
+        `SELECT COUNT(*)::int AS count
+         FROM bank_field_mappings
+         WHERE ($1::uuid IS NULL OR tenant_id = $1)
+           AND (bank_profile_id = $2 OR UPPER(banco_codigo) = UPPER($3))`,
+        [tenantId, record.id, code]
+      ),
+    ];
+  }
+
+  return [];
+}
+
+async function ensureResourceCanBeDeleted(config, record, user) {
+  const usages = (await usageChecksForResource(config, record)).filter((usage) => usage.count > 0);
+  if (usages.length === 0) return;
+
+  throw new AppError('No se puede eliminar este registro porque ya tiene consumos operativos. Modificalo o dejalo inactivo si aplica.', {
+    code: 'CONFIG_RESOURCE_IN_USE',
+    statusCode: 409,
+    userId: user.id,
+    details: {
+      table: config.table,
+      id: record.id,
+      usages,
+    },
+  });
+}
+
+async function deleteResource(resource, id, user, context = {}) {
+  ensureWriteAllowed(user);
+  const config = getResourceConfig(resource);
+  const whereParams = [id];
+  let scopeWhere = '';
+
+  if (user.rol !== 'superadmin') {
+    whereParams.push(user.tenantId);
+    scopeWhere = ` AND tenant_id = $${whereParams.length}`;
+  }
+
+  const previous = await db.query(
+    `SELECT * FROM ${config.table} WHERE id = $1${scopeWhere}`,
+    whereParams
+  );
+
+  if (previous.rows.length === 0) {
+    throw new AppError('Registro de configuracion no encontrado.', {
+      code: 'CONFIG_NOT_FOUND',
+      statusCode: 404,
+      userId: user.id,
+    });
+  }
+
+  await ensureResourceCanBeDeleted(config, previous.rows[0], user);
+
+  const deleteParams = [id];
+  let deleteWhere = 'id = $1';
+  if (user.rol !== 'superadmin') {
+    deleteParams.push(user.tenantId);
+    deleteWhere += ` AND tenant_id = $${deleteParams.length}`;
+  }
+
+  try {
+    await db.query(`DELETE FROM ${config.table} WHERE ${deleteWhere}`, deleteParams);
+  } catch (err) {
+    if (err.code === '23503') {
+      throw new AppError('No se puede eliminar este registro porque esta referenciado por otros datos operativos.', {
+        code: 'CONFIG_RESOURCE_IN_USE',
+        statusCode: 409,
+        userId: user.id,
+        details: { table: config.table, id },
+      });
+    }
+    throw err;
+  }
+
+  await recordAudit({
+    tenantId: previous.rows[0].tenant_id || user.tenantId || null,
+    userId: user.id,
+    correlationId: context.correlationId,
+    action: 'configuracion.eliminar',
+    entity: config.table,
+    entityId: id,
+    previousData: previous.rows[0],
+    ipAddress: context.ipAddress,
+  });
+
+  return {
+    deleted: true,
+    resource,
+    id,
+  };
+}
+
 async function ensureOnboardingSteps(tenantId) {
   for (const step of ONBOARDING_STEPS) {
     await db.query(`
@@ -804,6 +1009,7 @@ module.exports = {
   listResource,
   createResource,
   updateResource,
+  deleteResource,
   getConfigurationSummary,
   getOnboardingStatus,
   completeOnboardingStep,

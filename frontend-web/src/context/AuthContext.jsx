@@ -13,7 +13,7 @@ function normalizeAuthError(data) {
   const mapped = {
     AUTH_CREDENCIALES_INVALIDAS: 'Credenciales inválidas. Verifica el correo y la contraseña.',
     AUTH_EMAIL_NO_VERIFICADO: 'Correo no verificado. Revisa tu bandeja o solicita un nuevo código.',
-    TENANT_SUSPENDIDO: 'La empresa está suspendida. Contacta al OWNER o soporte.',
+    TENANT_SUSPENDIDO: 'La empresa está suspendida. Contacta al administrador o soporte.',
     PLAN_VENCIDO: 'El plan está vencido. Actualiza la suscripción para continuar.',
     REGISTRO_CONSENTIMIENTO_REQUERIDO: 'Debes aceptar términos, privacidad y tratamiento de datos para crear la empresa.',
   };

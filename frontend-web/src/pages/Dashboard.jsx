@@ -18,14 +18,12 @@ import {
   Mail,
   Settings2,
   ShieldCheck,
-  Smartphone,
   UserPlus,
   Users,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { authenticatedApi } from '../services/authenticatedApi';
 import { confirmEmailVerification, extractApiError, requestEmailVerification } from '../services/publicApi';
-import { operationalBaseline, statusStyles } from '../config/operationalBaseline';
 
 const monthNames = [
   'Enero',
@@ -317,15 +315,6 @@ function Dashboard() {
       tone: 'bg-amber-50 text-amber-700',
     },
   ];
-  const aiv50Controls = [
-    { icon: ShieldCheck, label: 'Auth protegida', detail: 'Login y recuperacion limitados por ruta/IP con mensajes anti-enumeracion.' },
-    { icon: Settings2, label: 'Parametros legales', detail: 'Calculo bloqueable si las fuentes oficiales no estan validadas o divergen.' },
-    { icon: Smartphone, label: 'Marcacion movil', detail: 'GPS requerido al cargar y foto validada antes de almacenar evidencia.' },
-  ];
-  const baselineHighlights = operationalBaseline.filter((item) => (
-    ['empresa', 'bancos', 'usuarios', 'rdep', 'superadmin', 'api'].includes(item.code)
-  ));
-
   return (
     <div className="space-y-6">
       <EmailVerificationBanner email={usuario?.email} />
@@ -336,8 +325,8 @@ function Dashboard() {
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Operacion de nomina</p>
             <h1 className="mt-2 text-2xl font-semibold text-slate-950">Periodo {period.label}</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Administra el ciclo mensual: empleados activos, novedades, calculo de roles, cierre,
-              archivo bancario y anexos para entidades publicas del Ecuador.
+              Administra el ciclo mensual: empleados activos, novedades, calculo de roles,
+              cierre, pagos y reportes para entidades.
             </p>
           </div>
           <div className={`rounded-md border px-5 py-4 text-center ${status.tone}`}>
@@ -382,56 +371,37 @@ function Dashboard() {
       <section className="soft-panel p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Linea base ONI26</p>
-            <h2 className="mt-1 text-lg font-semibold text-slate-950">Procesos visibles para operar</h2>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Preparacion del cierre</p>
+            <h2 className="mt-1 text-lg font-semibold text-slate-950">Lo importante para cerrar el mes</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Empresa, bancos, usuarios, RDEP, SUPERADMIN y API ya tienen una ruta clara de configuracion o contrato.
+              Revisa la informacion laboral, las novedades, los parametros y las salidas antes de calcular roles.
             </p>
           </div>
-          <Link className="inline-flex min-h-10 items-center justify-center rounded-md bg-teal-700 px-4 text-sm font-semibold text-white" to="/dashboard/operacion/base">
-            Ver linea base
-          </Link>
-          <Link className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:border-teal-300" to="/dashboard/operacion/integral">
-            Operar modulos
+          <Link className="inline-flex min-h-10 items-center justify-center rounded-md bg-teal-700 px-4 text-sm font-semibold text-white" to="/dashboard/nomina/cerrar">
+            Ir al cierre mensual
           </Link>
         </div>
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {baselineHighlights.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link className="rounded-md border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50" key={item.code} to={item.href}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <span className="rounded-md bg-slate-50 p-2 text-teal-700">
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <h3 className="font-semibold text-slate-950">{item.title}</h3>
-                  </div>
-                  <span className={`rounded-full border px-2 py-1 text-xs font-semibold ${statusStyles[item.status]}`}>
-                    {item.statusLabel}
-                  </span>
-                </div>
-                <p className="mt-3 text-sm leading-5 text-slate-600">{item.summary}</p>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-
-      <section className="soft-panel p-6">
-        <div className="mb-4 flex items-center gap-3">
-          <ShieldCheck className="h-5 w-5 text-teal-700" />
-          <h2 className="text-lg font-semibold text-slate-950">Controles AIV50 activos</h2>
-        </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          {aiv50Controls.map((control) => (
-            <div className="rounded-md border border-slate-200 p-4" key={control.label}>
-              <control.icon className="h-5 w-5 text-teal-700" />
-              <p className="mt-3 font-semibold text-slate-950">{control.label}</p>
-              <p className="mt-2 text-sm leading-5 text-slate-600">{control.detail}</p>
-            </div>
-          ))}
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <Link className="rounded-md border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50" to="/dashboard/empleados">
+            <Users className="h-5 w-5 text-teal-700" />
+            <h3 className="mt-3 font-semibold text-slate-950">Empleados</h3>
+            <p className="mt-2 text-sm leading-5 text-slate-600">Datos laborales, sueldo, banco, unidad y estado activo.</p>
+          </Link>
+          <Link className="rounded-md border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50" to="/dashboard/asistencia/novedades">
+            <ClipboardCheck className="h-5 w-5 text-teal-700" />
+            <h3 className="mt-3 font-semibold text-slate-950">Novedades</h3>
+            <p className="mt-2 text-sm leading-5 text-slate-600">Permisos, atrasos, horas extras y aprobaciones del periodo.</p>
+          </Link>
+          <Link className="rounded-md border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50" to="/dashboard/configuracion/parametrizacion">
+            <Settings2 className="h-5 w-5 text-teal-700" />
+            <h3 className="mt-3 font-semibold text-slate-950">Configuracion</h3>
+            <p className="mt-2 text-sm leading-5 text-slate-600">Empresa, jornada, zonas, bancos y parametros laborales vigentes.</p>
+          </Link>
+          <Link className="rounded-md border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50" to="/dashboard/nomina/reportes">
+            <Landmark className="h-5 w-5 text-teal-700" />
+            <h3 className="mt-3 font-semibold text-slate-950">Reportes</h3>
+            <p className="mt-2 text-sm leading-5 text-slate-600">Roles, archivos bancarios y reportes para entidades cuando aplique.</p>
+          </Link>
         </div>
       </section>
       <section className="grid gap-4 xl:grid-cols-[1.35fr_0.85fr]">
@@ -469,7 +439,7 @@ function Dashboard() {
               done={safeCount(nominas) > 0 && rolesClosed === safeCount(nominas)}
               icon={LockKeyhole}
               title="4. Cierre y emision"
-              description="Cierra la nomina, descarga roles, archivo bancario y reportes RDEP/IESS."
+              description="Cierra la nomina y descarga roles, archivo bancario y reportes para entidades."
               href="/dashboard/nomina/roles"
               action={rolesClosed ? 'Ver roles cerrados' : 'Preparar cierre'}
             />
@@ -480,11 +450,11 @@ function Dashboard() {
           <div className="soft-panel p-6">
             <div className="mb-4 flex items-center gap-3">
               <Settings2 className="h-5 w-5 text-teal-700" />
-              <h2 className="text-lg font-semibold text-slate-950">Preparacion legal</h2>
+              <h2 className="text-lg font-semibold text-slate-950">Configuracion laboral</h2>
             </div>
             <div className="rounded-md bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-medium text-slate-700">Parametrizacion validada</span>
+                <span className="text-sm font-medium text-slate-700">Configuracion lista</span>
                 <span className="font-semibold text-teal-800">{isLoading ? '...' : `${completion}%`}</span>
               </div>
               <div className="mt-3 h-2 rounded-full bg-white">
@@ -506,7 +476,7 @@ function Dashboard() {
             </div>
             <Link className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:border-teal-300" to="/dashboard/configuracion/parametrizacion">
               <Settings2 className="h-4 w-4" />
-              Parametrizar
+              Revisar configuracion
             </Link>
           </div>
 
@@ -520,7 +490,7 @@ function Dashboard() {
                 Roles de pago por empleado
               </Link>
               <Link className="rounded-md bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-teal-50 hover:text-teal-800" to="/dashboard/nomina/reportes">
-                RDEP, IESS y archivo bancario
+                Reportes para entidades y archivo bancario
               </Link>
               <Link className="rounded-md bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-teal-50 hover:text-teal-800" to="/dashboard/documentos/contratos">
                 Contratos y documentos laborales
@@ -542,7 +512,7 @@ function Dashboard() {
             <div className="flex gap-3">
               <AlertCircle className="h-5 w-5 shrink-0 text-amber-700" />
               <p className="text-sm leading-6 text-amber-900">
-                Valida parametros legales vigentes antes de usar calculos, anexos o archivos oficiales en produccion.
+                Revisa los parametros laborales y las novedades pendientes antes de cerrar el periodo.
                 {bankFilesAllowed ? ' Tu plan permite archivos bancarios.' : ' El plan actual no permite archivos bancarios.'}
               </p>
             </div>

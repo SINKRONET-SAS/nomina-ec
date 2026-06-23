@@ -226,7 +226,8 @@ async function replaceEmployeeDependents(tenantId, employeeId, dependientes, car
 async function listar(req, res) {
   try {
     const { tenantId } = req;
-    const { activo = true } = req.query;
+    const { activo = 'true' } = req.query;
+    const activoFilter = String(activo).toLowerCase() === 'true';
     
     const result = await db.query(`
       SELECT id, cedula, nombres, apellidos, cargo, departamento,
@@ -235,7 +236,7 @@ async function listar(req, res) {
       FROM empleados
       WHERE tenant_id = $1 AND activo = $2
       ORDER BY apellidos, nombres
-    `, [tenantId, activo === 'true']);
+    `, [tenantId, activoFilter]);
     
     res.json({ success: true, empleados: result.rows });
   } catch (err) {
