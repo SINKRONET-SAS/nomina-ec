@@ -79,6 +79,7 @@ model Tenant {
   legalParameterVersions LegalParameterVersion[]
   noveltyTypeConfigs     NoveltyTypeConfig[]
   organizationUnits      OrganizationUnit[]
+  jobPositions           JobPosition[]
   workZones              WorkZone[]
   workShifts             WorkShift[]
   onboardingSteps        TenantOnboardingStep[]
@@ -290,6 +291,7 @@ model Employee {
   nombres                 String                 @db.VarChar(120)
   apellidos               String                 @db.VarChar(120)
   fechaNacimiento         DateTime?              @map("fecha_nacimiento") @db.Date
+  positionId              String?                @map("position_id") @db.Uuid
   cargo                   String                 @default("") @db.VarChar(120)
   departamento            String                 @default("") @db.VarChar(120)
   unidadOrganizativaCodigo String                @default("") @map("unidad_organizativa_codigo") @db.VarChar(80)
@@ -320,6 +322,7 @@ model Employee {
   createdAt               DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt               DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   tenant                  Tenant                 @relation(fields: [tenantId], references: [id])
+  position                JobPosition?           @relation(fields: [positionId], references: [id], onDelete: Restrict)
   marcaciones             AttendanceMark[]
   novedades               AttendanceNovelty[]
   nominas                 Payroll[]
@@ -331,6 +334,7 @@ model Employee {
 
   @@index([tenantId, activo])
   @@index([tenantId, importBatchId])
+  @@index([tenantId, positionId])
   @@unique([tenantId, cedula])
   @@map("empleados")
 }
@@ -856,10 +860,38 @@ model OrganizationUnit {
   updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   workZone       WorkZone? @relation(fields: [workZoneId], references: [id], onDelete: Restrict)
+  jobPositions   JobPosition[]
 
   @@index([tenantId, unitType, status])
   @@index([tenantId, workZoneId, status])
   @@map("organization_units")
+}
+
+model JobPosition {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String           @map("tenant_id") @db.Uuid
+  organizationUnitId String           @map("organization_unit_id") @db.Uuid
+  code               String           @db.VarChar(80)
+  name               String           @db.VarChar(160)
+  description        String           @default("")
+  salaryMin          Decimal          @default(0) @map("salary_min") @db.Decimal(12, 2)
+  salaryMax          Decimal          @default(0) @map("salary_max") @db.Decimal(12, 2)
+  currency           String           @default("USD") @db.VarChar(3)
+  effectiveFrom      DateTime         @default(now()) @map("effective_from") @db.Date
+  effectiveTo        DateTime?        @map("effective_to") @db.Date
+  status             String           @default("activo") @db.VarChar(30)
+  metadata           Json             @default("{}")
+  createdBy          String?          @map("created_by") @db.Uuid
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant             Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organizationUnit   OrganizationUnit @relation(fields: [organizationUnitId], references: [id], onDelete: Restrict)
+  employees          Employee[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, organizationUnitId, status])
+  @@index([tenantId, status, effectiveFrom])
+  @@map("job_positions")
 }
 
 model WorkZone {
