@@ -7,8 +7,8 @@
 |-------|-------|
 | Plan | HAIKY-CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026 |
 | Codigo | CRS26 |
-| Estado | CRS26-04 parametrizacion PWA ejecutada localmente |
-| Fase actual | CRS26-04 frontend parametrizacion |
+| Estado | CRS26-05 empleados e importacion ejecutada localmente |
+| Fase actual | CRS26-05 empleados e importacion |
 | Alcance | crear cargos/puestos con rango salarial, vigencia y consumo de estructura organizativa; asignar empleados a cargos desde catalogo real |
 | Requerimiento fuente | "Se requiere crear cargos con un rango salarial y que consuman la estructura organizativa; el empleado debe ser asignado a un cargo o puesto llamando a la tabla de cargos." |
 | Plan doc | `docs2/PLAN_HAIKY_CARGOS_RANGOS_SALARIALES_ESTRUCTURA_2026.md` |
@@ -19,6 +19,7 @@
 | Reporte modelo | `docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_02_MODELO_DATOS.md` |
 | Reporte backend | `docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_03_BACKEND_CRUD.md` |
 | Reporte frontend | `docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_04_FRONTEND_PARAMETRIZACION.md` |
+| Reporte empleados | `docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_05_EMPLEADOS_IMPORTACION.md` |
 | AuditLock | `.vscode/AuditLock.json` |
 | Prompts | `.github/prompts/CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026-{00..07}-*.md` |
 | RULES | `RULES.md` |
@@ -36,7 +37,7 @@ CRS26 convierte `empleados.cargo` de texto libre en una entidad gobernada por te
 | CRS26-02 | P0 | completed_local | Modelo de datos, migracion, indices, relacion con estructura organizativa, vigencia e historial. |
 | CRS26-03 | P0 | completed_local | Backend CRUD de cargos, validaciones de rango, bloqueos de eliminacion y auditoria. |
 | CRS26-04 | P0 | completed_local | Frontend parametrizacion: cargos y puestos con crear, editar, inactivar y eliminar si no hay consumos. |
-| CRS26-05 | P0 | pending_approval | Empleados e importacion consumen tabla de cargos; sueldo validado contra rango. |
+| CRS26-05 | P0 | completed_local | Empleados e importacion consumen tabla de cargos; sueldo validado contra rango. |
 | CRS26-06 | P1 | pending_approval | Nomina, novedades, reportes y documentos consumen cargo real con compatibilidad historica. |
 | CRS26-07 | P0 | pending_approval | QA, migraciones, rollback, evidencia y release gate. |
 
@@ -64,6 +65,10 @@ Se expuso `jobPositions` en `configurationService` como recurso CRUD tenant-awar
 ### Ejecucion CRS26-04
 
 La pantalla PWA de parametrizacion incorpora `Cargo o puesto`, ligado a unidades organizativas reales y al recurso `jobPositions`. Permite crear, editar, inactivar, archivar y solicitar eliminacion condicionada por consumos. El build de frontend genero `dist/` y reporto exito; el proceso quedo vivo tras imprimir `built in 2m 31s` y fue cerrado manualmente.
+
+### Ejecucion CRS26-05
+
+Alta, edicion e importacion de empleados consumen `job_positions` mediante `position_id`. El backend valida cargo activo, unidad organizativa y sueldo dentro de rango; `empleados.cargo` queda como snapshot historico. La PWA reemplaza cargo manual por selector real y muestra rango salarial. Pasaron `npm.cmd test -- empleadoController.test.js employeeImportService.test.js` y `npm.cmd run build` en frontend.
 
 ---
 

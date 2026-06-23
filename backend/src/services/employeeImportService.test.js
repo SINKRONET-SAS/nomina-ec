@@ -76,7 +76,19 @@ describe('employeeImportService', () => {
   });
 
   test('commitEmployeeImport inserta lote y empleados en transaccion', async () => {
-    db.query.mockResolvedValueOnce({ rows: [] });
+    db.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'position-1',
+          code: 'ANALISTA',
+          name: 'Analista',
+          salary_min: '500.00',
+          salary_max: '1500.00',
+          organization_unit_code: 'ADM',
+          organization_unit_name: 'Administracion',
+        }],
+      });
     const client = {
       query: jest.fn()
         .mockResolvedValueOnce({ rows: [{ id: 'batch-1' }] })
@@ -95,6 +107,8 @@ describe('employeeImportService', () => {
 
     expect(result.ok).toBe(true);
     expect(result.batchId).toBe('batch-1');
+    expect(client.query.mock.calls[1][0]).toContain('position_id');
+    expect(client.query.mock.calls[1][1]).toEqual(expect.arrayContaining(['position-1', 'Analista', 'ADM']));
     expect(db.commit).toHaveBeenCalledWith(client);
     expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
       action: 'empleados.import.commit',

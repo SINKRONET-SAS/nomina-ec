@@ -2,28 +2,36 @@
   "schemaVersion": 1,
   "plan": "HAIKY-CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026",
   "planCode": "CRS26",
-  "status": "frontend_parametrizacion_local",
-  "phaseCompleted": "CRS26-04",
-  "currentPhase": "CRS26-04-frontend-parametrizacion",
-  "updatedAt": "2026-06-22T20:50:56.8286806-05:00",
-  "summary": "CRS26-04 agrego Cargo o puesto en la PWA de parametrizacion, consumiendo jobPositions y unidades organizativas reales con edicion, estado y eliminacion condicionada.",
+  "status": "empleados_importacion_local",
+  "phaseCompleted": "CRS26-05",
+  "currentPhase": "CRS26-05-empleados-importacion",
+  "updatedAt": "2026-06-22T20:58:44.6115250-05:00",
+  "summary": "CRS26-05 conecto empleados e importacion con job_positions, validando sueldo contra rango y conservando empleados.cargo como snapshot historico.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts CRS26.",
-  "previousAuditLockHash": "B7C3B3900F45A6F8AEC7FB2FFADD007249FA13310E54175695BAB59DCF39155A",
+  "previousAuditLockHash": "86F6D2E4E3502B8FEA2DADD2C64ACABB537CDC0CB28DD8277BFC786CD0643E28",
   "filesModified": [
     "CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-    "docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_04_FRONTEND_PARAMETRIZACION.md"
+    "backend/src/controllers/empleadoController.js",
+    "backend/src/services/employeeImportService.js",
+    "backend/src/services/employeeImportService.test.js",
+    "frontend-web/src/pages/Empleados/NuevoEmpleado.jsx",
+    "docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_05_EMPLEADOS_IMPORTACION.md"
   ],
   "runtimeArtifactsIgnored": [
     "frontend-web/dist"
   ],
   "validationChecks": [
     {
-      "gate": "CRS26-04-FRONTEND-BUILD",
-      "status": "PASS_WITH_MANUAL_TERMINATION",
-      "detail": "npm.cmd run build genero dist y reporto built in 2m 31s; el proceso quedo vivo y se cerro con taskkill /PID 7692 /F."
+      "gate": "CRS26-05-BACKEND-TESTS",
+      "status": "PASS",
+      "detail": "npm.cmd test -- empleadoController.test.js employeeImportService.test.js en backend: 2 suites, 11 tests."
+    },
+    {
+      "gate": "CRS26-05-FRONTEND-BUILD",
+      "status": "PASS",
+      "detail": "npm.cmd run build en frontend-web: built in 5.99s y PWA generated."
     }
   ],
   "fases": [
@@ -49,7 +57,7 @@
     },
     {
       "phase": "CRS26-05",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "CRS26-06",
@@ -61,9 +69,9 @@
     }
   ],
   "residualRisk": [
-    "Alta, edicion e importacion de empleados pendientes de consumir la tabla real en CRS26-05.",
-    "Reportes, novedades y nomina pendientes de compatibilidad historica completa en CRS26-06."
+    "Reportes, novedades y nomina pendientes de compatibilidad historica completa en CRS26-06.",
+    "QA integral, migraciones y release gate pendientes en CRS26-07."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "7EE105E4F46DF9FA12D2277E266DD972C32AE16022A0C0550A4ABD5419EE85DD"
+  "signature": "47D432CA82906A4407DCF276555CC8D200906B623AE2AD966653E5DF63C76F71"
 }

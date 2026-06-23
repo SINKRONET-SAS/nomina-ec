@@ -9,6 +9,7 @@ const initialForm = {
   nombres: '',
   apellidos: '',
   fecha_nacimiento: '',
+  position_id: '',
   cargo: '',
   departamento: '',
   unidad_organizativa_codigo: '',
@@ -70,6 +71,7 @@ function normalizeEmpleado(empleado) {
     nombres: empleado.nombres || '',
     apellidos: empleado.apellidos || '',
     fecha_nacimiento: empleado.fecha_nacimiento ? String(empleado.fecha_nacimiento).slice(0, 10) : '',
+    position_id: empleado.position_id || '',
     cargo: empleado.cargo || '',
     departamento: empleado.departamento || '',
     unidad_organizativa_codigo: empleado.unidad_organizativa_codigo || '',
@@ -203,6 +205,13 @@ function NuevoEmpleado() {
       return response.data.data || [];
     },
   });
+  const jobPositionsQuery = useQuery({
+    queryKey: ['configuracion', 'jobPositions'],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/configuracion/jobPositions');
+      return response.data.data || [];
+    },
+  });
   const workZonesQuery = useQuery({
     queryKey: ['configuracion', 'workZones'],
     queryFn: async () => {
@@ -212,6 +221,7 @@ function NuevoEmpleado() {
   });
   const activeWorkShifts = (workShiftsQuery.data || []).filter((item) => item.status !== 'inactivo');
   const activeOrganizationUnits = (organizationUnitsQuery.data || []).filter((item) => item.status !== 'inactivo');
+  const activeJobPositions = (jobPositionsQuery.data || []).filter((item) => item.status === 'activo');
   const activeWorkZones = (workZonesQuery.data || []).filter((item) => item.status !== 'inactivo');
   const provincesQuery = useQuery({
     queryKey: ['catalogos', 'ecuador', 'provincias'],
@@ -235,6 +245,17 @@ function NuevoEmpleado() {
   const employeeAge = calculateAge(formData.fecha_nacimiento);
   const isMinor = employeeAge !== null && employeeAge < MIN_EMPLOYEE_AGE;
   const isOlderAdult = employeeAge !== null && employeeAge >= OLDER_ADULT_AGE;
+  const selectedOrganizationUnit = activeOrganizationUnits.find((unit) => unit.code === formData.unidad_organizativa_codigo);
+  const availableJobPositions = activeJobPositions.filter((position) => (
+    !selectedOrganizationUnit || position.organization_unit_id === selectedOrganizationUnit.id
+  ));
+  const selectedJobPosition = activeJobPositions.find((position) => position.id === formData.position_id);
+  const salaryNumber = Number(formData.sueldo_bruto_mensual || 0);
+  const selectedSalaryMin = Number(selectedJobPosition?.salary_min || 0);
+  const selectedSalaryMax = Number(selectedJobPosition?.salary_max || 0);
+  const salaryOutOfRange = selectedJobPosition
+    && salaryNumber > 0
+    && (salaryNumber < selectedSalaryMin || salaryNumber > selectedSalaryMax);
 
   useEffect(() => {
     if (empleadoQuery.data) setFormData(normalizeEmpleado(empleadoQuery.data));
@@ -249,12 +270,36 @@ function NuevoEmpleado() {
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormData((current) => {
+      if (name === 'unidad_organizativa_codigo') {
+        const nextUnit = activeOrganizationUnits.find((unit) => unit.code === value);
+        const currentPosition = activeJobPositions.find((position) => position.id === current.position_id);
+        const keepPosition = currentPosition && nextUnit && currentPosition.organization_unit_id === nextUnit.id;
+        return {
+          ...current,
+          unidad_organizativa_codigo: value,
+          position_id: keepPosition ? current.position_id : '',
+          cargo: keepPosition ? current.cargo : '',
+        };
+      }
       if (name !== 'cargas_familiares') return { ...current, [name]: value };
       const count = Math.max(0, Number(value || 0));
       const dependientes = [...current.dependientes];
       while (dependientes.length < count) dependientes.push(emptyDependent());
       return { ...current, cargas_familiares: count, dependientes: dependientes.slice(0, count) };
     });
+  };
+
+  const handlePositionChange = (event) => {
+    const positionId = event.target.value;
+    const position = activeJobPositions.find((item) => item.id === positionId);
+    const unit = activeOrganizationUnits.find((item) => item.id === position?.organization_unit_id);
+    setFormData((current) => ({
+      ...current,
+      position_id: positionId,
+      cargo: position?.name || '',
+      unidad_organizativa_codigo: unit?.code || current.unidad_organizativa_codigo,
+      departamento: current.departamento || unit?.name || '',
+    }));
   };
 
   const handleDependentChange = (index, field, value) => {
@@ -289,6 +334,7 @@ function NuevoEmpleado() {
     nombres: formData.nombres,
     apellidos: formData.apellidos,
     fecha_nacimiento: formData.fecha_nacimiento,
+    position_id: formData.position_id,
     cargo: formData.cargo,
     departamento: formData.departamento,
     unidad_organizativa_codigo: formData.unidad_organizativa_codigo,
@@ -489,13 +535,22 @@ function NuevoEmpleado() {
         </Section>
 
         <Section title="Relacion laboral" description="Datos base para nomina, beneficios, contratos y reportes.">
-          <Field label="Cargo" name="cargo" onChange={handleChange} value={formData.cargo} />
           <Field label="Departamento o unidad" name="departamento" onChange={handleChange} value={formData.departamento} />
           <Field label="Unidad organizativa" name="unidad_organizativa_codigo" onChange={handleChange} value={formData.unidad_organizativa_codigo}>
             <select className={CONTROL_CLASS} name="unidad_organizativa_codigo" onChange={handleChange} value={formData.unidad_organizativa_codigo}>
               <option value="">{organizationUnitsQuery.isLoading ? 'Cargando unidades...' : 'Seleccionar unidad parametrizada...'}</option>
               {activeOrganizationUnits.map((unit) => (
                 <option key={unit.id || unit.code} value={unit.code}>{unit.code} - {unit.name}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Cargo o puesto" name="position_id" onChange={handlePositionChange} required value={formData.position_id}>
+            <select className={CONTROL_CLASS} name="position_id" onChange={handlePositionChange} required value={formData.position_id}>
+              <option value="">{jobPositionsQuery.isLoading ? 'Cargando cargos...' : 'Seleccionar cargo parametrizado...'}</option>
+              {availableJobPositions.map((position) => (
+                <option key={position.id} value={position.id}>
+                  {position.code} - {position.name} ({position.currency || 'USD'} {Number(position.salary_min || 0).toFixed(2)} a {Number(position.salary_max || 0).toFixed(2)})
+                </option>
               ))}
             </select>
           </Field>
@@ -516,6 +571,17 @@ function NuevoEmpleado() {
             </select>
           </Field>
           <Field label="Sueldo bruto" name="sueldo_bruto_mensual" onChange={handleChange} required step="0.01" type="number" value={formData.sueldo_bruto_mensual} />
+          {selectedJobPosition && (
+            <div className={`${FIELD_FULL} rounded-md border ${salaryOutOfRange ? 'border-red-200 bg-red-50 text-red-800' : 'border-teal-100 bg-teal-50 text-teal-950'} px-4 py-3 text-sm`}>
+              Rango del cargo seleccionado: {selectedJobPosition.currency || 'USD'} {selectedSalaryMin.toFixed(2)} a {selectedSalaryMax.toFixed(2)}.
+              {salaryOutOfRange ? ' Ajusta el sueldo o selecciona otro cargo.' : ''}
+            </div>
+          )}
+          {activeJobPositions.length === 0 && (
+            <div className={`${FIELD_FULL} rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800`}>
+              Configura cargos y rangos salariales en Parametrizacion antes de crear trabajadores.
+            </div>
+          )}
           <Field label="Gastos personales anuales SRI" min="0" name="gastos_personales_anuales" onChange={handleChange} placeholder="0.00" step="0.01" type="number" value={formData.gastos_personales_anuales} />
           <Field label="Fecha de ingreso" name="fecha_ingreso" onChange={handleChange} required type="date" value={formData.fecha_ingreso} />
           <Field label="Tipo de contrato" name="tipo_contrato" onChange={handleChange} value={formData.tipo_contrato}>
@@ -592,7 +658,7 @@ function NuevoEmpleado() {
 
         <div className="flex justify-end gap-4 pt-2">
           <button className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => navigate(-1)} type="button">Cancelar</button>
-          <button className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50" disabled={cargando || isMinor} type="submit">
+          <button className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50" disabled={cargando || isMinor || salaryOutOfRange || activeJobPositions.length === 0} type="submit">
             {cargando ? 'Guardando...' : isEdit ? 'Actualizar ficha' : 'Guardar trabajador'}
           </button>
         </div>

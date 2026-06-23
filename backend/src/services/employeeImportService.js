@@ -20,8 +20,13 @@ const HEADER_ALIASES = {
   department_code: 'departmentCode',
   departmentcode: 'departmentCode',
   departamento: 'departmentCode',
+  organization_unit_code: 'departmentCode',
+  unidad_organizativa_codigo: 'departmentCode',
   cargo: 'position',
   position: 'position',
+  position_code: 'position',
+  cargo_codigo: 'position',
+  job_position_code: 'position',
   hire_date: 'hireDate',
   hiredate: 'hireDate',
   fecha_ingreso: 'hireDate',
@@ -55,7 +60,7 @@ const HEADER_ALIASES = {
   direccion: 'address',
 };
 
-const REQUIRED_FIELDS = ['identification', 'firstName', 'lastName', 'hireDate', 'salary'];
+const REQUIRED_FIELDS = ['identification', 'firstName', 'lastName', 'position', 'hireDate', 'salary'];
 
 function cleanHeader(value) {
   return String(value || '')
@@ -170,7 +175,41 @@ function isValidDate(value) {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
-function buildPreviewRows(rows, existingCedulas = new Set()) {
+async function loadJobPositionIndex(tenantId) {
+  if (!tenantId) return new Map();
+
+  const result = await db.query(`
+    SELECT
+      jp.id,
+      jp.code,
+      jp.name,
+      jp.salary_min,
+      jp.salary_max,
+      ou.code AS organization_unit_code,
+      ou.name AS organization_unit_name
+    FROM job_positions jp
+    INNER JOIN organization_units ou
+      ON ou.id = jp.organization_unit_id
+     AND ou.tenant_id = jp.tenant_id
+    WHERE jp.tenant_id = $1
+      AND jp.status = 'activo'
+      AND ou.status = 'activo'
+  `, [tenantId]);
+
+  const index = new Map();
+  result.rows.forEach((position) => {
+    index.set(String(position.code || '').trim().toUpperCase(), position);
+    index.set(String(position.name || '').trim().toUpperCase(), position);
+  });
+  return index;
+}
+
+function resolveImportedPosition(row, positionIndex) {
+  if (!positionIndex || positionIndex.size === 0) return null;
+  return positionIndex.get(String(row.position || '').trim().toUpperCase()) || null;
+}
+
+function buildPreviewRows(rows, existingCedulas = new Set(), positionIndex = new Map()) {
   const seen = new Map();
 
   rows.forEach((row) => {
@@ -180,6 +219,7 @@ function buildPreviewRows(rows, existingCedulas = new Set()) {
 
   return rows.map((row) => {
     const errors = [];
+    const position = resolveImportedPosition(row, positionIndex);
 
     REQUIRED_FIELDS.forEach((field) => {
       if (!row[field]) errors.push(`Campo requerido: ${field}`);
@@ -199,6 +239,18 @@ function buildPreviewRows(rows, existingCedulas = new Set()) {
     if (!Number.isFinite(salary) || salary <= 0) {
       errors.push('Sueldo debe ser un numero positivo');
     }
+    if (!position) {
+      errors.push('Cargo no existe o no esta activo en parametrizacion');
+    } else if (Number.isFinite(salary) && salary > 0) {
+      const salaryMin = Number(position.salary_min || 0);
+      const salaryMax = Number(position.salary_max || 0);
+      if (salary < salaryMin || salary > salaryMax) {
+        errors.push(`Sueldo fuera del rango del cargo ${position.name}: USD ${salaryMin.toFixed(2)} a USD ${salaryMax.toFixed(2)}`);
+      }
+    }
+    if (position && row.departmentCode && String(row.departmentCode).trim().toUpperCase() !== String(position.organization_unit_code || '').toUpperCase()) {
+      errors.push('Cargo pertenece a otra unidad organizativa');
+    }
     const monthlyHours = row.monthlyHours ? Number(row.monthlyHours) : null;
     if (row.monthlyHours && (!Number.isFinite(monthlyHours) || monthlyHours <= 0)) {
       errors.push('Jornada mensual debe ser un numero positivo');
@@ -215,6 +267,14 @@ function buildPreviewRows(rows, existingCedulas = new Set()) {
       errors.push('Fecha de ingreso futura requiere revision manual');
     }
 
+    const enrichedOriginal = {
+      ...row,
+      positionId: position?.id || '',
+      positionCode: position?.code || '',
+      positionName: position?.name || row.position,
+      departmentCode: row.departmentCode || position?.organization_unit_code || '',
+    };
+
     return {
       rowNumber: row.rowNumber,
       status: errors.length ? 'error' : 'valid',
@@ -224,8 +284,10 @@ function buildPreviewRows(rows, existingCedulas = new Set()) {
         identification: row.identification,
         firstName: row.firstName,
         lastName: row.lastName,
-        departmentCode: row.departmentCode,
-        position: row.position,
+        departmentCode: enrichedOriginal.departmentCode,
+        position: enrichedOriginal.positionName,
+        positionCode: enrichedOriginal.positionCode,
+        positionId: enrichedOriginal.positionId,
         hireDate: row.hireDate,
         salary: salary > 0 ? salary : row.salary,
         monthlyHours: monthlyHours || '',
@@ -236,7 +298,7 @@ function buildPreviewRows(rows, existingCedulas = new Set()) {
         contractType: row.contractType,
         email: row.email,
       },
-      original: row,
+      original: enrichedOriginal,
     };
   });
 }
@@ -274,7 +336,8 @@ async function getExistingCedulas(rows, tenantId = null) {
 async function previewEmployeeImport(payload, tenantId = null) {
   const rows = parseEmployeeImport(payload);
   const existingCedulas = await getExistingCedulas(rows, tenantId);
-  return summarizePreview(buildPreviewRows(rows, existingCedulas));
+  const positionIndex = await loadJobPositionIndex(tenantId);
+  return summarizePreview(buildPreviewRows(rows, existingCedulas, positionIndex));
 }
 
 function batchFingerprint(payload) {
@@ -288,7 +351,8 @@ async function encryptBankAccount(_client, account) {
 async function commitEmployeeImport({ tenantId, userId, correlationId, ipAddress, payload }) {
   const rows = parseEmployeeImport(payload);
   const existingCedulas = await getExistingCedulas(rows, tenantId);
-  const previewRows = buildPreviewRows(rows, existingCedulas);
+  const positionIndex = await loadJobPositionIndex(tenantId);
+  const previewRows = buildPreviewRows(rows, existingCedulas, positionIndex);
   const preview = summarizePreview(previewRows);
 
   if (preview.errorRows > 0 || preview.validRows === 0) {
@@ -322,20 +386,23 @@ async function commitEmployeeImport({ tenantId, userId, correlationId, ipAddress
       const encryptedAccount = await encryptBankAccount(client, row.bankAccount);
       const result = await client.query(`
         INSERT INTO empleados (
-          tenant_id, cedula, nombres, apellidos, cargo, departamento,
+          tenant_id, cedula, nombres, apellidos, position_id, cargo, departamento,
+          unidad_organizativa_codigo,
           sueldo_bruto_mensual, jornada_horas_mensuales, gastos_personales_anuales,
           fecha_ingreso, tipo_contrato,
           cuenta_bancaria_cifrada, banco, tipo_cuenta,
           direccion_domicilio, telefono, email_personal, import_batch_id
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
         RETURNING id, cedula, nombres, apellidos
       `, [
         tenantId,
         row.identification,
         row.firstName,
         row.lastName,
-        row.position,
+        row.positionId,
+        row.positionName,
+        row.departmentCode,
         row.departmentCode,
         Number(row.salary),
         row.monthlyHours ? Number(row.monthlyHours) : null,

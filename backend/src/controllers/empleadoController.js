@@ -102,6 +102,79 @@ async function resolveConfiguredCode(tenantId, table, code, label, errorCode) {
   return result.rows[0].code;
 }
 
+function raiseEmployeeError(message, code, statusCode = 400) {
+  const err = new Error(message);
+  err.code = code;
+  err.statusCode = statusCode;
+  throw err;
+}
+
+async function resolveJobPositionAssignment(tenantId, { positionId, cargo, sueldoBrutoMensual, unidadOrganizativaCodigo }) {
+  const identifier = String(positionId || cargo || '').trim();
+  if (!identifier) {
+    raiseEmployeeError('Selecciona un cargo o puesto parametrizado para el trabajador.', 'EMPLEADO_CARGO_REQUERIDO');
+  }
+
+  const result = await db.query(`
+    SELECT
+      jp.id,
+      jp.code,
+      jp.name,
+      jp.salary_min,
+      jp.salary_max,
+      jp.status,
+      jp.effective_from,
+      jp.effective_to,
+      ou.code AS organization_unit_code,
+      ou.name AS organization_unit_name
+    FROM job_positions jp
+    INNER JOIN organization_units ou
+      ON ou.id = jp.organization_unit_id
+     AND ou.tenant_id = jp.tenant_id
+    WHERE jp.tenant_id = $1
+      AND (
+        jp.id::text = $2
+        OR UPPER(jp.code) = UPPER($2)
+        OR UPPER(jp.name) = UPPER($2)
+      )
+    LIMIT 1
+  `, [tenantId, identifier]);
+
+  if (result.rows.length === 0 || result.rows[0].status !== 'activo') {
+    raiseEmployeeError('El cargo seleccionado no existe o no esta activo para esta empresa.', 'EMPLEADO_CARGO_INVALIDO');
+  }
+
+  const position = result.rows[0];
+  const expectedUnitCode = String(unidadOrganizativaCodigo || '').trim().toUpperCase();
+  if (expectedUnitCode && expectedUnitCode !== String(position.organization_unit_code || '').toUpperCase()) {
+    raiseEmployeeError('El cargo seleccionado pertenece a otra unidad organizativa.', 'EMPLEADO_CARGO_UNIDAD_INVALIDA');
+  }
+
+  const salary = Number(sueldoBrutoMensual);
+  if (!Number.isFinite(salary) || salary <= 0) {
+    raiseEmployeeError('El sueldo bruto mensual debe ser un numero positivo.', 'EMPLEADO_SUELDO_INVALIDO');
+  }
+
+  const salaryMin = Number(position.salary_min || 0);
+  const salaryMax = Number(position.salary_max || 0);
+  if (salary < salaryMin || salary > salaryMax) {
+    raiseEmployeeError(
+      `El sueldo bruto mensual esta fuera del rango permitido para ${position.name}: USD ${salaryMin.toFixed(2)} a USD ${salaryMax.toFixed(2)}.`,
+      'EMPLEADO_CARGO_SUELDO_FUERA_RANGO'
+    );
+  }
+
+  return {
+    positionId: position.id,
+    cargo: position.name,
+    cargoCodigo: position.code,
+    unidadOrganizativaCodigo: position.organization_unit_code,
+    unidadOrganizativaNombre: position.organization_unit_name,
+    salaryMin,
+    salaryMax,
+  };
+}
+
 async function resolveLocationCodes(provinciaCodigo, ciudadCodigo) {
   const provinceCode = String(provinciaCodigo || '').trim();
   const cityCode = String(ciudadCodigo || '').trim();
@@ -230,12 +303,29 @@ async function listar(req, res) {
     const activoFilter = String(activo).toLowerCase() === 'true';
     
     const result = await db.query(`
-      SELECT id, cedula, nombres, apellidos, cargo, departamento,
-        sueldo_bruto_mensual, jornada_horas_mensuales, gastos_personales_anuales,
-        fecha_ingreso, tipo_contrato, activo
-      FROM empleados
-      WHERE tenant_id = $1 AND activo = $2
-      ORDER BY apellidos, nombres
+      SELECT
+        e.id,
+        e.cedula,
+        e.nombres,
+        e.apellidos,
+        COALESCE(jp.name, e.cargo) AS cargo,
+        e.position_id,
+        jp.code AS cargo_codigo,
+        jp.salary_min AS cargo_salary_min,
+        jp.salary_max AS cargo_salary_max,
+        e.departamento,
+        e.sueldo_bruto_mensual,
+        e.jornada_horas_mensuales,
+        e.gastos_personales_anuales,
+        e.fecha_ingreso,
+        e.tipo_contrato,
+        e.activo
+      FROM empleados e
+      LEFT JOIN job_positions jp
+        ON jp.id = e.position_id
+       AND jp.tenant_id = e.tenant_id
+      WHERE e.tenant_id = $1 AND e.activo = $2
+      ORDER BY e.apellidos, e.nombres
     `, [tenantId, activoFilter]);
     
     res.json({ success: true, empleados: result.rows });
@@ -251,7 +341,18 @@ async function obtener(req, res) {
     const { tenantId } = req;
     
     const result = await db.query(`
-      SELECT * FROM empleados WHERE id = $1 AND tenant_id = $2
+      SELECT
+        e.*,
+        COALESCE(jp.name, e.cargo) AS cargo,
+        jp.code AS cargo_codigo,
+        jp.salary_min AS cargo_salary_min,
+        jp.salary_max AS cargo_salary_max,
+        jp.organization_unit_id AS cargo_organization_unit_id
+      FROM empleados e
+      LEFT JOIN job_positions jp
+        ON jp.id = e.position_id
+       AND jp.tenant_id = e.tenant_id
+      WHERE e.id = $1 AND e.tenant_id = $2
     `, [id, tenantId]);
     
     if (result.rows.length === 0) {
@@ -281,7 +382,7 @@ async function crear(req, res) {
   try {
     const { tenantId } = req;
     const {
-      cedula, nombres, apellidos, fecha_nacimiento, cargo, departamento,
+      cedula, nombres, apellidos, fecha_nacimiento, cargo, position_id, cargo_codigo, departamento,
       sueldo_bruto_mensual, fecha_ingreso, tipo_contrato,
       jornada_horas_mensuales, gastos_personales_anuales,
       cuenta_bancaria, banco, tipo_cuenta, forma_pago, region_decimo_cuarto,
@@ -312,6 +413,12 @@ async function crear(req, res) {
     const normalizedWorkShiftCode = await resolveConfiguredCode(tenantId, 'work_shifts', jornada_codigo, 'La jornada', 'EMPLEADO_JORNADA_INVALIDA');
     const normalizedOrgUnitCode = await resolveConfiguredCode(tenantId, 'organization_units', unidad_organizativa_codigo, 'La unidad organizativa', 'EMPLEADO_UNIDAD_INVALIDA');
     const normalizedWorkZoneCode = await resolveConfiguredCode(tenantId, 'work_zones', zona_marcacion_codigo, 'La zona de marcacion', 'EMPLEADO_ZONA_INVALIDA');
+    const positionAssignment = await resolveJobPositionAssignment(tenantId, {
+      positionId: position_id || cargo_codigo,
+      cargo,
+      sueldoBrutoMensual: sueldo_bruto_mensual,
+      unidadOrganizativaCodigo: normalizedOrgUnitCode,
+    });
     const location = await resolveLocationCodes(provincia_codigo, ciudad_codigo);
     
     // Verificar que la cedula no exista dentro del tenant actual.
@@ -333,7 +440,7 @@ async function crear(req, res) {
     // Crear empleado
     const result = await db.query(`
       INSERT INTO empleados (
-        tenant_id, cedula, nombres, apellidos, fecha_nacimiento, cargo, departamento,
+        tenant_id, cedula, nombres, apellidos, fecha_nacimiento, position_id, cargo, departamento,
         unidad_organizativa_codigo, jornada_codigo, zona_marcacion_codigo,
         sueldo_bruto_mensual, jornada_horas_mensuales, gastos_personales_anuales,
         fecha_ingreso, tipo_contrato,
@@ -341,13 +448,13 @@ async function crear(req, res) {
         region_decimo_cuarto,
         direccion_domicilio, provincia_codigo, ciudad_codigo, ciudad_domicilio, provincia_domicilio,
         estado_civil, cargas_familiares, telefono, email_personal
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29)
-      RETURNING id, cedula, nombres, apellidos, fecha_nacimiento, cargo, sueldo_bruto_mensual,
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)
+      RETURNING id, cedula, nombres, apellidos, fecha_nacimiento, position_id, cargo, sueldo_bruto_mensual,
         jornada_horas_mensuales, gastos_personales_anuales, fecha_ingreso, tipo_contrato, banco, region_decimo_cuarto,
         unidad_organizativa_codigo, jornada_codigo, zona_marcacion_codigo
     `, [
-      tenantId, cedula, nombres, apellidos, fecha_nacimiento, cargo || '', departamento || '',
-      normalizedOrgUnitCode, normalizedWorkShiftCode, normalizedWorkZoneCode,
+      tenantId, cedula, nombres, apellidos, fecha_nacimiento, positionAssignment.positionId, positionAssignment.cargo, departamento || positionAssignment.unidadOrganizativaNombre || '',
+      positionAssignment.unidadOrganizativaCodigo, normalizedWorkShiftCode, normalizedWorkZoneCode,
       sueldo_bruto_mensual,
       jornada_horas_mensuales || null,
       gastos_personales_anuales || 0,
@@ -524,6 +631,7 @@ async function actualizar(req, res) {
       nombres: 'nombres',
       apellidos: 'apellidos',
       fecha_nacimiento: 'fecha_nacimiento',
+      position_id: 'position_id',
       cargo: 'cargo',
       departamento: 'departamento',
       unidad_organizativa_codigo: 'unidad_organizativa_codigo',
@@ -582,6 +690,42 @@ async function actualizar(req, res) {
     }
     if (Object.prototype.hasOwnProperty.call(body, 'zona_marcacion_codigo')) {
       body.zona_marcacion_codigo = await resolveConfiguredCode(tenantId, 'work_zones', body.zona_marcacion_codigo, 'La zona de marcacion', 'EMPLEADO_ZONA_INVALIDA');
+    }
+    const needsPositionValidation = [
+      'position_id',
+      'cargo_codigo',
+      'cargo',
+      'sueldo_bruto_mensual',
+      'unidad_organizativa_codigo',
+    ].some((field) => Object.prototype.hasOwnProperty.call(body, field));
+    if (needsPositionValidation) {
+      const currentEmployee = await db.query(`
+        SELECT id, position_id, cargo, sueldo_bruto_mensual, unidad_organizativa_codigo
+        FROM empleados
+        WHERE id = $1 AND tenant_id = $2
+        LIMIT 1
+      `, [id, tenantId]);
+
+      if (currentEmployee.rows.length === 0) {
+        return res.status(404).json({ error: 'Empleado no encontrado' });
+      }
+
+      const current = currentEmployee.rows[0];
+      const assignment = await resolveJobPositionAssignment(tenantId, {
+        positionId: body.position_id || body.cargo_codigo || current.position_id,
+        cargo: body.cargo,
+        sueldoBrutoMensual: Object.prototype.hasOwnProperty.call(body, 'sueldo_bruto_mensual')
+          ? body.sueldo_bruto_mensual
+          : current.sueldo_bruto_mensual,
+        unidadOrganizativaCodigo: Object.prototype.hasOwnProperty.call(body, 'unidad_organizativa_codigo')
+          ? body.unidad_organizativa_codigo
+          : current.unidad_organizativa_codigo,
+      });
+
+      body.position_id = assignment.positionId;
+      body.cargo = assignment.cargo;
+      body.unidad_organizativa_codigo = assignment.unidadOrganizativaCodigo;
+      delete body.cargo_codigo;
     }
     if (Object.prototype.hasOwnProperty.call(body, 'provincia_codigo') || Object.prototype.hasOwnProperty.call(body, 'ciudad_codigo')) {
       const location = await resolveLocationCodes(body.provincia_codigo, body.ciudad_codigo);
