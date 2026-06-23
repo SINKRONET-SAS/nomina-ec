@@ -7,14 +7,15 @@
 |-------|-------|
 | Plan | HAIKY-CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026 |
 | Codigo | CRS26 |
-| Estado | CRS26-00 desplegada documentalmente; runtime pendiente de aprobacion por fase |
-| Fase actual | CRS26-00 baseline documental |
+| Estado | CRS26-01 diagnosticada localmente; runtime pendiente desde CRS26-02 |
+| Fase actual | CRS26-01 diagnostico runtime |
 | Alcance | crear cargos/puestos con rango salarial, vigencia y consumo de estructura organizativa; asignar empleados a cargos desde catalogo real |
 | Requerimiento fuente | "Se requiere crear cargos con un rango salarial y que consuman la estructura organizativa; el empleado debe ser asignado a un cargo o puesto llamando a la tabla de cargos." |
 | Plan doc | `docs2/PLAN_HAIKY_CARGOS_RANGOS_SALARIALES_ESTRUCTURA_2026.md` |
 | Matriz | `docs2/cargos-rangos-salariales-estructura-2026/MATRIZ_CRS26_REQUERIMIENTOS.md` |
 | Contrato | `docs2/cargos-rangos-salariales-estructura-2026/CONTRATO_CRS26_CARGOS_RANGOS_SALARIALES.md` |
 | Reporte baseline | `docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_00_BASELINE.md` |
+| Reporte diagnostico | `docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_01_DIAGNOSTICO_RUNTIME.md` |
 | AuditLock | `.vscode/AuditLock.json` |
 | Prompts | `.github/prompts/CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026-{00..07}-*.md` |
 | RULES | `RULES.md` |
@@ -28,7 +29,7 @@ CRS26 convierte `empleados.cargo` de texto libre en una entidad gobernada por te
 | Fase | Prioridad | Estado | Resumen |
 |------|-----------|--------|---------|
 | CRS26-00 | P0 | completed_documental | Baseline, matriz, contrato, prompts, contexto y AuditLock sin runtime. |
-| CRS26-01 | P0 | pending_approval | Diagnostico runtime de usos de cargo/position en empleados, importacion, nomina, novedades, reportes y documentos. |
+| CRS26-01 | P0 | completed_local | Diagnostico runtime de usos de cargo/position en empleados, importacion, nomina, novedades, reportes y documentos. |
 | CRS26-02 | P0 | pending_approval | Modelo de datos, migracion, indices, relacion con estructura organizativa, vigencia e historial. |
 | CRS26-03 | P0 | pending_approval | Backend CRUD de cargos, validaciones de rango, bloqueos de eliminacion y auditoria. |
 | CRS26-04 | P0 | pending_approval | Frontend parametrizacion: cargos y puestos con crear, editar, inactivar y eliminar si no hay consumos. |
@@ -44,6 +45,10 @@ CRS26 convierte `empleados.cargo` de texto libre en una entidad gobernada por te
 - No eliminar cargos con consumos; inactivar cuando exista historico.
 - Validar sueldo contra rango salarial del cargo y registrar excepciones solo si CRS26-02 lo aprueba.
 - Commits esperados: `phase: CRS26-XX task: ...`.
+
+### Diagnostico CRS26-01
+
+Se verifico que `empleados.cargo` es texto libre, `NuevoEmpleado.jsx` permite cargo manual, `employeeImportService` usa `position`/`cargo` como string, `monthlyPeriodService` filtra novedades por `cargo = $2` y `payrollReportService` filtra/exporta `e.cargo`. La estrategia runtime aprobada es crear `job_positions`, agregar `empleados.position_id`, mantener `empleados.cargo` como snapshot historico y migrar consumidores gradualmente.
 
 ---
 

@@ -2,46 +2,35 @@
   "schemaVersion": 1,
   "plan": "HAIKY-CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026",
   "planCode": "CRS26",
-  "status": "completed_documental",
-  "phaseCompleted": "CRS26-00",
-  "currentPhase": "CRS26-00-baseline-documental",
-  "updatedAt": "2026-06-23T01:09:27.2169842Z",
-  "summary": "CRS26 desplegado documentalmente para crear cargos/puestos con rango salarial, consumo de estructura organizativa y asignacion de empleados desde tabla real. Runtime queda pendiente de aprobacion por fase.",
+  "status": "diagnosed_runtime_local",
+  "phaseCompleted": "CRS26-01",
+  "currentPhase": "CRS26-01-diagnostico-runtime",
+  "updatedAt": "2026-06-23T01:25:34.5028839Z",
+  "summary": "CRS26-01 diagnostico usos runtime de cargo/position en empleados, importacion, novedades por lote, reportes, documentos, app e API. Decision: job_positions + empleados.position_id + cargo snapshot historico.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: desplegar plan Haiky para cargos con rango salarial que consuman estructura organizativa y asignacion de empleados desde tabla de cargos.",
-  "previousAuditLockHash": "46efc751eb21d0487378c50dce2ee89b9d4791c7f03dea7bcb1de3abd9e6abdc",
+  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts CRS26.",
+  "previousAuditLockHash": "462b579a6519f31e6797083409dc524d4c3a8278a4f8a0da7fb114a0ca9b0c56",
   "filesModified": [
     "CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "docs2/PLAN_HAIKY_CARGOS_RANGOS_SALARIALES_ESTRUCTURA_2026.md",
-    "docs2/cargos-rangos-salariales-estructura-2026/MATRIZ_CRS26_REQUERIMIENTOS.md",
-    "docs2/cargos-rangos-salariales-estructura-2026/CONTRATO_CRS26_CARGOS_RANGOS_SALARIALES.md",
-    "docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_00_BASELINE.md",
-    ".github/prompts/CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026-00-baseline.md",
-    ".github/prompts/CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026-01-diagnostico-runtime.md",
-    ".github/prompts/CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026-02-modelo-datos.md",
-    ".github/prompts/CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026-03-backend-crud-validaciones.md",
-    ".github/prompts/CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026-04-frontend-parametrizacion.md",
-    ".github/prompts/CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026-05-empleados-asignacion.md",
-    ".github/prompts/CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026-06-nomina-reportes-documentos.md",
-    ".github/prompts/CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026-07-qa-release.md"
+    "docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_01_DIAGNOSTICO_RUNTIME.md"
   ],
   "runtimeArtifactsIgnored": [],
   "validationChecks": [
     {
-      "gate": "CRS26-RULES-READ",
+      "gate": "CRS26-01-AUDITLOCK",
       "status": "PASS",
-      "detail": "RULES.md leido antes de crear artefactos."
+      "detail": "AuditLock CRS26-00 firmado y leido."
     },
     {
-      "gate": "CRS26-CURRENT-STATE-REVIEW",
+      "gate": "CRS26-01-RUNTIME-RG",
       "status": "PASS",
-      "detail": "Se verifico que empleados.cargo es texto libre, NuevoEmpleado usa campo manual, importacion usa position/cargo string, monthlyPeriodService filtra por cargo y payrollReportService exporta e.cargo."
+      "detail": "rg y lectura directa identificaron usos de cargo/position en schema, empleados, importacion, monthlyPeriodService, payrollReportService, documentos, app/API."
     },
     {
-      "gate": "CRS26-DOCUMENTAL-ARTIFACTS",
+      "gate": "CRS26-01-NO-RUNTIME",
       "status": "PASS",
-      "detail": "Plan, matriz, contrato, reporte baseline, prompts, contexto y AuditLock creados sin tocar runtime."
+      "detail": "No se modifico base de datos ni codigo operativo en esta fase."
     }
   ],
   "fases": [
@@ -51,7 +40,7 @@
     },
     {
       "phase": "CRS26-01",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "CRS26-02",
@@ -79,10 +68,10 @@
     }
   ],
   "residualRisk": [
-    "Runtime no ejecutado en CRS26-00.",
-    "La politica para sueldo fuera de rango debe definirse en CRS26-02: bloqueo duro o excepcion auditable.",
-    "La migracion debe conservar compatibilidad con empleados.cargo, reportes y novedades historicas."
+    "Empleados existentes pueden tener cargos escritos con variantes que requeriran migracion asistida.",
+    "Novedades historicas por cargo string deben conservar compatibilidad.",
+    "Runtime empieza en CRS26-02."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "a58b93330f3cb2b1206128fef978eae8d74954bb6bf3fcd6f2eb497f57969d67"
+  "signature": "3d7c31c540584a6856c90953dd228c6f2910d52d8854391975752a1604b57bc2"
 }
