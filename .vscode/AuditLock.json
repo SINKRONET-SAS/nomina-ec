@@ -1,90 +1,89 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026",
-  "planCode": "CRS26",
-  "status": "closed_local",
-  "phaseCompleted": "CRS26-07",
-  "currentPhase": "CRS26-07-cierre-qa",
-  "updatedAt": "2026-06-22T21:06:35.4782688-05:00",
-  "summary": "CRS26-00..07 cerradas localmente: cargos con rango salarial, estructura organizativa, empleados, importacion, nomina, novedades, reportes y QA final.",
+  "plan": "HAIKY-MERCADERISTAS-RUTAS-MOVILES-ASISTENCIA-2026",
+  "planCode": "MRM26",
+  "status": "baseline_documental",
+  "phaseCompleted": "MRM26-00",
+  "currentPhase": "MRM26-00-baseline-documental",
+  "updatedAt": "2026-06-22T21:50:13.8413325-05:00",
+  "summary": "MRM26-00 despliega plan documental para rutas moviles de mercaderistas con jornada diaria, multiples visitas por dia, sitios dinamicos, geocerca, evidencia y separacion asistencia vs ruta.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts CRS26.",
-  "previousAuditLockHash": "534BFE6ABF7244C3EAD5FC1D0C11004EB2854E8B03B5EC2E8EE14F6D45792C1B",
+  "approvalSource": "Solicitud del usuario: desplegar plan Haiky en respuesta al flujo de mercaderistas con varias visitas diarias.",
+  "previousAuditLockHash": "49E04D575621C975B3A3A4E2B2D49FCBE58C21A5F0B8652A40A1165B3535B75C",
   "filesModified": [
     "CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "docs2/PLAN_HAIKY_CARGOS_RANGOS_SALARIALES_ESTRUCTURA_2026.md",
-    "docs2/cargos-rangos-salariales-estructura-2026/MATRIZ_CRS26_REQUERIMIENTOS.md",
-    "docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_07_CIERRE_QA.md"
+    "docs2/PLAN_HAIKY_MERCADERISTAS_RUTAS_MOVILES_ASISTENCIA_2026.md",
+    "docs2/mercaderistas-rutas-moviles-asistencia-2026/MATRIZ_MRM26_REQUERIMIENTOS.md",
+    "docs2/mercaderistas-rutas-moviles-asistencia-2026/CONTRATO_MRM26_RUTAS_VISITAS_MERCADERISTAS.md",
+    "docs2/mercaderistas-rutas-moviles-asistencia-2026/RUNBOOK_MRM26_OPERACION_MOVIL.md",
+    "docs2/mercaderistas-rutas-moviles-asistencia-2026/REPORTE_MRM26_00_BASELINE.md",
+    ".github/prompts/MERCADERISTAS-RUTAS-MOVILES-ASISTENCIA-2026-00-baseline.md",
+    ".github/prompts/MERCADERISTAS-RUTAS-MOVILES-ASISTENCIA-2026-01-diagnostico-runtime.md",
+    ".github/prompts/MERCADERISTAS-RUTAS-MOVILES-ASISTENCIA-2026-02-modelo-datos-rutas-sitios.md",
+    ".github/prompts/MERCADERISTAS-RUTAS-MOVILES-ASISTENCIA-2026-03-backend-rutas-visitas.md",
+    ".github/prompts/MERCADERISTAS-RUTAS-MOVILES-ASISTENCIA-2026-04-pwa-supervision-rutas.md",
+    ".github/prompts/MERCADERISTAS-RUTAS-MOVILES-ASISTENCIA-2026-05-app-movil-ruta-hoy.md",
+    ".github/prompts/MERCADERISTAS-RUTAS-MOVILES-ASISTENCIA-2026-06-reglas-marcacion-validacion.md",
+    ".github/prompts/MERCADERISTAS-RUTAS-MOVILES-ASISTENCIA-2026-07-reportes-auditoria-lopdp.md",
+    ".github/prompts/MERCADERISTAS-RUTAS-MOVILES-ASISTENCIA-2026-08-qa-release-gate.md"
   ],
-  "runtimeArtifactsIgnored": [
-    "frontend-web/dist"
-  ],
+  "runtimeArtifactsIgnored": [],
   "validationChecks": [
     {
-      "gate": "CRS26-07-PRISMA-VALIDATE",
+      "gate": "MRM26-00-DOCUMENTAL",
       "status": "PASS",
-      "detail": "npx.cmd prisma validate en backend."
+      "detail": "Plan, matriz, contrato, runbook, prompts, contexto y AuditLock generados sin runtime."
     },
     {
-      "gate": "CRS26-07-MIGRATE-DEPLOY",
+      "gate": "MRM26-00-RULES",
       "status": "PASS",
-      "detail": "npx.cmd prisma migrate deploy en backend: no pending migrations."
-    },
-    {
-      "gate": "CRS26-07-BACKEND-TESTS",
-      "status": "PASS",
-      "detail": "npm.cmd test -- --runInBand en backend: 28 suites, 114 tests."
-    },
-    {
-      "gate": "CRS26-07-FRONTEND-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web: PWA generated."
-    },
-    {
-      "gate": "CRS26-07-DB-SMOKE",
-      "status": "PASS",
-      "detail": "jobPositions=12, linkedEmployees=30 en PostgreSQL local."
+      "detail": "RULES.md leido; se mantiene runtime pendiente de aprobacion por fase."
     }
   ],
   "fases": [
     {
-      "phase": "CRS26-00",
+      "phase": "MRM26-00",
       "status": "completed_documental"
     },
     {
-      "phase": "CRS26-01",
-      "status": "completed_local"
+      "phase": "MRM26-01",
+      "status": "pending_approval"
     },
     {
-      "phase": "CRS26-02",
-      "status": "completed_local"
+      "phase": "MRM26-02",
+      "status": "pending_approval"
     },
     {
-      "phase": "CRS26-03",
-      "status": "completed_local"
+      "phase": "MRM26-03",
+      "status": "pending_approval"
     },
     {
-      "phase": "CRS26-04",
-      "status": "completed_local"
+      "phase": "MRM26-04",
+      "status": "pending_approval"
     },
     {
-      "phase": "CRS26-05",
-      "status": "completed_local"
+      "phase": "MRM26-05",
+      "status": "pending_approval"
     },
     {
-      "phase": "CRS26-06",
-      "status": "completed_local"
+      "phase": "MRM26-06",
+      "status": "pending_approval"
     },
     {
-      "phase": "CRS26-07",
-      "status": "completed_local"
+      "phase": "MRM26-07",
+      "status": "pending_approval"
+    },
+    {
+      "phase": "MRM26-08",
+      "status": "pending_approval"
     }
   ],
   "residualRisk": [
-    "Validacion visual con usuarios reales antes de demo comercial.",
-    "Excepciones salariales futuras requieren politica auditable separada."
+    "Runtime pendiente de aprobacion por fase.",
+    "Validacion LOPDP de geolocalizacion, foto, QR y retencion pendiente antes de produccion.",
+    "Politica de negocio pendiente: visitas fuera de geocerca bloquean pago o solo generan excepcion operativa."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "834B62F6FCF95A8907556E1A539E11A9B47F82C4057FBD63179A1B6F6E09FF44"
+  "signature": "2584FF51AEC3C54F9EE50B45051DBA601EBF565732CDECC0B5B7D401A5BF5095"
 }

@@ -1,6 +1,58 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-MERCADERISTAS-RUTAS-MOVILES-ASISTENCIA-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-MERCADERISTAS-RUTAS-MOVILES-ASISTENCIA-2026 |
+| Codigo | MRM26 |
+| Estado | MRM26-00 desplegada documentalmente; runtime pendiente de aprobacion por fase |
+| Fase actual | MRM26-00 baseline documental |
+| Alcance | rutas moviles para mercaderistas: jornada diaria, multiples visitas por dia, sitios asignados/no programados, geocercas, evidencia y separacion asistencia vs ruta |
+| Requerimiento fuente | "Mercaderistas visitan tiendas, pueden visitar varios sitios al dia y su marcacion requerida en la app es rotativa en los diferentes sitios a los que llega." |
+| Plan doc | `docs2/PLAN_HAIKY_MERCADERISTAS_RUTAS_MOVILES_ASISTENCIA_2026.md` |
+| Matriz | `docs2/mercaderistas-rutas-moviles-asistencia-2026/MATRIZ_MRM26_REQUERIMIENTOS.md` |
+| Contrato | `docs2/mercaderistas-rutas-moviles-asistencia-2026/CONTRATO_MRM26_RUTAS_VISITAS_MERCADERISTAS.md` |
+| Runbook | `docs2/mercaderistas-rutas-moviles-asistencia-2026/RUNBOOK_MRM26_OPERACION_MOVIL.md` |
+| Reporte baseline | `docs2/mercaderistas-rutas-moviles-asistencia-2026/REPORTE_MRM26_00_BASELINE.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Prompts | `.github/prompts/MERCADERISTAS-RUTAS-MOVILES-ASISTENCIA-2026-{00..08}-*.md` |
+| RULES | `RULES.md` |
+
+### Resumen MRM26
+
+MRM26 separa la asistencia laboral usada por nomina de la ruta operativa de mercaderistas. La app debe conservar inicio/fin de jornada y, dentro de esa jornada, permitir varias visitas por dia con llegada/salida por tienda, visitas no programadas, GPS, evidencia y excepciones revisables.
+
+### Fases MRM26
+
+| Fase | Prioridad | Estado | Resumen |
+|------|-----------|--------|---------|
+| MRM26-00 | P0 | completed_documental | Baseline, matriz, contrato, runbook, prompts, contexto y AuditLock sin runtime. |
+| MRM26-01 | P0 | pending_approval | Diagnostico runtime de asistencia movil, zonas, jornadas, periodos, app Expo, backend y reportes. |
+| MRM26-02 | P0 | pending_approval | Modelo de datos para sitios, rutas, paradas, visitas, excepciones, indices, RLS y retencion. |
+| MRM26-03 | P0 | pending_approval | Backend de sitios, rutas y visitas: CRUD, asignacion, validaciones, geocerca, offline y auditoria. |
+| MRM26-04 | P0 | pending_approval | PWA RRHH/supervisor: sitios, rutas diarias, asignacion masiva, monitoreo y aprobacion de excepciones. |
+| MRM26-05 | P0 | pending_approval | App movil: ruta de hoy, llegada/salida por tienda, visita no programada, evidencia y mensajes claros. |
+| MRM26-06 | P0 | pending_approval | Reglas fail-closed: no doble visita abierta, no fin de jornada con visita abierta, periodo requerido y geocerca. |
+| MRM26-07 | P1 | pending_approval | Reportes, auditoria, LOPDP, retencion, trazabilidad por empleado, sitio, unidad y periodo. |
+| MRM26-08 | P0 | pending_approval | QA, migraciones, rollback, seed demo, pruebas Expo Go, evidencia y release gate. |
+
+### Reglas MRM26
+
+- No iniciar runtime sin aprobacion explicita del prompt de fase.
+- La asistencia responde si el empleado trabajo y en que horario; la ruta responde que sitios visito y con que evidencia.
+- No permitir dos visitas abiertas al mismo tiempo.
+- No permitir finalizar jornada con una visita abierta.
+- Visitas fuera de geocerca quedan como excepcion pendiente, no como exito silencioso.
+- Visitas no programadas requieren motivo y politica de aprobacion.
+- Cada ruta y visita debe tener tenant, empleado, fecha y periodo operacional.
+- GPS, foto y QR son evidencia sensible; aplicar minimizacion, retencion y finalidad LOPDP.
+- La UI final no debe mostrar nombres Haiky, codigos internos ni lenguaje tecnico innecesario.
+- Commits esperados: `phase: MRM26-XX task: ...`.
+
+---
+
 ## Open Haiky Plan - HAIKY-CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026
 
 | Campo | Valor |
