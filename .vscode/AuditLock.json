@@ -2,27 +2,28 @@
   "schemaVersion": 1,
   "plan": "HAIKY-CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026",
   "planCode": "CRS26",
-  "status": "backend_crud_local",
-  "phaseCompleted": "CRS26-03",
-  "currentPhase": "CRS26-03-backend-crud",
-  "updatedAt": "2026-06-22T20:41:08.2638530-05:00",
-  "summary": "CRS26-03 expuso jobPositions en configurationService con CRUD, validacion de unidad activa, rango salarial, codigo unico y bloqueo de eliminacion por consumos.",
+  "status": "frontend_parametrizacion_local",
+  "phaseCompleted": "CRS26-04",
+  "currentPhase": "CRS26-04-frontend-parametrizacion",
+  "updatedAt": "2026-06-22T20:50:56.8286806-05:00",
+  "summary": "CRS26-04 agrego Cargo o puesto en la PWA de parametrizacion, consumiendo jobPositions y unidades organizativas reales con edicion, estado y eliminacion condicionada.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts CRS26.",
-  "previousAuditLockHash": "86DFC58839BBF8D378F8CC5FA13E6E9A96C52CCB0ECC7E492B706B3A01F766ED",
+  "previousAuditLockHash": "B7C3B3900F45A6F8AEC7FB2FFADD007249FA13310E54175695BAB59DCF39155A",
   "filesModified": [
     "CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "backend/src/services/configurationService.js",
-    "backend/src/services/configurationService.test.js",
-    "docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_03_BACKEND_CRUD.md"
+    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
+    "docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_04_FRONTEND_PARAMETRIZACION.md"
   ],
-  "runtimeArtifactsIgnored": [],
+  "runtimeArtifactsIgnored": [
+    "frontend-web/dist"
+  ],
   "validationChecks": [
     {
-      "gate": "CRS26-03-CONFIGURATION-SERVICE-TEST",
-      "status": "PASS",
-      "detail": "npm.cmd test -- configurationService.test.js en backend."
+      "gate": "CRS26-04-FRONTEND-BUILD",
+      "status": "PASS_WITH_MANUAL_TERMINATION",
+      "detail": "npm.cmd run build genero dist y reporto built in 2m 31s; el proceso quedo vivo y se cerro con taskkill /PID 7692 /F."
     }
   ],
   "fases": [
@@ -44,7 +45,7 @@
     },
     {
       "phase": "CRS26-04",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "CRS26-05",
@@ -60,10 +61,9 @@
     }
   ],
   "residualRisk": [
-    "Pantalla PWA de parametrizacion pendiente en CRS26-04.",
     "Alta, edicion e importacion de empleados pendientes de consumir la tabla real en CRS26-05.",
     "Reportes, novedades y nomina pendientes de compatibilidad historica completa en CRS26-06."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "755C21C5B034A2ACD96F8FBE156A3D1E2DB1C904BA57BEDC7BC1548C5CF3C9FC"
+  "signature": "7EE105E4F46DF9FA12D2277E266DD972C32AE16022A0C0550A4ABD5419EE85DD"
 }

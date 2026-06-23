@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  Briefcase,
   Building2,
   CheckCircle2,
   Circle,
@@ -261,6 +262,55 @@ const formDefinitions = [
     recordMeta: (record) => `${record.code} · ${record.unit_type}`,
   },
   {
+    key: 'cargo',
+    title: 'Cargo o puesto',
+    description: 'Crea cargos asociados a una unidad organizativa, con rango salarial, vigencia y estado operativo.',
+    icon: Briefcase,
+    resource: 'jobPositions',
+    stepCode: 'cargos',
+    fields: [
+      { name: 'organization_unit_id', label: 'Unidad organizativa', type: 'resourceSelect', resource: 'organizationUnits', required: true, emptyLabel: 'Primero crea una unidad organizativa', selectLabel: 'Selecciona una unidad' },
+      { name: 'code', label: 'Codigo', placeholder: 'ANALISTA_RRHH', required: true },
+      { name: 'name', label: 'Nombre', placeholder: 'Analista RRHH', required: true },
+      { name: 'salary_min', label: 'Sueldo minimo', type: 'number', step: '0.01', required: true },
+      { name: 'salary_max', label: 'Sueldo maximo', type: 'number', step: '0.01', required: true },
+      { name: 'currency', label: 'Moneda', type: 'select', options: ['USD'] },
+      { name: 'effective_from', label: 'Vigente desde', type: 'date', required: true },
+      { name: 'effective_to', label: 'Vigente hasta', type: 'date' },
+      { name: 'status', label: 'Estado', type: 'select', options: ['activo', 'inactivo', 'archivado'] },
+      { name: 'description', label: 'Descripcion', type: 'textarea', wide: true },
+    ],
+    initial: {
+      organization_unit_id: '',
+      code: '',
+      name: '',
+      salary_min: '',
+      salary_max: '',
+      currency: 'USD',
+      effective_from: `${new Date().getFullYear()}-01-01`,
+      effective_to: '',
+      status: 'activo',
+      description: '',
+    },
+    buildPayload: (values) => ({
+      organization_unit_id: values.organization_unit_id,
+      code: values.code.trim().toUpperCase(),
+      name: values.name.trim(),
+      description: values.description.trim(),
+      salary_min: Number(values.salary_min),
+      salary_max: Number(values.salary_max),
+      currency: values.currency,
+      effective_from: values.effective_from || null,
+      effective_to: values.effective_to || null,
+      status: values.status,
+      metadata: {
+        source: 'parametrizacion_operativa',
+      },
+    }),
+    recordLabel: (record) => record.name,
+    recordMeta: (record) => `${record.code} - ${record.status}`,
+  },
+  {
     key: 'zona',
     title: 'Zona de marcacion',
     description: 'Parametriza ubicaciones permitidas para asistencia y control de marcaciones.',
@@ -513,6 +563,12 @@ function recordMetaForDefinition(definition, record, summary) {
     const shift = (summary?.resources?.workShifts || []).find((item) => item.id === record.metadata?.workShiftId);
     return `${record.code} - ${record.unit_type} - zona: ${zone?.name || 'sin zona'} - jornada: ${shift?.name || 'sin jornada'}`;
   }
+  if (definition.key === 'cargo') {
+    const unit = (summary?.resources?.organizationUnits || []).find((item) => item.id === record.organization_unit_id);
+    const min = Number(record.salary_min || 0).toFixed(2);
+    const max = Number(record.salary_max || 0).toFixed(2);
+    return `${record.code} - ${unit?.name || 'sin unidad'} - ${record.currency || 'USD'} ${min} a ${max}`;
+  }
 
   return definition.recordMeta(record, summary);
 }
@@ -521,6 +577,7 @@ const stepFormMap = {
   empresa: 'empresa',
   legal: 'ir',
   organizacion: 'organizacion',
+  cargos: 'cargo',
   jornadas: 'jornada',
   zonas: 'zona',
   novedades: 'novedad',
@@ -614,6 +671,19 @@ function formValuesFromRecord(definition, record) {
         work_zone_id: record.work_zone_id || '',
         work_shift_id: metadata.workShiftId || '',
         cost_center_code: record.cost_center_code || '',
+        description: record.description || '',
+      };
+    case 'cargo':
+      return {
+        organization_unit_id: record.organization_unit_id || '',
+        code: record.code || '',
+        name: record.name || '',
+        salary_min: String(record.salary_min ?? ''),
+        salary_max: String(record.salary_max ?? ''),
+        currency: record.currency || 'USD',
+        effective_from: dateInputValue(record.effective_from) || `${new Date().getFullYear()}-01-01`,
+        effective_to: dateInputValue(record.effective_to),
+        status: record.status || 'activo',
         description: record.description || '',
       };
     case 'zona':
@@ -1200,6 +1270,7 @@ function Parametrizacion() {
     ['Parametros legales', countResources(summary, 'legalParameters')],
     ['Novedades', countResources(summary, 'noveltyTypes')],
     ['Organizacion', countResources(summary, 'organizationUnits')],
+    ['Cargos', countResources(summary, 'jobPositions')],
     ['Zonas', countResources(summary, 'workZones')],
     ['Jornadas', countResources(summary, 'workShifts')],
     ['Bancos', countResources(summary, 'bankProfiles')],
