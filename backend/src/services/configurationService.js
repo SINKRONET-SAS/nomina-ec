@@ -7,6 +7,7 @@ const ONBOARDING_STEPS = [
   { code: 'empresa', label: 'Datos de empresa' },
   { code: 'legal', label: 'Parametros legales' },
   { code: 'organizacion', label: 'Estructura organizativa' },
+  { code: 'cargos', label: 'Cargos y rangos salariales' },
   { code: 'jornadas', label: 'Jornadas y calendarios' },
   { code: 'zonas', label: 'Zonas de marcacion' },
   { code: 'novedades', label: 'Tipos de novedades' },
@@ -38,6 +39,12 @@ const RESOURCE_CONFIG = {
     tenantScoped: true,
     columns: ['parent_id', 'unit_type', 'code', 'name', 'description', 'cost_center_code', 'manager_user_id', 'work_zone_id', 'status', 'valid_from', 'valid_to', 'metadata'],
     orderBy: 'unit_type, name',
+  },
+  jobPositions: {
+    table: 'job_positions',
+    tenantScoped: true,
+    columns: ['organization_unit_id', 'code', 'name', 'description', 'salary_min', 'salary_max', 'currency', 'effective_from', 'effective_to', 'status', 'metadata'],
+    orderBy: 'name',
   },
   workZones: {
     table: 'work_zones',
@@ -99,6 +106,10 @@ function resolveTenantId(user, payload = {}) {
 }
 
 function normalizePayload(config, payload, user) {
+  if (config.table === 'job_positions') {
+    return normalizeJobPositionPayload(payload);
+  }
+
   const values = {};
   for (const column of config.columns) {
     if (Object.prototype.hasOwnProperty.call(payload, column)) {
@@ -111,6 +122,204 @@ function normalizePayload(config, payload, user) {
   }
 
   return values;
+}
+
+function pickPayloadValue(payload, aliases) {
+  for (const alias of aliases) {
+    if (Object.prototype.hasOwnProperty.call(payload, alias)) {
+      return payload[alias];
+    }
+  }
+  return undefined;
+}
+
+function normalizeOptionalText(value, { uppercase = false, lowercase = false } = {}) {
+  if (typeof value === 'undefined') return undefined;
+  if (value === null) return null;
+  const text = String(value).trim();
+  if (text === '') return '';
+  if (uppercase) return text.toUpperCase();
+  if (lowercase) return text.toLowerCase();
+  return text;
+}
+
+function normalizeOptionalDate(value) {
+  if (typeof value === 'undefined') return undefined;
+  if (value === null || value === '') return null;
+  return String(value).slice(0, 10);
+}
+
+function normalizeOptionalNumber(value) {
+  if (typeof value === 'undefined') return undefined;
+  if (value === null || value === '') return null;
+  return Number(value);
+}
+
+function normalizeJobPositionPayload(payload = {}) {
+  const values = {};
+  const organizationUnitId = pickPayloadValue(payload, ['organization_unit_id', 'organizationUnitId']);
+  const organizationUnitCode = pickPayloadValue(payload, ['organization_unit_code', 'organizationUnitCode']);
+  const code = pickPayloadValue(payload, ['code', 'codigo']);
+  const name = pickPayloadValue(payload, ['name', 'nombre']);
+  const description = pickPayloadValue(payload, ['description', 'descripcion']);
+  const salaryMin = pickPayloadValue(payload, ['salary_min', 'salaryMin', 'sueldo_minimo']);
+  const salaryMax = pickPayloadValue(payload, ['salary_max', 'salaryMax', 'sueldo_maximo']);
+  const currency = pickPayloadValue(payload, ['currency', 'moneda']);
+  const effectiveFrom = pickPayloadValue(payload, ['effective_from', 'effectiveFrom', 'vigente_desde']);
+  const effectiveTo = pickPayloadValue(payload, ['effective_to', 'effectiveTo', 'vigente_hasta']);
+  const status = pickPayloadValue(payload, ['status', 'estado']);
+  const metadata = pickPayloadValue(payload, ['metadata']);
+
+  if (typeof organizationUnitId !== 'undefined') values.organization_unit_id = organizationUnitId;
+  if (typeof organizationUnitCode !== 'undefined') values.organization_unit_code = normalizeOptionalText(organizationUnitCode, { uppercase: true });
+  if (typeof code !== 'undefined') values.code = normalizeOptionalText(code, { uppercase: true });
+  if (typeof name !== 'undefined') values.name = normalizeOptionalText(name);
+  if (typeof description !== 'undefined') values.description = normalizeOptionalText(description);
+  if (typeof salaryMin !== 'undefined') values.salary_min = normalizeOptionalNumber(salaryMin);
+  if (typeof salaryMax !== 'undefined') values.salary_max = normalizeOptionalNumber(salaryMax);
+  if (typeof currency !== 'undefined') values.currency = normalizeOptionalText(currency, { uppercase: true }) || 'USD';
+  if (typeof effectiveFrom !== 'undefined') values.effective_from = normalizeOptionalDate(effectiveFrom);
+  if (typeof effectiveTo !== 'undefined') values.effective_to = normalizeOptionalDate(effectiveTo);
+  if (typeof status !== 'undefined') values.status = normalizeOptionalText(status, { lowercase: true });
+  if (typeof metadata !== 'undefined') values.metadata = metadata || {};
+
+  return values;
+}
+
+function assertRequiredText(value, message, code, user) {
+  if (!String(value || '').trim()) {
+    throw new AppError(message, {
+      code,
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+}
+
+function assertMoneyRange(value, message, code, user) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount < 0) {
+    throw new AppError(message, {
+      code,
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+  return amount;
+}
+
+async function ensureJobPositionOrganizationUnit(values, tenantId, user, previous = {}) {
+  const code = values.organization_unit_code;
+  const organizationUnitId = values.organization_unit_id || previous.organization_unit_id;
+
+  if (!organizationUnitId && !code) {
+    throw new AppError('El cargo debe estar asociado a una unidad organizativa.', {
+      code: 'JOB_POSITION_ORGANIZATION_UNIT_REQUIRED',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(values, 'organization_unit_id') && !code && previous.id) {
+    delete values.organization_unit_code;
+    return;
+  }
+
+  const result = code
+    ? await db.query(`
+        SELECT id, code, status
+        FROM organization_units
+        WHERE tenant_id = $1
+          AND LOWER(code) = LOWER($2)
+        LIMIT 1
+      `, [tenantId, code])
+    : await db.query(`
+        SELECT id, code, status
+        FROM organization_units
+        WHERE tenant_id = $1
+          AND id = $2
+        LIMIT 1
+      `, [tenantId, organizationUnitId]);
+
+  const organizationUnit = result.rows[0];
+  if (!organizationUnit || organizationUnit.status !== 'activo') {
+    throw new AppError('La unidad organizativa del cargo no existe o no esta activa para esta empresa.', {
+      code: 'JOB_POSITION_ORGANIZATION_UNIT_INVALID',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+
+  values.organization_unit_id = organizationUnit.id;
+  delete values.organization_unit_code;
+}
+
+async function validateJobPositionPayload(values, tenantId, user, previous = {}) {
+  if (!tenantId) {
+    throw new AppError('Los cargos deben pertenecer a una empresa.', {
+      code: 'JOB_POSITION_TENANT_REQUIRED',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+
+  await ensureJobPositionOrganizationUnit(values, tenantId, user, previous);
+
+  const merged = { ...previous, ...values };
+  assertRequiredText(merged.code, 'El codigo del cargo es obligatorio.', 'JOB_POSITION_CODE_REQUIRED', user);
+  assertRequiredText(merged.name, 'El nombre del cargo es obligatorio.', 'JOB_POSITION_NAME_REQUIRED', user);
+
+  const salaryMin = assertMoneyRange(merged.salary_min, 'El sueldo minimo del cargo no es valido.', 'JOB_POSITION_SALARY_MIN_INVALID', user);
+  const salaryMax = assertMoneyRange(merged.salary_max, 'El sueldo maximo del cargo no es valido.', 'JOB_POSITION_SALARY_MAX_INVALID', user);
+  if (salaryMax < salaryMin) {
+    throw new AppError('El sueldo maximo del cargo no puede ser menor que el sueldo minimo.', {
+      code: 'JOB_POSITION_SALARY_RANGE_INVALID',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+
+  if (Object.prototype.hasOwnProperty.call(values, 'salary_min')) values.salary_min = salaryMin;
+  if (Object.prototype.hasOwnProperty.call(values, 'salary_max')) values.salary_max = salaryMax;
+
+  const allowedStatus = new Set(['activo', 'inactivo', 'archivado']);
+  if (merged.status && !allowedStatus.has(String(merged.status).toLowerCase())) {
+    throw new AppError('El estado del cargo no es valido.', {
+      code: 'JOB_POSITION_STATUS_INVALID',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+
+  if (merged.effective_from && merged.effective_to && String(merged.effective_to).slice(0, 10) < String(merged.effective_from).slice(0, 10)) {
+    throw new AppError('La fecha fin de vigencia no puede ser anterior a la fecha de inicio.', {
+      code: 'JOB_POSITION_EFFECTIVE_RANGE_INVALID',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+
+  if (!merged.currency) {
+    values.currency = 'USD';
+  }
+}
+
+function handleConfigurationDbError(err, config, user) {
+  if (config.table === 'job_positions' && err.code === '23505') {
+    throw new AppError('Ya existe un cargo con ese codigo en esta empresa.', {
+      code: 'JOB_POSITION_CODE_DUPLICATED',
+      statusCode: 409,
+      userId: user.id,
+    });
+  }
+  if (config.table === 'job_positions' && err.code === '23514') {
+    throw new AppError('El cargo no cumple las reglas de rango salarial o vigencia.', {
+      code: 'JOB_POSITION_CONSTRAINT_INVALID',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+  throw err;
 }
 
 function normalizeIncomeTaxTable(value) {
@@ -512,6 +721,9 @@ async function createResource(resource, payload, user, context = {}) {
   if (config.table === 'organization_units') {
     await ensureOrganizationUnitWorkZone(values, tenantId, user);
   }
+  if (config.table === 'job_positions') {
+    await validateJobPositionPayload(values, tenantId, user);
+  }
 
   const columns = Object.keys(values);
   if (columns.length === 0) {
@@ -585,12 +797,17 @@ async function createResource(resource, payload, user, context = {}) {
     }
   }
 
-  const result = await db.query(
-    `INSERT INTO ${config.table} (${columns.join(', ')})
-     VALUES (${placeholders.join(', ')})
-     RETURNING *`,
-    params
-  );
+  let result;
+  try {
+    result = await db.query(
+      `INSERT INTO ${config.table} (${columns.join(', ')})
+       VALUES (${placeholders.join(', ')})
+       RETURNING *`,
+      params
+    );
+  } catch (err) {
+    handleConfigurationDbError(err, config, user);
+  }
 
   await recordAudit({
     tenantId,
@@ -646,6 +863,9 @@ async function updateResource(resource, id, payload, user, context = {}) {
       ...values,
     }, previous.rows[0].tenant_id || user.tenantId, user);
   }
+  if (config.table === 'job_positions') {
+    await validateJobPositionPayload(values, previous.rows[0].tenant_id || user.tenantId, user, previous.rows[0]);
+  }
 
   const columns = Object.keys(values);
   const setClause = columns.map((column, index) => `${column} = $${index + 1}`).join(', ');
@@ -664,13 +884,18 @@ async function updateResource(resource, id, payload, user, context = {}) {
     updateWhere += ` AND tenant_id = $${params.length}`;
   }
 
-  const result = await db.query(
-    `UPDATE ${config.table}
-     SET ${setClause}, updated_at = now()
-     WHERE ${updateWhere}
-     RETURNING *`,
-    params
-  );
+  let result;
+  try {
+    result = await db.query(
+      `UPDATE ${config.table}
+       SET ${setClause}, updated_at = now()
+       WHERE ${updateWhere}
+       RETURNING *`,
+      params
+    );
+  } catch (err) {
+    handleConfigurationDbError(err, config, user);
+  }
 
   await recordAudit({
     tenantId: result.rows[0].tenant_id || tenantId,
@@ -740,6 +965,47 @@ async function usageChecksForResource(config, record) {
         'unidades_hijas',
         'SELECT COUNT(*)::int AS count FROM organization_units WHERE tenant_id = $1 AND parent_id = $2',
         [tenantId, record.id]
+      ),
+    ];
+  }
+
+  if (config.table === 'job_positions') {
+    return [
+      await countUsage(
+        'empleados',
+        'SELECT COUNT(*)::int AS count FROM empleados WHERE tenant_id = $1 AND position_id = $2',
+        [tenantId, record.id]
+      ),
+      await countUsage(
+        'nominas',
+        `SELECT COUNT(*)::int AS count
+         FROM nominas n
+         INNER JOIN empleados e ON e.id = n.empleado_id
+         WHERE n.tenant_id = $1
+           AND e.position_id = $2`,
+        [tenantId, record.id]
+      ),
+      await countUsage(
+        'documentos_legales',
+        `SELECT COUNT(*)::int AS count
+         FROM documentos_legales d
+         INNER JOIN empleados e ON e.id = d.empleado_id
+         WHERE d.tenant_id = $1
+           AND e.position_id = $2`,
+        [tenantId, record.id]
+      ),
+      await countUsage(
+        'lotes_novedades',
+        `SELECT COUNT(*)::int AS count
+         FROM novelty_batches
+         WHERE tenant_id = $1
+           AND scope_type = 'position'
+           AND (
+             scope_value = $2
+             OR LOWER(scope_value) = LOWER($3)
+             OR LOWER(scope_value) = LOWER($4)
+           )`,
+        [tenantId, record.id, record.code || '', record.name || '']
       ),
     ];
   }
@@ -994,6 +1260,7 @@ async function getConfigurationSummary(user) {
       { code: 'registro_empresa', label: 'Registro de empresa', passed: Boolean(user.tenantId) },
       { code: 'legal', label: 'Parámetros legales configurados', passed: resources.legalParameters.length > 0 },
       { code: 'organizacion', label: 'Estructura organizativa creada', passed: resources.organizationUnits.length > 0 },
+      { code: 'cargos', label: 'Cargos y rangos salariales configurados', passed: resources.jobPositions.length > 0 },
       { code: 'jornada_zona', label: 'Jornada y zona configuradas', passed: resources.workShifts.length > 0 && resources.workZones.length > 0 },
       { code: 'novedades', label: 'Tipos de novedades configurados', passed: resources.noveltyTypes.length > 0 },
       { code: 'bancos', label: 'Perfil bancario disponible', passed: resources.bankProfiles.length > 0 },

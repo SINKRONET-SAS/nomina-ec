@@ -2,37 +2,27 @@
   "schemaVersion": 1,
   "plan": "HAIKY-CARGOS-RANGOS-SALARIALES-ESTRUCTURA-2026",
   "planCode": "CRS26",
-  "status": "model_migrated_local",
-  "phaseCompleted": "CRS26-02",
-  "currentPhase": "CRS26-02-modelo-datos",
-  "updatedAt": "2026-06-23T01:31:50.5747513Z",
-  "summary": "CRS26-02 creo job_positions, empleados.position_id, relaciones Prisma, indices, constraints, RLS y backfill local de cargos legacy.",
+  "status": "backend_crud_local",
+  "phaseCompleted": "CRS26-03",
+  "currentPhase": "CRS26-03-backend-crud",
+  "updatedAt": "2026-06-22T20:41:08.2638530-05:00",
+  "summary": "CRS26-03 expuso jobPositions en configurationService con CRUD, validacion de unidad activa, rango salarial, codigo unico y bloqueo de eliminacion por consumos.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts CRS26.",
-  "previousAuditLockHash": "b7a14e0bfddc0caf99be042817655c706ea20c9a5b7da5716e0e616aa1484721",
+  "previousAuditLockHash": "86DFC58839BBF8D378F8CC5FA13E6E9A96C52CCB0ECC7E492B706B3A01F766ED",
   "filesModified": [
     "CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "backend/prisma/schema.prisma",
-    "backend/prisma/migrations/20260623012500_crs26_job_positions/migration.sql",
-    "docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_02_MODELO_DATOS.md"
+    "backend/src/services/configurationService.js",
+    "backend/src/services/configurationService.test.js",
+    "docs2/cargos-rangos-salariales-estructura-2026/REPORTE_CRS26_03_BACKEND_CRUD.md"
   ],
   "runtimeArtifactsIgnored": [],
   "validationChecks": [
     {
-      "gate": "CRS26-02-PRISMA-VALIDATE",
+      "gate": "CRS26-03-CONFIGURATION-SERVICE-TEST",
       "status": "PASS",
-      "detail": "npx.cmd prisma validate en backend."
-    },
-    {
-      "gate": "CRS26-02-MIGRATE-DEPLOY",
-      "status": "PASS",
-      "detail": "npx.cmd prisma migrate deploy aplico 20260623012500_crs26_job_positions."
-    },
-    {
-      "gate": "CRS26-02-DB-SMOKE",
-      "status": "PASS",
-      "detail": "Consulta local confirmo 12 job_positions y 30 empleados vinculados."
+      "detail": "npm.cmd test -- configurationService.test.js en backend."
     }
   ],
   "fases": [
@@ -50,7 +40,7 @@
     },
     {
       "phase": "CRS26-03",
-      "status": "pending_approval"
+      "status": "completed_local"
     },
     {
       "phase": "CRS26-04",
@@ -70,9 +60,10 @@
     }
   ],
   "residualRisk": [
-    "CRUD, validacion salarial en empleados e integraciones de reportes/novedades siguen pendientes en CRS26-03..06.",
-    "Cargos legacy requieren revision de rangos antes de uso productivo."
+    "Pantalla PWA de parametrizacion pendiente en CRS26-04.",
+    "Alta, edicion e importacion de empleados pendientes de consumir la tabla real en CRS26-05.",
+    "Reportes, novedades y nomina pendientes de compatibilidad historica completa en CRS26-06."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "923eec7aec421a3468bd40bbd1ff8bc797f830e446a01a5bc843a0d8be168a0e"
+  "signature": "755C21C5B034A2ACD96F8FBE156A3D1E2DB1C904BA57BEDC7BC1548C5CF3C9FC"
 }
