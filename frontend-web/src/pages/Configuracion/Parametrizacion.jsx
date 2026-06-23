@@ -309,6 +309,10 @@ const formDefinitions = [
     }),
     recordLabel: (record) => record.name,
     recordMeta: (record) => `${record.code} - ${record.status}`,
+    saveLabel: 'Guardar cargo',
+    updateLabel: 'Actualizar cargo',
+    recordsTitle: 'Cargos registrados',
+    emptyText: 'Aun no hay cargos registrados. Guarda un cargo para habilitar editar o eliminar.',
   },
   {
     key: 'zona',
@@ -1539,16 +1543,18 @@ function Parametrizacion() {
               {isEditingActiveRecord ? <Edit3 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
               {saveMutation.isPending
                 ? 'Guardando...'
-                : (isEditingActiveRecord ? 'Actualizar parametro' : 'Guardar parametro')}
+                : (isEditingActiveRecord
+                  ? activeDefinition.updateLabel || 'Actualizar parametro'
+                  : activeDefinition.saveLabel || 'Guardar parametro')}
             </button>
           </form>
 
           <aside className="rounded-md border border-slate-200 p-4">
-            <h3 className="font-semibold text-slate-950">Registros vigentes</h3>
+            <h3 className="font-semibold text-slate-950">{activeDefinition.recordsTitle || 'Registros vigentes'}</h3>
             <div className="mt-4 space-y-3">
               {records.length === 0 && (
                 <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                  Aun no hay registros en esta categoria.
+                  {activeDefinition.emptyText || 'Aun no hay registros en esta categoria.'}
                 </p>
               )}
               {records.slice(0, 12).map((record) => (
