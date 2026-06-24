@@ -70,5 +70,30 @@
       "importe",
       "referencia"
     ]
+  },
+  "PACIFICO": {
+    "bankCode": "2013",
+    "delimiter": ";",
+    "encoding": "latin1",
+    "lineEnding": "\r\n",
+    "dateFormat": "YYYYMMDD",
+    "amountDecimals": 2,
+    "decimalSeparator": ".",
+    "includeHeader": false,
+    "includeTrailer": true,
+    "accountLength": 10,
+    "layout": "pacifico_interbank_immediate",
+    "fields": [
+      "tipoRegistro",
+      "tipoIdentificacion",
+      "cedula",
+      "nombre",
+      "bancoCodigo",
+      "tipoCuenta",
+      "cuenta",
+      "importe",
+      "concepto",
+      "referencia"
+    ]
   }
 }

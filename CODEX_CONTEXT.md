@@ -22,6 +22,14 @@
 
 AIV55 fue ejecutada localmente sobre `nuevo_nomina` despues de contrastar la auditoria V55 contra el estado real. Se confirmo como cierre previo que el N+1 de parametros legales y el decimo cuarto por region ya estaban resueltos. Se implemento modalidad de fondo de reserva por empleado (`mensual` / `iess_directo`), UI en ficha empleado, importacion, seed demo y detalle de calculo. Se agregaron tipos de novedad faltantes en cierre de mes, app movil con textos humanizados y navegacion de periodos, landing publica sin jerga contable innecesaria, WhatsApp bloqueado sin consentimiento explicito y auditoria principal con sanitizacion.
 
+Segunda pasada puntual Banco Pacifico 2026-06-23:
+
+- `PACIFICO` agregado como perfil estatico con layout `pacifico_interbank_immediate`, codigo bancario base `2013`, encoding `latin1`, line ending CRLF y columnas canonicas para transferencias interbancarias inmediatas.
+- `bancoAebGenerator` entiende `layout` y deriva `tipoIdentificacion` y `tipoCuenta` para Banco Pacifico; valida columnas del archivo generado.
+- Parametrizacion PWA reemplaza campos decorativos por selector de plantilla bancaria, incluyendo `Banco Pacifico - transferencias interbancarias inmediatas`.
+- Seed demo registra perfil y homologacion Banco Pacifico con fuente `docs2/Formato_para_transferencias_interbancarias_inmediatas.pdf`.
+- Gates: `npm.cmd test -- bancoAebGenerator.test.js --runInBand` PASS, `node --check` del generador/seed PASS, `npm.cmd run build` en frontend PASS.
+
 Gates ejecutados:
 
 - `npm.cmd test -- calculoNominaService.test.js communicationService.test.js --runInBand` en `backend`: PASS, 2 suites y 19 tests.

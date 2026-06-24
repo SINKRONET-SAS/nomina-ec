@@ -3,7 +3,12 @@ jest.mock('../config/database', () => ({
 }));
 
 const db = require('../config/database');
-const { generarArchivoBanco, getBankProfile, getBankProfileForTenant, validateBankRows } = require('./bancoAebGenerator');
+const {
+  generarArchivoBanco,
+  getBankProfile,
+  getBankProfileForTenant,
+  validateBankRows,
+} = require('./bancoAebGenerator');
 
 describe('bancoAebGenerator', () => {
   beforeEach(() => {
@@ -16,6 +21,24 @@ describe('bancoAebGenerator', () => {
 
   test('obtiene perfil bancario por codigo numerico inicial', () => {
     expect(getBankProfile('2011').profileKey).toBe('PICHINCHA');
+  });
+
+  test('incluye plantilla Banco Pacifico para transferencias interbancarias inmediatas', () => {
+    const profile = getBankProfile('PACIFICO');
+    expect(profile.bankCode).toBe('2013');
+    expect(profile.layout).toBe('pacifico_interbank_immediate');
+    expect(profile.fields).toEqual([
+      'tipoRegistro',
+      'tipoIdentificacion',
+      'cedula',
+      'nombre',
+      'bancoCodigo',
+      'tipoCuenta',
+      'cuenta',
+      'importe',
+      'concepto',
+      'referencia',
+    ]);
   });
 
   test('prioriza perfil bancario configurado por tenant', async () => {
@@ -98,6 +121,15 @@ describe('bancoAebGenerator', () => {
     const rows = [
       profile.fields,
       ['1', '2011', '00', '0000000001', '0102030405', 'TEST', 'NOMINA', '20260628', '100.00', 'REF'],
+      ['9', '', '', '', '', '', '', '', '100.00', '1'],
+    ];
+    expect(() => validateBankRows(rows, 100, 1, profile)).not.toThrow();
+  });
+
+  test('valida columnas de Banco Pacifico', () => {
+    const profile = getBankProfile('PACIFICO');
+    const rows = [
+      ['D', 'C', '0102030405', 'TEST USER', '2013', 'AH', '0000000001', '100.00', 'NOMINA 06/2026', 'REF001'],
       ['9', '', '', '', '', '', '', '', '100.00', '1'],
     ];
     expect(() => validateBankRows(rows, 100, 1, profile)).not.toThrow();

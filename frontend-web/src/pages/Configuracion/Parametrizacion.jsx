@@ -401,11 +401,15 @@ const formDefinitions = [
   {
     key: 'banco',
     title: 'Banco y archivo plano',
-    description: 'Configura el banco y el formato base para generar archivos de pago de nomina.',
+    description: 'Selecciona una plantilla bancaria real para generar archivos de pago de nomina.',
     icon: CreditCard,
     resource: 'bankProfiles',
     stepCode: 'bancos',
     fields: [
+      { name: 'template', label: 'Plantilla bancaria', type: 'select', options: [
+        { value: 'generico', label: 'Generica delimitada' },
+        { value: 'pacifico_interbank_immediate', label: 'Banco Pacifico - transferencias interbancarias inmediatas' },
+      ], wide: true },
       { name: 'banco_codigo', label: 'Codigo banco', placeholder: 'PICHINCHA', required: true },
       { name: 'banco_nombre', label: 'Nombre banco', placeholder: 'Banco Pichincha', required: true },
       { name: 'delimiter', label: 'Separador', placeholder: ';', required: true },
@@ -417,6 +421,7 @@ const formDefinitions = [
       { name: 'amount_field', label: 'Campo valor', placeholder: 'netoRecibir' },
     ],
     initial: {
+      template: 'generico',
       banco_codigo: '',
       banco_nombre: '',
       delimiter: ';',
@@ -427,22 +432,7 @@ const formDefinitions = [
       account_field: 'cuentaBancaria',
       amount_field: 'netoRecibir',
     },
-    buildPayload: (values) => ({
-      banco_codigo: values.banco_codigo.trim().toUpperCase(),
-      banco_nombre: values.banco_nombre.trim(),
-      delimiter: values.delimiter,
-      encoding: values.encoding,
-      date_format: values.date_format,
-      include_header: Boolean(values.include_header),
-      include_trailer: Boolean(values.include_trailer),
-      field_map: {
-        cuenta: values.account_field.trim(),
-        valor: values.amount_field.trim(),
-        identificacion: 'cedula',
-        beneficiario: 'nombreCompleto',
-      },
-      activo: true,
-    }),
+    buildPayload: (values) => buildBankProfilePayload(values),
     recordLabel: (record) => record.banco_nombre,
     recordMeta: (record) => `${record.banco_codigo} - ${record.encoding || 'utf8'} - ${record.delimiter || ';'}`,
   },
@@ -455,7 +445,7 @@ const formDefinitions = [
     stepCode: 'bancos',
     fields: [
       { name: 'banco_codigo', label: 'Codigo banco', placeholder: 'PICHINCHA', required: true },
-      { name: 'canonical_field', label: 'Campo canonico', type: 'select', options: ['tipoRegistro', 'bancoCodigo', 'oficina', 'digitoControl', 'cuenta', 'cedula', 'nombre', 'concepto', 'fechaOperacion', 'importe', 'referencia'] },
+      { name: 'canonical_field', label: 'Campo canonico', type: 'select', options: ['tipoRegistro', 'tipoIdentificacion', 'bancoCodigo', 'tipoCuenta', 'oficina', 'digitoControl', 'cuenta', 'cedula', 'nombre', 'concepto', 'fechaOperacion', 'importe', 'referencia'] },
       { name: 'bank_field_name', label: 'Nombre en archivo del banco', placeholder: 'CTA_BENEFICIARIO', required: true },
       { name: 'position', label: 'Posicion', type: 'number', required: true },
       { name: 'formatter', label: 'Formato', placeholder: 'leftPad:10 / amount:2 / date:YYYYMMDD' },
@@ -534,6 +524,62 @@ function formatWorkDays(days = []) {
     .filter((option) => days.includes(option.value))
     .map((option) => option.label);
   return labels.length > 0 ? labels.join(', ') : 'dias no definidos';
+}
+
+function buildBankProfilePayload(values) {
+  const template = values.template || 'generico';
+
+  if (template === 'pacifico_interbank_immediate') {
+    return {
+      banco_codigo: values.banco_codigo.trim().toUpperCase() || 'PACIFICO',
+      banco_nombre: values.banco_nombre.trim() || 'Banco Pacifico',
+      delimiter: ';',
+      encoding: 'latin1',
+      date_format: 'YYYYMMDD',
+      include_header: false,
+      include_trailer: true,
+      field_map: {
+        profile: 'PACIFICO',
+        layout: 'pacifico_interbank_immediate',
+        bankCode: '2013',
+        fields: [
+          'tipoRegistro',
+          'tipoIdentificacion',
+          'cedula',
+          'nombre',
+          'bancoCodigo',
+          'tipoCuenta',
+          'cuenta',
+          'importe',
+          'concepto',
+          'referencia',
+        ],
+        accountLength: 10,
+        amountDecimals: 2,
+        decimalSeparator: '.',
+        lineEnding: '\r\n',
+        sourceDocument: 'docs2/Formato_para_transferencias_interbancarias_inmediatas.pdf',
+      },
+      activo: true,
+    };
+  }
+
+  return {
+    banco_codigo: values.banco_codigo.trim().toUpperCase(),
+    banco_nombre: values.banco_nombre.trim(),
+    delimiter: values.delimiter,
+    encoding: values.encoding,
+    date_format: values.date_format,
+    include_header: Boolean(values.include_header),
+    include_trailer: Boolean(values.include_trailer),
+    field_map: {
+      cuenta: values.account_field.trim(),
+      valor: values.amount_field.trim(),
+      identificacion: 'cedula',
+      beneficiario: 'nombreCompleto',
+    },
+    activo: true,
+  };
 }
 
 function recordsForDefinition(summary, definition) {
@@ -705,6 +751,7 @@ function formValuesFromRecord(definition, record) {
       };
     case 'banco':
       return {
+        template: fieldMap.layout === 'pacifico_interbank_immediate' ? 'pacifico_interbank_immediate' : 'generico',
         banco_codigo: record.banco_codigo || '',
         banco_nombre: record.banco_nombre || '',
         delimiter: record.delimiter || ';',
@@ -763,7 +810,7 @@ function Field({ field, value, onChange, options = [] }) {
         <span className="text-sm font-medium text-slate-700">{field.label}</span>
         <select className={baseClass} value={value} onChange={(event) => onChange(field.name, event.target.value)}>
           {field.options.map((option) => (
-            <option key={option} value={option}>{option}</option>
+            <option key={option.value || option} value={option.value || option}>{option.label || option}</option>
           ))}
         </select>
       </label>

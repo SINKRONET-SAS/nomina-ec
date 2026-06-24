@@ -3,13 +3,13 @@
   "plan": "HAIKY-AUDITORIA-INTEGRAL-V55-NOMINA-EC-2026",
   "planCode": "AIV55",
   "status": "completed_local",
-  "phaseCompleted": "AIV55-05",
-  "currentPhase": "AIV55-05-cierre-qa-local",
-  "updatedAt": "2026-06-23T19:55:00.0000000-05:00",
-  "summary": "AIV55 ejecutada localmente: contraste V55, fondo de reserva por modalidad, novedades visibles, app movil humanizada, landing sin jerga, WhatsApp con consentimiento explicito y auditoria sanitizada.",
+  "phaseCompleted": "AIV55-06",
+  "currentPhase": "AIV55-06-banco-pacifico-archivo-real",
+  "updatedAt": "2026-06-23T20:45:00.0000000-05:00",
+  "summary": "AIV55 segunda pasada: Banco Pacifico implementado como plantilla real para transferencias interbancarias inmediatas, con generador, UI de plantilla, seed demo y pruebas.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: desplegar auditoria-integral-2026-v55, generar plan Haiky, prompts por fases, actualizar CODEX_CONTEXT/AuditLock y ejecutar prompts.",
-  "previousAuditLockHash": "FA1B4CECFD9445527E3AD593D3D94B2304B5BAA64D419ED5DDDD6C2D7BAC32E7",
+  "approvalSource": "Solicitud del usuario: la pantalla Banco y archivo plano no funciona; implementar Banco Pacifico segun adjunto Formato_para_transferencias_interbancarias_inmediatas.pdf.",
+  "previousAuditLockHash": "15335BC89101EE33C845DF3ED4F78D56DF4D54666CC063DEBC4C6F7481C2CA17",
   "filesModified": [
     "CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
@@ -38,9 +38,29 @@
     "frontend-web/src/pages/Empleados/NuevoEmpleado.jsx",
     "frontend-web/src/pages/Landing.jsx",
     "app-movil/src/screens/MarcacionScreen.js",
-    "app-movil/src/screens/AutoservicioScreen.js"
+    "app-movil/src/screens/AutoservicioScreen.js",
+    "backend/src/config/bank-file-profiles.json",
+    "backend/src/services/bancoAebGenerator.js",
+    "backend/src/services/bancoAebGenerator.test.js",
+    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
+    "backend/scripts/seed-demo-commercial.js"
   ],
   "validationChecks": [
+    {
+      "gate": "AIV55-PACIFICO-BANK-TEST",
+      "status": "PASS",
+      "detail": "npm.cmd test -- bancoAebGenerator.test.js --runInBand: 1 suite y 9 tests."
+    },
+    {
+      "gate": "AIV55-PACIFICO-SYNTAX",
+      "status": "PASS",
+      "detail": "node --check en bancoAebGenerator.js y seed-demo-commercial.js."
+    },
+    {
+      "gate": "AIV55-PACIFICO-PWA-BUILD",
+      "status": "PASS",
+      "detail": "npm.cmd run build en frontend-web compilo Vite/PWA correctamente tras cerrar dev server anterior."
+    },
     {
       "gate": "AIV55-BACKEND-TESTS",
       "status": "PASS",
@@ -96,13 +116,18 @@
     {
       "phase": "AIV55-05",
       "status": "completed_local"
+    },
+    {
+      "phase": "AIV55-06",
+      "status": "completed_local"
     }
   ],
   "residualRisk": [
     "Revision laboral, contable y LOPDP profesional requerida antes de produccion.",
     "Clientes existentes deben confirmar modalidad real de fondo de reserva durante migracion de datos.",
-    "Prueba visual de app movil requiere dispositivo o Expo Go."
+    "Prueba visual de app movil requiere dispositivo o Expo Go.",
+    "El codigo bancario base de Banco Pacifico queda parametrizable por perfil si el banco entrega una variante distinta por convenio."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "FFC3A19C8DC41EE0036814083EB2C6EC7A24ADCF2ED1CBA7BC7AE03A58E111FC"
+  "signature": "3DBA5DC6889EBAAD5A2F325CD9DBEBD447C6971126ECD4BF6DEBF19B37AB4E23"
 }

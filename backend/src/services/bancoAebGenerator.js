@@ -225,6 +225,7 @@ function normalizeTenantBankProfile(row, requestedBank) {
     dateFormat: row.date_format || fallbackProfile?.dateFormat || 'YYYYMMDD',
     amountDecimals: Number(fieldMap.amountDecimals ?? fallbackProfile?.amountDecimals ?? 2),
     decimalSeparator: fieldMap.decimalSeparator || fallbackProfile?.decimalSeparator || '.',
+    layout: fieldMap.layout || fallbackProfile?.layout || 'generic_delimited',
     includeHeader: Boolean(row.include_header),
     includeTrailer: Boolean(row.include_trailer),
     accountLength: Number(fieldMap.accountLength || fallbackProfile?.accountLength || 10),
@@ -307,7 +308,7 @@ async function loadBankFieldMappings(tenantId, profileRow, profile) {
 }
 
 function buildPaymentValues({ payroll, cuenta, monto, bancoCodigo, tenantId, anio, mes, index, profile }) {
-  return {
+  const values = {
     tipoRegistro: '1',
     bancoCodigo: bancoCodigo.padStart(4, '0'),
     oficina: '00',
@@ -320,6 +321,35 @@ function buildPaymentValues({ payroll, cuenta, monto, bancoCodigo, tenantId, ani
     importe: formatAmount(monto, profile),
     referencia: `NOM${tenantId.substring(0, 8)}${String(index + 1).padStart(4, '0')}`,
   };
+
+  if (profile.layout === 'pacifico_interbank_immediate') {
+    return {
+      ...values,
+      tipoRegistro: 'D',
+      tipoIdentificacion: resolveIdentificationType(payroll.cedula),
+      tipoCuenta: resolvePacificoAccountType(payroll.tipo_cuenta),
+      nombre: values.nombre.substring(0, 60),
+      concepto: values.concepto.substring(0, 30),
+      referencia: values.referencia.substring(0, 20),
+    };
+  }
+
+  return values;
+}
+
+function resolveIdentificationType(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (digits.length === 10) return 'C';
+  if (digits.length === 13) return 'R';
+  if (digits.length > 0) return 'P';
+  throw new Error('Identificacion del beneficiario requerida para archivo bancario');
+}
+
+function resolvePacificoAccountType(value) {
+  const text = String(value || '').trim().toUpperCase();
+  if (['AHORROS', 'AHORRO', 'AH', 'A'].includes(text)) return 'AH';
+  if (['CORRIENTE', 'CC', 'C'].includes(text)) return 'CC';
+  throw new Error('Banco Pacifico requiere tipo de cuenta AHORROS o CORRIENTE por empleado');
 }
 
 function formatAmount(value, profile) {
@@ -335,6 +365,15 @@ function validateBankRows(rows, totalPagos, totalEmpleados, profile) {
 
   if (totalPagos <= 0) {
     throw new Error('Total bancario invalido');
+  }
+
+  if (profile.layout === 'pacifico_interbank_immediate') {
+    const dataRows = rows.slice(profile.includeHeader ? 1 : 0, profile.includeTrailer ? -1 : undefined);
+    for (const row of dataRows) {
+      if (row.length !== profile.fields.length) {
+        throw new Error('Formato Banco Pacifico inconsistente: columnas incompletas');
+      }
+    }
   }
 }
 

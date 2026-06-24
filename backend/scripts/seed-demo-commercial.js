@@ -361,6 +361,63 @@ async function insertBankProfile(client, tenantId) {
       VALUES ($1,$2,'DEMO',$3,$4,$5,$6,true,$7)
     `, [tenantId, profile.rows[0].id, canonical, bankName, position, formatter, toJson(demoMetadata())]);
   }
+
+  const pacifico = await client.query(`
+    INSERT INTO perfiles_bancarios (
+      tenant_id, banco_codigo, banco_nombre, delimiter, encoding, date_format,
+      include_header, include_trailer, field_map, activo
+    )
+    VALUES ($1,'PACIFICO','Banco Pacifico',';','latin1','YYYYMMDD',false,true,$2,true)
+    RETURNING id
+  `, [tenantId, toJson({
+    profile: 'PACIFICO',
+    layout: 'pacifico_interbank_immediate',
+    bankCode: '2013',
+    fields: [
+      'tipoRegistro',
+      'tipoIdentificacion',
+      'cedula',
+      'nombre',
+      'bancoCodigo',
+      'tipoCuenta',
+      'cuenta',
+      'importe',
+      'concepto',
+      'referencia',
+    ],
+    accountLength: 10,
+    lineEnding: '\r\n',
+    amountDecimals: 2,
+    decimalSeparator: '.',
+    sourceDocument: 'docs2/Formato_para_transferencias_interbancarias_inmediatas.pdf',
+    demo: true,
+    demoCode,
+  })]);
+
+  const pacificoMappings = [
+    ['tipoRegistro', 'TIPO_REGISTRO', 1, 'fixed:D'],
+    ['tipoIdentificacion', 'TIPO_IDENTIFICACION', 2, 'C/R/P'],
+    ['cedula', 'IDENTIFICACION', 3, 'digits:10|13'],
+    ['nombre', 'BENEFICIARIO', 4, 'uppercase:60'],
+    ['bancoCodigo', 'BANCO_DESTINO', 5, 'leftPad:4'],
+    ['tipoCuenta', 'TIPO_CUENTA', 6, 'AH|CC'],
+    ['cuenta', 'CUENTA_BENEFICIARIO', 7, 'leftPad:10'],
+    ['importe', 'VALOR', 8, 'amount:2'],
+    ['concepto', 'CONCEPTO', 9, 'text:30'],
+    ['referencia', 'REFERENCIA', 10, 'text:20'],
+  ];
+
+  for (const [canonical, bankName, position, formatter] of pacificoMappings) {
+    await client.query(`
+      INSERT INTO bank_field_mappings (
+        tenant_id, bank_profile_id, banco_codigo, canonical_field,
+        bank_field_name, position, formatter, required, metadata
+      )
+      VALUES ($1,$2,'PACIFICO',$3,$4,$5,$6,true,$7)
+    `, [tenantId, pacifico.rows[0].id, canonical, bankName, position, formatter, toJson(demoMetadata({
+      sourceDocument: 'docs2/Formato_para_transferencias_interbancarias_inmediatas.pdf',
+    }))]);
+  }
 }
 
 async function insertNoveltyTypes(client, tenantId, ownerId) {
