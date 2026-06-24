@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const { validarMarcacion } = require('../services/marcacionValidator');
+const routeVisitService = require('../services/routeVisitService');
 const {
   resolveAttendanceReadiness,
   resolveLinkedEmployee,
@@ -142,10 +143,104 @@ async function rolPago(req, res) {
   }
 }
 
+async function rutaHoy(req, res) {
+  try {
+    const employee = await resolveEmployee(req);
+    const route = await routeVisitService.getRouteDay({
+      tenantId: req.tenantId,
+      empleadoId: employee.id,
+      fecha: req.query.fecha,
+    });
+    return res.json({
+      success: true,
+      employee,
+      route,
+      message: route ? null : 'No tienes ruta asignada para hoy. Puedes registrar jornada si tu empresa lo permite.',
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({ error: err.code || 'MOBILE_ROUTE_ERROR', message: err.message, details: err.details, correlationId: req.correlationId });
+  }
+}
+
+async function registrarLlegadaRuta(req, res) {
+  try {
+    const employee = await resolveEmployee(req);
+    const result = await routeVisitService.registerRouteVisit({
+      tenantId: req.tenantId,
+      empleadoId: employee.id,
+      stopId: req.params.stopId,
+      markType: 'arrival',
+      payload: req.body,
+      user: req.usuario,
+      context: { correlationId: req.correlationId, ipAddress: req.ip },
+    });
+    return res.status(201).json({ success: true, ...result, employee, correlationId: req.correlationId });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({ error: err.code || 'MOBILE_ROUTE_ARRIVAL_ERROR', message: err.message, details: err.details, correlationId: req.correlationId });
+  }
+}
+
+async function registrarSalidaRuta(req, res) {
+  try {
+    const employee = await resolveEmployee(req);
+    const result = await routeVisitService.registerRouteVisit({
+      tenantId: req.tenantId,
+      empleadoId: employee.id,
+      stopId: req.params.stopId,
+      markType: 'departure',
+      payload: req.body,
+      user: req.usuario,
+      context: { correlationId: req.correlationId, ipAddress: req.ip },
+    });
+    return res.status(201).json({ success: true, ...result, employee, correlationId: req.correlationId });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({ error: err.code || 'MOBILE_ROUTE_DEPARTURE_ERROR', message: err.message, details: err.details, correlationId: req.correlationId });
+  }
+}
+
+async function registrarVisitaNoProgramada(req, res) {
+  try {
+    const employee = await resolveEmployee(req);
+    const result = await routeVisitService.registerUnplannedVisit({
+      tenantId: req.tenantId,
+      empleadoId: employee.id,
+      payload: req.body,
+      user: req.usuario,
+      context: { correlationId: req.correlationId, ipAddress: req.ip },
+    });
+    return res.status(201).json({ success: true, ...result, employee, correlationId: req.correlationId });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({ error: err.code || 'MOBILE_ROUTE_UNPLANNED_ERROR', message: err.message, details: err.details, correlationId: req.correlationId });
+  }
+}
+
+async function omitirParadaRuta(req, res) {
+  try {
+    const employee = await resolveEmployee(req);
+    const result = await routeVisitService.omitRouteStop({
+      tenantId: req.tenantId,
+      empleadoId: employee.id,
+      stopId: req.params.stopId,
+      reason: req.body?.reason || req.body?.motivo,
+      user: req.usuario,
+      context: { correlationId: req.correlationId, ipAddress: req.ip },
+    });
+    return res.json({ success: true, ...result, employee, correlationId: req.correlationId });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({ error: err.code || 'MOBILE_ROUTE_OMIT_ERROR', message: err.message, details: err.details, correlationId: req.correlationId });
+  }
+}
+
 module.exports = {
   perfil,
+  omitirParadaRuta,
   registrarMarcacionMovil,
+  registrarLlegadaRuta,
+  registrarSalidaRuta,
+  registrarVisitaNoProgramada,
   resumenAsistencia,
   rolPago,
+  rutaHoy,
   resolveEmployee,
 };

@@ -70,6 +70,31 @@ Conteos verificados localmente:
 
 `BANK_ACCOUNT_ENCRYPTION_KEY` queda sin valor en `backend/.env` por decision operativa local. El seed usa una clave demo efimera en memoria si no hay clave bancaria valida y no escribe secretos reales al repositorio.
 
+## Segunda pasada runtime 2026-06-22
+
+Se reejecuto DCEN26 despues de incorporar los parametros operativos de rutas moviles para mercaderistas. La base no fue reconstruida ni se descartaron migraciones: se aplico la migracion vigente `20260623023000_mrm26_route_visits` y luego se ejecuto solo el reset seguro del tenant demo DCEN26.
+
+Comandos ejecutados desde `backend`:
+
+- `npx.cmd prisma migrate deploy`: PASS, migracion de rutas aplicada y preservada.
+- `npx.cmd prisma generate`: PASS.
+- `npm.cmd run seed:demo:reset`: PASS, elimino 1 tenant marcado como demo.
+- `npm.cmd run seed:demo`: PASS, reconstruyo y verifico la demo.
+- `npm.cmd run seed:demo:verify`: PASS, confirmo conteos persistidos.
+
+Conteos verificados en esta segunda pasada:
+
+- 1 tenant demo DCEN26.
+- 4 usuarios demo.
+- 30 empleados ficticios, con el usuario movil asociado al primer empleado demo como mercaderista.
+- 20 cargas familiares.
+- 6 unidades Quito/Guayaquil, 2 zonas de marcacion y 2 jornadas.
+- 3 sitios de ruta para visita de campo, 1 ruta diaria y 3 paradas para la app movil.
+- 1.284 marcaciones de mayo 2026 y 101 novedades.
+- 5 periodos 2026 cerrados, 150 roles cerrados y 1 perfil bancario demo.
+
+Reporte de evidencia: `docs2/demo-comercial-empresa-nomina-ec-2026/REPORTE_DCEN26_SEGUNDA_PASADA_MRM26_2026_06_22.md`.
+
 ## Entregables esperados
 
 - Seed o comando reproducible para crear/restaurar la empresa demo.

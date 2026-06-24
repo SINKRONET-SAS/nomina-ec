@@ -29,6 +29,7 @@ import NuevoEmpleado from './pages/Empleados/NuevoEmpleado';
 import TerminarEmpleado from './pages/Empleados/TerminarEmpleado';
 import NovedadesPendientes from './pages/Asistencia/NovedadesPendientes';
 import ReporteAsistencia from './pages/Asistencia/ReporteAsistencia';
+import RutasCampo from './pages/Asistencia/RutasCampo';
 import CerrarMes from './pages/Nomina/CerrarMes';
 import Beneficios from './pages/Nomina/Beneficios';
 import RolesPagos from './pages/Nomina/RolesPagos';
@@ -127,6 +128,11 @@ function App() {
               <Route path="asistencia/reporte" element={
                 <ProtectedRoute requiredRole={['owner', 'admin_rrhh', 'supervisor']}>
                   <ReporteAsistencia />
+                </ProtectedRoute>
+              } />
+              <Route path="asistencia/rutas" element={
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh', 'supervisor']}>
+                  <RutasCampo />
                 </ProtectedRoute>
               } />
               

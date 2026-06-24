@@ -3,16 +3,29 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View
 import * as Location from 'expo-location';
 import { mobileAPI } from '../services/api';
 
+const MARK_TYPE_LABELS = {
+  inicio_jornada: 'Inicio de jornada',
+  fin_jornada: 'Fin de jornada',
+  inicio_almuerzo: 'Inicio de almuerzo',
+  fin_almuerzo: 'Fin de almuerzo',
+};
+
+function humanizeMarkType(value) {
+  return MARK_TYPE_LABELS[value] || String(value || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 function formatMark(mark) {
   if (!mark) return 'Sin marcaciones hoy';
-  return `${String(mark.tipo_marcacion || '').replace(/_/g, ' ')} - ${new Date(mark.timestamp).toLocaleString('es-EC', { timeZone: 'America/Guayaquil' })}`;
+  return `${humanizeMarkType(mark.tipo_marcacion)} - ${new Date(mark.timestamp).toLocaleString('es-EC', { timeZone: 'America/Guayaquil' })}`;
 }
 
 export default function MarcacionScreen({ onLogout }) {
   const [ubicacion, setUbicacion] = useState(null);
   const [employee, setEmployee] = useState(null);
   const [ultimaMarcacion, setUltimaMarcacion] = useState(null);
-  const [status, setStatus] = useState({ type: 'info', text: 'Preparando asistencia movil.' });
+  const [status, setStatus] = useState({ type: 'info', text: 'Preparando asistencia móvil.' });
   const [permissionStatus, setPermissionStatus] = useState('checking');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -47,7 +60,7 @@ export default function MarcacionScreen({ onLogout }) {
     if (requested.status !== 'granted') {
       setPermissionStatus('denied');
       setUbicacion(null);
-      setStatus({ type: 'error', text: 'Activa el permiso GPS para registrar asistencia. La marcacion queda bloqueada por privacidad y control laboral.' });
+      setStatus({ type: 'error', text: 'Activa el permiso GPS para registrar asistencia. La marcación queda bloqueada por privacidad y control laboral.' });
       return false;
     }
 
@@ -68,7 +81,7 @@ export default function MarcacionScreen({ onLogout }) {
         setStatus({ type: 'error', text: 'RRHH debe completar unidad, zona y jornada antes de marcar.' });
       }
     } catch (err) {
-      setStatus({ type: 'error', text: err.response?.data?.message || 'No pudimos cargar tu asistencia movil.' });
+      setStatus({ type: 'error', text: err.response?.data?.message || 'No pudimos cargar tu asistencia móvil.' });
     } finally {
       setLoading(false);
     }
@@ -110,14 +123,14 @@ export default function MarcacionScreen({ onLogout }) {
       const zona = response.data.marcacion?.zonaMarcacion || response.data.employee?.zona_marcacion || zonaMarcacion;
       setStatus({
         type: 'success',
-        text: `Marcacion registrada: ${tipo.replace(/_/g, ' ')}.${zona?.nombre ? ` Zona: ${zona.nombre}.` : ''}`,
+        text: `Marcación registrada: ${humanizeMarkType(tipo)}.${zona?.nombre ? ` Zona: ${zona.nombre}.` : ''}`,
       });
     } catch (err) {
       const details = err.response?.data?.details;
       const detailText = details?.distanciaMetros
         ? ` Distancia: ${details.distanciaMetros} m de ${details.radioPermitidoMetros} m permitidos.`
         : '';
-      setStatus({ type: 'error', text: `${err.response?.data?.message || 'No pudimos registrar la marcacion.'}${detailText}` });
+      setStatus({ type: 'error', text: `${err.response?.data?.message || 'No pudimos registrar la marcación.'}${detailText}` });
     } finally {
       setSubmitting(false);
     }
@@ -136,8 +149,8 @@ export default function MarcacionScreen({ onLogout }) {
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.eyebrow}>Asistencia movil</Text>
-          <Text style={styles.title}>Marcacion de jornada</Text>
+          <Text style={styles.eyebrow}>Asistencia móvil</Text>
+          <Text style={styles.title}>Marcación de jornada</Text>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
           <Text style={styles.logoutButtonText}>Salir</Text>
@@ -158,9 +171,9 @@ export default function MarcacionScreen({ onLogout }) {
           Jornada: {employee?.jornada ? `${employee.jornada.nombre} ${employee.jornada.inicio}-${employee.jornada.fin}` : 'Jornada no asignada'}
         </Text>
         {zonaMarcacion ? (
-          <Text style={styles.cardDetail}>Radio autorizado: {zonaMarcacion.radio_metros} m | Precision minima: {zonaMarcacion.precision_minima_metros || '-'} m</Text>
+          <Text style={styles.cardDetail}>Radio autorizado: {zonaMarcacion.radio_metros} m | Precisión mínima: {zonaMarcacion.precision_minima_metros || '-'} m</Text>
         ) : (
-          <Text style={styles.warningText}>Solicita a RRHH vincular tu unidad organizativa a una zona de marcacion.</Text>
+          <Text style={styles.warningText}>Solicita a RRHH vincular tu unidad organizativa a una zona de marcación.</Text>
         )}
         {!attendanceReady && blockers.length > 0 ? (
           <Text style={styles.warningText}>Pendiente RRHH: {blockers.join(', ')}</Text>
@@ -218,7 +231,7 @@ export default function MarcacionScreen({ onLogout }) {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardLabel}>Ultima marcacion</Text>
+        <Text style={styles.cardLabel}>Última marcación</Text>
         <Text style={styles.cardDetail}>{formatMark(ultimaMarcacion)}</Text>
       </View>
     </ScrollView>

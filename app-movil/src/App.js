@@ -10,9 +10,11 @@ import LoginScreen from './screens/LoginScreen';
 import MarcacionScreen from './screens/MarcacionScreen';
 import MisMarcacionesScreen from './screens/MisMarcacionesScreen';
 import AutoservicioScreen from './screens/AutoservicioScreen';
+import RutaHoyScreen from './screens/RutaHoyScreen';
 
 const tabs = [
   { id: 'marcar', label: 'Marcar' },
+  { id: 'ruta', label: 'Ruta' },
   { id: 'historial', label: 'Historial' },
   { id: 'perfil', label: 'Perfil' },
 ];
@@ -21,6 +23,7 @@ function EmployeeAppShell({ onLogout }) {
   const [activeTab, setActiveTab] = useState('marcar');
 
   const renderScreen = () => {
+    if (activeTab === 'ruta') return <RutaHoyScreen />;
     if (activeTab === 'historial') return <MisMarcacionesScreen />;
     if (activeTab === 'perfil') return <AutoservicioScreen />;
     return <MarcacionScreen onLogout={onLogout} />;

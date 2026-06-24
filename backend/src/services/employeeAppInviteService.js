@@ -142,6 +142,7 @@ function employeeReadinessSelect(whereClause) {
       e.email_personal,
       e.fecha_ingreso,
       e.sueldo_bruto_mensual,
+      e.whatsapp_consent_at,
       e.unidad_organizativa_codigo,
       e.jornada_codigo,
       e.zona_marcacion_codigo,
@@ -512,7 +513,7 @@ async function resendEmployeeInvitation({ tenantId, inviteId, userId, correlatio
     await expirePendingEmployeeInvites({ tenantId, queryable: client });
 
     const existing = await client.query(`
-      SELECT i.*, e.nombres, e.apellidos, e.departamento, e.email_personal, e.telefono
+      SELECT i.*, e.nombres, e.apellidos, e.departamento, e.email_personal, e.telefono, e.whatsapp_consent_at
       FROM employee_app_invites i
       JOIN empleados e ON e.id = i.empleado_id AND e.tenant_id = i.tenant_id
       WHERE i.id = $1

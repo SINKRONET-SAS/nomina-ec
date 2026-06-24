@@ -49,6 +49,11 @@ export const mobileAPI = {
   me: () => api.get('/mobile/me'),
   attendanceSummary: () => api.get('/mobile/asistencia/resumen'),
   registerMark: (payload) => api.post('/mobile/marcaciones', payload),
+  routeToday: () => api.get('/mobile/ruta/hoy'),
+  routeArrival: (stopId, payload) => api.post(`/mobile/ruta/paradas/${stopId}/llegada`, payload),
+  routeDeparture: (stopId, payload) => api.post(`/mobile/ruta/paradas/${stopId}/salida`, payload),
+  routeOmit: (stopId, payload) => api.post(`/mobile/ruta/paradas/${stopId}/omitir`, payload),
+  routeUnplanned: (payload) => api.post('/mobile/ruta/visitas/no-programada', payload),
   payroll: (anio, mes) => api.get(`/mobile/nomina/${anio}/${mes}`),
 };
 

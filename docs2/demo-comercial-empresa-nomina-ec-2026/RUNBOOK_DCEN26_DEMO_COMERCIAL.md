@@ -26,6 +26,8 @@ Ejecutar desde `backend`:
 
 ```powershell
 npx.cmd prisma validate
+npx.cmd prisma migrate deploy
+npx.cmd prisma generate
 npm.cmd run seed:demo
 npm.cmd run seed:demo:verify
 ```
@@ -45,6 +47,7 @@ El seed genera `backend/.demo-credentials.json` con credenciales temporales loca
 - Hay 30 empleados ficticios completos.
 - Existen unidades Quito/Guayaquil, zonas, jornadas y centros de costo.
 - Hay asistencias de un mes con casos normales y excepciones.
+- Hay sitios de ruta, ruta diaria y paradas de demo para validar app movil de mercaderistas.
 - Hay cinco periodos 2026 cerrados.
 - Hay 150 roles cerrados para enero-mayo 2026.
 - Dashboard no aparece vacio.
@@ -62,6 +65,9 @@ El seed genera `backend/.demo-credentials.json` con credenciales temporales loca
 | Unidades Quito/Guayaquil | 6 |
 | Zonas de marcacion | 2 |
 | Jornadas | 2 |
+| Sitios de ruta | 3 |
+| Rutas diarias demo | 1 |
+| Paradas de ruta demo | 3 |
 | Marcaciones mayo 2026 | 1284 |
 | Novedades | 101 |
 | Periodos cerrados 2026 | 5 |

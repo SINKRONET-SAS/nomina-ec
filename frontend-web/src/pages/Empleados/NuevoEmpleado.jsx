@@ -34,6 +34,8 @@ const initialForm = {
   tipo_cuenta: '',
   cuenta_bancaria: '',
   region_decimo_cuarto: 'sierra_amazonia',
+  modalidad_fondo_reserva: 'mensual',
+  whatsapp_consent: false,
   dependientes: [],
 };
 
@@ -96,6 +98,8 @@ function normalizeEmpleado(empleado) {
     tipo_cuenta: empleado.tipo_cuenta || '',
     cuenta_bancaria: '',
     region_decimo_cuarto: empleado.region_decimo_cuarto || 'sierra_amazonia',
+    modalidad_fondo_reserva: empleado.modalidad_fondo_reserva || 'mensual',
+    whatsapp_consent: Boolean(empleado.whatsapp_consent_at),
     dependientes: (empleado.dependientes || []).map((dependent) => ({
       nombres: dependent.nombres || '',
       apellidos: dependent.apellidos || '',
@@ -356,6 +360,8 @@ function NuevoEmpleado() {
     tipo_cuenta: formData.tipo_cuenta,
     cuenta_bancaria: formData.cuenta_bancaria,
     region_decimo_cuarto: formData.region_decimo_cuarto,
+    modalidad_fondo_reserva: formData.modalidad_fondo_reserva,
+    whatsapp_consent: Boolean(formData.whatsapp_consent),
     dependientes: formData.dependientes,
   });
 
@@ -363,6 +369,7 @@ function NuevoEmpleado() {
     const { cedula, ...payload } = formData;
     if (!payload.cuenta_bancaria) delete payload.cuenta_bancaria;
     delete payload.jornada_horas_mensuales;
+    payload.whatsapp_consent = Boolean(payload.whatsapp_consent);
     payload.cargas_familiares = Number(payload.cargas_familiares || 0);
     return payload;
   };
@@ -601,6 +608,12 @@ function NuevoEmpleado() {
           <div className={`${FIELD_FULL} rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950`}>
             Este codigo enlaza la ficha con el parametro legal de decimo cuarto correspondiente. No se calcula por texto libre.
           </div>
+          <Field label="Fondo de reserva" name="modalidad_fondo_reserva" onChange={handleChange} required value={formData.modalidad_fondo_reserva}>
+            <select className={CONTROL_CLASS} name="modalidad_fondo_reserva" onChange={handleChange} required value={formData.modalidad_fondo_reserva}>
+              <option value="mensual">Pagar mensual en rol</option>
+              <option value="iess_directo">Depositar directamente al IESS</option>
+            </select>
+          </Field>
         </Section>
 
         <Section title="Datos de pago del trabajador" description="Entidad y cuenta del trabajador. La entidad debe estar autorizada por la autoridad de control financiero aplicable.">
@@ -631,6 +644,21 @@ function NuevoEmpleado() {
             </select>
           </Field>
           <Field label={isEdit ? 'Nueva cuenta del trabajador' : 'Numero de cuenta del trabajador'} name="cuenta_bancaria" onChange={handleChange} placeholder={isEdit ? 'Dejar vacio para conservar la actual' : ''} value={formData.cuenta_bancaria} />
+          <label className={`${FIELD_FULL} flex items-start gap-3 rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700`}>
+            <input
+              checked={Boolean(formData.whatsapp_consent)}
+              className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+              name="whatsapp_consent"
+              onChange={(event) => setFormData((current) => ({ ...current, whatsapp_consent: event.target.checked }))}
+              type="checkbox"
+            />
+            <span>
+              <span className="block font-semibold text-slate-900">Autoriza comunicaciones laborales por WhatsApp</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                Usar solo si el trabajador acepto este canal para invitaciones y avisos laborales.
+              </span>
+            </span>
+          </label>
           <div className={`${FIELD_FULL} flex gap-3 rounded-md border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-950`}>
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
             <p>Esta cuenta pertenece al trabajador y se guarda cifrada. El banco sale de perfiles bancarios y su homologacion de campos. No corresponde a la cuenta pagadora del cliente/empresa.</p>

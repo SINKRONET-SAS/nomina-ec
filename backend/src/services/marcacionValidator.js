@@ -7,6 +7,7 @@ const { s3Upload } = require('../config/s3');
 const AppError = require('../utils/AppError');
 const { recordAudit } = require('./auditService');
 const { resolveAttendanceReadiness } = require('./employeeAppInviteService');
+const { assertNoOpenRouteVisitForEndOfDay } = require('./routeRulesService');
 
 const MAX_FOTO_BASE64_BYTES = Number.parseInt(process.env.MARCACION_FOTO_MAX_BYTES || String(2 * 1024 * 1024), 10);
 const VALID_MARK_TYPES = new Set(['inicio_jornada', 'inicio_almuerzo', 'fin_almuerzo', 'fin_jornada']);
@@ -234,6 +235,16 @@ async function validarMarcacion({
       correlationId,
       userId,
       details: { ultimoTipo, tipoSolicitado: tipo },
+    });
+  }
+
+  if (tipo === 'fin_jornada') {
+    await assertNoOpenRouteVisitForEndOfDay({
+      tenantId,
+      empleadoId,
+      operationalDate: fechaOperacional,
+      correlationId,
+      userId,
     });
   }
 

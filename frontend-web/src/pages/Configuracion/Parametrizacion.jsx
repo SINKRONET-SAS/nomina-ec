@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Briefcase,
@@ -534,14 +534,6 @@ function formatWorkDays(days = []) {
     .filter((option) => days.includes(option.value))
     .map((option) => option.label);
   return labels.length > 0 ? labels.join(', ') : 'dias no definidos';
-}
-
-function countResources(summary, key) {
-  return summary?.resources?.[key]?.length || 0;
-}
-
-function countCatalog(summary, catalogType) {
-  return (summary?.resources?.catalogs || []).filter((record) => record.catalog_type === catalogType).length;
 }
 
 function recordsForDefinition(summary, definition) {
@@ -1196,7 +1188,6 @@ function Parametrizacion() {
     data: summary,
     error: summaryError,
     isError: summaryHasError,
-    isLoading,
   } = useQuery({
     queryKey: ['configuration-summary'],
     queryFn: () => fetchConfigurationSummary(token),
@@ -1268,18 +1259,6 @@ function Parametrizacion() {
   const completion = summary?.onboarding?.completionPercent || 0;
   const records = recordsForDefinition(summary, activeDefinition);
   const legalRecords = summary?.resources?.legalParameters || [];
-
-  const metrics = useMemo(() => ([
-    ['Datos de empresa', countCatalog(summary, 'empresa_operativa')],
-    ['Parametros legales', countResources(summary, 'legalParameters')],
-    ['Novedades', countResources(summary, 'noveltyTypes')],
-    ['Organizacion', countResources(summary, 'organizationUnits')],
-    ['Cargos', countResources(summary, 'jobPositions')],
-    ['Zonas', countResources(summary, 'workZones')],
-    ['Jornadas', countResources(summary, 'workShifts')],
-    ['Bancos', countResources(summary, 'bankProfiles')],
-    ['Usuarios y roles', countCatalog(summary, 'usuarios_roles')],
-  ]), [summary]);
 
   function updateField(name, value) {
     setForms((current) => ({
@@ -1406,15 +1385,6 @@ function Parametrizacion() {
           {configurationLoadMessage(summaryError)}
         </div>
       )}
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {metrics.map(([label, value]) => (
-          <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" key={label}>
-            <p className="text-sm text-slate-500">{label}</p>
-            <p className="mt-2 text-3xl font-semibold text-slate-950">{isLoading && !summaryHasError ? '...' : value}</p>
-          </article>
-        ))}
-      </section>
 
       <section className="rounded-lg border border-teal-200 bg-teal-50 p-5 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

@@ -52,6 +52,10 @@ const HEADER_ALIASES = {
   contract_type: 'contractType',
   contracttype: 'contractType',
   tipo_contrato: 'contractType',
+  reserve_fund_mode: 'reserveFundMode',
+  reservefundmode: 'reserveFundMode',
+  modalidad_fondo_reserva: 'reserveFundMode',
+  fondo_reserva: 'reserveFundMode',
   email: 'email',
   correo: 'email',
   phone: 'phone',
@@ -61,6 +65,11 @@ const HEADER_ALIASES = {
 };
 
 const REQUIRED_FIELDS = ['identification', 'firstName', 'lastName', 'position', 'hireDate', 'salary'];
+
+function normalizeReserveFundMode(value) {
+  const normalized = String(value || 'mensual').trim().toLowerCase();
+  return normalized === 'iess_directo' ? 'iess_directo' : 'mensual';
+}
 
 function cleanHeader(value) {
   return String(value || '')
@@ -156,6 +165,7 @@ function normalizeEmployeeRow(row, rowNumber = 1) {
     bankAccount: String(source.bankAccount || source.cuenta_bancaria || '').trim(),
     accountType: String(source.accountType || source.tipo_cuenta || '').trim(),
     contractType: String(source.contractType || source.tipo_contrato || 'indefinido').trim() || 'indefinido',
+    reserveFundMode: normalizeReserveFundMode(source.reserveFundMode || source.modalidad_fondo_reserva || source.fondo_reserva),
     email: String(source.email || source.correo || '').trim(),
     phone: String(source.phone || source.telefono || '').trim(),
     address: String(source.address || source.direccion || '').trim(),
@@ -389,11 +399,11 @@ async function commitEmployeeImport({ tenantId, userId, correlationId, ipAddress
           tenant_id, cedula, nombres, apellidos, position_id, cargo, departamento,
           unidad_organizativa_codigo,
           sueldo_bruto_mensual, jornada_horas_mensuales, gastos_personales_anuales,
-          fecha_ingreso, tipo_contrato,
+          fecha_ingreso, tipo_contrato, modalidad_fondo_reserva,
           cuenta_bancaria_cifrada, banco, tipo_cuenta,
           direccion_domicilio, telefono, email_personal, import_batch_id
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
         RETURNING id, cedula, nombres, apellidos
       `, [
         tenantId,
@@ -409,6 +419,7 @@ async function commitEmployeeImport({ tenantId, userId, correlationId, ipAddress
         row.annualPersonalExpenses ? Number(row.annualPersonalExpenses) : 0,
         row.hireDate,
         row.contractType || 'indefinido',
+        row.reserveFundMode || 'mensual',
         encryptedAccount,
         row.bankCode,
         row.accountType,

@@ -17,8 +17,13 @@ const NOVELTY_TYPES = [
   { value: 'hora_extra_100', label: 'Hora extra 100%' },
   { value: 'atraso', label: 'Atraso' },
   { value: 'salida_temprana', label: 'Salida temprana' },
-  { value: 'falta', label: 'Falta' },
-  { value: 'bono_desempeno', label: 'Bono desempeno' },
+  { value: 'falta', label: 'Falta injustificada' },
+  { value: 'permiso_con_sueldo', label: 'Permiso con sueldo' },
+  { value: 'permiso_sin_sueldo', label: 'Permiso sin sueldo' },
+  { value: 'incapacidad_iess', label: 'Incapacidad IESS' },
+  { value: 'vacaciones', label: 'Vacaciones' },
+  { value: 'bono_desempeno', label: 'Bono de desempeño' },
+  { value: 'comision', label: 'Comisión' },
 ];
 
 const SCOPE_TYPES = [
@@ -129,7 +134,7 @@ function CerrarMes() {
   };
 
   const scopeNeedsValue = batchForm.scopeType !== 'company';
-  const requiresAmount = batchForm.tipoNovedad === 'bono_desempeno';
+  const requiresAmount = ['bono_desempeno', 'comision'].includes(batchForm.tipoNovedad);
   const canCreateBatch = (!scopeNeedsValue || batchForm.scopeValue) && (!requiresAmount || Number(batchForm.monto) > 0);
   const currentError = openMutation.error || batchMutation.error || calculateMutation.error || closeMutation.error || periodQuery.error;
   const currentPrecheck = precheckDetails(currentError);
@@ -278,7 +283,7 @@ function CerrarMes() {
                 setBatchForm((current) => ({
                   ...current,
                   tipoNovedad: nextType,
-                  minutos: nextType === 'bono_desempeno' ? 0 : current.minutos || 60,
+                  minutos: ['bono_desempeno', 'comision'].includes(nextType) ? 0 : current.minutos || 60,
                 }));
               }}
               value={batchForm.tipoNovedad}

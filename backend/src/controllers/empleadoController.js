@@ -28,6 +28,11 @@ function normalizeFourteenthRegion(value) {
   return FOURTEENTH_REGION_PARAMETERS[normalized] ? normalized : null;
 }
 
+function normalizeReserveFundMode(value) {
+  const normalized = String(value || 'mensual').trim().toLowerCase();
+  return ['mensual', 'iess_directo'].includes(normalized) ? normalized : null;
+}
+
 function calculateAge(fechaNacimiento, today = new Date()) {
   if (!fechaNacimiento) return null;
   const birthDate = new Date(`${String(fechaNacimiento).slice(0, 10)}T00:00:00Z`);
@@ -385,9 +390,10 @@ async function crear(req, res) {
       cedula, nombres, apellidos, fecha_nacimiento, cargo, position_id, cargo_codigo, departamento,
       sueldo_bruto_mensual, fecha_ingreso, tipo_contrato,
       jornada_horas_mensuales, gastos_personales_anuales,
-      cuenta_bancaria, banco, tipo_cuenta, forma_pago, region_decimo_cuarto,
+      cuenta_bancaria, banco, tipo_cuenta, forma_pago, region_decimo_cuarto, modalidad_fondo_reserva,
       jornada_codigo, unidad_organizativa_codigo, zona_marcacion_codigo,
-      direccion, ciudad_codigo, provincia_codigo, estado_civil, cargas_familiares, dependientes, telefono, email
+      direccion, ciudad_codigo, provincia_codigo, estado_civil, cargas_familiares, dependientes, telefono, email,
+      whatsapp_consent
     } = req.body;
     
     // Validaciones
@@ -405,6 +411,14 @@ async function crear(req, res) {
       return res.status(400).json({
         error: 'REGION_DECIMO_CUARTO_INVALIDA',
         message: 'Selecciona Costa/Galapagos o Sierra/Amazonia para calcular decimo cuarto.',
+        correlationId: req.correlationId,
+      });
+    }
+    const normalizedReserveFundMode = normalizeReserveFundMode(modalidad_fondo_reserva);
+    if (!normalizedReserveFundMode) {
+      return res.status(400).json({
+        error: 'MODALIDAD_FONDO_RESERVA_INVALIDA',
+        message: 'Selecciona si el fondo de reserva se paga mensual o se deposita al IESS.',
         correlationId: req.correlationId,
       });
     }
@@ -445,12 +459,13 @@ async function crear(req, res) {
         sueldo_bruto_mensual, jornada_horas_mensuales, gastos_personales_anuales,
         fecha_ingreso, tipo_contrato,
         cuenta_bancaria_cifrada, banco, tipo_cuenta, forma_pago,
-        region_decimo_cuarto,
+        region_decimo_cuarto, modalidad_fondo_reserva, whatsapp_consent_at,
         direccion_domicilio, provincia_codigo, ciudad_codigo, ciudad_domicilio, provincia_domicilio,
         estado_civil, cargas_familiares, telefono, email_personal
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32)
       RETURNING id, cedula, nombres, apellidos, fecha_nacimiento, position_id, cargo, sueldo_bruto_mensual,
         jornada_horas_mensuales, gastos_personales_anuales, fecha_ingreso, tipo_contrato, banco, region_decimo_cuarto,
+        modalidad_fondo_reserva, whatsapp_consent_at,
         unidad_organizativa_codigo, jornada_codigo, zona_marcacion_codigo
     `, [
       tenantId, cedula, nombres, apellidos, fecha_nacimiento, positionAssignment.positionId, positionAssignment.cargo, departamento || positionAssignment.unidadOrganizativaNombre || '',
@@ -460,6 +475,7 @@ async function crear(req, res) {
       gastos_personales_anuales || 0,
       fecha_ingreso, tipo_contrato || 'indefinido',
       cuentaCifrada, normalizedBankCode, tipo_cuenta || '', forma_pago || 'transferencia', normalizedRegion,
+      normalizedReserveFundMode, whatsapp_consent ? new Date() : null,
       direccion || '', location.provincia_codigo, location.ciudad_codigo, location.ciudad_nombre, location.provincia_nombre,
       estado_civil || '', Number(cargas_familiares || 0), telefono || '', email || ''
     ]);
@@ -646,6 +662,8 @@ async function actualizar(req, res) {
       tipo_cuenta: 'tipo_cuenta',
       forma_pago: 'forma_pago',
       region_decimo_cuarto: 'region_decimo_cuarto',
+      modalidad_fondo_reserva: 'modalidad_fondo_reserva',
+      whatsapp_consent_at: 'whatsapp_consent_at',
       direccion_domicilio: 'direccion_domicilio',
       provincia_codigo: 'provincia_codigo',
       ciudad_codigo: 'ciudad_codigo',
@@ -674,6 +692,20 @@ async function actualizar(req, res) {
           correlationId: req.correlationId,
         });
       }
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'modalidad_fondo_reserva')) {
+      body.modalidad_fondo_reserva = normalizeReserveFundMode(body.modalidad_fondo_reserva);
+      if (!body.modalidad_fondo_reserva) {
+        return res.status(400).json({
+          error: 'MODALIDAD_FONDO_RESERVA_INVALIDA',
+          message: 'Selecciona si el fondo de reserva se paga mensual o se deposita al IESS.',
+          correlationId: req.correlationId,
+        });
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'whatsapp_consent')) {
+      body.whatsapp_consent_at = body.whatsapp_consent ? new Date() : null;
+      delete body.whatsapp_consent;
     }
     if (Object.prototype.hasOwnProperty.call(body, 'banco') || Object.prototype.hasOwnProperty.call(body, 'forma_pago')) {
       body.banco = await resolveEmployeeBankCode(

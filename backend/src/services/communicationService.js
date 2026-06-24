@@ -47,6 +47,10 @@ function normalizePhone(value) {
   return digits;
 }
 
+function hasWhatsAppConsent(employee = {}) {
+  return Boolean(employee.whatsapp_consent_at || employee.whatsappConsentAt);
+}
+
 function appBaseUrl() {
   return String(process.env.APP_PUBLIC_URL || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
 }
@@ -151,6 +155,7 @@ function communicationStatus() {
       dataMinimization: true,
       storesMessageContent: false,
       storesVerificationCodes: false,
+      whatsappRequiresEmployeeConsent: true,
       eventRetentionDays: Number.isFinite(retentionDays) && retentionDays > 0 ? retentionDays : 365,
       legalBasis: 'LOPDP_EC_registro_recuperacion_comunicaciones_laborales',
     },
@@ -538,17 +543,35 @@ async function sendEmployeeInvite({ employee, invite, correlationId, userId }) {
     flow: 'empleado_invitacion_app',
   }));
 
-  results.push(await sendWhatsAppTemplate({
-    to: employee?.telefono,
-    templateName: whatsapp.templates.employeeInvite,
-    variables: [name, invite.code, invite.activationUrl || appBaseUrl()],
-    template: 'employee_app_invite',
-    correlationId,
-    userId,
-    tenantId,
-    purpose: 'activacion_app_asistencia',
-    flow: 'empleado_invitacion_app',
-  }));
+  if (hasWhatsAppConsent(employee)) {
+    results.push(await sendWhatsAppTemplate({
+      to: employee?.telefono,
+      templateName: whatsapp.templates.employeeInvite,
+      variables: [name, invite.code, invite.activationUrl || appBaseUrl()],
+      template: 'employee_app_invite',
+      correlationId,
+      userId,
+      tenantId,
+      purpose: 'activacion_app_asistencia',
+      flow: 'empleado_invitacion_app',
+    }));
+  } else {
+    results.push(await auditDelivery({
+      channel: 'whatsapp',
+      provider: 'whatsapp_cloud_api',
+      status: 'skipped',
+      configured: whatsapp.configured,
+      template: 'employee_app_invite',
+      reason: 'consentimiento_whatsapp_requerido',
+    }, {
+      tenantId,
+      userId,
+      correlationId,
+      recipient: employee?.telefono,
+      purpose: 'activacion_app_asistencia',
+      flow: 'empleado_invitacion_app',
+    }));
+  }
 
   return results;
 }
@@ -578,4 +601,5 @@ module.exports = {
   sendPasswordReset,
   sendTestEmail,
   sendWhatsAppTemplate,
+  hasWhatsAppConsent,
 };

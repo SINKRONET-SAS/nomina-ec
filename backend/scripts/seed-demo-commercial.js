@@ -93,6 +93,15 @@ function localDate(year, month, day) {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
+function todayInEcuador() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Guayaquil',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
 function localTimestamp(date, time) {
   const [hour, minute] = time.split(':').map(Number);
   const utcHour = hour + 5;
@@ -145,6 +154,11 @@ async function resetDemoTenant(client) {
       'communication_events',
       'api_idempotency_keys',
       'api_clients',
+      'route_exceptions',
+      'route_visit_marks',
+      'route_stops',
+      'route_days',
+      'route_sites',
       'employee_app_links',
       'employee_app_invites',
       'beneficios_empleados',
@@ -158,6 +172,7 @@ async function resetDemoTenant(client) {
       'employee_family_dependents',
       'empleados',
       'employee_import_batches',
+      'job_positions',
       'organization_units',
       'work_zones',
       'work_shifts',
@@ -517,9 +532,9 @@ function buildEmployees() {
       nombres: firstNames[index].join(' '),
       apellidos: lastNames[index].join(' '),
       fechaNacimiento: localDate(birthYear, (index % 12) + 1, ((index * 2) % 24) + 1),
-      cargo: isQuito ? (index % 2 === 0 ? 'Analista de Nomina' : 'Asistente Administrativo') : (index % 2 === 0 ? 'Ejecutivo Comercial' : 'Asistente Logistico'),
-      departamento: isQuito ? (index % 2 === 0 ? 'Operacion Quito' : 'Administracion Quito') : (index % 2 === 0 ? 'Comercial Guayaquil' : 'Logistica Guayaquil'),
-      unitCode: unitCodes[index % unitCodes.length],
+      cargo: index === 0 ? 'Mercaderista' : (isQuito ? (index % 2 === 0 ? 'Analista de Nomina' : 'Asistente Administrativo') : (index % 2 === 0 ? 'Ejecutivo Comercial' : 'Asistente Logistico')),
+      departamento: index === 0 ? 'Operacion Quito' : (isQuito ? (index % 2 === 0 ? 'Operacion Quito' : 'Administracion Quito') : (index % 2 === 0 ? 'Comercial Guayaquil' : 'Logistica Guayaquil')),
+      unitCode: index === 0 ? 'UIO_OPER' : unitCodes[index % unitCodes.length],
       shiftCode: isQuito ? 'UIO_LV_8H' : 'GYE_MS_8H',
       zoneCode: isQuito ? 'UIO_CENTRO_NORTE' : 'GYE_CENTRO',
       salary: 720 + (index * 35),
@@ -587,12 +602,12 @@ async function insertEmployees(client, tenantId, users, units, importBatchId) {
         fecha_ingreso, tipo_contrato, cuenta_bancaria_cifrada, banco, tipo_cuenta,
         direccion_domicilio, provincia_codigo, ciudad_codigo, ciudad_domicilio,
         provincia_domicilio, estado_civil, cargas_familiares, forma_pago,
-        region_decimo_cuarto, telefono, email_personal, import_batch_id
+        region_decimo_cuarto, modalidad_fondo_reserva, whatsapp_consent_at, telefono, email_personal, import_batch_id
       )
       VALUES (
         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NULL,$12,$13,$14,$15,
         'DEMO','AHORROS',$16,$17,$18,$19,$20,$21,$22,'transferencia',
-        $23,$24,$25,$26
+        $23,'mensual',$24,$25,$26,$27
       )
       RETURNING *
     `, [
@@ -619,6 +634,7 @@ async function insertEmployees(client, tenantId, users, units, importBatchId) {
       employee.estadoCivil,
       employee.cargasFamiliares,
       employee.region,
+      employee.email === DEMO_USERS.employee.email ? new Date() : null,
       employee.telefono,
       employee.email,
       importBatchId,
@@ -774,6 +790,136 @@ async function insertAttendance(client, tenantId, employees, shifts, zones, unit
         toJson(demoMetadata({ outside })),
       ]);
     }
+  }
+}
+
+async function insertDemoRoutes(client, tenantId, employees, zones, units, ownerId) {
+  const routeEmployee = employees[0];
+  const routeDate = todayInEcuador();
+  const [year, month] = routeDate.split('-').map(Number);
+  const period = await ensurePeriod(client, tenantId, ownerId, year, month);
+  const unit = units.UIO_OPER || routeEmployee.unit;
+  const zone = zones.UIO_CENTRO_NORTE || zones[routeEmployee.zona_marcacion_codigo];
+  const siteDefinitions = [
+    {
+      code: 'UIO_SUPERMERCADO_INAQUITO',
+      name: 'Supermercado Inaquito',
+      clientName: 'Cliente retail demo',
+      address: 'Av. Naciones Unidas y Amazonas, Quito',
+      latitude: -0.175213,
+      longitude: -78.481921,
+      radius: 140,
+      start: '09:00',
+      end: '10:00',
+    },
+    {
+      code: 'UIO_FARMACIA_CAROLINA',
+      name: 'Farmacia La Carolina',
+      clientName: 'Cliente farmacia demo',
+      address: 'Av. Republica y Eloy Alfaro, Quito',
+      latitude: -0.184532,
+      longitude: -78.484604,
+      radius: 120,
+      start: '11:00',
+      end: '12:00',
+    },
+    {
+      code: 'UIO_TIENDA_QUICENTRO',
+      name: 'Tienda Quicentro',
+      clientName: 'Cliente autoservicio demo',
+      address: 'Av. Naciones Unidas y 6 de Diciembre, Quito',
+      latitude: -0.176748,
+      longitude: -78.479299,
+      radius: 120,
+      start: '15:00',
+      end: '16:00',
+    },
+  ];
+
+  const siteIds = [];
+  for (const site of siteDefinitions) {
+    const result = await client.query(`
+      INSERT INTO route_sites (
+        tenant_id, organization_unit_id, work_zone_id, code, name, client_name,
+        address, latitude, longitude, radius_meters, min_accuracy_meters,
+        requires_photo, requires_qr, allows_unplanned, status, valid_from,
+        metadata, created_by
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,80,false,false,true,'activo',$11,$12,$13)
+      ON CONFLICT (tenant_id, code) DO UPDATE SET
+        organization_unit_id = EXCLUDED.organization_unit_id,
+        work_zone_id = EXCLUDED.work_zone_id,
+        name = EXCLUDED.name,
+        client_name = EXCLUDED.client_name,
+        address = EXCLUDED.address,
+        latitude = EXCLUDED.latitude,
+        longitude = EXCLUDED.longitude,
+        radius_meters = EXCLUDED.radius_meters,
+        status = 'activo',
+        updated_at = NOW()
+      RETURNING id
+    `, [
+      tenantId,
+      unit.id,
+      zone.id,
+      site.code,
+      site.name,
+      site.clientName,
+      site.address,
+      site.latitude,
+      site.longitude,
+      site.radius,
+      routeDate,
+      toJson(demoMetadata({ routeDemo: true, mobileReview: true })),
+      ownerId,
+    ]);
+    siteIds.push({ ...site, id: result.rows[0].id });
+  }
+
+  const routeDay = await client.query(`
+    INSERT INTO route_days (
+      tenant_id, empleado_id, period_id, operational_date, status,
+      allow_reorder, allow_unplanned, source, metadata, created_by
+    )
+    VALUES ($1,$2,$3,$4,'planned',true,true,'demo_seed',$5,$6)
+    ON CONFLICT (tenant_id, empleado_id, operational_date) DO UPDATE SET
+      period_id = EXCLUDED.period_id,
+      status = CASE
+        WHEN route_days.status IN ('completed', 'exception_pending') THEN route_days.status
+        ELSE 'planned'
+      END,
+      allow_reorder = true,
+      allow_unplanned = true,
+      metadata = EXCLUDED.metadata,
+      updated_at = NOW()
+    RETURNING id
+  `, [
+    tenantId,
+    routeEmployee.id,
+    period.id,
+    routeDate,
+    toJson(demoMetadata({ routeDemo: true, employeeEmail: routeEmployee.email_personal })),
+    ownerId,
+  ]);
+
+  await client.query('DELETE FROM route_stops WHERE tenant_id = $1 AND route_day_id = $2', [tenantId, routeDay.rows[0].id]);
+  for (const [index, site] of siteIds.entries()) {
+    await client.query(`
+      INSERT INTO route_stops (
+        tenant_id, route_day_id, site_id, sequence_order,
+        planned_start_time, planned_end_time, status, required_evidence, notes
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,'pending',$7,$8)
+    `, [
+      tenantId,
+      routeDay.rows[0].id,
+      site.id,
+      index + 1,
+      site.start,
+      site.end,
+      toJson({ gps: true, foto: false, qr: false }),
+      'Parada demo para validar llegada, salida, omision y visita no programada.',
+    ]);
   }
 }
 
@@ -964,6 +1110,9 @@ async function verifyDemo() {
       (SELECT COUNT(*)::int FROM work_zones WHERE tenant_id = (SELECT id FROM tenant)) AS zones,
       (SELECT COUNT(*)::int FROM organization_units WHERE tenant_id = (SELECT id FROM tenant)) AS units,
       (SELECT COUNT(*)::int FROM work_shifts WHERE tenant_id = (SELECT id FROM tenant)) AS shifts,
+      (SELECT COUNT(*)::int FROM route_sites WHERE tenant_id = (SELECT id FROM tenant) AND status = 'activo') AS route_sites,
+      (SELECT COUNT(*)::int FROM route_days WHERE tenant_id = (SELECT id FROM tenant)) AS route_days,
+      (SELECT COUNT(*)::int FROM route_stops WHERE tenant_id = (SELECT id FROM tenant)) AS route_stops,
       (SELECT COUNT(*)::int FROM marcaciones WHERE tenant_id = (SELECT id FROM tenant)) AS marks,
       (SELECT COUNT(*)::int FROM novedades_asistencia WHERE tenant_id = (SELECT id FROM tenant)) AS novelties,
       (SELECT COUNT(*)::int FROM payroll_periods WHERE tenant_id = (SELECT id FROM tenant) AND anio = 2026 AND status = 'closed') AS closed_periods,
@@ -977,6 +1126,9 @@ async function verifyDemo() {
     ['employees', 30],
     ['zones', 2],
     ['shifts', 2],
+    ['route_sites', 3],
+    ['route_days', 1],
+    ['route_stops', 3],
     ['closed_periods', 5],
     ['bank_profiles', 1],
   ];
@@ -1029,6 +1181,7 @@ async function seedDemo() {
     const employees = await insertEmployees(client, tenantId, users, units, batchId);
     await insertOnboarding(client, tenantId, users.owner.id);
     await insertAttendance(client, tenantId, employees, shifts, zones, units, users.owner.id);
+    await insertDemoRoutes(client, tenantId, employees, zones, units, users.owner.id);
     periods = await insertPayrollNovelties(client, tenantId, users.owner.id, employees);
     await db.commit(client);
   } catch (err) {

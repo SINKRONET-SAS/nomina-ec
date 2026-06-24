@@ -1,5 +1,6 @@
 const {
   calcularDiasTrabajados,
+  calcularFondoReserva,
   calcularIR,
   calcularProvisionFondosReserva,
   calcularValorHora,
@@ -65,6 +66,32 @@ describe('calculoNominaService', () => {
 
   test('provisiona fondos de reserva despues del primer anio laboral', () => {
     expect(calcularProvisionFondosReserva('2024-01-01', 600, 2026, 6)).toBe(50);
+  });
+
+  test('paga fondo de reserva en rol cuando la modalidad es mensual', () => {
+    expect(calcularFondoReserva({
+      fecha_ingreso: '2024-01-01',
+      modalidad_fondo_reserva: 'mensual',
+    }, 600, 2026, 6)).toEqual({
+      aplica: true,
+      modalidad: 'mensual',
+      provision: 50,
+      montoPagadoEmpleado: 50,
+      montoDepositadoIess: 0,
+    });
+  });
+
+  test('separa fondo de reserva para deposito IESS directo', () => {
+    expect(calcularFondoReserva({
+      fecha_ingreso: '2024-01-01',
+      modalidad_fondo_reserva: 'iess_directo',
+    }, 600, 2026, 6)).toEqual({
+      aplica: true,
+      modalidad: 'iess_directo',
+      provision: 50,
+      montoPagadoEmpleado: 0,
+      montoDepositadoIess: 50,
+    });
   });
 
   test('resuelve parametro regional de decimo cuarto desde la ficha del empleado', () => {

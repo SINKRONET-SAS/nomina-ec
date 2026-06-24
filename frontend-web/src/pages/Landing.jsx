@@ -16,41 +16,41 @@ import {
 const flow = [
   {
     icon: UsersRound,
-    title: 'Empleados, unidades y zonas',
-    text: 'Alta laboral, documentos y unidades organizativas vinculadas a zonas de marcacion.',
+    title: 'Tus empleados en orden',
+    text: 'Registra contratos, cargos y horarios de trabajo. Todo listo para el pago mensual.',
   },
   {
     icon: CalendarCheck2,
-    title: 'Asistencia y novedades',
-    text: 'Marcaciones, permisos, atrasos y aprobaciones con evidencia para el cierre mensual.',
+    title: 'Control de entradas y salidas',
+    text: 'Los empleados marcan desde el celular con GPS. Tu equipo aprueba horas extra, permisos y atrasos.',
   },
   {
     icon: ClipboardCheck,
-    title: 'Roles y cierre',
-    text: 'Cálculo de ingresos, descuentos, provisiones, cierre de periodo y rol de pago.',
+    title: 'El sueldo se calcula solo',
+    text: 'Decimos, aportes, retenciones y neto a pagar calculados automaticamente cada mes.',
   },
   {
     icon: Banknote,
-    title: 'Banco y archivo plano',
-    text: 'Netos a pagar, cuentas validadas y archivo bancario preparado para transferencia.',
+    title: 'Transferencia directa al banco',
+    text: 'Genera el archivo para pagar sueldos desde tu banco en minutos.',
   },
   {
     icon: FileSpreadsheet,
-    title: 'RDEP, IESS y entidades',
-    text: 'Base para anexos laborales y reportes requeridos por entidades públicas ecuatorianas.',
+    title: 'Reportes para entidades publicas',
+    text: 'Prepara reportes laborales y tributarios de nomina con datos consistentes.',
   },
   {
     icon: ShieldCheck,
-    title: 'Auditoría y privacidad',
-    text: 'Trazabilidad por usuario, parámetros versionados y controles de datos personales.',
+    title: 'Todo queda registrado',
+    text: 'Cada cambio tiene fecha, hora y responsable para revisiones laborales.',
   },
 ];
 
 const checklist = [
-  'Parámetros legales versionados y trazables por periodo',
-  'Políticas públicas de privacidad, soporte y eliminación de cuenta',
-  'Unidades organizativas conectadas a zonas de marcacion',
-  'PWA operativa para acceso web y flujos de RRHH',
+  'El salario basico y las tasas laborales quedan controlados por periodo',
+  'Privacidad, soporte y eliminacion de datos disponibles para empleados',
+  'Departamentos y sucursales conectados a zonas de marcacion',
+  'Funciona desde celular y computadora, sin instalar programas',
 ];
 
 const commercialOffer = [
@@ -64,14 +64,14 @@ const commercialOffer = [
   {
     name: 'PYME Ecuador',
     price: 'Desde planes mensuales',
-    description: 'Roles, bancos, reportes, documentos y auditoría para equipos de RRHH en crecimiento.',
+    description: 'Roles, bancos, reportes, documentos y auditoria para equipos de RRHH en crecimiento.',
     action: 'Ver planes',
     to: '/precios',
   },
   {
     name: 'Corporativo',
-    price: 'Contrato',
-    description: 'Multiempresa, soporte, parametrización y acompañamiento para operación regulada.',
+    price: 'Precio a medida',
+    description: 'Multiempresa, soporte, parametrizacion y acompanamiento para operacion regulada.',
     action: 'Hablar con ventas',
     to: '/soporte',
   },
@@ -86,26 +86,17 @@ function Landing() {
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-teal-700 text-white">
               <Building2 size={19} />
             </span>
-            Nómina-Ec
+            Nomina-Ec
           </Link>
-          <nav className="flex items-center gap-2 text-sm font-semibold">
-            <Link className="hidden rounded-md px-3 py-2 text-slate-700 hover:bg-slate-100 sm:inline-flex" to="/precios">
-              Planes
-            </Link>
-            <Link className="hidden rounded-md px-3 py-2 text-slate-700 hover:bg-slate-100 md:inline-flex" to="/soporte">
-              Soporte
-            </Link>
-            <Link className="secondary-button hidden sm:inline-flex" to="/privacidad">
-              Privacidad
-            </Link>
+          <nav className="flex items-center gap-3">
+            <Link className="text-sm font-semibold text-slate-700 hover:text-slate-950" to="/precios">Planes</Link>
+            <Link className="text-sm font-semibold text-slate-700 hover:text-slate-950" to="/soporte">Soporte</Link>
             <Link className="secondary-button" to="/login">
               <LogIn size={17} />
               <span className="hidden sm:inline">Ingresar a la PWA</span>
               <span className="sm:hidden">PWA</span>
             </Link>
-            <Link className="primary-button" to="/registro">
-              Crear cuenta
-            </Link>
+            <Link className="primary-button" to="/registro">Crear cuenta</Link>
           </nav>
         </div>
       </header>
@@ -114,29 +105,20 @@ function Landing() {
         <div className="page-container grid gap-8 py-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
             <p className="inline-flex rounded-md bg-teal-50 px-3 py-1 text-sm font-semibold text-teal-900">
-              Software de nómina para Ecuador
+              Software de nomina para Ecuador
             </p>
             <h1 className="mt-5 max-w-3xl text-4xl font-semibold leading-tight text-slate-950 sm:text-5xl">
-              Nómina, asistencia, bancos y reportes en una operación trazable.
+              Paga sueldos, controla horarios y deja evidencia sin enredarte cada mes.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600">
-              Nómina-Ec concentra la operación mensual de RRHH para empresas ecuatorianas:
-              parametrización legal, empleados, asistencia, roles de pago, documentos,
-              unidades con zona de marcacion, archivo bancario, reportes RDEP/IESS y auditoría por usuario.
+              Nomina-Ec concentra empleados, asistencia, roles de pago, documentos, zonas de marcacion,
+              archivo bancario, reportes para entidades publicas y auditoria por usuario.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link className="primary-button" to="/login">
-                Ingresar a la PWA <LogIn size={18} />
-              </Link>
-              <Link className="primary-button" to="/registro">
-                Crear cuenta <ArrowRight size={18} />
-              </Link>
-              <Link className="secondary-button" to="/soporte">
-                Hablar con ventas
-              </Link>
-              <Link className="secondary-button" to="/privacidad">
-                Revisar privacidad
-              </Link>
+              <Link className="primary-button" to="/login">Ingresar a la PWA <LogIn size={18} /></Link>
+              <Link className="primary-button" to="/registro">Crear cuenta <ArrowRight size={18} /></Link>
+              <Link className="secondary-button" to="/soporte">Hablar con ventas</Link>
+              <Link className="secondary-button" to="/privacidad">Revisar privacidad</Link>
             </div>
           </div>
 
@@ -159,14 +141,12 @@ function Landing() {
                   {[
                     ['Datos de empresa', 'configurado'],
                     ['Unidades y zonas', 'vinculadas'],
-                    ['RDEP e IESS', 'trazable'],
+                    ['Reportes publicos', 'trazable'],
                     ['Usuarios y roles', 'activo'],
                   ].map(([label, status]) => (
                     <div className="flex items-center justify-between gap-3" key={label}>
                       <span className="text-sm font-medium text-slate-800">{label}</span>
-                      <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
-                        {status}
-                      </span>
+                      <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{status}</span>
                     </div>
                   ))}
                 </div>
@@ -177,7 +157,7 @@ function Landing() {
                     ['Plantilla', 'Por empresa'],
                     ['Zonas activas', 'Por unidad'],
                     ['Neto a pagar', 'Por periodo'],
-                    ['Reportes', 'RDEP/IESS'],
+                    ['Reportes', 'Listos'],
                   ].map(([label, value]) => (
                     <div className="rounded-md border border-slate-200 p-4" key={label}>
                       <p className="text-xs font-medium text-slate-500">{label}</p>
@@ -205,11 +185,9 @@ function Landing() {
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-sm font-semibold uppercase text-teal-800">Oferta comercial</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950">Empieza pequeño y escala sin cambiar de sistema</h2>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950">Empieza pequeno y escala sin cambiar de sistema</h2>
             </div>
-            <Link className="text-sm font-semibold text-teal-800" to="/precios">
-              Comparar capacidades
-            </Link>
+            <Link className="text-sm font-semibold text-teal-800" to="/precios">Comparar capacidades</Link>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {commercialOffer.map((offer) => (
@@ -232,9 +210,7 @@ function Landing() {
             <p className="text-sm font-semibold uppercase text-teal-800">Flujo operativo</p>
             <h2 className="mt-2 text-2xl font-semibold text-slate-950">Una ruta para cerrar el mes</h2>
           </div>
-          <Link className="text-sm font-semibold text-teal-800" to="/precios">
-            Ver planes comerciales
-          </Link>
+          <Link className="text-sm font-semibold text-teal-800" to="/precios">Ver planes comerciales</Link>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {flow.map((item) => (
@@ -251,13 +227,10 @@ function Landing() {
         <div className="page-container grid gap-8 py-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <div>
             <p className="text-sm font-semibold uppercase text-teal-800">Confianza comercial</p>
-            <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-              Diseñado para operar con control legal y de datos.
-            </h2>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-950">Disenado para operar con control legal y de datos.</h2>
             <p className="mt-4 text-sm leading-7 text-slate-600">
-              Cada empresa puede parametrizar sus reglas, roles, cuentas bancarias y reportes
-              sin mezclar información entre organizaciones. La operación queda respaldada con
-              bitácora, fuentes legales versionadas y políticas públicas de privacidad.
+              Cada empresa puede configurar sus reglas, roles, cuentas bancarias y reportes sin mezclar informacion
+              entre organizaciones. La operacion queda respaldada con bitacora, fuentes revisables y politicas publicas de privacidad.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -271,12 +244,38 @@ function Landing() {
         </div>
       </section>
 
+      <section className="border-t border-slate-200 bg-white">
+        <div className="page-container py-10">
+          <div className="max-w-3xl">
+            <p className="text-sm font-semibold uppercase text-teal-800">Proteccion de datos</p>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-950">Los datos de tus empleados se tratan con controles claros</h2>
+            <p className="mt-4 text-sm leading-7 text-slate-600">
+              Nomina-Ec separa empresas, minimiza evidencias sensibles y mantiene historial de acciones.
+              Tu empresa administra la relacion laboral y los consentimientos de cada trabajador.
+            </p>
+          </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            {[
+              ['Privacidad laboral', 'Avisos y derechos de datos personales disponibles para empleados.'],
+              ['Bancos protegidos', 'Las cuentas se guardan cifradas y se descifran solo para generar pagos.'],
+              ['GPS con finalidad', 'La ubicacion se usa para asistencia y rutas autorizadas, con trazabilidad.'],
+            ].map(([title, text]) => (
+              <article className="rounded-lg border border-slate-200 bg-slate-50 p-5" key={title}>
+                <ShieldCheck className="mb-3 h-5 w-5 text-teal-700" />
+                <h3 className="font-semibold text-slate-950">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <footer className="border-t border-slate-200 bg-white">
         <div className="page-container flex flex-wrap items-center justify-between gap-3 py-6 text-sm text-slate-600">
-          <span>Nómina-Ec</span>
+          <span>Nomina-Ec</span>
           <div className="flex gap-4">
             <Link className="font-semibold text-slate-700" to="/soporte">Soporte</Link>
-            <Link className="font-semibold text-slate-700" to="/terminos">Términos</Link>
+            <Link className="font-semibold text-slate-700" to="/terminos">Terminos</Link>
             <Link className="font-semibold text-slate-700" to="/privacidad">Privacidad</Link>
           </div>
         </div>

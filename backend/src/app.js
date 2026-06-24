@@ -119,10 +119,26 @@ app.post('/api/marcaciones', marcacionController.registrar);
 app.get('/api/marcaciones/empleado/:empleadoId', marcacionController.listarPorEmpleado);
 app.get('/api/marcaciones/hoy', marcacionController.listarHoy);
 
+const routeController = require('./controllers/routeController');
+app.get('/api/rutas/sitios', requireRole('owner', 'admin_rrhh', 'supervisor'), routeController.listSites);
+app.post('/api/rutas/sitios', requireRole('owner', 'admin_rrhh'), routeController.createSite);
+app.put('/api/rutas/sitios/:id', requireRole('owner', 'admin_rrhh'), routeController.updateSite);
+app.delete('/api/rutas/sitios/:id', requireRole('owner', 'admin_rrhh'), routeController.deleteSite);
+app.get('/api/rutas/dias', requireRole('owner', 'admin_rrhh', 'supervisor'), routeController.listDays);
+app.post('/api/rutas/dias', requireRole('owner', 'admin_rrhh', 'supervisor'), routeController.createDay);
+app.get('/api/rutas/excepciones', requireRole('owner', 'admin_rrhh', 'supervisor'), routeController.listExceptions);
+app.put('/api/rutas/excepciones/:id', requireRole('owner', 'admin_rrhh', 'supervisor'), routeController.reviewException);
+app.get('/api/rutas/reporte.csv', requireRole('owner', 'admin_rrhh', 'supervisor'), routeController.exportCsv);
+
 const mobileController = require('./controllers/mobileController');
 app.get('/api/mobile/me', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.perfil);
 app.get('/api/mobile/asistencia/resumen', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.resumenAsistencia);
 app.post('/api/mobile/marcaciones', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.registrarMarcacionMovil);
+app.get('/api/mobile/ruta/hoy', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.rutaHoy);
+app.post('/api/mobile/ruta/paradas/:stopId/llegada', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.registrarLlegadaRuta);
+app.post('/api/mobile/ruta/paradas/:stopId/salida', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.registrarSalidaRuta);
+app.post('/api/mobile/ruta/paradas/:stopId/omitir', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.omitirParadaRuta);
+app.post('/api/mobile/ruta/visitas/no-programada', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.registrarVisitaNoProgramada);
 app.get('/api/mobile/nomina/:anio/:mes', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.rolPago);
 
 const novedadController = require('./controllers/novedadController');

@@ -82,6 +82,11 @@ model Tenant {
   jobPositions           JobPosition[]
   workZones              WorkZone[]
   workShifts             WorkShift[]
+  routeSites             RouteSite[]
+  routeDays              RouteDay[]
+  routeStops             RouteStop[]
+  routeVisitMarks        RouteVisitMark[]
+  routeExceptions        RouteException[]
   onboardingSteps        TenantOnboardingStep[]
   beneficios             EmployeeBenefit[]
   apiClients             ExternalApiClient[]
@@ -316,6 +321,8 @@ model Employee {
   cargasFamiliares        Int                    @default(0) @map("cargas_familiares")
   formaPago               String                 @default("transferencia") @map("forma_pago") @db.VarChar(30)
   regionDecimoCuarto      String                 @default("sierra_amazonia") @map("region_decimo_cuarto") @db.VarChar(40)
+  modalidadFondoReserva   String                 @default("mensual") @map("modalidad_fondo_reserva") @db.VarChar(40)
+  whatsappConsentAt       DateTime?              @map("whatsapp_consent_at") @db.Timestamptz(6)
   telefono                String                 @default("") @db.VarChar(40)
   emailPersonal           String                 @default("") @map("email_personal") @db.VarChar(255)
   activo                  Boolean                @default(true)
@@ -324,6 +331,9 @@ model Employee {
   tenant                  Tenant                 @relation(fields: [tenantId], references: [id])
   position                JobPosition?           @relation(fields: [positionId], references: [id], onDelete: Restrict)
   marcaciones             AttendanceMark[]
+  routeDays               RouteDay[]
+  routeVisitMarks         RouteVisitMark[]
+  routeExceptions         RouteException[]
   novedades               AttendanceNovelty[]
   nominas                 Payroll[]
   documentos              LegalDocument[]
@@ -438,6 +448,168 @@ model AttendanceMark {
   @@map("marcaciones")
 }
 
+model RouteSite {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String             @map("tenant_id") @db.Uuid
+  organizationUnitId String?            @map("organization_unit_id") @db.Uuid
+  workZoneId         String?            @map("work_zone_id") @db.Uuid
+  code               String             @db.VarChar(80)
+  name               String             @db.VarChar(160)
+  clientName         String             @default("") @map("client_name") @db.VarChar(160)
+  address            String             @default("")
+  latitude           Decimal            @db.Decimal(10, 7)
+  longitude          Decimal            @db.Decimal(10, 7)
+  radiusMeters       Int                @default(120) @map("radius_meters")
+  minAccuracyMeters  Int                @default(80) @map("min_accuracy_meters")
+  requiresPhoto      Boolean            @default(false) @map("requires_photo")
+  requiresQr         Boolean            @default(false) @map("requires_qr")
+  allowsUnplanned    Boolean            @default(true) @map("allows_unplanned")
+  status             String             @default("activo") @db.VarChar(30)
+  validFrom          DateTime           @default(now()) @map("valid_from") @db.Date
+  validTo            DateTime?          @map("valid_to") @db.Date
+  metadata           Json               @default("{}")
+  createdBy          String?            @map("created_by") @db.Uuid
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organizationUnit   OrganizationUnit?  @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
+  workZone           WorkZone?          @relation(fields: [workZoneId], references: [id], onDelete: SetNull)
+  stops              RouteStop[]
+  visitMarks         RouteVisitMark[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, organizationUnitId, status])
+  @@index([tenantId, status, validFrom])
+  @@map("route_sites")
+}
+
+model RouteDay {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String             @map("tenant_id") @db.Uuid
+  empleadoId      String             @map("empleado_id") @db.Uuid
+  periodId        String?            @map("period_id") @db.Uuid
+  operationalDate DateTime           @map("operational_date") @db.Date
+  status          String             @default("planned") @db.VarChar(30)
+  allowReorder    Boolean            @default(true) @map("allow_reorder")
+  allowUnplanned  Boolean            @default(true) @map("allow_unplanned")
+  source          String             @default("pwa") @db.VarChar(40)
+  metadata        Json               @default("{}")
+  createdBy       String?            @map("created_by") @db.Uuid
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant          Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  empleado        Employee           @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+  period          PayrollPeriod?     @relation(fields: [periodId], references: [id], onDelete: SetNull)
+  stops           RouteStop[]
+  visitMarks      RouteVisitMark[]
+  exceptions      RouteException[]
+
+  @@unique([tenantId, empleadoId, operationalDate])
+  @@index([tenantId, operationalDate, status])
+  @@index([tenantId, periodId, empleadoId])
+  @@map("route_days")
+}
+
+model RouteStop {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String             @map("tenant_id") @db.Uuid
+  routeDayId       String             @map("route_day_id") @db.Uuid
+  siteId           String?            @map("site_id") @db.Uuid
+  sequenceOrder    Int                @default(1) @map("sequence_order")
+  plannedStartTime String?            @map("planned_start_time") @db.VarChar(5)
+  plannedEndTime   String?            @map("planned_end_time") @db.VarChar(5)
+  status           String             @default("pending") @db.VarChar(30)
+  isUnplanned      Boolean            @default(false) @map("is_unplanned")
+  unplannedName    String             @default("") @map("unplanned_name") @db.VarChar(160)
+  unplannedAddress String             @default("") @map("unplanned_address")
+  requiredEvidence Json               @default("{}") @map("required_evidence")
+  notes            String             @default("")
+  startedAt        DateTime?          @map("started_at") @db.Timestamptz(6)
+  completedAt      DateTime?          @map("completed_at") @db.Timestamptz(6)
+  omittedAt        DateTime?          @map("omitted_at") @db.Timestamptz(6)
+  omissionReason   String             @default("") @map("omission_reason")
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  routeDay         RouteDay           @relation(fields: [routeDayId], references: [id], onDelete: Cascade)
+  site             RouteSite?         @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  visitMarks       RouteVisitMark[]
+  exceptions       RouteException[]
+
+  @@index([tenantId, routeDayId, status])
+  @@index([tenantId, siteId, status])
+  @@map("route_stops")
+}
+
+model RouteVisitMark {
+  id                 String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String          @map("tenant_id") @db.Uuid
+  empleadoId         String          @map("empleado_id") @db.Uuid
+  routeDayId         String          @map("route_day_id") @db.Uuid
+  routeStopId        String          @map("route_stop_id") @db.Uuid
+  siteId             String?         @map("site_id") @db.Uuid
+  periodId           String?         @map("period_id") @db.Uuid
+  operationalDate    DateTime        @map("operational_date") @db.Date
+  markType           String          @map("mark_type") @db.VarChar(20)
+  deviceTimestamp    DateTime?       @map("device_timestamp") @db.Timestamptz(6)
+  serverTimestamp    DateTime        @default(now()) @map("server_timestamp") @db.Timestamptz(6)
+  latitude           Decimal?        @db.Decimal(10, 7)
+  longitude          Decimal?        @db.Decimal(10, 7)
+  accuracyMeters     Decimal?        @map("accuracy_meters") @db.Decimal(10, 2)
+  withinGeofence     Boolean         @default(true) @map("within_geofence")
+  distanceMeters     Decimal         @default(0) @map("distance_meters") @db.Decimal(10, 2)
+  status             String          @default("valid") @db.VarChar(30)
+  evidenceUrl        String?         @map("evidence_url")
+  comment            String          @default("")
+  source             String          @default("mobile") @db.VarChar(40)
+  auditCorrelationId String?         @map("audit_correlation_id") @db.VarChar(120)
+  metadata           Json            @default("{}")
+  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  tenant             Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  empleado           Employee        @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+  routeDay           RouteDay        @relation(fields: [routeDayId], references: [id], onDelete: Cascade)
+  routeStop          RouteStop       @relation(fields: [routeStopId], references: [id], onDelete: Cascade)
+  site               RouteSite?      @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  period             PayrollPeriod?  @relation(fields: [periodId], references: [id], onDelete: SetNull)
+  exceptions         RouteException[]
+
+  @@index([tenantId, empleadoId, operationalDate])
+  @@index([tenantId, routeDayId, routeStopId])
+  @@index([tenantId, siteId, operationalDate])
+  @@map("route_visit_marks")
+}
+
+model RouteException {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String          @map("tenant_id") @db.Uuid
+  empleadoId      String          @map("empleado_id") @db.Uuid
+  routeDayId      String?         @map("route_day_id") @db.Uuid
+  routeStopId     String?         @map("route_stop_id") @db.Uuid
+  visitMarkId     String?         @map("visit_mark_id") @db.Uuid
+  periodId        String?         @map("period_id") @db.Uuid
+  operationalDate DateTime        @map("operational_date") @db.Date
+  exceptionType   String          @map("exception_type") @db.VarChar(50)
+  status          String          @default("pending_review") @db.VarChar(30)
+  reason          String          @default("")
+  resolution      String          @default("")
+  reviewedBy      String?         @map("reviewed_by") @db.Uuid
+  reviewedAt      DateTime?       @map("reviewed_at") @db.Timestamptz(6)
+  metadata        Json            @default("{}")
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  empleado        Employee        @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+  routeDay        RouteDay?       @relation(fields: [routeDayId], references: [id], onDelete: Cascade)
+  routeStop       RouteStop?      @relation(fields: [routeStopId], references: [id], onDelete: SetNull)
+  visitMark       RouteVisitMark? @relation(fields: [visitMarkId], references: [id], onDelete: SetNull)
+  period          PayrollPeriod?  @relation(fields: [periodId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, status, operationalDate])
+  @@index([tenantId, empleadoId, operationalDate])
+  @@index([tenantId, routeDayId])
+  @@map("route_exceptions")
+}
+
 model EmployeeAppInvite {
   id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId             String    @map("tenant_id") @db.Uuid
@@ -528,6 +700,9 @@ model PayrollPeriod {
   tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   noveltyBatches NoveltyBatch[]
   attendanceNovelties AttendanceNovelty[]
+  routeDays      RouteDay[]
+  routeVisitMarks RouteVisitMark[]
+  routeExceptions RouteException[]
 
   @@unique([tenantId, anio, mes])
   @@index([tenantId, status])
@@ -861,6 +1036,7 @@ model OrganizationUnit {
   tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   workZone       WorkZone? @relation(fields: [workZoneId], references: [id], onDelete: Restrict)
   jobPositions   JobPosition[]
+  routeSites     RouteSite[]
 
   @@index([tenantId, unitType, status])
   @@index([tenantId, workZoneId, status])
@@ -914,6 +1090,7 @@ model WorkZone {
   updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   organizationUnits OrganizationUnit[]
+  routeSites        RouteSite[]
 
   @@index([tenantId, status])
   @@map("work_zones")

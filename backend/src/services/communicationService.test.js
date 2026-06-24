@@ -170,7 +170,48 @@ describe('communicationService', () => {
       dataMinimization: true,
       storesMessageContent: false,
       storesVerificationCodes: false,
+      whatsappRequiresEmployeeConsent: true,
       eventRetentionDays: 365,
     });
+  });
+
+  test('omite WhatsApp de invitacion app si el empleado no tiene consentimiento', async () => {
+    const service = loadService({
+      NODE_ENV: 'production',
+      WHATSAPP_ENABLED: 'true',
+      WHATSAPP_API_BASE_URL: 'https://graph.facebook.com',
+      WHATSAPP_GRAPH_API_VERSION: 'v23.0',
+      WHATSAPP_ACCESS_TOKEN: 'token-test',
+      WHATSAPP_PHONE_NUMBER_ID: 'phone-id',
+      WHATSAPP_TEMPLATE_EMPLOYEE_INVITE: 'nomina_ec_employee_invite',
+    });
+    global.fetch = jest.fn();
+
+    const results = await service.sendEmployeeInvite({
+      employee: {
+        tenant_id: 'tenant-1',
+        nombres: 'Maria',
+        apellidos: 'Demo',
+        email_personal: '',
+        telefono: '0999999999',
+        whatsapp_consent_at: null,
+      },
+      invite: {
+        email: '',
+        code: 'ADM-1234',
+        activationUrl: 'https://app.example.com/activar',
+      },
+      correlationId: 'corr-4',
+      userId: 'user-4',
+    });
+
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(results).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        channel: 'whatsapp',
+        status: 'skipped',
+        reason: 'consentimiento_whatsapp_requerido',
+      }),
+    ]));
   });
 });

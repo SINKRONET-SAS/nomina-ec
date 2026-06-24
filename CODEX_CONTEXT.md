@@ -1,6 +1,44 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-V55-NOMINA-EC-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-AUDITORIA-INTEGRAL-V55-NOMINA-EC-2026 |
+| Codigo | AIV55 |
+| Estado | AIV55-00..05 ejecutadas localmente |
+| Fase actual | AIV55-05 cierre QA local |
+| Alcance | cierre de hallazgos V55: rendimiento nomina, fondo de reserva, novedades, app movil, landing, WhatsApp con consentimiento, auditoria y QA |
+| Fuente auditoria | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\AuditoriaIntegral2026V55.jsx` y `src/pages/v55/v55data.jsx` |
+| Plan doc | `docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V55_NOMINA_EC_2026.md` |
+| Matriz | `docs2/auditoria-integral-v55-nomina-ec-2026/MATRIZ_AIV55_HALLAZGOS.md` |
+| Runbook | `docs2/auditoria-integral-v55-nomina-ec-2026/RUNBOOK_AIV55_QA_CIERRE.md` |
+| Reporte cierre | `docs2/auditoria-integral-v55-nomina-ec-2026/REPORTE_AIV55_00_05_CIERRE_LOCAL.md` |
+| Prompts | `.github/prompts/AUDITORIA-INTEGRAL-V55-NOMINA-EC-2026-{00..05}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Resumen AIV55
+
+AIV55 fue ejecutada localmente sobre `nuevo_nomina` despues de contrastar la auditoria V55 contra el estado real. Se confirmo como cierre previo que el N+1 de parametros legales y el decimo cuarto por region ya estaban resueltos. Se implemento modalidad de fondo de reserva por empleado (`mensual` / `iess_directo`), UI en ficha empleado, importacion, seed demo y detalle de calculo. Se agregaron tipos de novedad faltantes en cierre de mes, app movil con textos humanizados y navegacion de periodos, landing publica sin jerga contable innecesaria, WhatsApp bloqueado sin consentimiento explicito y auditoria principal con sanitizacion.
+
+Gates ejecutados:
+
+- `npm.cmd test -- calculoNominaService.test.js communicationService.test.js --runInBand` en `backend`: PASS, 2 suites y 19 tests.
+- `npx.cmd prisma validate` en `backend`: PASS.
+- `npx.cmd prisma migrate deploy` en `backend`: PASS, aplico `20260623195500_aiv55_employee_reserve_whatsapp_consent`.
+- `npm.cmd run build` en `frontend-web`: PASS.
+- `npm.cmd run check:stores` en `app-movil`: PASS.
+- `node --check` de `MarcacionScreen.js` y `AutoservicioScreen.js`: PASS.
+
+Riesgos residuales AIV55:
+
+- Revision laboral/contable/LOPDP profesional antes de produccion.
+- Clientes existentes deben confirmar modalidad real de fondo de reserva durante migracion de datos.
+- Prueba visual mobile requiere Expo Go/dispositivo.
+
+---
+
 ## Open Haiky Plan - HAIKY-MERCADERISTAS-RUTAS-MOVILES-ASISTENCIA-2026
 
 | Campo | Valor |
@@ -174,6 +212,16 @@ Reejecucion local 2026-06-22:
 - `npm.cmd run smoke:pwa` en `frontend-web`: PASS.
 - `npm.cmd run check:stores` en `app-movil`: PASS.
 - Conteos confirmados: 1 tenant demo DCEN26, 4 usuarios, 30 empleados, 20 cargas familiares, 6 unidades, 2 zonas, 2 jornadas, 1.284 marcaciones, 101 novedades, 5 periodos 2026 cerrados, 150 roles cerrados y 1 perfil bancario demo.
+
+Segunda pasada local 2026-06-22 con rutas moviles:
+
+- Evidencia: `docs2/demo-comercial-empresa-nomina-ec-2026/REPORTE_DCEN26_SEGUNDA_PASADA_MRM26_2026_06_22.md`.
+- `npx.cmd prisma migrate deploy` en `backend`: PASS, migracion `20260623023000_mrm26_route_visits` preservada y aplicada.
+- `npx.cmd prisma generate` en `backend`: PASS.
+- `npm.cmd run seed:demo:reset` en `backend`: PASS tras corregir el orden de limpieza de `job_positions`.
+- `npm.cmd run seed:demo` en `backend`: PASS.
+- `npm.cmd run seed:demo:verify` en `backend`: PASS.
+- Conteos confirmados: 1 tenant demo DCEN26, 4 usuarios, 30 empleados, 20 cargas familiares, 6 unidades, 2 zonas, 2 jornadas, 3 sitios de ruta, 1 ruta diaria, 3 paradas de ruta, 1.284 marcaciones, 101 novedades, 5 periodos 2026 cerrados, 150 roles cerrados y 1 perfil bancario demo.
 
 ---
 

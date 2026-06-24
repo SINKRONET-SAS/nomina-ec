@@ -107,6 +107,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   const montoExtras50 = roundMoney(extras50 * valorHora * 1.5);
   const montoExtras100 = roundMoney(extras100 * valorHora * 2);
   const bonosDesempeno = roundMoney(noveltyByType.bono_desempeno?.amount || 0);
+  const comisiones = roundMoney(noveltyByType.comision?.amount || 0);
 
   const faltas = await db.query(`
     SELECT COUNT(*) as total
@@ -119,10 +120,12 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   `, [emp.id, anio, mes]);
   const descuentoFaltas = roundMoney((Number.parseInt(faltas.rows[0].total, 10) || 0) * valorHora * payrollParameters.dailyMaxHours);
 
-  const totalIngresos = roundMoney(sueldoProporcional + montoExtras50 + montoExtras100 + bonosDesempeno);
-  const aporteIess = roundMoney(totalIngresos * payrollParameters.personalIessRate);
-  const aportePatronal = roundMoney(totalIngresos * payrollParameters.employerIessRate);
-  const baseImponible = roundMoney(totalIngresos - aporteIess);
+  const ingresosBase = roundMoney(sueldoProporcional + montoExtras50 + montoExtras100 + bonosDesempeno + comisiones);
+  const fondoReserva = calcularFondoReserva(emp, ingresosBase, anio, mes, payrollParameters);
+  const totalIngresos = roundMoney(ingresosBase + fondoReserva.montoPagadoEmpleado);
+  const aporteIess = roundMoney(ingresosBase * payrollParameters.personalIessRate);
+  const aportePatronal = roundMoney(ingresosBase * payrollParameters.employerIessRate);
+  const baseImponible = roundMoney(ingresosBase - aporteIess);
   const impuestoRenta = calcularIR(
     baseImponible,
     legalParameters,
@@ -132,14 +135,15 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   const fourteenthSalaryRegion = resolveFourteenthSalaryRegion(emp.region_decimo_cuarto);
   const provisionDecimoCuarto = roundMoney(payrollParameters.unifiedBaseSalary * (payrollParameters.fourteenthSalaryProvisionRate ?? (1 / 12)));
   const provisionVacaciones = roundMoney(totalIngresos * payrollParameters.vacationProvisionRate);
-  const provisionFondosReserva = calcularProvisionFondosReserva(emp.fecha_ingreso, totalIngresos, anio, mes, payrollParameters);
+  const provisionFondosReserva = fondoReserva.provision;
   const costoEmpleador = roundMoney(
-    totalIngresos
+    ingresosBase
     + aportePatronal
     + provisionDecimoTercero
     + provisionDecimoCuarto
     + provisionVacaciones
-    + provisionFondosReserva
+    + fondoReserva.montoDepositadoIess
+    + fondoReserva.montoPagadoEmpleado
   );
   const benefitDeductions = await getApprovedDeductions(tenantId, emp.id, anio, mes);
   const anticipos = benefitDeductions.anticipos;
@@ -166,9 +170,11 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     gastosPersonalesAnuales: roundMoney(Number.parseFloat(emp.gastos_personales_anuales || 0)),
     extras50,
     extras100,
+    ingresosBase,
     montoExtras50,
     montoExtras100,
     bonosDesempeno,
+    comisiones,
     descuentoFaltas,
     aporteIess,
     aportePatronal,
@@ -180,6 +186,10 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     decimoCuartoParameterKey: fourteenthSalaryRegion.parameterKey,
     provisionVacaciones,
     provisionFondosReserva,
+    fondoReservaModalidad: fondoReserva.modalidad,
+    fondoReservaAplica: fondoReserva.aplica,
+    fondoReservaPagadoEmpleado: fondoReserva.montoPagadoEmpleado,
+    fondoReservaDepositadoIess: fondoReserva.montoDepositadoIess,
     costoEmpleador,
     anticipos,
     prestamos,
@@ -270,7 +280,45 @@ function validarPeriodoNomina(anio, mes) {
   }
 }
 
-function calcularProvisionFondosReserva(fechaIngreso, totalIngresos, anio, mes, payrollParameters = {}) {
+function normalizeReserveFundMode(value) {
+  const mode = String(value || 'mensual').trim().toLowerCase();
+  return mode === 'iess_directo' ? 'iess_directo' : 'mensual';
+}
+
+function calcularFondoReserva(emp = {}, ingresosBase, anio, mes, payrollParameters = {}) {
+  const provision = calcularProvisionFondosReserva(emp.fecha_ingreso, ingresosBase, anio, mes, payrollParameters);
+  const modalidad = normalizeReserveFundMode(emp.modalidad_fondo_reserva);
+
+  if (provision <= 0) {
+    return {
+      aplica: false,
+      modalidad,
+      provision: 0,
+      montoPagadoEmpleado: 0,
+      montoDepositadoIess: 0,
+    };
+  }
+
+  if (modalidad === 'iess_directo') {
+    return {
+      aplica: true,
+      modalidad,
+      provision,
+      montoPagadoEmpleado: 0,
+      montoDepositadoIess: provision,
+    };
+  }
+
+  return {
+    aplica: true,
+    modalidad,
+    provision,
+    montoPagadoEmpleado: provision,
+    montoDepositadoIess: 0,
+  };
+}
+
+function calcularProvisionFondosReserva(fechaIngreso, ingresosBase, anio, mes, payrollParameters = {}) {
   const ingreso = new Date(fechaIngreso);
   const finPeriodo = new Date(anio, mes, 0);
   const aniosServicio = (finPeriodo - ingreso) / (365.25 * 86400000);
@@ -280,7 +328,7 @@ function calcularProvisionFondosReserva(fechaIngreso, totalIngresos, anio, mes, 
     return 0;
   }
 
-  return roundMoney(totalIngresos * Number(payrollParameters.reserveFundRate ?? (1 / 12)));
+  return roundMoney(ingresosBase * Number(payrollParameters.reserveFundRate ?? (1 / 12)));
 }
 
 function calcularValorHora(emp, payrollParameters = {}) {
@@ -344,6 +392,8 @@ module.exports = {
   calcularEmpleado,
   calcularDiasTrabajados,
   calcularProvisionFondosReserva,
+  calcularFondoReserva,
+  normalizeReserveFundMode,
   calcularValorHora,
   getEmployeeMonthlyHours,
   calcularIR,

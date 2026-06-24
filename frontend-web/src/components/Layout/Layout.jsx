@@ -30,6 +30,7 @@ function Layout() {
       submenu: [
         { path: '/dashboard/asistencia/novedades', label: 'Novedades Pendientes' },
         { path: '/dashboard/asistencia/reporte', label: 'Reporte de Asistencia' },
+        { path: '/dashboard/asistencia/rutas', label: 'Rutas de campo' },
       ]
     },
     {
