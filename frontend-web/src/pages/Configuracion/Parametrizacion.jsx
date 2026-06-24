@@ -40,6 +40,83 @@ const workDayOptions = [
   { value: 'sunday', label: 'Domingo' },
 ];
 
+const BANK_TEMPLATE_PREVIEWS = {
+  pacifico_interbank_immediate: {
+    title: 'Banco Pacifico - transferencias interbancarias inmediatas',
+    source: 'docs2/Formato_para_transferencias_interbancarias_inmediatas.pdf',
+    fileName: 'PACIFICO_NOMINA_AAAAMM.txt',
+    lineEnding: 'CRLF',
+    encoding: 'latin1',
+    delimiter: ';',
+    sections: [
+      { label: 'Detalle', value: 'Una linea por trabajador con pago aprobado.' },
+      { label: 'Totalizador', value: 'Ultima linea con total pagado y numero de registros.' },
+      { label: 'Validacion', value: 'Tipo de cuenta AH/CC, identificacion C/R/P, banco destino y cuenta obligatorios.' },
+    ],
+    columns: [
+      ['1', 'TIPO_REGISTRO', 'Valor fijo D', 'D'],
+      ['2', 'TIPO_IDENTIFICACION', 'Cedula/RUC/pasaporte del trabajador', 'C, R o P'],
+      ['3', 'IDENTIFICACION', 'empleados.cedula', '10 o 13 digitos'],
+      ['4', 'BENEFICIARIO', 'apellidos + nombres', 'Mayusculas, max 60'],
+      ['5', 'BANCO_DESTINO', 'perfil bancario del trabajador', 'Codigo numerico'],
+      ['6', 'TIPO_CUENTA', 'empleados.tipo_cuenta', 'AH o CC'],
+      ['7', 'CUENTA_BENEFICIARIO', 'cuenta cifrada del trabajador', '10 digitos'],
+      ['8', 'VALOR', 'nominas.neto_recibir', 'Decimal 2'],
+      ['9', 'CONCEPTO', 'Periodo de nomina', 'Texto max 30'],
+      ['10', 'REFERENCIA', 'Referencia unica Nomina-Ec', 'Texto max 20'],
+    ],
+    example: 'D;C;1710034065;MARIA DEMO RUIZ;2013;AH;0012345678;850.00;NOMINA 06/2026;NOM9B230E040001',
+  },
+  generico: {
+    title: 'Generica delimitada',
+    source: 'Configuracion manual',
+    fileName: 'PAGO_NOMINA_AAAAMM.csv',
+    lineEnding: 'LF',
+    encoding: 'utf8',
+    delimiter: ';',
+    sections: [
+      { label: 'Cabecera', value: 'Opcional, usa nombres de columnas.' },
+      { label: 'Detalle', value: 'Una linea por trabajador.' },
+      { label: 'Totalizador', value: 'Opcional, total y numero de pagos.' },
+    ],
+    columns: [
+      ['1', 'TIPO_REGISTRO', 'Valor fijo', '1'],
+      ['2', 'CODIGO_BANCO', 'Perfil bancario', '4 digitos'],
+      ['3', 'CUENTA', 'Cuenta trabajador', 'Segun banco'],
+      ['4', 'IDENTIFICACION', 'Cedula/RUC', 'Digitos'],
+      ['5', 'BENEFICIARIO', 'Nombre trabajador', 'Texto'],
+      ['6', 'CONCEPTO', 'Periodo', 'Texto'],
+      ['7', 'FECHA_OPERACION', 'Fecha de pago', 'YYYYMMDD'],
+      ['8', 'VALOR', 'Neto a recibir', 'Decimal 2'],
+      ['9', 'REFERENCIA', 'Referencia interna', 'Texto'],
+    ],
+    example: '1;2011;0000000001;0102030405;TEST USER;NOMINA 06/2026;20260628;100.00;REF001',
+  },
+};
+
+const BANK_TEMPLATE_DEFAULTS = {
+  pacifico_interbank_immediate: {
+    banco_codigo: 'PACIFICO',
+    banco_nombre: 'Banco Pacifico',
+    delimiter: ';',
+    encoding: 'latin1',
+    date_format: 'YYYYMMDD',
+    include_header: false,
+    include_trailer: true,
+    account_field: 'cuenta',
+    amount_field: 'importe',
+  },
+  generico: {
+    delimiter: ';',
+    encoding: 'utf8',
+    date_format: 'YYYYMMDD',
+    include_header: true,
+    include_trailer: true,
+    account_field: 'cuentaBancaria',
+    amount_field: 'netoRecibir',
+  },
+};
+
 function parseStructuredValue(text, fallback) {
   if (!String(text || '').trim()) return fallback;
   try {
@@ -434,7 +511,12 @@ const formDefinitions = [
     },
     buildPayload: (values) => buildBankProfilePayload(values),
     recordLabel: (record) => record.banco_nombre,
-    recordMeta: (record) => `${record.banco_codigo} - ${record.encoding || 'utf8'} - ${record.delimiter || ';'}`,
+    recordMeta: (record) => {
+      const layout = record.field_map?.layout === 'pacifico_interbank_immediate'
+        ? 'Banco Pacifico interbancarias'
+        : 'Generico delimitado';
+      return `${record.banco_codigo} - ${layout} - ${record.encoding || 'utf8'}`;
+    },
   },
   {
     key: 'homologacion_banco',
@@ -894,6 +976,71 @@ function Field({ field, value, onChange, options = [] }) {
   );
 }
 
+function BankFlatFileGuide({ values }) {
+  const template = BANK_TEMPLATE_PREVIEWS[values.template] || BANK_TEMPLATE_PREVIEWS.generico;
+
+  return (
+    <div className="mt-5 space-y-4 rounded-md border border-teal-100 bg-teal-50/70 p-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-teal-950">Archivo plano que se generara</p>
+          <h4 className="mt-1 text-base font-semibold text-slate-950">{template.title}</h4>
+          <p className="mt-1 text-sm leading-6 text-slate-700">
+            Fuente: {template.source}. El sistema toma nominas cerradas/pagadas, descifra la cuenta solo en memoria y arma estas columnas.
+          </p>
+        </div>
+        <div className="rounded-md bg-white px-3 py-2 text-xs text-slate-600">
+          <p><strong>Archivo:</strong> {template.fileName}</p>
+          <p><strong>Encoding:</strong> {template.encoding}</p>
+          <p><strong>Separador:</strong> {template.delimiter === ';' ? 'punto y coma (;)' : template.delimiter}</p>
+          <p><strong>Lineas:</strong> {template.lineEnding}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        {template.sections.map((section) => (
+          <div className="rounded-md border border-teal-100 bg-white p-3" key={section.label}>
+            <p className="text-xs font-semibold uppercase text-teal-800">{section.label}</p>
+            <p className="mt-1 text-sm leading-5 text-slate-700">{section.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="overflow-x-auto rounded-md border border-teal-100 bg-white">
+        <table className="min-w-[760px] w-full text-left text-xs">
+          <thead className="bg-slate-50 text-slate-600">
+            <tr>
+              <th className="px-3 py-2 font-semibold">Pos.</th>
+              <th className="px-3 py-2 font-semibold">Campo banco</th>
+              <th className="px-3 py-2 font-semibold">Dato usado</th>
+              <th className="px-3 py-2 font-semibold">Formato</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {template.columns.map(([position, bankField, source, format]) => (
+              <tr key={`${position}-${bankField}`}>
+                <td className="px-3 py-2 font-mono text-slate-500">{position}</td>
+                <td className="px-3 py-2 font-semibold text-slate-900">{bankField}</td>
+                <td className="px-3 py-2 text-slate-700">{source}</td>
+                <td className="px-3 py-2 text-slate-700">{format}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="rounded-md bg-slate-950 px-3 py-2 text-xs text-slate-100">
+        <p className="font-semibold text-teal-200">Ejemplo de linea de detalle</p>
+        <code className="mt-1 block overflow-x-auto whitespace-nowrap">{template.example}</code>
+      </div>
+
+      <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-950">
+        Para que el archivo salga bien, cada trabajador debe tener identificacion, banco, tipo de cuenta, cuenta bancaria cifrada y nomina cerrada o pagada del periodo.
+      </div>
+    </div>
+  );
+}
+
 function IncomeTaxTableFields({ values, onFieldChange, onBracketChange, onAddBracket, onRemoveBracket }) {
   const inputClass = 'form-control';
 
@@ -1312,6 +1459,9 @@ function Parametrizacion() {
       ...current,
       [activeDefinition.key]: {
         ...current[activeDefinition.key],
+        ...(activeDefinition.key === 'banco' && name === 'template'
+          ? BANK_TEMPLATE_DEFAULTS[value] || {}
+          : {}),
         [name]: value,
       },
     }));
@@ -1539,17 +1689,22 @@ function Parametrizacion() {
                 />
               </div>
             ) : (
-              <div className="form-grid mt-5">
-                {activeDefinition.fields.map((field) => (
-                  <Field
-                    key={field.name}
-                    field={field}
-                    value={activeValues[field.name]}
-                    onChange={updateField}
-                    options={optionsForField(summary, field)}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="form-grid mt-5">
+                  {activeDefinition.fields.map((field) => (
+                    <Field
+                      key={field.name}
+                      field={field}
+                      value={activeValues[field.name]}
+                      onChange={updateField}
+                      options={optionsForField(summary, field)}
+                    />
+                  ))}
+                </div>
+                {activeDefinition.key === 'banco' && (
+                  <BankFlatFileGuide values={activeValues} />
+                )}
+              </>
             )}
 
             <button
