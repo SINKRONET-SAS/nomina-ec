@@ -29,3 +29,8 @@ export async function completeOnboardingStep(_token, stepCode, payload = {}) {
   const response = await authenticatedApi.post(`/configuracion/onboarding/${stepCode}`, payload);
   return response.data?.data;
 }
+
+export async function generateBankPaymentFile(_token, payload) {
+  const response = await authenticatedApi.post('/reportes/banco', payload);
+  return response.data?.reporte;
+}

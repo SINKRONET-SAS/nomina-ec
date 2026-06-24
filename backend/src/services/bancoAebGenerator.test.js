@@ -4,6 +4,7 @@ jest.mock('../config/database', () => ({
 
 const db = require('../config/database');
 const {
+  bankFileDescriptor,
   generarArchivoBanco,
   getBankProfile,
   getBankProfileForTenant,
@@ -39,6 +40,13 @@ describe('bancoAebGenerator', () => {
       'concepto',
       'referencia',
     ]);
+  });
+
+  test('nombra Banco Pacifico como archivo plano txt', () => {
+    const descriptor = bankFileDescriptor(getBankProfile('PACIFICO'), 2026, 6);
+
+    expect(descriptor.fileName).toBe('PAGO_NOMINA_202606_PACIFICO.txt');
+    expect(descriptor.contentType).toBe('text/plain');
   });
 
   test('prioriza perfil bancario configurado por tenant', async () => {

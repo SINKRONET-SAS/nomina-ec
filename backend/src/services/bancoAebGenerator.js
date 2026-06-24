@@ -74,10 +74,11 @@ async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', con
   }
 
   validateBankRows(rows, totalPagos, nominasResult.rows.length, profile);
-  const csvContent = rows.map((row) => row.join(profile.delimiter)).join(profile.lineEnding);
-  const checksum = crypto.createHash('sha256').update(csvContent, 'utf8').digest('hex');
-  const key = `reportes/${tenantId}/banco/PAGO_NOMINA_${anio}${String(mes).padStart(2, '0')}_${profile.profileKey}.csv`;
-  const url = await s3Upload(Buffer.from(csvContent, profile.encoding), key, 'text/csv');
+  const csvContent = rows.map((row) => row.join(profile.delimiter)).join(profile.lineEnding) + profile.lineEnding;
+  const checksum = crypto.createHash('sha256').update(Buffer.from(csvContent, profile.encoding)).digest('hex');
+  const descriptor = bankFileDescriptor(profile, anio, mes);
+  const key = `reportes/${tenantId}/banco/${descriptor.fileName}`;
+  const url = await s3Upload(Buffer.from(csvContent, profile.encoding), key, descriptor.contentType);
   const excelUrl = await generateReviewWorkbook(nominasResult.rows, tenantId, anio, mes);
 
   if (context.correlationId) {
@@ -113,12 +114,23 @@ async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', con
     totalPagos: toMoneyString(totalPagos),
     totalEmpleados: nominasResult.rows.length,
     checksum,
+    fileName: descriptor.fileName,
+    contentType: descriptor.contentType,
     bankProfile: {
       id: profile.id || null,
       source: profile.source,
       key: profile.profileKey,
       bankCode: profile.bankCode,
+      layout: profile.layout,
     },
+  };
+}
+
+function bankFileDescriptor(profile, anio, mes) {
+  const extension = profile.layout === 'pacifico_interbank_immediate' ? 'txt' : 'csv';
+  return {
+    fileName: `PAGO_NOMINA_${anio}${String(mes).padStart(2, '0')}_${profile.profileKey}.${extension}`,
+    contentType: extension === 'txt' ? 'text/plain' : 'text/csv',
   };
 }
 
@@ -379,6 +391,7 @@ function validateBankRows(rows, totalPagos, totalEmpleados, profile) {
 
 module.exports = {
   generarArchivoBanco,
+  bankFileDescriptor,
   getBankProfile,
   getBankProfileForTenant,
   decryptBankAccount,
