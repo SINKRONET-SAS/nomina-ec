@@ -119,6 +119,48 @@ const BANK_TEMPLATE_DEFAULTS = {
   },
 };
 
+const BANK_MAPPING_STRUCTURES = {
+  pacifico_interbank_immediate: [
+    { canonical_field: 'tipoRegistro', bank_field_name: 'TIPO_REGISTRO', position: 1, formatter: 'fixed:D', required: true },
+    { canonical_field: 'tipoIdentificacion', bank_field_name: 'TIPO_IDENTIFICACION', position: 2, formatter: 'idType:C/R/P', required: true },
+    { canonical_field: 'cedula', bank_field_name: 'IDENTIFICACION', position: 3, formatter: 'digits:10|13', required: true },
+    { canonical_field: 'nombre', bank_field_name: 'BENEFICIARIO', position: 4, formatter: 'uppercase:60', required: true },
+    { canonical_field: 'bancoCodigo', bank_field_name: 'BANCO_DESTINO', position: 5, formatter: 'numeric', required: true },
+    { canonical_field: 'tipoCuenta', bank_field_name: 'TIPO_CUENTA', position: 6, formatter: 'AH|CC', required: true },
+    { canonical_field: 'cuenta', bank_field_name: 'CUENTA_BENEFICIARIO', position: 7, formatter: 'leftPad:10', required: true },
+    { canonical_field: 'importe', bank_field_name: 'VALOR', position: 8, formatter: 'amount:2', required: true },
+    { canonical_field: 'concepto', bank_field_name: 'CONCEPTO', position: 9, formatter: 'text:30', required: true },
+    { canonical_field: 'referencia', bank_field_name: 'REFERENCIA', position: 10, formatter: 'text:20', required: true },
+  ],
+  generico: [
+    { canonical_field: 'tipoRegistro', bank_field_name: 'TIPO_REGISTRO', position: 1, formatter: 'fixed:1', required: true },
+    { canonical_field: 'bancoCodigo', bank_field_name: 'CODIGO_BANCO', position: 2, formatter: 'leftPad:4', required: true },
+    { canonical_field: 'cuenta', bank_field_name: 'CUENTA_BENEFICIARIO', position: 3, formatter: 'leftPad:10', required: true },
+    { canonical_field: 'cedula', bank_field_name: 'IDENTIFICACION', position: 4, formatter: 'digits:10', required: true },
+    { canonical_field: 'nombre', bank_field_name: 'BENEFICIARIO', position: 5, formatter: 'uppercase:40', required: true },
+    { canonical_field: 'concepto', bank_field_name: 'CONCEPTO', position: 6, formatter: 'text:40', required: true },
+    { canonical_field: 'fechaOperacion', bank_field_name: 'FECHA_OPERACION', position: 7, formatter: 'date:YYYYMMDD', required: true },
+    { canonical_field: 'importe', bank_field_name: 'VALOR', position: 8, formatter: 'amount:2', required: true },
+    { canonical_field: 'referencia', bank_field_name: 'REFERENCIA', position: 9, formatter: 'text:20', required: true },
+  ],
+};
+
+const CANONICAL_BANK_FIELDS = [
+  'tipoRegistro',
+  'tipoIdentificacion',
+  'bancoCodigo',
+  'tipoCuenta',
+  'oficina',
+  'digitoControl',
+  'cuenta',
+  'cedula',
+  'nombre',
+  'concepto',
+  'fechaOperacion',
+  'importe',
+  'referencia',
+];
+
 function parseStructuredValue(text, fallback) {
   if (!String(text || '').trim()) return fallback;
   try {
@@ -523,37 +565,18 @@ const formDefinitions = [
   {
     key: 'homologacion_banco',
     title: 'Homologacion bancaria',
-    description: 'Mapea campos canonicos de Nomina-Ec con los nombres, posiciones y formatos que exige cada banco.',
+    description: 'Genera la estructura completa de campos que consumira el archivo plano del banco.',
     icon: Network,
     resource: 'bankFieldMappings',
     stepCode: 'bancos',
-    fields: [
-      { name: 'banco_codigo', label: 'Codigo banco', placeholder: 'PICHINCHA', required: true },
-      { name: 'canonical_field', label: 'Campo canonico', type: 'select', options: ['tipoRegistro', 'tipoIdentificacion', 'bancoCodigo', 'tipoCuenta', 'oficina', 'digitoControl', 'cuenta', 'cedula', 'nombre', 'concepto', 'fechaOperacion', 'importe', 'referencia'] },
-      { name: 'bank_field_name', label: 'Nombre en archivo del banco', placeholder: 'CTA_BENEFICIARIO', required: true },
-      { name: 'position', label: 'Posicion', type: 'number', required: true },
-      { name: 'formatter', label: 'Formato', placeholder: 'leftPad:10 / amount:2 / date:YYYYMMDD' },
-      { name: 'required', label: 'Campo obligatorio', type: 'checkbox' },
-    ],
+    customType: 'bankMappingStructure',
+    fields: [],
     initial: {
-      banco_codigo: '',
-      canonical_field: 'cuenta',
-      bank_field_name: '',
-      position: 1,
-      formatter: '',
-      required: true,
+      banco_codigo: 'PACIFICO',
+      template: 'pacifico_interbank_immediate',
+      uploadedStructure: [],
     },
-    buildPayload: (values) => ({
-      banco_codigo: values.banco_codigo.trim().toUpperCase(),
-      canonical_field: values.canonical_field,
-      bank_field_name: values.bank_field_name.trim(),
-      position: Number(values.position),
-      formatter: values.formatter.trim(),
-      required: Boolean(values.required),
-      metadata: {
-        source: 'parametrizacion_operativa',
-      },
-    }),
+    buildPayload: () => ({}),
     recordLabel: (record) => `${record.banco_codigo} - ${record.canonical_field}`,
     recordMeta: (record) => `${record.position}. ${record.bank_field_name}${record.formatter ? ` - ${record.formatter}` : ''}`,
   },
@@ -676,6 +699,79 @@ function recordsForDefinition(summary, definition) {
   }
   if (!definition.catalogType) return records;
   return records.filter((record) => record.catalog_type === definition.catalogType);
+}
+
+function normalizeBankCode(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
+function mappingsForBank(summary, bancoCodigo) {
+  const code = normalizeBankCode(bancoCodigo);
+  return (summary?.resources?.bankFieldMappings || [])
+    .filter((mapping) => normalizeBankCode(mapping.banco_codigo) === code)
+    .sort((a, b) => Number(a.position) - Number(b.position));
+}
+
+function defaultMappingStructure(template) {
+  return BANK_MAPPING_STRUCTURES[template] || BANK_MAPPING_STRUCTURES.generico;
+}
+
+function guessCanonicalField(rawName, index) {
+  const normalized = String(rawName || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const rules = [
+    [/TIPOREG|REGISTRO/, 'tipoRegistro'],
+    [/TIPOIDENT|TIPOID/, 'tipoIdentificacion'],
+    [/IDENT|CEDULA|RUC|DOCUMENTO/, 'cedula'],
+    [/BENEF|NOMBRE|CLIENTE|EMPLEADO/, 'nombre'],
+    [/BANCO|CODIGOBANCO|BANCODESTINO/, 'bancoCodigo'],
+    [/TIPOCUENTA|CUENTATIPO/, 'tipoCuenta'],
+    [/CUENTA|CTA/, 'cuenta'],
+    [/VALOR|MONTO|IMPORTE|NETO/, 'importe'],
+    [/CONCEPTO|DETALLE|DESCRIPCION/, 'concepto'],
+    [/REFERENCIA|REF/, 'referencia'],
+    [/FECHA/, 'fechaOperacion'],
+  ];
+  const match = rules.find(([pattern]) => pattern.test(normalized));
+  return match ? match[1] : `campo${index + 1}`;
+}
+
+function detectDelimiter(line) {
+  const candidates = [';', ',', '|', '\t'];
+  return candidates
+    .map((delimiter) => ({ delimiter, count: line.split(delimiter).length }))
+    .sort((a, b) => b.count - a.count)[0].delimiter;
+}
+
+function parseUploadedBankStructure(text) {
+  const firstLine = String(text || '').split(/\r?\n/).find((line) => line.trim());
+  if (!firstLine) return [];
+  const delimiter = detectDelimiter(firstLine);
+  return firstLine
+    .split(delimiter)
+    .map((column, index) => column.trim())
+    .filter(Boolean)
+    .map((column, index) => ({
+      canonical_field: guessCanonicalField(column, index),
+      bank_field_name: column.toUpperCase().replace(/\s+/g, '_'),
+      position: index + 1,
+      formatter: '',
+      required: true,
+    }));
+}
+
+function bankTemplateFromProfile(profile) {
+  return profile?.field_map?.layout === 'pacifico_interbank_immediate'
+    ? 'pacifico_interbank_immediate'
+    : 'generico';
+}
+
+function profileOptions(summary) {
+  const profiles = summary?.resources?.bankProfiles || [];
+  return profiles.map((profile) => ({
+    value: profile.banco_codigo,
+    label: `${profile.banco_nombre} (${profile.banco_codigo})`,
+    template: bankTemplateFromProfile(profile),
+  }));
 }
 
 function optionsForField(summary, field) {
@@ -978,8 +1074,16 @@ function Field({ field, value, onChange, options = [] }) {
   );
 }
 
-function BankFlatFileGuide({ values }) {
+function BankFlatFileGuide({ values, mappings = [] }) {
   const template = BANK_TEMPLATE_PREVIEWS[values.template] || BANK_TEMPLATE_PREVIEWS.generico;
+  const visibleColumns = mappings.length > 0
+    ? mappings.map((mapping) => ([
+      String(mapping.position),
+      mapping.bank_field_name,
+      mapping.canonical_field,
+      mapping.formatter || (mapping.required ? 'Obligatorio' : 'Opcional'),
+    ]))
+    : template.columns;
 
   return (
     <div className="mt-5 space-y-4 rounded-md border border-teal-100 bg-teal-50/70 p-4">
@@ -1019,7 +1123,7 @@ function BankFlatFileGuide({ values }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {template.columns.map(([position, bankField, source, format]) => (
+            {visibleColumns.map(([position, bankField, source, format]) => (
               <tr key={`${position}-${bankField}`}>
                 <td className="px-3 py-2 font-mono text-slate-500">{position}</td>
                 <td className="px-3 py-2 font-semibold text-slate-900">{bankField}</td>
@@ -1037,7 +1141,184 @@ function BankFlatFileGuide({ values }) {
       </div>
 
       <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-950">
-        Para que el archivo salga bien, cada trabajador debe tener identificacion, banco, tipo de cuenta, cuenta bancaria cifrada y nomina cerrada o pagada del periodo.
+        {mappings.length > 0
+          ? 'Esta vista esta usando la homologacion guardada para el banco. Si cambias la estructura, actualiza la homologacion antes de generar el archivo.'
+          : 'Aun no hay homologacion guardada para este banco; se muestra la plantilla base. Genera la estructura completa en Homologacion bancaria.'}
+      </div>
+    </div>
+  );
+}
+
+function BankMappingStructureBuilder({
+  values,
+  summary,
+  onFieldChange,
+  onApplyProfile,
+  onGenerate,
+  isGenerating,
+}) {
+  const profiles = profileOptions(summary);
+  const selectedProfile = (summary?.resources?.bankProfiles || []).find(
+    (profile) => normalizeBankCode(profile.banco_codigo) === normalizeBankCode(values.banco_codigo)
+  );
+  const template = values.template || bankTemplateFromProfile(selectedProfile);
+  const uploadedStructure = Array.isArray(values.uploadedStructure) ? values.uploadedStructure : [];
+  const structure = uploadedStructure.length > 0 ? uploadedStructure : defaultMappingStructure(template);
+  const savedMappings = mappingsForBank(summary, values.banco_codigo);
+
+  function updateStructureField(index, name, value) {
+    const next = structure.map((field, fieldIndex) => (
+      fieldIndex === index ? { ...field, [name]: value } : field
+    ));
+    onFieldChange('uploadedStructure', next);
+  }
+
+  function importStructure(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const parsed = parseUploadedBankStructure(reader.result);
+      onFieldChange('uploadedStructure', parsed.length > 0 ? parsed : []);
+    };
+    reader.readAsText(file);
+  }
+
+  return (
+    <div className="mt-5 space-y-4">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <label>
+          <span className="text-sm font-medium text-slate-700">Banco configurado</span>
+          <select
+            className="form-control"
+            value={values.banco_codigo}
+            onChange={(event) => onApplyProfile(event.target.value)}
+          >
+            {profiles.length === 0 && <option value="">Primero crea un banco</option>}
+            {profiles.map((profile) => (
+              <option key={profile.value} value={profile.value}>{profile.label}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span className="text-sm font-medium text-slate-700">Estructura base</span>
+          <select
+            className="form-control"
+            value={template}
+            onChange={(event) => onFieldChange('template', event.target.value)}
+          >
+            <option value="generico">Generica delimitada</option>
+            <option value="pacifico_interbank_immediate">Banco Pacifico - transferencias interbancarias inmediatas</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-950">Homologacion rapida desde archivo plano</p>
+            <p className="mt-1 text-xs leading-5 text-slate-600">
+              Sube un TXT/CSV modelo. Se lee la primera linea como cabecera o estructura, y puedes ajustar los campos antes de guardar.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <label className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:border-teal-300">
+              <Download className="h-4 w-4 rotate-180" />
+              Subir plano modelo
+              <input className="hidden" type="file" accept=".txt,.csv" onChange={importStructure} />
+            </label>
+            {uploadedStructure.length > 0 && (
+              <button
+                className="inline-flex min-h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700"
+                type="button"
+                onClick={() => onFieldChange('uploadedStructure', [])}
+              >
+                Volver a plantilla base
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-md border border-slate-200">
+        <div className="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-950">Estructura que se guardara para {values.banco_codigo || 'el banco'}</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Se generan {structure.length} campos ordenados. Existentes para este banco: {savedMappings.length}.
+            </p>
+          </div>
+          <button
+            className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md bg-teal-700 px-3 text-sm font-semibold text-white disabled:opacity-60"
+            disabled={!values.banco_codigo || isGenerating}
+            type="button"
+            onClick={() => onGenerate(structure)}
+          >
+            <Plus className="h-4 w-4" />
+            {isGenerating ? 'Generando...' : 'Generar estructura completa'}
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left text-xs">
+            <thead className="bg-white text-slate-500">
+              <tr>
+                <th className="px-3 py-2 font-semibold">Pos.</th>
+                <th className="px-3 py-2 font-semibold">Campo Nomina-Ec</th>
+                <th className="px-3 py-2 font-semibold">Campo banco</th>
+                <th className="px-3 py-2 font-semibold">Formato</th>
+                <th className="px-3 py-2 font-semibold">Req.</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {structure.map((field, index) => {
+                const saved = savedMappings.find((mapping) => mapping.canonical_field === field.canonical_field);
+                return (
+                  <tr className={saved ? 'bg-emerald-50/50' : 'bg-white'} key={field.canonical_field}>
+                    <td className="px-3 py-2 font-mono">{field.position}</td>
+                    <td className="px-3 py-2">
+                      <select
+                        className="w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-xs"
+                        value={CANONICAL_BANK_FIELDS.includes(field.canonical_field) ? field.canonical_field : ''}
+                        onChange={(event) => updateStructureField(index, 'canonical_field', event.target.value)}
+                      >
+                        <option value="">Revisar campo</option>
+                        {CANONICAL_BANK_FIELDS.map((option) => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        className="w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-xs"
+                        value={field.bank_field_name}
+                        onChange={(event) => updateStructureField(index, 'bank_field_name', event.target.value.toUpperCase())}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        className="w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-xs"
+                        value={field.formatter || ''}
+                        onChange={(event) => updateStructureField(index, 'formatter', event.target.value)}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-700"
+                        type="checkbox"
+                        checked={Boolean(field.required)}
+                        onChange={(event) => updateStructureField(index, 'required', event.target.checked)}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-950">
+        Banco y archivo plano consume esta homologacion guardada. Si no existe, usa la plantilla base; si existe, el generador ordena el archivo por estas posiciones.
       </div>
     </div>
   );
@@ -1130,6 +1411,44 @@ function BankFileOperationPanel({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function BankMappingGroups({ records }) {
+  const groups = records.reduce((acc, record) => {
+    const code = normalizeBankCode(record.banco_codigo);
+    if (!acc.has(code)) acc.set(code, []);
+    acc.get(code).push(record);
+    return acc;
+  }, new Map());
+
+  if (groups.size === 0) {
+    return (
+      <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
+        Aun no hay estructuras bancarias homologadas.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {[...groups.entries()].map(([code, mappings]) => {
+        const ordered = [...mappings].sort((a, b) => Number(a.position) - Number(b.position));
+        return (
+          <div className="rounded-md bg-slate-50 px-3 py-2" key={code}>
+            <p className="text-sm font-semibold text-slate-900">{code}</p>
+            <p className="mt-1 text-xs text-slate-500">{ordered.length} campos homologados</p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {ordered.slice(0, 12).map((mapping) => (
+                <span className="rounded bg-white px-2 py-1 text-[11px] text-slate-600" key={mapping.id}>
+                  {mapping.position}. {mapping.bank_field_name}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -1561,6 +1880,59 @@ function Parametrizacion() {
     },
   });
 
+  const generateBankMappingStructureMutation = useMutation({
+    mutationFn: async (structure) => {
+      const bancoCodigo = normalizeBankCode(activeValues.banco_codigo);
+      const existingMappings = mappingsForBank(summary, bancoCodigo);
+      const validStructure = structure.filter((field) => CANONICAL_BANK_FIELDS.includes(field.canonical_field));
+      if (!bancoCodigo) {
+        throw new Error('Selecciona un banco antes de generar la homologacion.');
+      }
+      if (validStructure.length === 0) {
+        throw new Error('La estructura no tiene campos canonicos validos para guardar.');
+      }
+
+      const savedRows = [];
+      for (const field of validStructure) {
+        const payload = {
+          banco_codigo: bancoCodigo,
+          canonical_field: field.canonical_field,
+          bank_field_name: String(field.bank_field_name || field.canonical_field).trim().toUpperCase(),
+          position: Number(field.position),
+          formatter: String(field.formatter || '').trim(),
+          required: Boolean(field.required),
+          metadata: {
+            source: Array.isArray(activeValues.uploadedStructure) && activeValues.uploadedStructure.length > 0
+              ? 'archivo_plano_modelo'
+              : 'plantilla_nomina_ec',
+            template: activeValues.template,
+          },
+        };
+        const existing = existingMappings.find((mapping) => mapping.canonical_field === field.canonical_field);
+        const saved = existing
+          ? await updateConfigurationResource(token, 'bankFieldMappings', existing.id, payload)
+          : await createConfigurationResource(token, 'bankFieldMappings', payload);
+        savedRows.push(saved);
+      }
+
+      await completeOnboardingStep(token, 'bancos', {
+        notes: `Homologacion bancaria ${bancoCodigo} generada como estructura completa.`,
+        evidence: { bancoCodigo, totalCampos: savedRows.length },
+      });
+
+      return { bancoCodigo, savedRows };
+    },
+    onSuccess: ({ bancoCodigo, savedRows }) => {
+      setError('');
+      setMessage(`Homologacion ${bancoCodigo} actualizada: ${savedRows.length} campos guardados.`);
+      queryClient.invalidateQueries({ queryKey: ['configuration-summary'] });
+    },
+    onError: (err) => {
+      setMessage('');
+      setError(extractApiError(err, 'No pudimos generar la estructura bancaria completa.'));
+    },
+  });
+
   const activeDefinition = formDefinitions.find((definition) => definition.key === activeForm) || formDefinitions[0];
   const activeValues = forms[activeDefinition.key];
   const isEditingActiveRecord = editingRecord?.definitionKey === activeDefinition.key;
@@ -1584,6 +1956,26 @@ function Parametrizacion() {
   function updateBankFilePeriod(name, value) {
     setGeneratedBankFile(null);
     setBankFilePeriod((current) => ({ ...current, [name]: value }));
+  }
+
+  function applyBankProfileToMapping(bancoCodigo) {
+    const profile = (summary?.resources?.bankProfiles || []).find(
+      (item) => normalizeBankCode(item.banco_codigo) === normalizeBankCode(bancoCodigo)
+    );
+    setGeneratedBankFile(null);
+    setForms((current) => ({
+      ...current,
+      homologacion_banco: {
+        ...current.homologacion_banco,
+        banco_codigo: bancoCodigo,
+        template: bankTemplateFromProfile(profile),
+        uploadedStructure: [],
+      },
+    }));
+  }
+
+  function generateBankMappingStructure(structure) {
+    generateBankMappingStructureMutation.mutate(structure);
   }
 
   function generateBankFile() {
@@ -1628,6 +2020,9 @@ function Parametrizacion() {
 
   function submitForm(event) {
     event.preventDefault();
+    if (activeDefinition.customType === 'bankMappingStructure') {
+      return;
+    }
     saveMutation.mutate({
       definition: activeDefinition,
       values: activeValues,
@@ -1815,6 +2210,15 @@ function Parametrizacion() {
                   onRemoveBracket={removeBracket}
                 />
               </div>
+            ) : activeDefinition.customType === 'bankMappingStructure' ? (
+              <BankMappingStructureBuilder
+                values={activeValues}
+                summary={summary}
+                onFieldChange={updateField}
+                onApplyProfile={applyBankProfileToMapping}
+                onGenerate={generateBankMappingStructure}
+                isGenerating={generateBankMappingStructureMutation.isPending}
+              />
             ) : (
               <>
                 <div className="form-grid mt-5">
@@ -1830,7 +2234,10 @@ function Parametrizacion() {
                 </div>
                 {activeDefinition.key === 'banco' && (
                   <>
-                    <BankFlatFileGuide values={activeValues} />
+                    <BankFlatFileGuide
+                      values={activeValues}
+                      mappings={mappingsForBank(summary, activeValues.banco_codigo)}
+                    />
                     <BankFileOperationPanel
                       values={activeValues}
                       period={bankFilePeriod}
@@ -1844,29 +2251,33 @@ function Parametrizacion() {
               </>
             )}
 
-            <button
-              className="mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60"
-              disabled={saveMutation.isPending}
-              type="submit"
-            >
-              {isEditingActiveRecord ? <Edit3 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-              {saveMutation.isPending
-                ? 'Guardando...'
-                : (isEditingActiveRecord
-                  ? activeDefinition.updateLabel || (activeDefinition.key === 'banco' ? 'Actualizar estructura bancaria' : 'Actualizar parametro')
-                  : activeDefinition.saveLabel || (activeDefinition.key === 'banco' ? 'Guardar estructura bancaria' : 'Guardar parametro'))}
-            </button>
+            {activeDefinition.customType !== 'bankMappingStructure' && (
+              <button
+                className="mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60"
+                disabled={saveMutation.isPending}
+                type="submit"
+              >
+                {isEditingActiveRecord ? <Edit3 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                {saveMutation.isPending
+                  ? 'Guardando...'
+                  : (isEditingActiveRecord
+                    ? activeDefinition.updateLabel || (activeDefinition.key === 'banco' ? 'Actualizar estructura bancaria' : 'Actualizar parametro')
+                    : activeDefinition.saveLabel || (activeDefinition.key === 'banco' ? 'Guardar estructura bancaria' : 'Guardar parametro'))}
+              </button>
+            )}
           </form>
 
           <aside className="rounded-md border border-slate-200 p-4">
             <h3 className="font-semibold text-slate-950">{activeDefinition.recordsTitle || 'Registros vigentes'}</h3>
             <div className="mt-4 space-y-3">
-              {records.length === 0 && (
+              {activeDefinition.customType === 'bankMappingStructure' ? (
+                <BankMappingGroups records={records} />
+              ) : records.length === 0 && (
                 <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
                   {activeDefinition.emptyText || 'Aun no hay registros en esta categoria.'}
                 </p>
               )}
-              {records.slice(0, 12).map((record) => (
+              {activeDefinition.customType !== 'bankMappingStructure' && records.slice(0, 12).map((record) => (
                 <div className="rounded-md bg-slate-50 px-3 py-2" key={record.id}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
