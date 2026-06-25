@@ -10,6 +10,7 @@ const {
   getLegalParametersForTenant,
 } = require('./legalParameterService');
 const { getApprovedDeductions } = require('./beneficioEmpleadoService');
+const { persistPayrollCalculationLines } = require('./payrollAccountingService');
 
 const FOURTEENTH_REGION_PARAMETERS = {
   costa_galapagos: 'decimo_cuarto_costa_galapagos',
@@ -199,7 +200,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     netoRecibir,
   };
 
-  await db.query(`
+  const payrollResult = await db.query(`
     INSERT INTO nominas (
       tenant_id, empleado_id, anio, mes, dias_trabajados,
       sueldo_bruto, horas_extras_50, horas_extras_100, total_ingresos,
@@ -222,6 +223,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
       detalle_calculo = EXCLUDED.detalle_calculo,
       updated_at = NOW()
     WHERE nominas.estado = 'borrador'
+    RETURNING id
   `, [
     tenantId,
     emp.id,
@@ -240,6 +242,18 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     netoRecibir,
     JSON.stringify(detalleCalculo),
   ]);
+
+  if (payrollResult.rows[0]?.id) {
+    await persistPayrollCalculationLines({
+      payrollId: payrollResult.rows[0].id,
+      tenantId,
+      empleadoId: emp.id,
+      anio,
+      mes,
+      employee: emp,
+      detalleCalculo,
+    });
+  }
 
   return {
     empleadoId: emp.id,

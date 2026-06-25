@@ -153,6 +153,12 @@ app.get('/api/beneficios', requireRole('owner', 'admin_rrhh'), beneficioEmpleado
 app.post('/api/beneficios', requireRole('owner', 'admin_rrhh'), beneficioEmpleadoController.crear);
 app.put('/api/beneficios/:id', requireRole('owner', 'admin_rrhh'), beneficioEmpleadoController.actualizar);
 
+const payrollAccountingController = require('./controllers/payrollAccountingController');
+app.get('/api/nomina/contabilidad/conceptos', requireRole('owner', 'admin_rrhh'), payrollAccountingController.listConcepts);
+app.get('/api/nomina/contabilidad/mapeos', requireRole('owner', 'admin_rrhh'), payrollAccountingController.listMappings);
+app.post('/api/nomina/contabilidad/mapeos', requireRole('owner', 'admin_rrhh'), payrollAccountingController.createMapping);
+app.put('/api/nomina/contabilidad/mapeos/:id', requireRole('owner', 'admin_rrhh'), payrollAccountingController.updateMapping);
+
 const nominaController = require('./controllers/nominaController');
 app.post('/api/nomina/calcular', requireRole('owner', 'admin_rrhh'), nominaController.calcularMes);
 app.get('/api/nomina/periodo/:anio/:mes', requireRole('owner', 'admin_rrhh'), nominaController.obtenerEstadoPeriodo);

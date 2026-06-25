@@ -1,133 +1,133 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-AUDITORIA-INTEGRAL-V55-NOMINA-EC-2026",
-  "planCode": "AIV55",
+  "plan": "HAIKY-CONTABILIDAD-REPORTES-NOMINA-2026",
+  "planCode": "CRN26",
   "status": "completed_local",
-  "phaseCompleted": "AIV55-06",
-  "currentPhase": "AIV55-06-banco-pacifico-archivo-real",
-  "updatedAt": "2026-06-23T20:45:00.0000000-05:00",
-  "summary": "AIV55 segunda pasada: Banco Pacifico implementado como plantilla real para transferencias interbancarias inmediatas, con generador, UI de plantilla, seed demo y pruebas.",
+  "phaseCompleted": "CRN26-08",
+  "currentPhase": "CRN26-08-cierre-qa-local",
+  "updatedAt": "2026-06-24T21:25:00.0000000-05:00",
+  "summary": "CRN26 ejecutado localmente: esquema contable por tenant, lineas normalizadas de calculo, reportes por empleado, matriz empleados x beneficios/conceptos, reportes contables balanceados y PWA expuesta.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: la pantalla Banco y archivo plano no funciona; implementar Banco Pacifico segun adjunto Formato_para_transferencias_interbancarias_inmediatas.pdf.",
-  "previousAuditLockHash": "15335BC89101EE33C845DF3ED4F78D56DF4D54666CC063DEBC4C6F7481C2CA17",
+  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts de acuerdo al Open Haiky Plan HAIKY-CONTABILIDAD-REPORTES-NOMINA-2026.",
+  "previousAuditLockHash": "D26A83AC669898AE9AB99E6B7F168E2F759EB276828D3613751509B5177D626C",
   "filesModified": [
     "CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    ".github/prompts/AUDITORIA-INTEGRAL-V55-NOMINA-EC-2026-00-baseline.md",
-    ".github/prompts/AUDITORIA-INTEGRAL-V55-NOMINA-EC-2026-01-nomina-legal.md",
-    ".github/prompts/AUDITORIA-INTEGRAL-V55-NOMINA-EC-2026-02-pwa-operativa.md",
-    ".github/prompts/AUDITORIA-INTEGRAL-V55-NOMINA-EC-2026-03-app-movil.md",
-    ".github/prompts/AUDITORIA-INTEGRAL-V55-NOMINA-EC-2026-04-lopdp-auditoria.md",
-    ".github/prompts/AUDITORIA-INTEGRAL-V55-NOMINA-EC-2026-05-qa-cierre.md",
-    "docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V55_NOMINA_EC_2026.md",
-    "docs2/auditoria-integral-v55-nomina-ec-2026/MATRIZ_AIV55_HALLAZGOS.md",
-    "docs2/auditoria-integral-v55-nomina-ec-2026/RUNBOOK_AIV55_QA_CIERRE.md",
-    "docs2/auditoria-integral-v55-nomina-ec-2026/REPORTE_AIV55_00_05_CIERRE_LOCAL.md",
     "backend/prisma/schema.prisma",
-    "backend/prisma/migrations/20260623195500_aiv55_employee_reserve_whatsapp_consent/migration.sql",
+    "backend/prisma/migrations/20260624210000_crn26_payroll_accounting_reports/migration.sql",
+    "backend/src/app.js",
+    "backend/src/controllers/payrollAccountingController.js",
     "backend/src/services/calculoNominaService.js",
-    "backend/src/services/calculoNominaService.test.js",
-    "backend/src/controllers/empleadoController.js",
-    "backend/src/services/employeeImportService.js",
-    "backend/scripts/seed-demo-commercial.js",
-    "backend/src/services/communicationService.js",
-    "backend/src/services/communicationService.test.js",
-    "backend/src/services/employeeAppInviteService.js",
-    "backend/src/services/auditService.js",
-    "frontend-web/src/pages/Nomina/CerrarMes.jsx",
-    "frontend-web/src/pages/Empleados/NuevoEmpleado.jsx",
-    "frontend-web/src/pages/Landing.jsx",
-    "app-movil/src/screens/MarcacionScreen.js",
-    "app-movil/src/screens/AutoservicioScreen.js",
-    "backend/src/config/bank-file-profiles.json",
-    "backend/src/services/bancoAebGenerator.js",
-    "backend/src/services/bancoAebGenerator.test.js",
+    "backend/src/services/configurationService.js",
+    "backend/src/services/payrollAccountingService.js",
+    "backend/src/services/payrollReportService.js",
+    "backend/src/services/payrollReportService.test.js",
     "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-    "backend/scripts/seed-demo-commercial.js"
+    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
+    "docs2/PLAN_HAIKY_CONTABILIDAD_REPORTES_NOMINA_2026.md",
+    "docs2/contabilidad-reportes-nomina-2026/MATRIZ_CRN26_REQUERIMIENTOS.md",
+    "docs2/contabilidad-reportes-nomina-2026/CONTRATO_CRN26_ESQUEMA_REPORTES_CONTABLES.md",
+    "docs2/contabilidad-reportes-nomina-2026/RUNBOOK_CRN26_QA_RELEASE.md",
+    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_00_BASELINE.md",
+    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_01_DIAGNOSTICO_RUNTIME.md",
+    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_02_MODELO_DATOS.md",
+    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_03_BACKEND_ESQUEMA_CONTABLE.md",
+    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_04_MOTOR_LINEAS_CALCULO.md",
+    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_05_REPORTES_CALCULO_MATRIZ.md",
+    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_06_REPORTES_CONTABLES.md",
+    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_07_FRONTEND_PWA.md",
+    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_08_CIERRE_QA.md",
+    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-00-baseline.md",
+    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-01-diagnostico-runtime.md",
+    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-02-modelo-datos-conceptos.md",
+    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-03-backend-esquema-contable.md",
+    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-04-motor-lineas-calculo.md",
+    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-05-reportes-calculo-matriz.md",
+    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-06-reportes-contables.md",
+    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-07-frontend-pwa.md",
+    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-08-qa-release.md"
   ],
   "validationChecks": [
     {
-      "gate": "AIV55-PACIFICO-BANK-TEST",
+      "gate": "CRN26-PRISMA-VALIDATE",
       "status": "PASS",
-      "detail": "npm.cmd test -- bancoAebGenerator.test.js --runInBand: 1 suite y 9 tests."
+      "detail": "npx.cmd prisma validate en backend finalizo correctamente."
     },
     {
-      "gate": "AIV55-PACIFICO-SYNTAX",
+      "gate": "CRN26-MIGRATE-DEPLOY",
       "status": "PASS",
-      "detail": "node --check en bancoAebGenerator.js y seed-demo-commercial.js."
+      "detail": "npx.cmd prisma migrate deploy aplico 20260624210000_crn26_payroll_accounting_reports sobre plan_haiky."
     },
     {
-      "gate": "AIV55-PACIFICO-PWA-BUILD",
+      "gate": "CRN26-BACKEND-TESTS",
       "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web compilo Vite/PWA correctamente tras cerrar dev server anterior."
+      "detail": "npm.cmd test -- payrollReportService.test.js calculoNominaService.test.js --runInBand: 2 suites, 19 tests."
     },
     {
-      "gate": "AIV55-BACKEND-TESTS",
+      "gate": "CRN26-NODE-CHECK",
       "status": "PASS",
-      "detail": "npm.cmd test -- calculoNominaService.test.js communicationService.test.js --runInBand: 2 suites y 19 tests."
+      "detail": "node --check para payrollAccountingService, payrollReportService, configurationService, payrollAccountingController y app."
     },
     {
-      "gate": "AIV55-PRISMA-VALIDATE",
+      "gate": "CRN26-FRONTEND-BUILD",
       "status": "PASS",
-      "detail": "npx.cmd prisma validate confirmo schema valido."
+      "detail": "npm.cmd run build en frontend-web finalizo correctamente con Vite/PWA."
     },
     {
-      "gate": "AIV55-MIGRATIONS",
+      "gate": "CRN26-PWA-EXPOSURE",
       "status": "PASS",
-      "detail": "npx.cmd prisma migrate deploy aplico 20260623195500_aiv55_employee_reserve_whatsapp_consent."
+      "detail": "Parametrizacion expone Esquema contable y DescargarReportes expone detalle por empleado, matriz y reporte contable CRN26."
     },
     {
-      "gate": "AIV55-PWA-BUILD",
+      "gate": "CRN26-AUDITLOCK-JSON",
       "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web compilo Vite/PWA correctamente."
-    },
-    {
-      "gate": "AIV55-MOBILE-STORES",
-      "status": "PASS",
-      "detail": "npm.cmd run check:stores verifico configuracion, identificadores, URLs y assets."
-    },
-    {
-      "gate": "AIV55-MOBILE-SYNTAX",
-      "status": "PASS",
-      "detail": "node --check en MarcacionScreen.js y AutoservicioScreen.js."
+      "detail": "AuditLock actualizado a CRN26-08 con firma SHA256."
     }
   ],
   "fases": [
     {
-      "phase": "AIV55-00",
+      "phase": "CRN26-00",
+      "status": "completed_documental"
+    },
+    {
+      "phase": "CRN26-01",
       "status": "completed_local"
     },
     {
-      "phase": "AIV55-01",
+      "phase": "CRN26-02",
       "status": "completed_local"
     },
     {
-      "phase": "AIV55-02",
+      "phase": "CRN26-03",
       "status": "completed_local"
     },
     {
-      "phase": "AIV55-03",
+      "phase": "CRN26-04",
       "status": "completed_local"
     },
     {
-      "phase": "AIV55-04",
+      "phase": "CRN26-05",
       "status": "completed_local"
     },
     {
-      "phase": "AIV55-05",
+      "phase": "CRN26-06",
       "status": "completed_local"
     },
     {
-      "phase": "AIV55-06",
+      "phase": "CRN26-07",
+      "status": "completed_local"
+    },
+    {
+      "phase": "CRN26-08",
       "status": "completed_local"
     }
   ],
   "residualRisk": [
-    "Revision laboral, contable y LOPDP profesional requerida antes de produccion.",
-    "Clientes existentes deben confirmar modalidad real de fondo de reserva durante migracion de datos.",
-    "Prueba visual de app movil requiere dispositivo o Expo Go.",
-    "El codigo bancario base de Banco Pacifico queda parametrizable por perfil si el banco entrega una variante distinta por convenio."
+    "Las cuentas contables reales deben validarse con contador y plan de cuentas del tenant antes de produccion.",
+    "El formato importable a ERP externo queda sujeto al cliente y no forma parte del cierre local CRN26.",
+    "La matriz dinamica puede requerir optimizacion adicional para tenants con alta cardinalidad de conceptos.",
+    "Smoke visual con usuario real queda recomendado antes de release productivo."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "3DBA5DC6889EBAAD5A2F325CD9DBEBD447C6971126ECD4BF6DEBF19B37AB4E23"
+  "signature": "A72B4901E67D1E1CBAAECE912F8C62B1E0D3E480DFE11B4EC52C2D16DB0D9968"
 }

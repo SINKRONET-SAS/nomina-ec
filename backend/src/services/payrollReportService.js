@@ -8,6 +8,12 @@ const { s3Upload } = require('../config/s3');
 const db = require('../config/database');
 const { toMoneyString } = require('../utils/money');
 const { recordAudit } = require('./auditService');
+const {
+  buildAccountingEntries,
+  buildBenefitsMatrixRows,
+  buildEmployeeDetailRows,
+  getAccountingMappings,
+} = require('./payrollAccountingService');
 
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const PDF_MIME = 'application/pdf';
@@ -17,6 +23,9 @@ const REPORT_TYPES = {
   PAYROLL_SUMMARY: 'summary',
   PAYROLL_DETAIL_TABULAR: 'detail',
   PAYROLL_ACCOUNTING_ENTRIES: 'accounting',
+  PAYROLL_EMPLOYEE_DETAIL: 'employee_detail',
+  PAYROLL_BENEFITS_MATRIX: 'benefits_matrix',
+  PAYROLL_ACCOUNTING_REPORT: 'accounting_report',
 };
 
 const FORMAT_MIME = {
@@ -45,7 +54,7 @@ async function generarReporteNomina({
     throw new Error(`Formato de reporte no soportado: ${format}`);
   }
 
-  if (['PAYROLL_DETAIL_TABULAR', 'PAYROLL_ACCOUNTING_ENTRIES'].includes(normalizedReportCode) && normalizedFormat === 'pdf') {
+  if (normalizedReportCode !== 'PAYROLL_SUMMARY' && normalizedFormat === 'pdf') {
     throw new Error(`${normalizedReportCode} se exporta como XLSX o CSV para mantener formato tabular auditable`);
   }
 
@@ -56,11 +65,22 @@ async function generarReporteNomina({
   }
 
   const tenant = await getTenant(tenantId);
+  const reportOptions = {};
+  if (normalizedReportCode === 'PAYROLL_ACCOUNTING_REPORT') {
+    reportOptions.accountingMappings = await getAccountingMappings(tenantId, {
+      anio: Number(anio),
+      mes: Number(mes),
+      userId: context.userId || null,
+    });
+  }
+  const exportRows = normalizedFormat === 'pdf'
+    ? []
+    : rowsForReport(rows, normalizedReportCode, Number(anio), Number(mes), reportOptions);
   const buffer = normalizedFormat === 'pdf'
     ? await buildSummaryPdf({ tenant, anio, mes, rows, filters, context })
     : normalizedFormat === 'csv'
-      ? buildCsv({ anio, mes, rows, reportCode: normalizedReportCode })
-      : await buildWorkbook({ tenant, anio, mes, rows, reportCode: normalizedReportCode, filters, context });
+      ? buildCsv({ exportRows, reportCode: normalizedReportCode })
+      : await buildWorkbook({ tenant, anio, mes, exportRows, reportCode: normalizedReportCode, filters, context });
 
   const scopeSuffix = buildScopeSuffix(filters);
   const fileName = `${normalizedReportCode}_${anio}${String(mes).padStart(2, '0')}${scopeSuffix}.${normalizedFormat}`;
@@ -92,7 +112,7 @@ async function generarReporteNomina({
     contentType: FORMAT_MIME[normalizedFormat],
     reportCode: normalizedReportCode,
     format: normalizedFormat,
-    totalFilas: rows.length,
+    totalFilas: normalizedFormat === 'pdf' ? rows.length : exportRows.length,
     resumen: summarizeRows(rows),
   };
 }
@@ -144,7 +164,25 @@ async function getPayrollRows(tenantId, anio, mes, filters = {}) {
       COALESCE(ou.code, '') AS unidad_codigo,
       COALESCE(ou.name, e.departamento, '') AS unidad_nombre,
       COALESCE(ou.unit_type, CASE WHEN e.departamento <> '' THEN 'departamento' ELSE '' END) AS unidad_tipo,
-      COALESCE(ou.cost_center_code, '') AS centro_costo
+      COALESCE(ou.cost_center_code, '') AS centro_costo,
+      COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+          'concept_code', pcl.concept_code,
+          'concept_label', pcl.concept_label,
+          'category', pcl.category,
+          'amount', pcl.amount,
+          'source', pcl.source,
+          'source_id', pcl.source_id,
+          'source_version', pcl.source_version,
+          'legal_parameter_key', pcl.legal_parameter_key,
+          'cost_center_code', pcl.cost_center_code,
+          'organization_unit_code', pcl.organization_unit_code,
+          'position_code', pcl.position_code,
+          'metadata', pcl.metadata
+        ) ORDER BY pcl.category, pcl.concept_code, pcl.source_id)
+        FROM payroll_calculation_lines pcl
+        WHERE pcl.payroll_id = n.id
+      ), '[]'::jsonb) AS calculation_lines
     FROM nominas n
     JOIN empleados e ON e.id = n.empleado_id
     LEFT JOIN job_positions jp
@@ -186,17 +224,17 @@ function addPositionFilter(where, params, value) {
   )`);
 }
 
-async function buildWorkbook({ tenant, anio, mes, rows, reportCode, filters, context }) {
+async function buildWorkbook({ tenant, anio, mes, exportRows, reportCode, filters, context }) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Nomina-Ec';
   workbook.created = new Date();
   workbook.modified = new Date();
 
   const sheet = workbook.addWorksheet(reportCode === 'PAYROLL_SUMMARY' ? 'Resumen' : 'Detalle');
-  sheet.columns = getWorkbookColumns(reportCode);
+  sheet.columns = getWorkbookColumns(reportCode, exportRows);
   sheet.views = [{ state: 'frozen', ySplit: 1 }];
 
-  rowsForReport(rows, reportCode, anio, mes).forEach((row) => {
+  exportRows.forEach((row) => {
     sheet.addRow(row);
   });
 
@@ -230,22 +268,27 @@ async function buildWorkbook({ tenant, anio, mes, rows, reportCode, filters, con
   return workbook.xlsx.writeBuffer();
 }
 
-function buildCsv({ anio, mes, rows, reportCode }) {
-  const columns = getWorkbookColumns(reportCode);
+function buildCsv({ exportRows, reportCode }) {
+  const columns = getWorkbookColumns(reportCode, exportRows);
   const header = columns.map((column) => column.header);
   const lines = [
     header.map(csvCell).join(','),
-    ...rows.map((row) => {
-      return rowsForReport([row], reportCode, anio, mes)
-        .map((exportRow) => columns.map((column) => csvCell(exportRow[column.key])).join(','))
-        .join('\r\n');
-    }),
+    ...exportRows.map((exportRow) => columns.map((column) => csvCell(exportRow[column.key])).join(',')),
   ];
 
   return Buffer.from(`\ufeff${lines.join('\r\n')}`, 'utf8');
 }
 
-function rowsForReport(rows, reportCode, anio, mes) {
+function rowsForReport(rows, reportCode, anio, mes, options = {}) {
+  if (reportCode === 'PAYROLL_EMPLOYEE_DETAIL') {
+    return buildEmployeeDetailRows(rows, anio, mes);
+  }
+  if (reportCode === 'PAYROLL_BENEFITS_MATRIX') {
+    return buildBenefitsMatrixRows(rows, anio, mes);
+  }
+  if (reportCode === 'PAYROLL_ACCOUNTING_REPORT') {
+    return buildAccountingEntries(rows, anio, mes, options.accountingMappings);
+  }
   if (reportCode === 'PAYROLL_ACCOUNTING_ENTRIES') {
     return rows.flatMap((row) => mapAccountingEntries(row, anio, mes));
   }
@@ -333,7 +376,7 @@ function csvCell(value) {
   return `"${normalized.replace(/"/g, '""')}"`;
 }
 
-function getWorkbookColumns(reportCode) {
+function getWorkbookColumns(reportCode, exportRows = []) {
   if (reportCode === 'PAYROLL_ACCOUNTING_ENTRIES') {
     return [
       { header: 'Periodo', key: 'periodo', width: 12 },
@@ -345,6 +388,64 @@ function getWorkbookColumns(reportCode) {
       { header: 'Empleado', key: 'empleado', width: 36 },
       { header: 'Cedula', key: 'cedula', width: 14 },
       { header: 'Referencia', key: 'referencia', width: 28 },
+    ];
+  }
+
+  if (reportCode === 'PAYROLL_ACCOUNTING_REPORT') {
+    return [
+      { header: 'Periodo', key: 'periodo', width: 12 },
+      { header: 'Asiento', key: 'asiento', width: 18 },
+      { header: 'Concepto codigo', key: 'conceptoCodigo', width: 18 },
+      { header: 'Concepto', key: 'concepto', width: 28 },
+      { header: 'Categoria', key: 'categoria', width: 16 },
+      { header: 'Cuenta', key: 'cuenta', width: 14 },
+      { header: 'Nombre cuenta', key: 'nombreCuenta', width: 34 },
+      { header: 'Debe', key: 'debe', width: 14, style: { numFmt: '$#,##0.00' } },
+      { header: 'Haber', key: 'haber', width: 14, style: { numFmt: '$#,##0.00' } },
+      { header: 'Empleado', key: 'empleado', width: 36 },
+      { header: 'Cedula', key: 'cedula', width: 14 },
+      { header: 'Centro costo', key: 'centroCosto', width: 16 },
+      { header: 'Referencia', key: 'referencia', width: 34 },
+    ];
+  }
+
+  if (reportCode === 'PAYROLL_EMPLOYEE_DETAIL') {
+    return [
+      { header: 'Periodo', key: 'periodo', width: 12 },
+      { header: 'Cedula', key: 'cedula', width: 14 },
+      { header: 'Empleado', key: 'empleado', width: 36 },
+      { header: 'Departamento', key: 'departamento', width: 20 },
+      { header: 'Codigo cargo', key: 'cargoCodigo', width: 16 },
+      { header: 'Cargo', key: 'cargo', width: 24 },
+      { header: 'Unidad organizativa', key: 'unidad', width: 26 },
+      { header: 'Centro costo', key: 'centroCosto', width: 16 },
+      { header: 'Concepto codigo', key: 'conceptoCodigo', width: 18 },
+      { header: 'Concepto', key: 'concepto', width: 28 },
+      { header: 'Categoria', key: 'categoria', width: 16 },
+      { header: 'Origen', key: 'origen', width: 16 },
+      { header: 'Referencia origen', key: 'referenciaOrigen', width: 22 },
+      { header: 'Valor', key: 'valor', width: 14, style: { numFmt: '$#,##0.00' } },
+      { header: 'Total ingresos nomina', key: 'totalIngresos', width: 20, style: { numFmt: '$#,##0.00' } },
+      { header: 'Total deducciones nomina', key: 'totalDeducciones', width: 24, style: { numFmt: '$#,##0.00' } },
+      { header: 'Neto recibir', key: 'netoRecibir', width: 16, style: { numFmt: '$#,##0.00' } },
+    ];
+  }
+
+  if (reportCode === 'PAYROLL_BENEFITS_MATRIX') {
+    return [
+      { header: 'Periodo', key: 'periodo', width: 12 },
+      { header: 'Cedula', key: 'cedula', width: 14 },
+      { header: 'Empleado', key: 'empleado', width: 36 },
+      { header: 'Departamento', key: 'departamento', width: 20 },
+      { header: 'Cargo', key: 'cargo', width: 24 },
+      { header: 'Centro costo', key: 'centroCosto', width: 16 },
+      ...getMatrixConceptColumns(exportRows),
+      { header: 'Total ingresos nomina', key: 'totalIngresosNomina', width: 20, style: { numFmt: '$#,##0.00' } },
+      { header: 'Total deducciones nomina', key: 'totalDeduccionesNomina', width: 24, style: { numFmt: '$#,##0.00' } },
+      { header: 'Total provisiones', key: 'totalProvisiones', width: 18, style: { numFmt: '$#,##0.00' } },
+      { header: 'Costo empleador', key: 'costoEmpleador', width: 18, style: { numFmt: '$#,##0.00' } },
+      { header: 'Neto recibir', key: 'netoRecibir', width: 16, style: { numFmt: '$#,##0.00' } },
+      { header: 'Conciliacion', key: 'conciliacion', width: 14 },
     ];
   }
 
@@ -391,6 +492,24 @@ function getWorkbookColumns(reportCode) {
     base[13],
     { header: 'Fuente legal', key: 'fuenteLegal', width: 30 },
   ];
+}
+
+function getMatrixConceptColumns(exportRows = []) {
+  const labels = new Map();
+  for (const row of exportRows) {
+    for (const [key, label] of Object.entries(row._conceptLabels || {})) {
+      if (!labels.has(key)) {
+        labels.set(key, label);
+      }
+    }
+  }
+
+  return [...labels.entries()].map(([key, label]) => ({
+    header: label,
+    key,
+    width: Math.max(14, Math.min(30, String(label).length + 2)),
+    style: { numFmt: '$#,##0.00' },
+  }));
 }
 
 async function buildSummaryPdf({ tenant, anio, mes, rows, filters, context }) {

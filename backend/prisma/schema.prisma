@@ -69,6 +69,8 @@ model Tenant {
   empleados              Employee[]
   cargasFamiliares       EmployeeFamilyDependent[]
   nominas                Payroll[]
+  payrollAccountingMappings PayrollAccountingMapping[]
+  payrollCalculationLines PayrollCalculationLine[]
   marcaciones            AttendanceMark[]
   novedades              AttendanceNovelty[]
   documentos             LegalDocument[]
@@ -336,6 +338,7 @@ model Employee {
   routeExceptions         RouteException[]
   novedades               AttendanceNovelty[]
   nominas                 Payroll[]
+  payrollCalculationLines PayrollCalculationLine[]
   documentos              LegalDocument[]
   actasEquipos            EquipmentDeliveryAct[]
   beneficios              EmployeeBenefit[]
@@ -762,10 +765,69 @@ model Payroll {
   updatedAt          DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   empleado           Employee      @relation(fields: [empleadoId], references: [id])
   tenant             Tenant        @relation(fields: [tenantId], references: [id])
+  calculationLines   PayrollCalculationLine[]
 
   @@unique([tenantId, empleadoId, anio, mes])
   @@index([tenantId, anio, mes])
   @@map("nominas")
+}
+
+model PayrollAccountingMapping {
+  id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                  String   @map("tenant_id") @db.Uuid
+  conceptCode               String   @map("concept_code") @db.VarChar(100)
+  conceptLabel              String   @map("concept_label") @db.VarChar(180)
+  category                  String   @db.VarChar(40)
+  entryType                 String   @default("DEVENGAMIENTO") @map("entry_type") @db.VarChar(40)
+  debitAccountCode          String   @map("debit_account_code") @db.VarChar(80)
+  debitAccountName          String   @map("debit_account_name") @db.VarChar(180)
+  creditAccountCode         String   @map("credit_account_code") @db.VarChar(80)
+  creditAccountName         String   @map("credit_account_name") @db.VarChar(180)
+  costCenterMode            String   @default("employee") @map("cost_center_mode") @db.VarChar(40)
+  fixedCostCenterCode       String   @default("") @map("fixed_cost_center_code") @db.VarChar(80)
+  requiresEmployeeBreakdown Boolean  @default(true) @map("requires_employee_breakdown")
+  status                    String   @default("activo") @db.VarChar(30)
+  validFrom                 DateTime @default(now()) @map("valid_from") @db.Date
+  validTo                   DateTime? @map("valid_to") @db.Date
+  metadata                  Json     @default("{}")
+  createdBy                 String?  @map("created_by") @db.Uuid
+  createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant                    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, conceptCode, entryType, validFrom])
+  @@index([tenantId, status, conceptCode])
+  @@map("payroll_accounting_mappings")
+}
+
+model PayrollCalculationLine {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  payrollId            String   @map("payroll_id") @db.Uuid
+  tenantId             String   @map("tenant_id") @db.Uuid
+  empleadoId           String   @map("empleado_id") @db.Uuid
+  anio                 Int
+  mes                  Int
+  conceptCode          String   @map("concept_code") @db.VarChar(100)
+  conceptLabel         String   @map("concept_label") @db.VarChar(180)
+  category             String   @db.VarChar(40)
+  amount               Decimal  @db.Decimal(12, 2)
+  source               String   @default("calculo_nomina") @db.VarChar(60)
+  sourceId             String   @default("") @map("source_id") @db.VarChar(120)
+  sourceVersion        String   @default("CRN26") @map("source_version") @db.VarChar(80)
+  legalParameterKey    String   @default("") @map("legal_parameter_key") @db.VarChar(120)
+  costCenterCode       String   @default("") @map("cost_center_code") @db.VarChar(80)
+  organizationUnitCode String   @default("") @map("organization_unit_code") @db.VarChar(80)
+  positionCode         String   @default("") @map("position_code") @db.VarChar(80)
+  metadata             Json     @default("{}")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  payroll              Payroll  @relation(fields: [payrollId], references: [id], onDelete: Cascade)
+  tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  empleado             Employee @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, anio, mes])
+  @@index([payrollId, conceptCode])
+  @@index([tenantId, empleadoId, anio, mes])
+  @@map("payroll_calculation_lines")
 }
 
 model LegalDocument {

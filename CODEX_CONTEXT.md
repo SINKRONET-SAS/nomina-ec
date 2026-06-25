@@ -1,6 +1,62 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-CONTABILIDAD-REPORTES-NOMINA-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-CONTABILIDAD-REPORTES-NOMINA-2026 |
+| Codigo | CRN26 |
+| Estado | CRN26-00..08 ejecutadas localmente |
+| Fase actual | CRN26-08 cierre QA local |
+| Alcance | esquema contable por parametro de nomina, reportes por empleado, matriz empleados x beneficios/conceptos y reportes contables de nomina |
+| Requerimiento fuente | "Es necesario desplegar el esquema contable de cada uno de los parametros, consumir y desplegar los calculos de nomina en reportes tanto a nivel de un empleado como de todos los empleados con filas los empleados y columnas los beneficios, adicionalmente que se despliegue los reportes contables relativos a nomina." |
+| Plan doc | `docs2/PLAN_HAIKY_CONTABILIDAD_REPORTES_NOMINA_2026.md` |
+| Matriz | `docs2/contabilidad-reportes-nomina-2026/MATRIZ_CRN26_REQUERIMIENTOS.md` |
+| Contrato | `docs2/contabilidad-reportes-nomina-2026/CONTRATO_CRN26_ESQUEMA_REPORTES_CONTABLES.md` |
+| Runbook | `docs2/contabilidad-reportes-nomina-2026/RUNBOOK_CRN26_QA_RELEASE.md` |
+| Reporte baseline | `docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_00_BASELINE.md` |
+| Reportes runtime | `docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_01_DIAGNOSTICO_RUNTIME.md` .. `REPORTE_CRN26_08_CIERRE_QA.md` |
+| Prompts | `.github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-{00..08}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Resumen CRN26
+
+CRN26 formaliza la solucion definitiva para contabilidad y reportes de nomina. La ejecucion local agrego esquema contable gobernado por tenant, lineas de calculo normalizadas, reportes por empleado, matriz empleados x beneficios/conceptos y asientos contables balanceados, manteniendo compatibilidad con `detalle_calculo` historico y reportes legacy.
+
+### Fases CRN26
+
+| Fase | Prioridad | Estado | Resumen |
+|------|-----------|--------|---------|
+| CRN26-00 | P0 | completed_documental | Baseline, matriz, contrato, runbook, prompts, contexto y AuditLock sin runtime. |
+| CRN26-01 | P0 | completed_local | Diagnostico runtime de parametros, calculo, beneficios, reportes, contabilidad, PWA y permisos. |
+| CRN26-02 | P0 | completed_local | Modelo de datos y conceptos contables/reportables con vigencia, RLS, indices y rollback. |
+| CRN26-03 | P0 | completed_local | Backend de esquema contable: CRUD, defaults, overrides por tenant, validaciones y auditoria. |
+| CRN26-04 | P0 | completed_local | Motor de nomina emite lineas de calculo normalizadas sin romper historico. |
+| CRN26-05 | P0 | completed_local | Reportes de calculo: detalle por empleado y matriz empleados x beneficios/conceptos. |
+| CRN26-06 | P0 | completed_local | Reportes contables: devengamiento, provisiones, pago, balance y exportacion. |
+| CRN26-07 | P0 | completed_local | PWA: esquema contable, filtros, descargas, bloqueos y navegacion. |
+| CRN26-08 | P0 | completed_local | QA, migraciones, rollback, pruebas, AuditLock y release gate. |
+
+### Reglas CRN26
+
+- No iniciar runtime sin aprobacion explicita del prompt de fase.
+- No reemplazar cuentas reales del tenant por defaults; los defaults son semilla auditable.
+- No recalcular historicos cerrados con mappings nuevos; usar snapshots y vigencia.
+- Todo reporte contable debe balancear debe/haber o fallar con error visible.
+- La matriz empleados x beneficios debe conciliar con total ingresos, deducciones, provisiones, costo empleador y neto.
+- La UI final debe exponer configuracion contable y reportes; no se acepta cierre solo backend.
+- Commits esperados: `phase: CRN26-XX task: ...`.
+
+### Ejecucion CRN26
+
+- Migracion aplicada: `20260624210000_crn26_payroll_accounting_reports`.
+- Backend: `payrollAccountingService`, `payrollAccountingController`, recurso `payrollAccountingMappings` y reportes `PAYROLL_EMPLOYEE_DETAIL`, `PAYROLL_BENEFITS_MATRIX`, `PAYROLL_ACCOUNTING_REPORT`.
+- PWA: formulario `Esquema contable` en parametrizacion y nuevos reportes internos de nomina.
+- Gates: Prisma validate PASS, migrate deploy PASS, tests backend PASS, node --check PASS y frontend build PASS.
+
+---
+
 ## Open Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-V55-NOMINA-EC-2026
 
 | Campo | Valor |

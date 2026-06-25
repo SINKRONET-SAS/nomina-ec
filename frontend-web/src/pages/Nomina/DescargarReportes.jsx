@@ -217,7 +217,7 @@ function DescargarReportes() {
             <div>
               <h2 className="text-lg font-semibold text-slate-950">Reportes internos de nomina</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Exporta resumen, detalle tabular o asientos contables de devengamiento y pago con filtros por persona, departamento, cargo o centro de costo.
+                Exporta resumen, detalle por empleado, matriz empleados por conceptos y reportes contables con filtros por persona, departamento, cargo o centro de costo.
               </p>
             </div>
           </div>
@@ -240,13 +240,16 @@ function DescargarReportes() {
               onChange={(event) => {
                 const nextReport = event.target.value;
                 setReportCode(nextReport);
-                if (['PAYROLL_DETAIL_TABULAR', 'PAYROLL_ACCOUNTING_ENTRIES'].includes(nextReport) && format === 'pdf') setFormat('xlsx');
+                if (nextReport !== 'PAYROLL_SUMMARY' && format === 'pdf') setFormat('xlsx');
               }}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
             >
               <option value="PAYROLL_DETAIL_TABULAR">Detalle tabular</option>
+              <option value="PAYROLL_EMPLOYEE_DETAIL">Detalle por empleado</option>
+              <option value="PAYROLL_BENEFITS_MATRIX">Matriz empleados x beneficios</option>
               <option value="PAYROLL_SUMMARY">Resumen de nomina</option>
-              <option value="PAYROLL_ACCOUNTING_ENTRIES">Asientos contables</option>
+              <option value="PAYROLL_ACCOUNTING_REPORT">Reporte contable CRN26</option>
+              <option value="PAYROLL_ACCOUNTING_ENTRIES">Asientos contables legacy</option>
             </select>
           </div>
           <div>

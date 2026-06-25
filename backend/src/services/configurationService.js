@@ -2,6 +2,7 @@ const db = require('../config/database');
 const AppError = require('../utils/AppError');
 const { recordAudit } = require('./auditService');
 const { getLegalParameters } = require('../config/legal-ecuador');
+const { ensureDefaultPayrollAccountingMappings } = require('./payrollAccountingService');
 
 const ONBOARDING_STEPS = [
   { code: 'empresa', label: 'Datos de empresa' },
@@ -11,6 +12,7 @@ const ONBOARDING_STEPS = [
   { code: 'jornadas', label: 'Jornadas y calendarios' },
   { code: 'zonas', label: 'Zonas de marcacion' },
   { code: 'novedades', label: 'Tipos de novedades' },
+  { code: 'contabilidad', label: 'Esquema contable de nomina' },
   { code: 'bancos', label: 'Banco y archivo plano' },
   { code: 'usuarios', label: 'Usuarios y roles' },
 ];
@@ -57,6 +59,28 @@ const RESOURCE_CONFIG = {
     tenantScoped: true,
     columns: ['code', 'name', 'shift_type', 'weekly_hours', 'start_time', 'end_time', 'break_minutes', 'tolerance_minutes', 'overtime_rules', 'calendar_rules', 'status', 'valid_from', 'valid_to'],
     orderBy: 'name',
+  },
+  payrollAccountingMappings: {
+    table: 'payroll_accounting_mappings',
+    tenantScoped: true,
+    columns: [
+      'concept_code',
+      'concept_label',
+      'category',
+      'entry_type',
+      'debit_account_code',
+      'debit_account_name',
+      'credit_account_code',
+      'credit_account_name',
+      'cost_center_mode',
+      'fixed_cost_center_code',
+      'requires_employee_breakdown',
+      'status',
+      'valid_from',
+      'valid_to',
+      'metadata',
+    ],
+    orderBy: 'category, concept_code, entry_type, valid_from DESC',
   },
   bankProfiles: {
     table: 'perfiles_bancarios',
@@ -109,6 +133,9 @@ function normalizePayload(config, payload, user) {
   if (config.table === 'job_positions') {
     return normalizeJobPositionPayload(payload);
   }
+  if (config.table === 'payroll_accounting_mappings') {
+    return normalizePayrollAccountingMappingPayload(payload, user);
+  }
 
   const values = {};
   for (const column of config.columns) {
@@ -122,6 +149,57 @@ function normalizePayload(config, payload, user) {
   }
 
   return values;
+}
+
+function normalizePayrollAccountingMappingPayload(payload = {}, user) {
+  const conceptCode = normalizeOptionalText(payload.concept_code, { lowercase: true });
+  const conceptLabel = normalizeOptionalText(payload.concept_label);
+  const debitAccountCode = normalizeOptionalText(payload.debit_account_code);
+  const debitAccountName = normalizeOptionalText(payload.debit_account_name);
+  const creditAccountCode = normalizeOptionalText(payload.credit_account_code);
+  const creditAccountName = normalizeOptionalText(payload.credit_account_name);
+
+  if (!conceptCode || !conceptLabel || !debitAccountCode || !debitAccountName || !creditAccountCode || !creditAccountName) {
+    throw new AppError('El esquema contable requiere concepto y cuentas debe/haber completas.', {
+      code: 'PAYROLL_ACCOUNTING_MAPPING_INVALID',
+      statusCode: 400,
+      userId: user?.id,
+    });
+  }
+
+  const category = normalizeOptionalText(payload.category, { lowercase: true }) || 'ingreso';
+  const entryType = normalizeOptionalText(payload.entry_type, { uppercase: true }) || 'DEVENGAMIENTO';
+  const costCenterMode = normalizeOptionalText(payload.cost_center_mode, { lowercase: true }) || 'employee';
+  const status = normalizeOptionalText(payload.status, { lowercase: true }) || 'activo';
+  const allowedCategories = ['ingreso', 'deduccion', 'provision', 'costo_empleador', 'pago'];
+  const allowedEntryTypes = ['DEVENGAMIENTO', 'PROVISION', 'PAGO', 'AJUSTE'];
+  const allowedCostCenterModes = ['employee', 'fixed', 'none'];
+
+  if (!allowedCategories.includes(category) || !allowedEntryTypes.includes(entryType) || !allowedCostCenterModes.includes(costCenterMode)) {
+    throw new AppError('El esquema contable incluye categoria, asiento o centro de costo no permitido.', {
+      code: 'PAYROLL_ACCOUNTING_MAPPING_RULE_INVALID',
+      statusCode: 400,
+      userId: user?.id,
+    });
+  }
+
+  return {
+    concept_code: conceptCode,
+    concept_label: conceptLabel,
+    category,
+    entry_type: entryType,
+    debit_account_code: debitAccountCode,
+    debit_account_name: debitAccountName,
+    credit_account_code: creditAccountCode,
+    credit_account_name: creditAccountName,
+    cost_center_mode: costCenterMode,
+    fixed_cost_center_code: normalizeOptionalText(payload.fixed_cost_center_code) || '',
+    requires_employee_breakdown: Boolean(payload.requires_employee_breakdown ?? true),
+    status,
+    valid_from: normalizeOptionalDate(payload.valid_from) || `${new Date().getFullYear()}-01-01`,
+    valid_to: normalizeOptionalDate(payload.valid_to),
+    metadata: payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : {},
+  };
 }
 
 function pickPayloadValue(payload, aliases) {
@@ -1010,6 +1088,16 @@ async function usageChecksForResource(config, record) {
     ];
   }
 
+  if (config.table === 'payroll_accounting_mappings') {
+    return [
+      await countUsage(
+        'lineas_calculo_nomina',
+        'SELECT COUNT(*)::int AS count FROM payroll_calculation_lines WHERE tenant_id = $1 AND LOWER(concept_code) = LOWER($2)',
+        [tenantId, record.concept_code || '']
+      ),
+    ];
+  }
+
   if (config.table === 'work_zones') {
     return [
       await countUsage(
@@ -1247,6 +1335,10 @@ async function completeOnboardingStep(stepCode, payload, user, context = {}) {
 }
 
 async function getConfigurationSummary(user) {
+  if (user.tenantId) {
+    await ensureDefaultPayrollAccountingMappings(user.tenantId, { userId: user.id });
+  }
+
   const resources = {};
   for (const resource of Object.keys(RESOURCE_CONFIG)) {
     resources[resource] = await listResource(resource, user);
@@ -1263,6 +1355,7 @@ async function getConfigurationSummary(user) {
       { code: 'cargos', label: 'Cargos y rangos salariales configurados', passed: resources.jobPositions.length > 0 },
       { code: 'jornada_zona', label: 'Jornada y zona configuradas', passed: resources.workShifts.length > 0 && resources.workZones.length > 0 },
       { code: 'novedades', label: 'Tipos de novedades configurados', passed: resources.noveltyTypes.length > 0 },
+      { code: 'contabilidad_nomina', label: 'Esquema contable de nomina configurado', passed: resources.payrollAccountingMappings.length > 0 },
       { code: 'bancos', label: 'Perfil bancario disponible', passed: resources.bankProfiles.length > 0 },
       { code: 'homologacion_bancaria', label: 'Homologacion bancaria configurada', passed: resources.bankFieldMappings.length > 0 },
     ],
