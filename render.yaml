@@ -1,12 +1,12 @@
 databases:
-  - name: haiky-postgres
-    databaseName: plan_haiky
-    user: haiky_migration
+  - name: nomina-ec-postgres
+    databaseName: nomina_ec
+    user: nomina_ec_app
     plan: starter
 
 services:
   - type: web
-    name: haiky-api
+    name: nomina-ec-api
     env: node
     rootDir: backend
     plan: starter
@@ -20,7 +20,7 @@ services:
         value: "true"
       - key: DATABASE_URL
         fromDatabase:
-          name: haiky-postgres
+          name: nomina-ec-postgres
           property: connectionString
       - key: REDIS_URL
         sync: false
@@ -30,6 +30,16 @@ services:
         sync: false
       - key: APP_PUBLIC_URL
         sync: false
+      - key: BACKEND_PUBLIC_URL
+        sync: false
+      - key: PAYPHONE_API_BASE
+        value: https://pay.payphonetodoesposible.com
+      - key: PAYPHONE_TOKEN
+        sync: false
+      - key: PAYPHONE_STORE_ID
+        sync: false
+      - key: PAYPHONE_TIMEOUT_MS
+        value: "12000"
       - key: SMTP_ENABLED
         sync: false
       - key: COMMUNICATION_RETENTION_DAYS
@@ -82,7 +92,7 @@ services:
         sync: false
 
   - type: worker
-    name: haiky-worker-cron
+    name: nomina-ec-worker-cron
     env: node
     rootDir: backend
     plan: starter
@@ -95,7 +105,7 @@ services:
         value: "true"
       - key: DATABASE_URL
         fromDatabase:
-          name: haiky-postgres
+          name: nomina-ec-postgres
           property: connectionString
       - key: REDIS_URL
         sync: false
@@ -111,7 +121,7 @@ services:
         sync: false
 
   - type: web
-    name: haiky-frontend
+    name: nomina-ec-frontend
     env: static
     rootDir: frontend-web
     buildCommand: npm ci && npm run build

@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Envoltura de controladores async
+// Nomina-Ec - Envoltura de controladores async
 // ============================================================
 
 function asyncHandler(handler) {

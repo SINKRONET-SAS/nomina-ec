@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Controlador de Auditoria
+// Nomina-Ec - Controlador de Auditoria
 // ============================================================
 const db = require('../config/database');
 

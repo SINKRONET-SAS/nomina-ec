@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Utilidades monetarias
+// Nomina-Ec - Utilidades monetarias
 // ============================================================
 
 function roundMoney(value) {

@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Controlador de Marcaciones
+// Nomina-Ec - Controlador de Marcaciones
 // ============================================================
 const db = require('../config/database');
 const { validarMarcacion } = require('../services/marcacionValidator');

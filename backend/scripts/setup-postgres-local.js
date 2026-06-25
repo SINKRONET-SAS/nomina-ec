@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Preparacion local de PostgreSQL
+// Nomina-Ec - Preparacion local de PostgreSQL
 // ============================================================
 const { Client } = require('pg');
 
@@ -13,9 +13,9 @@ const adminConfig = {
 };
 
 const roles = [
-  { name: 'haiky_app', password: 'haiky_app_local' },
-  { name: 'haiky_migration', password: 'haiky_migration_local' },
-  { name: 'haiky_readonly', password: 'haiky_readonly_local' },
+  { name: 'nomina_ec_app', password: 'nomina_ec_app_local' },
+  { name: 'nomina_ec_migration', password: 'nomina_ec_migration_local' },
+  { name: 'nomina_ec_readonly', password: 'nomina_ec_readonly_local' },
 ];
 
 async function ensureRole(client, role) {
@@ -31,26 +31,26 @@ async function ensureRole(client, role) {
 }
 
 async function ensureDatabase(client) {
-  const result = await client.query('SELECT 1 FROM pg_database WHERE datname = $1', ['plan_haiky']);
+  const result = await client.query('SELECT 1 FROM pg_database WHERE datname = $1', ['nomina_ec']);
 
   if (result.rowCount > 0) {
-    console.log('[DB] Base local verificada: plan_haiky');
+    console.log('[DB] Base local verificada: nomina_ec');
     return;
   }
 
-  await client.query('CREATE DATABASE plan_haiky OWNER haiky_migration');
-  console.log('[DB] Base local creada: plan_haiky');
+  await client.query('CREATE DATABASE nomina_ec OWNER nomina_ec_migration');
+  console.log('[DB] Base local creada: nomina_ec');
 }
 
 async function configureDatabase() {
-  const client = new Client({ ...adminConfig, database: 'plan_haiky' });
+  const client = new Client({ ...adminConfig, database: 'nomina_ec' });
   await client.connect();
 
   try {
     await client.query('CREATE EXTENSION IF NOT EXISTS pgcrypto');
-    await client.query('GRANT CONNECT ON DATABASE plan_haiky TO haiky_app, haiky_readonly');
-    await client.query('GRANT USAGE ON SCHEMA public TO haiky_app, haiky_readonly');
-    await client.query('GRANT CREATE ON SCHEMA public TO haiky_migration');
+    await client.query('GRANT CONNECT ON DATABASE nomina_ec TO nomina_ec_app, nomina_ec_readonly');
+    await client.query('GRANT USAGE ON SCHEMA public TO nomina_ec_app, nomina_ec_readonly');
+    await client.query('GRANT CREATE ON SCHEMA public TO nomina_ec_migration');
     console.log('[DB] Extensiones y privilegios locales verificados');
   } finally {
     await client.end();

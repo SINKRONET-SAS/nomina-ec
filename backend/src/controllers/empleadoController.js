@@ -1,9 +1,10 @@
 // ============================================================
-// PLAN HAIKY - Controlador de Empleados
+// Nomina-Ec - Controlador de Empleados
 // ============================================================
 const db = require('../config/database');
 const { validarCedula } = require('../utils/validarCedula');
 const { encryptBankAccount } = require('../services/bankAccountCrypto');
+const { recordAudit } = require('../services/auditService');
 const { getBankProfileForTenant } = require('../services/bancoAebGenerator');
 const { s3Upload } = require('../config/s3');
 const { generarContrato } = require('../services/templateGenerator');
@@ -22,6 +23,21 @@ const MIN_EMPLOYEE_AGE = 18;
 const OLDER_ADULT_AGE = 65;
 const DEPENDENT_DOCUMENT_MAX_BYTES = 5 * 1024 * 1024;
 const DEPENDENT_DOCUMENT_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png']);
+const EMPLOYEE_SENSITIVE_READ_ROLES = new Set(['owner', 'admin_rrhh', 'superadmin']);
+const EMPLOYEE_READ_ROLES = new Set(['owner', 'admin_rrhh', 'supervisor', 'superadmin']);
+const IESS_RELATION_TYPES = new Set([
+  'relacion_dependencia',
+  'jornada_parcial_permanente',
+  'sin_relacion_dependencia',
+  'servicios_profesionales',
+  'pasante',
+]);
+const SENSITIVE_EMPLOYEE_FIELDS = [
+  'sueldo_bruto_mensual',
+  'gastos_personales_anuales',
+  'cargo_salary_min',
+  'cargo_salary_max',
+];
 
 function normalizeFourteenthRegion(value) {
   const normalized = String(value || 'sierra_amazonia').trim().toLowerCase();
@@ -31,6 +47,67 @@ function normalizeFourteenthRegion(value) {
 function normalizeReserveFundMode(value) {
   const normalized = String(value || 'mensual').trim().toLowerCase();
   return ['mensual', 'iess_directo'].includes(normalized) ? normalized : null;
+}
+
+function normalizeIessAffiliated(value) {
+  if (typeof value === 'undefined' || value === null || value === '') return true;
+  if (typeof value === 'boolean') return value;
+  return !['false', '0', 'no', 'sin_iess'].includes(String(value).trim().toLowerCase());
+}
+
+function normalizeIessRelationType(value) {
+  const normalized = String(value || 'relacion_dependencia').trim().toLowerCase();
+  return IESS_RELATION_TYPES.has(normalized) ? normalized : null;
+}
+
+function ensureEmployeeReadRole(req, res) {
+  const role = req.usuario?.rol || '';
+  if (!EMPLOYEE_READ_ROLES.has(role)) {
+    res.status(403).json({
+      error: 'PERMISO_DENEGADO',
+      message: 'No tiene permisos para consultar fichas laborales.',
+      correlationId: req.correlationId,
+    });
+    return false;
+  }
+  return true;
+}
+
+function hasSensitiveEmployeeAccess(req) {
+  return EMPLOYEE_SENSITIVE_READ_ROLES.has(req.usuario?.rol || '');
+}
+
+function redactEmployeeForRole(row, req) {
+  if (hasSensitiveEmployeeAccess(req)) return row;
+  const redacted = { ...row, datos_sensibles_redactados: true };
+  for (const field of SENSITIVE_EMPLOYEE_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(redacted, field)) redacted[field] = null;
+  }
+  return redacted;
+}
+
+async function recordSensitiveEmployeeRead(req, { entityId = null, count = 0, scope = 'list' } = {}) {
+  if (!hasSensitiveEmployeeAccess(req) || count <= 0) return;
+  try {
+    await recordAudit({
+      tenantId: req.tenantId,
+      userId: req.usuarioId || req.usuario?.id || null,
+      correlationId: req.correlationId || 'empleados-read',
+      action: 'empleado.datos_sensibles.leidos',
+      entity: 'empleados',
+      entityId,
+      newData: { count, fields: SENSITIVE_EMPLOYEE_FIELDS, scope },
+      metadata: { role: req.usuario?.rol || '', lopdpPurpose: 'gestion_laboral_nomina' },
+      ipAddress: req.ip,
+    });
+  } catch (err) {
+    console.error('[EMPLEADOS] No se pudo auditar lectura sensible', {
+      code: err.code || 'EMPLOYEE_SENSITIVE_READ_AUDIT_ERROR',
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+  }
 }
 
 function calculateAge(fechaNacimiento, today = new Date()) {
@@ -303,6 +380,7 @@ async function replaceEmployeeDependents(tenantId, employeeId, dependientes, car
 
 async function listar(req, res) {
   try {
+    if (!ensureEmployeeReadRole(req, res)) return;
     const { tenantId } = req;
     const { activo = 'true' } = req.query;
     const activoFilter = String(activo).toLowerCase() === 'true';
@@ -324,6 +402,8 @@ async function listar(req, res) {
         e.gastos_personales_anuales,
         e.fecha_ingreso,
         e.tipo_contrato,
+        e.iess_afiliado,
+        e.iess_tipo_relacion,
         e.activo
       FROM empleados e
       LEFT JOIN job_positions jp
@@ -333,7 +413,8 @@ async function listar(req, res) {
       ORDER BY e.apellidos, e.nombres
     `, [tenantId, activoFilter]);
     
-    res.json({ success: true, empleados: result.rows });
+    await recordSensitiveEmployeeRead(req, { count: result.rows.length, scope: 'list' });
+    res.json({ success: true, empleados: result.rows.map((row) => redactEmployeeForRole(row, req)) });
   } catch (err) {
     console.error('[EMPLEADOS] Error:', err);
     res.status(500).json({ error: 'Error interno' });
@@ -342,6 +423,7 @@ async function listar(req, res) {
 
 async function obtener(req, res) {
   try {
+    if (!ensureEmployeeReadRole(req, res)) return;
     const { id } = req.params;
     const { tenantId } = req;
     
@@ -376,7 +458,8 @@ async function obtener(req, res) {
     empleado.edad = calculateAge(empleado.fecha_nacimiento);
     empleado.es_adulto_mayor = (empleado.edad || 0) >= OLDER_ADULT_AGE;
     empleado.dependientes = dependents.rows;
-    res.json({ success: true, empleado });
+    await recordSensitiveEmployeeRead(req, { entityId: empleado.id, count: 1, scope: 'detail' });
+    res.json({ success: true, empleado: redactEmployeeForRole(empleado, req) });
   } catch (err) {
     console.error('[EMPLEADOS] Error:', err);
     res.status(500).json({ error: 'Error interno' });
@@ -389,6 +472,7 @@ async function crear(req, res) {
     const {
       cedula, nombres, apellidos, fecha_nacimiento, cargo, position_id, cargo_codigo, departamento,
       sueldo_bruto_mensual, fecha_ingreso, tipo_contrato,
+      iess_afiliado, iess_tipo_relacion,
       jornada_horas_mensuales, gastos_personales_anuales,
       cuenta_bancaria, banco, tipo_cuenta, forma_pago, region_decimo_cuarto, modalidad_fondo_reserva,
       jornada_codigo, unidad_organizativa_codigo, zona_marcacion_codigo,
@@ -422,6 +506,15 @@ async function crear(req, res) {
         correlationId: req.correlationId,
       });
     }
+    const normalizedIessRelationType = normalizeIessRelationType(iess_tipo_relacion);
+    if (!normalizedIessRelationType) {
+      return res.status(400).json({
+        error: 'IESS_TIPO_RELACION_INVALIDO',
+        message: 'Selecciona un tipo de relacion IESS valido para el trabajador.',
+        correlationId: req.correlationId,
+      });
+    }
+    const normalizedIessAffiliated = normalizeIessAffiliated(iess_afiliado);
 
     const normalizedBankCode = await resolveEmployeeBankCode(tenantId, forma_pago, banco);
     const normalizedWorkShiftCode = await resolveConfiguredCode(tenantId, 'work_shifts', jornada_codigo, 'La jornada', 'EMPLEADO_JORNADA_INVALIDA');
@@ -457,14 +550,14 @@ async function crear(req, res) {
         tenant_id, cedula, nombres, apellidos, fecha_nacimiento, position_id, cargo, departamento,
         unidad_organizativa_codigo, jornada_codigo, zona_marcacion_codigo,
         sueldo_bruto_mensual, jornada_horas_mensuales, gastos_personales_anuales,
-        fecha_ingreso, tipo_contrato,
+        fecha_ingreso, tipo_contrato, iess_afiliado, iess_tipo_relacion,
         cuenta_bancaria_cifrada, banco, tipo_cuenta, forma_pago,
         region_decimo_cuarto, modalidad_fondo_reserva, whatsapp_consent_at,
         direccion_domicilio, provincia_codigo, ciudad_codigo, ciudad_domicilio, provincia_domicilio,
         estado_civil, cargas_familiares, telefono, email_personal
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32)
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34)
       RETURNING id, cedula, nombres, apellidos, fecha_nacimiento, position_id, cargo, sueldo_bruto_mensual,
-        jornada_horas_mensuales, gastos_personales_anuales, fecha_ingreso, tipo_contrato, banco, region_decimo_cuarto,
+        jornada_horas_mensuales, gastos_personales_anuales, fecha_ingreso, tipo_contrato, iess_afiliado, iess_tipo_relacion, banco, region_decimo_cuarto,
         modalidad_fondo_reserva, whatsapp_consent_at,
         unidad_organizativa_codigo, jornada_codigo, zona_marcacion_codigo
     `, [
@@ -474,6 +567,7 @@ async function crear(req, res) {
       jornada_horas_mensuales || null,
       gastos_personales_anuales || 0,
       fecha_ingreso, tipo_contrato || 'indefinido',
+      normalizedIessAffiliated, normalizedIessRelationType,
       cuentaCifrada, normalizedBankCode, tipo_cuenta || '', forma_pago || 'transferencia', normalizedRegion,
       normalizedReserveFundMode, whatsapp_consent ? new Date() : null,
       direccion || '', location.provincia_codigo, location.ciudad_codigo, location.ciudad_nombre, location.provincia_nombre,
@@ -658,6 +752,8 @@ async function actualizar(req, res) {
       gastos_personales_anuales: 'gastos_personales_anuales',
       fecha_ingreso: 'fecha_ingreso',
       tipo_contrato: 'tipo_contrato',
+      iess_afiliado: 'iess_afiliado',
+      iess_tipo_relacion: 'iess_tipo_relacion',
       banco: 'banco',
       tipo_cuenta: 'tipo_cuenta',
       forma_pago: 'forma_pago',
@@ -699,6 +795,19 @@ async function actualizar(req, res) {
         return res.status(400).json({
           error: 'MODALIDAD_FONDO_RESERVA_INVALIDA',
           message: 'Selecciona si el fondo de reserva se paga mensual o se deposita al IESS.',
+          correlationId: req.correlationId,
+        });
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'iess_afiliado')) {
+      body.iess_afiliado = normalizeIessAffiliated(body.iess_afiliado);
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'iess_tipo_relacion')) {
+      body.iess_tipo_relacion = normalizeIessRelationType(body.iess_tipo_relacion);
+      if (!body.iess_tipo_relacion) {
+        return res.status(400).json({
+          error: 'IESS_TIPO_RELACION_INVALIDO',
+          message: 'Selecciona un tipo de relacion IESS valido para el trabajador.',
           correlationId: req.correlationId,
         });
       }

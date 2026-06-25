@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Error estructurado de aplicacion
+// Nomina-Ec - Error estructurado de aplicacion
 // ============================================================
 
 class AppError extends Error {

@@ -91,6 +91,7 @@ model Tenant {
   noveltyBatches         NoveltyBatch[]
   supportIncidents       SupportIncident[]
   communicationEvents    CommunicationEvent[]
+  consentPreferences     ConsentPreference[]
 
   @@map("tenants")
 }
@@ -150,9 +151,32 @@ model User {
   emailVerificationTokens EmailVerificationToken[]
   transaccionesPago       PaymentTransaction[]
   communicationEvents     CommunicationEvent[]
+  consentPreferences      ConsentPreference[]
 
   @@unique([tenantId, email])
   @@map("usuarios")
+}
+
+model ConsentPreference {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String?   @map("tenant_id") @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  scope       String    @db.VarChar(80)
+  active      Boolean   @default(true)
+  givenAt     DateTime? @map("given_at") @db.Timestamptz(6)
+  withdrawnAt DateTime? @map("withdrawn_at") @db.Timestamptz(6)
+  source      String    @default("dashboard") @db.VarChar(80)
+  version     String    @default("LOPDP-2026-06") @db.VarChar(40)
+  metadata    Json      @default("{}")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant      Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scope])
+  @@index([tenantId, userId])
+  @@index([scope, active])
+  @@map("consent_preferences")
 }
 
 model PasswordResetToken {
@@ -303,6 +327,8 @@ model Employee {
   fechaIngreso            DateTime               @map("fecha_ingreso") @db.Date
   fechaSalida             DateTime?              @map("fecha_salida") @db.Date
   tipoContrato            String                 @default("indefinido") @map("tipo_contrato") @db.VarChar(60)
+  iessAfiliado            Boolean                @default(true) @map("iess_afiliado")
+  iessTipoRelacion        String                 @default("relacion_dependencia") @map("iess_tipo_relacion") @db.VarChar(60)
   cuentaBancariaCifrada   Bytes?                 @map("cuenta_bancaria_cifrada")
   importBatchId           String?                @map("import_batch_id") @db.Uuid
   banco                   String                 @default("") @db.VarChar(80)

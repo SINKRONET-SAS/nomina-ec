@@ -1,4 +1,4 @@
--- PLAN HAIKY - RLS, inmutabilidad y seed base
+-- Nomina-Ec - RLS, inmutabilidad y seed base
 
 CREATE OR REPLACE FUNCTION app_current_tenant_id()
 RETURNS uuid AS $$

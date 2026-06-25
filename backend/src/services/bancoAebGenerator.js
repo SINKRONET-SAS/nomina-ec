@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Generador de Archivo Bancario
+// Nomina-Ec - Generador de Archivo Bancario
 // ============================================================
 const crypto = require('crypto');
 const ExcelJS = require('exceljs');

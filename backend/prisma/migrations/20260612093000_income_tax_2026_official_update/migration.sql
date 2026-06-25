@@ -1,4 +1,4 @@
--- PLAN HAIKY - Actualizacion oficial tabla IR 2026 SRI
+-- Nomina-Ec - Actualizacion oficial tabla IR 2026 SRI
 -- Fuente: Resolucion Nro. NAC-DGERCGC25-00000043, Segundo Suplemento del Registro Oficial No. 194, 30/12/2025.
 
 UPDATE parametros_legales

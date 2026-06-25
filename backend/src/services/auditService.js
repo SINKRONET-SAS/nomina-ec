@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Servicio de auditoria
+// Nomina-Ec - Servicio de auditoria
 // ============================================================
 const db = require('../config/database');
 
@@ -20,7 +20,14 @@ const SENSITIVE_KEY_PATTERNS = [
   /password/i,
   /token/i,
   /secret/i,
+  /cedula/i,
+  /identificacion/i,
+  /sueldo/i,
+  /salario/i,
+  /remuneracion/i,
+  /gastos_personales/i,
   /cuenta/i,
+  /iban/i,
   /bank/i,
   /foto/i,
   /base64/i,
@@ -30,6 +37,9 @@ const SENSITIVE_KEY_PATTERNS = [
 function sanitizeAuditValue(value, depth = 0) {
   if (value === null || value === undefined) return value;
   if (depth > 6) return '[TRUNCADO]';
+  if (Buffer.isBuffer(value)) {
+    return `[BUFFER:${value.length}]`;
+  }
   if (Array.isArray(value)) {
     return value.slice(0, 100).map((item) => sanitizeAuditValue(item, depth + 1));
   }
@@ -45,6 +55,10 @@ function sanitizeAuditValue(value, depth = 0) {
     return `${value.slice(0, 2000)}...[TRUNCADO]`;
   }
   return value;
+}
+
+function sanitizeAuditPayload(value) {
+  return sanitizeAuditValue(value);
 }
 
 async function recordAudit({
@@ -103,4 +117,9 @@ async function recordAudit({
   }
 }
 
-module.exports = { AUDIT_ACTIONS, recordAudit, sanitizeAuditValue };
+module.exports = {
+  AUDIT_ACTIONS,
+  recordAudit,
+  sanitizeAuditPayload,
+  sanitizeAuditValue,
+};

@@ -19,7 +19,10 @@ export function extractApiError(err, fallback = 'No se pudo completar la operaci
 
 export async function fetchPlans() {
   const response = await publicApi.get('/pagos/planes');
-  return response.data?.data || [];
+  return {
+    plans: response.data?.data || [],
+    paymentCapabilities: response.data?.paymentCapabilities || null,
+  };
 }
 
 export async function publicRegister(payload) {

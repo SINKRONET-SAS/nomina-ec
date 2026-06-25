@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Servicio de Liquidacion y Finiquito
+// Nomina-Ec - Servicio de Liquidacion y Finiquito
 // ============================================================
 const db = require('../config/database');
 const AppError = require('../utils/AppError');

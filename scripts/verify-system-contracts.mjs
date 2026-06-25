@@ -53,7 +53,29 @@ const contratosGenerados = read('frontend-web/src/pages/Documentos/ContratosGene
 const descargarReportes = read('frontend-web/src/pages/Nomina/DescargarReportes.jsx');
 const configurationApi = read('frontend-web/src/services/configurationApi.js');
 const templateGenerator = read('backend/src/services/templateGenerator.js');
+const paymentController = read('backend/src/controllers/paymentController.js');
+const payphoneGatewayService = read('backend/src/services/payphoneGatewayService.js');
+const paymentReferenceService = read('backend/src/services/paymentReferenceService.js');
+const auditService = read('backend/src/services/auditService.js');
+const privacyController = read('backend/src/controllers/privacyController.js');
+const privacyConsentService = read('backend/src/services/privacyConsentService.js');
+const userDataExportService = read('backend/src/services/userDataExportService.js');
+const userDataPurgeService = read('backend/src/services/userDataPurgeService.js');
+const planesPublicos = read('frontend-web/src/pages/Planes.jsx');
+const planesGestion = read('frontend-web/src/pages/PlanesGestion.jsx');
+const privacidadCuenta = read('frontend-web/src/pages/PrivacidadCuenta.jsx');
+const privacyApi = read('frontend-web/src/services/privacyApi.js');
+const beneficiosApi = read('frontend-web/src/services/beneficiosApi.js');
+const renderYaml = read('render.yaml');
 const merchandiserTrialTemplate = JSON.parse(read('backend/src/templates/legal/contracts/contrato_indefinido_mercaderista_prueba.json'));
+const forbiddenLegacyDbName = ['plan', 'haiky'].join('_');
+const forbiddenLegacyDbUser = ['haiky', 'migration'].join('_');
+
+assert(!exists('CODEX_CONTEXT.md'), 'CODEX_CONTEXT.md no debe quedar en raiz publica del repo.');
+assert(exists('.github/CODEX_CONTEXT.md'), 'CODEX_CONTEXT.md debe estar ubicado bajo .github/.');
+assert(!renderYaml.includes(forbiddenLegacyDbName), 'render.yaml no debe exponer nombre interno legacy de base de datos.');
+assert(!renderYaml.includes(forbiddenLegacyDbUser), 'render.yaml no debe exponer usuario interno legacy de base de datos.');
+assert(renderYaml.includes('nomina-ec-api'), 'render.yaml debe nombrar el servicio API como Nomina-Ec.');
 
 const frontendResources = unique(regexValues(parametrizacion, /resource:\s*'([^']+)'/g));
 for (const resource of frontendResources) {
@@ -151,6 +173,47 @@ assert(
 assert(app.includes("'/api/documentos/contrato/plantillas'"), 'Backend debe exponer catalogo de plantillas de contrato.');
 assert(contratosGenerados.includes('/documentos/contrato/plantillas'), 'La PWA debe consumir plantillas de contrato desde backend.');
 assert(contratosGenerados.includes('/documentos/contrato'), 'La PWA debe generar contratos contra backend real.');
+
+assert(payphoneGatewayService.includes('/api/button/Prepare'), 'PayPhone debe preparar checkout contra API real Prepare.');
+assert(payphoneGatewayService.includes('/api/button/V2/Confirm'), 'PayPhone debe confirmar pago contra API real Confirm.');
+assert(payphoneGatewayService.includes('Content-Length'), 'Gateway PayPhone debe enviar Content-Length para evitar chunked.');
+assert(payphoneGatewayService.includes('BACKEND_PUBLIC_URL'), 'PayPhone debe exigir callback backend publico HTTPS.');
+assert(paymentReferenceService.includes('nominaec-'), 'Pagos deben usar referencia unica Nomina-Ec parseable.');
+assert(paymentController.includes('createPayPhonePayment'), 'Checkout debe llamar gateway PayPhone real.');
+assert(paymentController.includes('confirmPayPhonePayment'), 'Confirmacion debe consultar PayPhone antes de activar plan.');
+assert(paymentController.includes('PAYMENT_AMOUNT_MISMATCH'), 'Confirmacion debe bloquear monto PayPhone distinto al checkout.');
+assert(paymentController.includes('versionedFromActiveSubscriptions'), 'Gestion de planes debe versionar cuando existen suscripciones activas.');
+assert(app.includes("'/api/pagos/cancelado'"), 'Backend debe exponer cancelacion PayPhone.');
+assert(planesPublicos.includes('checkoutAvailable === false'), 'PWA debe bloquear CTA cuando PayPhone no esta configurado.');
+assert(beneficiosApi.includes('return response.data;'), 'Gestion de planes debe recibir meta de versionado desde backend.');
+assert(planesGestion.includes('Plan versionado como'), 'Superadmin debe informar versionado de planes con suscriptores.');
+
+assert(schema.includes('model ConsentPreference'), 'Prisma debe declarar ConsentPreference para LOPDP.');
+assert(
+  exists('backend/prisma/migrations/20260625021500_anv1_lopdp_consent_preferences/migration.sql'),
+  'Debe existir migracion ANV1 de consentimientos LOPDP.'
+);
+assert(
+  read('backend/prisma/migrations/20260625021500_anv1_lopdp_consent_preferences/migration.sql').includes('consent_preferences_user_scope_key'),
+  'Consentimientos LOPDP deben tener indice unico por usuario y alcance.'
+);
+assert(app.includes("'/api/privacidad/consentimientos'"), 'Backend debe exponer estado de consentimientos LOPDP.');
+assert(app.includes("'/api/privacidad/exportar'"), 'Backend debe exponer exportacion LOPDP.');
+assert(app.includes("'/api/privacidad/anonimizar/:userId'"), 'Backend debe exponer anonimizacion LOPDP controlada.');
+assert(privacyController.includes('withdrawAllOptionalConsents'), 'Controlador LOPDP debe retirar consentimientos opcionales.');
+assert(privacyConsentService.includes('withdrawable: false'), 'LOPDP debe separar bases legales no revocables de consentimientos opcionales.');
+assert(privacyConsentService.includes('lopdp.consent.withdraw_all'), 'Retiro masivo LOPDP debe auditarse.');
+assert(userDataExportService.includes('lopdp.data.export'), 'Exportacion de datos personales debe auditarse.');
+assert(userDataExportService.includes('retentionNotice'), 'Exportacion LOPDP debe informar conservacion legal.');
+assert(userDataPurgeService.includes('LOPDP_OWNER_UNICO_PROTEGIDO'), 'Anonimizacion debe proteger el unico owner activo.');
+assert(userDataPurgeService.includes('lopdp.data.anonymize'), 'Anonimizacion LOPDP debe auditarse.');
+assert(auditService.includes('sanitizeAuditPayload'), 'Auditoria debe exponer sanitizador LOPDP.');
+assert(auditService.includes('/cedula/i') && auditService.includes('/sueldo/i'), 'Auditoria debe redactar cedula y sueldo.');
+assert(appWeb.includes('PrivacidadCuenta'), 'PWA debe registrar pantalla autenticada de privacidad.');
+assert(layoutWeb.includes('/dashboard/privacidad'), 'Navegacion debe exponer privacidad para usuarios autenticados.');
+assert(privacyApi.includes('/privacidad/consentimientos'), 'PWA debe consumir API real de consentimientos.');
+assert(privacidadCuenta.includes('Retirar opcionales'), 'Pantalla LOPDP debe permitir retirar consentimientos opcionales.');
+assert(privacidadCuenta.includes('Exportar JSON'), 'Pantalla LOPDP debe permitir exportar datos personales.');
 
 if (issues.length > 0) {
   console.error('[CONTRACTS] Fallaron contratos de sistema unico:');

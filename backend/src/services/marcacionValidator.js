@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Validador de Marcaciones con GPS
+// Nomina-Ec - Validador de Marcaciones con GPS
 // ============================================================
 const db = require('../config/database');
 const { dateInEcuador, ensurePayrollPeriodForDate } = require('./monthlyPeriodService');

@@ -7,6 +7,7 @@ const {
   sendEmailVerification,
   sendPasswordReset,
 } = require('../services/communicationService');
+const { CONSENT_SCOPES, LOPDP_VERSION } = require('../services/privacyConsentService');
 
 const OWNER_LOPDP_VERSION = 'LOPDP-2026-06';
 
@@ -75,6 +76,46 @@ async function insertConsentAudit(queryable, { tenantId, userId, consent, ipAddr
       acceptedDataProcessing: hasAcceptedLopdpConsent(consent),
     }),
   ]);
+}
+
+async function insertDefaultConsentPreferences(queryable, { tenantId, userId, consent, source }) {
+  const acceptedOptional = new Set(['payphone_billing']);
+  if (consent?.whatsappNotifications || consent?.whatsapp) acceptedOptional.add('whatsapp_notifications');
+  if (consent?.productAnalytics || consent?.analytics) acceptedOptional.add('product_analytics');
+
+  for (const definition of CONSENT_SCOPES) {
+    const active = definition.defaultActive || acceptedOptional.has(definition.scope);
+    await queryable.query(
+      `INSERT INTO consent_preferences (
+         tenant_id, user_id, scope, active, given_at, withdrawn_at, source, version, metadata
+       )
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       ON CONFLICT (user_id, scope) DO UPDATE SET
+         active = EXCLUDED.active,
+         given_at = EXCLUDED.given_at,
+         withdrawn_at = EXCLUDED.withdrawn_at,
+         source = EXCLUDED.source,
+         version = EXCLUDED.version,
+         metadata = consent_preferences.metadata || EXCLUDED.metadata,
+         updated_at = NOW()`,
+      [
+        tenantId,
+        userId,
+        definition.scope,
+        active,
+        active ? new Date() : null,
+        active ? null : new Date(),
+        source,
+        consent?.version || LOPDP_VERSION,
+        JSON.stringify({
+          source,
+          legalBasis: definition.legalBasis,
+          required: definition.required,
+          withdrawable: definition.withdrawable,
+        }),
+      ]
+    );
+  }
 }
 
 async function login(req, res, next) {
@@ -301,6 +342,12 @@ async function publicRegister(req, res, next) {
       consent: lopdpConsent,
       ipAddress: req.ip,
       correlationId: req.correlationId,
+    });
+    await insertDefaultConsentPreferences(client, {
+      tenantId: tenant.id,
+      userId: userResult.rows[0].id,
+      consent: lopdpConsent,
+      source: 'public-register',
     });
 
     const requestedPlan = String(planId || 'TRIAL').trim().toUpperCase();

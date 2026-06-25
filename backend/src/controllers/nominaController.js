@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Controlador de Nomina
+// Nomina-Ec - Controlador de Nomina
 // ============================================================
 const db = require('../config/database');
 const { calcularNominaMensual } = require('../services/calculoNominaService');

@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Trabajos Programados
+// Nomina-Ec - Trabajos Programados
 // ============================================================
 const cron = require('node-cron');
 const { calcularNominaMensual } = require('../services/calculoNominaService');

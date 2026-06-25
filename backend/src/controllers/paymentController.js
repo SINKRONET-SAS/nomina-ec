@@ -1,7 +1,14 @@
-const crypto = require('crypto');
 const db = require('../config/database');
 const { buildPayphoneAmounts, formatUsdFromCents } = require('../services/paymentPricingService');
 const { getTenantPlanCapabilities } = require('../services/planCapabilityService');
+const { buildSubscriptionPaymentReference } = require('../services/paymentReferenceService');
+const {
+  assertPayPhoneConfig,
+  confirmPayPhonePayment,
+  createPayPhonePayment,
+  isPayPhoneMockMode,
+  resolveBackendPublicUrl,
+} = require('../services/payphoneGatewayService');
 
 function normalizePlan(row) {
   return {
@@ -36,6 +43,7 @@ async function listPublicPlans(_req, res, next) {
     res.json({
       success: true,
       data: result.rows.map(normalizePlan),
+      paymentCapabilities: buildPaymentCapabilities(),
     });
   } catch (err) {
     next(err);
@@ -99,6 +107,42 @@ function validatePlanPayload(body) {
 async function upsertPlan(req, res, next) {
   try {
     const payload = validatePlanPayload({ ...req.body, id: req.params.planId || req.body.id });
+    const existing = await db.query('SELECT * FROM planes_comerciales WHERE id = $1', [payload.id]);
+    if (existing.rows.length > 0 && req.params.planId) {
+      const activeSubscriptions = await db.query(
+        "SELECT COUNT(*)::int AS total FROM suscripciones WHERE plan_id = $1 AND estado IN ('active','trial')",
+        [payload.id]
+      );
+      const hasActiveSubscribers = Number(activeSubscriptions.rows[0]?.total || 0) > 0;
+      if (hasActiveSubscribers && req.body.forceInPlace !== true) {
+        const versionedPayload = {
+          ...payload,
+          id: buildVersionedCommercialPlanId(payload.id),
+          metadata: {
+            ...payload.metadata,
+            rootPlanId: payload.id,
+            previousPlanId: payload.id,
+            versionedFromActiveSubscriptions: true,
+            versionedAt: new Date().toISOString(),
+          },
+        };
+        const versioned = await insertCommercialPlan(versionedPayload);
+        await db.query(
+          'UPDATE planes_comerciales SET publico = false, updated_at = NOW() WHERE id = $1',
+          [payload.id]
+        );
+        return res.status(201).json({
+          success: true,
+          data: normalizePlan(versioned.rows[0]),
+          meta: {
+            versioned: true,
+            previousPlanId: payload.id,
+            activeSubscriptions: Number(activeSubscriptions.rows[0]?.total || 0),
+          },
+        });
+      }
+    }
+
     const result = await db.query(
       `INSERT INTO planes_comerciales (
         id, nombre, descripcion, precio_mensual_centavos, empleados_max, empresas_max,
@@ -148,6 +192,39 @@ async function upsertPlan(req, res, next) {
   }
 }
 
+function buildVersionedCommercialPlanId(rootPlanId) {
+  const root = String(rootPlanId || '').trim().toUpperCase().slice(0, 26);
+  const suffix = String(Date.now()).slice(-10);
+  return `${root}_V${suffix}`;
+}
+
+function insertCommercialPlan(payload) {
+  return db.query(
+    `INSERT INTO planes_comerciales (
+      id, nombre, descripcion, precio_mensual_centavos, empleados_max, empresas_max,
+      usuarios_max, archivos_bancarios, reportes_avanzados, soporte, publico, activo, orden, metadata
+    )
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+    RETURNING *`,
+    [
+      payload.id,
+      payload.nombre,
+      payload.descripcion,
+      payload.precioMensualCentavos,
+      payload.empleadosMax,
+      payload.empresasMax,
+      payload.usuariosMax,
+      payload.archivosBancarios,
+      payload.reportesAvanzados,
+      payload.soporte,
+      payload.publico,
+      payload.activo,
+      payload.orden,
+      JSON.stringify(payload.metadata),
+    ]
+  );
+}
+
 async function deletePlan(req, res, next) {
   try {
     const planId = String(req.params.planId || '').trim().toUpperCase();
@@ -164,14 +241,7 @@ async function deletePlan(req, res, next) {
 async function paymentCapabilities(_req, res) {
   res.json({
     success: true,
-    data: {
-      supportsMultiple: false,
-      supportedProviders: ['PAYPHONE'],
-      supportsManualEntry: false,
-      supportsDefaultSwitch: false,
-      supportsRevoke: true,
-      mockMode: String(process.env.PAYPHONE_MOCK_MODE || 'true').toLowerCase() === 'true',
-    },
+    data: buildPaymentCapabilities(),
   });
 }
 
@@ -239,19 +309,45 @@ async function subscriptionStatus(req, res, next) {
   }
 }
 
-function buildCheckoutUrl(clientTransactionId) {
-  const baseUrl = process.env.PAYPHONE_BASE_URL || '';
-  const confirmUrl = process.env.PAYPHONE_CONFIRM_URL || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/pago/resultado`;
-
-  if (String(process.env.PAYPHONE_MOCK_MODE || 'true').toLowerCase() === 'true' || !baseUrl) {
-    return `${confirmUrl}?provider=PAYPHONE&clientTransactionId=${encodeURIComponent(clientTransactionId)}&mock=true`;
+function buildPaymentCapabilities() {
+  const mockMode = isPayPhoneMockMode();
+  let configOk = true;
+  let configError = '';
+  try {
+    assertPayPhoneConfig();
+  } catch (err) {
+    configOk = false;
+    configError = err.publicMessage || err.message;
   }
+  const checkoutAvailable = !mockMode && configOk;
 
-  return `${baseUrl.replace(/\/$/, '')}/?clientTransactionId=${encodeURIComponent(clientTransactionId)}`;
+  return {
+    supportsMultiple: false,
+    supportedProviders: ['PAYPHONE'],
+    supportsManualEntry: false,
+    supportsDefaultSwitch: false,
+    supportsRevoke: true,
+    mockMode,
+    checkoutAvailable,
+    providerConfigured: checkoutAvailable,
+    publicCallbackConfigured: Boolean(resolveBackendPublicUrl()),
+    status: checkoutAvailable ? 'ready' : 'blocked_configuration',
+    blockedReason: checkoutAvailable ? '' : (mockMode ? 'PayPhone esta en modo mock.' : configError || 'PayPhone no esta configurado para cobro real.'),
+  };
 }
 
 async function createCheckoutIntent(req, res, next) {
   try {
+    const capabilities = buildPaymentCapabilities();
+    if (!capabilities.checkoutAvailable) {
+      return res.status(503).json({
+        error: 'PAYPHONE_NO_CONFIGURADO',
+        message: capabilities.blockedReason || 'PayPhone no esta configurado para cobro real.',
+        correlationId: req.correlationId,
+        capabilities,
+      });
+    }
+
     const planId = String(req.body.planId || '').trim().toUpperCase();
     const planResult = await db.query(
       'SELECT * FROM planes_comerciales WHERE id = $1 AND activo = true',
@@ -268,8 +364,23 @@ async function createCheckoutIntent(req, res, next) {
 
     const plan = planResult.rows[0];
     const amounts = buildPayphoneAmounts(plan.precio_mensual_centavos);
-    const clientTransactionId = `NOMINAEC-${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
-    const checkoutUrl = buildCheckoutUrl(clientTransactionId);
+    const clientTransactionId = buildSubscriptionPaymentReference({
+      tenantId: req.usuario.tenantId,
+      userId: req.usuario.id,
+      planId: plan.id,
+    });
+    const gatewayResult = await createPayPhonePayment({
+      amounts,
+      reference: clientTransactionId,
+    });
+    const checkoutUrl = gatewayResult.paymentUrl || gatewayResult.paymentUrlWeb || gatewayResult.payWithCard;
+    if (!checkoutUrl) {
+      return res.status(502).json({
+        error: 'PAYPHONE_CHECKOUT_URL_INVALIDA',
+        message: 'PayPhone no devolvio una URL de checkout valida.',
+        correlationId: req.correlationId,
+      });
+    }
 
     const insertResult = await db.query(
       `INSERT INTO transacciones_pago (
@@ -290,7 +401,15 @@ async function createCheckoutIntent(req, res, next) {
         amounts.moneda,
         clientTransactionId,
         checkoutUrl,
-        JSON.stringify({ planNombre: plan.nombre, ivaPercent: amounts.ivaPercent }),
+        JSON.stringify({
+          planNombre: plan.nombre,
+          ivaPercent: amounts.ivaPercent,
+          gateway: {
+            provider: 'PAYPHONE',
+            payWithCard: gatewayResult.payWithCard || null,
+            payWithPayPhone: gatewayResult.payWithPayPhone || null,
+          },
+        }),
       ]
     );
 
@@ -313,6 +432,11 @@ async function createCheckoutIntent(req, res, next) {
           clientTransactionId,
           storeId: process.env.PAYPHONE_STORE_ID || null,
         },
+        gateway: {
+          payWithCard: gatewayResult.payWithCard || null,
+          payWithPayPhone: gatewayResult.payWithPayPhone || null,
+          paymentUrlMobile: gatewayResult.paymentUrlMobile || checkoutUrl,
+        },
       },
     });
   } catch (err) {
@@ -320,14 +444,40 @@ async function createCheckoutIntent(req, res, next) {
   }
 }
 
+function extractProviderPaymentTotalCents(paymentPayload = {}) {
+  const value = paymentPayload.amount
+    ?? paymentPayload.totalAmount
+    ?? paymentPayload.total
+    ?? paymentPayload.value
+    ?? paymentPayload.amountWithTax;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : 0;
+}
+
+async function resolveProviderConfirmation({ req, tx, clientTransactionId }) {
+  const providerId = req.body.id || req.query.id || req.body.transactionId || req.query.transactionId || req.body.providerTransactionId;
+  const mockRequested = String(req.body.mock || req.query.mock || '').toLowerCase() === 'true';
+  if (mockRequested && isPayPhoneMockMode()) {
+    return {
+      providerTransactionId: `mock-${clientTransactionId}`,
+      payload: { amount: Number(tx.monto_centavos || 0), mock: true },
+      source: 'PAYPHONE_MOCK',
+    };
+  }
+
+  const payload = await confirmPayPhonePayment({ id: providerId, clientTxId: clientTransactionId });
+  return {
+    providerTransactionId: String(payload?.transactionId || payload?.id || providerId || ''),
+    payload,
+    source: 'PAYPHONE_CONFIRM',
+  };
+}
+
 async function confirmPayment(req, res, next) {
   try {
     const clientTransactionId = String(
-      req.body.clientTransactionId || req.query.clientTransactionId || ''
+      req.body.clientTransactionId || req.query.clientTransactionId || req.body.clientTxId || req.query.clientTxId || ''
     ).trim();
-    const providerTransactionId = String(
-      req.body.transactionId || req.query.transactionId || req.body.providerTransactionId || ''
-    ).trim() || null;
 
     if (!clientTransactionId) {
       return res.status(400).json({
@@ -337,17 +487,12 @@ async function confirmPayment(req, res, next) {
       });
     }
 
-    const result = await db.query(
-      `UPDATE transacciones_pago
-       SET estado = 'APPROVED',
-           provider_transaction_id = COALESCE($2, provider_transaction_id),
-           updated_at = NOW()
-       WHERE client_transaction_id = $1
-       RETURNING *`,
-      [clientTransactionId, providerTransactionId]
+    const txResult = await db.query(
+      'SELECT * FROM transacciones_pago WHERE client_transaction_id = $1 LIMIT 1',
+      [clientTransactionId]
     );
 
-    if (result.rows.length === 0) {
+    if (txResult.rows.length === 0) {
       return res.status(404).json({
         error: 'PAGO_NO_ENCONTRADO',
         message: 'No se encontró la transacción de pago.',
@@ -355,7 +500,46 @@ async function confirmPayment(req, res, next) {
       });
     }
 
-    const tx = result.rows[0];
+    const tx = txResult.rows[0];
+    if (tx.estado === 'APPROVED') {
+      return res.json({
+        success: true,
+        data: {
+          clientTransactionId,
+          status: 'APPROVED',
+          idempotent: true,
+        },
+      });
+    }
+
+    const confirmation = await resolveProviderConfirmation({ req, tx, clientTransactionId });
+    const providerTotalCents = extractProviderPaymentTotalCents(confirmation.payload);
+    if (providerTotalCents > 0 && providerTotalCents !== Number(tx.monto_centavos || 0)) {
+      return res.status(409).json({
+        error: 'PAYMENT_AMOUNT_MISMATCH',
+        message: 'El monto confirmado por PayPhone no coincide con el checkout esperado. No se activo el plan.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const result = await db.query(
+      `UPDATE transacciones_pago
+       SET estado = 'APPROVED',
+           provider_transaction_id = COALESCE($2, provider_transaction_id),
+           metadata = metadata || $3::jsonb,
+           updated_at = NOW()
+       WHERE client_transaction_id = $1
+       RETURNING *`,
+      [
+        clientTransactionId,
+        confirmation.providerTransactionId || null,
+        JSON.stringify({
+          confirmationSource: confirmation.source,
+          providerPayload: confirmation.payload,
+        }),
+      ]
+    );
+    const approvedTx = result.rows[0];
     await db.query(
       `INSERT INTO suscripciones (tenant_id, plan_id, estado, inicio_en, renovacion_automatica, metadata)
        VALUES ($1, $2, 'active', NOW(), true, $3)
@@ -366,9 +550,12 @@ async function confirmPayment(req, res, next) {
          metadata = EXCLUDED.metadata,
          updated_at = NOW()`,
       [
-        tx.tenant_id,
-        tx.plan_id,
-        JSON.stringify({ activatedByPayment: tx.client_transaction_id }),
+        approvedTx.tenant_id,
+        approvedTx.plan_id,
+        JSON.stringify({
+          activatedByPayment: approvedTx.client_transaction_id,
+          providerTransactionId: approvedTx.provider_transaction_id || null,
+        }),
       ]
     );
 
@@ -382,6 +569,17 @@ async function confirmPayment(req, res, next) {
   } catch (err) {
     next(err);
   }
+}
+
+async function paymentCancelled(req, res) {
+  res.status(200).send(`<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pago cancelado</title></head>
+<body style="font-family:Arial,sans-serif;padding:32px;text-align:center;color:#243042">
+  <h1>Pago cancelado</h1>
+  <p>No se activo ningun plan. Puedes cerrar esta ventana y volver a Nomina-Ec.</p>
+</body>
+</html>`);
 }
 
 async function revokePaymentMethod(req, res, next) {
@@ -399,6 +597,7 @@ async function revokePaymentMethod(req, res, next) {
 }
 
 module.exports = {
+  buildPaymentCapabilities,
   listPublicPlans,
   listAdminPlans,
   upsertPlan,
@@ -409,5 +608,6 @@ module.exports = {
   subscriptionStatus,
   createCheckoutIntent,
   confirmPayment,
+  paymentCancelled,
   revokePaymentMethod,
 };

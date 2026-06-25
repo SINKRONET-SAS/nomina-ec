@@ -1,4 +1,4 @@
--- PLAN HAIKY - Actualizacion oficial SBU 2026
+-- Nomina-Ec - Actualizacion oficial SBU 2026
 -- Fuente: Ministerio del Trabajo, noticia oficial sobre consenso de SBU 2026 en USD 482.
 
 UPDATE parametros_legales

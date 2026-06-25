@@ -20,6 +20,8 @@ const initialForm = {
   gastos_personales_anuales: '',
   fecha_ingreso: '',
   tipo_contrato: 'indefinido',
+  iess_afiliado: true,
+  iess_tipo_relacion: 'relacion_dependencia',
   estado_civil: '',
   cargas_familiares: 0,
   direccion_domicilio: '',
@@ -84,6 +86,8 @@ function normalizeEmpleado(empleado) {
     gastos_personales_anuales: empleado.gastos_personales_anuales || '',
     fecha_ingreso: empleado.fecha_ingreso ? String(empleado.fecha_ingreso).slice(0, 10) : '',
     tipo_contrato: empleado.tipo_contrato || 'indefinido',
+    iess_afiliado: empleado.iess_afiliado !== false,
+    iess_tipo_relacion: empleado.iess_tipo_relacion || 'relacion_dependencia',
     estado_civil: empleado.estado_civil || '',
     cargas_familiares: empleado.cargas_familiares || 0,
     direccion_domicilio: empleado.direccion_domicilio || '',
@@ -348,6 +352,8 @@ function NuevoEmpleado() {
     gastos_personales_anuales: formData.gastos_personales_anuales,
     fecha_ingreso: formData.fecha_ingreso,
     tipo_contrato: formData.tipo_contrato,
+    iess_afiliado: Boolean(formData.iess_afiliado),
+    iess_tipo_relacion: formData.iess_tipo_relacion,
     estado_civil: formData.estado_civil,
     cargas_familiares: Number(formData.cargas_familiares || 0),
     direccion: formData.direccion_domicilio,
@@ -599,6 +605,28 @@ function NuevoEmpleado() {
               <option value="hora">Por hora</option>
             </select>
           </Field>
+          <Field label="Tipo relacion IESS" name="iess_tipo_relacion" onChange={handleChange} value={formData.iess_tipo_relacion}>
+            <select className={CONTROL_CLASS} name="iess_tipo_relacion" onChange={handleChange} value={formData.iess_tipo_relacion}>
+              <option value="relacion_dependencia">Relacion de dependencia</option>
+              <option value="jornada_parcial_permanente">Jornada parcial permanente</option>
+              <option value="sin_relacion_dependencia">Sin relacion de dependencia</option>
+              <option value="servicios_profesionales">Servicios profesionales</option>
+              <option value="pasante">Pasante</option>
+            </select>
+          </Field>
+          <label className={`${FIELD_HALF} flex min-h-10 items-center gap-3 rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700`}>
+            <input
+              checked={Boolean(formData.iess_afiliado)}
+              className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+              name="iess_afiliado"
+              onChange={(event) => setFormData((current) => ({ ...current, iess_afiliado: event.target.checked }))}
+              type="checkbox"
+            />
+            Afiliado IESS para nomina
+          </label>
+          <div className={`${FIELD_FULL} rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700`}>
+            El calculo de aportes IESS usa esta clasificacion y deja la decision visible en el detalle de nomina.
+          </div>
           <Field label="Region para decimo cuarto" name="region_decimo_cuarto" onChange={handleChange} required value={formData.region_decimo_cuarto}>
             <select className={CONTROL_CLASS} name="region_decimo_cuarto" onChange={handleChange} required value={formData.region_decimo_cuarto}>
               <option value="sierra_amazonia">Sierra / Amazonia</option>

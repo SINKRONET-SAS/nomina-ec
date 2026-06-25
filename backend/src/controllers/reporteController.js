@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Controlador de Reportes
+// Nomina-Ec - Controlador de Reportes
 // ============================================================
 const { generarXML_RDEP, precheckRDEP } = require('../services/sriRdepGenerator');
 const { generarXML_SAE } = require('../services/iessSaeGenerator');

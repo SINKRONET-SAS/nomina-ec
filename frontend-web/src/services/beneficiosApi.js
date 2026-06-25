@@ -29,7 +29,7 @@ export async function saveAdminPlan(payload) {
   const method = payload.existing ? 'put' : 'post';
   const url = payload.existing ? `/pagos/planes/${payload.id}` : '/pagos/planes';
   const response = await authenticatedApi[method](url, payload);
-  return response.data?.data;
+  return response.data;
 }
 
 export async function deactivateAdminPlan(planId) {

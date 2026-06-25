@@ -4,7 +4,12 @@ const {
   calcularIR,
   calcularProvisionFondosReserva,
   calcularValorHora,
+  assertWeeklyOvertimeLimit,
+  normalizeIessRelationType,
+  resolveFourteenthSalaryPeriod,
   resolveFourteenthSalaryRegion,
+  resolveIessApplicability,
+  resolveThirteenthSalaryPeriod,
 } = require('./calculoNominaService');
 const { getLegalParameters } = require('../config/legal-ecuador');
 const {
@@ -102,6 +107,77 @@ describe('calculoNominaService', () => {
     expect(resolveFourteenthSalaryRegion('sierra_amazonia')).toEqual({
       regionCode: 'sierra_amazonia',
       parameterKey: 'decimo_cuarto_sierra_amazonia',
+    });
+  });
+
+  test('diferencia aporte IESS por afiliacion y tipo de relacion', () => {
+    const payroll = getLegalParameters(2026).payroll;
+
+    expect(resolveIessApplicability({
+      iess_afiliado: true,
+      iess_tipo_relacion: 'relacion_dependencia',
+    }, payroll)).toMatchObject({
+      applies: true,
+      relationType: 'relacion_dependencia',
+      personalRate: payroll.personalIessRate,
+      employerRate: payroll.employerIessRate,
+    });
+
+    expect(resolveIessApplicability({
+      iess_afiliado: false,
+      iess_tipo_relacion: 'relacion_dependencia',
+    }, payroll)).toMatchObject({
+      applies: false,
+      personalRate: 0,
+      employerRate: 0,
+    });
+
+    expect(resolveIessApplicability({
+      iess_afiliado: true,
+      iess_tipo_relacion: 'servicios_profesionales',
+    }, payroll)).toMatchObject({
+      applies: false,
+      relationType: 'servicios_profesionales',
+    });
+  });
+
+  test('normaliza tipo IESS desconocido a relacion de dependencia', () => {
+    expect(normalizeIessRelationType('otro')).toBe('relacion_dependencia');
+    expect(normalizeIessRelationType('pasante')).toBe('pasante');
+  });
+
+  test('bloquea horas extra por encima del limite semanal', () => {
+    expect(() => assertWeeklyOvertimeLimit({
+      '2026-06-22': 721,
+    }, { maxWeeklyOvertimeHours: 12 })).toThrow('Las horas extra aprobadas exceden');
+
+    expect(() => assertWeeklyOvertimeLimit({
+      '2026-06-22': 720,
+    }, { maxWeeklyOvertimeHours: 12 })).not.toThrow();
+  });
+
+  test('expone periodos legales de decimos en el detalle', () => {
+    const payroll = getLegalParameters(2026).payroll;
+
+    expect(resolveThirteenthSalaryPeriod(2026, 6, payroll)).toEqual({
+      startDate: '2025-12-01',
+      endDate: '2026-11-30',
+      startMonth: 12,
+      endMonth: 11,
+    });
+
+    expect(resolveFourteenthSalaryPeriod(2026, 6, 'sierra_amazonia', payroll)).toEqual({
+      startDate: '2025-08-01',
+      endDate: '2026-07-31',
+      startMonth: 8,
+      endMonth: 7,
+    });
+
+    expect(resolveFourteenthSalaryPeriod(2026, 6, 'costa_galapagos', payroll)).toEqual({
+      startDate: '2026-03-01',
+      endDate: '2027-02-28',
+      startMonth: 3,
+      endMonth: 2,
     });
   });
 

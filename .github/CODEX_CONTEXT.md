@@ -845,7 +845,7 @@ El objetivo es pasar de boceto o prototipo a sistema productizable mediante fase
 Proyecto: Nómina-Ec, SaaS de nómina Ecuador.  
 Raíz: `C:\proyectos web\nuevo_nomina`.  
 Repositorio remoto: `https://github.com/SINKRONET-SAS/nomina-ec.git`.  
-Rama activa esperada: `codex/haiky-render-legal-plan`.  
+Rama activa esperada: rama de trabajo vigente Nomina-Ec.  
 Fecha de contexto: 2026-06-12.
 
 ## Regla principal
@@ -1225,3 +1225,47 @@ Riesgos residuales controlados:
 - Roles PDF productivos siguen dependiendo del generador/almacenamiento real; el prechequeo avisa si faltan.
 - La captura de foto movil no se agrego para no introducir dependencia de camara en Expo Go; el backend conserva soporte `fotoBase64`.
 - Revision legal/contable/LOPDP profesional sigue requerida antes de produccion.
+
+---
+
+## ANV1 - Auditoria Nomina-Ec 2026 V1
+
+Plan: `HAIKY-AUDITORIA-NOMINA-EC-2026-V1`.
+
+Estado: ANV1-01..08 ejecutadas localmente en runtime; validacion final pendiente al momento de registrar este contexto.
+
+Fuentes revisadas:
+
+- `C:\proyectos web\sinkroniq-cloud-flow\src\pages\AuditoriaNominaEC2026V1.jsx`
+- `C:\proyectos web\sinkroniq-cloud-flow\src\pages\v_nominaec\nominaec_v1_data.jsx`
+- `C:\proyectos web\sinkroniq-mobile` para PayPhone y gestion de planes.
+- `C:\proyectos web\sinkroniq-mobile` para patrones LOPDP: consentimientos, exportacion, anonimizado y sanitizacion de auditoria.
+
+Alcance ejecutado:
+
+- `CODEX_CONTEXT.md` fue movido desde raiz a `.github/CODEX_CONTEXT.md`; el contrato raiz bloquea que vuelva a raiz.
+- Runtime activo cambio defaults/config de base y Render a nombres Nomina-Ec; archivos historicos archivados no se reescriben.
+- PayPhone se alinea al patron de `sinkroniq-mobile`: gateway `Prepare`, `Confirm`, referencia unica `nominaec-*`, callback backend HTTPS, bloqueo si mock/config incompleta, verificacion de monto antes de activar suscripcion y ruta de cancelacion.
+- Gestion de planes versiona un plan editado si tiene suscripciones activas, para no mutar retroactivamente contratos comerciales.
+- Calculo de nomina agrega IESS por afiliacion/tipo de relacion laboral, limite semanal de horas extra, periodos explicitos de decimo tercero y decimo cuarto regional.
+- Ficha de trabajador, importacion y PWA exponen `iess_afiliado` y `iess_tipo_relacion`.
+- Lectura de fichas laborales queda protegida por RBAC; owner/admin_rrhh/superadmin auditan lectura salarial y supervisor recibe campos sensibles redactados.
+- LOPDP agrega `consent_preferences`, API `/api/privacidad/*`, exportacion JSON auditada, retiro de consentimientos opcionales, anonimizado superadmin con bloqueo del unico owner activo y pantalla `/dashboard/privacidad`.
+- Auditoria redacta cedula, identificacion, sueldo, salario, remuneracion, gastos personales, cuentas, tokens y buffers.
+- Se creo ruta/pagina explicita `frontend-web/src/pages/Superadmin.jsx` protegida por rol superadmin.
+
+Artefactos:
+
+- `docs2/PLAN_HAIKY_AUDITORIA_NOMINA_EC_2026_V1.md`
+- `docs2/auditoria-nomina-ec-2026-v1/MATRIZ_ANV1_HALLAZGOS.md`
+- `docs2/auditoria-nomina-ec-2026-v1/CONTRATO_ANV1_CIERRE_DEFINITIVO.md`
+- `docs2/auditoria-nomina-ec-2026-v1/RUNBOOK_ANV1_QA_RELEASE.md`
+- `docs2/auditoria-nomina-ec-2026-v1/REPORTE_ANV1_01_08_CIERRE_RUNTIME.md`
+- `.github/prompts/AUDITORIA-NOMINA-EC-2026-V1-00..08-*.md`
+
+Riesgos residuales:
+
+- PayPhone requiere `PAYPHONE_TOKEN`, `PAYPHONE_STORE_ID` y `BACKEND_PUBLIC_URL` HTTPS reales antes de cobro productivo.
+- La geolocalizacion movil mantiene snapshot de consentimiento existente; el retiro operativo de geolocalizacion requiere fase adicional que bloquee marcacion movil antes de exponerse como toggle.
+- Las reglas legales quedan parametrizadas y probadas, pero requieren validacion laboral/contable ecuatoriana antes de release comercial.
+- El renombre de DB/usuario en Render requiere migracion controlada en infraestructura si ya existe una instancia productiva previa.

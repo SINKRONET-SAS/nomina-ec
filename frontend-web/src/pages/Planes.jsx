@@ -12,6 +12,7 @@ function formatPrice(plan) {
 
 function Planes() {
   const [planes, setPlanes] = useState([]);
+  const [paymentCapabilities, setPaymentCapabilities] = useState(null);
   const [error, setError] = useState('');
   const [capabilitiesError, setCapabilitiesError] = useState('');
   const [capabilities, setCapabilities] = useState(null);
@@ -21,7 +22,10 @@ function Planes() {
 
   useEffect(() => {
     fetchPlans()
-      .then(setPlanes)
+      .then((payload) => {
+        setPlanes(payload.plans || []);
+        setPaymentCapabilities(payload.paymentCapabilities || null);
+      })
       .catch((err) => setError(extractApiError(err, 'No se pudieron cargar los planes.')));
   }, []);
 
@@ -43,6 +47,12 @@ function Planes() {
   }, [token]);
 
   const handleCheckout = async (planId) => {
+    const checkoutBlocked = planId !== 'TRIAL' && paymentCapabilities?.checkoutAvailable === false;
+    if (checkoutBlocked) {
+      setError(paymentCapabilities?.blockedReason || 'Checkout de pago no disponible.');
+      return;
+    }
+
     if (!token) {
       console.log('[PAGOS] Usuario sin sesion redirigido a registro para seleccionar plan', { planId });
       navigate(`/registro?plan=${encodeURIComponent(planId)}`);
@@ -94,9 +104,16 @@ function Planes() {
             Plan activo: <strong>{capabilities.planNombre}</strong>. Archivos bancarios: {capabilities.allowed?.bankFiles ? 'habilitados' : 'bloqueados'}.
           </div>
         )}
+        {paymentCapabilities?.checkoutAvailable === false && (
+          <div className="mt-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            Checkout PayPhone bloqueado: {paymentCapabilities.blockedReason || 'faltan credenciales de cobro real'}.
+          </div>
+        )}
 
         <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {planes.map((plan) => (
+          {planes.map((plan) => {
+            const checkoutBlocked = plan.id !== 'TRIAL' && paymentCapabilities?.checkoutAvailable === false;
+            return (
             <article className="soft-panel flex flex-col p-6" key={plan.id}>
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -116,14 +133,14 @@ function Planes() {
               </ul>
               <button
                 className="primary-button mt-6 w-full"
-                disabled={loadingPlan === plan.id}
+                disabled={loadingPlan === plan.id || checkoutBlocked}
                 onClick={() => handleCheckout(plan.id)}
               >
-                {loadingPlan === plan.id ? 'Abriendo checkout...' : plan.id === 'TRIAL' ? 'Empezar prueba' : 'Activar plan'}
+                {checkoutBlocked ? 'Checkout no configurado' : loadingPlan === plan.id ? 'Abriendo checkout...' : plan.id === 'TRIAL' ? 'Empezar prueba' : 'Activar plan'}
                 {loadingPlan !== plan.id && <ArrowRight size={18} />}
               </button>
             </article>
-          ))}
+          );})}
         </div>
       </section>
     </main>

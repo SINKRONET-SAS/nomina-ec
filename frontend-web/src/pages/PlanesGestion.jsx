@@ -95,9 +95,11 @@ function PlanesGestion() {
       };
       return saveAdminPlan(payload);
     },
-    onSuccess: () => {
+    onSuccess: (payload) => {
       setError('');
-      setMessage('Plan guardado y catalogo actualizado.');
+      setMessage(payload?.meta?.versioned
+        ? `Plan versionado como ${payload.data?.id}. Los clientes activos conservan su plan anterior.`
+        : 'Plan guardado y catalogo actualizado.');
       setDraft(EMPTY_PLAN);
       queryClient.invalidateQueries({ queryKey: ['admin-plans'] });
     },

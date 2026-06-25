@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - CorrelationId por solicitud
+// Nomina-Ec - CorrelationId por solicitud
 // ============================================================
 const { v4: uuidv4 } = require('uuid');
 

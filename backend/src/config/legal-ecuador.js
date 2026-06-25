@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Parametros legales Ecuador
+// Nomina-Ec - Parametros legales Ecuador
 // ============================================================
 
 const LEGAL_PARAMETERS = {
@@ -18,7 +18,13 @@ const LEGAL_PARAMETERS = {
       employerIessRate: 0.1115,
       vacationProvisionRate: 1 / 24,
       thirteenthSalaryProvisionRate: 1 / 12,
+      thirteenthSalaryPeriodStartMonth: 12,
+      thirteenthSalaryPeriodEndMonth: 11,
       fourteenthSalaryProvisionRate: 1 / 12,
+      fourteenthSalaryCostaGalapagosPeriodStartMonth: 3,
+      fourteenthSalaryCostaGalapagosPeriodEndMonth: 2,
+      fourteenthSalarySierraAmazoniaPeriodStartMonth: 8,
+      fourteenthSalarySierraAmazoniaPeriodEndMonth: 7,
       reserveFundRate: 1 / 12,
       reserveFundStartsAfterMonths: 12,
       personalExpenseDeductionLimit: 16302,
@@ -28,6 +34,7 @@ const LEGAL_PARAMETERS = {
       unifiedBaseSalary: 482,
       vacationDaysAfterFirstYear: 15,
       weeklyMaxHours: 40,
+      maxWeeklyOvertimeHours: 12,
       dailyMaxHours: 8,
     },
     incomeTax: [

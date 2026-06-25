@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Middleware de Reglas Irrenunciables
+// Nomina-Ec - Middleware de Reglas Irrenunciables
 // Estas reglas NO PUEDEN ser desactivadas por ningún cliente
 // ============================================================
 

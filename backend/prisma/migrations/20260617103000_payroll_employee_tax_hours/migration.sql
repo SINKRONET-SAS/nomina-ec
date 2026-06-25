@@ -1,4 +1,4 @@
--- PLAN HAIKY - Parametros por empleado para calculo de nomina
+-- Nomina-Ec - Parametros por empleado para calculo de nomina
 -- Permite gastos personales anuales y jornada mensual configurable sin cambiar el contrato base.
 
 ALTER TABLE empleados

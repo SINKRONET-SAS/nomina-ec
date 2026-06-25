@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Rate limiting simple en memoria
+// Nomina-Ec - Rate limiting simple en memoria
 // ============================================================
 
 function createRateLimiter({ windowMs, max, keyPrefix }) {

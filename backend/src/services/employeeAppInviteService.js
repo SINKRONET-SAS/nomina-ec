@@ -4,6 +4,7 @@ const db = require('../config/database');
 const AppError = require('../utils/AppError');
 const { generateToken } = require('../middleware/auth');
 const { sendEmployeeInvite } = require('./communicationService');
+const { CONSENT_SCOPES, LOPDP_VERSION } = require('./privacyConsentService');
 
 const INVITE_STATUS = Object.freeze({
   PENDING: 'PENDING_INVITE',
@@ -317,6 +318,46 @@ async function insertAudit(queryable, {
     ipAddress,
     JSON.stringify(metadata || {}),
   ]);
+}
+
+async function syncEmployeeActivationConsents(queryable, {
+  tenantId,
+  userId,
+  source = 'employee-mobile-activation',
+}) {
+  for (const definition of CONSENT_SCOPES) {
+    const active = definition.defaultActive;
+    await queryable.query(
+      `INSERT INTO consent_preferences (
+         tenant_id, user_id, scope, active, given_at, withdrawn_at, source, version, metadata
+       )
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       ON CONFLICT (user_id, scope) DO UPDATE SET
+         active = EXCLUDED.active,
+         given_at = EXCLUDED.given_at,
+         withdrawn_at = EXCLUDED.withdrawn_at,
+         source = EXCLUDED.source,
+         version = EXCLUDED.version,
+         metadata = consent_preferences.metadata || EXCLUDED.metadata,
+         updated_at = NOW()`,
+      [
+        tenantId,
+        userId,
+        definition.scope,
+        active,
+        active ? new Date() : null,
+        active ? null : new Date(),
+        source,
+        LOPDP_VERSION,
+        JSON.stringify({
+          source,
+          legalBasis: definition.legalBasis,
+          required: definition.required,
+          withdrawable: definition.withdrawable,
+        }),
+      ]
+    );
+  }
 }
 
 async function listEmployeeAppInvitations({ tenantId }) {
@@ -815,6 +856,10 @@ async function acceptEmployeeInvitation(payload = {}, requestMeta = {}) {
       }),
       payload.deviceHint ? hashInviteCode(payload.deviceHint) : null,
     ]);
+    await syncEmployeeActivationConsents(client, {
+      tenantId: invite.tenant_id,
+      userId: usuario.id,
+    });
 
     await client.query(`
       UPDATE employee_app_invites

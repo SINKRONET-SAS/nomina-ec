@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Parametros legales versionados
+// Nomina-Ec - Parametros legales versionados
 // ============================================================
 const db = require('../config/database');
 const AppError = require('../utils/AppError');
@@ -34,7 +34,13 @@ async function getLegalParametersForTenant(tenantId, year) {
       employerIessRate: Number(row.aporte_patronal_pct),
       vacationProvisionRate: 1 / 24,
       thirteenthSalaryProvisionRate: 1 / 12,
+      thirteenthSalaryPeriodStartMonth: 12,
+      thirteenthSalaryPeriodEndMonth: 11,
       fourteenthSalaryProvisionRate: 1 / 12,
+      fourteenthSalaryCostaGalapagosPeriodStartMonth: 3,
+      fourteenthSalaryCostaGalapagosPeriodEndMonth: 2,
+      fourteenthSalarySierraAmazoniaPeriodStartMonth: 8,
+      fourteenthSalarySierraAmazoniaPeriodEndMonth: 7,
       reserveFundRate: 1 / 12,
       reserveFundStartsAfterMonths: 12,
       personalExpenseDeductionLimit: Number(row.gastos_personales_limite || 16302),
@@ -44,6 +50,7 @@ async function getLegalParametersForTenant(tenantId, year) {
       unifiedBaseSalary: Number(row.salario_basico),
       vacationDaysAfterFirstYear: 15,
       weeklyMaxHours: Number(row.jornada_maxima_semanal),
+      maxWeeklyOvertimeHours: 12,
       dailyMaxHours: 8,
     },
     incomeTax: row.tabla_impuesto_renta,
@@ -87,6 +94,7 @@ async function getVersionedLegalParametersForTenant(tenantId, year) {
         'iess_aporte_patronal',
         'jornada_horas_mensuales',
         'jornada_maxima_semanal',
+        'horas_extra_limite_semanal',
         'provision_vacaciones',
         'vacaciones_dias_anuales',
         'decimo_tercero',
@@ -137,6 +145,7 @@ function mergeVersionedParameters(baseParameters, versionedParameters) {
   const employerIess = versionedParameters.iess_aporte_patronal?.value;
   const monthlyHours = versionedParameters.jornada_horas_mensuales?.value;
   const weeklyHours = versionedParameters.jornada_maxima_semanal?.value;
+  const overtimeLimit = versionedParameters.horas_extra_limite_semanal?.value;
   const vacationProvision = versionedParameters.provision_vacaciones?.value;
   const vacationDays = versionedParameters.vacaciones_dias_anuales?.value;
 
@@ -145,18 +154,25 @@ function mergeVersionedParameters(baseParameters, versionedParameters) {
   if (employerIess) payroll.employerIessRate = Number(employerIess.amount ?? payroll.employerIessRate);
   if (monthlyHours) payroll.monthlyWorkHours = Number(monthlyHours.amount ?? payroll.monthlyWorkHours);
   if (weeklyHours) payroll.weeklyMaxHours = Number(weeklyHours.amount ?? payroll.weeklyMaxHours);
+  if (overtimeLimit) payroll.maxWeeklyOvertimeHours = Number(overtimeLimit.amount ?? payroll.maxWeeklyOvertimeHours);
   if (vacationProvision) payroll.vacationProvisionRate = Number(vacationProvision.amount ?? payroll.vacationProvisionRate);
   if (vacationDays) payroll.vacationDaysAfterFirstYear = Number(vacationDays.amount ?? payroll.vacationDaysAfterFirstYear);
 
   if (thirteenth) {
     payroll.thirteenthSalaryProvisionRate = Number(thirteenth.rate ?? payroll.thirteenthSalaryProvisionRate ?? (1 / 12));
     payroll.thirteenthSalaryPaymentMonth = Number(thirteenth.paymentMonth ?? payroll.thirteenthSalaryPaymentMonth ?? 12);
+    payroll.thirteenthSalaryPeriodStartMonth = Number(thirteenth.periodStartMonth ?? payroll.thirteenthSalaryPeriodStartMonth ?? 12);
+    payroll.thirteenthSalaryPeriodEndMonth = Number(thirteenth.periodEndMonth ?? payroll.thirteenthSalaryPeriodEndMonth ?? 11);
   }
 
   if (fourteenthCosta || fourteenthSierra) {
     payroll.fourteenthSalaryProvisionRate = Number((fourteenthCosta || fourteenthSierra).rate ?? payroll.fourteenthSalaryProvisionRate ?? (1 / 12));
     payroll.fourteenthSalaryCostaGalapagosPaymentMonth = Number(fourteenthCosta?.paymentMonth ?? payroll.fourteenthSalaryCostaGalapagosPaymentMonth ?? 3);
     payroll.fourteenthSalarySierraAmazoniaPaymentMonth = Number(fourteenthSierra?.paymentMonth ?? payroll.fourteenthSalarySierraAmazoniaPaymentMonth ?? 8);
+    payroll.fourteenthSalaryCostaGalapagosPeriodStartMonth = Number(fourteenthCosta?.periodStartMonth ?? payroll.fourteenthSalaryCostaGalapagosPeriodStartMonth ?? 3);
+    payroll.fourteenthSalaryCostaGalapagosPeriodEndMonth = Number(fourteenthCosta?.periodEndMonth ?? payroll.fourteenthSalaryCostaGalapagosPeriodEndMonth ?? 2);
+    payroll.fourteenthSalarySierraAmazoniaPeriodStartMonth = Number(fourteenthSierra?.periodStartMonth ?? payroll.fourteenthSalarySierraAmazoniaPeriodStartMonth ?? 8);
+    payroll.fourteenthSalarySierraAmazoniaPeriodEndMonth = Number(fourteenthSierra?.periodEndMonth ?? payroll.fourteenthSalarySierraAmazoniaPeriodEndMonth ?? 7);
   }
 
   if (reserveFund) {

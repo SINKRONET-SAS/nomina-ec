@@ -14,6 +14,8 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import Planes from './pages/Planes';
 import PlanesGestion from './pages/PlanesGestion';
+import Superadmin from './pages/Superadmin';
+import PrivacidadCuenta from './pages/PrivacidadCuenta';
 import PaymentResult from './pages/PaymentResult';
 import LegalText from './pages/LegalText';
 import NotFound from './pages/NotFound';
@@ -190,9 +192,19 @@ function App() {
                   <Auditoria />
                 </ProtectedRoute>
               } />
+              <Route path="privacidad" element={
+                <ProtectedRoute requiredRole={['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado']}>
+                  <PrivacidadCuenta />
+                </ProtectedRoute>
+              } />
               <Route path="planes" element={
                 <ProtectedRoute requiredRole={['superadmin']}>
                   <PlanesGestion />
+                </ProtectedRoute>
+              } />
+              <Route path="superadmin" element={
+                <ProtectedRoute requiredRole={['superadmin']}>
+                  <Superadmin />
                 </ProtectedRoute>
               } />
             </Route>

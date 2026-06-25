@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Generador de XML SAE para IESS
+// Nomina-Ec - Generador de XML SAE para IESS
 // Sistema de Aviso de Entrada/Salida
 // ============================================================
 const { XMLBuilder } = require('fast-xml-parser');

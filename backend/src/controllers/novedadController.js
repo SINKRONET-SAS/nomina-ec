@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Controlador de Novedades
+// Nomina-Ec - Controlador de Novedades
 // ============================================================
 const db = require('../config/database');
 const { ensurePayrollPeriodForDate } = require('../services/monthlyPeriodService');

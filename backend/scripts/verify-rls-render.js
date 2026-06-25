@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Verificacion RLS Render
+// Nomina-Ec - Verificacion RLS Render
 // ============================================================
 const crypto = require('crypto');
 const fs = require('fs');

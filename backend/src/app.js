@@ -53,6 +53,7 @@ app.post('/api/mobile/empleado/activar', authRateLimit, employeeAppInviteControl
 const paymentController = require('./controllers/paymentController');
 app.get('/api/pagos/planes', paymentController.listPublicPlans);
 app.get('/api/pagos/confirm', paymentController.confirmPayment);
+app.get('/api/pagos/cancelado', paymentController.paymentCancelled);
 app.post('/api/pagos/webhook', paymentController.confirmPayment);
 
 const externalApiRoutes = require('./routes/externalApiRoutes');
@@ -65,10 +66,18 @@ app.use('/api', authenticateToken);
 const configurationController = require('./controllers/configurationController');
 const communicationController = require('./controllers/communicationController');
 const ecuadorCatalogController = require('./controllers/ecuadorCatalogController');
+const privacyController = require('./controllers/privacyController');
 app.get('/api/configuracion/resumen', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.summary);
 app.get('/api/configuracion/onboarding', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.onboarding);
 app.get('/api/catalogos/ecuador/provincias', requireRole('superadmin', 'owner', 'admin_rrhh'), ecuadorCatalogController.provincias);
 app.get('/api/catalogos/ecuador/ciudades', requireRole('superadmin', 'owner', 'admin_rrhh'), ecuadorCatalogController.ciudades);
+app.get('/api/privacidad/consentimientos', privacyController.consentStatus);
+app.patch('/api/privacidad/consentimientos', privacyController.updateConsents);
+app.post('/api/privacidad/consentimientos/retirar-todo', privacyController.withdrawAll);
+app.get('/api/privacidad/consentimientos/historial', privacyController.history);
+app.get('/api/privacidad/exportar', privacyController.exportData);
+app.get('/api/privacidad/exportar/:userId', privacyController.exportData);
+app.post('/api/privacidad/anonimizar/:userId', requireRole('superadmin'), privacyController.anonymize);
 app.post('/api/configuracion/onboarding/:stepCode', requireRole('owner', 'admin_rrhh'), configurationController.completeOnboardingStep);
 app.post('/api/configuracion/parametros-legales/obligatorios', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.loadMandatoryLegalParameters);
 app.get('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.list);
@@ -100,7 +109,7 @@ app.put('/api/pagos/planes/:planId', requireRole('superadmin'), paymentControlle
 app.delete('/api/pagos/planes/:planId', requireRole('superadmin'), paymentController.deletePlan);
 
 const empleadoController = require('./controllers/empleadoController');
-app.get('/api/empleados', empleadoController.listar);
+app.get('/api/empleados', requireRole('owner', 'admin_rrhh', 'supervisor'), empleadoController.listar);
 app.get('/api/empleados/app-invitaciones', requireRole('owner', 'admin_rrhh'), employeeAppInviteController.listar);
 app.post('/api/empleados/app-invitaciones/:id/reenviar', requireRole('owner', 'admin_rrhh'), employeeAppInviteController.reenviar);
 app.post('/api/empleados/app-invitaciones/:id/revocar', requireRole('owner', 'admin_rrhh'), employeeAppInviteController.revocar);
@@ -108,7 +117,7 @@ app.get('/api/empleados/importar/lotes', requireRole('owner', 'admin_rrhh'), emp
 app.post('/api/empleados/importar/preview', requireRole('owner', 'admin_rrhh'), empleadoController.previewImportacion);
 app.post('/api/empleados/importar/confirmar', requireRole('owner', 'admin_rrhh'), empleadoController.confirmarImportacion);
 app.delete('/api/empleados/importar/lotes/:batchId', requireRole('owner', 'admin_rrhh'), empleadoController.revertirImportacion);
-app.get('/api/empleados/:id', empleadoController.obtener);
+app.get('/api/empleados/:id', requireRole('owner', 'admin_rrhh', 'supervisor'), empleadoController.obtener);
 app.post('/api/empleados', requireRole('owner', 'admin_rrhh'), empleadoController.crear);
 app.put('/api/empleados/:id', requireRole('owner', 'admin_rrhh'), empleadoController.actualizar);
 app.post('/api/empleados/:id/app-invitacion', requireRole('owner', 'admin_rrhh'), employeeAppInviteController.crear);

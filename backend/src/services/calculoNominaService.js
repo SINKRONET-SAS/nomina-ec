@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Motor de Calculo de Nomina Mensual
+// Nomina-Ec - Motor de Calculo de Nomina Mensual
 // Ecuador
 // ============================================================
 const db = require('../config/database');
@@ -20,6 +20,17 @@ const FOURTEENTH_REGION_PARAMETERS = {
   costa_galapagos: 'decimo_cuarto_costa_galapagos',
   sierra_amazonia: 'decimo_cuarto_sierra_amazonia',
 };
+const IESS_RELATION_TYPES = new Set([
+  'relacion_dependencia',
+  'jornada_parcial_permanente',
+  'sin_relacion_dependencia',
+  'servicios_profesionales',
+  'pasante',
+]);
+const IESS_APPLICABLE_RELATION_TYPES = new Set([
+  'relacion_dependencia',
+  'jornada_parcial_permanente',
+]);
 
 function resolveFourteenthSalaryRegion(value) {
   const regionCode = String(value || 'sierra_amazonia').trim().toLowerCase();
@@ -27,6 +38,77 @@ function resolveFourteenthSalaryRegion(value) {
     regionCode: FOURTEENTH_REGION_PARAMETERS[regionCode] ? regionCode : 'sierra_amazonia',
     parameterKey: FOURTEENTH_REGION_PARAMETERS[regionCode] || FOURTEENTH_REGION_PARAMETERS.sierra_amazonia,
   };
+}
+
+function normalizeIessRelationType(value) {
+  const normalized = String(value || 'relacion_dependencia').trim().toLowerCase();
+  return IESS_RELATION_TYPES.has(normalized) ? normalized : 'relacion_dependencia';
+}
+
+function resolveIessApplicability(emp = {}, payrollParameters = {}) {
+  const affiliated = emp.iess_afiliado !== false && String(emp.iess_afiliado ?? 'true').toLowerCase() !== 'false';
+  const relationType = normalizeIessRelationType(emp.iess_tipo_relacion || emp.iessTipoRelacion);
+  const applies = affiliated && IESS_APPLICABLE_RELATION_TYPES.has(relationType);
+
+  return {
+    affiliated,
+    relationType,
+    applies,
+    personalRate: applies ? Number(payrollParameters.personalIessRate || 0) : 0,
+    employerRate: applies ? Number(payrollParameters.employerIessRate || 0) : 0,
+  };
+}
+
+function resolveThirteenthSalaryPeriod(anio, mes, payrollParameters = {}) {
+  return resolveAnnualPeriod({
+    anio,
+    mes,
+    startMonth: Number(payrollParameters.thirteenthSalaryPeriodStartMonth || 12),
+    endMonth: Number(payrollParameters.thirteenthSalaryPeriodEndMonth || 11),
+  });
+}
+
+function resolveFourteenthSalaryPeriod(anio, mes, regionCode, payrollParameters = {}) {
+  const prefix = regionCode === 'costa_galapagos' ? 'CostaGalapagos' : 'SierraAmazonia';
+  return resolveAnnualPeriod({
+    anio,
+    mes,
+    startMonth: Number(payrollParameters[`fourteenthSalary${prefix}PeriodStartMonth`] || (regionCode === 'costa_galapagos' ? 3 : 8)),
+    endMonth: Number(payrollParameters[`fourteenthSalary${prefix}PeriodEndMonth`] || (regionCode === 'costa_galapagos' ? 2 : 7)),
+  });
+}
+
+function resolveAnnualPeriod({ anio, mes, startMonth, endMonth }) {
+  const startYear = Number(mes) >= startMonth ? Number(anio) : Number(anio) - 1;
+  const endYear = endMonth >= startMonth ? startYear : startYear + 1;
+  const endDate = new Date(Date.UTC(endYear, endMonth, 0)).toISOString().slice(0, 10);
+  return {
+    startDate: `${startYear}-${String(startMonth).padStart(2, '0')}-01`,
+    endDate,
+    startMonth,
+    endMonth,
+  };
+}
+
+function assertWeeklyOvertimeLimit(weeklyOvertimeMinutes = {}, payrollParameters = {}) {
+  const maxWeeklyOvertimeHours = Number(payrollParameters.maxWeeklyOvertimeHours ?? 12);
+  const maxWeeklyMinutes = maxWeeklyOvertimeHours * 60;
+  const violations = Object.entries(weeklyOvertimeMinutes)
+    .filter(([, minutes]) => Number(minutes || 0) > maxWeeklyMinutes)
+    .map(([weekStartDate, minutes]) => ({
+      weekStartDate,
+      minutes: Number(minutes || 0),
+      hours: roundMoney(Number(minutes || 0) / 60),
+      maxHours: maxWeeklyOvertimeHours,
+    }));
+
+  if (violations.length > 0) {
+    throw new AppError('Las horas extra aprobadas exceden el limite semanal permitido.', {
+      code: 'NOMINA_HORAS_EXTRA_LIMITE_SEMANAL',
+      statusCode: 422,
+      details: { violations },
+    });
+  }
 }
 
 async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
@@ -150,6 +232,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     valorHora,
     dailyMaxHours: payrollParameters.dailyMaxHours,
   });
+  assertWeeklyOvertimeLimit(noveltyImpact.weeklyOvertimeMinutes, payrollParameters);
   const extras50 = (noveltyImpact.minutesByConcept.horas_extra_50 || 0) / 60;
   const extras100 = (noveltyImpact.minutesByConcept.horas_extra_100 || 0) / 60;
   const montoExtras50 = roundMoney(noveltyImpact.amountByConcept.horas_extra_50 || 0);
@@ -162,8 +245,9 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   const ingresosRenta = roundMoney(sueldoProporcional + noveltyImpact.totals.incomeAffectsIncomeTax);
   const fondoReserva = calcularFondoReserva(emp, ingresosBase, anio, mes, payrollParameters);
   const totalIngresos = roundMoney(ingresosBase + noveltyImpact.totals.incomeNotAffectsIess + fondoReserva.montoPagadoEmpleado);
-  const aporteIess = roundMoney(ingresosBase * payrollParameters.personalIessRate);
-  const aportePatronal = roundMoney(ingresosBase * payrollParameters.employerIessRate);
+  const iessApplicability = resolveIessApplicability(emp, payrollParameters);
+  const aporteIess = roundMoney(ingresosBase * iessApplicability.personalRate);
+  const aportePatronal = roundMoney(ingresosBase * iessApplicability.employerRate);
   const baseImponible = roundMoney(ingresosRenta - aporteIess);
   const impuestoRenta = calcularIR(
     baseImponible,
@@ -173,7 +257,9 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   const baseDecimos = roundMoney(sueldoProporcional + noveltyImpact.totals.incomeAffectsDecimos + fondoReserva.montoPagadoEmpleado);
   const baseVacaciones = roundMoney(sueldoProporcional + noveltyImpact.totals.incomeAffectsVacation + fondoReserva.montoPagadoEmpleado);
   const provisionDecimoTercero = roundMoney(baseDecimos * (payrollParameters.thirteenthSalaryProvisionRate ?? (1 / 12)));
+  const thirteenthSalaryPeriod = resolveThirteenthSalaryPeriod(anio, mes, payrollParameters);
   const fourteenthSalaryRegion = resolveFourteenthSalaryRegion(emp.region_decimo_cuarto);
+  const fourteenthSalaryPeriod = resolveFourteenthSalaryPeriod(anio, mes, fourteenthSalaryRegion.regionCode, payrollParameters);
   const provisionDecimoCuarto = roundMoney(payrollParameters.unifiedBaseSalary * (payrollParameters.fourteenthSalaryProvisionRate ?? (1 / 12)));
   const provisionVacaciones = roundMoney(baseVacaciones * payrollParameters.vacationProvisionRate);
   const provisionFondosReserva = fondoReserva.provision;
@@ -214,19 +300,28 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     ingresosRenta,
     montoExtras50,
     montoExtras100,
+    horasExtraPorSemana: noveltyImpact.weeklyOvertimeMinutes || {},
+    horasExtraLimiteSemanal: Number(payrollParameters.maxWeeklyOvertimeHours ?? 12),
     bonosDesempeno,
     comisiones,
     descuentoFaltas,
     novedadesCalculadas: noveltyImpact.lines,
     novedadesResumen: noveltyImpact.totals,
+    iessAfiliado: iessApplicability.affiliated,
+    iessTipoRelacion: iessApplicability.relationType,
+    iessAplica: iessApplicability.applies,
+    iessAportePersonalRate: iessApplicability.personalRate,
+    iessAportePatronalRate: iessApplicability.employerRate,
     aporteIess,
     aportePatronal,
     baseImponible,
     impuestoRenta,
     provisionDecimoTercero,
+    decimoTerceroPeriodo: thirteenthSalaryPeriod,
     provisionDecimoCuarto,
     decimoCuartoRegion: fourteenthSalaryRegion.regionCode,
     decimoCuartoParameterKey: fourteenthSalaryRegion.parameterKey,
+    decimoCuartoPeriodo: fourteenthSalaryPeriod,
     provisionVacaciones,
     provisionFondosReserva,
     fondoReservaModalidad: fondoReserva.modalidad,
@@ -543,4 +638,9 @@ module.exports = {
   getEmployeeMonthlyHours,
   calcularIR,
   resolveFourteenthSalaryRegion,
+  normalizeIessRelationType,
+  resolveIessApplicability,
+  resolveThirteenthSalaryPeriod,
+  resolveFourteenthSalaryPeriod,
+  assertWeeklyOvertimeLimit,
 };

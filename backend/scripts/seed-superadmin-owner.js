@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Seed seguro de SUPERADMIN y OWNER demo opcional
+// Nomina-Ec - Seed seguro de SUPERADMIN y OWNER demo opcional
 // ============================================================
 const bcrypt = require('bcryptjs');
 const { Client } = require('pg');

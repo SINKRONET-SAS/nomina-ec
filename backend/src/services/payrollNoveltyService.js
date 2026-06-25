@@ -222,6 +222,7 @@ function calculateNoveltyImpacts(rows = [], configs = [], context = {}) {
   };
   const amountByConcept = {};
   const minutesByConcept = {};
+  const weeklyOvertimeMinutes = {};
 
   for (const row of rows) {
     const code = normalizeNoveltyCode(row.tipo_novedad || row.tipoNovedad);
@@ -240,6 +241,7 @@ function calculateNoveltyImpacts(rows = [], configs = [], context = {}) {
     if (amount <= 0 || config.payrollImpact === 'informativo') continue;
 
     const category = config.payrollImpact === 'ingreso' ? 'ingreso' : 'deduccion';
+    const overtimeWeekKey = isOvertimeConcept(config.conceptCode) ? weekKeyFromDate(row.fecha) : '';
     const line = {
       noveltyId: row.id || '',
       code,
@@ -263,12 +265,16 @@ function calculateNoveltyImpacts(rows = [], configs = [], context = {}) {
         justificacion: row.justificacion || '',
         tipoNovedad: code,
         configId: config.id,
+        overtimeWeekKey,
       },
     };
     lines.push(line);
 
     amountByConcept[line.conceptCode] = roundMoney((amountByConcept[line.conceptCode] || 0) + amount);
     minutesByConcept[line.conceptCode] = (minutesByConcept[line.conceptCode] || 0) + Number(row.minutos || 0);
+    if (overtimeWeekKey) {
+      weeklyOvertimeMinutes[overtimeWeekKey] = (weeklyOvertimeMinutes[overtimeWeekKey] || 0) + Number(row.minutos || 0);
+    }
 
     if (category === 'ingreso') {
       totals.income += amount;
@@ -286,7 +292,20 @@ function calculateNoveltyImpacts(rows = [], configs = [], context = {}) {
     totals[key] = roundMoney(totals[key]);
   }
 
-  return { lines, totals, amountByConcept, minutesByConcept };
+  return { lines, totals, amountByConcept, minutesByConcept, weeklyOvertimeMinutes };
+}
+
+function isOvertimeConcept(conceptCode) {
+  return conceptCode === 'horas_extra_50' || conceptCode === 'horas_extra_100';
+}
+
+function weekKeyFromDate(value) {
+  const isoDate = String(value || '').slice(0, 10);
+  const date = new Date(`${isoDate}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return 'sin_fecha';
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() - day + 1);
+  return date.toISOString().slice(0, 10);
 }
 
 function calculateNoveltyAmount(row, config, context = {}) {
@@ -322,6 +341,8 @@ module.exports = {
   ensureNoveltyTypeAllowed,
   getActiveNoveltyTypeConfigs,
   getApprovedPayrollNoveltyImpacts,
+  isOvertimeConcept,
   normalizeConfig,
   normalizeNoveltyCode,
+  weekKeyFromDate,
 };

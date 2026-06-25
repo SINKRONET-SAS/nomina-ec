@@ -1,5 +1,5 @@
 // ============================================================
-// PLAN HAIKY - Ejecutor de migraciones Prisma
+// Nomina-Ec - Ejecutor de migraciones Prisma
 // ============================================================
 const { spawn } = require('child_process');
 const path = require('path');
