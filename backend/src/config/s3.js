@@ -8,11 +8,26 @@ const {
   S3Client,
 } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const crypto = require('crypto');
+const fs = require('fs/promises');
+const path = require('path');
 require('dotenv').config();
 
 const BUCKET = process.env.AWS_S3_BUCKET || 'nomina-ec-documents';
 const REGION = process.env.AWS_REGION || 'us-east-1';
 const ENDPOINT = process.env.AWS_S3_ENDPOINT || undefined;
+const LOCAL_STORAGE_DIR = process.env.LOCAL_STORAGE_DIR
+  || path.join(__dirname, '..', '..', 'storage', 'local-files');
+const LOCAL_URL_TTL_SECONDS = Number(process.env.LOCAL_STORAGE_URL_TTL_SECONDS || 3600);
+const PLACEHOLDER_VALUES = new Set([
+  'your-access-key',
+  'your-secret-key',
+  'change-me',
+  'changeme',
+  'placeholder',
+  'mock',
+  'test',
+]);
 
 const s3 = new S3Client({
   region: REGION,
@@ -26,12 +41,187 @@ const s3 = new S3Client({
     : undefined,
 });
 
+function cleanEnv(value) {
+  return String(value || '').trim();
+}
+
+function isPlaceholder(value) {
+  const normalized = cleanEnv(value).toLowerCase();
+  return !normalized || PLACEHOLDER_VALUES.has(normalized);
+}
+
+function hasRealS3Credentials() {
+  return !isPlaceholder(process.env.AWS_ACCESS_KEY_ID)
+    && !isPlaceholder(process.env.AWS_SECRET_ACCESS_KEY);
+}
+
+function isLocalStorageEnabled() {
+  const driver = cleanEnv(process.env.STORAGE_DRIVER).toLowerCase();
+  if (driver === 'local') return true;
+  if (driver === 's3') return false;
+
+  return process.env.NODE_ENV !== 'production' && !hasRealS3Credentials();
+}
+
+function canFallbackToLocalStorage() {
+  const driver = cleanEnv(process.env.STORAGE_DRIVER).toLowerCase();
+  return driver !== 's3' && process.env.NODE_ENV !== 'production';
+}
+
+function isLocalStorageAvailable() {
+  return isLocalStorageEnabled() || canFallbackToLocalStorage();
+}
+
 function buildObjectLocation(key) {
   if (ENDPOINT) {
     return `${ENDPOINT.replace(/\/$/, '')}/${BUCKET}/${key}`;
   }
 
   return `https://${BUCKET}.s3.${REGION}.amazonaws.com/${key}`;
+}
+
+function localPublicBaseUrl() {
+  return cleanEnv(process.env.LOCAL_STORAGE_PUBLIC_BASE_URL)
+    || cleanEnv(process.env.BACKEND_PUBLIC_URL)
+    || cleanEnv(process.env.API_PUBLIC_URL)
+    || `http://localhost:${process.env.PORT || 3000}`;
+}
+
+function normalizeStorageKey(key) {
+  const raw = String(key || '').replace(/\\/g, '/').trim();
+  const normalized = path.posix.normalize(`/${raw}`).replace(/^\/+/, '');
+
+  if (!normalized || normalized === '.' || normalized.startsWith('..') || normalized.includes('/../')) {
+    throw new Error('Clave de almacenamiento local invalida.');
+  }
+
+  return normalized;
+}
+
+function localObjectPath(key) {
+  const normalizedKey = normalizeStorageKey(key);
+  const root = path.resolve(LOCAL_STORAGE_DIR);
+  const target = path.resolve(root, ...normalizedKey.split('/'));
+
+  if (target !== root && !target.startsWith(`${root}${path.sep}`)) {
+    throw new Error('Ruta de almacenamiento local fuera del directorio permitido.');
+  }
+
+  return target;
+}
+
+function metadataPath(key) {
+  return `${localObjectPath(key)}.metadata.json`;
+}
+
+function encodeLocalStorageKey(key) {
+  return Buffer.from(normalizeStorageKey(key), 'utf8').toString('base64url');
+}
+
+function decodeLocalStorageKey(encodedKey) {
+  return normalizeStorageKey(Buffer.from(String(encodedKey || ''), 'base64url').toString('utf8'));
+}
+
+function localSigningSecret() {
+  return cleanEnv(process.env.LOCAL_STORAGE_SIGNING_SECRET)
+    || cleanEnv(process.env.JWT_SECRET)
+    || 'nomina-ec-local-storage-development-secret';
+}
+
+function signLocalStoragePayload(payload) {
+  return crypto
+    .createHmac('sha256', localSigningSecret())
+    .update(payload)
+    .digest('base64url');
+}
+
+function timingSafeEqualText(left, right) {
+  const leftBuffer = Buffer.from(String(left || ''));
+  const rightBuffer = Buffer.from(String(right || ''));
+  return leftBuffer.length === rightBuffer.length && crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function buildLocalObjectUrl(key, expiresIn = LOCAL_URL_TTL_SECONDS) {
+  const normalizedKey = normalizeStorageKey(key);
+  const encodedKey = encodeLocalStorageKey(normalizedKey);
+  const expiresAt = Math.floor(Date.now() / 1000) + Number(expiresIn || LOCAL_URL_TTL_SECONDS);
+  const payload = `${encodedKey}.${expiresAt}`;
+  const signature = signLocalStoragePayload(payload);
+  const token = `${expiresAt}.${signature}`;
+
+  return `${localPublicBaseUrl().replace(/\/$/, '')}/api/storage/local/${encodedKey}?token=${encodeURIComponent(token)}`;
+}
+
+function verifyLocalStorageToken(encodedKey, token) {
+  const [expiresAtText, signature] = String(token || '').split('.');
+  const expiresAt = Number(expiresAtText);
+
+  if (!Number.isFinite(expiresAt) || expiresAt < Math.floor(Date.now() / 1000) || !signature) {
+    return false;
+  }
+
+  const expected = signLocalStoragePayload(`${encodedKey}.${expiresAt}`);
+  return timingSafeEqualText(expected, signature);
+}
+
+function extractLocalStorageKey(storedUrl, storageKey) {
+  if (storageKey) return normalizeStorageKey(storageKey);
+
+  const text = String(storedUrl || '');
+  if (text.startsWith('local://')) {
+    return decodeLocalStorageKey(text.replace(/^local:\/\//, '').split(/[?#]/)[0]);
+  }
+
+  const match = text.match(/\/api\/storage\/local\/([^/?#]+)/);
+  if (match) {
+    return decodeLocalStorageKey(match[1]);
+  }
+
+  return null;
+}
+
+function resolveStorageUrl(storedUrl, storageKey, expiresIn = LOCAL_URL_TTL_SECONDS) {
+  const key = extractLocalStorageKey(storedUrl, storageKey);
+  if (!key) return storedUrl;
+  return buildLocalObjectUrl(key, expiresIn);
+}
+
+async function localUpload(buffer, key, contentType) {
+  const filePath = localObjectPath(key);
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, buffer);
+  await fs.writeFile(metadataPath(key), JSON.stringify({
+    key: normalizeStorageKey(key),
+    contentType,
+    size: Buffer.byteLength(buffer),
+    createdAt: new Date().toISOString(),
+  }, null, 2));
+  console.log('[LOCAL_STORAGE] Archivo guardado', { key: normalizeStorageKey(key) });
+  return buildLocalObjectUrl(key);
+}
+
+async function localGet(key) {
+  return fs.readFile(localObjectPath(key));
+}
+
+async function getLocalObject(key) {
+  return localGet(key);
+}
+
+async function getLocalObjectMetadata(key) {
+  try {
+    const raw = await fs.readFile(metadataPath(key), 'utf8');
+    return JSON.parse(raw);
+  } catch (err) {
+    if (err.code === 'ENOENT') return {};
+    throw err;
+  }
+}
+
+async function localDelete(key) {
+  const filePath = localObjectPath(key);
+  await fs.rm(filePath, { force: true });
+  await fs.rm(metadataPath(key), { force: true });
 }
 
 function logS3Error(action, key, err) {
@@ -53,6 +243,10 @@ function logS3Error(action, key, err) {
  * @returns {Promise<string>} URL del archivo.
  */
 const s3Upload = async (buffer, key, contentType = 'application/octet-stream') => {
+  if (isLocalStorageEnabled()) {
+    return localUpload(buffer, key, contentType);
+  }
+
   try {
     await s3.send(new PutObjectCommand({
       Bucket: BUCKET,
@@ -64,6 +258,14 @@ const s3Upload = async (buffer, key, contentType = 'application/octet-stream') =
     console.log('[S3] Archivo subido', { key });
     return buildObjectLocation(key);
   } catch (err) {
+    if (canFallbackToLocalStorage()) {
+      console.warn('[S3] Fallo en entorno no productivo; se usa almacenamiento local', {
+        code: err.code || err.name || 'S3_ERROR',
+        key,
+      });
+      return localUpload(buffer, key, contentType);
+    }
+
     logS3Error('subir archivo', key, err);
     throw new Error(`Error al subir archivo a S3: ${err.message}`);
   }
@@ -75,6 +277,10 @@ const s3Upload = async (buffer, key, contentType = 'application/octet-stream') =
  * @returns {Promise<Buffer>} Contenido del archivo.
  */
 const s3Get = async (key) => {
+  if (isLocalStorageEnabled()) {
+    return localGet(key);
+  }
+
   try {
     const result = await s3.send(new GetObjectCommand({
       Bucket: BUCKET,
@@ -100,6 +306,10 @@ const s3Get = async (key) => {
  * @returns {Promise<string>} URL firmada.
  */
 const s3SignedUrl = async (key, expiresIn = 3600) => {
+  if (isLocalStorageEnabled()) {
+    return buildLocalObjectUrl(key, expiresIn);
+  }
+
   try {
     return await getSignedUrl(
       s3,
@@ -121,6 +331,12 @@ const s3SignedUrl = async (key, expiresIn = 3600) => {
  * @returns {Promise<void>}
  */
 const s3Delete = async (key) => {
+  if (isLocalStorageEnabled()) {
+    await localDelete(key);
+    console.log('[LOCAL_STORAGE] Archivo eliminado', { key: normalizeStorageKey(key) });
+    return;
+  }
+
   try {
     await s3.send(new DeleteObjectCommand({
       Bucket: BUCKET,
@@ -139,5 +355,13 @@ module.exports = {
   s3Get,
   s3SignedUrl,
   s3Delete,
+  buildLocalObjectUrl,
+  decodeLocalStorageKey,
+  getLocalObject,
+  getLocalObjectMetadata,
+  isLocalStorageAvailable,
+  isLocalStorageEnabled,
+  resolveStorageUrl,
+  verifyLocalStorageToken,
   BUCKET,
 };

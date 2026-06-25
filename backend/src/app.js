@@ -56,6 +56,9 @@ app.get('/api/pagos/confirm', paymentController.confirmPayment);
 app.get('/api/pagos/cancelado', paymentController.paymentCancelled);
 app.post('/api/pagos/webhook', paymentController.confirmPayment);
 
+const storageController = require('./controllers/storageController');
+app.get('/api/storage/local/:encodedKey', storageController.descargarLocal);
+
 const externalApiRoutes = require('./routes/externalApiRoutes');
 const { authenticateExternalApi } = require('./middleware/externalApiAuth');
 const externalApiRateLimit = createRateLimiter({ windowMs: 60 * 1000, max: 120, keyPrefix: 'api-v1' });

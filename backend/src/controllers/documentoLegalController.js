@@ -5,7 +5,7 @@ const db = require('../config/database');
 const { generarContrato, listContractTemplates } = require('../services/templateGenerator');
 const { calcularLiquidacion } = require('../services/liquidacionService');
 const { generateEquipmentDeliveryAct } = require('../services/equipmentDeliveryActService');
-const { s3Upload } = require('../config/s3');
+const { resolveStorageUrl, s3Upload } = require('../config/s3');
 
 async function generarContratoCtrl(req, res) {
   try {
@@ -249,15 +249,18 @@ async function descargar(req, res) {
     const { tenantId } = req;
     
     const result = await db.query(`
-      SELECT documento_url FROM documentos_legales
+      SELECT documento_url, metadata FROM documentos_legales
       WHERE id = $1 AND tenant_id = $2
     `, [id, tenantId]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Documento no encontrado', correlationId: req.correlationId });
     }
-    
-    res.json({ success: true, url: result.rows[0].documento_url, correlationId: req.correlationId });
+    const row = result.rows[0];
+    const metadata = typeof row.metadata === 'object' && row.metadata ? row.metadata : {};
+    const url = resolveStorageUrl(row.documento_url, metadata.storageKey);
+
+    res.json({ success: true, url, correlationId: req.correlationId });
   } catch (err) {
     console.error('[DOCUMENTOS] Error descargando documento', {
       code: err.code || 'DOCUMENTO_DOWNLOAD_ERROR',

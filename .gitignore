@@ -21,6 +21,7 @@ yarn-error.log*
 .codex/
 .cache/
 coverage/
+backend/storage/
 
 # Python y temporales
 __pycache__/
