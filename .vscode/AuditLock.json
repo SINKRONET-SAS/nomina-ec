@@ -4,12 +4,12 @@
   "planCode": "CRN26",
   "status": "completed_local",
   "phaseCompleted": "CRN26-08",
-  "currentPhase": "CRN26-08-cierre-qa-local-doc26-dotacion-parametrizacion",
-  "updatedAt": "2026-06-24T23:11:56.3955168-05:00",
-  "summary": "CRN26 cerrado localmente y ampliado con cierre DOC26: acta de entrega de dotacion/equipos generada desde backend y PWA, valores legales separados de cuentas contables de nomina, novedades consumidas dinamicamente, calculos asignados a lote obligatorio, reportes con lote y monorepo gobernado como un solo sistema mediante contrato raiz.",
+  "currentPhase": "CRN26-08-cierre-qa-local-novedades-indice-unico",
+  "updatedAt": "2026-06-24T23:49:14.2649026-05:00",
+  "summary": "CRN26 cerrado localmente y ampliado con cierre DOC26 y cierre de indice unico para tipos de novedad: acta de entrega de dotacion/equipos generada desde backend y PWA, valores legales separados de cuentas contables de nomina, tipos de novedad deduplicados por codigo normalizado, novedades consumidas dinamicamente, calculos asignados a lote obligatorio, reportes con lote y monorepo gobernado como un solo sistema mediante contrato raiz.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: cubrir brechas, evitar falsas promesas comerciales, asignar cada calculo de nomina a un lote y eliminar separaciones que generen espejismos frontend/backend.",
-  "previousAuditLockHash": "0988210191D45C47569324B784FE1AC18B2F1B6FA0E9333EEC3A98C760C4D6C0",
+  "previousAuditLockHash": "A7530DFECC74AC4B159FD1CB3352F3D0FC4201798F37AC52312DF842C56D1E68",
   "filesModified": [
     "package.json",
     "README.md",
@@ -19,6 +19,7 @@
     "backend/package.json",
     "backend/prisma/schema.prisma",
     "backend/prisma/migrations/20260624231500_doc26_equipment_delivery_acts/migration.sql",
+    "backend/prisma/migrations/20260624233500_crn26_novelty_type_unique_index/migration.sql",
     "backend/prisma/migrations/20260624223000_crn26_configurable_novelties/migration.sql",
     "backend/prisma/migrations/20260624224500_crn26_payroll_calculation_batches/migration.sql",
     "backend/scripts/seed-demo-commercial.js",
@@ -60,6 +61,11 @@
       "detail": "Migracion 20260624231500_doc26_equipment_delivery_acts aplicada; backend expone POST /api/documentos/acta-entrega-dotacion; PWA expone Documentos > Entrega de dotacion."
     },
     {
+      "gate": "CRN26-NOVEDADES-INDICE-UNICO",
+      "status": "PASS",
+      "detail": "Migracion 20260624233500_crn26_novelty_type_unique_index aplicada; backend deduplica por LOWER(BTRIM(code)); base local reporta 0 tipos de novedad activos duplicados por alcance/codigo."
+    },
+    {
       "gate": "CRN26-PRISMA-VALIDATE",
       "status": "PASS",
       "detail": "npm run prisma:validate desde raiz finalizo correctamente."
@@ -67,7 +73,7 @@
     {
       "gate": "CRN26-MIGRATE-DEPLOY",
       "status": "PASS",
-      "detail": "npx prisma migrate deploy aplico 20260624231500_doc26_equipment_delivery_acts; migraciones CRN26 previas ya estaban aplicadas."
+      "detail": "npx prisma migrate deploy aplico 20260624233500_crn26_novelty_type_unique_index; migracion DOC26 y migraciones CRN26 previas ya estaban aplicadas."
     },
     {
       "gate": "CRN26-PRISMA-GENERATE",
@@ -77,7 +83,7 @@
     {
       "gate": "CRN26-BACKEND-TESTS",
       "status": "PASS",
-      "detail": "npm run test:backend desde raiz: 29 suites, 125 tests."
+      "detail": "npm run test:backend desde raiz: 29 suites, 127 tests."
     },
     {
       "gate": "CRN26-FRONTEND-BUILD",
@@ -141,5 +147,5 @@
     "El contrato raiz reduce espejismos frontend/backend, pero debe ejecutarse en CI para bloquear merges."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "A7530DFECC74AC4B159FD1CB3352F3D0FC4201798F37AC52312DF842C56D1E68"
+  "signature": "7B604986D264C5928E892E8E09180247DA9517B9EE1D5C204CE2FE4C3714F230"
 }

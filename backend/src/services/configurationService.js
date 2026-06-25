@@ -462,6 +462,13 @@ async function validateJobPositionPayload(values, tenantId, user, previous = {})
 }
 
 function handleConfigurationDbError(err, config, user) {
+  if (config.table === 'novelty_type_configs' && err.code === '23505') {
+    throw new AppError('Ya existe un tipo de novedad con ese codigo para esta empresa.', {
+      code: 'NOVELTY_TYPE_CODE_DUPLICATED',
+      statusCode: 409,
+      userId: user.id,
+    });
+  }
   if (config.table === 'job_positions' && err.code === '23505') {
     throw new AppError('Ya existe un cargo con ese codigo en esta empresa.', {
       code: 'JOB_POSITION_CODE_DUPLICATED',
@@ -837,6 +844,42 @@ async function listResource(resource, user) {
         period_year,
         parameter_key,
         tenant_id NULLS LAST,
+        valid_from DESC,
+        updated_at DESC,
+        created_at DESC
+    `, [tenantId]);
+    return result.rows;
+  }
+
+  if (config.table === 'novelty_type_configs') {
+    if (user.rol === 'superadmin' && !tenantId) {
+      const result = await db.query(`
+        SELECT DISTINCT ON (
+          COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid),
+          LOWER(BTRIM(code))
+        ) *
+        FROM novelty_type_configs
+        ORDER BY
+          COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid),
+          LOWER(BTRIM(code)),
+          CASE WHEN status = 'activo' THEN 0 ELSE 1 END,
+          CASE WHEN valid_to IS NULL THEN 0 ELSE 1 END,
+          valid_from DESC,
+          updated_at DESC,
+          created_at DESC
+      `);
+      return result.rows;
+    }
+
+    const result = await db.query(`
+      SELECT DISTINCT ON (LOWER(BTRIM(code))) *
+      FROM novelty_type_configs
+      WHERE tenant_id = $1 OR tenant_id IS NULL
+      ORDER BY
+        LOWER(BTRIM(code)),
+        CASE WHEN tenant_id = $1 THEN 0 ELSE 1 END,
+        CASE WHEN status = 'activo' THEN 0 ELSE 1 END,
+        CASE WHEN valid_to IS NULL THEN 0 ELSE 1 END,
         valid_from DESC,
         updated_at DESC,
         created_at DESC

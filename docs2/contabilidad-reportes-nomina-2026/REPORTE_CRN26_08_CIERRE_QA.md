@@ -15,6 +15,7 @@ Completado localmente con cierre adicional anti-brecha.
 - La raiz del repo ahora gobierna `backend`, `frontend-web` y `app-movil` como workspaces de un solo sistema.
 - `scripts/verify-system-contracts.mjs` bloquea recursos/reportes/endpoints visibles sin soporte backend/schema.
 - Cierre DOC26 agregado: `acta_entrega_dotacion` se genera desde backend/PWA, registra PDF en `documentos_legales`, estructura items en `acta_entrega_equipos` y queda visible en `Documentos > Entrega de dotacion`.
+- Cierre anti-duplicados agregado: `Tipo de novedad` queda deduplicado por `LOWER(BTRIM(code))`, preferencia tenant sobre default global y indice unico parcial `novelty_type_configs_active_code_norm_idx` para activos vigentes.
 
 ## Migraciones aplicadas
 
@@ -22,6 +23,7 @@ Completado localmente con cierre adicional anti-brecha.
 - `20260624223000_crn26_configurable_novelties`
 - `20260624224500_crn26_payroll_calculation_batches`
 - `20260624231500_doc26_equipment_delivery_acts`
+- `20260624233500_crn26_novelty_type_unique_index`
 
 Nota QA: el primer intento de `20260624224500_crn26_payroll_calculation_batches` fue bloqueado por `trg_prevent_update_closed_nomina` durante el backfill tecnico. Se marco como rolled back en Prisma, se ajusto la migracion para desactivar/reactivar solo ese trigger durante el backfill y se reaplico correctamente. El trigger quedo activo (`tgenabled = O`).
 
@@ -31,11 +33,11 @@ Nota QA: el primer intento de `20260624224500_crn26_payroll_calculation_batches`
 - `npm run prisma:validate`: PASS.
 - `npx prisma migrate deploy` en `backend`: PASS.
 - `npx prisma generate` en `backend`: PASS.
-- `npm run test:backend`: PASS, 29 suites y 125 tests.
+- `npm run test:backend`: PASS, 29 suites y 127 tests.
 - `npm run build:web`: PASS.
 - `npm run check:mobile`: PASS.
 - `node --check` en servicios/controladores modificados: PASS.
-- Verificacion DB local: 5 lotes, 0 nominas sin lote, 0 lineas sin lote, novedades base configuradas.
+- Verificacion DB local: 5 lotes, 0 nominas sin lote, 0 lineas sin lote, novedades base configuradas y 0 tipos de novedad activos duplicados por alcance/codigo normalizado.
 
 ## Riesgos residuales
 

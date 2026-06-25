@@ -13,6 +13,7 @@ const {
   RESOURCE_CONFIG,
   createResource,
   deleteResource,
+  listResource,
 } = require('./configurationService');
 
 const ownerUser = {
@@ -52,6 +53,47 @@ describe('configurationService metadata', () => {
       'bancos',
       'usuarios',
     ]);
+  });
+
+  test('listResource deduplica tipos de novedad por codigo normalizado y prefiere tenant', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'tenant-novelty',
+        tenant_id: ownerUser.tenantId,
+        code: 'atraso',
+        name: 'Atraso tenant',
+      }],
+    });
+
+    const result = await listResource('noveltyTypes', ownerUser);
+
+    expect(result).toEqual([expect.objectContaining({
+      id: 'tenant-novelty',
+      code: 'atraso',
+    })]);
+    expect(db.query.mock.calls[0][0]).toContain('DISTINCT ON (LOWER(BTRIM(code)))');
+    expect(db.query.mock.calls[0][0]).toContain('CASE WHEN tenant_id = $1 THEN 0 ELSE 1 END');
+    expect(db.query.mock.calls[0][1]).toEqual([ownerUser.tenantId]);
+  });
+
+  test('createResource bloquea tipo de novedad duplicado con mensaje funcional', async () => {
+    db.query.mockRejectedValueOnce({
+      code: '23505',
+      constraint: 'novelty_type_configs_active_code_norm_idx',
+    });
+
+    await expect(
+      createResource('noveltyTypes', {
+        code: ' Atraso ',
+        name: 'Atraso',
+        payroll_impact: 'descuento',
+        calculation_mode: 'minutes_hourly',
+      }, ownerUser)
+    ).rejects.toMatchObject({
+      code: 'NOVELTY_TYPE_CODE_DUPLICATED',
+      statusCode: 409,
+    });
+    expect(recordAudit).not.toHaveBeenCalled();
   });
 
   test('deleteResource elimina parametros legales sin consumo operativo', async () => {

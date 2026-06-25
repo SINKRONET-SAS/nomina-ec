@@ -97,6 +97,16 @@ assert(payrollNoveltyService.includes('calculateNoveltyImpacts'), 'Debe existir 
 assert(payrollNoveltyService.includes('NOVELTY_APPROVED_TYPE_NOT_CONFIGURED'), 'Novedades aprobadas sin tipo activo deben fallar visible.');
 assert(payrollCalculationService.includes('getApprovedPayrollNoveltyImpacts'), 'Calculo de nomina debe consumir novedades aprobadas.');
 assert(payrollAccountingService.includes('ensurePayrollAccountingMappingForNoveltyConfig'), 'Las novedades deben sincronizarse con la matriz contable unica.');
+assert(
+  exists('backend/prisma/migrations/20260624233500_crn26_novelty_type_unique_index/migration.sql'),
+  'Debe existir migracion CRN26 para indice unico de tipos de novedad.'
+);
+assert(
+  read('backend/prisma/migrations/20260624233500_crn26_novelty_type_unique_index/migration.sql').includes('novelty_type_configs_active_code_norm_idx'),
+  'La migracion de novedades debe crear indice unico normalizado para activos vigentes.'
+);
+assert(configurationService.includes('DISTINCT ON (LOWER(BTRIM(code)))'), 'Backend debe deduplicar tipos de novedad por codigo normalizado.');
+assert(parametrizacion.includes('dedupeNoveltyRecords'), 'La PWA debe defender la lista de tipos de novedad contra duplicados.');
 assert(parametrizacion.includes('Valores legales'), 'La PWA debe separar valores legales de cuentas contables.');
 assert(parametrizacion.includes('Cuentas contables de nomina'), 'La PWA debe exponer cuentas contables de nomina sin duplicar parametros legales.');
 

@@ -776,8 +776,43 @@ function buildBankProfilePayload(values) {
   };
 }
 
+function rankScopedRecord(record = {}) {
+  return [
+    record.tenant_id ? 0 : 1,
+    String(record.status || '').toLowerCase() === 'activo' ? 0 : 1,
+    record.valid_to ? 1 : 0,
+    -new Date(record.valid_from || record.updated_at || record.created_at || 0).getTime(),
+    -new Date(record.updated_at || record.created_at || 0).getTime(),
+  ];
+}
+
+function compareScopedRecords(a, b) {
+  const rankA = rankScopedRecord(a);
+  const rankB = rankScopedRecord(b);
+  for (let index = 0; index < rankA.length; index += 1) {
+    if (rankA[index] !== rankB[index]) return rankA[index] - rankB[index];
+  }
+  return String(a.id || '').localeCompare(String(b.id || ''));
+}
+
+function dedupeNoveltyRecords(records = []) {
+  const byCode = new Map();
+  for (const record of records) {
+    const code = normalizeNoveltyCode(record.code);
+    if (!code) continue;
+    const current = byCode.get(code);
+    if (!current || compareScopedRecords(record, current) < 0) {
+      byCode.set(code, record);
+    }
+  }
+  return [...byCode.values()].sort((a, b) => String(a.name || a.code).localeCompare(String(b.name || b.code)));
+}
+
 function recordsForDefinition(summary, definition) {
   const records = summary?.resources?.[definition.resource] || [];
+  if (definition.key === 'novedad') {
+    return dedupeNoveltyRecords(records);
+  }
   if (definition.key === 'legal') {
     return records.filter((record) => record.parameter_key !== 'income_tax_table');
   }

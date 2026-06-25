@@ -213,6 +213,8 @@ function buildPayrollConceptCatalog(noveltyTypes = []) {
   for (const novelty of noveltyTypes) {
     const normalizedCode = normalizeNoveltyCode(novelty.code);
     if (!normalizedCode) continue;
+    if (String(novelty.status || 'activo').toLowerCase() !== 'activo') continue;
+    if (novelty.valid_to && String(novelty.valid_to).slice(0, 10) < new Date().toISOString().slice(0, 10)) continue;
     const conceptCode = conceptCodeForNovelty(normalizedCode, novelty);
     if (!conceptCode || concepts.has(conceptCode)) continue;
     const payrollImpact = String(novelty.payroll_impact || novelty.payrollImpact || 'informativo').toLowerCase();

@@ -30,6 +30,8 @@ En respuesta a la preocupacion comercial de no prometer funcionalidades sin back
 
 La pantalla de parametrizacion tambien se ajusto para evitar la percepcion de doble parametrizacion: el dominio legal visible pasa a `Valores legales` y el dominio contable a `Cuentas contables de nomina`. Los valores legales alimentan calculos; las cuentas contables consumen conceptos calculados para debe/haber. El contrato raiz verifica esta separacion.
 
+Seguimiento 2026-06-24 23:50: `Tipo de novedad` quedo protegido contra duplicados. Se agrego la migracion `20260624233500_crn26_novelty_type_unique_index`, que normaliza codigos, cierra duplicados activos por alcance y crea `novelty_type_configs_active_code_norm_idx` para impedir dos novedades activas vigentes con el mismo codigo normalizado. El backend deduplica el resumen por `LOWER(BTRIM(code))` prefiriendo el override del tenant sobre defaults globales; la PWA tambien aplica `dedupeNoveltyRecords` como defensa visual.
+
 ### Fases CRN26
 
 | Fase | Prioridad | Estado | Resumen |
@@ -60,7 +62,7 @@ La pantalla de parametrizacion tambien se ajusto para evitar la percepcion de do
 - Backend: `payrollAccountingService`, `payrollNoveltyService`, recurso `payrollAccountingMappings`, lotes `payroll_calculation_batches` y reportes `PAYROLL_EMPLOYEE_DETAIL`, `PAYROLL_BENEFITS_MATRIX`, `PAYROLL_ACCOUNTING_REPORT`.
 - PWA: formulario `Cuentas contables de nomina`, valores legales separados, tipos de novedad con forma de calculo e impacto, acta de entrega de dotacion/equipos, reportes internos de nomina y reporte contable sin opcion legacy visible.
 - Sistema unico: `package.json` raiz con workspaces `backend`, `frontend-web`, `app-movil` y gate `scripts/verify-system-contracts.mjs`.
-- Gates: `npm run contracts` PASS, `npm run prisma:validate` PASS, `npx prisma migrate deploy` PASS, `npx prisma generate` PASS, `npm run test:backend` PASS con 29 suites y 125 tests, `npm run build:web` PASS, `npm run check:mobile` PASS.
+- Gates: `npm run contracts` PASS, `npm run prisma:validate` PASS, `npx prisma migrate deploy` PASS, `npx prisma generate` PASS, `npm run test:backend` PASS con 29 suites y 127 tests, `npm --workspace=frontend-web run build` PASS, `npm run check:mobile` PASS.
 
 ---
 
