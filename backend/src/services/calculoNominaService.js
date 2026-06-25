@@ -10,7 +10,11 @@ const {
   getLegalParametersForTenant,
 } = require('./legalParameterService');
 const { getApprovedDeductions } = require('./beneficioEmpleadoService');
-const { persistPayrollCalculationLines } = require('./payrollAccountingService');
+const {
+  ensureDefaultPayrollAccountingMappings,
+  persistPayrollCalculationLines,
+} = require('./payrollAccountingService');
+const { getApprovedPayrollNoveltyImpacts } = require('./payrollNoveltyService');
 
 const FOURTEENTH_REGION_PARAMETERS = {
   costa_galapagos: 'decimo_cuarto_costa_galapagos',
@@ -25,52 +29,105 @@ function resolveFourteenthSalaryRegion(value) {
   };
 }
 
-async function calcularNominaMensual(tenantId, anio, mes) {
+async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
   validarPeriodoNomina(anio, mes);
   console.log(`[NOMINA] Calculando ${mes}/${anio} para tenant ${tenantId}`);
 
-  const legalParameters = await getLegalParametersForTenant(tenantId, anio);
-  assertLegalParametersReadyForProduction(legalParameters, {
-    year: anio,
+  const batch = await createPayrollCalculationBatch({
     tenantId,
-    operation: 'calculo_nomina',
+    anio,
+    mes,
+    userId: context.userId || null,
+    correlationId: context.correlationId || '',
   });
-
-  const empleados = await db.query(`
-    SELECT e.*, ws.weekly_hours AS jornada_weekly_hours
-    FROM empleados e
-    LEFT JOIN work_shifts ws
-      ON ws.tenant_id = e.tenant_id
-      AND ws.code = e.jornada_codigo
-      AND ws.status = 'activo'
-    WHERE e.tenant_id = $1
-      AND e.activo = true
-      AND e.fecha_ingreso <= $2
-  `, [tenantId, `${anio}-${String(mes).padStart(2, '0')}-01`]);
-
-  const resultados = [];
-
-  for (const emp of empleados.rows) {
-    try {
-      const resultado = await calcularEmpleado(emp, tenantId, anio, mes, legalParameters);
-      resultados.push(resultado);
-    } catch (err) {
-      console.error('[NOMINA] Error calculando empleado', {
-        code: err.code || 'NOMINA_EMPLEADO_ERROR',
-        statusCode: err.statusCode || 500,
-        correlationId: process.env.CORRELATION_ID || 'nomina-mensual',
-        userId: null,
-        empleadoId: emp.id,
-        message: err.message,
-      });
-      resultados.push({ empleadoId: emp.id, error: err.message });
-    }
+  if (!batch?.id) {
+    throw new AppError('No se pudo crear el lote de calculo de nomina.', {
+      code: 'NOMINA_CALCULATION_BATCH_CREATE_FAILED',
+      statusCode: 500,
+    });
   }
 
-  return { success: true, total: empleados.rows.length, resultados };
+  let empleados = { rows: [] };
+  const resultados = [];
+
+  try {
+    const legalParameters = await getLegalParametersForTenant(tenantId, anio);
+    assertLegalParametersReadyForProduction(legalParameters, {
+      year: anio,
+      tenantId,
+      operation: 'calculo_nomina',
+    });
+    await ensureDefaultPayrollAccountingMappings(tenantId, {
+      userId: context.userId || null,
+      anio,
+      mes,
+    });
+
+    empleados = await db.query(`
+      SELECT e.*, ws.weekly_hours AS jornada_weekly_hours
+      FROM empleados e
+      LEFT JOIN work_shifts ws
+        ON ws.tenant_id = e.tenant_id
+        AND ws.code = e.jornada_codigo
+        AND ws.status = 'activo'
+      WHERE e.tenant_id = $1
+        AND e.activo = true
+        AND e.fecha_ingreso <= $2
+    `, [tenantId, `${anio}-${String(mes).padStart(2, '0')}-01`]);
+
+    for (const emp of empleados.rows) {
+      try {
+        const resultado = await calcularEmpleado(emp, tenantId, anio, mes, legalParameters, {
+          calculationBatchId: batch.id,
+        });
+        resultados.push(resultado);
+      } catch (err) {
+        console.error('[NOMINA] Error calculando empleado', {
+          code: err.code || 'NOMINA_EMPLEADO_ERROR',
+          statusCode: err.statusCode || 500,
+          correlationId: context.correlationId || process.env.CORRELATION_ID || 'nomina-mensual',
+          userId: context.userId || null,
+          empleadoId: emp.id,
+          message: err.message,
+        });
+        resultados.push({ empleadoId: emp.id, error: err.message });
+      }
+    }
+
+    const errores = resultados.filter((row) => row.error);
+    const completedBatch = await finishPayrollCalculationBatch({
+      tenantId,
+      batchId: batch.id,
+      status: errores.length > 0 ? 'failed' : 'completed',
+      totalEmpleados: empleados.rows.length,
+      totalCalculadas: resultados.length - errores.length,
+      totalErrores: errores.length,
+      errores,
+    });
+
+    return { success: true, total: empleados.rows.length, batch: completedBatch, resultados };
+  } catch (err) {
+    await finishPayrollCalculationBatch({
+      tenantId,
+      batchId: batch.id,
+      status: 'failed',
+      totalEmpleados: empleados.rows.length,
+      totalCalculadas: 0,
+      totalErrores: 1,
+      errores: [{ error: err.message }],
+    });
+    throw err;
+  }
 }
 
-async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParameters = null) {
+async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParameters = null, options = {}) {
+  if (!options.calculationBatchId) {
+    throw new AppError('Cada calculo de nomina debe estar asociado a un lote.', {
+      code: 'NOMINA_CALCULATION_BATCH_REQUIRED',
+      statusCode: 422,
+    });
+  }
+
   const legalParameters = preloadedLegalParameters || await getLegalParametersForTenant(tenantId, anio);
   if (!preloadedLegalParameters) {
     assertLegalParametersReadyForProduction(legalParameters, {
@@ -81,75 +138,57 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   }
   const payrollParameters = legalParameters.payroll;
 
-  const novedades = await db.query(`
-    SELECT tipo_novedad, SUM(minutos) as total_minutos, SUM(monto) as total_monto
-    FROM novedades_asistencia
-    WHERE empleado_id = $1
-      AND EXTRACT(YEAR FROM fecha) = $2
-      AND EXTRACT(MONTH FROM fecha) = $3
-      AND estado = 'aprobado'
-    GROUP BY tipo_novedad
-  `, [emp.id, anio, mes]);
-
-  const noveltyByType = {};
-  novedades.rows.forEach((novedad) => {
-    noveltyByType[novedad.tipo_novedad] = {
-      minutes: Number.parseInt(novedad.total_minutos, 10) || 0,
-      amount: roundMoney(Number.parseFloat(novedad.total_monto || 0)),
-    };
-  });
-
   const diasTrabajados = calcularDiasTrabajados(emp.fecha_ingreso, anio, mes);
   const sueldo = Number.parseFloat(emp.sueldo_bruto_mensual);
   const sueldoProporcional = roundMoney((sueldo * diasTrabajados) / 30);
   const valorHora = calcularValorHora(emp, payrollParameters);
-  const extras50 = (noveltyByType.hora_extra_50?.minutes || 0) / 60;
-  const extras100 = (noveltyByType.hora_extra_100?.minutes || 0) / 60;
-  const montoExtras50 = roundMoney(extras50 * valorHora * 1.5);
-  const montoExtras100 = roundMoney(extras100 * valorHora * 2);
-  const bonosDesempeno = roundMoney(noveltyByType.bono_desempeno?.amount || 0);
-  const comisiones = roundMoney(noveltyByType.comision?.amount || 0);
+  const noveltyImpact = await getApprovedPayrollNoveltyImpacts({
+    tenantId,
+    empleadoId: emp.id,
+    anio,
+    mes,
+    valorHora,
+    dailyMaxHours: payrollParameters.dailyMaxHours,
+  });
+  const extras50 = (noveltyImpact.minutesByConcept.horas_extra_50 || 0) / 60;
+  const extras100 = (noveltyImpact.minutesByConcept.horas_extra_100 || 0) / 60;
+  const montoExtras50 = roundMoney(noveltyImpact.amountByConcept.horas_extra_50 || 0);
+  const montoExtras100 = roundMoney(noveltyImpact.amountByConcept.horas_extra_100 || 0);
+  const bonosDesempeno = roundMoney(noveltyImpact.amountByConcept.bono_desempeno || 0);
+  const comisiones = roundMoney(noveltyImpact.amountByConcept.comision || 0);
+  const descuentoFaltas = roundMoney(noveltyImpact.amountByConcept.descuento_faltas || 0);
 
-  const faltas = await db.query(`
-    SELECT COUNT(*) as total
-    FROM novedades_asistencia
-    WHERE empleado_id = $1
-      AND tipo_novedad = 'falta'
-      AND estado = 'aprobado'
-      AND EXTRACT(YEAR FROM fecha) = $2
-      AND EXTRACT(MONTH FROM fecha) = $3
-  `, [emp.id, anio, mes]);
-  const descuentoFaltas = roundMoney((Number.parseInt(faltas.rows[0].total, 10) || 0) * valorHora * payrollParameters.dailyMaxHours);
-
-  const ingresosBase = roundMoney(sueldoProporcional + montoExtras50 + montoExtras100 + bonosDesempeno + comisiones);
+  const ingresosBase = roundMoney(sueldoProporcional + noveltyImpact.totals.incomeAffectsIess);
+  const ingresosRenta = roundMoney(sueldoProporcional + noveltyImpact.totals.incomeAffectsIncomeTax);
   const fondoReserva = calcularFondoReserva(emp, ingresosBase, anio, mes, payrollParameters);
-  const totalIngresos = roundMoney(ingresosBase + fondoReserva.montoPagadoEmpleado);
+  const totalIngresos = roundMoney(ingresosBase + noveltyImpact.totals.incomeNotAffectsIess + fondoReserva.montoPagadoEmpleado);
   const aporteIess = roundMoney(ingresosBase * payrollParameters.personalIessRate);
   const aportePatronal = roundMoney(ingresosBase * payrollParameters.employerIessRate);
-  const baseImponible = roundMoney(ingresosBase - aporteIess);
+  const baseImponible = roundMoney(ingresosRenta - aporteIess);
   const impuestoRenta = calcularIR(
     baseImponible,
     legalParameters,
     Number.parseFloat(emp.gastos_personales_anuales || 0)
   );
-  const provisionDecimoTercero = roundMoney(totalIngresos * (payrollParameters.thirteenthSalaryProvisionRate ?? (1 / 12)));
+  const baseDecimos = roundMoney(sueldoProporcional + noveltyImpact.totals.incomeAffectsDecimos + fondoReserva.montoPagadoEmpleado);
+  const baseVacaciones = roundMoney(sueldoProporcional + noveltyImpact.totals.incomeAffectsVacation + fondoReserva.montoPagadoEmpleado);
+  const provisionDecimoTercero = roundMoney(baseDecimos * (payrollParameters.thirteenthSalaryProvisionRate ?? (1 / 12)));
   const fourteenthSalaryRegion = resolveFourteenthSalaryRegion(emp.region_decimo_cuarto);
   const provisionDecimoCuarto = roundMoney(payrollParameters.unifiedBaseSalary * (payrollParameters.fourteenthSalaryProvisionRate ?? (1 / 12)));
-  const provisionVacaciones = roundMoney(totalIngresos * payrollParameters.vacationProvisionRate);
+  const provisionVacaciones = roundMoney(baseVacaciones * payrollParameters.vacationProvisionRate);
   const provisionFondosReserva = fondoReserva.provision;
   const costoEmpleador = roundMoney(
-    ingresosBase
+    totalIngresos
     + aportePatronal
     + provisionDecimoTercero
     + provisionDecimoCuarto
     + provisionVacaciones
     + fondoReserva.montoDepositadoIess
-    + fondoReserva.montoPagadoEmpleado
   );
   const benefitDeductions = await getApprovedDeductions(tenantId, emp.id, anio, mes);
   const anticipos = benefitDeductions.anticipos;
   const prestamos = benefitDeductions.prestamos;
-  const totalDeducciones = roundMoney(aporteIess + impuestoRenta + descuentoFaltas + anticipos + prestamos);
+  const totalDeducciones = roundMoney(aporteIess + impuestoRenta + noveltyImpact.totals.deductions + anticipos + prestamos);
   const netoRecibir = roundMoney(totalIngresos - totalDeducciones);
 
   if (netoRecibir < 0) {
@@ -172,11 +211,14 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     extras50,
     extras100,
     ingresosBase,
+    ingresosRenta,
     montoExtras50,
     montoExtras100,
     bonosDesempeno,
     comisiones,
     descuentoFaltas,
+    novedadesCalculadas: noveltyImpact.lines,
+    novedadesResumen: noveltyImpact.totals,
     aporteIess,
     aportePatronal,
     baseImponible,
@@ -202,13 +244,14 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
 
   const payrollResult = await db.query(`
     INSERT INTO nominas (
-      tenant_id, empleado_id, anio, mes, dias_trabajados,
+      tenant_id, empleado_id, calculation_batch_id, anio, mes, dias_trabajados,
       sueldo_bruto, horas_extras_50, horas_extras_100, total_ingresos,
       aporte_iess_personal, impuesto_renta, anticipos, prestamos,
       total_deducciones, neto_recibir, estado, detalle_calculo
     )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'borrador',$16)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'borrador',$17)
     ON CONFLICT (tenant_id, empleado_id, anio, mes) DO UPDATE SET
+      calculation_batch_id = EXCLUDED.calculation_batch_id,
       dias_trabajados = EXCLUDED.dias_trabajados,
       sueldo_bruto = EXCLUDED.sueldo_bruto,
       horas_extras_50 = EXCLUDED.horas_extras_50,
@@ -227,6 +270,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   `, [
     tenantId,
     emp.id,
+    options.calculationBatchId || null,
     anio,
     mes,
     diasTrabajados,
@@ -243,17 +287,23 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     JSON.stringify(detalleCalculo),
   ]);
 
-  if (payrollResult.rows[0]?.id) {
-    await persistPayrollCalculationLines({
-      payrollId: payrollResult.rows[0].id,
-      tenantId,
-      empleadoId: emp.id,
-      anio,
-      mes,
-      employee: emp,
-      detalleCalculo,
+  if (!payrollResult.rows[0]?.id) {
+    throw new AppError('La nomina del empleado no esta editable para recalculo.', {
+      code: 'NOMINA_EMPLEADO_NO_EDITABLE',
+      statusCode: 409,
     });
   }
+
+  await persistPayrollCalculationLines({
+    payrollId: payrollResult.rows[0].id,
+    tenantId,
+    empleadoId: emp.id,
+    calculationBatchId: options.calculationBatchId,
+    anio,
+    mes,
+    employee: emp,
+    detalleCalculo,
+  });
 
   return {
     empleadoId: emp.id,
@@ -262,6 +312,87 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     netoRecibir: toMoneyString(netoRecibir),
     detalleCalculo,
   };
+}
+
+async function createPayrollCalculationBatch({ tenantId, anio, mes, userId = null, correlationId = '' }) {
+  const period = await db.query(`
+    WITH inserted AS (
+      INSERT INTO payroll_periods (tenant_id, anio, mes, status, opened_by)
+      VALUES ($1,$2,$3,'open',$4)
+      ON CONFLICT (tenant_id, anio, mes) DO UPDATE SET updated_at = NOW()
+      RETURNING id, status
+    )
+    SELECT id, status FROM inserted
+    UNION ALL
+    SELECT id, status
+    FROM payroll_periods
+    WHERE tenant_id = $1 AND anio = $2 AND mes = $3
+    LIMIT 1
+  `, [tenantId, Number(anio), Number(mes), userId]);
+
+  if (period.rows[0]?.status === 'closed') {
+    throw new AppError('No se puede calcular nomina en un periodo cerrado.', {
+      code: 'NOMINA_PERIODO_CERRADO',
+      statusCode: 422,
+    });
+  }
+
+  const result = await db.query(`
+    INSERT INTO payroll_calculation_batches (
+      tenant_id, period_id, anio, mes, status, started_by, correlation_id, metadata
+    )
+    VALUES ($1,$2,$3,$4,'processing',$5,$6,$7)
+    RETURNING *
+  `, [
+    tenantId,
+    period.rows[0]?.id || null,
+    Number(anio),
+    Number(mes),
+    userId,
+    correlationId || '',
+    JSON.stringify({ source: 'calculo_nomina_mensual' }),
+  ]);
+
+  if (!result.rows[0]?.id) {
+    throw new AppError('No se pudo crear el lote de calculo de nomina.', {
+      code: 'NOMINA_CALCULATION_BATCH_CREATE_FAILED',
+      statusCode: 500,
+    });
+  }
+
+  return result.rows[0];
+}
+
+async function finishPayrollCalculationBatch({
+  tenantId,
+  batchId,
+  status,
+  totalEmpleados,
+  totalCalculadas,
+  totalErrores,
+  errores,
+}) {
+  const result = await db.query(`
+    UPDATE payroll_calculation_batches
+    SET status = $3,
+        total_empleados = $4,
+        total_calculadas = $5,
+        total_errores = $6,
+        errores = $7::jsonb,
+        completed_at = NOW()
+    WHERE tenant_id = $1 AND id = $2
+    RETURNING *
+  `, [
+    tenantId,
+    batchId,
+    status,
+    Number(totalEmpleados || 0),
+    Number(totalCalculadas || 0),
+    Number(totalErrores || 0),
+    JSON.stringify(errores || []),
+  ]);
+
+  return result.rows[0] || null;
 }
 
 function calcularDiasTrabajados(fechaIngreso, anio, mes) {

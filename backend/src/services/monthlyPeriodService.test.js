@@ -24,6 +24,7 @@ const {
 describe('monthlyPeriodService', () => {
   beforeEach(() => {
     db.query.mockReset();
+    db.query.mockResolvedValue({ rows: [] });
     db.getClient.mockReset();
     db.commit.mockReset();
     db.rollback.mockReset();

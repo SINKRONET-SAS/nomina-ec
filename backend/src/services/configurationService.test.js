@@ -34,6 +34,7 @@ describe('configurationService metadata', () => {
       'jobPositions',
       'workZones',
       'workShifts',
+      'payrollAccountingMappings',
       'bankProfiles',
     ]));
   });
@@ -47,6 +48,7 @@ describe('configurationService metadata', () => {
       'jornadas',
       'zonas',
       'novedades',
+      'contabilidad',
       'bancos',
       'usuarios',
     ]);

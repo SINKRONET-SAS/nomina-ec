@@ -1,107 +1,85 @@
-# Nómina-Ec - SaaS de Nómina Ecuador
+# Nomina-Ec - Sistema de nomina Ecuador
 
-Sistema SaaS para gestión de nómina, asistencia y documentos laborales adaptado a la legislación ecuatoriana 2026.
+Nomina-Ec es un solo sistema operativo para nomina, asistencia, documentos laborales, reportes y app movil. El codigo esta organizado como monorepo con tres workspaces, pero no son tres productos separados:
 
-## Caracteristicas Principales
+- `backend`: API, PostgreSQL, Prisma, calculo de nomina, auditoria, reportes e integraciones.
+- `frontend-web`: PWA administrativa para operar empleados, parametrizacion, novedades, nomina y reportes.
+- `app-movil`: app de empleado para marcaciones, ruta y consulta de rol.
 
-### Cumplimiento Legal Ecuador
-- Codigo del Trabajo: Registro de jornada (Art. 71), contratos escritos (Art. 18)
-- IESS: Calculo automatico de aportes (9.45% personal, 11.15% patronal)
-- SRI: Generación de XML ATS para declaración de Impuesto a la Renta
-- Ministerio del Trabajo: Actas de finiquito con todos los rubros legales
+## Regla de sistema unico
 
-### Multi-Tenant
-- Aislamiento completo de datos por empresa (PostgreSQL RLS)
-- Configuracion independiente por tenant
-- Auditoria completa de todas las operaciones
+Toda funcionalidad visible en frontend debe tener respaldo en backend, modelo/migracion cuando aplique, pruebas o gate verificable. Para evitar espejismos comerciales, la raiz incluye un contrato automatizado:
 
-### App Movil (React Native + Expo)
-- Marcación con foto + GPS obligatorio
-- Validación de perímetro (radio configurable)
-- Historial de marcaciones del empleado
+```bash
+npm run contracts
+```
 
-### Frontend Web (React + Vite)
-- Dashboard con metricas en tiempo real
-- Gestion completa de empleados
-- Aprobación de novedades
-- Cierre mensual de nómina
+El contrato valida, entre otros puntos:
 
-### Reglas Irrenunciables (Hardcode)
-1. No eliminacion de marcaciones
-2. Geolocalizacion obligatoria
-3. Devolucion de equipos antes de finiquito
-4. Clausula constitucional en contratos
-5. Nomina cerrada inmutable
-6. Liquidacion minima legal
-7. Auditoria obligatoria
+- Recursos de parametrizacion visibles en PWA contra `RESOURCE_CONFIG` backend.
+- Reportes visibles en PWA contra `REPORT_TYPES` backend.
+- Endpoints consumidos por PWA contra rutas Express.
+- Matriz contable unica, lineas de calculo y lotes de nomina.
+- Novedades consumidas por calculo y sincronizadas con contabilidad.
 
-## Instalacion
+## Comandos raiz
 
-### Backend
+```bash
+npm run contracts
+npm run prisma:validate
+npm run test:backend
+npm run build:web
+npm run validate
+```
+
+`npm run validate` ejecuta contrato, Prisma validate, tests backend y build web desde la raiz.
+
+## Instalacion por workspace
+
+```bash
 cd backend
 npm install
 cp .env.example .env
-npm run db:migrate
+npx prisma migrate deploy
 npm run dev
+```
 
-### Frontend Web
+```bash
 cd frontend-web
 npm install
 npm run dev
+```
 
-### App Movil
+```bash
 cd app-movil
 npm install
 npm start
+```
 
-## Estructura del Proyecto
+## Capacidades implementadas
 
-- backend/: API Node.js + Express
-- frontend-web/: React + Vite + Tailwind
-- app-movil/: React Native + Expo
-- docs/: Documentacion
+- Multi-tenant con aislamiento por empresa y RLS.
+- Empleados, estructura organizativa, cargos, jornadas, zonas y marcaciones.
+- Novedades configurables con impacto en nomina.
+- Calculo mensual asociado a lote auditable.
+- Matriz contable unica por tenant para conceptos de nomina.
+- Reportes internos: detalle tabular, detalle por empleado, matriz empleados x conceptos y reporte contable balanceado.
+- Reportes externos de nomina: RDEP, SAE y archivo bancario segun configuracion disponible.
+- App movil para marcacion y consulta operativa.
 
-## Seguridad
+## Bloqueos antes de produccion
 
-- JWT para autenticacion
-- RLS (Row Level Security) en PostgreSQL
-- Cifrado de cuentas bancarias (pgcrypto)
-- HTTPS obligatorio
-- Auditoria completa
+- Validacion legal/laboral/contable profesional para parametros oficiales y plan de cuentas real.
+- Credenciales productivas de banco, correo, almacenamiento y pagos.
+- Revision LOPDP y politicas de tratamiento de datos.
+- Homologaciones externas requeridas por bancos o entidades publicas.
 
-## Reportes Generados
+## Estructura
 
-- ATS (XML) para SRI
-- SAE (XML) para IESS
-- Archivo Bancario (CSV) para bancos
-- Rol de Pagos (PDF) para empleados
-- Contratos (PDF) para Ministerio
-- Actas Finiquito (PDF) para Ministerio
-
-## Calculos Implementados
-
-### Nomina Mensual
-- Sueldo basico proporcional
-- Horas extras 50% y 100%
-- Aporte IESS personal (9.45%)
-- Impuesto a la Renta (tabla progresiva 2026)
-
-### Liquidacion
-- Sueldo pendiente
-- Decimo tercero y cuarto proporcionales
-- Vacaciones proporcionales
-- Indemnizacion (Art. 188)
-- Desahucio (Art. 185)
-
-## Variables de Entorno
-
-PORT=3000
-DB_HOST=localhost
-DB_NAME=nomina_ec
-JWT_SECRET=your-secret-key
-AWS_S3_BUCKET=nomina-ec-documents
-
----
-
-Nómina-Ec - Sistema SaaS de nómina Ecuador 2026
-
+```text
+backend/       API Node.js, Prisma, PostgreSQL y servicios de dominio
+frontend-web/  PWA React + Vite
+app-movil/     Expo / React Native
+docs2/         Planes HAIKY, reportes de fase y evidencias
+scripts/       Gates de sistema unico
+```

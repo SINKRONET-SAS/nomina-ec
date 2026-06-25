@@ -248,8 +248,7 @@ function DescargarReportes() {
               <option value="PAYROLL_EMPLOYEE_DETAIL">Detalle por empleado</option>
               <option value="PAYROLL_BENEFITS_MATRIX">Matriz empleados x beneficios</option>
               <option value="PAYROLL_SUMMARY">Resumen de nomina</option>
-              <option value="PAYROLL_ACCOUNTING_REPORT">Reporte contable CRN26</option>
-              <option value="PAYROLL_ACCOUNTING_ENTRIES">Asientos contables legacy</option>
+              <option value="PAYROLL_ACCOUNTING_REPORT">Reporte contable</option>
             </select>
           </div>
           <div>

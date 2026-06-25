@@ -4,84 +4,79 @@
   "planCode": "CRN26",
   "status": "completed_local",
   "phaseCompleted": "CRN26-08",
-  "currentPhase": "CRN26-08-cierre-qa-local",
-  "updatedAt": "2026-06-24T21:25:00.0000000-05:00",
-  "summary": "CRN26 ejecutado localmente: esquema contable por tenant, lineas normalizadas de calculo, reportes por empleado, matriz empleados x beneficios/conceptos, reportes contables balanceados y PWA expuesta.",
+  "currentPhase": "CRN26-08-cierre-qa-local-anti-brecha",
+  "updatedAt": "2026-06-24T22:39:26.9051721-05:00",
+  "summary": "CRN26 cerrado localmente con matriz contable unica, novedades consumidas dinamicamente, calculos asignados a lote obligatorio, reportes con lote, PWA alineada y monorepo gobernado como un solo sistema mediante contrato raiz.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts de acuerdo al Open Haiky Plan HAIKY-CONTABILIDAD-REPORTES-NOMINA-2026.",
-  "previousAuditLockHash": "D26A83AC669898AE9AB99E6B7F168E2F759EB276828D3613751509B5177D626C",
+  "approvalSource": "Solicitud del usuario: cubrir brechas, evitar falsas promesas comerciales, asignar cada calculo de nomina a un lote y eliminar separaciones que generen espejismos frontend/backend.",
+  "previousAuditLockHash": "A72B4901E67D1E1CBAAECE912F8C62B1E0D3E480DFE11B4EC52C2D16DB0D9968",
   "filesModified": [
+    "package.json",
+    "README.md",
     "CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
+    "scripts/verify-system-contracts.mjs",
+    "backend/package.json",
     "backend/prisma/schema.prisma",
-    "backend/prisma/migrations/20260624210000_crn26_payroll_accounting_reports/migration.sql",
-    "backend/src/app.js",
-    "backend/src/controllers/payrollAccountingController.js",
+    "backend/prisma/migrations/20260624223000_crn26_configurable_novelties/migration.sql",
+    "backend/prisma/migrations/20260624224500_crn26_payroll_calculation_batches/migration.sql",
+    "backend/scripts/seed-demo-commercial.js",
+    "backend/src/controllers/externalApiController.js",
+    "backend/src/controllers/nominaController.js",
+    "backend/src/controllers/novedadController.js",
     "backend/src/services/calculoNominaService.js",
+    "backend/src/services/calculoNominaService.batch.test.js",
     "backend/src/services/configurationService.js",
+    "backend/src/services/configurationService.test.js",
+    "backend/src/services/monthlyPeriodService.js",
+    "backend/src/services/monthlyPeriodService.test.js",
     "backend/src/services/payrollAccountingService.js",
+    "backend/src/services/payrollNoveltyService.js",
     "backend/src/services/payrollReportService.js",
-    "backend/src/services/payrollReportService.test.js",
     "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
     "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
-    "docs2/PLAN_HAIKY_CONTABILIDAD_REPORTES_NOMINA_2026.md",
-    "docs2/contabilidad-reportes-nomina-2026/MATRIZ_CRN26_REQUERIMIENTOS.md",
-    "docs2/contabilidad-reportes-nomina-2026/CONTRATO_CRN26_ESQUEMA_REPORTES_CONTABLES.md",
-    "docs2/contabilidad-reportes-nomina-2026/RUNBOOK_CRN26_QA_RELEASE.md",
-    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_00_BASELINE.md",
-    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_01_DIAGNOSTICO_RUNTIME.md",
-    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_02_MODELO_DATOS.md",
-    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_03_BACKEND_ESQUEMA_CONTABLE.md",
-    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_04_MOTOR_LINEAS_CALCULO.md",
-    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_05_REPORTES_CALCULO_MATRIZ.md",
-    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_06_REPORTES_CONTABLES.md",
-    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_07_FRONTEND_PWA.md",
-    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_08_CIERRE_QA.md",
-    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-00-baseline.md",
-    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-01-diagnostico-runtime.md",
-    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-02-modelo-datos-conceptos.md",
-    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-03-backend-esquema-contable.md",
-    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-04-motor-lineas-calculo.md",
-    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-05-reportes-calculo-matriz.md",
-    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-06-reportes-contables.md",
-    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-07-frontend-pwa.md",
-    ".github/prompts/CONTABILIDAD-REPORTES-NOMINA-2026-08-qa-release.md"
+    "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_08_CIERRE_QA.md"
   ],
   "validationChecks": [
     {
+      "gate": "CRN26-CONTRACTS-SISTEMA-UNICO",
+      "status": "PASS",
+      "detail": "npm run contracts valido recursos frontend contra backend, reportes visibles contra REPORT_TYPES, endpoints, matriz contable, novedades y lotes."
+    },
+    {
       "gate": "CRN26-PRISMA-VALIDATE",
       "status": "PASS",
-      "detail": "npx.cmd prisma validate en backend finalizo correctamente."
+      "detail": "npm run prisma:validate desde raiz finalizo correctamente."
     },
     {
       "gate": "CRN26-MIGRATE-DEPLOY",
       "status": "PASS",
-      "detail": "npx.cmd prisma migrate deploy aplico 20260624210000_crn26_payroll_accounting_reports sobre plan_haiky."
+      "detail": "npx prisma migrate deploy aplico 20260624223000_crn26_configurable_novelties y 20260624224500_crn26_payroll_calculation_batches."
+    },
+    {
+      "gate": "CRN26-PRISMA-GENERATE",
+      "status": "PASS",
+      "detail": "npx prisma generate en backend finalizo correctamente."
     },
     {
       "gate": "CRN26-BACKEND-TESTS",
       "status": "PASS",
-      "detail": "npm.cmd test -- payrollReportService.test.js calculoNominaService.test.js --runInBand: 2 suites, 19 tests."
-    },
-    {
-      "gate": "CRN26-NODE-CHECK",
-      "status": "PASS",
-      "detail": "node --check para payrollAccountingService, payrollReportService, configurationService, payrollAccountingController y app."
+      "detail": "npm run test:backend desde raiz: 28 suites, 123 tests."
     },
     {
       "gate": "CRN26-FRONTEND-BUILD",
       "status": "PASS",
-      "detail": "npm.cmd run build en frontend-web finalizo correctamente con Vite/PWA."
+      "detail": "npm run build:web desde raiz genero build Vite/PWA correctamente."
     },
     {
-      "gate": "CRN26-PWA-EXPOSURE",
+      "gate": "CRN26-MOBILE-CHECK",
       "status": "PASS",
-      "detail": "Parametrizacion expone Esquema contable y DescargarReportes expone detalle por empleado, matriz y reporte contable CRN26."
+      "detail": "npm run check:mobile desde raiz valido configuracion, identificadores, URLs y assets de tienda."
     },
     {
-      "gate": "CRN26-AUDITLOCK-JSON",
+      "gate": "CRN26-DB-BACKFILL-LOTES",
       "status": "PASS",
-      "detail": "AuditLock actualizado a CRN26-08 con firma SHA256."
+      "detail": "Base local plan_haiky: 5 lotes de calculo, 0 nominas sin lote, 0 lineas sin lote y trigger de nomina cerrada activo."
     }
   ],
   "fases": [
@@ -125,9 +120,9 @@
   "residualRisk": [
     "Las cuentas contables reales deben validarse con contador y plan de cuentas del tenant antes de produccion.",
     "El formato importable a ERP externo queda sujeto al cliente y no forma parte del cierre local CRN26.",
-    "La matriz dinamica puede requerir optimizacion adicional para tenants con alta cardinalidad de conceptos.",
-    "Smoke visual con usuario real queda recomendado antes de release productivo."
+    "Smoke visual con usuario real queda recomendado antes de release productivo.",
+    "El contrato raiz reduce espejismos frontend/backend, pero debe ejecutarse en CI para bloquear merges."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "A72B4901E67D1E1CBAAECE912F8C62B1E0D3E480DFE11B4EC52C2D16DB0D9968"
+  "signature": "0988210191D45C47569324B784FE1AC18B2F1B6FA0E9333EEC3A98C760C4D6C0"
 }

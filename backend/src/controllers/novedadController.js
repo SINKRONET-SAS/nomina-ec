@@ -3,6 +3,7 @@
 // ============================================================
 const db = require('../config/database');
 const { ensurePayrollPeriodForDate } = require('../services/monthlyPeriodService');
+const { ensureNoveltyTypeAllowed, normalizeNoveltyCode } = require('../services/payrollNoveltyService');
 
 async function listar(req, res) {
   try {
@@ -68,11 +69,19 @@ async function crear(req, res) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
     }
     
-    const montoNovedad = normalizeAmount(monto);
-    if (tipoNovedad === 'bono_desempeno' && montoNovedad <= 0) {
-      return res.status(422).json({ error: 'El bono de desempeno requiere un monto mayor a cero' });
-    }
+    const normalizedTipo = normalizeNoveltyCode(tipoNovedad);
     const period = await ensurePayrollPeriodForDate({ tenantId, userId: usuarioId, fecha });
+    const noveltyConfig = await ensureNoveltyTypeAllowed({
+      tenantId,
+      tipoNovedad: normalizedTipo,
+      anio: Number(period.periodoNomina.slice(0, 4)),
+      mes: Number(period.periodoNomina.slice(5, 7)),
+      userId: usuarioId,
+    });
+    const montoNovedad = normalizeAmount(monto);
+    if (noveltyConfig.calculationMode === 'amount' && montoNovedad <= 0 && noveltyConfig.payrollImpact !== 'informativo') {
+      return res.status(422).json({ error: 'La novedad requiere un monto mayor a cero segun su forma de calculo.' });
+    }
     if (period.status === 'closed') {
       return res.status(422).json({ error: 'No se puede registrar novedades en un periodo cerrado' });
     }
@@ -82,7 +91,7 @@ async function crear(req, res) {
         empleado_id, tenant_id, period_id, periodo_nomina, fecha, tipo_novedad, minutos, monto, justificacion
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id, empleado_id, fecha, tipo_novedad, minutos, monto, estado
-    `, [empleadoId, tenantId, period.id, period.periodoNomina, fecha, tipoNovedad, minutos || 0, montoNovedad, justificacion || '']);
+    `, [empleadoId, tenantId, period.id, period.periodoNomina, fecha, normalizedTipo, minutos || 0, montoNovedad, justificacion || '']);
     
     res.status(201).json({ success: true, novedad: result.rows[0] });
   } catch (err) {

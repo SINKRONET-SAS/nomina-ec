@@ -2,7 +2,13 @@ const db = require('../config/database');
 const AppError = require('../utils/AppError');
 const { recordAudit } = require('./auditService');
 const { getLegalParameters } = require('../config/legal-ecuador');
-const { ensureDefaultPayrollAccountingMappings } = require('./payrollAccountingService');
+const {
+  PAYROLL_CONCEPTS,
+  buildPayrollConceptCatalog,
+  ensureDefaultPayrollAccountingMappings,
+  ensurePayrollAccountingMappingForNoveltyConfig,
+} = require('./payrollAccountingService');
+const { VALID_CALCULATION_MODES, normalizeNoveltyCode } = require('./payrollNoveltyService');
 
 const ONBOARDING_STEPS = [
   { code: 'empresa', label: 'Datos de empresa' },
@@ -133,6 +139,9 @@ function normalizePayload(config, payload, user) {
   if (config.table === 'job_positions') {
     return normalizeJobPositionPayload(payload);
   }
+  if (config.table === 'novelty_type_configs') {
+    return normalizeNoveltyTypePayload(payload, user);
+  }
   if (config.table === 'payroll_accounting_mappings') {
     return normalizePayrollAccountingMappingPayload(payload, user);
   }
@@ -151,32 +160,102 @@ function normalizePayload(config, payload, user) {
   return values;
 }
 
+function normalizeNoveltyTypePayload(payload = {}, user) {
+  const code = normalizeNoveltyCode(payload.code);
+  const name = normalizeOptionalText(payload.name);
+  if (!code || !name) {
+    throw new AppError('El tipo de novedad requiere codigo y nombre.', {
+      code: 'NOVELTY_TYPE_INVALID',
+      statusCode: 400,
+      userId: user?.id,
+    });
+  }
+
+  const payrollImpact = normalizeOptionalText(payload.payroll_impact, { lowercase: true }) || 'informativo';
+  if (!['ingreso', 'descuento', 'informativo'].includes(payrollImpact)) {
+    throw new AppError('El impacto de nomina de la novedad no es valido.', {
+      code: 'NOVELTY_PAYROLL_IMPACT_INVALID',
+      statusCode: 400,
+      userId: user?.id,
+    });
+  }
+
+  const applicability = payload.applicability && typeof payload.applicability === 'object' ? payload.applicability : {};
+  const calculationMode = String(payload.calculation_mode || applicability.calculationMode || '').trim()
+    || (payrollImpact === 'informativo' ? 'informational' : 'amount');
+  if (!VALID_CALCULATION_MODES.has(calculationMode)) {
+    throw new AppError('La forma de calculo de la novedad no es valida.', {
+      code: 'NOVELTY_CALCULATION_MODE_INVALID',
+      statusCode: 400,
+      userId: user?.id,
+    });
+  }
+
+  return {
+    code,
+    name,
+    description: normalizeOptionalText(payload.description) || '',
+    category: normalizeOptionalText(payload.category, { lowercase: true }) || 'ajuste',
+    payroll_impact: payrollImpact,
+    affects_iess: Boolean(payload.affects_iess),
+    affects_income_tax: Boolean(payload.affects_income_tax),
+    affects_decimos: Boolean(payload.affects_decimos),
+    affects_vacation: Boolean(payload.affects_vacation),
+    affects_bank_file: Boolean(payload.affects_bank_file),
+    requires_evidence: Boolean(payload.requires_evidence),
+    approval_flow: payload.approval_flow && typeof payload.approval_flow === 'object' ? payload.approval_flow : {},
+    applicability: {
+      ...applicability,
+      calculationMode,
+    },
+    status: normalizeOptionalText(payload.status, { lowercase: true }) || 'activo',
+    valid_from: normalizeOptionalDate(payload.valid_from) || `${new Date().getFullYear()}-01-01`,
+    valid_to: normalizeOptionalDate(payload.valid_to),
+  };
+}
+
 function normalizePayrollAccountingMappingPayload(payload = {}, user) {
   const conceptCode = normalizeOptionalText(payload.concept_code, { lowercase: true });
-  const conceptLabel = normalizeOptionalText(payload.concept_label);
+  const concept = PAYROLL_CONCEPTS.find((item) => item.code === conceptCode);
+  const dynamicNoveltyConcept = !concept && conceptCode?.startsWith('novedad_')
+    ? {
+        code: conceptCode,
+        label: normalizeOptionalText(payload.concept_label) || conceptCode,
+        category: normalizeOptionalText(payload.category, { lowercase: true }) || 'ingreso',
+        entryType: normalizeOptionalText(payload.entry_type, { uppercase: true }) || 'DEVENGAMIENTO',
+      }
+    : null;
+  const resolvedConcept = concept || dynamicNoveltyConcept;
   const debitAccountCode = normalizeOptionalText(payload.debit_account_code);
   const debitAccountName = normalizeOptionalText(payload.debit_account_name);
   const creditAccountCode = normalizeOptionalText(payload.credit_account_code);
   const creditAccountName = normalizeOptionalText(payload.credit_account_name);
 
-  if (!conceptCode || !conceptLabel || !debitAccountCode || !debitAccountName || !creditAccountCode || !creditAccountName) {
-    throw new AppError('El esquema contable requiere concepto y cuentas debe/haber completas.', {
+  if (!resolvedConcept) {
+    throw new AppError('Seleccione un concepto de nomina valido para configurar su esquema contable.', {
+      code: 'PAYROLL_ACCOUNTING_CONCEPT_INVALID',
+      statusCode: 400,
+      userId: user?.id,
+    });
+  }
+
+  if (!debitAccountCode || !debitAccountName || !creditAccountCode || !creditAccountName) {
+    throw new AppError('El esquema contable requiere cuentas debe/haber completas.', {
       code: 'PAYROLL_ACCOUNTING_MAPPING_INVALID',
       statusCode: 400,
       userId: user?.id,
     });
   }
 
-  const category = normalizeOptionalText(payload.category, { lowercase: true }) || 'ingreso';
-  const entryType = normalizeOptionalText(payload.entry_type, { uppercase: true }) || 'DEVENGAMIENTO';
+  const category = resolvedConcept.category;
+  const entryType = normalizeOptionalText(payload.entry_type, { uppercase: true }) || resolvedConcept.entryType || 'DEVENGAMIENTO';
   const costCenterMode = normalizeOptionalText(payload.cost_center_mode, { lowercase: true }) || 'employee';
   const status = normalizeOptionalText(payload.status, { lowercase: true }) || 'activo';
-  const allowedCategories = ['ingreso', 'deduccion', 'provision', 'costo_empleador', 'pago'];
   const allowedEntryTypes = ['DEVENGAMIENTO', 'PROVISION', 'PAGO', 'AJUSTE'];
   const allowedCostCenterModes = ['employee', 'fixed', 'none'];
 
-  if (!allowedCategories.includes(category) || !allowedEntryTypes.includes(entryType) || !allowedCostCenterModes.includes(costCenterMode)) {
-    throw new AppError('El esquema contable incluye categoria, asiento o centro de costo no permitido.', {
+  if (!allowedEntryTypes.includes(entryType) || !allowedCostCenterModes.includes(costCenterMode)) {
+    throw new AppError('El esquema contable incluye asiento o centro de costo no permitido.', {
       code: 'PAYROLL_ACCOUNTING_MAPPING_RULE_INVALID',
       statusCode: 400,
       userId: user?.id,
@@ -185,7 +264,7 @@ function normalizePayrollAccountingMappingPayload(payload = {}, user) {
 
   return {
     concept_code: conceptCode,
-    concept_label: conceptLabel,
+    concept_label: resolvedConcept.label,
     category,
     entry_type: entryType,
     debit_account_code: debitAccountCode,
@@ -782,6 +861,32 @@ async function listResource(resource, user) {
   return result.rows;
 }
 
+async function synchronizeUnifiedAccountingMatrix(config, record, user, context = {}) {
+  if (config.table !== 'novelty_type_configs') return;
+
+  const tenantId = record.tenant_id || user.tenantId || null;
+  if (!tenantId || String(record.status || '').toLowerCase() !== 'activo') return;
+  if (String(record.payroll_impact || '').toLowerCase() === 'informativo') return;
+
+  const mappings = await ensurePayrollAccountingMappingForNoveltyConfig(tenantId, record, { userId: user.id });
+  if (mappings.length === 0) return;
+
+  await recordAudit({
+    tenantId,
+    userId: user.id,
+    correlationId: context.correlationId,
+    action: 'configuracion.sincronizar_matriz_contable_nomina',
+    entity: 'payroll_accounting_mappings',
+    entityId: null,
+    newData: {
+      source: 'novelty_type_configs',
+      noveltyCode: record.code,
+      conceptCodes: mappings.map((mapping) => mapping.concept_code),
+    },
+    ipAddress: context.ipAddress,
+  });
+}
+
 async function createResource(resource, payload, user, context = {}) {
   ensureWriteAllowed(user);
   const config = getResourceConfig(resource);
@@ -898,6 +1003,8 @@ async function createResource(resource, payload, user, context = {}) {
     ipAddress: context.ipAddress,
   });
 
+  await synchronizeUnifiedAccountingMatrix(config, result.rows[0], user, context);
+
   return result.rows[0];
 }
 
@@ -986,6 +1093,8 @@ async function updateResource(resource, id, payload, user, context = {}) {
     newData: result.rows[0],
     ipAddress: context.ipAddress,
   });
+
+  await synchronizeUnifiedAccountingMatrix(config, result.rows[0], user, context);
 
   return result.rows[0];
 }
@@ -1343,6 +1452,7 @@ async function getConfigurationSummary(user) {
   for (const resource of Object.keys(RESOURCE_CONFIG)) {
     resources[resource] = await listResource(resource, user);
   }
+  resources.payrollConcepts = buildPayrollConceptCatalog(resources.noveltyTypes);
   const onboarding = await getOnboardingStatus(user);
 
   return {

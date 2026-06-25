@@ -137,6 +137,7 @@ async function getPayrollRows(tenantId, anio, mes, filters = {}) {
   const result = await db.query(`
     SELECT
       n.id,
+      n.calculation_batch_id,
       n.empleado_id,
       n.anio,
       n.mes,
@@ -168,6 +169,7 @@ async function getPayrollRows(tenantId, anio, mes, filters = {}) {
       COALESCE((
         SELECT jsonb_agg(jsonb_build_object(
           'concept_code', pcl.concept_code,
+          'calculation_batch_id', pcl.calculation_batch_id,
           'concept_label', pcl.concept_label,
           'category', pcl.category,
           'amount', pcl.amount,
@@ -306,6 +308,7 @@ function mapRowForExport(row, anio, mes) {
     cargoCodigo: row.cargo_codigo || '',
     unidad: row.unidad_nombre,
     centroCosto: row.centro_costo,
+    loteCalculo: row.calculation_batch_id || '',
     estado: row.estado,
     diasTrabajados: Number(row.dias_trabajados || 0),
     sueldoBruto: numberValue(row.sueldo_bruto),
@@ -405,6 +408,7 @@ function getWorkbookColumns(reportCode, exportRows = []) {
       { header: 'Empleado', key: 'empleado', width: 36 },
       { header: 'Cedula', key: 'cedula', width: 14 },
       { header: 'Centro costo', key: 'centroCosto', width: 16 },
+      { header: 'Lote calculo', key: 'loteCalculo', width: 38 },
       { header: 'Referencia', key: 'referencia', width: 34 },
     ];
   }
@@ -419,6 +423,7 @@ function getWorkbookColumns(reportCode, exportRows = []) {
       { header: 'Cargo', key: 'cargo', width: 24 },
       { header: 'Unidad organizativa', key: 'unidad', width: 26 },
       { header: 'Centro costo', key: 'centroCosto', width: 16 },
+      { header: 'Lote calculo', key: 'loteCalculo', width: 38 },
       { header: 'Concepto codigo', key: 'conceptoCodigo', width: 18 },
       { header: 'Concepto', key: 'concepto', width: 28 },
       { header: 'Categoria', key: 'categoria', width: 16 },
@@ -439,6 +444,7 @@ function getWorkbookColumns(reportCode, exportRows = []) {
       { header: 'Departamento', key: 'departamento', width: 20 },
       { header: 'Cargo', key: 'cargo', width: 24 },
       { header: 'Centro costo', key: 'centroCosto', width: 16 },
+      { header: 'Lote calculo', key: 'loteCalculo', width: 38 },
       ...getMatrixConceptColumns(exportRows),
       { header: 'Total ingresos nomina', key: 'totalIngresosNomina', width: 20, style: { numFmt: '$#,##0.00' } },
       { header: 'Total deducciones nomina', key: 'totalDeduccionesNomina', width: 24, style: { numFmt: '$#,##0.00' } },
@@ -458,6 +464,7 @@ function getWorkbookColumns(reportCode, exportRows = []) {
     { header: 'Cargo', key: 'cargo', width: 24 },
     { header: 'Unidad organizativa', key: 'unidad', width: 26 },
     { header: 'Centro costo', key: 'centroCosto', width: 16 },
+    { header: 'Lote calculo', key: 'loteCalculo', width: 38 },
     { header: 'Estado', key: 'estado', width: 12 },
     { header: 'Dias trabajados', key: 'diasTrabajados', width: 16 },
     { header: 'Total ingresos', key: 'totalIngresos', width: 16, style: { numFmt: '$#,##0.00' } },
@@ -471,25 +478,25 @@ function getWorkbookColumns(reportCode, exportRows = []) {
   }
 
   return [
-    ...base.slice(0, 10),
+    ...base.slice(0, 11),
     { header: 'Sueldo bruto/proporcional', key: 'sueldoBruto', width: 22, style: { numFmt: '$#,##0.00' } },
     { header: 'Horas extra 50%', key: 'extras50', width: 16, style: { numFmt: '$#,##0.00' } },
     { header: 'Horas extra 100%', key: 'extras100', width: 17, style: { numFmt: '$#,##0.00' } },
     { header: 'Bonos desempeno', key: 'bonosDesempeno', width: 17, style: { numFmt: '$#,##0.00' } },
-    base[10],
+    base[11],
     { header: 'IESS personal', key: 'aporteIess', width: 16, style: { numFmt: '$#,##0.00' } },
     { header: 'Impuesto renta', key: 'impuestoRenta', width: 16, style: { numFmt: '$#,##0.00' } },
     { header: 'Anticipos', key: 'anticipos', width: 14, style: { numFmt: '$#,##0.00' } },
     { header: 'Prestamos', key: 'prestamos', width: 14, style: { numFmt: '$#,##0.00' } },
     { header: 'Descuento faltas', key: 'descuentoFaltas', width: 17, style: { numFmt: '$#,##0.00' } },
-    base[11],
     base[12],
+    base[13],
     { header: 'IESS patronal', key: 'aportePatronal', width: 16, style: { numFmt: '$#,##0.00' } },
     { header: 'Provision decimo tercero', key: 'decimoTercero', width: 24, style: { numFmt: '$#,##0.00' } },
     { header: 'Provision decimo cuarto', key: 'decimoCuarto', width: 23, style: { numFmt: '$#,##0.00' } },
     { header: 'Provision vacaciones', key: 'vacaciones', width: 20, style: { numFmt: '$#,##0.00' } },
     { header: 'Fondos reserva', key: 'fondosReserva', width: 17, style: { numFmt: '$#,##0.00' } },
-    base[13],
+    base[14],
     { header: 'Fuente legal', key: 'fuenteLegal', width: 30 },
   ];
 }

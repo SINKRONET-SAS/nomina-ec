@@ -1,0 +1,19 @@
+{
+  "name": "nomina-ec-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nomina-Ec como un solo sistema: backend, PWA web y app movil gobernados desde la raiz.",
+  "workspaces": [
+    "backend",
+    "frontend-web",
+    "app-movil"
+  ],
+  "scripts": {
+    "contracts": "node scripts/verify-system-contracts.mjs",
+    "prisma:validate": "npm --workspace=backend run prisma:validate",
+    "test:backend": "npm --workspace=backend test",
+    "build:web": "npm --workspace=frontend-web run build",
+    "check:mobile": "npm --workspace=app-movil run check:stores",
+    "validate": "npm run contracts && npm run prisma:validate && npm run test:backend && npm run build:web"
+  }
+}

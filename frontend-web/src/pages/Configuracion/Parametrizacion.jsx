@@ -315,9 +315,23 @@ const formDefinitions = [
       { name: 'name', label: 'Nombre', placeholder: 'Hora extra 50%', required: true },
       { name: 'category', label: 'Categoria', type: 'select', options: ['ingreso', 'descuento', 'permiso', 'ausencia', 'ajuste'] },
       { name: 'payroll_impact', label: 'Impacto', type: 'select', options: ['ingreso', 'descuento', 'informativo'] },
+      { name: 'calculation_mode', label: 'Forma de calculo', type: 'select', options: [
+        { value: 'amount', label: 'Monto directo' },
+        { value: 'minutes_hourly', label: 'Minutos x valor hora' },
+        { value: 'minutes_hourly_1_5', label: 'Minutos x hora 50%' },
+        { value: 'minutes_hourly_2', label: 'Minutos x hora 100%' },
+        { value: 'absence_day', label: 'Dia de falta' },
+        { value: 'informational', label: 'Solo informativo' },
+      ] },
       { name: 'affects_iess', label: 'Afecta IESS', type: 'checkbox' },
       { name: 'affects_income_tax', label: 'Afecta IR', type: 'checkbox' },
+      { name: 'affects_decimos', label: 'Afecta decimos', type: 'checkbox' },
+      { name: 'affects_vacation', label: 'Afecta vacaciones', type: 'checkbox' },
+      { name: 'affects_bank_file', label: 'Afecta pago bancario', type: 'checkbox' },
       { name: 'requires_evidence', label: 'Requiere respaldo', type: 'checkbox' },
+      { name: 'status', label: 'Estado', type: 'select', options: ['activo', 'inactivo', 'borrador'] },
+      { name: 'valid_from', label: 'Vigente desde', type: 'date', required: true },
+      { name: 'valid_to', label: 'Vigente hasta', type: 'date' },
       { name: 'description', label: 'Descripcion', type: 'textarea', wide: true },
     ],
     initial: {
@@ -325,9 +339,16 @@ const formDefinitions = [
       name: '',
       category: 'ajuste',
       payroll_impact: 'informativo',
+      calculation_mode: 'informational',
       affects_iess: false,
       affects_income_tax: false,
+      affects_decimos: false,
+      affects_vacation: false,
+      affects_bank_file: false,
       requires_evidence: true,
+      status: 'activo',
+      valid_from: `${new Date().getFullYear()}-01-01`,
+      valid_to: '',
       description: '',
     },
     buildPayload: (values) => ({
@@ -336,11 +357,17 @@ const formDefinitions = [
       description: values.description.trim(),
       category: values.category,
       payroll_impact: values.payroll_impact,
+      calculation_mode: values.calculation_mode,
       affects_iess: Boolean(values.affects_iess),
       affects_income_tax: Boolean(values.affects_income_tax),
+      affects_decimos: Boolean(values.affects_decimos),
+      affects_vacation: Boolean(values.affects_vacation),
+      affects_bank_file: Boolean(values.affects_bank_file),
       requires_evidence: Boolean(values.requires_evidence),
       approval_flow: { requiredRoles: ['admin_rrhh', 'owner'] },
-      status: 'activo',
+      status: values.status,
+      valid_from: values.valid_from || null,
+      valid_to: values.valid_to || null,
     }),
     recordLabel: (record) => record.name,
     recordMeta: (record) => `${record.code} · ${record.payroll_impact}`,
@@ -522,15 +549,13 @@ const formDefinitions = [
   },
   {
     key: 'contabilidad',
-    title: 'Esquema contable',
-    description: 'Configura la cuenta debe/haber por concepto de nomina, con vigencia y centro de costo.',
+    title: 'Matriz contable unica',
+    description: 'Configura debe/haber para cada concepto de nomina en una sola matriz vigente por tenant.',
     icon: Landmark,
     resource: 'payrollAccountingMappings',
     stepCode: 'contabilidad',
     fields: [
-      { name: 'concept_code', label: 'Codigo concepto', placeholder: 'sueldo_base', required: true },
-      { name: 'concept_label', label: 'Concepto', placeholder: 'Sueldo proporcional', required: true },
-      { name: 'category', label: 'Categoria', type: 'select', options: ['ingreso', 'deduccion', 'provision', 'costo_empleador', 'pago'] },
+      { name: 'concept_code', label: 'Concepto de nomina', type: 'payrollConceptSelect', required: true },
       { name: 'entry_type', label: 'Asiento', type: 'select', options: ['DEVENGAMIENTO', 'PROVISION', 'PAGO', 'AJUSTE'] },
       { name: 'debit_account_code', label: 'Cuenta debe', placeholder: '510101', required: true },
       { name: 'debit_account_name', label: 'Nombre cuenta debe', placeholder: 'Sueldos y salarios', required: true },
@@ -561,8 +586,6 @@ const formDefinitions = [
     },
     buildPayload: (values) => ({
       concept_code: values.concept_code.trim().toLowerCase(),
-      concept_label: values.concept_label.trim(),
-      category: values.category,
       entry_type: values.entry_type,
       debit_account_code: values.debit_account_code.trim(),
       debit_account_name: values.debit_account_name.trim(),
@@ -576,12 +599,12 @@ const formDefinitions = [
       valid_to: values.valid_to || null,
       metadata: { source: 'parametrizacion_contable_crn26' },
     }),
-    recordLabel: (record) => record.concept_label || record.concept_code,
+    recordLabel: (record, summary) => payrollConceptByCode(summary, record.concept_code)?.label || record.concept_label || record.concept_code,
     recordMeta: (record) => `${record.concept_code} - ${record.entry_type} - debe ${record.debit_account_code} / haber ${record.credit_account_code}`,
-    saveLabel: 'Guardar esquema contable',
-    updateLabel: 'Actualizar esquema contable',
-    recordsTitle: 'Esquemas contables vigentes',
-    emptyText: 'Aun no hay esquemas contables. Se cargan defaults editables cuando el tenant no tiene cuentas propias.',
+    saveLabel: 'Guardar matriz contable',
+    updateLabel: 'Actualizar matriz contable',
+    recordsTitle: 'Matriz contable vigente',
+    emptyText: 'Aun no hay matriz contable. Se cargan defaults editables para todos los conceptos de nomina.',
   },
   {
     key: 'banco',
@@ -838,7 +861,48 @@ function profileOptions(summary) {
   }));
 }
 
+function payrollConceptOptions(summary) {
+  return (summary?.resources?.payrollConcepts || []).map((concept) => ({
+    value: concept.code,
+    label: `${concept.label} (${concept.code})`,
+    category: concept.category,
+    entryType: concept.entryType,
+  }));
+}
+
+function payrollConceptByCode(summary, code) {
+  return (summary?.resources?.payrollConcepts || []).find((concept) => concept.code === code);
+}
+
+const defaultNoveltyConceptCodes = {
+  hora_extra_50: 'horas_extra_50',
+  hora_extra_100: 'horas_extra_100',
+  bono_desempeno: 'bono_desempeno',
+  comision: 'comision',
+  falta: 'descuento_faltas',
+};
+
+function normalizeNoveltyCode(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function conceptCodeForNoveltyRecord(record = {}) {
+  const code = normalizeNoveltyCode(record.code);
+  if (!code) return '';
+  return defaultNoveltyConceptCodes[code] || `novedad_${code}`;
+}
+
+function accountingMappingByConcept(summary, conceptCode) {
+  return (summary?.resources?.payrollAccountingMappings || [])
+    .find((mapping) => mapping.concept_code === conceptCode && mapping.status !== 'inactivo');
+}
+
 function optionsForField(summary, field) {
+  if (field.type === 'payrollConceptSelect') return payrollConceptOptions(summary);
   if (field.type !== 'resourceSelect') return [];
   return (summary?.resources?.[field.resource] || []).filter((record) => record.status !== 'inactivo');
 }
@@ -854,6 +918,16 @@ function recordMetaForDefinition(definition, record, summary) {
     const min = Number(record.salary_min || 0).toFixed(2);
     const max = Number(record.salary_max || 0).toFixed(2);
     return `${record.code} - ${unit?.name || 'sin unidad'} - ${record.currency || 'USD'} ${min} a ${max}`;
+  }
+  if (definition.key === 'novedad') {
+    const conceptCode = conceptCodeForNoveltyRecord(record);
+    const mapping = accountingMappingByConcept(summary, conceptCode);
+    if (String(record.payroll_impact || '').toLowerCase() === 'informativo') {
+      return `${record.code} - informativo - sin asiento contable`;
+    }
+    return mapping
+      ? `${record.code} - ${record.payroll_impact} - ${conceptCode} - debe ${mapping.debit_account_code} / haber ${mapping.credit_account_code}`
+      : `${record.code} - ${record.payroll_impact} - ${conceptCode} sin cuenta configurada`;
   }
 
   return definition.recordMeta(record, summary);
@@ -945,9 +1019,16 @@ function formValuesFromRecord(definition, record) {
         name: record.name || '',
         category: record.category || 'ajuste',
         payroll_impact: record.payroll_impact || 'informativo',
+        calculation_mode: record.applicability?.calculationMode || 'informational',
         affects_iess: Boolean(record.affects_iess),
         affects_income_tax: Boolean(record.affects_income_tax),
+        affects_decimos: Boolean(record.affects_decimos),
+        affects_vacation: Boolean(record.affects_vacation),
+        affects_bank_file: Boolean(record.affects_bank_file),
         requires_evidence: Boolean(record.requires_evidence),
+        status: record.status || 'activo',
+        valid_from: dateInputValue(record.valid_from) || `${new Date().getFullYear()}-01-01`,
+        valid_to: dateInputValue(record.valid_to),
         description: record.description || '',
       };
     case 'organizacion':
@@ -1073,6 +1154,26 @@ function Field({ field, value, onChange, options = [] }) {
         <select className={baseClass} value={value} onChange={(event) => onChange(field.name, event.target.value)}>
           {field.options.map((option) => (
             <option key={option.value || option} value={option.value || option}>{option.label || option}</option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
+  if (field.type === 'payrollConceptSelect') {
+    return (
+      <label className={fieldClass}>
+        <span className="text-sm font-medium text-slate-700">{field.label}</span>
+        <select
+          className={baseClass}
+          value={value}
+          onChange={(event) => onChange(field.name, event.target.value)}
+          required={field.required}
+          disabled={options.length === 0}
+        >
+          <option value="">{options.length === 0 ? 'Sin conceptos disponibles' : 'Selecciona un concepto'}</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
           ))}
         </select>
       </label>
@@ -2023,16 +2124,27 @@ function Parametrizacion() {
   const legalRecords = summary?.resources?.legalParameters || [];
 
   function updateField(name, value) {
-    setForms((current) => ({
-      ...current,
-      [activeDefinition.key]: {
+    setForms((current) => {
+      const nextValues = {
         ...current[activeDefinition.key],
         ...(activeDefinition.key === 'banco' && name === 'template'
           ? BANK_TEMPLATE_DEFAULTS[value] || {}
           : {}),
         [name]: value,
-      },
-    }));
+      };
+
+      if (activeDefinition.key === 'contabilidad' && name === 'concept_code') {
+        const concept = payrollConceptByCode(summary, value);
+        nextValues.concept_label = concept?.label || '';
+        nextValues.category = concept?.category || '';
+        nextValues.entry_type = concept?.entryType || nextValues.entry_type || 'DEVENGAMIENTO';
+      }
+
+      return {
+        ...current,
+        [activeDefinition.key]: nextValues,
+      };
+    });
   }
 
   function updateBankFilePeriod(name, value) {
@@ -2363,7 +2475,7 @@ function Parametrizacion() {
                 <div className="rounded-md bg-slate-50 px-3 py-2" key={record.id}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-900">{activeDefinition.recordLabel(record)}</p>
+                      <p className="text-sm font-semibold text-slate-900">{activeDefinition.recordLabel(record, summary)}</p>
                       <p className="mt-1 text-xs text-slate-500">{recordMetaForDefinition(activeDefinition, record, summary)}</p>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">

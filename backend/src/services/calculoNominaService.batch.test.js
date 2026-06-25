@@ -6,6 +6,10 @@ jest.mock('./legalParameterService', () => ({
   assertLegalParametersReadyForProduction: jest.fn(),
   getLegalParametersForTenant: jest.fn(),
 }));
+jest.mock('./payrollAccountingService', () => ({
+  ensureDefaultPayrollAccountingMappings: jest.fn(async () => []),
+  persistPayrollCalculationLines: jest.fn(async () => []),
+}));
 
 const db = require('../config/database');
 const {
@@ -55,10 +59,19 @@ describe('calculoNominaService lote AIV50', () => {
     jest.clearAllMocks();
     getLegalParametersForTenant.mockResolvedValue(legalParameters);
     db.query.mockImplementation(async (sql) => {
+      if (String(sql).includes('INSERT INTO payroll_periods')) {
+        return { rows: [{ id: 'period-1', status: 'open' }] };
+      }
+      if (String(sql).includes('INSERT INTO payroll_calculation_batches')) {
+        return { rows: [{ id: 'batch-1', status: 'processing' }] };
+      }
+      if (String(sql).includes('UPDATE payroll_calculation_batches')) {
+        return { rows: [{ id: 'batch-1', status: 'completed', total_calculadas: 2, total_errores: 0 }] };
+      }
       if (String(sql).includes('FROM empleados')) return { rows: [employee('emp-1'), employee('emp-2')] };
-      if (String(sql).includes('GROUP BY tipo_novedad')) return { rows: [] };
-      if (String(sql).includes("tipo_novedad = 'falta'")) return { rows: [{ total: '0' }] };
-      if (String(sql).includes('INSERT INTO nominas')) return { rows: [] };
+      if (String(sql).includes('FROM novelty_type_configs')) return { rows: [] };
+      if (String(sql).includes('FROM novedades_asistencia')) return { rows: [] };
+      if (String(sql).includes('INSERT INTO nominas')) return { rows: [{ id: `payroll-${Date.now()}` }] };
       return { rows: [] };
     });
   });

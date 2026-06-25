@@ -1,8 +1,8 @@
 const crypto = require('crypto');
 const db = require('../config/database');
 const { recordAudit } = require('./auditService');
+const { ensureNoveltyTypeAllowed, normalizeNoveltyCode } = require('./payrollNoveltyService');
 
-const VALID_NOVELTY_TYPES = new Set(['falta', 'atraso', 'salida_temprana', 'hora_extra_50', 'hora_extra_100', 'bono_desempeno']);
 const VALID_SCOPE_TYPES = new Set(['company', 'department', 'position', 'employee']);
 
 function validatePeriod(anio, mes) {
@@ -217,7 +217,7 @@ async function createNoveltyBatch({
   const { anio, mes } = validatePeriod(payload.anio, payload.mes);
   const scopeType = String(payload.scopeType || 'company');
   const scopeValue = String(payload.scopeValue || '').trim();
-  const tipoNovedad = String(payload.tipoNovedad || '');
+  const tipoNovedad = normalizeNoveltyCode(payload.tipoNovedad);
   const minutos = Math.max(0, Math.round(Number(payload.minutos || 0)));
   const monto = roundAmount(payload.monto);
   const justificacion = String(payload.justificacion || 'Lote mensual').trim();
@@ -231,11 +231,9 @@ async function createNoveltyBatch({
   if (scopeType !== 'company' && !scopeValue) {
     throw new Error('El alcance seleccionado requiere un valor.');
   }
-  if (!VALID_NOVELTY_TYPES.has(tipoNovedad)) {
-    throw new Error('Tipo de novedad invalido.');
-  }
-  if (tipoNovedad === 'bono_desempeno' && monto <= 0) {
-    throw new Error('El bono de desempeno requiere un monto mayor a cero.');
+  const noveltyConfig = await ensureNoveltyTypeAllowed({ tenantId, tipoNovedad, anio, mes, userId });
+  if (noveltyConfig.calculationMode === 'amount' && monto <= 0 && noveltyConfig.payrollImpact !== 'informativo') {
+    throw new Error('La novedad requiere un monto mayor a cero segun su forma de calculo.');
   }
 
   const existing = await db.query(`

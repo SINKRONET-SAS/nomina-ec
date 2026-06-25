@@ -3,6 +3,7 @@ const { validarMarcacion } = require('../services/marcacionValidator');
 const { recordAudit } = require('../services/auditService');
 const { persistExternalIdempotency } = require('../middleware/externalApiIdempotency');
 const { ensurePayrollPeriodForDate } = require('../services/monthlyPeriodService');
+const { ensureNoveltyTypeAllowed, normalizeNoveltyCode } = require('../services/payrollNoveltyService');
 
 async function sendApiResponse(req, res, statusCode, payload) {
   const body = {
@@ -97,15 +98,22 @@ async function createNovelty(req, res) {
       return res.status(404).json({ error: 'API_EMPLOYEE_NOT_FOUND', message: 'Empleado no encontrado para este tenant.', correlationId: req.correlationId });
     }
 
+    const normalizedTipo = normalizeNoveltyCode(tipoNovedad);
+    const period = await ensurePayrollPeriodForDate({ tenantId: req.tenantId, userId: null, fecha });
+    const noveltyConfig = await ensureNoveltyTypeAllowed({
+      tenantId: req.tenantId,
+      tipoNovedad: normalizedTipo,
+      anio: period.anio,
+      mes: period.mes,
+    });
     const amount = normalizeAmount(monto);
-    if (tipoNovedad === 'bono_desempeno' && amount <= 0) {
+    if (noveltyConfig.calculationMode === 'amount' && amount <= 0 && noveltyConfig.payrollImpact !== 'informativo') {
       return res.status(422).json({
         error: 'API_NOVELTY_AMOUNT_REQUIRED',
-        message: 'El bono de desempeno requiere un monto mayor a cero.',
+        message: 'La novedad requiere un monto mayor a cero segun su forma de calculo.',
         correlationId: req.correlationId,
       });
     }
-    const period = await ensurePayrollPeriodForDate({ tenantId: req.tenantId, userId: null, fecha });
     if (period.status === 'closed') {
       return res.status(422).json({
         error: 'API_PERIOD_CLOSED',
@@ -120,7 +128,7 @@ async function createNovelty(req, res) {
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pendiente')
       RETURNING *
-    `, [req.tenantId, empleadoId, period.id, period.periodoNomina, tipoNovedad, fecha, Number(minutos || 0), amount, motivo || 'Carga API v1']);
+    `, [req.tenantId, empleadoId, period.id, period.periodoNomina, normalizedTipo, fecha, Number(minutos || 0), amount, motivo || 'Carga API v1']);
 
     await recordAudit({
       tenantId: req.tenantId,
@@ -128,7 +136,7 @@ async function createNovelty(req, res) {
       action: 'api_v1.novelties.write',
       entity: 'novedades_asistencia',
       entityId: result.rows[0].id,
-      newData: { empleadoId, tipoNovedad, fecha },
+      newData: { empleadoId, tipoNovedad: normalizedTipo, fecha },
       ipAddress: req.ip,
       metadata: { apiClientId: req.apiClient.id, apiClientName: req.apiClient.name },
     });
@@ -137,12 +145,17 @@ async function createNovelty(req, res) {
   } catch (err) {
     console.error('[API_V1] Error creando novedad', {
       code: err.code || 'API_NOVELTY_ERROR',
-      statusCode: 500,
+      statusCode: err.statusCode || 500,
       correlationId: req.correlationId,
       userId: null,
       message: err.message,
     });
-    return res.status(500).json({ error: 'API_NOVELTY_ERROR', message: 'No pudimos crear la novedad.', correlationId: req.correlationId });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'API_NOVELTY_ERROR',
+      message: err.statusCode ? err.message : 'No pudimos crear la novedad.',
+      correlationId: req.correlationId,
+      ...(err.details && { details: err.details }),
+    });
   }
 }
 

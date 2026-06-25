@@ -29,7 +29,11 @@ async function calcularMes(req, res) {
       mode: 'calculation',
     });
 
-    const resultado = await calcularNominaMensual(tenantId, anioNumber, mesNumber);
+    const resultado = await calcularNominaMensual(tenantId, anioNumber, mesNumber, {
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+    });
     const erroresDetalle = Array.isArray(resultado.resultados)
       ? resultado.resultados.filter((row) => row.error)
       : [];
@@ -45,12 +49,13 @@ async function calcularMes(req, res) {
                 'errores', $4::jsonb,
                 'totalErrores', $5::int,
                 'correlationId', $6::text,
+                'batchId', $7::text,
                 'at', NOW()
               )
             ),
             updated_at = NOW()
         WHERE tenant_id = $1 AND anio = $2 AND mes = $3
-      `, [tenantId, anioNumber, mesNumber, JSON.stringify(erroresDetalle), erroresDetalle.length, req.correlationId || null]);
+      `, [tenantId, anioNumber, mesNumber, JSON.stringify(erroresDetalle), erroresDetalle.length, req.correlationId || null, resultado.batch?.id || null]);
 
       return res.status(422).json({
         success: false,
@@ -76,12 +81,13 @@ async function calcularMes(req, res) {
               'status', 'calculated',
               'total', $4::int,
               'correlationId', $5::text,
+              'batchId', $6::text,
               'at', NOW()
             )
           ),
           updated_at = NOW()
       WHERE tenant_id = $1 AND anio = $2 AND mes = $3
-    `, [tenantId, anioNumber, mesNumber, resultado.total || 0, req.correlationId || null]);
+    `, [tenantId, anioNumber, mesNumber, resultado.total || 0, req.correlationId || null, resultado.batch?.id || null]);
     res.json({ success: true, resultado, readiness, correlationId: req.correlationId });
   } catch (err) {
     console.error('[NOMINA] Error calculando mes', {

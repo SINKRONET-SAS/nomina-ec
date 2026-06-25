@@ -4,6 +4,12 @@
 const db = require('../config/database');
 const AppError = require('../utils/AppError');
 const { roundMoney } = require('../utils/money');
+const {
+  conceptCodeForNovelty,
+  getActiveNoveltyTypeConfigs,
+  normalizeConfig: normalizeNoveltyConfig,
+  normalizeNoveltyCode,
+} = require('./payrollNoveltyService');
 
 const PAYROLL_CONCEPTS = [
   {
@@ -201,6 +207,27 @@ const DEFAULT_ACCOUNTING_MAPPINGS = PAYROLL_CONCEPTS.map((concept) => ({
 
 const DEFAULT_MAPPING_BY_CODE = new Map(DEFAULT_ACCOUNTING_MAPPINGS.map((mapping) => [mapping.concept_code, mapping]));
 
+function buildPayrollConceptCatalog(noveltyTypes = []) {
+  const concepts = new Map(PAYROLL_CONCEPTS.map((concept) => [concept.code, concept]));
+
+  for (const novelty of noveltyTypes) {
+    const normalizedCode = normalizeNoveltyCode(novelty.code);
+    if (!normalizedCode) continue;
+    const conceptCode = conceptCodeForNovelty(normalizedCode, novelty);
+    if (!conceptCode || concepts.has(conceptCode)) continue;
+    const payrollImpact = String(novelty.payroll_impact || novelty.payrollImpact || 'informativo').toLowerCase();
+    if (payrollImpact === 'informativo') continue;
+    concepts.set(conceptCode, {
+      code: conceptCode,
+      label: novelty.name || conceptCode,
+      category: payrollImpact === 'descuento' ? 'deduccion' : 'ingreso',
+      entryType: 'DEVENGAMIENTO',
+    });
+  }
+
+  return [...concepts.values()];
+}
+
 function normalizeDetail(value) {
   if (!value) return {};
   if (typeof value === 'object') return value;
@@ -258,6 +285,7 @@ function addLine(lines, {
 function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
   const detail = normalizeDetail(detailValue);
   const lines = [];
+  const normalizedNoveltyLines = Array.isArray(detail.novedadesCalculadas) ? detail.novedadesCalculadas : [];
 
   addLine(lines, {
     code: 'sueldo_base',
@@ -266,40 +294,70 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
     amount: detail.sueldoProporcional ?? payrollRow.sueldo_bruto,
     sourceId: 'sueldo_proporcional',
   });
-  addLine(lines, {
-    code: 'horas_extra_50',
-    label: 'Horas extra 50%',
-    category: 'ingreso',
-    amount: detail.montoExtras50 ?? payrollRow.horas_extras_50,
-    source: 'novedad',
-    sourceId: 'hora_extra_50',
-    metadata: { horas: numberValue(detail.extras50) },
-  });
-  addLine(lines, {
-    code: 'horas_extra_100',
-    label: 'Horas extra 100%',
-    category: 'ingreso',
-    amount: detail.montoExtras100 ?? payrollRow.horas_extras_100,
-    source: 'novedad',
-    sourceId: 'hora_extra_100',
-    metadata: { horas: numberValue(detail.extras100) },
-  });
-  addLine(lines, {
-    code: 'bono_desempeno',
-    label: 'Bono de desempeno',
-    category: 'ingreso',
-    amount: detail.bonosDesempeno,
-    source: 'novedad',
-    sourceId: 'bono_desempeno',
-  });
-  addLine(lines, {
-    code: 'comision',
-    label: 'Comisiones',
-    category: 'ingreso',
-    amount: detail.comisiones,
-    source: 'novedad',
-    sourceId: 'comision',
-  });
+  if (normalizedNoveltyLines.length > 0) {
+    for (const noveltyLine of normalizedNoveltyLines) {
+      addLine(lines, {
+        code: noveltyLine.conceptCode || noveltyLine.concept_code || conceptCodeForNovelty(noveltyLine.code),
+        label: noveltyLine.label || noveltyLine.concept_label || noveltyLine.code,
+        category: noveltyLine.category || (noveltyLine.payrollImpact === 'descuento' ? 'deduccion' : 'ingreso'),
+        amount: noveltyLine.amount,
+        source: 'novedad',
+        sourceId: noveltyLine.sourceId || noveltyLine.source_id || noveltyLine.noveltyId || noveltyLine.code,
+        legalParameterKey: noveltyLine.legalParameterKey || '',
+        metadata: {
+          ...(noveltyLine.metadata || {}),
+          calculationMode: noveltyLine.calculationMode || '',
+          affectsIess: Boolean(noveltyLine.affectsIess),
+          affectsIncomeTax: Boolean(noveltyLine.affectsIncomeTax),
+          affectsDecimos: Boolean(noveltyLine.affectsDecimos),
+          affectsVacation: Boolean(noveltyLine.affectsVacation),
+        },
+      });
+    }
+  } else {
+    addLine(lines, {
+      code: 'horas_extra_50',
+      label: 'Horas extra 50%',
+      category: 'ingreso',
+      amount: detail.montoExtras50 ?? payrollRow.horas_extras_50,
+      source: 'novedad',
+      sourceId: 'hora_extra_50',
+      metadata: { horas: numberValue(detail.extras50) },
+    });
+    addLine(lines, {
+      code: 'horas_extra_100',
+      label: 'Horas extra 100%',
+      category: 'ingreso',
+      amount: detail.montoExtras100 ?? payrollRow.horas_extras_100,
+      source: 'novedad',
+      sourceId: 'hora_extra_100',
+      metadata: { horas: numberValue(detail.extras100) },
+    });
+    addLine(lines, {
+      code: 'bono_desempeno',
+      label: 'Bono de desempeno',
+      category: 'ingreso',
+      amount: detail.bonosDesempeno,
+      source: 'novedad',
+      sourceId: 'bono_desempeno',
+    });
+    addLine(lines, {
+      code: 'comision',
+      label: 'Comisiones',
+      category: 'ingreso',
+      amount: detail.comisiones,
+      source: 'novedad',
+      sourceId: 'comision',
+    });
+    addLine(lines, {
+      code: 'descuento_faltas',
+      label: 'Descuento por faltas',
+      category: 'deduccion',
+      amount: detail.descuentoFaltas,
+      source: 'novedad',
+      sourceId: 'falta',
+    });
+  }
   addLine(lines, {
     code: 'fondo_reserva_pagado',
     label: 'Fondo de reserva pagado',
@@ -327,15 +385,6 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
     sourceId: 'impuesto_renta',
     legalParameterKey: 'income_tax_table',
   });
-  addLine(lines, {
-    code: 'descuento_faltas',
-    label: 'Descuento por faltas',
-    category: 'deduccion',
-    amount: detail.descuentoFaltas,
-    source: 'novedad',
-    sourceId: 'falta',
-  });
-
   if (Array.isArray(detail.beneficiosDescontados) && detail.beneficiosDescontados.length > 0) {
     for (const item of detail.beneficiosDescontados) {
       const tipo = String(item.tipo || '').trim().toLowerCase() === 'prestamo' ? 'prestamo' : 'anticipo';
@@ -432,6 +481,7 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
 
 function normalizePersistedLine(line = {}) {
   return {
+    calculation_batch_id: line.calculation_batch_id || line.calculationBatchId || '',
     concept_code: line.concept_code || line.conceptCode || '',
     concept_label: line.concept_label || line.conceptLabel || '',
     category: line.category || '',
@@ -461,6 +511,7 @@ function linesForPayrollRow(row = {}) {
 
 async function persistPayrollCalculationLines({
   payrollId,
+  calculationBatchId = null,
   tenantId,
   empleadoId,
   anio,
@@ -470,6 +521,12 @@ async function persistPayrollCalculationLines({
   userId = null,
 }) {
   if (!payrollId || !tenantId || !empleadoId) return [];
+  if (!calculationBatchId) {
+    throw new AppError('Cada linea de calculo de nomina debe estar asociada a un lote.', {
+      code: 'PAYROLL_CALCULATION_LINE_BATCH_REQUIRED',
+      statusCode: 422,
+    });
+  }
 
   const baseLines = buildCalculationLinesFromDetail(detalleCalculo, {
     sueldo_bruto: detalleCalculo.sueldoProporcional,
@@ -502,9 +559,10 @@ async function persistPayrollCalculationLines({
     if (lines.length > 0) {
       const params = [];
       const values = lines.map((line, index) => {
-        const offset = index * 17;
+        const offset = index * 18;
         params.push(
           payrollId,
+          calculationBatchId,
           tenantId,
           empleadoId,
           Number(anio),
@@ -522,12 +580,12 @@ async function persistPayrollCalculationLines({
           line.position_code,
           JSON.stringify(line.metadata || {})
         );
-        return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9}, $${offset + 10}, $${offset + 11}, $${offset + 12}, $${offset + 13}, $${offset + 14}, $${offset + 15}, $${offset + 16}, $${offset + 17})`;
+        return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9}, $${offset + 10}, $${offset + 11}, $${offset + 12}, $${offset + 13}, $${offset + 14}, $${offset + 15}, $${offset + 16}, $${offset + 17}, $${offset + 18})`;
       });
 
       await client.query(`
         INSERT INTO payroll_calculation_lines (
-          payroll_id, tenant_id, empleado_id, anio, mes,
+          payroll_id, calculation_batch_id, tenant_id, empleado_id, anio, mes,
           concept_code, concept_label, category, amount,
           source, source_id, source_version, legal_parameter_key,
           cost_center_code, organization_unit_code, position_code, metadata
@@ -544,19 +602,32 @@ async function persistPayrollCalculationLines({
   }
 }
 
-async function ensureDefaultPayrollAccountingMappings(tenantId, { userId = null } = {}) {
+async function ensureDefaultPayrollAccountingMappings(tenantId, { userId = null, anio = null, mes = null } = {}) {
   if (!tenantId) return [];
 
-  const existing = await db.query(
-    'SELECT COUNT(*)::int AS count FROM payroll_accounting_mappings WHERE tenant_id = $1',
-    [tenantId]
-  );
-  if (Number(existing.rows[0]?.count || 0) > 0) {
-    return [];
-  }
+  const noveltyMappings = await buildDefaultNoveltyMappings(tenantId, { anio, mes });
+  const mappings = [...DEFAULT_ACCOUNTING_MAPPINGS, ...noveltyMappings];
+  if (mappings.length === 0) return [];
+
+  await insertPayrollAccountingMappings(tenantId, mappings, userId);
+  return mappings;
+}
+
+async function ensurePayrollAccountingMappingForNoveltyConfig(tenantId, noveltyConfig = {}, { userId = null } = {}) {
+  if (!tenantId) return [];
+
+  const mapping = buildDefaultNoveltyMapping(normalizeNoveltyConfig(noveltyConfig), new Date().getFullYear());
+  if (!mapping) return [];
+
+  await insertPayrollAccountingMappings(tenantId, [mapping], userId);
+  return [mapping];
+}
+
+async function insertPayrollAccountingMappings(tenantId, mappings = [], userId = null) {
+  if (!tenantId || mappings.length === 0) return [];
 
   const params = [];
-  const values = DEFAULT_ACCOUNTING_MAPPINGS.map((mapping, index) => {
+  const values = mappings.map((mapping, index) => {
     const offset = index * 16;
     params.push(
       tenantId,
@@ -590,12 +661,64 @@ async function ensureDefaultPayrollAccountingMappings(tenantId, { userId = null 
     ON CONFLICT DO NOTHING
   `, params);
 
-  return DEFAULT_ACCOUNTING_MAPPINGS;
+  return mappings;
+}
+
+async function buildDefaultNoveltyMappings(tenantId, { anio = null, mes = null } = {}) {
+  const now = new Date();
+  const currentYear = Number(anio) || now.getFullYear();
+  const currentMonth = Number(mes) || now.getMonth() + 1;
+  const configs = await getActiveNoveltyTypeConfigs(tenantId, currentYear, currentMonth);
+  return configs
+    .map((config) => buildDefaultNoveltyMapping(config, currentYear))
+    .filter(Boolean);
+}
+
+function buildDefaultNoveltyMapping(config = {}, currentYear = new Date().getFullYear()) {
+  if (!config.code || config.payrollImpact === 'informativo') return null;
+
+  const conceptCode = conceptCodeForNovelty(normalizeNoveltyCode(config.code), config);
+  const staticDefault = DEFAULT_MAPPING_BY_CODE.get(conceptCode);
+  if (staticDefault) {
+    return {
+      ...staticDefault,
+      concept_label: config.name || staticDefault.concept_label,
+      metadata: {
+        ...(staticDefault.metadata || {}),
+        source: 'CRN26-unified-accounting-matrix',
+        noveltyCode: config.code,
+        editableByTenant: true,
+      },
+    };
+  }
+
+  const isIncome = config.payrollImpact === 'ingreso';
+  return {
+    concept_code: conceptCode,
+    concept_label: config.name,
+    category: isIncome ? 'ingreso' : 'deduccion',
+    entry_type: 'DEVENGAMIENTO',
+    debit_account_code: isIncome ? '510190' : '210101',
+    debit_account_name: isIncome ? 'Novedades de ingreso de nomina' : 'Nomina por pagar',
+    credit_account_code: isIncome ? '210101' : '510191',
+    credit_account_name: isIncome ? 'Nomina por pagar' : 'Recupero por novedades de nomina',
+    cost_center_mode: 'employee',
+    fixed_cost_center_code: '',
+    requires_employee_breakdown: true,
+    status: 'activo',
+    valid_from: `${currentYear}-01-01`,
+    valid_to: null,
+    metadata: {
+      source: 'CRN26-unified-accounting-matrix',
+      noveltyCode: config.code,
+      editableByTenant: true,
+    },
+  };
 }
 
 async function getAccountingMappings(tenantId, { anio, mes, ensureDefaults = true, userId = null } = {}) {
   if (ensureDefaults) {
-    await ensureDefaultPayrollAccountingMappings(tenantId, { userId });
+    await ensureDefaultPayrollAccountingMappings(tenantId, { userId, anio, mes });
   }
 
   const periodDate = `${Number(anio || new Date().getFullYear())}-${String(Number(mes || 1)).padStart(2, '0')}-01`;
@@ -650,6 +773,7 @@ function accountLine({ periodo, asiento, mapping, side, amount, row, line, centr
     empleado: employeeFullName(row),
     cedula: row.cedula || '',
     centroCosto,
+    loteCalculo: row.calculation_batch_id || line.calculation_batch_id || '',
     referencia: `${asiento}-${line.concept_code}-${row.cedula || row.empleado_id || row.empleadoId || 'empleado'}-${periodo.replace('/', '')}`,
   };
 }
@@ -723,6 +847,7 @@ function buildEmployeeDetailRows(rows, anio, mes) {
     cargoCodigo: row.cargo_codigo || '',
     unidad: row.unidad_nombre || '',
     centroCosto: line.cost_center_code || row.centro_costo || '',
+    loteCalculo: row.calculation_batch_id || '',
     conceptoCodigo: line.concept_code,
     concepto: line.concept_label,
     categoria: line.category,
@@ -751,6 +876,7 @@ function buildBenefitsMatrixRows(rows, anio, mes) {
       departamento: row.departamento || '',
       cargo: row.cargo || '',
       centroCosto: row.centro_costo || '',
+      loteCalculo: row.calculation_batch_id || '',
       totalIngresosNomina: numberValue(row.total_ingresos),
       totalDeduccionesNomina: numberValue(row.total_deducciones),
       totalProvisiones: 0,
@@ -794,7 +920,9 @@ module.exports = {
   buildBenefitsMatrixRows,
   buildCalculationLinesFromDetail,
   buildEmployeeDetailRows,
+  buildPayrollConceptCatalog,
   ensureDefaultPayrollAccountingMappings,
+  ensurePayrollAccountingMappingForNoveltyConfig,
   getAccountingMappings,
   linesForPayrollRow,
   normalizeDetail,

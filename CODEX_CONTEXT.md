@@ -22,7 +22,7 @@
 
 ### Resumen CRN26
 
-CRN26 formaliza la solucion definitiva para contabilidad y reportes de nomina. La ejecucion local agrego esquema contable gobernado por tenant, lineas de calculo normalizadas, reportes por empleado, matriz empleados x beneficios/conceptos y asientos contables balanceados, manteniendo compatibilidad con `detalle_calculo` historico y reportes legacy.
+CRN26 formaliza la solucion definitiva para contabilidad y reportes de nomina. La ejecucion local agrego matriz contable unica gobernada por tenant, lineas de calculo normalizadas, consumo dinamico de novedades aprobadas, lote obligatorio por corrida de calculo, reportes por empleado, matriz empleados x beneficios/conceptos y asientos contables balanceados. La raiz del repo ahora gobierna `backend`, `frontend-web` y `app-movil` como un solo sistema mediante workspaces y `npm run contracts`.
 
 ### Fases CRN26
 
@@ -50,10 +50,11 @@ CRN26 formaliza la solucion definitiva para contabilidad y reportes de nomina. L
 
 ### Ejecucion CRN26
 
-- Migracion aplicada: `20260624210000_crn26_payroll_accounting_reports`.
-- Backend: `payrollAccountingService`, `payrollAccountingController`, recurso `payrollAccountingMappings` y reportes `PAYROLL_EMPLOYEE_DETAIL`, `PAYROLL_BENEFITS_MATRIX`, `PAYROLL_ACCOUNTING_REPORT`.
-- PWA: formulario `Esquema contable` en parametrizacion y nuevos reportes internos de nomina.
-- Gates: Prisma validate PASS, migrate deploy PASS, tests backend PASS, node --check PASS y frontend build PASS.
+- Migraciones aplicadas: `20260624223000_crn26_configurable_novelties` y `20260624224500_crn26_payroll_calculation_batches`.
+- Backend: `payrollAccountingService`, `payrollNoveltyService`, recurso `payrollAccountingMappings`, lotes `payroll_calculation_batches` y reportes `PAYROLL_EMPLOYEE_DETAIL`, `PAYROLL_BENEFITS_MATRIX`, `PAYROLL_ACCOUNTING_REPORT`.
+- PWA: formulario `Matriz contable unica`, tipos de novedad con forma de calculo e impacto, reportes internos de nomina y reporte contable sin opcion legacy visible.
+- Sistema unico: `package.json` raiz con workspaces `backend`, `frontend-web`, `app-movil` y gate `scripts/verify-system-contracts.mjs`.
+- Gates: `npm run contracts` PASS, `npm run prisma:validate` PASS, `npx prisma migrate deploy` PASS, `npm run test:backend` PASS con 28 suites y 123 tests, `npm run build:web` PASS.
 
 ---
 

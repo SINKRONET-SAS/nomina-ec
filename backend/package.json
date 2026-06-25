@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
+    "prisma:validate": "prisma validate",
     "db:migrate": "node src/config/migrate.js",
     "seed:admins": "node scripts/seed-superadmin-owner.js",
     "seed:demo": "node scripts/seed-demo-commercial.js seed",

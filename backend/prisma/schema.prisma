@@ -22,15 +22,6 @@ enum AttendanceMarkType {
   fin_almuerzo
 }
 
-enum AttendanceNoveltyType {
-  falta
-  atraso
-  salida_temprana
-  hora_extra_50
-  hora_extra_100
-  bono_desempeno
-}
-
 enum ApprovalStatus {
   pendiente
   aprobado
@@ -70,6 +61,7 @@ model Tenant {
   cargasFamiliares       EmployeeFamilyDependent[]
   nominas                Payroll[]
   payrollAccountingMappings PayrollAccountingMapping[]
+  payrollCalculationBatches PayrollCalculationBatch[]
   payrollCalculationLines PayrollCalculationLine[]
   marcaciones            AttendanceMark[]
   novedades              AttendanceNovelty[]
@@ -664,7 +656,7 @@ model AttendanceNovelty {
   periodId       String?               @map("period_id") @db.Uuid
   periodoNomina  String                @default("") @map("periodo_nomina") @db.VarChar(7)
   fecha          DateTime              @db.Date
-  tipoNovedad    AttendanceNoveltyType @map("tipo_novedad")
+  tipoNovedad    String                @map("tipo_novedad") @db.VarChar(80)
   minutos        Int                   @default(0)
   monto          Decimal               @default(0) @db.Decimal(12, 2)
   justificacion  String                @default("")
@@ -702,6 +694,7 @@ model PayrollPeriod {
   updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   noveltyBatches NoveltyBatch[]
+  calculationBatches PayrollCalculationBatch[]
   attendanceNovelties AttendanceNovelty[]
   routeDays      RouteDay[]
   routeVisitMarks RouteVisitMark[]
@@ -718,7 +711,7 @@ model NoveltyBatch {
   periodId       String                @map("period_id") @db.Uuid
   scopeType      String                @map("scope_type") @db.VarChar(40)
   scopeValue     String                @default("") @map("scope_value") @db.VarChar(160)
-  tipoNovedad    AttendanceNoveltyType @map("tipo_novedad")
+  tipoNovedad    String                @map("tipo_novedad") @db.VarChar(80)
   fecha          DateTime              @db.Date
   minutos        Int                   @default(0)
   monto          Decimal               @default(0) @db.Decimal(12, 2)
@@ -744,6 +737,7 @@ model Payroll {
   id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId           String        @map("tenant_id") @db.Uuid
   empleadoId         String        @map("empleado_id") @db.Uuid
+  calculationBatchId String?       @map("calculation_batch_id") @db.Uuid
   anio               Int
   mes                Int
   diasTrabajados     Int           @default(30) @map("dias_trabajados")
@@ -765,11 +759,39 @@ model Payroll {
   updatedAt          DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   empleado           Employee      @relation(fields: [empleadoId], references: [id])
   tenant             Tenant        @relation(fields: [tenantId], references: [id])
+  calculationBatch   PayrollCalculationBatch? @relation(fields: [calculationBatchId], references: [id], onDelete: SetNull)
   calculationLines   PayrollCalculationLine[]
 
   @@unique([tenantId, empleadoId, anio, mes])
+  @@index([tenantId, calculationBatchId])
   @@index([tenantId, anio, mes])
   @@map("nominas")
+}
+
+model PayrollCalculationBatch {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  periodId       String?   @map("period_id") @db.Uuid
+  anio           Int
+  mes            Int
+  status         String    @default("processing") @db.VarChar(30)
+  totalEmpleados Int       @default(0) @map("total_empleados")
+  totalCalculadas Int      @default(0) @map("total_calculadas")
+  totalErrores   Int       @default(0) @map("total_errores")
+  errores        Json      @default("[]")
+  startedBy      String?   @map("started_by") @db.Uuid
+  correlationId  String    @default("") @map("correlation_id") @db.VarChar(120)
+  metadata       Json      @default("{}")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  completedAt    DateTime? @map("completed_at") @db.Timestamptz(6)
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  period         PayrollPeriod? @relation(fields: [periodId], references: [id], onDelete: SetNull)
+  nominas        Payroll[]
+  calculationLines PayrollCalculationLine[]
+
+  @@index([tenantId, anio, mes, createdAt])
+  @@index([tenantId, status])
+  @@map("payroll_calculation_batches")
 }
 
 model PayrollAccountingMapping {
@@ -803,6 +825,7 @@ model PayrollAccountingMapping {
 model PayrollCalculationLine {
   id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   payrollId            String   @map("payroll_id") @db.Uuid
+  calculationBatchId   String?  @map("calculation_batch_id") @db.Uuid
   tenantId             String   @map("tenant_id") @db.Uuid
   empleadoId           String   @map("empleado_id") @db.Uuid
   anio                 Int
@@ -821,10 +844,12 @@ model PayrollCalculationLine {
   metadata             Json     @default("{}")
   createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   payroll              Payroll  @relation(fields: [payrollId], references: [id], onDelete: Cascade)
+  calculationBatch     PayrollCalculationBatch? @relation(fields: [calculationBatchId], references: [id], onDelete: SetNull)
   tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   empleado             Employee @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, anio, mes])
+  @@index([tenantId, calculationBatchId])
   @@index([payrollId, conceptCode])
   @@index([tenantId, empleadoId, anio, mes])
   @@map("payroll_calculation_lines")
