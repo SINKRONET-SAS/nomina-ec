@@ -929,5 +929,6 @@ module.exports = {
   linesForPayrollRow,
   normalizeDetail,
   numberValue,
+  persistPayrollCalculationLines,
   validateAccountingBalance,
 };

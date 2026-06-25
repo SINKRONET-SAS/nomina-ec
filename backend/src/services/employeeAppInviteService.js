@@ -87,12 +87,18 @@ function invitePublicPayload(row, code = null) {
 
 function buildReadiness(row = {}, { requireEmail = false } = {}) {
   const blockers = [];
+  const employeeMonthlyHours = Number(row.jornada_horas_mensuales || 0);
+  const shiftWeeklyHours = Number(row.work_shift_weekly_hours || row.jornada_weekly_hours || row.weekly_hours || 0);
+
   if (requireEmail && !normalizeEmail(row.email_personal)) blockers.push('email_personal_requerido');
   if (!String(row.departamento || '').trim()) blockers.push('departamento_requerido');
   if (!row.organization_unit_id) blockers.push('unidad_organizativa_sin_match');
   if (row.organization_unit_id && !row.work_zone_id) blockers.push('unidad_organizativa_sin_zona');
   if (!row.work_shift_id) blockers.push('jornada_base_no_configurada');
-  if (!Number.isFinite(Number(row.jornada_horas_mensuales)) || Number(row.jornada_horas_mensuales) <= 0) {
+  if (
+    (!Number.isFinite(employeeMonthlyHours) || employeeMonthlyHours <= 0)
+    && (!Number.isFinite(shiftWeeklyHours) || shiftWeeklyHours <= 0)
+  ) {
     blockers.push('jornada_mensual_empleado_requerida');
   }
 
@@ -163,6 +169,7 @@ function employeeReadinessSelect(whereClause) {
       ws.id AS work_shift_id,
       ws.code AS work_shift_code,
       ws.name AS work_shift_name,
+      ws.weekly_hours AS work_shift_weekly_hours,
       ws.start_time,
       ws.end_time,
       ws.tolerance_minutes,

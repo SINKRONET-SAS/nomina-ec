@@ -8,6 +8,7 @@ import {
   Layers,
   Lock,
   RefreshCw,
+  XCircle,
 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
@@ -84,6 +85,7 @@ function CerrarMes() {
   const period = state.period;
   const payrollStatus = summarize(state.payrollByStatus);
   const noveltyStatus = summarize(state.noveltiesByStatus);
+  const pendingNovelties = Number(noveltyStatus.pendiente || 0);
 
   useEffect(() => {
     setBatchForm((current) => ({
@@ -107,6 +109,22 @@ function CerrarMes() {
     onSuccess: (response) => {
       const batch = response.data?.batch;
       setMessage({ type: 'success', text: `Lote ${batch?.id || ''}: ${batch?.total_creadas || 0} novedades creadas.` });
+      refreshPeriod();
+    },
+  });
+
+  const resolveNoveltiesMutation = useMutation({
+    mutationFn: async ({ decision, motivo }) => authenticatedApi.put('/novedades/periodo/resolver', {
+      anio,
+      mes,
+      decision,
+      motivo,
+    }),
+    onSuccess: (response) => {
+      const total = response.data?.total || 0;
+      const decision = response.data?.decision === 'rechazar' ? 'rechazadas' : 'aprobadas';
+      setMessage({ type: 'success', text: `${total} novedades ${decision} para el periodo.` });
+      queryClient.invalidateQueries({ queryKey: ['novedades-pendientes'] });
       refreshPeriod();
     },
   });
@@ -136,8 +154,26 @@ function CerrarMes() {
   const scopeNeedsValue = batchForm.scopeType !== 'company';
   const requiresAmount = ['bono_desempeno', 'comision'].includes(batchForm.tipoNovedad);
   const canCreateBatch = (!scopeNeedsValue || batchForm.scopeValue) && (!requiresAmount || Number(batchForm.monto) > 0);
-  const currentError = openMutation.error || batchMutation.error || calculateMutation.error || closeMutation.error || periodQuery.error;
+  const currentError = openMutation.error || batchMutation.error || resolveNoveltiesMutation.error || calculateMutation.error || closeMutation.error || periodQuery.error;
   const currentPrecheck = precheckDetails(currentError);
+  const alertIsError = Boolean(currentError || message?.type === 'error');
+
+  const resolvePendingNovelties = (decision) => {
+    if (decision === 'aprobar') {
+      const accepted = window.confirm(`Aprobar ${pendingNovelties} novedades pendientes de ${String(mes).padStart(2, '0')}/${anio}.`);
+      if (!accepted) return;
+      resolveNoveltiesMutation.mutate({ decision: 'aprobar', motivo: '' });
+      return;
+    }
+
+    const motivo = window.prompt(`Motivo para rechazar ${pendingNovelties} novedades pendientes de ${String(mes).padStart(2, '0')}/${anio}:`);
+    if (motivo === null) return;
+    if (motivo.trim().length < 5) {
+      setMessage({ type: 'error', text: 'El rechazo requiere un motivo claro.' });
+      return;
+    }
+    resolveNoveltiesMutation.mutate({ decision: 'rechazar', motivo: motivo.trim() });
+  };
 
   return (
     <div className="space-y-6">
@@ -168,7 +204,7 @@ function CerrarMes() {
       </section>
 
       {(message || currentError) && (
-        <div className={`rounded-md border px-4 py-3 text-sm font-medium ${currentError ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
+        <div className={`rounded-md border px-4 py-3 text-sm font-medium ${alertIsError ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
           {currentError ? extractApiError(currentError, 'No pudimos completar la accion. Revisa el periodo e intenta nuevamente.') : message.text}
           {currentPrecheck?.blockers?.length > 0 && (
             <ul className="mt-3 list-disc space-y-1 pl-5 text-xs font-semibold">
@@ -216,7 +252,29 @@ function CerrarMes() {
             </div>
             <div className="rounded-md bg-amber-50 p-4">
               <p className="text-xs font-semibold uppercase text-amber-700">Novedades pendientes</p>
-              <p className="mt-1 text-2xl font-semibold text-amber-900">{noveltyStatus.pendiente || 0}</p>
+              <p className="mt-1 text-2xl font-semibold text-amber-900">{pendingNovelties}</p>
+              {pendingNovelties > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    className="inline-flex min-h-9 items-center gap-2 rounded-md bg-emerald-700 px-3 text-xs font-semibold text-white disabled:bg-slate-300"
+                    disabled={resolveNoveltiesMutation.isPending}
+                    onClick={() => resolvePendingNovelties('aprobar')}
+                    type="button"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Aprobar
+                  </button>
+                  <button
+                    className="inline-flex min-h-9 items-center gap-2 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 disabled:text-slate-400"
+                    disabled={resolveNoveltiesMutation.isPending}
+                    onClick={() => resolvePendingNovelties('rechazar')}
+                    type="button"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    Rechazar
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

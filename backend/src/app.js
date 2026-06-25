@@ -157,6 +157,7 @@ const novedadController = require('./controllers/novedadController');
 app.get('/api/novedades', novedadController.listar);
 app.get('/api/novedades/pendientes', novedadController.listarPendientes);
 app.post('/api/novedades', requireRole('owner', 'admin_rrhh', 'supervisor'), novedadController.crear);
+app.put('/api/novedades/periodo/resolver', requireRole('owner', 'admin_rrhh'), novedadController.resolverPeriodo);
 app.put('/api/novedades/:id/aprobar', requireRole('owner', 'admin_rrhh'), novedadController.aprobar);
 app.put('/api/novedades/:id/rechazar', requireRole('owner', 'admin_rrhh'), novedadController.rechazar);
 

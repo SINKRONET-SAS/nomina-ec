@@ -2,7 +2,8 @@
 // Nomina-Ec - Controlador de Novedades
 // ============================================================
 const db = require('../config/database');
-const { ensurePayrollPeriodForDate } = require('../services/monthlyPeriodService');
+const { recordAudit } = require('../services/auditService');
+const { ensurePayrollPeriodForDate, formatPeriodMarker, validatePeriod } = require('../services/monthlyPeriodService');
 const { ensureNoveltyTypeAllowed, normalizeNoveltyCode } = require('../services/payrollNoveltyService');
 
 async function listar(req, res) {
@@ -147,10 +148,100 @@ async function rechazar(req, res) {
   }
 }
 
+async function resolverPeriodo(req, res) {
+  try {
+    const { tenantId, usuarioId } = req;
+    const { anio, mes } = validatePeriod(req.body?.anio, req.body?.mes);
+    const decision = String(req.body?.decision || 'aprobar').trim().toLowerCase();
+    const motivo = String(req.body?.motivo || '').trim();
+    const periodoNomina = formatPeriodMarker(anio, mes);
+
+    if (!['aprobar', 'rechazar'].includes(decision)) {
+      return res.status(400).json({
+        error: 'DECISION_NOVEDADES_INVALIDA',
+        message: 'La decision debe ser aprobar o rechazar.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const estado = decision === 'aprobar' ? 'aprobado' : 'rechazado';
+    const estadoSql = estado === 'aprobado' ? "'aprobado'" : "'rechazado'";
+    const justificacion = estado === 'rechazado' ? motivo : null;
+    if (estado === 'rechazado' && motivo.length < 5) {
+      return res.status(422).json({
+        error: 'MOTIVO_RECHAZO_REQUERIDO',
+        message: 'Indica un motivo claro para rechazar novedades del periodo.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const result = await db.query(`
+      UPDATE novedades_asistencia
+      SET estado = ${estadoSql},
+          aprobado_por = $1,
+          justificacion = COALESCE($4::text, justificacion),
+          updated_at = NOW()
+      WHERE tenant_id = $2
+        AND estado = 'pendiente'
+        AND (
+          periodo_nomina = $3
+          OR (EXTRACT(YEAR FROM fecha) = $5 AND EXTRACT(MONTH FROM fecha) = $6)
+        )
+      RETURNING id, empleado_id, tipo_novedad, fecha, estado
+    `, [usuarioId || null, tenantId, periodoNomina, justificacion, anio, mes]);
+
+    await recordAudit({
+      tenantId,
+      userId: usuarioId,
+      correlationId: req.correlationId,
+      action: `novedades.periodo.${estado}`,
+      entity: 'novedades_asistencia',
+      newData: {
+        anio,
+        mes,
+        periodoNomina,
+        decision,
+        total: result.rows.length,
+      },
+      ipAddress: req.ip,
+    });
+
+    return res.json({
+      success: true,
+      periodoNomina,
+      decision,
+      estado,
+      total: result.rows.length,
+      novedades: result.rows,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[NOVEDADES] Error resolviendo periodo', {
+      code: err.code || 'NOVEDADES_PERIODO_RESOLVE_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'NOVEDADES_PERIODO_RESOLVE_ERROR',
+      message: err.message,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
 function normalizeAmount(value) {
   const amount = Number(value || 0);
   return Number.isFinite(amount) && amount >= 0 ? Math.round(amount * 100) / 100 : 0;
 }
 
-module.exports = { listar, listarPendientes, crear, aprobar, rechazar };
+module.exports = {
+  listar,
+  listarPendientes,
+  crear,
+  aprobar,
+  rechazar,
+  resolverPeriodo,
+};
 

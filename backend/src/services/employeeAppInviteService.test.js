@@ -40,6 +40,7 @@ describe('employeeAppInviteService', () => {
     const sql = employeeReadinessSelect('WHERE e.id = $1');
 
     expect(sql).toContain("ws.id::text = ou.metadata->>'workShiftId'");
+    expect(sql).toContain('ws.weekly_hours AS work_shift_weekly_hours');
     expect(sql).toContain('SELECT COUNT(*)');
     expect(sql).toContain(') = 1');
   });
@@ -74,5 +75,20 @@ describe('employeeAppInviteService', () => {
     expect(readiness.workShift.startTime).toBe('08:00');
     expect(readiness.workShift.workDays).toEqual(['monday', 'tuesday']);
     expect(readiness.workShift.legalNotice).toContain('MDT');
+  });
+
+  test('buildReadiness acepta horas mensuales derivadas de jornada semanal configurada', () => {
+    const readiness = buildReadiness({
+      departamento: 'OPS',
+      email_personal: 'ops@empresa.com',
+      jornada_horas_mensuales: null,
+      organization_unit_id: 'ou-1',
+      work_zone_id: 'zone-1',
+      work_shift_id: 'shift-1',
+      work_shift_weekly_hours: 40,
+    }, { requireEmail: true });
+
+    expect(readiness.ready).toBe(true);
+    expect(readiness.blockers).not.toContain('jornada_mensual_empleado_requerida');
   });
 });
