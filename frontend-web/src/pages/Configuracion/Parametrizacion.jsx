@@ -222,8 +222,8 @@ const formDefinitions = [
   },
   {
     key: 'legal',
-    title: 'Parametro laboral',
-    description: 'Registra SBU, tasas IESS, tabla IR u otro parametro legal aplicable.',
+    title: 'Valores legales',
+    description: 'Registra SBU, tasas IESS, tabla IR u otro valor legal aplicable para calculos. No contiene cuentas contables.',
     icon: Scale,
     resource: 'legalParameters',
     stepCode: 'legal',
@@ -549,8 +549,8 @@ const formDefinitions = [
   },
   {
     key: 'contabilidad',
-    title: 'Matriz contable unica',
-    description: 'Configura debe/haber para cada concepto de nomina en una sola matriz vigente por tenant.',
+    title: 'Cuentas contables de nomina',
+    description: 'Define debe/haber por concepto calculado de nomina. Consume los conceptos operativos y no duplica los valores legales.',
     icon: Landmark,
     resource: 'payrollAccountingMappings',
     stepCode: 'contabilidad',
@@ -601,10 +601,10 @@ const formDefinitions = [
     }),
     recordLabel: (record, summary) => payrollConceptByCode(summary, record.concept_code)?.label || record.concept_label || record.concept_code,
     recordMeta: (record) => `${record.concept_code} - ${record.entry_type} - debe ${record.debit_account_code} / haber ${record.credit_account_code}`,
-    saveLabel: 'Guardar matriz contable',
-    updateLabel: 'Actualizar matriz contable',
-    recordsTitle: 'Matriz contable vigente',
-    emptyText: 'Aun no hay matriz contable. Se cargan defaults editables para todos los conceptos de nomina.',
+    saveLabel: 'Guardar cuenta contable',
+    updateLabel: 'Actualizar cuenta contable',
+    recordsTitle: 'Cuentas contables vigentes',
+    emptyText: 'Aun no hay cuentas contables de nomina. Carga defaults editables para todos los conceptos calculados.',
   },
   {
     key: 'banco',
@@ -862,16 +862,30 @@ function profileOptions(summary) {
 }
 
 function payrollConceptOptions(summary) {
-  return (summary?.resources?.payrollConcepts || []).map((concept) => ({
+  const configuredConcepts = (summary?.resources?.payrollConcepts || []).map((concept) => ({
     value: concept.code,
     label: `${concept.label} (${concept.code})`,
     category: concept.category,
     entryType: concept.entryType,
   }));
+
+  if (configuredConcepts.length > 0) return configuredConcepts;
+
+  const fallback = new Map();
+  for (const mapping of summary?.resources?.payrollAccountingMappings || []) {
+    if (!mapping.concept_code || fallback.has(mapping.concept_code)) continue;
+    fallback.set(mapping.concept_code, {
+      value: mapping.concept_code,
+      label: `${mapping.concept_label || mapping.concept_code} (${mapping.concept_code})`,
+      category: mapping.category || 'nomina',
+      entryType: mapping.entry_type || 'DEVENGAMIENTO',
+    });
+  }
+  return [...fallback.values()];
 }
 
 function payrollConceptByCode(summary, code) {
-  return (summary?.resources?.payrollConcepts || []).find((concept) => concept.code === code);
+  return payrollConceptOptions(summary).find((concept) => concept.value === code || concept.code === code);
 }
 
 const defaultNoveltyConceptCodes = {
@@ -2302,7 +2316,7 @@ function Parametrizacion() {
       <section className="rounded-lg border border-teal-200 bg-teal-50 p-5 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-teal-950">Carga legal obligatoria</h2>
+            <h2 className="text-lg font-semibold text-teal-950">Carga de valores legales obligatorios</h2>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-teal-900">
               Carga SBU, aportes IESS, jornada, vacaciones y tabla de impuesto a la renta del anio seleccionado
               como parametros revisables. Incluye decimos tercero/cuarto y fondo de reserva. No reemplaza la validacion
@@ -2326,7 +2340,7 @@ function Parametrizacion() {
               onClick={() => loadMandatoryMutation.mutate()}
             >
               <Download className="h-4 w-4" />
-              {loadMandatoryMutation.isPending ? 'Cargando...' : 'Cargar parametros obligatorios'}
+              {loadMandatoryMutation.isPending ? 'Cargando...' : 'Cargar valores legales'}
             </button>
           </div>
         </div>
@@ -2336,9 +2350,20 @@ function Parametrizacion() {
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <Settings2 className="h-6 w-6 text-teal-700" />
-            <h2 className="text-lg font-semibold text-slate-950">Nuevo parametro</h2>
+            <h2 className="text-lg font-semibold text-slate-950">Centro de configuracion</h2>
           </div>
-          <p className="text-sm text-slate-500">Selecciona una categoria y completa los campos requeridos.</p>
+          <p className="text-sm text-slate-500">Selecciona un dominio operativo y completa los campos requeridos.</p>
+        </div>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <div className="rounded-md border border-teal-100 bg-teal-50 px-4 py-3 text-sm leading-6 text-teal-950">
+            <p className="font-semibold">Valores legales</p>
+            <p>SBU, IESS, impuesto a la renta, decimos, jornada y reglas que alimentan el calculo.</p>
+          </div>
+          <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
+            <p className="font-semibold text-slate-950">Cuentas contables de nomina</p>
+            <p>Debe/haber por cada concepto calculado, con vigencia y centro de costo del tenant.</p>
+          </div>
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">

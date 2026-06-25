@@ -36,7 +36,17 @@ async function generarContrato(empleado, tenant, tipoContrato) {
   await db.query(`
     INSERT INTO documentos_legales (tenant_id, empleado_id, tipo_documento, documento_url, metadata)
     VALUES ($1, $2, $3, $4, $5)
-  `, [tenant.id, empleado.id, `contrato_${tipoContrato}`, url, JSON.stringify(data)]);
+  `, [
+    tenant.id,
+    empleado.id,
+    'contrato',
+    url,
+    JSON.stringify({
+      ...data,
+      tipoContrato,
+      templateKey: `contrato_${tipoContrato}`,
+    }),
+  ]);
 
   return { url, data };
 }

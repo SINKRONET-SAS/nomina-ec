@@ -152,7 +152,10 @@ function calcularFondoReservaLiquidacion(fechaIngreso, fechaSalida, sueldo, payr
 
 async function verificarDevolucionEquipos(empleadoId, tenantId) {
   const result = await db.query(`
-    SELECT COUNT(*) as pendientes
+    SELECT COALESCE(
+      SUM(GREATEST(jsonb_array_length(COALESCE(items, '[]'::jsonb)), 1)),
+      0
+    ) as pendientes
     FROM acta_entrega_equipos
     WHERE empleado_id = $1 AND tenant_id = $2 AND devuelto = false
   `, [empleadoId, tenantId]);

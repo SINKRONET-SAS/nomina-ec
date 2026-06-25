@@ -13,7 +13,7 @@ function ContratosGenerados() {
   const { data: documentos, isLoading } = useQuery({
     queryKey: ['contratos'],
     queryFn: async () => {
-      const response = await authenticatedApi.get('/documentos?tipo=contrato_indefinido,contrato_ocasional,contrato_obra');
+      const response = await authenticatedApi.get('/documentos?tipo=contrato');
       return response.data.documentos;
     },
   });
@@ -71,7 +71,7 @@ function ContratosGenerados() {
                     <td className="px-6 py-4 text-sm">{doc.nombres} {doc.apellidos}</td>
                     <td className="px-6 py-4">
                       <span className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800">
-                        {(doc.tipo_documento || 'contrato').replace(/_/g, ' ')}
+                        {(doc.metadata?.templateKey || doc.tipo_documento || 'contrato').replace(/_/g, ' ')}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">{formatDateEC(doc.created_at)}</td>

@@ -39,6 +39,7 @@ enum LegalDocumentType {
   acta_finiquito
   rol_pago
   certificado
+  acta_entrega_dotacion
 }
 
 model Tenant {
@@ -887,6 +888,9 @@ model EquipmentDeliveryAct {
   tenantId      String    @map("tenant_id") @db.Uuid
   descripcion   String
   serial        String    @default("") @db.VarChar(120)
+  items         Json      @default("[]")
+  fechaEntrega DateTime  @default(dbgenerated("CURRENT_DATE")) @map("fecha_entrega") @db.Date
+  documentoLegalId String? @unique @map("documento_legal_id") @db.Uuid
   devuelto      Boolean   @default(false)
   devueltoEn    DateTime? @map("devuelto_en") @db.Timestamptz(6)
   observaciones String    @default("")

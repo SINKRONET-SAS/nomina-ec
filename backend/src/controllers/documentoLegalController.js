@@ -4,6 +4,7 @@
 const db = require('../config/database');
 const { generarContrato } = require('../services/templateGenerator');
 const { calcularLiquidacion } = require('../services/liquidacionService');
+const { generateEquipmentDeliveryAct } = require('../services/equipmentDeliveryActService');
 const { s3Upload } = require('../config/s3');
 
 async function generarContratoCtrl(req, res) {
@@ -129,6 +130,52 @@ async function adjuntarDocumento(req, res) {
   }
 }
 
+async function generarActaEntregaDotacion(req, res) {
+  try {
+    const {
+      empleadoId,
+      fechaEntrega,
+      items,
+      observaciones,
+      entregadoPor,
+    } = req.body || {};
+    const { tenantId } = req;
+
+    const resultado = await generateEquipmentDeliveryAct({
+      tenantId,
+      empleadoId,
+      fechaEntrega,
+      items,
+      observaciones,
+      entregadoPor,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || req.usuario?.id || null,
+      ipAddress: req.ip,
+    });
+
+    return res.status(201).json({
+      success: true,
+      acta: resultado.acta,
+      documento: resultado.documento,
+      url: resultado.url,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[DOCUMENTOS] Error generando acta de entrega de dotacion', {
+      code: err.code || 'DOCUMENTO_ACTA_DOTACION_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'DOCUMENTO_ACTA_DOTACION_ERROR',
+      message: err.message,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
 async function listar(req, res) {
   try {
     const { tenantId } = req;
@@ -147,8 +194,14 @@ async function listar(req, res) {
       params.push(empleadoId);
     }
     if (tipo) {
-      query += ` AND d.tipo_documento = $${params.length + 1}`;
-      params.push(tipo);
+      const tipos = String(tipo).split(',').map((item) => item.trim()).filter(Boolean);
+      if (tipos.length > 1) {
+        query += ` AND d.tipo_documento::text = ANY($${params.length + 1}::text[])`;
+        params.push(tipos);
+      } else if (tipos.length === 1) {
+        query += ` AND d.tipo_documento::text = $${params.length + 1}`;
+        params.push(tipos[0]);
+      }
     }
     
     query += ` ORDER BY d.created_at DESC`;
@@ -197,6 +250,7 @@ async function descargar(req, res) {
 module.exports = {
   generarContrato: generarContratoCtrl,
   generarFiniquito,
+  generarActaEntregaDotacion,
   listar,
   descargar,
   adjuntarDocumento

@@ -36,6 +36,7 @@ import RolesPagos from './pages/Nomina/RolesPagos';
 import DescargarReportes from './pages/Nomina/DescargarReportes';
 import ContratosGenerados from './pages/Documentos/ContratosGenerados';
 import ActasFiniquito from './pages/Documentos/ActasFiniquito';
+import ActasEntregaDotacion from './pages/Documentos/ActasEntregaDotacion';
 
 // Layout
 import Layout from './components/Layout/Layout';
@@ -167,6 +168,11 @@ function App() {
               <Route path="documentos/finiquitos" element={
                 <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
                   <ActasFiniquito />
+                </ProtectedRoute>
+              } />
+              <Route path="documentos/dotacion" element={
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
+                  <ActasEntregaDotacion />
                 </ProtectedRoute>
               } />
               <Route path="configuracion/parametrizacion" element={

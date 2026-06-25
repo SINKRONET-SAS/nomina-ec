@@ -51,6 +51,7 @@ function Layout() {
       submenu: [
         { path: '/dashboard/documentos/contratos', label: 'Contratos' },
         { path: '/dashboard/documentos/finiquitos', label: 'Actas de Finiquito' },
+        { path: '/dashboard/documentos/dotacion', label: 'Entrega de dotacion' },
       ]
     },
     { path: '/dashboard/configuracion/parametrizacion', icon: Settings2, label: 'Parametrización', roles: ['superadmin', 'owner', 'admin_rrhh'] },

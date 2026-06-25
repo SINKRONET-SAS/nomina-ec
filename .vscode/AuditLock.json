@@ -4,12 +4,12 @@
   "planCode": "CRN26",
   "status": "completed_local",
   "phaseCompleted": "CRN26-08",
-  "currentPhase": "CRN26-08-cierre-qa-local-anti-brecha",
-  "updatedAt": "2026-06-24T22:39:26.9051721-05:00",
-  "summary": "CRN26 cerrado localmente con matriz contable unica, novedades consumidas dinamicamente, calculos asignados a lote obligatorio, reportes con lote, PWA alineada y monorepo gobernado como un solo sistema mediante contrato raiz.",
+  "currentPhase": "CRN26-08-cierre-qa-local-doc26-dotacion-parametrizacion",
+  "updatedAt": "2026-06-24T23:11:56.3955168-05:00",
+  "summary": "CRN26 cerrado localmente y ampliado con cierre DOC26: acta de entrega de dotacion/equipos generada desde backend y PWA, valores legales separados de cuentas contables de nomina, novedades consumidas dinamicamente, calculos asignados a lote obligatorio, reportes con lote y monorepo gobernado como un solo sistema mediante contrato raiz.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: cubrir brechas, evitar falsas promesas comerciales, asignar cada calculo de nomina a un lote y eliminar separaciones que generen espejismos frontend/backend.",
-  "previousAuditLockHash": "A72B4901E67D1E1CBAAECE912F8C62B1E0D3E480DFE11B4EC52C2D16DB0D9968",
+  "previousAuditLockHash": "0988210191D45C47569324B784FE1AC18B2F1B6FA0E9333EEC3A98C760C4D6C0",
   "filesModified": [
     "package.json",
     "README.md",
@@ -18,9 +18,12 @@
     "scripts/verify-system-contracts.mjs",
     "backend/package.json",
     "backend/prisma/schema.prisma",
+    "backend/prisma/migrations/20260624231500_doc26_equipment_delivery_acts/migration.sql",
     "backend/prisma/migrations/20260624223000_crn26_configurable_novelties/migration.sql",
     "backend/prisma/migrations/20260624224500_crn26_payroll_calculation_batches/migration.sql",
     "backend/scripts/seed-demo-commercial.js",
+    "backend/src/app.js",
+    "backend/src/controllers/documentoLegalController.js",
     "backend/src/controllers/externalApiController.js",
     "backend/src/controllers/nominaController.js",
     "backend/src/controllers/novedadController.js",
@@ -28,12 +31,20 @@
     "backend/src/services/calculoNominaService.batch.test.js",
     "backend/src/services/configurationService.js",
     "backend/src/services/configurationService.test.js",
+    "backend/src/services/equipmentDeliveryActService.js",
+    "backend/src/services/equipmentDeliveryActService.test.js",
+    "backend/src/services/liquidacionService.js",
     "backend/src/services/monthlyPeriodService.js",
     "backend/src/services/monthlyPeriodService.test.js",
     "backend/src/services/payrollAccountingService.js",
     "backend/src/services/payrollNoveltyService.js",
     "backend/src/services/payrollReportService.js",
+    "backend/src/services/templateGenerator.js",
+    "frontend-web/src/App.jsx",
+    "frontend-web/src/components/Layout/Layout.jsx",
     "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
+    "frontend-web/src/pages/Documentos/ActasEntregaDotacion.jsx",
+    "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
     "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
     "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_08_CIERRE_QA.md"
   ],
@@ -41,7 +52,12 @@
     {
       "gate": "CRN26-CONTRACTS-SISTEMA-UNICO",
       "status": "PASS",
-      "detail": "npm run contracts valido recursos frontend contra backend, reportes visibles contra REPORT_TYPES, endpoints, matriz contable, novedades y lotes."
+      "detail": "npm run contracts valido recursos frontend contra backend, reportes visibles contra REPORT_TYPES, endpoints, cuentas contables, valores legales separados, acta de entrega de dotacion, novedades y lotes."
+    },
+    {
+      "gate": "DOC26-ACTA-DOTACION",
+      "status": "PASS",
+      "detail": "Migracion 20260624231500_doc26_equipment_delivery_acts aplicada; backend expone POST /api/documentos/acta-entrega-dotacion; PWA expone Documentos > Entrega de dotacion."
     },
     {
       "gate": "CRN26-PRISMA-VALIDATE",
@@ -51,7 +67,7 @@
     {
       "gate": "CRN26-MIGRATE-DEPLOY",
       "status": "PASS",
-      "detail": "npx prisma migrate deploy aplico 20260624223000_crn26_configurable_novelties y 20260624224500_crn26_payroll_calculation_batches."
+      "detail": "npx prisma migrate deploy aplico 20260624231500_doc26_equipment_delivery_acts; migraciones CRN26 previas ya estaban aplicadas."
     },
     {
       "gate": "CRN26-PRISMA-GENERATE",
@@ -61,7 +77,7 @@
     {
       "gate": "CRN26-BACKEND-TESTS",
       "status": "PASS",
-      "detail": "npm run test:backend desde raiz: 28 suites, 123 tests."
+      "detail": "npm run test:backend desde raiz: 29 suites, 125 tests."
     },
     {
       "gate": "CRN26-FRONTEND-BUILD",
@@ -120,9 +136,10 @@
   "residualRisk": [
     "Las cuentas contables reales deben validarse con contador y plan de cuentas del tenant antes de produccion.",
     "El formato importable a ERP externo queda sujeto al cliente y no forma parte del cierre local CRN26.",
-    "Smoke visual con usuario real queda recomendado antes de release productivo.",
+    "La generacion PDF requiere almacenamiento S3/compatible configurado para ambientes productivos.",
+    "Smoke visual con usuario real queda recomendado antes de release productivo; intento MCP Browser/Node REPL quedo bloqueado por sandboxCwd.",
     "El contrato raiz reduce espejismos frontend/backend, pero debe ejecutarse en CI para bloquear merges."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "0988210191D45C47569324B784FE1AC18B2F1B6FA0E9333EEC3A98C760C4D6C0"
+  "signature": "A7530DFECC74AC4B159FD1CB3352F3D0FC4201798F37AC52312DF842C56D1E68"
 }

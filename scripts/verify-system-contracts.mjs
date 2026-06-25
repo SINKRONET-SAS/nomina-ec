@@ -46,6 +46,9 @@ const payrollNoveltyService = read('backend/src/services/payrollNoveltyService.j
 const payrollCalculationService = read('backend/src/services/calculoNominaService.js');
 const schema = read('backend/prisma/schema.prisma');
 const parametrizacion = read('frontend-web/src/pages/Configuracion/Parametrizacion.jsx');
+const appWeb = read('frontend-web/src/App.jsx');
+const layoutWeb = read('frontend-web/src/components/Layout/Layout.jsx');
+const actasEntregaDotacion = read('frontend-web/src/pages/Documentos/ActasEntregaDotacion.jsx');
 const descargarReportes = read('frontend-web/src/pages/Nomina/DescargarReportes.jsx');
 const configurationApi = read('frontend-web/src/services/configurationApi.js');
 
@@ -94,7 +97,21 @@ assert(payrollNoveltyService.includes('calculateNoveltyImpacts'), 'Debe existir 
 assert(payrollNoveltyService.includes('NOVELTY_APPROVED_TYPE_NOT_CONFIGURED'), 'Novedades aprobadas sin tipo activo deben fallar visible.');
 assert(payrollCalculationService.includes('getApprovedPayrollNoveltyImpacts'), 'Calculo de nomina debe consumir novedades aprobadas.');
 assert(payrollAccountingService.includes('ensurePayrollAccountingMappingForNoveltyConfig'), 'Las novedades deben sincronizarse con la matriz contable unica.');
-assert(parametrizacion.includes('Matriz contable unica'), 'La PWA debe nombrar la matriz contable unica.');
+assert(parametrizacion.includes('Valores legales'), 'La PWA debe separar valores legales de cuentas contables.');
+assert(parametrizacion.includes('Cuentas contables de nomina'), 'La PWA debe exponer cuentas contables de nomina sin duplicar parametros legales.');
+
+assert(schema.includes('acta_entrega_dotacion'), 'Prisma debe declarar el tipo documental acta_entrega_dotacion.');
+assert(schema.includes('model EquipmentDeliveryAct'), 'Prisma debe declarar EquipmentDeliveryAct.');
+assert(schema.includes('items         Json'), 'EquipmentDeliveryAct debe almacenar items estructurados.');
+assert(
+  exists('backend/prisma/migrations/20260624231500_doc26_equipment_delivery_acts/migration.sql'),
+  'Debe existir migracion DOC26 para actas de entrega de dotacion.'
+);
+assert(app.includes("'/api/documentos/acta-entrega-dotacion'"), 'Backend debe exponer generacion de acta de entrega de dotacion.');
+assert(appWeb.includes('ActasEntregaDotacion'), 'La PWA debe registrar la ruta de actas de entrega de dotacion.');
+assert(layoutWeb.includes('Entrega de dotacion'), 'La navegacion debe exponer entrega de dotacion.');
+assert(actasEntregaDotacion.includes('/documentos/acta-entrega-dotacion'), 'La pantalla debe consumir la ruta backend de acta de entrega.');
+assert(actasEntregaDotacion.includes('acta_entrega_dotacion'), 'La pantalla debe listar documentos del tipo acta_entrega_dotacion.');
 
 if (issues.length > 0) {
   console.error('[CONTRACTS] Fallaron contratos de sistema unico:');
