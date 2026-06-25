@@ -5,6 +5,8 @@ const db = require('../config/database');
 const { calcularNominaMensual } = require('../services/calculoNominaService');
 const { recordAudit } = require('../services/auditService');
 const { assertTenantPayrollReady } = require('../services/operationalReadinessService');
+const { resolveStorageUrl } = require('../config/s3');
+const { generatePayrollRolePdf } = require('../services/payrollRolePdfService');
 const {
   createNoveltyBatch,
   getPayrollPeriodState,
@@ -178,6 +180,16 @@ async function listarPorPeriodo(req, res) {
   try {
     const { anio, mes } = req.params;
     const { tenantId } = req;
+    const anioNumber = Number(anio);
+    const mesNumber = Number(mes);
+    if (!Number.isInteger(anioNumber) || !Number.isInteger(mesNumber) || mesNumber < 1 || mesNumber > 12) {
+      return res.status(400).json({
+        error: 'NOMINA_PERIODO_INVALIDO',
+        message: 'El periodo de nomina debe incluir anio numerico y mes entre 1 y 12.',
+        correlationId: req.correlationId,
+      });
+    }
+
     const result = await db.query(`
       SELECT n.*, e.nombres, e.apellidos, e.cedula, COALESCE(jp.name, e.cargo) AS cargo, jp.code AS cargo_codigo
       FROM nominas n
@@ -187,7 +199,7 @@ async function listarPorPeriodo(req, res) {
        AND jp.tenant_id = e.tenant_id
       WHERE n.tenant_id = $1 AND n.anio = $2 AND n.mes = $3
       ORDER BY e.apellidos, e.nombres
-    `, [tenantId, anio, mes]);
+    `, [tenantId, anioNumber, mesNumber]);
 
     res.json({ success: true, nominas: result.rows, correlationId: req.correlationId });
   } catch (err) {
@@ -241,20 +253,32 @@ async function descargarRolPDF(req, res) {
       WHERE n.id = $1 AND n.tenant_id = $2
     `, [id, tenantId]);
 
-    if (result.rows.length === 0 || !result.rows[0].rol_pdf_url) {
+    if (result.rows.length === 0) {
       return res.status(404).json({
-        error: 'NOMINA_PDF_NO_ENCONTRADO',
-        message: 'El rol de pago todavia no tiene PDF generado.',
+        error: 'NOMINA_NO_ENCONTRADA',
+        message: 'Nomina no encontrada.',
         correlationId: req.correlationId,
       });
     }
 
     const row = result.rows[0];
+    let url = row.rol_pdf_url;
+    let generatedRole = null;
+    if (!url || String(url).startsWith('demo://')) {
+      generatedRole = await generatePayrollRolePdf({
+        tenantId,
+        payrollId: id,
+        userId: req.usuarioId || null,
+      });
+      url = generatedRole.url;
+    }
+
     res.json({
       success: true,
-      url: row.rol_pdf_url,
+      url: resolveStorageUrl(url),
       fileName: `rol_pago_${row.cedula}_${row.anio}_${String(row.mes).padStart(2, '0')}.pdf`,
       contentType: 'application/pdf',
+      generated: Boolean(generatedRole),
       storageContract: 'url_firmada_o_publica',
       encoding: 'url',
       correlationId: req.correlationId,
@@ -262,12 +286,16 @@ async function descargarRolPDF(req, res) {
   } catch (err) {
     console.error('[NOMINA] Error descargando rol PDF', {
       code: err.code || 'NOMINA_PDF_ERROR',
-      statusCode: 500,
+      statusCode: err.statusCode || 500,
       correlationId: req.correlationId,
       userId: req.usuarioId || null,
       message: err.message,
     });
-    res.status(500).json({ error: 'Error interno', correlationId: req.correlationId });
+    res.status(err.statusCode || 500).json({
+      error: err.code || 'NOMINA_PDF_ERROR',
+      message: err.message || 'Error interno',
+      correlationId: req.correlationId,
+    });
   }
 }
 

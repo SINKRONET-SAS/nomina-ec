@@ -177,9 +177,9 @@ app.post('/api/nomina/calcular', requireRole('owner', 'admin_rrhh'), nominaContr
 app.get('/api/nomina/periodo/:anio/:mes', requireRole('owner', 'admin_rrhh'), nominaController.obtenerEstadoPeriodo);
 app.post('/api/nomina/periodo/abrir', requireRole('owner', 'admin_rrhh'), nominaController.abrirPeriodo);
 app.post('/api/nomina/novedades/lote', requireRole('owner', 'admin_rrhh'), nominaController.crearLoteNovedades);
+app.get('/api/nomina/:id/rol-pdf', nominaController.descargarRolPDF);
 app.get('/api/nomina/:anio/:mes', nominaController.listarPorPeriodo);
 app.get('/api/nomina/empleado/:empleadoId/:anio/:mes', nominaController.obtenerPorEmpleado);
-app.get('/api/nomina/:id/rol-pdf', nominaController.descargarRolPDF);
 app.post('/api/nomina/cerrar', requireRole('owner', 'admin_rrhh'), nominaController.cerrarMes);
 app.post('/api/nomina/reabrir', requireRole('owner', 'admin_rrhh'), nominaController.reabrirMes);
 
