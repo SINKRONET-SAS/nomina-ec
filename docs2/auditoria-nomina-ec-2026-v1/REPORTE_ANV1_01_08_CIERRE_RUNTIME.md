@@ -1,7 +1,7 @@
 # Reporte ANV1-01..08 - Cierre runtime local
 
 Fecha: 2026-06-25  
-Estado: in_validation
+Estado: completed_local
 
 ## Cambios ejecutados
 
@@ -26,13 +26,23 @@ Estado: in_validation
 - `userDataPurgeService.test.js`
 - Nuevos casos en `calculoNominaService.test.js` y `empleadoController.test.js`
 
-## Pendiente de gate
+## Gates ejecutados
 
-- `npm run contracts`
-- `npm run prisma:validate`
-- `npm run test:backend`
-- `npm run build:web`
-- `npm run check:mobile`
+- `npm run contracts`: PASS.
+- `npm run prisma:validate`: PASS.
+- `npx prisma migrate deploy`: PASS, aplica `20260625013000_anv1_iess_employee_fields` y `20260625021500_anv1_lopdp_consent_preferences`.
+- `npm run test:backend`: PASS, 37 suites y 152 tests.
+- `npm run build:web`: PASS.
+- `npm run check:mobile`: PASS.
+- `git diff --check`: PASS.
+- Smoke visual: PASS con Chrome headless via DevTools Protocol sobre backend `3000` y PWA `5177`.
+
+## Evidencia visual
+
+- `docs2/auditoria-nomina-ec-2026-v1/evidencias/ANV1-smoke-privacidad.png`
+- `docs2/auditoria-nomina-ec-2026-v1/evidencias/ANV1-smoke-superadmin.png`
+- `docs2/auditoria-nomina-ec-2026-v1/evidencias/ANV1-smoke-planes-payphone.png`
+- `docs2/auditoria-nomina-ec-2026-v1/evidencias/ANV1-smoke-visual-browser.json`
 
 ## Riesgos residuales
 

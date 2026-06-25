@@ -5,11 +5,11 @@
   "status": "completed_local",
   "phaseCompleted": "ANV1-08",
   "currentPhase": "ANV1-08-qa-release",
-  "updatedAt": "2026-06-25T01:34:49.1691494-05:00",
-  "summary": "ANV1 cerrado localmente: contexto movido a .github, nombres runtime Nomina-Ec, D13/D14/horas extra/IESS reforzados, lectura salarial minimizada y auditada, PayPhone real gobernado por gateway Prepare/Confirm con bloqueo de mock, planes versionados con suscriptores activos, superadmin PWA y LOPDP operativo con consentimientos, exportacion, anonimizado controlado y pantalla de privacidad.",
+  "updatedAt": "2026-06-25T07:28:35.1558470-05:00",
+  "summary": "ANV1 cerrado localmente: contexto movido a .github, nombres runtime Nomina-Ec, D13/D14/horas extra/IESS reforzados, lectura salarial minimizada y auditada, PayPhone real gobernado por gateway Prepare/Confirm con bloqueo de mock, planes versionados con suscriptores activos, superadmin PWA, LOPDP operativo con consentimientos/exportacion/anonimizado controlado y smoke visual ejecutado con evidencia.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts ANV1 en base a CODEX_CONTEXT, mover CODEX_CONTEXT.md a .github, revisar PayPhone/planes y LOPDP contra sinkroniq-mobile, evitar falsas promesas comerciales, commit y push.",
-  "previousAuditLockHash": "5B18C20E794B3D79FC5DA03FE77AA6BAC959A5D3C61720614A188CC42777F2AA",
+  "previousAuditLockHash": "EC450887B91D0B58B164D0E14BFF34A601EBDA37FE6529F22EFCFFE87B5F33B6",
   "filesModifiedSummary": [
     ".github/CODEX_CONTEXT.md",
     ".github/prompts/AUDITORIA-NOMINA-EC-2026-V1-00..08-*.md",
@@ -17,6 +17,8 @@
     ".vscode/AuditLock.json",
     "docs2/PLAN_HAIKY_AUDITORIA_NOMINA_EC_2026_V1.md",
     "docs2/auditoria-nomina-ec-2026-v1/*",
+    "docs2/auditoria-nomina-ec-2026-v1/evidencias/ANV1-smoke-*.png",
+    "docs2/auditoria-nomina-ec-2026-v1/evidencias/ANV1-smoke-visual-browser.json",
     "scripts/verify-system-contracts.mjs",
     "render.yaml",
     "backend/.env.example",
@@ -93,8 +95,8 @@
     },
     {
       "gate": "ANV1-BROWSER-SMOKE",
-      "status": "BLOCKED_TOOLING",
-      "detail": "No quedo herramienta Browser callable en esta sesion despues de tool_search; se conserva build web como evidencia automatizada."
+      "status": "PASS",
+      "detail": "Chrome headless via DevTools Protocol valido /dashboard/privacidad, /dashboard/superadmin y /precios en 1365x900 contra backend 3000 y PWA 5177; evidencia PNG/JSON en docs2/auditoria-nomina-ec-2026-v1/evidencias."
     }
   ],
   "fases": [
@@ -112,9 +114,8 @@
     "PayPhone productivo requiere PAYPHONE_TOKEN, PAYPHONE_STORE_ID y BACKEND_PUBLIC_URL HTTPS reales antes de cobro real.",
     "La validacion laboral, contable y LOPDP profesional externa sigue requerida antes de oferta comercial definitiva.",
     "El .env local no versionado conserva la base configurada por el usuario; el repo ya cambio defaults/scripts/Render a Nomina-Ec.",
-    "El retiro operativo de geolocalizacion movil requiere una fase posterior que bloquee marcacion movil si se expone como consentimiento revocable.",
-    "Smoke visual manual recomendado para /dashboard/privacidad y /dashboard/superadmin antes de release productivo."
+    "El retiro operativo de geolocalizacion movil requiere una fase posterior que bloquee marcacion movil si se expone como consentimiento revocable."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "EC450887B91D0B58B164D0E14BFF34A601EBDA37FE6529F22EFCFFE87B5F33B6"
+  "signature": "61C0FDF30A32892A21E1C46438DC6B5C891E6A325DDD1A3B1D6EC8F19FAF12A2"
 }
