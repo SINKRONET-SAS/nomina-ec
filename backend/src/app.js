@@ -171,6 +171,7 @@ app.post('/api/nomina/cerrar', requireRole('owner', 'admin_rrhh'), nominaControl
 app.post('/api/nomina/reabrir', requireRole('owner', 'admin_rrhh'), nominaController.reabrirMes);
 
 const documentoLegalController = require('./controllers/documentoLegalController');
+app.get('/api/documentos/contrato/plantillas', requireRole('owner', 'admin_rrhh'), documentoLegalController.listarPlantillasContrato);
 app.post('/api/documentos/contrato', requireRole('owner', 'admin_rrhh'), documentoLegalController.generarContrato);
 app.post('/api/documentos/finiquito', requireRole('owner', 'admin_rrhh'), documentoLegalController.generarFiniquito);
 app.post('/api/documentos/acta-entrega-dotacion', requireRole('owner', 'admin_rrhh'), documentoLegalController.generarActaEntregaDotacion);

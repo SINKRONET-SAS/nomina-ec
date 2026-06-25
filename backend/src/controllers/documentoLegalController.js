@@ -2,18 +2,18 @@
 // PLAN HAIKY - Controlador de Documentos Legales
 // ============================================================
 const db = require('../config/database');
-const { generarContrato } = require('../services/templateGenerator');
+const { generarContrato, listContractTemplates } = require('../services/templateGenerator');
 const { calcularLiquidacion } = require('../services/liquidacionService');
 const { generateEquipmentDeliveryAct } = require('../services/equipmentDeliveryActService');
 const { s3Upload } = require('../config/s3');
 
 async function generarContratoCtrl(req, res) {
   try {
-    const { empleadoId, tipoContrato } = req.body;
+    const { empleadoId, tipoContrato, templateKey } = req.body;
     const { tenantId } = req;
     
-    if (!empleadoId || !tipoContrato) {
-      return res.status(400).json({ error: 'empleadoId y tipoContrato requeridos', correlationId: req.correlationId });
+    if (!empleadoId || (!tipoContrato && !templateKey)) {
+      return res.status(400).json({ error: 'empleadoId y tipoContrato o templateKey requeridos', correlationId: req.correlationId });
     }
     
     // Obtener empleado
@@ -28,8 +28,11 @@ async function generarContratoCtrl(req, res) {
     
     // Obtener tenant
     const tenantResult = await db.query('SELECT * FROM tenants WHERE id = $1', [tenantId]);
+    if (tenantResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Tenant no encontrado', correlationId: req.correlationId });
+    }
     
-    const resultado = await generarContrato(empResult.rows[0], tenantResult.rows[0], tipoContrato);
+    const resultado = await generarContrato(empResult.rows[0], tenantResult.rows[0], tipoContrato || templateKey, { templateKey });
     
     res.status(201).json({ success: true, documento: resultado, correlationId: req.correlationId });
   } catch (err) {
@@ -127,6 +130,26 @@ async function adjuntarDocumento(req, res) {
       message: err.message,
     });
     return res.status(err.statusCode || 500).json({ error: err.code || 'DOCUMENTO_ADJUNTO_ERROR', message: err.message, correlationId: req.correlationId });
+  }
+}
+
+async function listarPlantillasContrato(req, res) {
+  try {
+    const templates = listContractTemplates();
+    return res.json({ success: true, templates, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[DOCUMENTOS] Error listando plantillas de contrato', {
+      code: err.code || 'DOCUMENTO_CONTRATO_TEMPLATES_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'DOCUMENTO_CONTRATO_TEMPLATES_ERROR',
+      message: err.message,
+      correlationId: req.correlationId,
+    });
   }
 }
 
@@ -249,6 +272,7 @@ async function descargar(req, res) {
 
 module.exports = {
   generarContrato: generarContratoCtrl,
+  listarPlantillasContrato,
   generarFiniquito,
   generarActaEntregaDotacion,
   listar,

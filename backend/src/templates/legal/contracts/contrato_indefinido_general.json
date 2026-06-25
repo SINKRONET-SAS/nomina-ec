@@ -1,0 +1,95 @@
+{
+  "templateKey": "contrato_indefinido_general",
+  "version": "2026.06",
+  "sortOrder": 20,
+  "displayName": "Contrato indefinido general",
+  "description": "Contrato individual de trabajo a tiempo indefinido para cargos administrativos u operativos generales.",
+  "documentTitle": "CONTRATO INDIVIDUAL DE TRABAJO A TIEMPO INDEFINIDO",
+  "contractType": "indefinido",
+  "appliesTo": ["general", "administrativo", "operativo"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": false,
+    "days": 0
+  },
+  "legalBasis": [
+    {
+      "label": "Constitucion de la Republica del Ecuador, Art. 326",
+      "note": "los derechos laborales son irrenunciables e intangibles; cualquier estipulacion en contrario se considera no escrita."
+    },
+    {
+      "label": "Codigo del Trabajo de Ecuador",
+      "note": "la relacion laboral directa debe documentar cargo, jornada, remuneracion y obligaciones esenciales."
+    },
+    {
+      "label": "Parametros legales Nomina-Ec {{legal.year}}",
+      "note": "SBU configurado USD {{legal.sbuAmount}}, aporte personal IESS {{legal.personalIessRate}} y aporte patronal IESS {{legal.employerIessRate}}."
+    }
+  ],
+  "notices": [
+    "Este documento se genera como evidencia interna y debe revisarse frente a la obligacion laboral aplicable antes de firma o registro externo.",
+    "Registro SUT/MDT: {{contract.sutRegistrationStatus}}."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen a la celebracion del presente contrato, por una parte {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, a quien en adelante se denominara EL EMPLEADOR; y, por otra parte, {{employee.fullName}}, con cedula de ciudadania {{employee.idNumber}}, domiciliado en {{employee.address}}, a quien en adelante se denominara EL TRABAJADOR."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- NATURALEZA Y DURACION",
+      "paragraphs": [
+        "Las partes celebran un contrato individual de trabajo a tiempo indefinido, modalidad ordinaria para una relacion laboral estable y directa. La relacion inicia el {{employee.startDate}} y se mantendra vigente hasta que termine por una causa y procedimiento previstos por la normativa laboral aplicable."
+      ]
+    },
+    {
+      "title": "TERCERA.- CARGO Y FUNCIONES",
+      "paragraphs": [
+        "EL TRABAJADOR prestara servicios personales y licitos en el cargo de {{employee.position}}, dentro de la unidad {{employee.organizationUnit}}, cumpliendo las funciones propias del cargo, politicas internas, instrucciones razonables del empleador y normas de seguridad y confidencialidad.",
+        "El cargo queda asociado a la ficha laboral y al catalogo de cargos vigente de Nomina-Ec, sin perjuicio de los cambios organizativos permitidos por la normativa laboral y documentados por escrito."
+      ]
+    },
+    {
+      "title": "CUARTA.- LUGAR, JORNADA Y CONTROL DE ASISTENCIA",
+      "paragraphs": [
+        "La prestacion de servicios se realizara en {{company.city}} o en los lugares operativos autorizados por EL EMPLEADOR. La zona de marcacion registrada es {{employee.workZone}}.",
+        "La jornada aplicable es {{employee.workShift}}, respetando los limites legales y las reglas parametrizadas de descanso, horas suplementarias o extraordinarias cuando correspondan.",
+        "EL TRABAJADOR registrara asistencia mediante los mecanismos autorizados por EL EMPLEADOR. Los registros de asistencia, novedades y evidencias se usaran para fines laborales, de nomina y auditoria interna."
+      ]
+    },
+    {
+      "title": "QUINTA.- REMUNERACION Y BENEFICIOS",
+      "paragraphs": [
+        "EL EMPLEADOR pagara a EL TRABAJADOR una remuneracion mensual de USD {{employee.salaryAmount}} ({{employee.salaryWords}}), sin que pueda ser inferior al SBU vigente configurado para {{legal.year}}.",
+        "EL TRABAJADOR tendra derecho a los beneficios laborales que correspondan conforme a la normativa ecuatoriana aplicable, incluyendo afiliacion y aportes al IESS, decimos, vacaciones, fondos de reserva cuando correspondan y demas rubros calculados por Nomina-Ec."
+      ]
+    },
+    {
+      "title": "SEXTA.- OBLIGACIONES DEL TRABAJADOR",
+      "paragraphs": [
+        "EL TRABAJADOR se obliga a ejecutar sus labores con diligencia, cumplir instrucciones licitas, cuidar herramientas, informacion y bienes entregados, reportar novedades oportunamente y observar las politicas internas de seguridad, datos personales y uso de sistemas.",
+        "La informacion, fotografias, ubicacion o evidencias operativas que se registren en sistemas del empleador se usaran solo para fines laborales, asistencia, control operativo, nomina, auditoria y cumplimiento legal."
+      ]
+    },
+    {
+      "title": "SEPTIMA.- OBLIGACIONES DEL EMPLEADOR",
+      "paragraphs": [
+        "EL EMPLEADOR se obliga a pagar la remuneracion pactada, afiliar y aportar al IESS cuando corresponda, entregar herramientas o instrucciones necesarias, respetar la dignidad del trabajador y conservar registros laborales conforme a la normativa aplicable."
+      ]
+    },
+    {
+      "title": "OCTAVA.- DERECHOS IRRENUNCIABLES",
+      "paragraphs": [
+        "Las partes reconocen que los derechos del trabajador son irrenunciables e intangibles. Cualquier clausula, politica o practica que disminuya derechos laborales minimos se tendra por no escrita y no podra ser usada por Nomina-Ec como base de calculo o evidencia valida."
+      ]
+    },
+    {
+      "title": "NOVENA.- REGISTRO Y ANEXOS",
+      "paragraphs": [
+        "El presente documento debe ser revisado, firmado y registrado en los sistemas oficiales cuando corresponda. Nomina-Ec conserva la evidencia generada y marca el estado externo como {{contract.sutRegistrationStatus}} hasta que exista confirmacion documental.",
+        "Forman parte referencial del expediente laboral la ficha del trabajador, cargo parametrizado, jornada, zona de marcacion, actas de entrega de dotacion o equipos, roles de pago, novedades aprobadas y demas documentos generados desde el sistema."
+      ]
+    }
+  ]
+}

@@ -4,12 +4,12 @@
   "planCode": "CRN26",
   "status": "completed_local",
   "phaseCompleted": "CRN26-08",
-  "currentPhase": "CRN26-08-cierre-qa-local-novedades-indice-unico",
-  "updatedAt": "2026-06-24T23:49:14.2649026-05:00",
-  "summary": "CRN26 cerrado localmente y ampliado con cierre DOC26 y cierre de indice unico para tipos de novedad: acta de entrega de dotacion/equipos generada desde backend y PWA, valores legales separados de cuentas contables de nomina, tipos de novedad deduplicados por codigo normalizado, novedades consumidas dinamicamente, calculos asignados a lote obligatorio, reportes con lote y monorepo gobernado como un solo sistema mediante contrato raiz.",
+  "currentPhase": "CRN26-08-cierre-qa-local-contratos-plantillas",
+  "updatedAt": "2026-06-25T00:15:25.1098335-05:00",
+  "summary": "CRN26 cerrado localmente y ampliado con cierres anti-brecha: acta de entrega de dotacion/equipos generada desde backend y PWA, valores legales separados de cuentas contables de nomina, tipos de novedad deduplicados por codigo normalizado, novedades consumidas dinamicamente, calculos asignados a lote obligatorio, reportes con lote, monorepo gobernado como un solo sistema mediante contrato raiz y contratos laborales generados desde plantillas versionadas no hardcodeadas.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: cubrir brechas, evitar falsas promesas comerciales, asignar cada calculo de nomina a un lote y eliminar separaciones que generen espejismos frontend/backend.",
-  "previousAuditLockHash": "A7530DFECC74AC4B159FD1CB3352F3D0FC4201798F37AC52312DF842C56D1E68",
+  "approvalSource": "Solicitud del usuario: cubrir brechas, evitar falsas promesas comerciales, asignar cada calculo de nomina a un lote, eliminar separaciones que generen espejismos frontend/backend, generar contrato de prueba para mercaderistas y ubicar plantillas fuera de codigo hardcodeado.",
+  "previousAuditLockHash": "7B604986D264C5928E892E8E09180247DA9517B9EE1D5C204CE2FE4C3714F230",
   "filesModified": [
     "package.json",
     "README.md",
@@ -41,12 +41,17 @@
     "backend/src/services/payrollNoveltyService.js",
     "backend/src/services/payrollReportService.js",
     "backend/src/services/templateGenerator.js",
+    "backend/src/services/templateGenerator.test.js",
+    "backend/src/templates/legal/contracts/contrato_indefinido_general.json",
+    "backend/src/templates/legal/contracts/contrato_indefinido_mercaderista_prueba.json",
     "frontend-web/src/App.jsx",
     "frontend-web/src/components/Layout/Layout.jsx",
     "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
     "frontend-web/src/pages/Documentos/ActasEntregaDotacion.jsx",
     "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
     "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
+    "docs2/plantillas-legales/contratos/README.md",
+    "docs2/plantillas-legales/contratos/contrato_indefinido_mercaderista_prueba.md",
     "docs2/contabilidad-reportes-nomina-2026/REPORTE_CRN26_08_CIERRE_QA.md"
   ],
   "validationChecks": [
@@ -59,6 +64,21 @@
       "gate": "DOC26-ACTA-DOTACION",
       "status": "PASS",
       "detail": "Migracion 20260624231500_doc26_equipment_delivery_acts aplicada; backend expone POST /api/documentos/acta-entrega-dotacion; PWA expone Documentos > Entrega de dotacion."
+    },
+    {
+      "gate": "DOC26-CONTRATOS-PLANTILLAS",
+      "status": "PASS",
+      "detail": "Backend expone GET /api/documentos/contrato/plantillas, carga plantillas JSON desde backend/src/templates/legal/contracts, elimina PDF placeholder y genera contratos completos con metadata auditable."
+    },
+    {
+      "gate": "DOC26-CONTRATO-PRUEBA-MERCADERISTA",
+      "status": "PASS",
+      "detail": "Plantilla contrato_indefinido_mercaderista_prueba version 2026.06 cubre periodo de prueba 90 dias, rutas/evidencia, dotacion/equipos, derechos irrenunciables y estado SUT/MDT pendiente."
+    },
+    {
+      "gate": "DOC26-CONTRATO-TESTS",
+      "status": "PASS",
+      "detail": "npm --workspace=backend test -- templateGenerator.test.js --runInBand: 1 suite, 5 tests."
     },
     {
       "gate": "CRN26-NOVEDADES-INDICE-UNICO",
@@ -83,7 +103,7 @@
     {
       "gate": "CRN26-BACKEND-TESTS",
       "status": "PASS",
-      "detail": "npm run test:backend desde raiz: 29 suites, 127 tests."
+      "detail": "npm run test:backend desde raiz: 30 suites, 132 tests."
     },
     {
       "gate": "CRN26-FRONTEND-BUILD",
@@ -94,6 +114,11 @@
       "gate": "CRN26-MOBILE-CHECK",
       "status": "PASS",
       "detail": "npm run check:mobile desde raiz valido configuracion, identificadores, URLs y assets de tienda."
+    },
+    {
+      "gate": "DOC26-BROWSER-SMOKE",
+      "status": "BLOCKED_TOOLING",
+      "detail": "Smoke visual con Browser in-app intentado; la herramienta node_repl devolvio sandboxCwd must use the file URI scheme. No bloqueo funcional detectado por gates automatizados."
     },
     {
       "gate": "CRN26-DB-BACKFILL-LOTES",
@@ -143,9 +168,11 @@
     "Las cuentas contables reales deben validarse con contador y plan de cuentas del tenant antes de produccion.",
     "El formato importable a ERP externo queda sujeto al cliente y no forma parte del cierre local CRN26.",
     "La generacion PDF requiere almacenamiento S3/compatible configurado para ambientes productivos.",
+    "Las plantillas de contrato son preliminares y requieren revision laboral ecuatoriana antes de uso productivo o firma masiva.",
+    "El registro SUT/MDT sigue siendo gestion externa hasta integrar credenciales oficiales o confirmacion documental.",
     "Smoke visual con usuario real queda recomendado antes de release productivo; intento MCP Browser/Node REPL quedo bloqueado por sandboxCwd.",
     "El contrato raiz reduce espejismos frontend/backend, pero debe ejecutarse en CI para bloquear merges."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "7B604986D264C5928E892E8E09180247DA9517B9EE1D5C204CE2FE4C3714F230"
+  "signature": "5B18C20E794B3D79FC5DA03FE77AA6BAC959A5D3C61720614A188CC42777F2AA"
 }

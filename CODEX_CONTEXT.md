@@ -32,6 +32,8 @@ La pantalla de parametrizacion tambien se ajusto para evitar la percepcion de do
 
 Seguimiento 2026-06-24 23:50: `Tipo de novedad` quedo protegido contra duplicados. Se agrego la migracion `20260624233500_crn26_novelty_type_unique_index`, que normaliza codigos, cierra duplicados activos por alcance y crea `novelty_type_configs_active_code_norm_idx` para impedir dos novedades activas vigentes con el mismo codigo normalizado. El backend deduplica el resumen por `LOWER(BTRIM(code))` prefiriendo el override del tenant sobre defaults globales; la PWA tambien aplica `dedupeNoveltyRecords` como defensa visual.
 
+Seguimiento 2026-06-25 00: contrato de prueba para mercaderistas se cerro sin hardcodear clausulas en JS. Las plantillas legales revisables viven en `docs2/plantillas-legales/contratos` y las plantillas ejecutables versionadas en `backend/src/templates/legal/contracts`. El backend expone `GET /api/documentos/contrato/plantillas`, genera PDF completo desde JSON con `POST /api/documentos/contrato`, guarda `documentos_legales` con metadata de plantilla, periodo de prueba, fuente runtime, estado SUT/MDT pendiente y revision legal requerida. La PWA `Documentos > Contratos` consume el catalogo real de plantillas, permite seleccionar empleado y genera el PDF contra backend; se elimino el placeholder de PDF que remitia a HTML original.
+
 ### Fases CRN26
 
 | Fase | Prioridad | Estado | Resumen |

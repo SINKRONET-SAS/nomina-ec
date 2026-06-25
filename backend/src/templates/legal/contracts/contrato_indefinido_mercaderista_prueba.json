@@ -1,0 +1,115 @@
+{
+  "templateKey": "contrato_indefinido_mercaderista_prueba",
+  "version": "2026.06",
+  "sortOrder": 10,
+  "displayName": "Contrato indefinido mercaderista con periodo de prueba",
+  "description": "Contrato individual a tiempo indefinido para mercaderista/promotor de punto de venta con clausula de periodo de prueba, rutas y evidencia operativa.",
+  "documentTitle": "CONTRATO INDIVIDUAL DE TRABAJO A TIEMPO INDEFINIDO CON PERIODO DE PRUEBA PARA MERCADERISTA",
+  "contractType": "indefinido",
+  "appliesTo": ["mercaderista", "promotor", "punto de venta", "rutas"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": true,
+    "days": 90,
+    "basis": "Periodo de prueba laboral pactado por escrito; validar texto vigente del Codigo del Trabajo antes de produccion."
+  },
+  "legalBasis": [
+    {
+      "label": "Constitucion de la Republica del Ecuador, Art. 326",
+      "note": "los derechos laborales son irrenunciables e intangibles; cualquier estipulacion en contrario se considera no escrita."
+    },
+    {
+      "label": "Codigo del Trabajo de Ecuador, periodo de prueba",
+      "note": "el periodo de prueba debe constar por escrito, no convierte la relacion en contrato temporal y se parametriza aqui con maximo {{contract.probationDays}} dias."
+    },
+    {
+      "label": "Relacion laboral directa",
+      "note": "la actividad de mercaderista/promotor se documenta como relacion laboral dependiente cuando existe subordinacion, jornada, remuneracion y control operativo."
+    },
+    {
+      "label": "Parametros legales Nomina-Ec {{legal.year}}",
+      "note": "SBU configurado USD {{legal.sbuAmount}}, aporte personal IESS {{legal.personalIessRate}} y aporte patronal IESS {{legal.employerIessRate}}."
+    }
+  ],
+  "notices": [
+    "Este contrato es una plantilla preliminar para revision laboral ecuatoriana. No debe usarse en produccion sin validacion profesional y registro externo cuando corresponda.",
+    "Registro SUT/MDT: {{contract.sutRegistrationStatus}}."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen a la celebracion del presente contrato, por una parte {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, a quien en adelante se denominara EL EMPLEADOR; y, por otra parte, {{employee.fullName}}, con cedula de ciudadania {{employee.idNumber}}, domiciliado en {{employee.address}}, a quien en adelante se denominara EL TRABAJADOR."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- NATURALEZA DEL CONTRATO Y PERIODO DE PRUEBA",
+      "paragraphs": [
+        "Las partes celebran un contrato individual de trabajo a tiempo indefinido. La relacion laboral inicia el {{employee.startDate}} y se sujeta a las causas y procedimientos de terminacion previstos en la normativa laboral aplicable.",
+        "Las partes pactan por escrito un periodo de prueba de hasta {{contract.probationDays}} dias, contado desde la fecha de inicio de labores y con fecha referencial de cierre {{contract.probationEndDate}}. Este periodo no transforma el contrato en temporal ni reduce derechos laborales, remuneracion, afiliacion, seguridad social, descansos, beneficios o protecciones irrenunciables."
+      ]
+    },
+    {
+      "title": "TERCERA.- CARGO, PERFIL Y FUNCIONES DE MERCADERISTA",
+      "paragraphs": [
+        "EL TRABAJADOR prestara servicios personales en el cargo de {{employee.position}}, asociado a la unidad {{employee.organizationUnit}}. Sus funciones principales comprenden exhibicion y reposicion de productos, verificacion de inventario visible, levantamiento de evidencias, reporte de novedades comerciales, control de material promocional, visita a puntos de venta asignados y cumplimiento de rutas autorizadas.",
+        "EL TRABAJADOR no podra comprometer comercialmente a EL EMPLEADOR fuera de las facultades expresamente asignadas. Cualquier actividad adicional debera estar documentada por escrito por el supervisor autorizado."
+      ]
+    },
+    {
+      "title": "CUARTA.- RUTAS, PUNTOS DE VENTA Y EVIDENCIA OPERATIVA",
+      "paragraphs": [
+        "Por la naturaleza del cargo, EL TRABAJADOR podra ejecutar sus labores en puntos de venta, tiendas, autoservicios, bodegas, oficinas, zonas comerciales o rutas asignadas por EL EMPLEADOR. La zona de marcacion registrada es {{employee.workZone}}.",
+        "Las rutas, visitas, llegadas, salidas, fotografias, geolocalizacion, formularios, novedades o evidencias registradas en la app o PWA se usaran para control operativo, asistencia, nomina, auditoria interna y cumplimiento laboral, respetando finalidad, proporcionalidad y politicas de datos personales.",
+        "Las visitas no programadas, incidencias de geocerca, ausencia de evidencia o cambios de ruta deberan registrarse como novedades operativas y ser revisadas por el supervisor o RRHH antes de impactar nomina."
+      ]
+    },
+    {
+      "title": "QUINTA.- JORNADA, DESCANSO Y HORAS SUPLEMENTARIAS",
+      "paragraphs": [
+        "La jornada aplicable es {{employee.workShift}}, respetando el limite semanal configurado de {{legal.weeklyMaxHours}} horas y los descansos que correspondan.",
+        "Las horas suplementarias, extraordinarias, trabajo en descanso o recargos solo procederan cuando exista autorizacion, registro verificable y calculo conforme a los parametros legales vigentes de Nomina-Ec. La ruta comercial no autoriza por si sola trabajo fuera de jornada."
+      ]
+    },
+    {
+      "title": "SEXTA.- REMUNERACION, IESS Y BENEFICIOS",
+      "paragraphs": [
+        "EL EMPLEADOR pagara a EL TRABAJADOR una remuneracion mensual de USD {{employee.salaryAmount}} ({{employee.salaryWords}}), sin que pueda ser inferior al SBU vigente configurado para {{legal.year}}.",
+        "EL TRABAJADOR tendra derecho a afiliacion y aportes al IESS cuando correspondan, decimo tercero, decimo cuarto, vacaciones, fondos de reserva una vez cumplido el supuesto legal y demas beneficios calculados por Nomina-Ec conforme a parametros vigentes."
+      ]
+    },
+    {
+      "title": "SEPTIMA.- DOTACION, EQUIPOS Y HERRAMIENTAS",
+      "paragraphs": [
+        "Cuando EL EMPLEADOR entregue uniformes, ropa de trabajo, credenciales, equipos de proteccion, telefonos, dispositivos, material POP, herramientas o cualquier bien para la ejecucion de labores, la entrega debera documentarse mediante acta de entrega de dotacion y equipos generada desde el sistema o documento externo equivalente.",
+        "EL TRABAJADOR se obliga a usar dichos bienes para fines laborales, cuidarlos razonablemente y devolver los bienes retornables cuando corresponda. Los descuentos por perdida o dano solo podran aplicarse conforme a normativa laboral, evidencia y procedimiento valido."
+      ]
+    },
+    {
+      "title": "OCTAVA.- OBLIGACIONES DEL TRABAJADOR",
+      "paragraphs": [
+        "EL TRABAJADOR se obliga a cumplir rutas y horarios autorizados, registrar asistencia y visitas con veracidad, reportar novedades, preservar confidencialidad comercial, cuidar productos y material asignado, observar normas de seguridad y mantener trato respetuoso con clientes, consumidores, companeros y personal de los puntos de venta.",
+        "La falsificacion de evidencias, manipulacion de ubicacion, registros inexactos o uso no autorizado de herramientas debera investigarse con debido proceso interno y evidencia trazable antes de cualquier decision laboral."
+      ]
+    },
+    {
+      "title": "NOVENA.- OBLIGACIONES DEL EMPLEADOR",
+      "paragraphs": [
+        "EL EMPLEADOR se obliga a pagar la remuneracion pactada, afiliar y aportar al IESS cuando corresponda, proporcionar instrucciones razonables, mantener parametros de nomina revisables, entregar herramientas necesarias para el cargo y respetar la dignidad, privacidad y derechos laborales de EL TRABAJADOR."
+      ]
+    },
+    {
+      "title": "DECIMA.- DERECHOS IRRENUNCIABLES",
+      "paragraphs": [
+        "Las partes reconocen que los derechos laborales son irrenunciables e intangibles. El periodo de prueba, las rutas, el uso de app, las metas comerciales o cualquier politica interna no podran disminuir derechos minimos, justificar trabajo no remunerado ni reemplazar obligaciones del empleador."
+      ]
+    },
+    {
+      "title": "DECIMA PRIMERA.- REGISTRO Y ANEXOS",
+      "paragraphs": [
+        "El presente documento debe ser revisado, firmado y registrado en los sistemas oficiales cuando corresponda. Nomina-Ec conserva la evidencia generada y mantiene el estado externo como {{contract.sutRegistrationStatus}} hasta que exista confirmacion documental.",
+        "Forman parte referencial del expediente laboral la ficha del trabajador, cargo parametrizado, jornada, zona de marcacion, rutas autorizadas, actas de entrega de dotacion o equipos, roles de pago, novedades aprobadas y demas documentos generados desde el sistema."
+      ]
+    }
+  ]
+}

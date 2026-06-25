@@ -49,8 +49,11 @@ const parametrizacion = read('frontend-web/src/pages/Configuracion/Parametrizaci
 const appWeb = read('frontend-web/src/App.jsx');
 const layoutWeb = read('frontend-web/src/components/Layout/Layout.jsx');
 const actasEntregaDotacion = read('frontend-web/src/pages/Documentos/ActasEntregaDotacion.jsx');
+const contratosGenerados = read('frontend-web/src/pages/Documentos/ContratosGenerados.jsx');
 const descargarReportes = read('frontend-web/src/pages/Nomina/DescargarReportes.jsx');
 const configurationApi = read('frontend-web/src/services/configurationApi.js');
+const templateGenerator = read('backend/src/services/templateGenerator.js');
+const merchandiserTrialTemplate = JSON.parse(read('backend/src/templates/legal/contracts/contrato_indefinido_mercaderista_prueba.json'));
 
 const frontendResources = unique(regexValues(parametrizacion, /resource:\s*'([^']+)'/g));
 for (const resource of frontendResources) {
@@ -122,6 +125,32 @@ assert(appWeb.includes('ActasEntregaDotacion'), 'La PWA debe registrar la ruta d
 assert(layoutWeb.includes('Entrega de dotacion'), 'La navegacion debe exponer entrega de dotacion.');
 assert(actasEntregaDotacion.includes('/documentos/acta-entrega-dotacion'), 'La pantalla debe consumir la ruta backend de acta de entrega.');
 assert(actasEntregaDotacion.includes('acta_entrega_dotacion'), 'La pantalla debe listar documentos del tipo acta_entrega_dotacion.');
+
+assert(!templateGenerator.includes('Ver documento HTML original'), 'El generador de contratos no debe emitir PDF placeholder.');
+assert(templateGenerator.includes('listContractTemplates'), 'Backend debe cargar catalogo de plantillas de contrato desde archivos.');
+assert(
+  exists('backend/src/templates/legal/contracts/contrato_indefinido_general.json'),
+  'Debe existir plantilla ejecutable de contrato indefinido general.'
+);
+assert(
+  exists('backend/src/templates/legal/contracts/contrato_indefinido_mercaderista_prueba.json'),
+  'Debe existir plantilla ejecutable de contrato de mercaderista con periodo de prueba.'
+);
+assert(
+  exists('docs2/plantillas-legales/contratos/README.md'),
+  'Debe existir carpeta documental para revision de plantillas legales de contratos.'
+);
+assert(
+  merchandiserTrialTemplate.probation?.enabled === true && Number(merchandiserTrialTemplate.probation?.days) === 90,
+  'La plantilla de mercaderista debe parametrizar periodo de prueba de 90 dias.'
+);
+assert(
+  JSON.stringify(merchandiserTrialTemplate).includes('rutas') && JSON.stringify(merchandiserTrialTemplate).includes('dotacion'),
+  'La plantilla de mercaderista debe cubrir rutas/evidencia y dotacion/equipos.'
+);
+assert(app.includes("'/api/documentos/contrato/plantillas'"), 'Backend debe exponer catalogo de plantillas de contrato.');
+assert(contratosGenerados.includes('/documentos/contrato/plantillas'), 'La PWA debe consumir plantillas de contrato desde backend.');
+assert(contratosGenerados.includes('/documentos/contrato'), 'La PWA debe generar contratos contra backend real.');
 
 if (issues.length > 0) {
   console.error('[CONTRACTS] Fallaron contratos de sistema unico:');
