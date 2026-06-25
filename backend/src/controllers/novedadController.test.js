@@ -8,7 +8,7 @@ jest.mock('../services/auditService', () => ({
 
 const db = require('../config/database');
 const { recordAudit } = require('../services/auditService');
-const { resolverPeriodo } = require('./novedadController');
+const { crear, resolverPeriodo } = require('./novedadController');
 
 function createResponse() {
   return {
@@ -82,5 +82,41 @@ describe('novedadController resolverPeriodo', () => {
     expect(res.statusCode).toBe(422);
     expect(res.body.error).toBe('MOTIVO_RECHAZO_REQUERIDO');
     expect(db.query).not.toHaveBeenCalled();
+  });
+});
+
+describe('novedadController crear', () => {
+  beforeEach(() => {
+    db.query.mockReset();
+    recordAudit.mockReset();
+  });
+
+  test('rechaza novedades de empleados que no pertenecen al tenant actual', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-tenant',
+      body: {
+        empleadoId: 'emp-otro-tenant',
+        fecha: '2026-06-01',
+        tipoNovedad: 'hora_extra_50',
+        minutos: 60,
+      },
+    };
+    const res = createResponse();
+
+    await crear(req, res);
+
+    expect(res.statusCode).toBe(404);
+    expect(res.body).toMatchObject({
+      error: 'EMPLEADO_NO_ENCONTRADO',
+      correlationId: 'corr-tenant',
+    });
+    expect(db.query).toHaveBeenCalledTimes(1);
+    expect(db.query).toHaveBeenCalledWith(
+      expect.stringContaining('tenant_id = $2'),
+      ['emp-otro-tenant', 'tenant-1']
+    );
   });
 });

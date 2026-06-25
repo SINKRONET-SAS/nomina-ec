@@ -203,7 +203,11 @@ async function login(req, res, next) {
 
 async function register(req, res, next) {
   try {
-    const { tenantId, email, password, rol, nombres, apellidos } = req.body;
+    const { email, password, rol, nombres, apellidos } = req.body;
+    const requestedTenantId = String(req.body?.tenantId || '').trim();
+    const tenantId = req.usuario?.rol === 'superadmin'
+      ? requestedTenantId
+      : req.usuario?.tenantId;
 
     if (!tenantId || !email || !password || !rol) {
       return res.status(400).json({

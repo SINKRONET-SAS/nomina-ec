@@ -382,10 +382,11 @@ async function generarNovedadTardia(empleadoId, tenantId, correlationId, userId)
     SELECT timestamp
     FROM marcaciones
     WHERE empleado_id = $1
+      AND tenant_id = $2
       AND tipo_marcacion = 'inicio_jornada'
     ORDER BY timestamp DESC
     LIMIT 1
-  `, [empleadoId]);
+  `, [empleadoId, tenantId]);
 
   if (marcacion.rows.length === 0) {
     console.error('[NOVEDAD] No existe marcacion reciente para evaluar atraso', {
@@ -426,4 +427,10 @@ async function generarNovedadTardia(empleadoId, tenantId, correlationId, userId)
   }
 }
 
-module.exports = { validarMarcacion, calcularDistanciaHaversine, resolveWorkZoneForEmployee, validateFotoBase64 };
+module.exports = {
+  validarMarcacion,
+  calcularDistanciaHaversine,
+  generarNovedadTardia,
+  resolveWorkZoneForEmployee,
+  validateFotoBase64,
+};

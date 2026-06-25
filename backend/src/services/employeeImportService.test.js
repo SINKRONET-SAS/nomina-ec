@@ -75,6 +75,20 @@ describe('employeeImportService', () => {
     expect(preview.rows[0].errors).toContain('Cedula ya registrada en el sistema');
   });
 
+  test('previewEmployeeImport filtra cedulas existentes por tenant cuando recibe tenantId', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ cedula: '1710034065' }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    await previewEmployeeImport({ rawText: RAW_IMPORT }, 'tenant-1');
+
+    expect(db.query).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('WHERE tenant_id = $1'),
+      ['tenant-1', ['1710034065']]
+    );
+  });
+
   test('commitEmployeeImport inserta lote y empleados en transaccion', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [] })

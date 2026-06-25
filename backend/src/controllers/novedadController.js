@@ -69,6 +69,18 @@ async function crear(req, res) {
     if (!empleadoId || !fecha || !tipoNovedad) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
     }
+
+    const empleado = await db.query(
+      'SELECT id FROM empleados WHERE id = $1 AND tenant_id = $2 AND activo = true',
+      [empleadoId, tenantId]
+    );
+    if (empleado.rows.length === 0) {
+      return res.status(404).json({
+        error: 'EMPLEADO_NO_ENCONTRADO',
+        message: 'Empleado no encontrado para el tenant actual.',
+        correlationId: req.correlationId,
+      });
+    }
     
     const normalizedTipo = normalizeNoveltyCode(tipoNovedad);
     const period = await ensurePayrollPeriodForDate({ tenantId, userId: usuarioId, fecha });
