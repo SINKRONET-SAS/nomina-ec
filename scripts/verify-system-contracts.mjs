@@ -59,6 +59,8 @@ const monthlyPeriodService = read('backend/src/services/monthlyPeriodService.js'
 const payrollAccountingController = read('backend/src/controllers/payrollAccountingController.js');
 const configurationApi = read('frontend-web/src/services/configurationApi.js');
 const templateGenerator = read('backend/src/services/templateGenerator.js');
+const payrollRolePdfService = read('backend/src/services/payrollRolePdfService.js');
+const equipmentDeliveryActService = read('backend/src/services/equipmentDeliveryActService.js');
 const paymentController = read('backend/src/controllers/paymentController.js');
 const payphoneGatewayService = read('backend/src/services/payphoneGatewayService.js');
 const paymentReferenceService = read('backend/src/services/paymentReferenceService.js');
@@ -172,6 +174,7 @@ assert(actasEntregaDotacion.includes('acta_entrega_dotacion'), 'La pantalla debe
 
 assert(!templateGenerator.includes('Ver documento HTML original'), 'El generador de contratos no debe emitir PDF placeholder.');
 assert(templateGenerator.includes('listContractTemplates'), 'Backend debe cargar catalogo de plantillas de contrato desde archivos.');
+assert(templateGenerator.includes('legalRepresentativeId'), 'Contratos deben incluir identificacion del representante legal.');
 assert(
   exists('backend/src/templates/legal/contracts/contrato_indefinido_general.json'),
   'Debe existir plantilla ejecutable de contrato indefinido general.'
@@ -195,6 +198,10 @@ assert(
 assert(app.includes("'/api/documentos/contrato/plantillas'"), 'Backend debe exponer catalogo de plantillas de contrato.');
 assert(contratosGenerados.includes('/documentos/contrato/plantillas'), 'La PWA debe consumir plantillas de contrato desde backend.');
 assert(contratosGenerados.includes('/documentos/contrato'), 'La PWA debe generar contratos contra backend real.');
+assert(payrollRolePdfService.includes('Recepcion y conformidad'), 'Roles de pago deben incluir bloque de recepcion y conformidad.');
+assert(payrollRolePdfService.includes('Representante legal / delegado del empleador'), 'Roles de pago deben firmarse por representante/delegado del empleador.');
+assert(payrollRolePdfService.includes('tenant_configuracion'), 'Roles de pago deben leer configuracion del tenant para representante legal.');
+assert(equipmentDeliveryActService.includes('representante_legal_identificacion'), 'Actas de dotacion deben incluir identificacion del representante legal/delegado.');
 
 assert(payphoneGatewayService.includes('/api/button/Prepare'), 'PayPhone debe preparar checkout contra API real Prepare.');
 assert(payphoneGatewayService.includes('/api/button/V2/Confirm'), 'PayPhone debe confirmar pago contra API real Confirm.');

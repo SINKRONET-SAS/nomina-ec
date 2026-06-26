@@ -31,6 +31,7 @@ const tenant = {
   configuracion: {
     direccion: 'Quito',
     representanteLegal: 'Ana Representante',
+    representanteLegalIdentificacion: '1700000001',
     ciudad: 'Quito',
   },
 };
@@ -105,6 +106,7 @@ describe('templateGenerator', () => {
     expect(pdfmake.createPdf).toHaveBeenCalledTimes(1);
     const docDefinition = pdfmake.createPdf.mock.calls[0][0];
     expect(JSON.stringify(docDefinition)).toContain('CONTRATO INDIVIDUAL DE TRABAJO A TIEMPO INDEFINIDO CON PERIODO DE PRUEBA');
+    expect(JSON.stringify(docDefinition)).toContain('1700000001');
     expect(JSON.stringify(docDefinition)).not.toContain('Ver documento HTML original');
 
     expect(s3Upload).toHaveBeenCalledWith(

@@ -116,6 +116,13 @@ function employeeFullName(employee) {
   return `${employee.nombres || ''} ${employee.apellidos || ''}`.trim();
 }
 
+function employerSigner({ tenant, entregadoPor }) {
+  return {
+    name: cleanText(entregadoPor || tenant.representante_legal || tenant.razon_social, 'Representante del empleador'),
+    idNumber: cleanText(tenant.representante_legal_identificacion, 'no registrada'),
+  };
+}
+
 function buildItemsTable(items) {
   return [
     [
@@ -139,6 +146,7 @@ function buildItemsTable(items) {
 
 async function buildActPdf({ employee, tenant, items, fechaEntrega, observaciones, entregadoPor, correlationId }) {
   const employeeName = employeeFullName(employee);
+  const signer = employerSigner({ tenant, entregadoPor });
   const generatedAt = new Date().toISOString();
   const docDefinition = {
     pageSize: 'A4',
@@ -155,6 +163,8 @@ async function buildActPdf({ employee, tenant, items, fechaEntrega, observacione
               { text: tenant.razon_social || tenant.razonSocial || 'Empleador' },
               { text: `RUC: ${tenant.ruc || 'no registrado'}` },
               { text: `Direccion: ${tenant.direccion || 'no registrada'}` },
+              { text: `Representante legal: ${tenant.representante_legal || 'no registrado'}` },
+              { text: `ID representante: ${tenant.representante_legal_identificacion || 'no registrada'}` },
             ],
           },
           {
@@ -205,8 +215,9 @@ async function buildActPdf({ employee, tenant, items, fechaEntrega, observacione
             width: '*',
             stack: [
               { text: '\n\n____________________________', alignment: 'center' },
-              { text: entregadoPor || tenant.representante_legal || tenant.razon_social || 'Representante del empleador', alignment: 'center', bold: true },
-              { text: 'Entrega por el empleador', alignment: 'center' },
+              { text: signer.name, alignment: 'center', bold: true },
+              { text: 'Representante legal / delegado del empleador', alignment: 'center' },
+              { text: `Identificacion: ${signer.idNumber}`, alignment: 'center' },
             ],
           },
         ],
@@ -282,6 +293,10 @@ async function generateEquipmentDeliveryAct({
     ruc: employee.ruc,
     direccion: employee.configuracion?.direccion || employee.configuracion?.direccionMatriz || '',
     representante_legal: employee.configuracion?.representanteLegal || '',
+    representante_legal_identificacion: employee.configuracion?.representanteLegalIdentificacion
+      || employee.configuracion?.representante_legal_identificacion
+      || employee.configuracion?.legalRepresentativeId
+      || '',
   };
   const pdfBuffer = await buildActPdf({
     employee,
@@ -322,6 +337,8 @@ async function generateEquipmentDeliveryAct({
       storageKey: key,
       fechaEntrega: deliveryDate,
       entregadoPor: cleanDeliveredBy,
+      representanteLegal: tenant.representante_legal,
+      representanteLegalIdentificacion: tenant.representante_legal_identificacion,
       items: normalizedItems,
     };
 

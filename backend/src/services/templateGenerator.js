@@ -278,6 +278,13 @@ function buildContractContext({ employee, tenant, template, legalParameters, yea
       address: cleanText(tenant.direccion || tenantConfig.direccion || tenantConfig.direccionMatriz, 'no registrada'),
       city: cleanText(tenantConfig.ciudad || tenantConfig.canton || 'Quito'),
       legalRepresentative: cleanText(tenantConfig.representanteLegal || tenantConfig.representante_legal, 'representante autorizado'),
+      legalRepresentativeId: cleanText(
+        tenantConfig.representanteLegalIdentificacion
+          || tenantConfig.representante_legal_identificacion
+          || tenantConfig.legalRepresentativeId
+          || tenantConfig.cedulaRepresentanteLegal,
+        'no registrada'
+      ),
     },
     employee: {
       fullName: employeeName(employee),
@@ -348,6 +355,7 @@ function buildContractDocDefinition({ template, context }) {
             { text: `RUC: ${context.company.ruc}` },
             { text: `Direccion: ${context.company.address}` },
             { text: `Representante: ${context.company.legalRepresentative}` },
+            { text: `ID representante: ${context.company.legalRepresentativeId}` },
           ],
         },
         {
@@ -407,6 +415,7 @@ function buildContractDocDefinition({ template, context }) {
         stack: [
           { text: '\n\n____________________________', alignment: 'center' },
           { text: context.company.legalRepresentative, alignment: 'center', bold: true },
+          { text: `Identificacion: ${context.company.legalRepresentativeId}`, alignment: 'center' },
           { text: context.company.legalName, alignment: 'center' },
           { text: `RUC: ${context.company.ruc}`, alignment: 'center' },
         ],

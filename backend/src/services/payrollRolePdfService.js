@@ -20,12 +20,37 @@ function money(value) {
   return `$${toMoneyString(Number(value || 0))}`;
 }
 
+function cleanText(value, fallback = '') {
+  const text = String(value ?? '').trim().replace(/\s+/g, ' ');
+  return text || fallback;
+}
+
 function safeFilePart(value) {
   return String(value || 'sin_dato').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
 }
 
 function employeeName(row = {}) {
   return `${row.nombres || ''} ${row.apellidos || ''}`.trim() || 'Empleado';
+}
+
+function legalRepresentative(row = {}) {
+  const config = normalizeDetail(row.tenant_configuracion || row.configuracion);
+  return {
+    name: cleanText(
+      config.representanteLegal
+        || config.representante_legal
+        || config.legalRepresentative
+        || row.representante_legal,
+      'Representante legal/delegado autorizado'
+    ),
+    idNumber: cleanText(
+      config.representanteLegalIdentificacion
+        || config.representante_legal_identificacion
+        || config.legalRepresentativeId
+        || config.cedulaRepresentanteLegal,
+      'no registrada'
+    ),
+  };
 }
 
 function addAmountLine(lines, label, amount) {
@@ -36,6 +61,8 @@ function addAmountLine(lines, label, amount) {
 
 function buildPayrollRoleDocDefinition(row) {
   const detail = normalizeDetail(row.detalle_calculo);
+  const representative = legalRepresentative(row);
+  const generatedAt = new Date().toISOString();
   const ingresos = [];
   const deducciones = [];
   const provisiones = [];
@@ -126,8 +153,38 @@ function buildPayrollRoleDocDefinition(row) {
         layout: 'lightHorizontalLines',
         margin: [0, 6, 0, 12],
       },
+      { text: 'Recepcion y conformidad', style: 'section' },
       {
-        text: `Documento generado por Nomina-Ec. Fecha: ${new Date().toISOString()}.`,
+        text: 'El trabajador declara haber recibido el detalle de ingresos, deducciones, provisiones y neto del periodo indicado. La firma deja constancia de recepcion del rol de pago y no reemplaza obligaciones de pago, registro o conservacion de evidencias que correspondan al empleador.',
+        style: 'notice',
+        margin: [0, 0, 0, 18],
+      },
+      {
+        columns: [
+          {
+            width: '*',
+            stack: [
+              { text: '\n\n____________________________', alignment: 'center' },
+              { text: representative.name, alignment: 'center', bold: true },
+              { text: 'Representante legal / delegado del empleador', alignment: 'center' },
+              { text: `Identificacion: ${representative.idNumber}`, alignment: 'center' },
+            ],
+          },
+          {
+            width: '*',
+            stack: [
+              { text: '\n\n____________________________', alignment: 'center' },
+              { text: employeeName(row), alignment: 'center', bold: true },
+              { text: 'Trabajador', alignment: 'center' },
+              { text: `C.C.: ${row.cedula || 'no registrada'}`, alignment: 'center' },
+            ],
+          },
+        ],
+        columnGap: 26,
+        margin: [0, 0, 0, 16],
+      },
+      {
+        text: `Plantilla rol_pago_nomina_ec v2026.06. Documento generado por Nomina-Ec. Fecha: ${generatedAt}.`,
         style: 'audit',
       },
     ],
@@ -136,6 +193,7 @@ function buildPayrollRoleDocDefinition(row) {
       subtitle: { fontSize: 11, bold: true, alignment: 'center', color: '#0f766e', margin: [0, 0, 0, 4] },
       section: { fontSize: 10, bold: true, color: '#0f766e', margin: [0, 8, 0, 4] },
       boxTitle: { fontSize: 9, bold: true, color: '#0f766e', margin: [0, 0, 0, 3] },
+      notice: { fontSize: 8, color: '#475569', italics: true },
       audit: { fontSize: 8, color: '#64748b' },
     },
     defaultStyle: { fontSize: 9, lineHeight: 1.25 },
@@ -158,7 +216,8 @@ async function generatePayrollRolePdf({ tenantId, payrollId, userId = null } = {
       COALESCE(jp.name, e.cargo) AS cargo,
       e.departamento,
       t.razon_social,
-      t.ruc
+      t.ruc,
+      t.configuracion AS tenant_configuracion
     FROM nominas n
     JOIN empleados e ON e.id = n.empleado_id AND e.tenant_id = n.tenant_id
     JOIN tenants t ON t.id = n.tenant_id

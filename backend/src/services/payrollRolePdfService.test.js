@@ -56,6 +56,10 @@ describe('payrollRolePdfService', () => {
           departamento: 'OPERACIONES',
           razon_social: 'Empresa Demo',
           ruc: '1799999999001',
+          tenant_configuracion: {
+            representanteLegal: 'Ana Representante',
+            representanteLegalIdentificacion: '1700000001',
+          },
         }],
       })
       .mockResolvedValueOnce({ rows: [] });
@@ -94,10 +98,17 @@ describe('payrollRolePdfService', () => {
       total_deducciones: 58.12,
       neto_recibir: 556.88,
       detalle_calculo: { costoEmpleador: 710 },
+      tenant_configuracion: {
+        representanteLegal: 'Ana Representante',
+        representanteLegalIdentificacion: '1700000001',
+      },
     });
 
     expect(JSON.stringify(doc)).toContain('ROL DE PAGO');
     expect(JSON.stringify(doc)).toContain('Neto a recibir');
     expect(JSON.stringify(doc)).toContain('$556.88');
+    expect(JSON.stringify(doc)).toContain('Recepcion y conformidad');
+    expect(JSON.stringify(doc)).toContain('Ana Representante');
+    expect(JSON.stringify(doc)).toContain('Representante legal / delegado del empleador');
   });
 });

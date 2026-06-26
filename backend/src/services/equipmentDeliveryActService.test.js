@@ -26,6 +26,7 @@ jest.mock('./auditService', () => ({
   recordAudit: jest.fn(async () => {}),
 }));
 
+const pdfmake = require('pdfmake/build/pdfmake');
 const db = require('../config/database');
 const { s3Upload } = require('../config/s3');
 const { recordAudit } = require('./auditService');
@@ -62,7 +63,11 @@ describe('equipmentDeliveryActService', () => {
         cargo: 'Analista',
         razon_social: 'Demo S.A.',
         ruc: '1790012345001',
-        configuracion: { direccion: 'Quito' },
+        configuracion: {
+          direccion: 'Quito',
+          representanteLegal: 'Ana Representante',
+          representanteLegalIdentificacion: '1700000001',
+        },
       }],
     });
     mockClient.query
@@ -85,6 +90,10 @@ describe('equipmentDeliveryActService', () => {
       expect.stringContaining('acta_entrega_dotacion_'),
       'application/pdf',
     );
+    const docDefinition = pdfmake.createPdf.mock.calls[0][0];
+    expect(JSON.stringify(docDefinition)).toContain('Ana Representante');
+    expect(JSON.stringify(docDefinition)).toContain('1700000001');
+    expect(JSON.stringify(docDefinition)).toContain('Representante legal / delegado del empleador');
     expect(mockClient.query.mock.calls[0][0]).toContain('INSERT INTO acta_entrega_equipos');
     expect(mockClient.query.mock.calls[1][0]).toContain('INSERT INTO documentos_legales');
     expect(mockClient.query.mock.calls[1][0]).toContain('acta_entrega_dotacion');
