@@ -3,6 +3,7 @@ jest.mock('../config/database', () => ({
 }));
 
 const db = require('../config/database');
+const AppError = require('../utils/AppError');
 const {
   bankFileDescriptor,
   generarArchivoBanco,
@@ -122,6 +123,26 @@ describe('bancoAebGenerator', () => {
 
   test('filtra nominas cerradas y pagadas para archivo bancario', () => {
     expect(generarArchivoBanco.toString()).toContain("n.estado IN ('cerrada', 'pagada')");
+  });
+
+  test('reporta 422 cuando no hay nominas cerradas o pagadas con cuenta bancaria', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: 'tenant-1' }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    let error;
+    try {
+      await generarArchivoBanco('tenant-1', 2026, 6, 'PICHINCHA', { userId: 'user-1' });
+    } catch (err) {
+      error = err;
+    }
+
+    expect(error).toBeInstanceOf(AppError);
+    expect(error).toMatchObject({
+      code: 'BANCO_SIN_NOMINAS_CERRADAS_CON_CUENTA',
+      statusCode: 422,
+    });
   });
 
   test('valida conteo de registros bancarios', () => {

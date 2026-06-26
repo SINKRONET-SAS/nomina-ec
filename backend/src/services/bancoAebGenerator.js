@@ -9,13 +9,18 @@ const bankProfiles = require('../config/bank-file-profiles.json');
 const { roundMoney, toMoneyString } = require('../utils/money');
 const { recordAudit } = require('./auditService');
 const { decryptBankAccount } = require('./bankAccountCrypto');
+const AppError = require('../utils/AppError');
 
 async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', context = {}) {
   const profile = await getBankProfileForTenant(tenantId, banco);
   const tenantResult = await db.query('SELECT * FROM tenants WHERE id = $1', [tenantId]);
 
   if (tenantResult.rows.length === 0) {
-    throw new Error('Tenant no encontrado');
+    throw new AppError('Tenant no encontrado', {
+      code: 'TENANT_NO_ENCONTRADO',
+      statusCode: 404,
+      userId: context.userId || null,
+    });
   }
 
   const nominasResult = await db.query(`
@@ -32,7 +37,15 @@ async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', con
   `, [tenantId, anio, mes]);
 
   if (nominasResult.rows.length === 0) {
-    throw new Error('No hay nominas cerradas o pagadas con cuenta bancaria para el periodo');
+    throw new AppError('No hay nominas cerradas o pagadas con cuenta bancaria para el periodo', {
+      code: 'BANCO_SIN_NOMINAS_CERRADAS_CON_CUENTA',
+      statusCode: 422,
+      userId: context.userId || null,
+      details: {
+        anio: Number(anio),
+        mes: Number(mes),
+      },
+    });
   }
 
   const rows = [];
