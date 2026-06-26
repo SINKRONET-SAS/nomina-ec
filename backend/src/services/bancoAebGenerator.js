@@ -139,6 +139,77 @@ async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', con
   };
 }
 
+async function precheckArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA') {
+  const checks = [];
+  const tenantResult = await db.query('SELECT id FROM tenants WHERE id = $1', [tenantId]);
+  checks.push({
+    code: 'tenant_activo',
+    label: 'Empresa activa',
+    passed: tenantResult.rows.length > 0,
+  });
+
+  let profile = null;
+  let profileError = '';
+  try {
+    profile = await getBankProfileForTenant(tenantId, banco);
+  } catch (err) {
+    profileError = err.message;
+  }
+  checks.push({
+    code: 'perfil_bancario',
+    label: 'Perfil bancario configurado',
+    passed: Boolean(profile),
+    detail: profile ? `${profile.profileKey} (${profile.source})` : profileError,
+  });
+
+  const summaryResult = await db.query(`
+    SELECT
+      COUNT(*) FILTER (WHERE n.estado IN ('cerrada', 'pagada'))::int AS total_cerradas,
+      COUNT(*) FILTER (
+        WHERE n.estado IN ('cerrada', 'pagada')
+          AND e.cuenta_bancaria_cifrada IS NOT NULL
+      )::int AS total_con_cuenta
+    FROM nominas n
+    JOIN empleados e ON n.empleado_id = e.id
+    WHERE n.tenant_id = $1
+      AND n.anio = $2
+      AND n.mes = $3
+  `, [tenantId, anio, mes]);
+  const summary = summaryResult.rows[0] || {};
+  const totalCerradas = Number(summary.total_cerradas || 0);
+  const totalConCuenta = Number(summary.total_con_cuenta || 0);
+
+  checks.push({
+    code: 'nominas_cerradas',
+    label: 'Nominas cerradas o pagadas',
+    passed: totalCerradas > 0,
+    detail: `${totalCerradas} roles cerrados o pagados`,
+  });
+  checks.push({
+    code: 'cuentas_bancarias',
+    label: 'Cuentas bancarias de empleados',
+    passed: totalConCuenta > 0,
+    detail: `${totalConCuenta} pagos con cuenta bancaria`,
+  });
+
+  return {
+    ready: checks.every((check) => check.passed),
+    anio: Number(anio),
+    mes: Number(mes),
+    banco: normalizeBankKey(banco || 'PICHINCHA'),
+    totalNominasCerradas: totalCerradas,
+    totalPagosBancarios: totalConCuenta,
+    checks,
+    bankProfile: profile ? {
+      id: profile.id || null,
+      source: profile.source,
+      key: profile.profileKey,
+      bankCode: profile.bankCode,
+      layout: profile.layout,
+    } : null,
+  };
+}
+
 function bankFileDescriptor(profile, anio, mes) {
   const extension = profile.layout === 'pacifico_interbank_immediate' ? 'txt' : 'csv';
   return {
@@ -407,6 +478,7 @@ module.exports = {
   bankFileDescriptor,
   getBankProfile,
   getBankProfileForTenant,
+  precheckArchivoBanco,
   decryptBankAccount,
   validateBankRows,
 };

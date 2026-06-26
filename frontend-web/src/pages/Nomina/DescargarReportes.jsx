@@ -65,6 +65,7 @@ function DescargarReportes() {
   });
   const [cargando, setCargando] = useState('');
   const [rdepPrecheck, setRdepPrecheck] = useState(null);
+  const [bankPrecheck, setBankPrecheck] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -89,6 +90,31 @@ function DescargarReportes() {
     }
   };
 
+  const validarBanco = async () => {
+    setCargando('banco-precheck');
+    setMessage('');
+    setError('');
+    try {
+      const response = await authenticatedApi.post('/reportes/banco/precheck', { anio, mes });
+      const precheck = response.data.precheck;
+      setBankPrecheck(precheck);
+      if (!precheck.ready) {
+        const failed = precheck.checks.filter((check) => !check.passed);
+        setError(failed.map((check) => check.detail || check.label).join(' | ') || 'Archivo bancario requiere acciones antes de generarse.');
+      } else {
+        setMessage('Archivo bancario listo para generar.');
+      }
+      return precheck;
+    } catch (err) {
+      const nextError = err.response?.data?.message || err.response?.data?.error || 'No pudimos validar el archivo bancario.';
+      setError(nextError);
+      setBankPrecheck(null);
+      return null;
+    } finally {
+      setCargando('');
+    }
+  };
+
   const generarReporte = async (tipo) => {
     setCargando(tipo);
     setMessage('');
@@ -96,6 +122,13 @@ function DescargarReportes() {
     try {
       if (tipo === 'rdep') {
         const precheck = rdepPrecheck?.anio === anio && rdepPrecheck?.mes === mes ? rdepPrecheck : await validarRdep();
+        if (!precheck?.ready) {
+          setCargando('');
+          return;
+        }
+      }
+      if (tipo === 'banco') {
+        const precheck = bankPrecheck?.anio === anio && bankPrecheck?.mes === mes ? bankPrecheck : await validarBanco();
         if (!precheck?.ready) {
           setCargando('');
           return;
@@ -338,6 +371,20 @@ function DescargarReportes() {
             <div className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-700 lg:col-span-2">
               Verificacion tecnica: <span className="font-mono text-xs">{rdepPrecheck.xsd?.sha256}</span>
             </div>
+          </div>
+        )}
+
+        {bankPrecheck && (
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {bankPrecheck.checks.map((check) => (
+              <div className={`flex items-start gap-3 rounded-md px-4 py-3 ${check.passed ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900'}`} key={check.code}>
+                {check.passed ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />}
+                <div>
+                  <p className="text-sm font-semibold">{check.label}</p>
+                  {check.detail && <p className="mt-1 text-xs opacity-80">{check.detail}</p>}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>

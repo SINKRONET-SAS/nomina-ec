@@ -450,10 +450,21 @@ async function refreshToken(req, res, next) {
 
     return res.json({ success: true, token: newToken, usuario: user, user });
   } catch (err) {
-    if (err.name === 'TokenExpiredError') {
+    if (err.name === 'TokenExpiredError' || err.name === 'JsonWebTokenError') {
       return res.status(401).json({
-        error: 'TOKEN_EXPIRADO',
-        message: 'Token expirado.',
+        error: err.name === 'TokenExpiredError' ? 'TOKEN_EXPIRADO' : 'TOKEN_INVALIDO',
+        message: err.name === 'TokenExpiredError' ? 'Token expirado.' : 'Token invalido.',
+        correlationId: req.correlationId,
+      });
+    }
+    if (
+      err.code === 'ETIMEDOUT'
+      || err.code === 'ECONNRESET'
+      || err.message?.includes('Connection terminated due to connection timeout')
+    ) {
+      return res.status(503).json({
+        error: 'AUTH_REFRESH_DB_UNAVAILABLE',
+        message: 'No pudimos refrescar la sesion por un problema temporal de base de datos.',
         correlationId: req.correlationId,
       });
     }

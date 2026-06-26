@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { API_URL } from '../services/apiBase';
 
@@ -41,6 +41,7 @@ export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(readStoredUser);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [cargando, setCargando] = useState(true);
+  const refreshStarted = useRef(false);
 
   const logout = () => {
     setToken(null);
@@ -67,10 +68,19 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
+    if (refreshStarted.current) return;
+    refreshStarted.current = true;
+
     const storedToken = localStorage.getItem('token');
 
     if (!storedToken) {
       console.log('[AUTH] No existe token local para refrescar sesión.');
+      setCargando(false);
+      return;
+    }
+
+    if (window.location.pathname === '/login') {
+      logout();
       setCargando(false);
       return;
     }

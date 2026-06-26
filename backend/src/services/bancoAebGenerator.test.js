@@ -9,6 +9,7 @@ const {
   generarArchivoBanco,
   getBankProfile,
   getBankProfileForTenant,
+  precheckArchivoBanco,
   validateBankRows,
 } = require('./bancoAebGenerator');
 
@@ -143,6 +144,23 @@ describe('bancoAebGenerator', () => {
       code: 'BANCO_SIN_NOMINAS_CERRADAS_CON_CUENTA',
       statusCode: 422,
     });
+  });
+
+  test('precheck bancario bloquea generacion sin nominas bancarizables', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'tenant-1' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ total_cerradas: 0, total_con_cuenta: 0 }] });
+
+    const result = await precheckArchivoBanco('tenant-1', 2026, 6, 'PICHINCHA');
+
+    expect(result.ready).toBe(false);
+    expect(result.totalNominasCerradas).toBe(0);
+    expect(result.totalPagosBancarios).toBe(0);
+    expect(result.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'nominas_cerradas', passed: false }),
+      expect.objectContaining({ code: 'cuentas_bancarias', passed: false }),
+    ]));
   });
 
   test('valida conteo de registros bancarios', () => {

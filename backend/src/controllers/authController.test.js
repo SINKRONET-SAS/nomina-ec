@@ -12,9 +12,15 @@ jest.mock('bcryptjs', () => ({
   compare: jest.fn(),
 }));
 
+jest.mock('../config/jwt', () => ({
+  signJwt: jest.fn().mockReturnValue('token-test'),
+  verifyJwt: jest.fn(),
+}));
+
 const db = require('../config/database');
 const { sendEmailVerification } = require('../services/communicationService');
-const { register } = require('./authController');
+const { verifyJwt } = require('../config/jwt');
+const { refreshToken, register } = require('./authController');
 
 function createResponse() {
   return {
@@ -34,6 +40,7 @@ function createResponse() {
 describe('authController register', () => {
   beforeEach(() => {
     db.query.mockReset();
+    verifyJwt.mockReset();
     sendEmailVerification.mockClear();
   });
 
@@ -120,5 +127,55 @@ describe('authController register', () => {
       ['tenant-destino', 'admin@example.com']
     );
     expect(db.query.mock.calls[1][1][0]).toBe('tenant-destino');
+  });
+});
+
+describe('authController refreshToken', () => {
+  beforeEach(() => {
+    db.query.mockReset();
+    verifyJwt.mockReset();
+  });
+
+  test('responde 401 cuando el token es invalido', async () => {
+    const error = new Error('jwt malformed');
+    error.name = 'JsonWebTokenError';
+    verifyJwt.mockImplementation(() => {
+      throw error;
+    });
+    const req = {
+      body: { token: 'token-invalido' },
+      correlationId: 'corr-refresh-1',
+    };
+    const res = createResponse();
+    const next = jest.fn();
+
+    await refreshToken(req, res, next);
+
+    expect(res.statusCode).toBe(401);
+    expect(res.body).toMatchObject({
+      error: 'TOKEN_INVALIDO',
+      correlationId: 'corr-refresh-1',
+    });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  test('responde 503 cuando la base no esta disponible temporalmente', async () => {
+    verifyJwt.mockReturnValue({ userId: 'user-1' });
+    db.query.mockRejectedValueOnce(new Error('Connection terminated due to connection timeout'));
+    const req = {
+      body: { token: 'token-valido' },
+      correlationId: 'corr-refresh-2',
+    };
+    const res = createResponse();
+    const next = jest.fn();
+
+    await refreshToken(req, res, next);
+
+    expect(res.statusCode).toBe(503);
+    expect(res.body).toMatchObject({
+      error: 'AUTH_REFRESH_DB_UNAVAILABLE',
+      correlationId: 'corr-refresh-2',
+    });
+    expect(next).not.toHaveBeenCalled();
   });
 });

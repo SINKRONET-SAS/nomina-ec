@@ -3,10 +3,10 @@
 // ============================================================
 const { generarXML_RDEP, precheckRDEP } = require('../services/sriRdepGenerator');
 const { generarXML_SAE } = require('../services/iessSaeGenerator');
-const { generarArchivoBanco } = require('../services/bancoAebGenerator');
+const { generarArchivoBanco, precheckArchivoBanco } = require('../services/bancoAebGenerator');
 const { generarReporteNomina } = require('../services/payrollReportService');
 const db = require('../config/database');
-const { assertCapability } = require('../services/planCapabilityService');
+const { assertCapability, getTenantPlanCapabilities } = require('../services/planCapabilityService');
 
 async function generarRDEP(req, res) {
   try {
@@ -110,6 +110,45 @@ async function generarArchivoBancoCtrl(req, res) {
   }
 }
 
+async function validarArchivoBanco(req, res) {
+  try {
+    const { tenantId } = req;
+    const { anio, mes, banco } = req.body;
+
+    if (!anio || !mes) {
+      return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
+    }
+
+    const [capabilities, precheck] = await Promise.all([
+      getTenantPlanCapabilities(tenantId),
+      precheckArchivoBanco(tenantId, anio, mes, banco),
+    ]);
+    const planCheck = {
+      code: 'plan_archivos_bancarios',
+      label: 'Plan con archivos bancarios',
+      passed: Boolean(capabilities.allowed.bankFiles),
+      detail: capabilities.planNombre,
+    };
+
+    const result = {
+      ...precheck,
+      ready: precheck.ready && planCheck.passed,
+      checks: [planCheck, ...precheck.checks],
+    };
+
+    return res.json({ success: true, precheck: result, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[REPORTES] Error precheck Banco', {
+      code: err.code || 'BANCO_PRECHECK_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
+  }
+}
+
 async function reporteAsistencia(req, res) {
   try {
     const { anio, mes } = req.params;
@@ -198,6 +237,7 @@ module.exports = {
   validarRDEP,
   generarSAE,
   generarArchivoBanco: generarArchivoBancoCtrl,
+  validarArchivoBanco,
   reporteAsistencia,
   exportarNomina,
 };
