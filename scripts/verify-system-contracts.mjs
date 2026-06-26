@@ -202,6 +202,9 @@ assert(contratosGenerados.includes('/documentos/contrato'), 'La PWA debe generar
 assert(payrollRolePdfService.includes('Recepcion y conformidad'), 'Roles de pago deben incluir bloque de recepcion y conformidad.');
 assert(payrollRolePdfService.includes('Representante legal / delegado del empleador'), 'Roles de pago deben firmarse por representante/delegado del empleador.');
 assert(payrollRolePdfService.includes('tenant_configuracion'), 'Roles de pago deben leer configuracion del tenant para representante legal.');
+assert(payrollRolePdfService.includes('buildPayrollRoleTransposedDocDefinition'), 'Backend debe generar rol de pago consolidado transpuesto.');
+assert(app.includes("'/api/nomina/:anio/:mes/roles-pdf-transpuesto'"), 'Backend debe exponer descarga de rol transpuesto por periodo.');
+assert(rolesPagos.includes('roles-pdf-transpuesto'), 'PWA debe consumir descarga real del rol transpuesto por periodo.');
 assert(equipmentDeliveryActService.includes('representante_legal_identificacion'), 'Actas de dotacion deben incluir identificacion del representante legal/delegado.');
 
 assert(payphoneGatewayService.includes('/api/button/Prepare'), 'PayPhone debe preparar checkout contra API real Prepare.');

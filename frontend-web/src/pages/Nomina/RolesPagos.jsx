@@ -10,6 +10,7 @@ function RolesPagos() {
   const [anio, setAnio] = useState(initialPeriod.anio);
   const [mes, setMes] = useState(initialPeriod.mes);
   const [downloadingId, setDownloadingId] = useState('');
+  const [downloadingTransposed, setDownloadingTransposed] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -41,6 +42,28 @@ function RolesPagos() {
     }
   };
 
+  const descargarPDFTranspuesto = async () => {
+    setDownloadingTransposed(true);
+    setMessage('');
+    setError('');
+    try {
+      const response = await authenticatedApi.get(`/nomina/${anio}/${mes}/roles-pdf-transpuesto`);
+      const url = response.data?.url;
+      if (!url) {
+        throw new Error('El backend no entrego una URL de descarga.');
+      }
+      const fileName = response.data.fileName || `roles-pago-transpuesto-${anio}-${String(mes).padStart(2, '0')}.pdf`;
+      downloadUrl(url, fileName);
+      const total = response.data.totalEmpleados || nominas?.length || 0;
+      setMessage(`Rol transpuesto listo: ${fileName} (${total} empleados).`);
+    } catch (err) {
+      const apiMessage = err.response?.data?.message || err.response?.data?.error || err.message;
+      setError(apiMessage || 'No pudimos descargar el rol transpuesto del periodo.');
+    } finally {
+      setDownloadingTransposed(false);
+    }
+  };
+
   return (
     <div>
       <h1 className="mb-6 text-2xl font-bold">Roles de Pago</h1>
@@ -48,28 +71,40 @@ function RolesPagos() {
       {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
 
       <div className="mb-6 rounded-lg bg-white p-4 shadow">
-        <div className="flex space-x-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium">Mes</label>
-            <select
-              value={mes}
-              onChange={(event) => setMes(parseInt(event.target.value, 10))}
-              className="rounded-lg border px-3 py-2"
-            >
-              {Array.from({ length: 12 }, (_, index) => (
-                <option key={index + 1} value={index + 1}>{index + 1}</option>
-              ))}
-            </select>
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="flex flex-wrap gap-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium">Mes</label>
+              <select
+                value={mes}
+                onChange={(event) => setMes(parseInt(event.target.value, 10))}
+                className="rounded-lg border px-3 py-2"
+              >
+                {Array.from({ length: 12 }, (_, index) => (
+                  <option key={index + 1} value={index + 1}>{index + 1}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Anio</label>
+              <input
+                type="number"
+                value={anio}
+                onChange={(event) => setAnio(parseInt(event.target.value, 10))}
+                className="rounded-lg border px-3 py-2"
+              />
+            </div>
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Anio</label>
-            <input
-              type="number"
-              value={anio}
-              onChange={(event) => setAnio(parseInt(event.target.value, 10))}
-              className="rounded-lg border px-3 py-2"
-            />
-          </div>
+          <button
+            type="button"
+            onClick={descargarPDFTranspuesto}
+            disabled={downloadingTransposed || isLoading || !nominas || nominas.length === 0}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+            title="Descargar rol de pago transpuesto del periodo"
+          >
+            <Download size={16} />
+            <span>{downloadingTransposed ? 'Generando PDF' : 'PDF transpuesto'}</span>
+          </button>
         </div>
         <p className="mt-3 text-xs font-semibold text-slate-500">Periodo inicial calculado en {ECUADOR_TIME_ZONE}.</p>
       </div>

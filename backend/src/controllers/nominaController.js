@@ -6,7 +6,10 @@ const { calcularNominaMensual } = require('../services/calculoNominaService');
 const { recordAudit } = require('../services/auditService');
 const { assertTenantPayrollReady } = require('../services/operationalReadinessService');
 const { resolveStorageUrl } = require('../config/s3');
-const { generatePayrollRolePdf } = require('../services/payrollRolePdfService');
+const {
+  generatePayrollRolePdf,
+  generatePayrollRolePeriodTransposedPdf,
+} = require('../services/payrollRolePdfService');
 const {
   createNoveltyBatch,
   getPayrollPeriodState,
@@ -299,6 +302,44 @@ async function descargarRolPDF(req, res) {
   }
 }
 
+async function descargarRolesTranspuestosPDF(req, res) {
+  try {
+    const { anio, mes } = req.params;
+    const { tenantId } = req;
+    const generatedRole = await generatePayrollRolePeriodTransposedPdf({
+      tenantId,
+      anio,
+      mes,
+      userId: req.usuarioId || null,
+    });
+
+    res.json({
+      success: true,
+      url: resolveStorageUrl(generatedRole.url),
+      fileName: generatedRole.fileName,
+      contentType: generatedRole.contentType,
+      totalEmpleados: generatedRole.totalEmpleados,
+      generated: true,
+      storageContract: 'url_firmada_o_publica',
+      encoding: 'url',
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[NOMINA] Error descargando roles transpuestos PDF', {
+      code: err.code || 'NOMINA_ROLES_TRANSPUESTOS_PDF_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    res.status(err.statusCode || 500).json({
+      error: err.code || 'NOMINA_ROLES_TRANSPUESTOS_PDF_ERROR',
+      message: err.message || 'Error interno',
+      correlationId: req.correlationId,
+    });
+  }
+}
+
 async function cerrarMes(req, res) {
   try {
     const { tenantId, usuarioId } = req;
@@ -529,6 +570,7 @@ module.exports = {
   listarPorPeriodo,
   obtenerPorEmpleado,
   descargarRolPDF,
+  descargarRolesTranspuestosPDF,
   cerrarMes,
   reabrirMes,
 };

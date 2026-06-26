@@ -18,8 +18,46 @@ const db = require('../config/database');
 const { s3Upload } = require('../config/s3');
 const {
   buildPayrollRoleDocDefinition,
+  buildPayrollRoleTransposedDocDefinition,
   generatePayrollRolePdf,
+  generatePayrollRolePeriodTransposedPdf,
 } = require('./payrollRolePdfService');
+
+function payrollRow(overrides = {}) {
+  return {
+    id: 'payroll-1',
+    tenant_id: 'tenant-1',
+    empleado_id: 'employee-1',
+    anio: 2026,
+    mes: 6,
+    dias_trabajados: 30,
+    sueldo_bruto: 600,
+    horas_extras_50: 15,
+    horas_extras_100: 0,
+    total_ingresos: 615,
+    total_deducciones: 58.12,
+    neto_recibir: 556.88,
+    estado: 'borrador',
+    detalle_calculo: {
+      sueldoProporcional: 600,
+      aporteIess: 58.12,
+      netoRecibir: 556.88,
+      costoEmpleador: 710,
+    },
+    nombres: 'Carla',
+    apellidos: 'Almeida',
+    cedula: '1707300008',
+    cargo: 'Mercaderista',
+    departamento: 'OPERACIONES',
+    razon_social: 'Empresa Demo',
+    ruc: '1799999999001',
+    tenant_configuracion: {
+      representanteLegal: 'Ana Representante',
+      representanteLegalIdentificacion: '1700000001',
+    },
+    ...overrides,
+  };
+}
 
 describe('payrollRolePdfService', () => {
   beforeEach(() => {
@@ -29,38 +67,7 @@ describe('payrollRolePdfService', () => {
   test('genera rol PDF bajo demanda y persiste URL en nomina', async () => {
     db.query
       .mockResolvedValueOnce({
-        rows: [{
-          id: 'payroll-1',
-          tenant_id: 'tenant-1',
-          empleado_id: 'employee-1',
-          anio: 2026,
-          mes: 6,
-          dias_trabajados: 30,
-          sueldo_bruto: 600,
-          horas_extras_50: 15,
-          horas_extras_100: 0,
-          total_ingresos: 615,
-          total_deducciones: 58.12,
-          neto_recibir: 556.88,
-          estado: 'borrador',
-          detalle_calculo: {
-            sueldoProporcional: 600,
-            aporteIess: 58.12,
-            netoRecibir: 556.88,
-            costoEmpleador: 710,
-          },
-          nombres: 'Carla',
-          apellidos: 'Almeida',
-          cedula: '1707300008',
-          cargo: 'Mercaderista',
-          departamento: 'OPERACIONES',
-          razon_social: 'Empresa Demo',
-          ruc: '1799999999001',
-          tenant_configuracion: {
-            representanteLegal: 'Ana Representante',
-            representanteLegalIdentificacion: '1700000001',
-          },
-        }],
+        rows: [payrollRow()],
       })
       .mockResolvedValueOnce({ rows: [] });
 
@@ -110,5 +117,79 @@ describe('payrollRolePdfService', () => {
     expect(JSON.stringify(doc)).toContain('Recepcion y conformidad');
     expect(JSON.stringify(doc)).toContain('Ana Representante');
     expect(JSON.stringify(doc)).toContain('Representante legal / delegado del empleador');
+  });
+
+  test('documento transpuesto incluye conceptos en filas y empleados en columnas', () => {
+    const doc = buildPayrollRoleTransposedDocDefinition({
+      anio: 2026,
+      mes: 6,
+      rows: [
+        payrollRow(),
+        payrollRow({
+          id: 'payroll-2',
+          empleado_id: 'employee-2',
+          nombres: 'Marco',
+          apellidos: 'Benitez',
+          cedula: '1707300009',
+          total_ingresos: 700,
+          total_deducciones: 66.15,
+          neto_recibir: 633.85,
+          detalle_calculo: {
+            sueldoProporcional: 700,
+            aporteIess: 66.15,
+            netoRecibir: 633.85,
+            costoEmpleador: 828.05,
+          },
+        }),
+      ],
+    });
+
+    const serialized = JSON.stringify(doc);
+    expect(doc.pageOrientation).toBe('landscape');
+    expect(serialized).toContain('ROL DE PAGO CONSOLIDADO TRANSPUESTO');
+    expect(serialized).toContain('Sueldo proporcional');
+    expect(serialized).toContain('Almeida Carla');
+    expect(serialized).toContain('Benitez Marco');
+    expect(serialized).toContain('$1315.00');
+    expect(serialized).toContain('rol_pago_transpuesto_nomina_ec');
+  });
+
+  test('genera rol transpuesto por periodo y sube un unico PDF consolidado', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [
+        payrollRow(),
+        payrollRow({
+          id: 'payroll-2',
+          empleado_id: 'employee-2',
+          nombres: 'Marco',
+          apellidos: 'Benitez',
+          cedula: '1707300009',
+        }),
+      ],
+    });
+
+    const result = await generatePayrollRolePeriodTransposedPdf({
+      tenantId: 'tenant-1',
+      anio: 2026,
+      mes: 6,
+      userId: 'user-1',
+    });
+
+    expect(result).toMatchObject({
+      url: 'http://localhost:3000/api/storage/local/rol-demo',
+      fileName: 'roles_pago_transpuesto_2026_06.pdf',
+      contentType: 'application/pdf',
+      totalEmpleados: 2,
+    });
+    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('WHERE n.tenant_id = $1'), [
+      'tenant-1',
+      2026,
+      6,
+    ]);
+    expect(s3Upload).toHaveBeenCalledWith(
+      Buffer.from('pdf-rol-demo'),
+      expect.stringContaining('roles_pago_transpuesto_2026_06.pdf'),
+      'application/pdf'
+    );
   });
 });
