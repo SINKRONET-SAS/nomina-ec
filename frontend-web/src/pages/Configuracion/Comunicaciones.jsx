@@ -1,12 +1,32 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { CheckCircle2, History, Mail, MessageCircle, Send, Settings2, ShieldCheck, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, History, Mail, MessageCircle, Send, Settings2, ShieldCheck, XCircle } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 import { useAuth } from '../../context/AuthContext';
 
-function StatusBadge({ configured, enabled = true }) {
-  if (!enabled) {
+function StatusBadge({ configured, enabled = true, channel = null }) {
+  const state = channel || { configured, enabled };
+
+  if (state.productionBlocked || state.deliveryMode === 'blocked') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-800">
+        <AlertTriangle className="h-3.5 w-3.5" />
+        bloqueado
+      </span>
+    );
+  }
+
+  if (state.deliveryMode === 'development_log') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">
+        <AlertTriangle className="h-3.5 w-3.5" />
+        modo dev
+      </span>
+    );
+  }
+
+  if (!state.enabled || state.deliveryMode === 'disabled') {
     return (
       <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">
         <XCircle className="h-3.5 w-3.5" />
@@ -15,7 +35,7 @@ function StatusBadge({ configured, enabled = true }) {
     );
   }
 
-  return configured ? (
+  return state.configured ? (
     <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800">
       <CheckCircle2 className="h-3.5 w-3.5" />
       operativo
@@ -41,7 +61,7 @@ function ChannelCard({ icon: Icon, title, description, channel, children }) {
             <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
           </div>
         </div>
-        <StatusBadge configured={channel?.configured} enabled={channel?.enabled} />
+        <StatusBadge channel={channel} />
       </div>
       <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
         {children}
@@ -144,6 +164,18 @@ function Comunicaciones() {
         </div>
       )}
 
+      {email.deliveryMode === 'development_log' && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+          Modo desarrollo activo: las pruebas quedan auditadas como `dev_logged`, pero no salen por SMTP real.
+        </div>
+      )}
+
+      {(email.productionBlocked || email.deliveryMode === 'blocked') && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+          Correo bloqueado: configura SMTP real y remitente verificado antes de prometer envio de correos transaccionales.
+        </div>
+      )}
+
       <section className="grid gap-4 xl:grid-cols-2">
         <ChannelCard
           icon={Mail}
@@ -155,6 +187,8 @@ function Comunicaciones() {
           <Definition label="Puerto" value={email.port} />
           <Definition label="TLS directo" value={email.secure ? 'si' : 'no'} />
           <Definition label="Remitente" value={email.fromEmail} />
+          <Definition label="Modo entrega" value={email.deliveryMode} />
+          <Definition label="Proveedor real requerido" value={email.realProviderRequired ? 'si' : 'no'} />
         </ChannelCard>
 
         <ChannelCard
@@ -167,6 +201,8 @@ function Comunicaciones() {
           <Definition label="Phone number ID" value={whatsapp.phoneNumberId} />
           <Definition label="Proveedor" value={whatsapp.provider} />
           <Definition label="Estado" value={whatsapp.enabled ? 'habilitado' : 'deshabilitado'} />
+          <Definition label="Modo entrega" value={whatsapp.deliveryMode} />
+          <Definition label="Modo dev" value={whatsapp.devMode ? 'si' : 'no'} />
         </ChannelCard>
       </section>
 

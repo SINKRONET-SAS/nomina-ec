@@ -48,6 +48,7 @@ const schema = read('backend/prisma/schema.prisma');
 const parametrizacion = read('frontend-web/src/pages/Configuracion/Parametrizacion.jsx');
 const appWeb = read('frontend-web/src/App.jsx');
 const layoutWeb = read('frontend-web/src/components/Layout/Layout.jsx');
+const comunicacionesWeb = read('frontend-web/src/pages/Configuracion/Comunicaciones.jsx');
 const actasEntregaDotacion = read('frontend-web/src/pages/Documentos/ActasEntregaDotacion.jsx');
 const contratosGenerados = read('frontend-web/src/pages/Documentos/ContratosGenerados.jsx');
 const cerrarMes = read('frontend-web/src/pages/Nomina/CerrarMes.jsx');
@@ -243,6 +244,12 @@ assert(layoutWeb.includes('/dashboard/privacidad'), 'Navegacion debe exponer pri
 assert(privacyApi.includes('/privacidad/consentimientos'), 'PWA debe consumir API real de consentimientos.');
 assert(privacidadCuenta.includes('Retirar opcionales'), 'Pantalla LOPDP debe permitir retirar consentimientos opcionales.');
 assert(privacidadCuenta.includes('Exportar JSON'), 'Pantalla LOPDP debe permitir exportar datos personales.');
+
+assert(comunicacionesWeb.includes('deliveryMode'), 'PWA de comunicaciones debe mostrar modo de entrega real/dev/bloqueado.');
+assert(comunicacionesWeb.includes('productionBlocked'), 'PWA de comunicaciones debe mostrar bloqueo productivo sin proveedor real.');
+assert(comunicacionesWeb.includes('Enviar prueba'), 'PWA de comunicaciones debe conservar accion de prueba controlada.');
+assert(contratosGenerados.includes('signatureStatus'), 'Pantalla de contratos debe mostrar estado de firmas/representante.');
+assert(actasEntregaDotacion.includes('signatureStatus'), 'Pantalla de actas de dotacion debe mostrar estado de firmas/representante.');
 
 if (issues.length > 0) {
   console.error('[CONTRACTS] Fallaron contratos de sistema unico:');

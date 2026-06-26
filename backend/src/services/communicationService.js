@@ -129,13 +129,13 @@ function getWhatsAppConfig() {
   if (!graphApiVersion) missing.push('WHATSAPP_GRAPH_API_VERSION');
 
   const configured = enabled && missing.length === 0;
-  const devMode = !configured && developmentDeliveryAllowed();
+  const devMode = enabled && !configured && developmentDeliveryAllowed();
 
   return {
     enabled,
     configured,
     ready: configured || devMode,
-    deliveryMode: configured ? 'whatsapp_cloud_api' : (devMode ? DEVELOPMENT_DELIVERY_PROVIDER : 'blocked'),
+    deliveryMode: configured ? 'whatsapp_cloud_api' : (devMode ? DEVELOPMENT_DELIVERY_PROVIDER : (enabled ? 'blocked' : 'disabled')),
     devMode,
     accessToken,
     phoneNumberId,

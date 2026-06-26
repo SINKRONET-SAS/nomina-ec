@@ -33,6 +33,12 @@ function employeeLabel(employee) {
   return `${employee.nombres || ''} ${employee.apellidos || ''}`.trim() || employee.cedula || employee.id;
 }
 
+function signatureStatus(doc) {
+  return doc?.metadata?.representanteLegalIdentificacion && doc.metadata.representanteLegalIdentificacion !== 'no registrada'
+    ? 'Rep./trabajador'
+    : 'Rep. incompleto';
+}
+
 function ActasEntregaDotacion() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
@@ -159,6 +165,14 @@ function ActasEntregaDotacion() {
 
       {message && <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}
       {error && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
+
+      <section className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-950">
+        <p className="font-semibold">Control de firmas del acta</p>
+        <p className="mt-1">
+          El PDF incluye firma del trabajador y del representante legal/delegado del empleador. Si falta la identificacion
+          del representante en Datos de empresa, el acta queda visible como incompleta para correccion.
+        </p>
+      </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center gap-3">
@@ -348,20 +362,26 @@ function ActasEntregaDotacion() {
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase text-slate-500">Cedula</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase text-slate-500">Fecha</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase text-slate-500">Items</th>
+                <th className="px-5 py-3 text-left text-xs font-medium uppercase text-slate-500">Firmas</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase text-slate-500">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {documentsQuery.isLoading ? (
-                <tr><td className="px-5 py-4 text-center text-sm" colSpan="5">Cargando...</td></tr>
+                <tr><td className="px-5 py-4 text-center text-sm" colSpan="6">Cargando...</td></tr>
               ) : documentos.length === 0 ? (
-                <tr><td className="px-5 py-4 text-center text-sm" colSpan="5">No hay actas de entrega generadas</td></tr>
+                <tr><td className="px-5 py-4 text-center text-sm" colSpan="6">No hay actas de entrega generadas</td></tr>
               ) : documentos.map((doc) => (
                 <tr className="hover:bg-slate-50" key={doc.id}>
                   <td className="px-5 py-4 text-sm">{doc.nombres} {doc.apellidos}</td>
                   <td className="px-5 py-4 text-sm">{doc.cedula}</td>
                   <td className="px-5 py-4 text-sm">{formatDateEC(doc.created_at)}</td>
                   <td className="px-5 py-4 text-sm">{doc.metadata?.items?.length || '-'}</td>
+                  <td className="px-5 py-4">
+                    <span className={`rounded-full px-2 py-1 text-xs ${signatureStatus(doc) === 'Rep./trabajador' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                      {signatureStatus(doc)}
+                    </span>
+                  </td>
                   <td className="px-5 py-4">
                     <button
                       className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50"

@@ -9,6 +9,14 @@ function getErrorMessage(err, fallback) {
   return err.response?.data?.message || err.response?.data?.error || err.message || fallback;
 }
 
+function signatureStatus(doc) {
+  const company = doc?.metadata?.snapshot?.company || {};
+  const representativeId = company.legalRepresentativeId || '';
+  return representativeId && representativeId !== 'no registrada'
+    ? 'Rep./trabajador'
+    : 'Rep. incompleto';
+}
+
 function ContratosGenerados() {
   const queryClient = useQueryClient();
   const [descargandoId, setDescargandoId] = useState('');
@@ -101,6 +109,14 @@ function ContratosGenerados() {
         </p>
       </section>
 
+      <section className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-950">
+        <p className="font-semibold">Control de firmas del documento</p>
+        <p className="mt-1">
+          Las plantillas generan firma del representante legal/delegado y del trabajador. Si los datos del representante
+          no estan completos en Datos de empresa, el documento queda marcado como no registrado para correccion previa.
+        </p>
+      </section>
+
       <section className="mb-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm">
         <div className="mb-4 flex items-center gap-2">
           <FileText className="h-5 w-5 text-teal-700" />
@@ -176,15 +192,16 @@ function ContratosGenerados() {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Empleado</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Plantilla</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Firmas</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Fecha</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {isLoading ? (
-                <tr><td colSpan="4" className="px-6 py-4 text-center">Cargando...</td></tr>
+                <tr><td colSpan="5" className="px-6 py-4 text-center">Cargando...</td></tr>
               ) : !documentos || documentos.length === 0 ? (
-                <tr><td colSpan="4" className="px-6 py-4 text-center">No hay contratos generados</td></tr>
+                <tr><td colSpan="5" className="px-6 py-4 text-center">No hay contratos generados</td></tr>
               ) : (
                 documentos.map((doc) => (
                   <tr key={doc.id} className="hover:bg-gray-50">
@@ -192,6 +209,11 @@ function ContratosGenerados() {
                     <td className="px-6 py-4">
                       <span className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800">
                         {doc.metadata?.templateDisplayName || (doc.metadata?.templateKey || doc.tipo_documento || 'contrato').replace(/_/g, ' ')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`rounded-full px-2 py-1 text-xs ${signatureStatus(doc) === 'Rep./trabajador' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                        {signatureStatus(doc)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">{formatDateEC(doc.created_at)}</td>
