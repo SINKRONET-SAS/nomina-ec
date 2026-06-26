@@ -1,6 +1,49 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-AUDITORIA-NOMINA-EC-2026-V2
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-AUDITORIA-NOMINA-EC-2026-V2 |
+| Codigo | ANV2 |
+| Estado | ANV2-00 desplegada documentalmente; runtime pendiente de aprobacion por fase |
+| Fase actual | ANV2-00 baseline documental |
+| Alcance | emails reales, timezone America/Guayaquil y firmas legales en documentos laborales generados |
+| Fuente auditoria | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\AuditoriaNominaEC2026V2.jsx`, `src/pages/v_nominaec/nominaec_v2_scripts.jsx`, `src/pages/v_nominaec/nominaec_v2_hallazgos.jsx` |
+| Plan doc | `docs2/PLAN_HAIKY_AUDITORIA_NOMINA_EC_2026_V2.md` |
+| Matriz | `docs2/auditoria-nomina-ec-2026-v2/MATRIZ_ANV2_HALLAZGOS.md` |
+| Contrato | `docs2/auditoria-nomina-ec-2026-v2/CONTRATO_ANV2_CIERRE_DEFINITIVO.md` |
+| Runbook | `docs2/auditoria-nomina-ec-2026-v2/RUNBOOK_ANV2_QA_RELEASE.md` |
+| Prompts | `.github/prompts/AUDITORIA-NOMINA-EC-2026-V2-{00..06}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Resumen ANV2
+
+ANV2 abre una linea documental para responder a la auditoria V2. La auditoria corrige cuatro falsos positivos de V1 y prioriza tres hallazgos P0: EMAIL-C01 por ausencia de proveedor SMTP/API real en `.env.example`, TZ-C01 por defaults de periodo basados en `new Date()` sin zona Ecuador en PWA, y LEG-H01 por documentos laborales generados sin bloque de firma del representante legal.
+
+ANV2 conserva la decision ANV1 de no reintroducir `CODEX_CONTEXT.md` sensible en raiz; el contexto operativo vive en `.github/CODEX_CONTEXT.md`.
+
+### Fases ANV2
+
+| Fase | Prioridad | Estado | Resumen |
+|------|-----------|--------|---------|
+| ANV2-00 | P0 | completed_documental | Baseline, matriz, contrato, runbook, prompts, contexto y AuditLock sin runtime. |
+| ANV2-01 | P0 | pending_approval | Diagnostico runtime y evidencia de falsos positivos V1. |
+| ANV2-02 | P0 | pending_approval | Comunicaciones reales con proveedor, readiness, auditoria y bloqueo productivo sin credenciales. |
+| ANV2-03 | P0 | pending_approval | Timezone Ecuador para defaults de periodo en web/backend/mobile. |
+| ANV2-04 | P0 | pending_approval | Firmas legales y datos de representante legal en documentos laborales. |
+| ANV2-05 | P1 | pending_approval | Frontend operativo para estados de correo, periodo y documentos. |
+| ANV2-06 | P0 | pending_approval | QA, smokes, AuditLock y release gate. |
+
+### Reglas ANV2
+
+- No iniciar runtime sin aprobacion explicita del prompt de fase.
+- No prometer emails reales sin proveedor configurado y verificado.
+- No usar `new Date()` directo como default operativo de periodo en nomina/reportes.
+- No generar documentos laborales finales sin bloque de firmas y datos obligatorios del representante legal.
+- Cada fase requiere pruebas, evidencia, AuditLock firmado y commit `phase: ANV2-XX task: ...`.
+
 ## Open Haiky Plan - HAIKY-CONTABILIDAD-REPORTES-NOMINA-2026
 
 | Campo | Valor |

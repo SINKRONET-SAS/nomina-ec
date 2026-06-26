@@ -1,121 +1,68 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-AUDITORIA-NOMINA-EC-2026-V1",
-  "planCode": "ANV1",
-  "status": "completed_local",
-  "phaseCompleted": "ANV1-08",
-  "currentPhase": "ANV1-08-qa-release",
-  "updatedAt": "2026-06-25T07:28:35.1558470-05:00",
-  "summary": "ANV1 cerrado localmente: contexto movido a .github, nombres runtime Nomina-Ec, D13/D14/horas extra/IESS reforzados, lectura salarial minimizada y auditada, PayPhone real gobernado por gateway Prepare/Confirm con bloqueo de mock, planes versionados con suscriptores activos, superadmin PWA, LOPDP operativo con consentimientos/exportacion/anonimizado controlado y smoke visual ejecutado con evidencia.",
+  "plan": "HAIKY-AUDITORIA-NOMINA-EC-2026-V2",
+  "planCode": "ANV2",
+  "status": "completed_documental",
+  "phaseCompleted": "ANV2-00",
+  "currentPhase": "ANV2-00-baseline-documental",
+  "updatedAt": "2026-06-25T22:29:14.6340645-05:00",
+  "summary": "ANV2-00 desplegada documentalmente para cerrar hallazgos V2: EMAIL-C01 proveedor real de comunicaciones, TZ-C01 defaults America/Guayaquil y LEG-H01 firmas legales. No se toca runtime. CODEX_CONTEXT sensible permanece en .github y no se reintroduce en raiz.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts ANV1 en base a CODEX_CONTEXT, mover CODEX_CONTEXT.md a .github, revisar PayPhone/planes y LOPDP contra sinkroniq-mobile, evitar falsas promesas comerciales, commit y push.",
-  "previousAuditLockHash": "EC450887B91D0B58B164D0E14BFF34A601EBDA37FE6529F22EFCFFE87B5F33B6",
+  "approvalSource": "Solicitud del usuario: generar plan Haiky V2 en docs2, actualizar contexto, AuditLock y prompts por fases en base a RULES.md.",
+  "previousAuditLockHash": "56E4495BE3199DEC26E5983560B6AE9854A39F526381309766ED7F1C469FA329",
   "filesModifiedSummary": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/AUDITORIA-NOMINA-EC-2026-V1-00..08-*.md",
-    ".github/workflows/nomina-ec-ci.yml",
+    ".github/prompts/AUDITORIA-NOMINA-EC-2026-V2-00-baseline.md",
+    ".github/prompts/AUDITORIA-NOMINA-EC-2026-V2-01-diagnostico-runtime.md",
+    ".github/prompts/AUDITORIA-NOMINA-EC-2026-V2-02-comunicaciones-reales.md",
+    ".github/prompts/AUDITORIA-NOMINA-EC-2026-V2-03-timezone-ecuador.md",
+    ".github/prompts/AUDITORIA-NOMINA-EC-2026-V2-04-firmas-legales.md",
+    ".github/prompts/AUDITORIA-NOMINA-EC-2026-V2-05-frontend-operativo.md",
+    ".github/prompts/AUDITORIA-NOMINA-EC-2026-V2-06-qa-release.md",
     ".vscode/AuditLock.json",
-    "docs2/PLAN_HAIKY_AUDITORIA_NOMINA_EC_2026_V1.md",
-    "docs2/auditoria-nomina-ec-2026-v1/*",
-    "docs2/auditoria-nomina-ec-2026-v1/evidencias/ANV1-smoke-*.png",
-    "docs2/auditoria-nomina-ec-2026-v1/evidencias/ANV1-smoke-visual-browser.json",
-    "scripts/verify-system-contracts.mjs",
-    "render.yaml",
-    "backend/.env.example",
-    "backend/prisma/schema.prisma",
-    "backend/prisma/migrations/20260625013000_anv1_iess_employee_fields/migration.sql",
-    "backend/prisma/migrations/20260625021500_anv1_lopdp_consent_preferences/migration.sql",
-    "backend/src/app.js",
-    "backend/src/controllers/authController.js",
-    "backend/src/controllers/empleadoController.js",
-    "backend/src/controllers/paymentController.js",
-    "backend/src/controllers/privacyController.js",
-    "backend/src/services/auditService.js",
-    "backend/src/services/calculoNominaService.js",
-    "backend/src/services/employeeAppInviteService.js",
-    "backend/src/services/employeeImportService.js",
-    "backend/src/services/legalParameterService.js",
-    "backend/src/services/paymentReferenceService.js",
-    "backend/src/services/payphoneGatewayService.js",
-    "backend/src/services/payrollNoveltyService.js",
-    "backend/src/services/privacyConsentService.js",
-    "backend/src/services/userDataExportService.js",
-    "backend/src/services/userDataPurgeService.js",
-    "frontend-web/src/App.jsx",
-    "frontend-web/src/components/Layout/Layout.jsx",
-    "frontend-web/src/pages/Empleados/NuevoEmpleado.jsx",
-    "frontend-web/src/pages/Planes.jsx",
-    "frontend-web/src/pages/PlanesGestion.jsx",
-    "frontend-web/src/pages/PrivacidadCuenta.jsx",
-    "frontend-web/src/pages/Superadmin.jsx",
-    "frontend-web/src/services/beneficiosApi.js",
-    "frontend-web/src/services/privacyApi.js",
-    "frontend-web/src/services/publicApi.js"
+    "docs2/PLAN_HAIKY_AUDITORIA_NOMINA_EC_2026_V2.md",
+    "docs2/auditoria-nomina-ec-2026-v2/MATRIZ_ANV2_HALLAZGOS.md",
+    "docs2/auditoria-nomina-ec-2026-v2/CONTRATO_ANV2_CIERRE_DEFINITIVO.md",
+    "docs2/auditoria-nomina-ec-2026-v2/RUNBOOK_ANV2_QA_RELEASE.md",
+    "docs2/auditoria-nomina-ec-2026-v2/REPORTE_ANV2_00_BASELINE.md"
   ],
   "validationChecks": [
     {
-      "gate": "ANV1-RUNTIME-NAMING-GREP",
+      "gate": "ANV2-RULES-READ",
       "status": "PASS",
-      "detail": "rg -n \"PLAN HAIKY|plan_haiky|haiky_migration|haiky-\" backend/src backend/scripts backend/prisma render.yaml backend/.env.example .github/workflows .github/CODEX_CONTEXT.md scripts no encontro coincidencias."
+      "detail": "RULES.md leido; fase 00 se limita a documentacion, contexto, prompts y AuditLock."
     },
     {
-      "gate": "ANV1-CONTRACTS-SISTEMA-UNICO",
+      "gate": "ANV2-CONTEXT-SAFE-PATH",
       "status": "PASS",
-      "detail": "npm run contracts valido monorepo, reportes, documentos, PayPhone, planes, Superadmin, LOPDP y ubicacion de CODEX_CONTEXT.md."
+      "detail": "CODEX_CONTEXT.md no existe en raiz; contexto operativo actualizado en .github/CODEX_CONTEXT.md para no reabrir exposicion ANV1."
     },
     {
-      "gate": "ANV1-PRISMA-VALIDATE",
+      "gate": "ANV2-DOCUMENTS-CREATED",
       "status": "PASS",
-      "detail": "npm run prisma:validate finalizo correctamente."
+      "detail": "Plan, matriz, contrato, runbook y reporte baseline ANV2 creados en docs2."
     },
     {
-      "gate": "ANV1-MIGRATE-DEPLOY",
+      "gate": "ANV2-PROMPTS-CREATED",
       "status": "PASS",
-      "detail": "npx prisma migrate deploy aplico 20260625013000_anv1_iess_employee_fields y 20260625021500_anv1_lopdp_consent_preferences en la base local configurada por .env."
-    },
-    {
-      "gate": "ANV1-BACKEND-TESTS",
-      "status": "PASS",
-      "detail": "npm run test:backend: 37 suites, 152 tests."
-    },
-    {
-      "gate": "ANV1-FRONTEND-BUILD",
-      "status": "PASS",
-      "detail": "npm run build:web genero build Vite/PWA correctamente."
-    },
-    {
-      "gate": "ANV1-MOBILE-CHECK",
-      "status": "PASS",
-      "detail": "npm run check:mobile valido configuracion, identificadores, URLs y assets de tienda."
-    },
-    {
-      "gate": "ANV1-DIFF-CHECK",
-      "status": "PASS",
-      "detail": "git diff --check sin errores; solo avisos CRLF normales en Windows."
-    },
-    {
-      "gate": "ANV1-BROWSER-SMOKE",
-      "status": "PASS",
-      "detail": "Chrome headless via DevTools Protocol valido /dashboard/privacidad, /dashboard/superadmin y /precios en 1365x900 contra backend 3000 y PWA 5177; evidencia PNG/JSON en docs2/auditoria-nomina-ec-2026-v1/evidencias."
+      "detail": "Prompts ANV2-00..06 creados en .github/prompts."
     }
   ],
   "fases": [
-    { "phase": "ANV1-00", "status": "completed_documental" },
-    { "phase": "ANV1-01", "status": "completed_local" },
-    { "phase": "ANV1-02", "status": "completed_local" },
-    { "phase": "ANV1-03", "status": "completed_local" },
-    { "phase": "ANV1-04", "status": "completed_local" },
-    { "phase": "ANV1-05", "status": "completed_local" },
-    { "phase": "ANV1-06", "status": "completed_local" },
-    { "phase": "ANV1-07", "status": "completed_local" },
-    { "phase": "ANV1-08", "status": "completed_local" }
+    { "phase": "ANV2-00", "status": "completed_documental" },
+    { "phase": "ANV2-01", "status": "pending_approval" },
+    { "phase": "ANV2-02", "status": "pending_approval" },
+    { "phase": "ANV2-03", "status": "pending_approval" },
+    { "phase": "ANV2-04", "status": "pending_approval" },
+    { "phase": "ANV2-05", "status": "pending_approval" },
+    { "phase": "ANV2-06", "status": "pending_approval" }
   ],
   "residualRisk": [
-    "PayPhone productivo requiere PAYPHONE_TOKEN, PAYPHONE_STORE_ID y BACKEND_PUBLIC_URL HTTPS reales antes de cobro real.",
-    "La validacion laboral, contable y LOPDP profesional externa sigue requerida antes de oferta comercial definitiva.",
-    "El .env local no versionado conserva la base configurada por el usuario; el repo ya cambio defaults/scripts/Render a Nomina-Ec.",
-    "El retiro operativo de geolocalizacion movil requiere una fase posterior que bloquee marcacion movil si se expone como consentimiento revocable."
+    "ANV2-00 no modifica runtime; EMAIL-C01, TZ-C01 y LEG-H01 siguen pendientes hasta aprobacion de fases.",
+    "Credenciales reales SMTP/API y remitente verificado son dependencia externa para cierre productivo de emails.",
+    "La interpretacion legal de firmas y documentos laborales requiere revision profesional ecuatoriana antes de oferta comercial definitiva.",
+    "No se reintroduce CODEX_CONTEXT.md sensible en raiz aunque el requerimiento mencione la ruta historica."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "61C0FDF30A32892A21E1C46438DC6B5C891E6A325DDD1A3B1D6EC8F19FAF12A2"
+  "signature": "DC19F4148211A5E6B71D6229F9D86541A44E0AF7E4A18F62F24F5D6244DBE760"
 }
