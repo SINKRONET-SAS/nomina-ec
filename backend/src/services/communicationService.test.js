@@ -19,6 +19,9 @@ describe('communicationService', () => {
     [
       'COMMUNICATION_RETENTION_DAYS',
       'COMMUNICATION_EVENT_HASH_SECRET',
+      'COMMUNICATION_PROVIDER',
+      'COMMUNICATION_DEV_MODE',
+      'COMMUNICATION_REQUIRE_REAL_PROVIDER',
       'SMTP_ENABLED',
       'SMTP_HOST',
       'SMTP_PORT',
@@ -51,7 +54,7 @@ describe('communicationService', () => {
   });
 
   test('registra entrega de desarrollo cuando SMTP no esta configurado', async () => {
-    const service = loadService({ NODE_ENV: 'development' });
+    const service = loadService({ NODE_ENV: 'development', COMMUNICATION_DEV_MODE: 'true' });
     const result = await service.sendEmailVerification({
       to: 'owner@example.com',
       code: '123456',
@@ -67,6 +70,34 @@ describe('communicationService', () => {
       template: 'email_verification',
       status: 'dev_logged',
       recipient: 'owner@example.com',
+    }));
+  });
+
+  test('bloquea correo requerido en produccion si SMTP real no esta configurado', async () => {
+    const service = loadService({
+      NODE_ENV: 'production',
+      SMTP_ENABLED: 'false',
+      COMMUNICATION_DEV_MODE: 'true',
+    });
+
+    await expect(service.sendTestEmail({
+      to: 'owner@example.com',
+      correlationId: 'corr-prod',
+      userId: 'user-prod',
+    })).rejects.toMatchObject({
+      code: 'COMM_SMTP_NOT_CONFIGURED',
+      statusCode: 503,
+    });
+
+    expect(createTransportMock).not.toHaveBeenCalled();
+    expect(recordCommunicationEventMock).toHaveBeenCalledWith(expect.objectContaining({
+      channel: 'email',
+      provider: 'smtp',
+      status: 'not_configured',
+      metadata: expect.objectContaining({
+        required: true,
+        reason: 'production_provider_required',
+      }),
     }));
   });
 
@@ -159,6 +190,8 @@ describe('communicationService', () => {
 
     const status = service.communicationStatus();
     expect(status.email.configured).toBe(true);
+    expect(status.email.deliveryMode).toBe('smtp');
+    expect(status.email.ready).toBe(true);
     expect(status.email.fromEmail).toBe('not***com');
     expect(status.whatsapp.configured).toBe(false);
     expect(status.whatsapp.missing).toEqual(expect.arrayContaining([

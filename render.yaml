@@ -42,6 +42,12 @@ services:
         value: "12000"
       - key: SMTP_ENABLED
         sync: false
+      - key: COMMUNICATION_PROVIDER
+        value: smtp
+      - key: COMMUNICATION_DEV_MODE
+        value: "false"
+      - key: COMMUNICATION_REQUIRE_REAL_PROVIDER
+        value: "true"
       - key: COMMUNICATION_RETENTION_DAYS
         value: "365"
       - key: COMMUNICATION_EVENT_HASH_SECRET

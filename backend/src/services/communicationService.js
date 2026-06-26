@@ -4,6 +4,8 @@ const { recordCommunicationEvent } = require('./communicationAuditService');
 
 const EMAIL_FROM_NAME = process.env.SMTP_FROM_NAME || 'Nomina-Ec';
 const DEFAULT_WHATSAPP_LANGUAGE = process.env.WHATSAPP_TEMPLATE_LANGUAGE || 'es';
+const DEFAULT_COMMUNICATION_PROVIDER = 'smtp';
+const DEVELOPMENT_DELIVERY_PROVIDER = 'development_log';
 
 let cachedTransporter = null;
 let cachedTransportKey = '';
@@ -11,6 +13,24 @@ let cachedTransportKey = '';
 function boolEnv(value, fallback = false) {
   if (value === undefined || value === null || value === '') return fallback;
   return ['1', 'true', 'yes', 'si', 'on'].includes(String(value).trim().toLowerCase());
+}
+
+function isProduction() {
+  return process.env.NODE_ENV === 'production';
+}
+
+function communicationProvider() {
+  return String(process.env.COMMUNICATION_PROVIDER || DEFAULT_COMMUNICATION_PROVIDER).trim().toLowerCase();
+}
+
+function realProviderRequired() {
+  return boolEnv(process.env.COMMUNICATION_REQUIRE_REAL_PROVIDER, isProduction());
+}
+
+function developmentDeliveryAllowed() {
+  return !isProduction()
+    && !realProviderRequired()
+    && boolEnv(process.env.COMMUNICATION_DEV_MODE, true);
 }
 
 function redact(value) {
@@ -56,13 +76,14 @@ function appBaseUrl() {
 }
 
 function getEmailConfig() {
+  const provider = communicationProvider();
   const host = process.env.SMTP_HOST || '';
   const port = Number.parseInt(process.env.SMTP_PORT || '587', 10);
   const secure = boolEnv(process.env.SMTP_SECURE, false);
   const user = process.env.SMTP_USER || '';
   const pass = process.env.SMTP_PASSWORD || '';
   const fromEmail = process.env.SMTP_FROM_EMAIL || user;
-  const enabled = boolEnv(process.env.SMTP_ENABLED, true);
+  const enabled = boolEnv(process.env.SMTP_ENABLED, provider === 'smtp');
   const missing = [];
 
   if (!host) missing.push('SMTP_HOST');
@@ -72,9 +93,18 @@ function getEmailConfig() {
     if (!pass) missing.push('SMTP_PASSWORD');
   }
 
+  const configured = provider === 'smtp' && enabled && missing.length === 0;
+  const devMode = !configured && developmentDeliveryAllowed();
+
   return {
+    provider,
     enabled,
-    configured: enabled && missing.length === 0,
+    configured,
+    ready: configured || devMode,
+    deliveryMode: configured ? 'smtp' : (devMode ? DEVELOPMENT_DELIVERY_PROVIDER : 'blocked'),
+    devMode,
+    productionBlocked: isProduction() && !configured,
+    realProviderRequired: realProviderRequired(),
     host,
     port,
     secure,
@@ -98,9 +128,15 @@ function getWhatsAppConfig() {
   if (!phoneNumberId) missing.push('WHATSAPP_PHONE_NUMBER_ID');
   if (!graphApiVersion) missing.push('WHATSAPP_GRAPH_API_VERSION');
 
+  const configured = enabled && missing.length === 0;
+  const devMode = !configured && developmentDeliveryAllowed();
+
   return {
     enabled,
-    configured: enabled && missing.length === 0,
+    configured,
+    ready: configured || devMode,
+    deliveryMode: configured ? 'whatsapp_cloud_api' : (devMode ? DEVELOPMENT_DELIVERY_PROVIDER : 'blocked'),
+    devMode,
     accessToken,
     phoneNumberId,
     graphApiVersion,
@@ -123,9 +159,14 @@ function communicationStatus() {
 
   return {
     email: {
-      provider: 'smtp',
+      provider: email.provider,
       enabled: email.enabled,
       configured: email.configured,
+      ready: email.ready,
+      deliveryMode: email.deliveryMode,
+      devMode: email.devMode,
+      productionBlocked: email.productionBlocked,
+      realProviderRequired: email.realProviderRequired,
       host: email.host || null,
       port: email.port,
       secure: email.secure,
@@ -136,6 +177,9 @@ function communicationStatus() {
       provider: 'whatsapp_cloud_api',
       enabled: whatsapp.enabled,
       configured: whatsapp.configured,
+      ready: whatsapp.ready,
+      deliveryMode: whatsapp.deliveryMode,
+      devMode: whatsapp.devMode,
       phoneNumberId: whatsapp.phoneNumberId ? redact(whatsapp.phoneNumberId) : null,
       graphApiVersion: whatsapp.graphApiVersion || null,
       missing: whatsapp.missing,
@@ -267,7 +311,7 @@ async function sendEmail({
   }
 
   if (!config.configured) {
-    if (process.env.NODE_ENV !== 'production') {
+    if (config.devMode) {
       return auditDelivery(
         devDelivery('email', template, { correlationId, userId, to: recipient }),
         { tenantId, userId, correlationId, recipient, purpose, flow, required }
@@ -276,20 +320,21 @@ async function sendEmail({
 
     const result = {
       channel: 'email',
-      provider: 'smtp',
+      provider: config.provider,
       status: 'not_configured',
       configured: false,
       template,
       missing: config.missing,
+      reason: config.productionBlocked ? 'production_provider_required' : 'provider_not_configured',
     };
 
     await auditDelivery(result, { tenantId, userId, correlationId, recipient, purpose, flow, required });
 
     if (required) {
-      throw new AppError('SMTP no esta configurado para enviar correos transaccionales.', {
+      throw new AppError('SMTP real no esta configurado para enviar correos transaccionales.', {
         code: 'COMM_SMTP_NOT_CONFIGURED',
         statusCode: 503,
-        details: { missing: config.missing },
+        details: { missing: config.missing, provider: config.provider, deliveryMode: config.deliveryMode },
       });
     }
 
@@ -378,7 +423,7 @@ async function sendWhatsAppTemplate({
   }
 
   if (!config.configured) {
-    if (process.env.NODE_ENV !== 'production') {
+    if (config.devMode) {
       return auditDelivery(
         devDelivery('whatsapp', template, { correlationId, userId, to: phone }),
         { tenantId, userId, correlationId, recipient: phone, purpose, flow }
