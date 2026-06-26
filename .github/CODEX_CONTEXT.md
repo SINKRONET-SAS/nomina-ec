@@ -7,8 +7,8 @@
 |-------|-------|
 | Plan | HAIKY-AUDITORIA-NOMINA-EC-2026-V2 |
 | Codigo | ANV2 |
-| Estado | ANV2-00 desplegada documentalmente; runtime pendiente de aprobacion por fase |
-| Fase actual | ANV2-00 baseline documental |
+| Estado | ANV2-00..06 ejecutadas localmente; QA verde |
+| Fase actual | ANV2-06 QA y release local |
 | Alcance | emails reales, timezone America/Guayaquil y firmas legales en documentos laborales generados |
 | Fuente auditoria | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\AuditoriaNominaEC2026V2.jsx`, `src/pages/v_nominaec/nominaec_v2_scripts.jsx`, `src/pages/v_nominaec/nominaec_v2_hallazgos.jsx` |
 | Plan doc | `docs2/PLAN_HAIKY_AUDITORIA_NOMINA_EC_2026_V2.md` |
@@ -20,21 +20,28 @@
 
 ### Resumen ANV2
 
-ANV2 abre una linea documental para responder a la auditoria V2. La auditoria corrige cuatro falsos positivos de V1 y prioriza tres hallazgos P0: EMAIL-C01 por ausencia de proveedor SMTP/API real en `.env.example`, TZ-C01 por defaults de periodo basados en `new Date()` sin zona Ecuador en PWA, y LEG-H01 por documentos laborales generados sin bloque de firma del representante legal.
+ANV2 respondio a la auditoria V2. Se reconciliaron cuatro falsos positivos de V1 y se cerraron tres hallazgos P0: EMAIL-C01 con proveedor/modo de comunicaciones real y bloqueo productivo, TZ-C01 con defaults America/Guayaquil y LEG-H01 con firmas de representante legal/delegado y trabajador en documentos laborales.
 
 ANV2 conserva la decision ANV1 de no reintroducir `CODEX_CONTEXT.md` sensible en raiz; el contexto operativo vive en `.github/CODEX_CONTEXT.md`.
+
+### Ejecucion ANV2
+
+- EMAIL-C01: `communicationService` expone `deliveryMode`, `devMode`, `productionBlocked` y falla cerrado en produccion sin SMTP real. `.env.example` y `render.yaml` declaran proveedor, modo dev y proveedor real requerido.
+- TZ-C01: PWA usa `currentPeriodEC()` en pantallas de nomina/reportes y backend usa `currentPeriodInEcuador()` para fallback API. El contrato raiz bloquea regresion a `new Date()` local en esas pantallas.
+- LEG-H01: roles PDF incluyen recepcion y conformidad; contratos y actas incluyen identificacion del representante legal/delegado y trabajador; PWA muestra estado de firmas.
+- Gates: `npm.cmd run contracts` PASS, `npm.cmd run prisma:validate` PASS, `npm.cmd run test:backend` PASS con 44 suites/174 tests, `npm.cmd run build:web` PASS, `npm.cmd --workspace=frontend-web run smoke:pwa` PASS, `npm.cmd run check:mobile` PASS.
 
 ### Fases ANV2
 
 | Fase | Prioridad | Estado | Resumen |
 |------|-----------|--------|---------|
 | ANV2-00 | P0 | completed_documental | Baseline, matriz, contrato, runbook, prompts, contexto y AuditLock sin runtime. |
-| ANV2-01 | P0 | pending_approval | Diagnostico runtime y evidencia de falsos positivos V1. |
-| ANV2-02 | P0 | pending_approval | Comunicaciones reales con proveedor, readiness, auditoria y bloqueo productivo sin credenciales. |
-| ANV2-03 | P0 | pending_approval | Timezone Ecuador para defaults de periodo en web/backend/mobile. |
-| ANV2-04 | P0 | pending_approval | Firmas legales y datos de representante legal en documentos laborales. |
-| ANV2-05 | P1 | pending_approval | Frontend operativo para estados de correo, periodo y documentos. |
-| ANV2-06 | P0 | pending_approval | QA, smokes, AuditLock y release gate. |
+| ANV2-01 | P0 | completed_local | Diagnostico runtime y evidencia de falsos positivos V1. |
+| ANV2-02 | P0 | completed_local | Comunicaciones reales con proveedor, readiness, auditoria y bloqueo productivo sin credenciales. |
+| ANV2-03 | P0 | completed_local | Timezone Ecuador para defaults de periodo en web/backend/mobile. |
+| ANV2-04 | P0 | completed_local | Firmas legales y datos de representante legal en documentos laborales. |
+| ANV2-05 | P1 | completed_local | Frontend operativo para estados de correo, periodo y documentos. |
+| ANV2-06 | P0 | completed_local | QA, smoke PWA, AuditLock y release gate. |
 
 ### Reglas ANV2
 

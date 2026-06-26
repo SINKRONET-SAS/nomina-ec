@@ -2,67 +2,96 @@
   "schemaVersion": 1,
   "plan": "HAIKY-AUDITORIA-NOMINA-EC-2026-V2",
   "planCode": "ANV2",
-  "status": "completed_documental",
-  "phaseCompleted": "ANV2-00",
-  "currentPhase": "ANV2-00-baseline-documental",
-  "updatedAt": "2026-06-25T22:29:14.6340645-05:00",
-  "summary": "ANV2-00 desplegada documentalmente para cerrar hallazgos V2: EMAIL-C01 proveedor real de comunicaciones, TZ-C01 defaults America/Guayaquil y LEG-H01 firmas legales. No se toca runtime. CODEX_CONTEXT sensible permanece en .github y no se reintroduce en raiz.",
+  "status": "completed_local",
+  "phaseCompleted": "ANV2-06",
+  "currentPhase": "ANV2-06-qa-release",
+  "updatedAt": "2026-06-25T23:26:26.4699281-05:00",
+  "summary": "ANV2-00..06 ejecutadas localmente. EMAIL-C01 cerrado con comunicaciones reales y bloqueo productivo; TZ-C01 cerrado con America/Guayaquil; LEG-H01 cerrado con firmas legales visibles en roles, contratos y actas. CODEX_CONTEXT sensible permanece fuera de raiz.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: generar plan Haiky V2 en docs2, actualizar contexto, AuditLock y prompts por fases en base a RULES.md.",
-  "previousAuditLockHash": "56E4495BE3199DEC26E5983560B6AE9854A39F526381309766ED7F1C469FA329",
+  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts de acuerdo al PLAN_HAIKY_AUDITORIA_NOMINA_EC_2026_V2.md.",
+  "previousAuditLockHash": "A2B11DACCD670591BD92CABD9F2784C6F5FFF65963D388D55500B6FDA893C4ED",
   "filesModifiedSummary": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/AUDITORIA-NOMINA-EC-2026-V2-00-baseline.md",
-    ".github/prompts/AUDITORIA-NOMINA-EC-2026-V2-01-diagnostico-runtime.md",
-    ".github/prompts/AUDITORIA-NOMINA-EC-2026-V2-02-comunicaciones-reales.md",
-    ".github/prompts/AUDITORIA-NOMINA-EC-2026-V2-03-timezone-ecuador.md",
-    ".github/prompts/AUDITORIA-NOMINA-EC-2026-V2-04-firmas-legales.md",
-    ".github/prompts/AUDITORIA-NOMINA-EC-2026-V2-05-frontend-operativo.md",
-    ".github/prompts/AUDITORIA-NOMINA-EC-2026-V2-06-qa-release.md",
     ".vscode/AuditLock.json",
+    "backend/.env.example",
+    "backend/src/controllers/payrollAccountingController.js",
+    "backend/src/services/communicationService.js",
+    "backend/src/services/equipmentDeliveryActService.js",
+    "backend/src/services/monthlyPeriodService.js",
+    "backend/src/services/payrollRolePdfService.js",
+    "backend/src/services/templateGenerator.js",
+    "backend/src/services/*.test.js",
+    "frontend-web/src/pages/Configuracion/Comunicaciones.jsx",
+    "frontend-web/src/pages/Documentos/ActasEntregaDotacion.jsx",
+    "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
+    "frontend-web/src/pages/Nomina/Beneficios.jsx",
+    "frontend-web/src/pages/Nomina/CerrarMes.jsx",
+    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
+    "frontend-web/src/pages/Nomina/RolesPagos.jsx",
+    "frontend-web/src/pages/Dashboard.jsx",
+    "frontend-web/src/utils/dateFormat.js",
+    "render.yaml",
+    "scripts/verify-system-contracts.mjs",
     "docs2/PLAN_HAIKY_AUDITORIA_NOMINA_EC_2026_V2.md",
     "docs2/auditoria-nomina-ec-2026-v2/MATRIZ_ANV2_HALLAZGOS.md",
-    "docs2/auditoria-nomina-ec-2026-v2/CONTRATO_ANV2_CIERRE_DEFINITIVO.md",
-    "docs2/auditoria-nomina-ec-2026-v2/RUNBOOK_ANV2_QA_RELEASE.md",
-    "docs2/auditoria-nomina-ec-2026-v2/REPORTE_ANV2_00_BASELINE.md"
+    "docs2/auditoria-nomina-ec-2026-v2/REPORTE_ANV2_01_DIAGNOSTICO_RUNTIME.md",
+    "docs2/auditoria-nomina-ec-2026-v2/REPORTE_ANV2_02_COMUNICACIONES_REALES.md",
+    "docs2/auditoria-nomina-ec-2026-v2/REPORTE_ANV2_03_TIMEZONE_ECUADOR.md",
+    "docs2/auditoria-nomina-ec-2026-v2/REPORTE_ANV2_04_FIRMAS_LEGALES.md",
+    "docs2/auditoria-nomina-ec-2026-v2/REPORTE_ANV2_05_FRONTEND_OPERATIVO.md",
+    "docs2/auditoria-nomina-ec-2026-v2/REPORTE_ANV2_06_QA_RELEASE.md"
   ],
   "validationChecks": [
     {
-      "gate": "ANV2-RULES-READ",
-      "status": "PASS",
-      "detail": "RULES.md leido; fase 00 se limita a documentacion, contexto, prompts y AuditLock."
-    },
-    {
       "gate": "ANV2-CONTEXT-SAFE-PATH",
       "status": "PASS",
-      "detail": "CODEX_CONTEXT.md no existe en raiz; contexto operativo actualizado en .github/CODEX_CONTEXT.md para no reabrir exposicion ANV1."
+      "detail": "Test-Path CODEX_CONTEXT.md retorno False; el contexto operativo permanece en .github/CODEX_CONTEXT.md."
     },
     {
-      "gate": "ANV2-DOCUMENTS-CREATED",
+      "gate": "ANV2-CONTRACTS",
       "status": "PASS",
-      "detail": "Plan, matriz, contrato, runbook y reporte baseline ANV2 creados en docs2."
+      "detail": "npm.cmd run contracts"
     },
     {
-      "gate": "ANV2-PROMPTS-CREATED",
+      "gate": "ANV2-PRISMA-VALIDATE",
       "status": "PASS",
-      "detail": "Prompts ANV2-00..06 creados en .github/prompts."
+      "detail": "npm.cmd run prisma:validate"
+    },
+    {
+      "gate": "ANV2-BACKEND-TESTS",
+      "status": "PASS",
+      "detail": "npm.cmd run test:backend: 44 suites, 174 tests."
+    },
+    {
+      "gate": "ANV2-WEB-BUILD",
+      "status": "PASS",
+      "detail": "npm.cmd run build:web"
+    },
+    {
+      "gate": "ANV2-PWA-SMOKE",
+      "status": "PASS",
+      "detail": "npm.cmd --workspace=frontend-web run smoke:pwa"
+    },
+    {
+      "gate": "ANV2-MOBILE-CHECK",
+      "status": "PASS",
+      "detail": "npm.cmd run check:mobile"
     }
   ],
   "fases": [
     { "phase": "ANV2-00", "status": "completed_documental" },
-    { "phase": "ANV2-01", "status": "pending_approval" },
-    { "phase": "ANV2-02", "status": "pending_approval" },
-    { "phase": "ANV2-03", "status": "pending_approval" },
-    { "phase": "ANV2-04", "status": "pending_approval" },
-    { "phase": "ANV2-05", "status": "pending_approval" },
-    { "phase": "ANV2-06", "status": "pending_approval" }
+    { "phase": "ANV2-01", "status": "completed_local" },
+    { "phase": "ANV2-02", "status": "completed_local" },
+    { "phase": "ANV2-03", "status": "completed_local" },
+    { "phase": "ANV2-04", "status": "completed_local" },
+    { "phase": "ANV2-05", "status": "completed_local" },
+    { "phase": "ANV2-06", "status": "completed_local" }
   ],
   "residualRisk": [
-    "ANV2-00 no modifica runtime; EMAIL-C01, TZ-C01 y LEG-H01 siguen pendientes hasta aprobacion de fases.",
-    "Credenciales reales SMTP/API y remitente verificado son dependencia externa para cierre productivo de emails.",
-    "La interpretacion legal de firmas y documentos laborales requiere revision profesional ecuatoriana antes de oferta comercial definitiva.",
-    "No se reintroduce CODEX_CONTEXT.md sensible en raiz aunque el requerimiento mencione la ruta historica."
+    "Produccion requiere credenciales SMTP reales, remitente verificado y prueba de entrega con proveedor antes de prometer correos.",
+    "Registro SUT/MDT y revision legal laboral ecuatoriana siguen siendo obligaciones externas antes de oferta comercial definitiva.",
+    "Smoke visual manual con navegador no se ejecuto en esta fase; se cubrio con contratos, build PWA, smoke PWA automatizado, pruebas backend y check mobile."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "DC19F4148211A5E6B71D6229F9D86541A44E0AF7E4A18F62F24F5D6244DBE760"
+  "signature": "59D383AE544180C32DD2D4288281504E9CF9FD47154AB69A86525C0ED09CE0AA"
 }

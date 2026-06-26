@@ -1,14 +1,14 @@
 # Matriz ANV2 - Hallazgos Auditoria Nomina-Ec 2026 V2
 
-| Codigo | Prioridad | Estado inicial | Bloque | Hallazgo | Riesgo | Fase | Cierre esperado |
+| Codigo | Prioridad | Estado final | Bloque | Hallazgo | Riesgo | Fase | Cierre |
 |--------|-----------|----------------|--------|----------|--------|------|-----------------|
-| FP-V1-01 | P2 | falso_positivo_corregido | Documentos | `templateGenerator.js` usa `tenant.razon_social`; no imprime "PLAN HAIKY". | Evitar retrabajo y narrativa incorrecta. | ANV2-01 | Evidencia de codigo y matriz marcada como falso positivo. |
-| FP-V1-02 | P2 | falso_positivo_corregido | Seguridad | `db.query()` revisado usa parametros. | Evitar parche inseguro innecesario. | ANV2-01 | Evidencia de queries parametrizadas y limites de revision. |
-| FP-V1-03 | P2 | falso_positivo_corregido | Nomina legal | Provision mensual D13 `1/12` es correcta para rol mensual. | Evitar romper calculo mensual correcto. | ANV2-01 | Distinguir provision mensual de liquidacion/acumulado legal. |
-| FP-V1-04 | P2 | falso_positivo_corregido | Mobile | `AutoservicioScreen.js` carga rol de pago, pero es incompleto. | Evitar afirmar inexistencia; enfocar alcance. | ANV2-01 | Brecha reclasificada como incompletitud UX/funcional. |
-| EMAIL-C01 | P0 | confirmado_fuente | Comunicaciones | `communicationService.js` no tiene proveedor SMTP/API en `.env.example`. | Emails no llegan: verificacion, recuperacion, invitaciones y churn comercial. | ANV2-02/05 | Proveedor configurado, readiness visible, modo dev bloqueado en produccion, pruebas y auditoria. |
-| TZ-C01 | P0 | confirmado_fuente | Timezone | `CerrarMes.jsx` y `DescargarReportes.jsx` usan `new Date()` para defaults. | A las 22h del ultimo dia puede seleccionar mes siguiente fuera de Ecuador. | ANV2-03 | Helper unico America/Guayaquil, paridad web/mobile/API y pruebas borde. |
-| LEG-H01 | P0 | confirmado_fuente | Documentos legales | Roles, contratos o plantillas generadas sin seccion de firma del representante legal. | Documentos laborales incompletos para evidencia contractual. | ANV2-04/05 | Bloque de firmas, representante legal, trabajador, version de plantilla y revision legal. |
+| FP-V1-01 | P2 | reconciliado | Documentos | `templateGenerator.js` usa `tenant.razon_social`; no imprime "PLAN HAIKY". | Evitar retrabajo y narrativa incorrecta. | ANV2-01 | Evidencia runtime en `REPORTE_ANV2_01_DIAGNOSTICO_RUNTIME.md`. |
+| FP-V1-02 | P2 | reconciliado | Seguridad | `db.query()` revisado usa parametros. | Evitar parche inseguro innecesario. | ANV2-01 | Evidencia runtime con limite de alcance. |
+| FP-V1-03 | P2 | reconciliado | Nomina legal | Provision mensual D13 `1/12` es correcta para rol mensual. | Evitar romper calculo mensual correcto. | ANV2-01 | Diferenciado de liquidacion/acumulado legal. |
+| FP-V1-04 | P2 | reclasificado | Mobile | `AutoservicioScreen.js` carga rol de pago, pero es incompleto. | Evitar afirmar inexistencia; enfocar alcance. | ANV2-01 | Brecha reclasificada como incompletitud UX/funcional. |
+| EMAIL-C01 | P0 | cerrado_local | Comunicaciones | `communicationService.js` no tiene proveedor SMTP/API en `.env.example`. | Emails no llegan: verificacion, recuperacion, invitaciones y churn comercial. | ANV2-02/05 | Proveedor, readiness, modo dev explicito, bloqueo productivo, auditoria y PWA visible. |
+| TZ-C01 | P0 | cerrado_local | Timezone | `CerrarMes.jsx` y `DescargarReportes.jsx` usan `new Date()` para defaults. | A las 22h del ultimo dia puede seleccionar mes siguiente fuera de Ecuador. | ANV2-03 | Helper America/Guayaquil, defaults PWA/API y contrato estatico. |
+| LEG-H01 | P0 | cerrado_local | Documentos legales | Roles, contratos o plantillas generadas sin seccion de firma del representante legal. | Documentos laborales incompletos para evidencia contractual. | ANV2-04/05 | Firmas y representante/trabajador en roles, contratos y actas; estado visible en PWA. |
 
 ## Criterio de clasificacion
 
