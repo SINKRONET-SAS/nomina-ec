@@ -20,7 +20,11 @@ authenticatedApi.interceptors.request.use((config) => {
 authenticatedApi.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error?.response?.status === 401) {
+    const status = error?.response?.status;
+    const errorCode = error?.response?.data?.error || error?.response?.data?.code;
+    const sessionRejected = status === 401 || (status === 403 && ['TOKEN_INVALIDO', 'TOKEN_EXPIRADO'].includes(errorCode));
+
+    if (sessionRejected) {
       localStorage.removeItem('token');
       localStorage.removeItem('usuario');
       if (window.location.pathname !== '/login') {
