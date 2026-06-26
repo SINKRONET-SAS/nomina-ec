@@ -4,6 +4,7 @@ const {
   PAYROLL_CONCEPTS,
   getAccountingMappings,
 } = require('../services/payrollAccountingService');
+const { currentPeriodInEcuador } = require('../services/monthlyPeriodService');
 
 function requestContext(req) {
   return {
@@ -34,9 +35,10 @@ async function listConcepts(req, res, next) {
 async function listMappings(req, res, next) {
   try {
     ensureTenant(req);
+    const currentPeriod = currentPeriodInEcuador();
     const data = await getAccountingMappings(req.usuario.tenantId, {
-      anio: Number(req.query.anio || new Date().getFullYear()),
-      mes: Number(req.query.mes || 1),
+      anio: Number(req.query.anio || currentPeriod.anio),
+      mes: Number(req.query.mes || currentPeriod.mes),
       userId: req.usuario.id,
     });
     return res.json({ data, correlationId: req.correlationId });

@@ -50,7 +50,13 @@ const appWeb = read('frontend-web/src/App.jsx');
 const layoutWeb = read('frontend-web/src/components/Layout/Layout.jsx');
 const actasEntregaDotacion = read('frontend-web/src/pages/Documentos/ActasEntregaDotacion.jsx');
 const contratosGenerados = read('frontend-web/src/pages/Documentos/ContratosGenerados.jsx');
+const cerrarMes = read('frontend-web/src/pages/Nomina/CerrarMes.jsx');
+const rolesPagos = read('frontend-web/src/pages/Nomina/RolesPagos.jsx');
+const beneficios = read('frontend-web/src/pages/Nomina/Beneficios.jsx');
 const descargarReportes = read('frontend-web/src/pages/Nomina/DescargarReportes.jsx');
+const dateFormatWeb = read('frontend-web/src/utils/dateFormat.js');
+const monthlyPeriodService = read('backend/src/services/monthlyPeriodService.js');
+const payrollAccountingController = read('backend/src/controllers/payrollAccountingController.js');
 const configurationApi = read('frontend-web/src/services/configurationApi.js');
 const templateGenerator = read('backend/src/services/templateGenerator.js');
 const paymentController = read('backend/src/controllers/paymentController.js');
@@ -98,6 +104,22 @@ for (const reportCode of frontendReportCodes) {
 assert(!descargarReportes.includes('PAYROLL_ACCOUNTING_ENTRIES'), 'La PWA no debe mostrar el reporte contable legacy.');
 assert(descargarReportes.includes('PAYROLL_ACCOUNTING_REPORT'), 'La PWA debe mostrar el reporte contable gobernado.');
 assert(app.includes("'/api/reportes/nomina/exportar'"), 'Backend debe exponer /api/reportes/nomina/exportar.');
+
+for (const [screenName, screenText] of [
+  ['CerrarMes.jsx', cerrarMes],
+  ['DescargarReportes.jsx', descargarReportes],
+  ['RolesPagos.jsx', rolesPagos],
+  ['Beneficios.jsx', beneficios],
+]) {
+  assert(screenText.includes('currentPeriodEC'), `${screenName} debe inicializar periodo con America/Guayaquil.`);
+  assert(!screenText.includes('new Date()'), `${screenName} no debe usar new Date() directo para default de periodo.`);
+  assert(!screenText.includes('getMonth() + 1'), `${screenName} no debe derivar mes operativo del timezone local.`);
+}
+assert(dateFormatWeb.includes("const ECUADOR_TIME_ZONE = 'America/Guayaquil'"), 'Helper web debe fijar America/Guayaquil.');
+assert(dateFormatWeb.includes('function datePartsEC'), 'Helper web debe centralizar partes de fecha Ecuador.');
+assert(dateFormatWeb.includes('export function currentPeriodEC'), 'Helper web debe exponer currentPeriodEC.');
+assert(monthlyPeriodService.includes('function currentPeriodInEcuador'), 'Backend debe exponer periodo actual en America/Guayaquil.');
+assert(payrollAccountingController.includes('currentPeriodInEcuador'), 'API contable no debe caer a new Date local para periodo default.');
 
 for (const endpoint of unique(regexValues(descargarReportes, /['"]((?:\/reportes\/)[^'"]+)['"]/g))) {
   assert(app.includes(`'/api${endpoint}'`), `Frontend consume ${endpoint} pero backend no expone /api${endpoint}.`);

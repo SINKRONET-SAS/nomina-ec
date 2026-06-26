@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
+import { ECUADOR_TIME_ZONE, currentPeriodEC, firstDayOfPeriodEC } from '../../utils/dateFormat';
 
 const NOVELTY_TYPES = [
   { value: 'hora_extra_50', label: 'Hora extra 50%' },
@@ -44,9 +45,9 @@ function precheckDetails(error) {
 
 function CerrarMes() {
   const queryClient = useQueryClient();
-  const hoy = new Date();
-  const [anio, setAnio] = useState(hoy.getFullYear());
-  const [mes, setMes] = useState(hoy.getMonth() + 1);
+  const initialPeriod = useMemo(() => currentPeriodEC(), []);
+  const [anio, setAnio] = useState(initialPeriod.anio);
+  const [mes, setMes] = useState(initialPeriod.mes);
   const [resultado, setResultado] = useState(null);
   const [message, setMessage] = useState(null);
   const [closeConfirmation, setCloseConfirmation] = useState(false);
@@ -54,7 +55,7 @@ function CerrarMes() {
     scopeType: 'company',
     scopeValue: '',
     tipoNovedad: 'hora_extra_50',
-    fecha: `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-01`,
+    fecha: firstDayOfPeriodEC(initialPeriod.anio, initialPeriod.mes),
     minutos: 60,
     monto: '',
     justificacion: 'Lote mensual de novedades',
@@ -90,7 +91,7 @@ function CerrarMes() {
   useEffect(() => {
     setBatchForm((current) => ({
       ...current,
-      fecha: `${anio}-${String(mes).padStart(2, '0')}-01`,
+      fecha: firstDayOfPeriodEC(anio, mes),
     }));
   }, [anio, mes]);
 
@@ -185,6 +186,7 @@ function CerrarMes() {
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
               Abre el periodo antes de cargar novedades. Los lotes crean registros reales por alcance y quedan auditados.
             </p>
+            <p className="mt-1 text-xs font-semibold text-slate-500">Periodo inicial calculado en {ECUADOR_TIME_ZONE}.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <label className="text-sm font-semibold text-slate-700">

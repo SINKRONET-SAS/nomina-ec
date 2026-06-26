@@ -58,6 +58,10 @@ function todayInEcuador() {
   return dateInEcuador(new Date());
 }
 
+function currentPeriodInEcuador(value = new Date()) {
+  return extractPeriodFromDate(dateInEcuador(value));
+}
+
 async function ensurePayrollPeriodForDate({ tenantId, userId, fecha }) {
   const period = extractPeriodFromDate(fecha);
   const result = await db.query(`
@@ -344,6 +348,7 @@ function roundAmount(value) {
 module.exports = {
   buildEmployeeQuery,
   createNoveltyBatch,
+  currentPeriodInEcuador,
   dateInEcuador,
   ensurePayrollPeriodForDate,
   extractPeriodFromDate,

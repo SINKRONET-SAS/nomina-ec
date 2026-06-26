@@ -4,22 +4,21 @@ import { CheckCircle2, Edit3, Plus } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { createBeneficio, fetchBeneficios, updateBeneficio } from '../../services/beneficiosApi';
 import { extractApiError } from '../../services/publicApi';
+import { ECUADOR_TIME_ZONE, currentPeriodEC } from '../../utils/dateFormat';
 
-function currentPeriod() {
-  const today = new Date();
-  return { anio: today.getFullYear(), mes: today.getMonth() + 1 };
+function emptyForm() {
+  const period = currentPeriodEC();
+  return {
+    empleadoId: '',
+    tipo: 'anticipo',
+    descripcion: '',
+    montoTotal: '',
+    cuotaMensual: '',
+    anioInicio: period.anio,
+    mesInicio: period.mes,
+    estado: 'pendiente',
+  };
 }
-
-const EMPTY_FORM = {
-  empleadoId: '',
-  tipo: 'anticipo',
-  descripcion: '',
-  montoTotal: '',
-  cuotaMensual: '',
-  anioInicio: currentPeriod().anio,
-  mesInicio: currentPeriod().mes,
-  estado: 'pendiente',
-};
 
 function money(value) {
   return `$${Number(value || 0).toFixed(2)}`;
@@ -27,7 +26,7 @@ function money(value) {
 
 function Beneficios() {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState(() => emptyForm());
   const [editingId, setEditingId] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -73,7 +72,7 @@ function Beneficios() {
       setError('');
       setMessage(editingId ? 'Beneficio actualizado.' : 'Beneficio registrado.');
       setEditingId('');
-      setForm(EMPTY_FORM);
+      setForm(emptyForm());
       queryClient.invalidateQueries({ queryKey: ['beneficios-empleados'] });
     },
     onError: (err) => {
@@ -115,6 +114,7 @@ function Beneficios() {
               Registra valores aprobables por empleado. Solo los beneficios en estado aprobado entran como deduccion
               al calcular y cerrar la nomina del periodo.
             </p>
+            <p className="mt-1 text-xs font-semibold text-slate-500">Periodo inicial calculado en {ECUADOR_TIME_ZONE}.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-md bg-amber-50 px-4 py-3 text-amber-900">

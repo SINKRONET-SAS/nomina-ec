@@ -24,6 +24,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { authenticatedApi } from '../services/authenticatedApi';
 import { confirmEmailVerification, extractApiError, requestEmailVerification } from '../services/publicApi';
+import { currentPeriodEC } from '../utils/dateFormat';
 
 const monthNames = [
   'Enero',
@@ -71,11 +72,12 @@ async function optionalGet(url) {
 }
 
 function getPeriod() {
-  const today = new Date();
+  const period = currentPeriodEC();
   return {
-    year: today.getFullYear(),
-    month: today.getMonth() + 1,
-    label: `${monthNames[today.getMonth()]} ${today.getFullYear()}`,
+    year: period.anio,
+    month: period.mes,
+    label: `${monthNames[period.mes - 1]} ${period.anio}`,
+    timeZone: period.timeZone,
   };
 }
 

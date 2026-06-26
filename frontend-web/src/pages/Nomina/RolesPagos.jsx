@@ -3,11 +3,12 @@ import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { downloadUrl } from '../../utils/downloadUrl';
+import { ECUADOR_TIME_ZONE, currentPeriodEC } from '../../utils/dateFormat';
 
 function RolesPagos() {
-  const hoy = new Date();
-  const [anio, setAnio] = useState(hoy.getFullYear());
-  const [mes, setMes] = useState(hoy.getMonth() + 1);
+  const initialPeriod = currentPeriodEC();
+  const [anio, setAnio] = useState(initialPeriod.anio);
+  const [mes, setMes] = useState(initialPeriod.mes);
   const [downloadingId, setDownloadingId] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -70,6 +71,7 @@ function RolesPagos() {
             />
           </div>
         </div>
+        <p className="mt-3 text-xs font-semibold text-slate-500">Periodo inicial calculado en {ECUADOR_TIME_ZONE}.</p>
       </div>
 
       <div className="rounded-lg bg-white shadow">
