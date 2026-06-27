@@ -28,7 +28,7 @@ function Layout() {
       icon: Clock,
       roles: ['owner', 'admin_rrhh', 'supervisor'],
       submenu: [
-        { path: '/dashboard/asistencia/novedades', label: 'Novedades Pendientes' },
+        { path: '/dashboard/asistencia/novedades', label: 'Ingreso manual y pendientes' },
         { path: '/dashboard/asistencia/reporte', label: 'Reporte de Asistencia' },
         { path: '/dashboard/asistencia/rutas', label: 'Rutas de campo' },
       ]

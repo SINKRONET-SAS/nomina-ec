@@ -5,6 +5,10 @@ const { generarXML_RDEP, precheckRDEP } = require('../services/sriRdepGenerator'
 const { generarXML_SAE } = require('../services/iessSaeGenerator');
 const { generarArchivoBanco, precheckArchivoBanco } = require('../services/bancoAebGenerator');
 const { generarReporteNomina } = require('../services/payrollReportService');
+const {
+  generarFormulario107,
+  precheckFormulario107,
+} = require('../services/sriFormulario107Service');
 const db = require('../config/database');
 const { assertCapability, getTenantPlanCapabilities } = require('../services/planCapabilityService');
 
@@ -74,6 +78,79 @@ async function generarSAE(req, res) {
       message: err.message,
     });
     res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
+  }
+}
+
+async function validarFormulario107(req, res) {
+  try {
+    const { tenantId } = req;
+    const { anio, empleadoId } = req.body;
+
+    if (!anio || !empleadoId) {
+      return res.status(400).json({
+        error: 'FORM107_PARAMETROS_REQUERIDOS',
+        message: 'Anio y empleado son requeridos para validar Formulario 107.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const resultado = await precheckFormulario107({ tenantId, anio, empleadoId });
+    return res.json({ success: true, precheck: resultado, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[REPORTES] Error precheck Formulario 107', {
+      code: err.code || 'FORM107_PRECHECK_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'FORM107_PRECHECK_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function generarFormulario107Ctrl(req, res) {
+  try {
+    const { tenantId } = req;
+    const { anio, empleadoId } = req.body;
+
+    if (!anio || !empleadoId) {
+      return res.status(400).json({
+        error: 'FORM107_PARAMETROS_REQUERIDOS',
+        message: 'Anio y empleado son requeridos para generar Formulario 107.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const resultado = await generarFormulario107({
+      tenantId,
+      anio,
+      empleadoId,
+      context: {
+        correlationId: req.correlationId,
+        userId: req.usuarioId,
+        ipAddress: req.ip,
+      },
+    });
+    return res.json({ success: true, reporte: resultado, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[REPORTES] Error Formulario 107', {
+      code: err.code || 'FORM107_GENERATE_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'FORM107_GENERATE_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
   }
 }
 
@@ -235,6 +312,8 @@ async function exportarNomina(req, res) {
 module.exports = {
   generarRDEP,
   validarRDEP,
+  generarFormulario107: generarFormulario107Ctrl,
+  validarFormulario107,
   generarSAE,
   generarArchivoBanco: generarArchivoBancoCtrl,
   validarArchivoBanco,

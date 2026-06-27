@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, Download, FileSpreadsheet, FileText, Landmark, ShieldCheck } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { downloadUrl } from '../../utils/downloadUrl';
@@ -11,6 +11,14 @@ const institutionalReports = [
     entity: 'Servicio de Rentas Internas',
     description: 'Anexo de relacion de dependencia para retenciones de impuesto a la renta de empleados.',
     button: 'Generar XML RDEP',
+    accent: 'blue',
+  },
+  {
+    type: 'form107',
+    title: 'Formulario 107 - SRI',
+    entity: 'Servicio de Rentas Internas',
+    description: 'PDF individual anual por trabajador con resumen de ingresos y retenciones de relacion de dependencia.',
+    button: 'Generar PDF 107',
     accent: 'blue',
   },
   {
@@ -64,11 +72,28 @@ function DescargarReportes() {
     position: '',
     costCenter: '',
   });
+  const [empleados, setEmpleados] = useState([]);
+  const [form107EmpleadoId, setForm107EmpleadoId] = useState('');
   const [cargando, setCargando] = useState('');
   const [rdepPrecheck, setRdepPrecheck] = useState(null);
+  const [form107Precheck, setForm107Precheck] = useState(null);
   const [bankPrecheck, setBankPrecheck] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    authenticatedApi.get('/empleados')
+      .then((response) => setEmpleados(response.data.empleados || response.data.data || []))
+      .catch((err) => {
+        console.error('[REPORTES] No se pudieron cargar empleados para Formulario 107', {
+          code: err.response?.data?.error || 'FORM107_EMPLOYEES_LOAD_ERROR',
+          statusCode: err.response?.status || 500,
+          correlationId: err.response?.data?.correlationId || 'frontend-form107',
+          userId: null,
+          message: err.message,
+        });
+      });
+  }, []);
 
   const validarRdep = async () => {
     setCargando('rdep-precheck');
@@ -116,6 +141,33 @@ function DescargarReportes() {
     }
   };
 
+  const validarFormulario107 = async () => {
+    setCargando('form107-precheck');
+    setMessage('');
+    setError('');
+    try {
+      if (!form107EmpleadoId) {
+        throw new Error('Selecciona un empleado para validar Formulario 107.');
+      }
+      const response = await authenticatedApi.post('/reportes/formulario-107/precheck', {
+        anio,
+        empleadoId: form107EmpleadoId,
+      });
+      setForm107Precheck(response.data.precheck);
+      setMessage(response.data.precheck.ready
+        ? 'Formulario 107 listo para generar en PDF.'
+        : 'Formulario 107 requiere acciones antes de generarse.');
+      return response.data.precheck;
+    } catch (err) {
+      const nextError = err.response?.data?.message || err.response?.data?.error || err.message || 'No pudimos validar Formulario 107.';
+      setError(nextError);
+      setForm107Precheck(null);
+      return null;
+    } finally {
+      setCargando('');
+    }
+  };
+
   const generarReporte = async (tipo) => {
     setCargando(tipo);
     setMessage('');
@@ -135,12 +187,26 @@ function DescargarReportes() {
           return;
         }
       }
+      if (tipo === 'form107') {
+        const precheck = form107Precheck?.anio === anio && form107Precheck?.empleadoId === form107EmpleadoId
+          ? form107Precheck
+          : await validarFormulario107();
+        if (!precheck?.ready) {
+          setCargando('');
+          return;
+        }
+      }
       const endpointByType = {
         rdep: '/reportes/rdep',
+        form107: '/reportes/formulario-107',
         sae: '/reportes/sae',
         banco: '/reportes/banco',
       };
-      const response = await authenticatedApi.post(endpointByType[tipo], { anio, mes });
+      const response = await authenticatedApi.post(endpointByType[tipo], {
+        anio,
+        mes,
+        empleadoId: tipo === 'form107' ? form107EmpleadoId : undefined,
+      });
       const url = response.data.reporte?.url || response.data.reporte?.csvUrl;
 
       if (url) {
@@ -222,6 +288,54 @@ function DescargarReportes() {
         </div>
         <p className="mt-3 text-xs font-semibold text-slate-500">Periodo inicial calculado en {ECUADOR_TIME_ZONE}.</p>
       </div>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+          <label className="block text-sm font-medium text-slate-700">
+            Empleado para Formulario 107
+            <select
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+              value={form107EmpleadoId}
+              onChange={(event) => {
+                setForm107EmpleadoId(event.target.value);
+                setForm107Precheck(null);
+              }}
+            >
+              <option value="">Seleccionar empleado...</option>
+              {empleados.map((empleado) => (
+                <option key={empleado.id} value={empleado.id}>
+                  {empleado.apellidos || ''} {empleado.nombres || ''} - {empleado.cedula || ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-teal-200 px-4 text-sm font-semibold text-teal-700 hover:border-teal-400 disabled:opacity-60"
+            type="button"
+            disabled={cargando === 'form107-precheck'}
+            onClick={validarFormulario107}
+          >
+            <ShieldCheck className="h-4 w-4" />
+            {cargando === 'form107-precheck' ? 'Validando...' : 'Validar Formulario 107'}
+          </button>
+        </div>
+        {form107Precheck && (
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            {form107Precheck.checks.map((check) => (
+              <div className={`flex items-start gap-3 rounded-md px-4 py-3 ${check.passed ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900'}`} key={check.code}>
+                {check.passed ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />}
+                <div>
+                  <p className="text-sm font-semibold">{check.label}</p>
+                  {check.detail && <p className="mt-1 text-xs opacity-80">{check.detail}</p>}
+                </div>
+              </div>
+            ))}
+            <div className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-700 lg:col-span-2">
+              Plantilla PDF: <span className="font-mono text-xs">{form107Precheck.templateVersion}</span>
+            </div>
+          </div>
+        )}
+      </section>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {institutionalReports.map((report) => {

@@ -5,6 +5,7 @@ const {
   calcularProvisionFondosReserva,
   calcularValorHora,
   assertWeeklyOvertimeLimit,
+  assertEmployeeMeetsUnifiedBaseSalary,
   normalizeIessRelationType,
   resolveFourteenthSalaryPeriod,
   resolveFourteenthSalaryRegion,
@@ -206,5 +207,18 @@ describe('calculoNominaService', () => {
     })).not.toThrow();
 
     process.env.REQUIRE_VALIDATED_LEGAL_PARAMETERS = previous;
+  });
+
+  test('bloquea empleado con sueldo mensual menor al SBU vigente', () => {
+    expect(() => assertEmployeeMeetsUnifiedBaseSalary({
+      id: 'emp-1',
+      sueldo_bruto_mensual: 400,
+      tipo_contrato: 'indefinido',
+    }, {
+      unifiedBaseSalary: 482,
+    }, {
+      anio: 2026,
+      mes: 6,
+    })).toThrow('menor al SBU vigente');
   });
 });

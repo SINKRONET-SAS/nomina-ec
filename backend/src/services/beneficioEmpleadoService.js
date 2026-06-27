@@ -242,9 +242,10 @@ async function updateBenefit(tenantId, id, payload, user, context = {}) {
   return normalizeBenefit(result.rows[0]);
 }
 
-async function getApprovedDeductions(tenantId, empleadoId, anio, mes) {
+async function getApprovedDeductions(tenantId, empleadoId, anio, mes, options = {}) {
   assertPeriod(anio, mes);
-  const result = await db.query(`
+  const executor = options.dbClient || db;
+  const result = await executor.query(`
     SELECT id, tipo, descripcion, saldo_pendiente, cuota_mensual
     FROM beneficios_empleados
     WHERE tenant_id = $1

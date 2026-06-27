@@ -1319,3 +1319,38 @@ Riesgos residuales:
 - La geolocalizacion movil mantiene snapshot de consentimiento existente; el retiro operativo de geolocalizacion requiere fase adicional que bloquee marcacion movil antes de exponerse como toggle.
 - Las reglas legales quedan parametrizadas y probadas, pero requieren validacion laboral/contable ecuatoriana antes de release comercial.
 - El renombre de DB/usuario en Render requiere migracion controlada en infraestructura si ya existe una instancia productiva previa.
+
+---
+
+## CDAN26 - Cierre definitivo Auditoria Nomina-Ec 2026
+
+Plan: `HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026`.
+
+Estado: CDAN26-00 a CDAN26-08 ejecutadas localmente; gates especificos y build web verdes; gates generales en cierre final.
+
+Artefactos:
+
+- `docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026.md`
+- `docs2/cierre-definitivo-auditoria-nomina-ec-2026/MATRIZ_CDAN26_HALLAZGOS.md`
+- `docs2/cierre-definitivo-auditoria-nomina-ec-2026/CONTRATO_CDAN26_CIERRE_DEFINITIVO.md`
+- `docs2/cierre-definitivo-auditoria-nomina-ec-2026/RUNBOOK_CDAN26_QA_RELEASE.md`
+- `docs2/cierre-definitivo-auditoria-nomina-ec-2026/REPORTE_CDAN26_01_DIAGNOSTICO_RUNTIME.md` a `REPORTE_CDAN26_08_QA_RELEASE.md`
+- `prompts/CDAN26-00-baseline.md` a `prompts/CDAN26-08-qa-release.md`
+- `.vscode/AuditLock.json`
+
+Runtime cerrado:
+
+- `calcularMes()` usa cliente transaccional compartido para lote, nominas, lineas normalizadas y estado de `payroll_periods`.
+- El motor bloquea sueldo mensual inferior al SBU vigente configurado salvo excepcion legal auditada.
+- Fondo de Reserva se conserva por modalidad de empleado `mensual` / `iess_directo`.
+- Formulario 107 individual se genera como PDF con precheck, version `FORM107-SRI-2026-CDAN26`, auditoria y UI en Reportes Entidades.
+- Novedades permite ingreso manual y carga masiva con plantilla CSV descargable; las novedades por tiempo se expresan como horas redondeadas a 2 decimales en UI/detalle, conservando minutos internamente.
+- Cierre de nomina dispara `sendRolPagoDisponible()` y audita cada intento de email.
+- Pagos conserva PayPhone como proveedor real existente; `PAYMENT_PROVIDER=stripe` queda bloqueado con mensaje claro si se declara sin implementacion completa.
+- `render.yaml` activo mantiene naming Nomina-Ec y variables Stripe no sensibles.
+
+Reglas CDAN26:
+
+- `CODEX_CONTEXT.md` no debe quedar en raiz; el contexto consolidado vive en `.github/CODEX_CONTEXT.md`.
+- No prometer validez oficial de Formulario 107 sin revision tributaria profesional.
+- SBU 2026 debe tomarse desde parametros legales vigentes del tenant/anio; la matriz interna actual usa USD 482, aunque la auditoria mencionaba USD 460.

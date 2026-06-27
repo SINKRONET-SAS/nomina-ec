@@ -40,6 +40,12 @@ services:
         sync: false
       - key: PAYPHONE_TIMEOUT_MS
         value: "12000"
+      - key: PAYMENT_PROVIDER
+        value: payphone
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
       - key: SMTP_ENABLED
         sync: false
       - key: COMMUNICATION_PROVIDER

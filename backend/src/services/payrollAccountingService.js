@@ -6,6 +6,7 @@ const AppError = require('../utils/AppError');
 const { roundMoney } = require('../utils/money');
 const {
   conceptCodeForNovelty,
+  getActiveNoveltyTypeConfigsWithExecutor,
   getActiveNoveltyTypeConfigs,
   normalizeConfig: normalizeNoveltyConfig,
   normalizeNoveltyCode,
@@ -521,6 +522,7 @@ async function persistPayrollCalculationLines({
   employee = {},
   detalleCalculo = {},
   userId = null,
+  dbClient = null,
 }) {
   if (!payrollId || !tenantId || !empleadoId) return [];
   if (!calculationBatchId) {
@@ -554,7 +556,8 @@ async function persistPayrollCalculationLines({
     position_code: positionCode,
   }));
 
-  const client = await db.getClient(tenantId, userId);
+  const client = dbClient || await db.getClient(tenantId, userId);
+  const ownsClient = !dbClient;
   try {
     await client.query('DELETE FROM payroll_calculation_lines WHERE payroll_id = $1', [payrollId]);
 
@@ -596,22 +599,26 @@ async function persistPayrollCalculationLines({
       `, params);
     }
 
-    await db.commit(client);
+    if (ownsClient) {
+      await db.commit(client);
+    }
     return lines;
   } catch (err) {
-    await db.rollback(client);
+    if (ownsClient) {
+      await db.rollback(client);
+    }
     throw err;
   }
 }
 
-async function ensureDefaultPayrollAccountingMappings(tenantId, { userId = null, anio = null, mes = null } = {}) {
+async function ensureDefaultPayrollAccountingMappings(tenantId, { userId = null, anio = null, mes = null, dbClient = null } = {}) {
   if (!tenantId) return [];
 
-  const noveltyMappings = await buildDefaultNoveltyMappings(tenantId, { anio, mes });
+  const noveltyMappings = await buildDefaultNoveltyMappings(tenantId, { anio, mes, dbClient });
   const mappings = [...DEFAULT_ACCOUNTING_MAPPINGS, ...noveltyMappings];
   if (mappings.length === 0) return [];
 
-  await insertPayrollAccountingMappings(tenantId, mappings, userId);
+  await insertPayrollAccountingMappings(tenantId, mappings, userId, dbClient);
   return mappings;
 }
 
@@ -625,8 +632,9 @@ async function ensurePayrollAccountingMappingForNoveltyConfig(tenantId, noveltyC
   return [mapping];
 }
 
-async function insertPayrollAccountingMappings(tenantId, mappings = [], userId = null) {
+async function insertPayrollAccountingMappings(tenantId, mappings = [], userId = null, dbClient = null) {
   if (!tenantId || mappings.length === 0) return [];
+  const executor = dbClient || db;
 
   const params = [];
   const values = mappings.map((mapping, index) => {
@@ -652,7 +660,7 @@ async function insertPayrollAccountingMappings(tenantId, mappings = [], userId =
     return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9}, $${offset + 10}, $${offset + 11}, $${offset + 12}, $${offset + 13}, $${offset + 14}, $${offset + 15}, $${offset + 16})`;
   });
 
-  await db.query(`
+  await executor.query(`
     INSERT INTO payroll_accounting_mappings (
       tenant_id, concept_code, concept_label, category, entry_type,
       debit_account_code, debit_account_name, credit_account_code, credit_account_name,
@@ -666,11 +674,13 @@ async function insertPayrollAccountingMappings(tenantId, mappings = [], userId =
   return mappings;
 }
 
-async function buildDefaultNoveltyMappings(tenantId, { anio = null, mes = null } = {}) {
+async function buildDefaultNoveltyMappings(tenantId, { anio = null, mes = null, dbClient = null } = {}) {
   const now = new Date();
   const currentYear = Number(anio) || now.getFullYear();
   const currentMonth = Number(mes) || now.getMonth() + 1;
-  const configs = await getActiveNoveltyTypeConfigs(tenantId, currentYear, currentMonth);
+  const configs = dbClient
+    ? await getActiveNoveltyTypeConfigsWithExecutor(dbClient, tenantId, currentYear, currentMonth)
+    : await getActiveNoveltyTypeConfigs(tenantId, currentYear, currentMonth);
   return configs
     .map((config) => buildDefaultNoveltyMapping(config, currentYear))
     .filter(Boolean);

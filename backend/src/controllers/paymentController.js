@@ -310,6 +310,27 @@ async function subscriptionStatus(req, res, next) {
 }
 
 function buildPaymentCapabilities() {
+  const paymentProvider = String(process.env.PAYMENT_PROVIDER || 'payphone').trim().toLowerCase();
+  if (paymentProvider === 'stripe') {
+    const stripeConfigured = Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET);
+    return {
+      supportsMultiple: false,
+      provider: 'STRIPE',
+      supportedProviders: ['STRIPE', 'PAYPHONE'],
+      supportsManualEntry: false,
+      supportsDefaultSwitch: false,
+      supportsRevoke: true,
+      mockMode: false,
+      checkoutAvailable: false,
+      providerConfigured: stripeConfigured,
+      publicCallbackConfigured: Boolean(resolveBackendPublicUrl()),
+      status: 'blocked_configuration',
+      blockedReason: stripeConfigured
+        ? 'Stripe esta declarado, pero el checkout Stripe aun no esta habilitado en este backend.'
+        : 'Stripe requiere STRIPE_SECRET_KEY y STRIPE_WEBHOOK_SECRET antes de habilitar cobro real.',
+    };
+  }
+
   const mockMode = isPayPhoneMockMode();
   let configOk = true;
   let configError = '';
@@ -323,6 +344,7 @@ function buildPaymentCapabilities() {
 
   return {
     supportsMultiple: false,
+    provider: 'PAYPHONE',
     supportedProviders: ['PAYPHONE'],
     supportsManualEntry: false,
     supportsDefaultSwitch: false,

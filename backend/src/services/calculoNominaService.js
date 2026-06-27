@@ -114,6 +114,7 @@ function assertWeeklyOvertimeLimit(weeklyOvertimeMinutes = {}, payrollParameters
 async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
   validarPeriodoNomina(anio, mes);
   console.log(`[NOMINA] Calculando ${mes}/${anio} para tenant ${tenantId}`);
+  const executor = context.dbClient || db;
 
   const batch = await createPayrollCalculationBatch({
     tenantId,
@@ -121,6 +122,7 @@ async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
     mes,
     userId: context.userId || null,
     correlationId: context.correlationId || '',
+    dbClient: executor,
   });
   if (!batch?.id) {
     throw new AppError('No se pudo crear el lote de calculo de nomina.', {
@@ -143,9 +145,10 @@ async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
       userId: context.userId || null,
       anio,
       mes,
+      dbClient: executor,
     });
 
-    empleados = await db.query(`
+    empleados = await executor.query(`
       SELECT e.*, ws.weekly_hours AS jornada_weekly_hours
       FROM empleados e
       LEFT JOIN work_shifts ws
@@ -161,6 +164,7 @@ async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
       try {
         const resultado = await calcularEmpleado(emp, tenantId, anio, mes, legalParameters, {
           calculationBatchId: batch.id,
+          dbClient: executor,
         });
         resultados.push(resultado);
       } catch (err) {
@@ -185,6 +189,7 @@ async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
       totalCalculadas: resultados.length - errores.length,
       totalErrores: errores.length,
       errores,
+      dbClient: executor,
     });
 
     return { success: true, total: empleados.rows.length, batch: completedBatch, resultados };
@@ -197,6 +202,7 @@ async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
       totalCalculadas: 0,
       totalErrores: 1,
       errores: [{ error: err.message }],
+      dbClient: executor,
     });
     throw err;
   }
@@ -219,6 +225,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     });
   }
   const payrollParameters = legalParameters.payroll;
+  assertEmployeeMeetsUnifiedBaseSalary(emp, payrollParameters, { anio, mes });
 
   const diasTrabajados = calcularDiasTrabajados(emp.fecha_ingreso, anio, mes);
   const sueldo = Number.parseFloat(emp.sueldo_bruto_mensual);
@@ -231,10 +238,11 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     mes,
     valorHora,
     dailyMaxHours: payrollParameters.dailyMaxHours,
+    dbClient: options.dbClient || null,
   });
   assertWeeklyOvertimeLimit(noveltyImpact.weeklyOvertimeMinutes, payrollParameters);
-  const extras50 = (noveltyImpact.minutesByConcept.horas_extra_50 || 0) / 60;
-  const extras100 = (noveltyImpact.minutesByConcept.horas_extra_100 || 0) / 60;
+  const extras50 = roundMoney((noveltyImpact.minutesByConcept.horas_extra_50 || 0) / 60);
+  const extras100 = roundMoney((noveltyImpact.minutesByConcept.horas_extra_100 || 0) / 60);
   const montoExtras50 = roundMoney(noveltyImpact.amountByConcept.horas_extra_50 || 0);
   const montoExtras100 = roundMoney(noveltyImpact.amountByConcept.horas_extra_100 || 0);
   const bonosDesempeno = roundMoney(noveltyImpact.amountByConcept.bono_desempeno || 0);
@@ -271,7 +279,9 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     + provisionVacaciones
     + fondoReserva.montoDepositadoIess
   );
-  const benefitDeductions = await getApprovedDeductions(tenantId, emp.id, anio, mes);
+  const benefitDeductions = await getApprovedDeductions(tenantId, emp.id, anio, mes, {
+    dbClient: options.dbClient || null,
+  });
   const anticipos = benefitDeductions.anticipos;
   const prestamos = benefitDeductions.prestamos;
   const totalDeducciones = roundMoney(aporteIess + impuestoRenta + noveltyImpact.totals.deductions + anticipos + prestamos);
@@ -301,6 +311,10 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     montoExtras50,
     montoExtras100,
     horasExtraPorSemana: noveltyImpact.weeklyOvertimeMinutes || {},
+    horasExtraPorSemanaHoras: Object.fromEntries(Object.entries(noveltyImpact.weeklyOvertimeMinutes || {}).map(([week, minutes]) => [
+      week,
+      roundMoney(Number(minutes || 0) / 60),
+    ])),
     horasExtraLimiteSemanal: Number(payrollParameters.maxWeeklyOvertimeHours ?? 12),
     bonosDesempeno,
     comisiones,
@@ -337,7 +351,8 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     netoRecibir,
   };
 
-  const payrollResult = await db.query(`
+  const executor = options.dbClient || db;
+  const payrollResult = await executor.query(`
     INSERT INTO nominas (
       tenant_id, empleado_id, calculation_batch_id, anio, mes, dias_trabajados,
       sueldo_bruto, horas_extras_50, horas_extras_100, total_ingresos,
@@ -398,6 +413,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     mes,
     employee: emp,
     detalleCalculo,
+    dbClient: options.dbClient || null,
   });
 
   return {
@@ -409,8 +425,9 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   };
 }
 
-async function createPayrollCalculationBatch({ tenantId, anio, mes, userId = null, correlationId = '' }) {
-  const period = await db.query(`
+async function createPayrollCalculationBatch({ tenantId, anio, mes, userId = null, correlationId = '', dbClient = null }) {
+  const executor = dbClient || db;
+  const period = await executor.query(`
     WITH inserted AS (
       INSERT INTO payroll_periods (tenant_id, anio, mes, status, opened_by)
       VALUES ($1,$2,$3,'open',$4)
@@ -432,7 +449,7 @@ async function createPayrollCalculationBatch({ tenantId, anio, mes, userId = nul
     });
   }
 
-  const result = await db.query(`
+  const result = await executor.query(`
     INSERT INTO payroll_calculation_batches (
       tenant_id, period_id, anio, mes, status, started_by, correlation_id, metadata
     )
@@ -466,8 +483,10 @@ async function finishPayrollCalculationBatch({
   totalCalculadas,
   totalErrores,
   errores,
+  dbClient = null,
 }) {
-  const result = await db.query(`
+  const executor = dbClient || db;
+  const result = await executor.query(`
     UPDATE payroll_calculation_batches
     SET status = $3,
         total_empleados = $4,
@@ -523,6 +542,53 @@ function validarPeriodoNomina(anio, mes) {
 function normalizeReserveFundMode(value) {
   const mode = String(value || 'mensual').trim().toLowerCase();
   return mode === 'iess_directo' ? 'iess_directo' : 'mensual';
+}
+
+function metadataAllowsSbuException(metadata = {}) {
+  const source = typeof metadata === 'object' && metadata !== null ? metadata : {};
+  return source.sbuExceptionApproved === true
+    || source.excepcionSbuAprobada === true
+    || source.legalMinimumWageException === true;
+}
+
+function assertEmployeeMeetsUnifiedBaseSalary(emp = {}, payrollParameters = {}, context = {}) {
+  const tipoContrato = String(emp.tipo_contrato || '').trim().toLowerCase();
+  if (tipoContrato === 'hora') return true;
+
+  const salary = Number.parseFloat(emp.sueldo_bruto_mensual || 0);
+  const unifiedBaseSalary = Number.parseFloat(payrollParameters.unifiedBaseSalary || 0);
+  const metadata = typeof emp.metadata === 'string' ? safeJson(emp.metadata) : (emp.metadata || {});
+
+  if (!Number.isFinite(unifiedBaseSalary) || unifiedBaseSalary <= 0) {
+    throw new AppError('El SBU vigente no esta configurado para calcular nomina.', {
+      code: 'NOMINA_SBU_NO_CONFIGURADO',
+      statusCode: 422,
+      details: { anio: context.anio, mes: context.mes },
+    });
+  }
+
+  if (Number.isFinite(salary) && salary >= unifiedBaseSalary) return true;
+  if (metadataAllowsSbuException(metadata)) return true;
+
+  throw new AppError('El sueldo base del empleado es menor al SBU vigente configurado.', {
+    code: 'NOMINA_SUELDO_MENOR_SBU',
+    statusCode: 422,
+    details: {
+      empleadoId: emp.id || null,
+      sueldo: Number.isFinite(salary) ? salary : 0,
+      sbuVigente: unifiedBaseSalary,
+      anio: context.anio,
+      mes: context.mes,
+    },
+  });
+}
+
+function safeJson(value) {
+  try {
+    return JSON.parse(value);
+  } catch (err) {
+    return {};
+  }
 }
 
 function calcularFondoReserva(emp = {}, ingresosBase, anio, mes, payrollParameters = {}) {
@@ -643,4 +709,5 @@ module.exports = {
   resolveThirteenthSalaryPeriod,
   resolveFourteenthSalaryPeriod,
   assertWeeklyOvertimeLimit,
+  assertEmployeeMeetsUnifiedBaseSalary,
 };

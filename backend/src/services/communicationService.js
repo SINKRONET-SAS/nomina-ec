@@ -537,6 +537,16 @@ function employeeInviteEmailTemplate({ employeeName, code, activationUrl, expire
   };
 }
 
+function payrollRoleAvailableEmailTemplate({ employeeName, anio, mes, roleUrl }) {
+  const safeName = sanitizeHeader(employeeName, 'empleado');
+  const period = `${String(mes).padStart(2, '0')}/${anio}`;
+  return {
+    subject: `Rol de pago disponible ${period}`,
+    text: `Hola ${safeName}.\n\nTu rol de pago del periodo ${period} esta disponible en Nomina-Ec.\n${roleUrl ? `Puedes revisarlo aqui: ${roleUrl}\n` : ''}\nSi tienes dudas, contacta a RRHH.`,
+    html: `<p>Hola ${safeName}.</p><p>Tu rol de pago del periodo <strong>${period}</strong> esta disponible en Nomina-Ec.</p>${roleUrl ? `<p><a href="${roleUrl}">Revisar rol de pago</a></p>` : ''}<p>Si tienes dudas, contacta a RRHH.</p>`,
+  };
+}
+
 async function sendEmailVerification({ to, code, name, correlationId, userId, tenantId }) {
   const content = verificationEmailTemplate({ code, name });
   return sendEmail({
@@ -621,6 +631,29 @@ async function sendEmployeeInvite({ employee, invite, correlationId, userId }) {
   return results;
 }
 
+async function sendRolPagoDisponible({ employee, payroll, correlationId, userId, roleUrl = '' }) {
+  const name = [employee?.nombres, employee?.apellidos].filter(Boolean).join(' ') || 'empleado';
+  const tenantId = employee?.tenant_id || employee?.tenantId || payroll?.tenant_id || payroll?.tenantId || null;
+  const content = payrollRoleAvailableEmailTemplate({
+    employeeName: name,
+    anio: payroll?.anio,
+    mes: payroll?.mes,
+    roleUrl,
+  });
+
+  return sendEmail({
+    to: employee?.email_personal || employee?.email,
+    ...content,
+    template: 'payroll_role_available',
+    correlationId,
+    userId,
+    tenantId,
+    purpose: 'notificacion_rol_pago_disponible',
+    flow: 'nomina_cierre_roles',
+    required: false,
+  });
+}
+
 async function sendTestEmail({ to, correlationId, userId, tenantId }) {
   return sendEmail({
     to,
@@ -644,6 +677,7 @@ module.exports = {
   sendEmailVerification,
   sendEmployeeInvite,
   sendPasswordReset,
+  sendRolPagoDisponible,
   sendTestEmail,
   sendWhatsAppTemplate,
   hasWhatsAppConsent,

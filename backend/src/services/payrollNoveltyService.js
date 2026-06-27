@@ -162,6 +162,24 @@ async function getActiveNoveltyTypeConfigs(tenantId, anio, mes) {
   return result.rows.map(normalizeConfig);
 }
 
+async function getActiveNoveltyTypeConfigsWithExecutor(executor, tenantId, anio, mes) {
+  const periodDate = `${Number(anio)}-${String(Number(mes)).padStart(2, '0')}-01`;
+  const result = await executor.query(`
+    SELECT DISTINCT ON (LOWER(code))
+      id, tenant_id, code, name, description, payroll_impact,
+      affects_iess, affects_income_tax, affects_decimos, affects_vacation,
+      affects_bank_file, applicability, status, valid_from, valid_to
+    FROM novelty_type_configs
+    WHERE status = 'activo'
+      AND valid_from <= $2::date
+      AND (valid_to IS NULL OR valid_to >= $2::date)
+      AND (tenant_id = $1 OR tenant_id IS NULL)
+    ORDER BY LOWER(code), tenant_id NULLS LAST, valid_from DESC, updated_at DESC
+  `, [tenantId, periodDate]);
+
+  return result.rows.map(normalizeConfig);
+}
+
 async function ensureNoveltyTypeAllowed({ tenantId, tipoNovedad, anio, mes, userId = null }) {
   const code = normalizeNoveltyCode(tipoNovedad);
   if (!code) {
@@ -192,9 +210,11 @@ async function getApprovedPayrollNoveltyImpacts({
   mes,
   valorHora,
   dailyMaxHours,
+  dbClient = null,
 }) {
-  const configs = await getActiveNoveltyTypeConfigs(tenantId, anio, mes);
-  const result = await db.query(`
+  const executor = dbClient || db;
+  const configs = await getActiveNoveltyTypeConfigsWithExecutor(executor, tenantId, anio, mes);
+  const result = await executor.query(`
     SELECT id, tipo_novedad, fecha, minutos, monto, justificacion
     FROM novedades_asistencia
     WHERE empleado_id = $1
@@ -251,6 +271,7 @@ function calculateNoveltyImpacts(rows = [], configs = [], context = {}) {
       payrollImpact: config.payrollImpact,
       amount,
       minutes: Number(row.minutos || 0),
+      hours: roundMoney(Number(row.minutos || 0) / 60),
       source: 'novedad',
       sourceId: row.id || code,
       legalParameterKey: '',
@@ -338,8 +359,10 @@ module.exports = {
   VALID_CALCULATION_MODES,
   calculateNoveltyImpacts,
   conceptCodeForNovelty,
+  defaultConfigForCode,
   ensureNoveltyTypeAllowed,
   getActiveNoveltyTypeConfigs,
+  getActiveNoveltyTypeConfigsWithExecutor,
   getApprovedPayrollNoveltyImpacts,
   isOvertimeConcept,
   normalizeConfig,

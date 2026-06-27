@@ -156,7 +156,9 @@ app.get('/api/mobile/nomina/:anio/:mes', requireRole('empleado', 'owner', 'admin
 const novedadController = require('./controllers/novedadController');
 app.get('/api/novedades', novedadController.listar);
 app.get('/api/novedades/pendientes', novedadController.listarPendientes);
+app.get('/api/novedades/plantilla-carga-masiva', requireRole('owner', 'admin_rrhh', 'supervisor'), novedadController.descargarPlantillaCargaMasiva);
 app.post('/api/novedades', requireRole('owner', 'admin_rrhh', 'supervisor'), novedadController.crear);
+app.post('/api/novedades/carga-masiva', requireRole('owner', 'admin_rrhh'), novedadController.cargaMasiva);
 app.put('/api/novedades/periodo/resolver', requireRole('owner', 'admin_rrhh'), novedadController.resolverPeriodo);
 app.put('/api/novedades/:id/aprobar', requireRole('owner', 'admin_rrhh'), novedadController.aprobar);
 app.put('/api/novedades/:id/rechazar', requireRole('owner', 'admin_rrhh'), novedadController.rechazar);
@@ -196,6 +198,8 @@ app.get('/api/documentos/:id/download', documentoLegalController.descargar);
 const reporteController = require('./controllers/reporteController');
 app.post('/api/reportes/rdep/precheck', requireRole('owner', 'admin_rrhh'), reporteController.validarRDEP);
 app.post('/api/reportes/rdep', requireRole('owner', 'admin_rrhh'), reporteController.generarRDEP);
+app.post('/api/reportes/formulario-107/precheck', requireRole('owner', 'admin_rrhh'), reporteController.validarFormulario107);
+app.post('/api/reportes/formulario-107', requireRole('owner', 'admin_rrhh'), reporteController.generarFormulario107);
 app.post('/api/reportes/sae', requireRole('owner', 'admin_rrhh'), reporteController.generarSAE);
 app.post('/api/reportes/banco/precheck', requireRole('owner', 'admin_rrhh'), reporteController.validarArchivoBanco);
 app.post('/api/reportes/banco', requireRole('owner', 'admin_rrhh'), reporteController.generarArchivoBanco);

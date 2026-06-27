@@ -15,8 +15,10 @@ const {
   getPayrollPeriodState,
   openPayrollPeriod,
 } = require('../services/monthlyPeriodService');
+const { sendRolPagoDisponible } = require('../services/communicationService');
 
 async function calcularMes(req, res) {
+  let tx = null;
   try {
     const { tenantId } = req;
     const { anio, mes } = req.body;
@@ -34,17 +36,19 @@ async function calcularMes(req, res) {
       mode: 'calculation',
     });
 
+    tx = await db.getClient(tenantId, req.usuarioId);
     const resultado = await calcularNominaMensual(tenantId, anioNumber, mesNumber, {
       userId: req.usuarioId,
       correlationId: req.correlationId,
       ipAddress: req.ip,
+      dbClient: tx,
     });
     const erroresDetalle = Array.isArray(resultado.resultados)
       ? resultado.resultados.filter((row) => row.error)
       : [];
 
     if (erroresDetalle.length > 0) {
-      await db.query(`
+      await tx.query(`
         UPDATE payroll_periods
         SET status = 'calculation_failed',
             calculated_at = NOW(),
@@ -62,6 +66,8 @@ async function calcularMes(req, res) {
         WHERE tenant_id = $1 AND anio = $2 AND mes = $3
       `, [tenantId, anioNumber, mesNumber, JSON.stringify(erroresDetalle), erroresDetalle.length, req.correlationId || null, resultado.batch?.id || null]);
 
+      await db.commit(tx);
+      tx = null;
       return res.status(422).json({
         success: false,
         error: 'NOMINA_CALCULATION_FAILED',
@@ -77,7 +83,7 @@ async function calcularMes(req, res) {
       });
     }
 
-    await db.query(`
+    await tx.query(`
       UPDATE payroll_periods
       SET status = CASE WHEN status IN ('open', 'novelties_loaded', 'reopened', 'calculation_failed') THEN 'calculated' ELSE status END,
           calculated_at = NOW(),
@@ -93,8 +99,21 @@ async function calcularMes(req, res) {
           updated_at = NOW()
       WHERE tenant_id = $1 AND anio = $2 AND mes = $3
     `, [tenantId, anioNumber, mesNumber, resultado.total || 0, req.correlationId || null, resultado.batch?.id || null]);
+    await db.commit(tx);
+    tx = null;
     res.json({ success: true, resultado, readiness, correlationId: req.correlationId });
   } catch (err) {
+    if (tx) {
+      await db.rollback(tx).catch((rollbackErr) => {
+        console.error('[NOMINA] Error revirtiendo transaccion de calculo', {
+          code: rollbackErr.code || 'NOMINA_CALCULO_ROLLBACK_ERROR',
+          statusCode: 500,
+          correlationId: req.correlationId,
+          userId: req.usuarioId || null,
+          message: rollbackErr.message,
+        });
+      });
+    }
     console.error('[NOMINA] Error calculando mes', {
       code: err.code || 'NOMINA_CALCULO_ERROR',
       statusCode: err.statusCode || 500,
@@ -362,7 +381,7 @@ async function cerrarMes(req, res) {
       UPDATE nominas
       SET estado = 'cerrada', cerrado_en = NOW(), updated_at = NOW()
       WHERE tenant_id = $1 AND anio = $2 AND mes = $3 AND estado = 'borrador'
-      RETURNING id, detalle_calculo
+      RETURNING id, empleado_id, tenant_id, anio, mes, detalle_calculo
     `, [tenantId, anioNumber, mesNumber]);
 
     const periodo = `${Number(anio)}-${String(Number(mes)).padStart(2, '0')}`;
@@ -449,12 +468,58 @@ async function cerrarMes(req, res) {
       ipAddress: req.ip,
     });
 
+    const employeesResult = result.rows.length > 0
+      ? await db.query(`
+        SELECT id, tenant_id, nombres, apellidos, email_personal
+        FROM empleados
+        WHERE tenant_id = $1 AND id = ANY($2::uuid[])
+      `, [tenantId, result.rows.map((row) => row.empleado_id)])
+      : { rows: [] };
+    const employeeById = new Map(employeesResult.rows.map((employee) => [String(employee.id), employee]));
+    const communicationResults = [];
+
+    for (const payroll of result.rows) {
+      const employee = employeeById.get(String(payroll.empleado_id));
+      if (!employee) continue;
+      try {
+        const delivery = await sendRolPagoDisponible({
+          employee,
+          payroll,
+          correlationId: req.correlationId,
+          userId: usuarioId,
+        });
+        communicationResults.push({
+          payrollId: payroll.id,
+          employeeId: employee.id,
+          status: delivery.status,
+          provider: delivery.provider,
+        });
+      } catch (deliveryErr) {
+        console.error('[NOMINA] No se pudo notificar rol de pago disponible', {
+          code: deliveryErr.code || 'ROL_PAGO_NOTIFICACION_ERROR',
+          statusCode: deliveryErr.statusCode || 500,
+          correlationId: req.correlationId,
+          userId: usuarioId || null,
+          empleadoId: employee.id,
+          message: deliveryErr.message,
+        });
+        communicationResults.push({
+          payrollId: payroll.id,
+          employeeId: employee.id,
+          status: 'failed',
+          provider: 'smtp',
+          error: deliveryErr.code || 'ROL_PAGO_NOTIFICACION_ERROR',
+        });
+      }
+    }
+
     res.json({
       success: true,
       mensaje: `${result.rows.length} nominas cerradas`,
       total: result.rows.length,
       beneficiosAplicados,
       beneficiosOmitidos,
+      notificacionesRolPago: communicationResults,
       readiness,
       correlationId: req.correlationId,
     });

@@ -1,97 +1,98 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-AUDITORIA-NOMINA-EC-2026-V2",
-  "planCode": "ANV2",
+  "plan": "HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026",
+  "planCode": "CDAN26",
   "status": "completed_local",
-  "phaseCompleted": "ANV2-06",
-  "currentPhase": "ANV2-06-qa-release",
-  "updatedAt": "2026-06-25T23:26:26.4699281-05:00",
-  "summary": "ANV2-00..06 ejecutadas localmente. EMAIL-C01 cerrado con comunicaciones reales y bloqueo productivo; TZ-C01 cerrado con America/Guayaquil; LEG-H01 cerrado con firmas legales visibles en roles, contratos y actas. CODEX_CONTEXT sensible permanece fuera de raiz.",
+  "phaseCompleted": "CDAN26-08",
+  "currentPhase": "CDAN26-08-qa-release",
+  "updatedAt": "2026-06-26T20:15:00-05:00",
+  "summary": "CDAN26-00..08 ejecutadas localmente. Se cerro calculo transaccional, SBU, Formulario 107 PDF, novedades manuales y carga masiva, horas a 2 decimales, notificacion de rol de pago, pagos con bloqueo Stripe/PayPhone preservado, contexto consolidado en .github y gates principales verdes.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts de acuerdo al PLAN_HAIKY_AUDITORIA_NOMINA_EC_2026_V2.md.",
-  "previousAuditLockHash": "A2B11DACCD670591BD92CABD9F2784C6F5FFF65963D388D55500B6FDA893C4ED",
+  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts CDAN26, consolidar CODEX_CONTEXT.md con .github/CODEX_CONTEXT.md, cerrar artefactos de gobierno, commit y push.",
+  "previousAuditLockHash": "00890E4F282E38C4BC03360CC891541AD54E7D2BF4B679F96005B9CA91D6E3D1",
   "filesModifiedSummary": [
     ".github/CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "backend/.env.example",
-    "backend/src/controllers/payrollAccountingController.js",
-    "backend/src/services/communicationService.js",
-    "backend/src/services/equipmentDeliveryActService.js",
-    "backend/src/services/monthlyPeriodService.js",
-    "backend/src/services/payrollRolePdfService.js",
-    "backend/src/services/templateGenerator.js",
-    "backend/src/services/*.test.js",
-    "frontend-web/src/pages/Configuracion/Comunicaciones.jsx",
-    "frontend-web/src/pages/Documentos/ActasEntregaDotacion.jsx",
-    "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
-    "frontend-web/src/pages/Nomina/Beneficios.jsx",
-    "frontend-web/src/pages/Nomina/CerrarMes.jsx",
-    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
-    "frontend-web/src/pages/Nomina/RolesPagos.jsx",
-    "frontend-web/src/pages/Dashboard.jsx",
-    "frontend-web/src/utils/dateFormat.js",
     "render.yaml",
-    "scripts/verify-system-contracts.mjs",
-    "docs2/PLAN_HAIKY_AUDITORIA_NOMINA_EC_2026_V2.md",
-    "docs2/auditoria-nomina-ec-2026-v2/MATRIZ_ANV2_HALLAZGOS.md",
-    "docs2/auditoria-nomina-ec-2026-v2/REPORTE_ANV2_01_DIAGNOSTICO_RUNTIME.md",
-    "docs2/auditoria-nomina-ec-2026-v2/REPORTE_ANV2_02_COMUNICACIONES_REALES.md",
-    "docs2/auditoria-nomina-ec-2026-v2/REPORTE_ANV2_03_TIMEZONE_ECUADOR.md",
-    "docs2/auditoria-nomina-ec-2026-v2/REPORTE_ANV2_04_FIRMAS_LEGALES.md",
-    "docs2/auditoria-nomina-ec-2026-v2/REPORTE_ANV2_05_FRONTEND_OPERATIVO.md",
-    "docs2/auditoria-nomina-ec-2026-v2/REPORTE_ANV2_06_QA_RELEASE.md"
+    "backend/src/app.js",
+    "backend/src/controllers/nominaController.js",
+    "backend/src/controllers/novedadController.js",
+    "backend/src/controllers/paymentController.js",
+    "backend/src/controllers/reporteController.js",
+    "backend/src/services/beneficioEmpleadoService.js",
+    "backend/src/services/calculoNominaService.js",
+    "backend/src/services/calculoNominaService.test.js",
+    "backend/src/services/communicationService.js",
+    "backend/src/services/payrollAccountingService.js",
+    "backend/src/services/payrollNoveltyService.js",
+    "backend/src/services/payrollNoveltyService.cdan26.test.js",
+    "backend/src/services/sriFormulario107Service.js",
+    "backend/src/services/sriFormulario107Service.test.js",
+    "frontend-web/src/components/Layout/Layout.jsx",
+    "frontend-web/src/pages/Asistencia/NovedadesPendientes.jsx",
+    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
+    "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026/*.md",
+    "prompts/CDAN26-00-baseline.md",
+    "prompts/CDAN26-01-diagnostico-runtime.md",
+    "prompts/CDAN26-02-seguridad-render-naming.md",
+    "prompts/CDAN26-03-legal-sbu-fondo-superadmin.md",
+    "prompts/CDAN26-04-sri-formulario-107.md",
+    "prompts/CDAN26-05-calculo-transaccional.md",
+    "prompts/CDAN26-06-revenue-pagos.md",
+    "prompts/CDAN26-07-comunicaciones-rol-pago.md",
+    "prompts/CDAN26-08-qa-release.md"
   ],
   "validationChecks": [
     {
-      "gate": "ANV2-CONTEXT-SAFE-PATH",
-      "status": "PASS",
-      "detail": "Test-Path CODEX_CONTEXT.md retorno False; el contexto operativo permanece en .github/CODEX_CONTEXT.md."
-    },
-    {
-      "gate": "ANV2-CONTRACTS",
+      "gate": "CDAN26-CONTRACTS",
       "status": "PASS",
       "detail": "npm.cmd run contracts"
     },
     {
-      "gate": "ANV2-PRISMA-VALIDATE",
+      "gate": "CDAN26-PRISMA-VALIDATE",
       "status": "PASS",
       "detail": "npm.cmd run prisma:validate"
     },
     {
-      "gate": "ANV2-BACKEND-TESTS",
+      "gate": "CDAN26-BACKEND-TESTS",
       "status": "PASS",
-      "detail": "npm.cmd run test:backend: 44 suites, 174 tests."
+      "detail": "npm.cmd run test:backend: 46 suites, 180 tests."
     },
     {
-      "gate": "ANV2-WEB-BUILD",
+      "gate": "CDAN26-WEB-BUILD",
       "status": "PASS",
       "detail": "npm.cmd run build:web"
     },
     {
-      "gate": "ANV2-PWA-SMOKE",
-      "status": "PASS",
-      "detail": "npm.cmd --workspace=frontend-web run smoke:pwa"
-    },
-    {
-      "gate": "ANV2-MOBILE-CHECK",
+      "gate": "CDAN26-MOBILE-CHECK",
       "status": "PASS",
       "detail": "npm.cmd run check:mobile"
+    },
+    {
+      "gate": "CDAN26-CONTEXT-CONSOLIDATED",
+      "status": "PASS",
+      "detail": "CODEX_CONTEXT.md de raiz eliminado; contexto CDAN26 consolidado en .github/CODEX_CONTEXT.md."
     }
   ],
   "fases": [
-    { "phase": "ANV2-00", "status": "completed_documental" },
-    { "phase": "ANV2-01", "status": "completed_local" },
-    { "phase": "ANV2-02", "status": "completed_local" },
-    { "phase": "ANV2-03", "status": "completed_local" },
-    { "phase": "ANV2-04", "status": "completed_local" },
-    { "phase": "ANV2-05", "status": "completed_local" },
-    { "phase": "ANV2-06", "status": "completed_local" }
+    { "phase": "CDAN26-00", "status": "completed_documental" },
+    { "phase": "CDAN26-01", "status": "completed_local" },
+    { "phase": "CDAN26-02", "status": "completed_local" },
+    { "phase": "CDAN26-03", "status": "completed_local" },
+    { "phase": "CDAN26-04", "status": "completed_local" },
+    { "phase": "CDAN26-05", "status": "completed_local" },
+    { "phase": "CDAN26-06", "status": "completed_local" },
+    { "phase": "CDAN26-07", "status": "completed_local" },
+    { "phase": "CDAN26-08", "status": "completed_local" }
   ],
   "residualRisk": [
-    "Produccion requiere credenciales SMTP reales, remitente verificado y prueba de entrega con proveedor antes de prometer correos.",
-    "Registro SUT/MDT y revision legal laboral ecuatoriana siguen siendo obligaciones externas antes de oferta comercial definitiva.",
-    "Smoke visual manual con navegador no se ejecuto en esta fase; se cubrio con contratos, build PWA, smoke PWA automatizado, pruebas backend y check mobile."
+    "Formulario 107 PDF requiere revision tributaria profesional y ficha SRI vigente antes de presentacion oficial.",
+    "SBU 2026 se consume desde parametros legales vigentes; la auditoria mencionaba USD 460, pero la matriz legal interna vigente usa USD 482.",
+    "Stripe real queda bloqueado si se declara como PAYMENT_PROVIDER=stripe; PayPhone permanece como canal real existente.",
+    "Comunicaciones productivas requieren proveedor SMTP/API real y remitente verificado.",
+    "Smoke visual con navegador integrado no se completo por falla de conexion de la herramienta; se cubrio con build PWA, contratos y pruebas."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "59D383AE544180C32DD2D4288281504E9CF9FD47154AB69A86525C0ED09CE0AA"
+  "signature": "71727CE1CD1DEF8E7077E3653D646031BB9AC04480025299F9B4D697843016AC"
 }
