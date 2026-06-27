@@ -3,6 +3,7 @@ jest.mock('../config/database', () => ({
 }));
 
 jest.mock('../config/jwt', () => ({
+  signUserToken: jest.fn(),
   signJwt: jest.fn(),
   verifyJwt: jest.fn(),
 }));

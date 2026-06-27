@@ -11,12 +11,15 @@ import MarcacionScreen from './screens/MarcacionScreen';
 import MisMarcacionesScreen from './screens/MisMarcacionesScreen';
 import AutoservicioScreen from './screens/AutoservicioScreen';
 import RutaHoyScreen from './screens/RutaHoyScreen';
+import GastosMovilizacionScreen from './screens/GastosMovilizacionScreen';
+import { initMovilizacionDB } from './db/movilizacion';
 
 const tabs = [
   { id: 'marcar', label: 'Marcar' },
   { id: 'ruta', label: 'Ruta' },
+  { id: 'movilizacion', label: 'Moviliz.' },
   { id: 'historial', label: 'Historial' },
-  { id: 'perfil', label: 'Perfil' },
+  { id: 'autoservicio', label: 'Mi Nomina' },
 ];
 
 function EmployeeAppShell({ onLogout }) {
@@ -24,8 +27,9 @@ function EmployeeAppShell({ onLogout }) {
 
   const renderScreen = () => {
     if (activeTab === 'ruta') return <RutaHoyScreen />;
+    if (activeTab === 'movilizacion') return <GastosMovilizacionScreen />;
     if (activeTab === 'historial') return <MisMarcacionesScreen />;
-    if (activeTab === 'perfil') return <AutoservicioScreen />;
+    if (activeTab === 'autoservicio') return <AutoservicioScreen />;
     return <MarcacionScreen onLogout={onLogout} />;
   };
 
@@ -58,6 +62,15 @@ export default function App() {
 
   useEffect(() => {
     cargarToken();
+    initMovilizacionDB().catch((err) => {
+      console.error('Error inicializando movilizacion local:', {
+        code: err.code || 'MOVILIZACION_SQLITE_INIT_ERROR',
+        statusCode: 500,
+        correlationId: 'mobile-local',
+        userId: null,
+        message: err.message,
+      });
+    });
   }, []);
 
   const cargarToken = async () => {

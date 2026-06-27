@@ -55,6 +55,8 @@ export const mobileAPI = {
   routeOmit: (stopId, payload) => api.post(`/mobile/ruta/paradas/${stopId}/omitir`, payload),
   routeUnplanned: (payload) => api.post('/mobile/ruta/visitas/no-programada', payload),
   payroll: (anio, mes) => api.get(`/mobile/nomina/${anio}/${mes}`),
+  sendMobilizationReport: (payload) => api.post('/movilizacion/informe', payload),
+  mobilizationReports: () => api.get('/movilizacion/mis-informes'),
 };
 
 export default api;

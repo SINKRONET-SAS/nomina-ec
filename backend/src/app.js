@@ -55,6 +55,7 @@ app.get('/api/pagos/planes', paymentController.listPublicPlans);
 app.get('/api/pagos/confirm', paymentController.confirmPayment);
 app.get('/api/pagos/cancelado', paymentController.paymentCancelled);
 app.post('/api/pagos/webhook', paymentController.confirmPayment);
+app.post('/api/pagos/webhook/payphone', paymentController.payphoneWebhook);
 
 const storageController = require('./controllers/storageController');
 app.get('/api/storage/local/:encodedKey', storageController.descargarLocal);
@@ -144,6 +145,12 @@ app.get('/api/rutas/reporte', requireRole('owner', 'admin_rrhh', 'supervisor'), 
 app.get('/api/rutas/reporte.csv', requireRole('owner', 'admin_rrhh', 'supervisor'), routeController.exportCsv);
 app.get('/api/rutas/reporte.xlsx', requireRole('owner', 'admin_rrhh', 'supervisor'), routeController.exportXlsx);
 app.get('/api/rutas/reporte.pdf', requireRole('owner', 'admin_rrhh', 'supervisor'), routeController.exportPdf);
+
+const movilizacionController = require('./controllers/movilizacionController');
+app.post('/api/movilizacion/informe', requireRole('empleado', 'owner', 'admin_rrhh'), movilizacionController.recibirInforme);
+app.get('/api/movilizacion/mis-informes', requireRole('empleado', 'owner', 'admin_rrhh'), movilizacionController.misInformes);
+app.get('/api/movilizacion/informes', requireRole('owner', 'admin_rrhh'), movilizacionController.listarInformes);
+app.patch('/api/movilizacion/informes/:id', requireRole('owner', 'admin_rrhh'), requireFreshUser, movilizacionController.resolverInforme);
 
 const mobileController = require('./controllers/mobileController');
 app.get('/api/mobile/me', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.perfil);

@@ -1,28 +1,29 @@
 {
-    "version":  "1.0.0",
-    "name":  "nomina-ec-app",
-    "overrides":  {
-                      "uuid":  "^11.1.1",
-                      "form-data":  "^4.0.6"
-                  },
-    "scripts":  {
-                    "doctor":  "npx expo-doctor",
-                    "ios":  "node ./node_modules/expo/bin/cli start --ios",
-                    "check:stores":  "node scripts/check-store-readiness.mjs",
-                    "android":  "node ./node_modules/expo/bin/cli start --android",
-                    "start":  "node ./node_modules/expo/bin/cli start",
-                    "start:lan":  "node ./node_modules/expo/bin/cli start --lan -c"
-                },
-    "dependencies":  {
-                         "expo-location":  "~19.0.8",
-                         "react":  "19.1.0",
-                         "axios":  "^1.6.2",
-                         "expo-status-bar":  "~3.0.9",
-                         "react-native-safe-area-context":  "~5.6.0",
-                         "react-native":  "0.81.5",
-                         "expo":  "~54.0.35",
-                         "expo-secure-store":  "~15.0.8"
-                     },
-    "private":  true,
-    "main":  "index.js"
+    "version": "1.0.0",
+    "name": "nomina-ec-app",
+    "overrides": {
+        "uuid": "^11.1.1",
+        "form-data": "^4.0.6"
+    },
+    "scripts": {
+        "doctor": "npx expo-doctor",
+        "ios": "node ./node_modules/expo/bin/cli start --ios",
+        "check:stores": "node scripts/check-store-readiness.mjs",
+        "android": "node ./node_modules/expo/bin/cli start --android",
+        "start": "node ./node_modules/expo/bin/cli start",
+        "start:lan": "node ./node_modules/expo/bin/cli start --lan -c"
+    },
+    "dependencies": {
+        "axios": "^1.6.2",
+        "expo": "~54.0.35",
+        "expo-location": "~19.0.8",
+        "expo-secure-store": "~15.0.8",
+        "expo-sqlite": "~16.0.9",
+        "expo-status-bar": "~3.0.9",
+        "react": "19.1.0",
+        "react-native": "0.81.5",
+        "react-native-safe-area-context": "~5.6.0"
+    },
+    "private": true,
+    "main": "index.js"
 }

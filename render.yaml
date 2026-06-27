@@ -10,7 +10,7 @@ services:
     env: node
     rootDir: backend
     plan: starter
-    buildCommand: npm ci && npm run db:migrate
+    buildCommand: npm ci && npm run db:migrate && npm run seed:admins
     startCommand: npm start
     healthCheckPath: /health
     envVars:
@@ -26,6 +26,14 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      - key: SUPERADMIN_EMAIL
+        sync: false
+      - key: SUPERADMIN_PASSWORD
+        sync: false
+      - key: SUPERADMIN_NAMES
+        value: Super
+      - key: SUPERADMIN_LAST_NAMES
+        value: Admin
       - key: FRONTEND_URL
         sync: false
       - key: APP_PUBLIC_URL
@@ -37,6 +45,8 @@ services:
       - key: PAYPHONE_TOKEN
         sync: false
       - key: PAYPHONE_STORE_ID
+        sync: false
+      - key: PAYPHONE_WEBHOOK_SECRET
         sync: false
       - key: PAYPHONE_TIMEOUT_MS
         value: "12000"

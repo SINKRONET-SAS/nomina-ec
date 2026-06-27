@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Mail, Settings2, LogOut, Menu, ShieldCheck, X, Home } from 'lucide-react';
+import { LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Mail, Settings2, LogOut, Menu, ShieldCheck, X, Home, Route } from 'lucide-react';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -31,6 +31,14 @@ function Layout() {
         { path: '/dashboard/asistencia/novedades', label: 'Ingreso manual y pendientes' },
         { path: '/dashboard/asistencia/reporte', label: 'Reporte de Asistencia' },
         { path: '/dashboard/asistencia/rutas', label: 'Rutas de campo' },
+      ]
+    },
+    {
+      label: 'Operacion',
+      icon: Route,
+      roles: ['owner', 'admin_rrhh'],
+      submenu: [
+        { path: '/dashboard/operacion/movilizacion', label: 'Movilizacion' },
       ]
     },
     {

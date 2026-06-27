@@ -155,6 +155,7 @@ async function resetDemoTenant(client) {
       'api_idempotency_keys',
       'api_clients',
       'route_exceptions',
+      'informe_movilizacion',
       'route_visit_marks',
       'route_stops',
       'route_days',
@@ -1057,6 +1058,77 @@ async function insertDemoRoutes(client, tenantId, employees, zones, units, owner
   ]);
 }
 
+async function insertDemoMobilization(client, tenantId, employees, ownerId) {
+  const selected = employees.slice(0, 3);
+  const reports = [
+    {
+      employee: selected[0],
+      periodo: '2026-06',
+      estado: 'pendiente',
+      total: 38.5,
+      dias: 2,
+      detalle: [
+        { fecha: '2026-06-10', origen: 'Oficina Quito', destino: 'Supermercado Inaquito', concepto: 'taxi', km: 5.2, valor_usd: 12.5 },
+        { fecha: '2026-06-11', origen: 'Farmacia La Carolina', destino: 'Tienda Quicentro', concepto: 'uber', km: 8.1, valor_usd: 26 },
+      ],
+    },
+    {
+      employee: selected[1],
+      periodo: '2026-06',
+      estado: 'aprobado',
+      total: 24,
+      dias: 1,
+      anticipo: 24,
+      detalle: [
+        { fecha: '2026-06-12', origen: 'Bodega Quito', destino: 'Cliente norte', concepto: 'bus', km: null, valor_usd: 24 },
+      ],
+    },
+    {
+      employee: selected[2],
+      periodo: '2026-06',
+      estado: 'rechazado',
+      total: 18,
+      dias: 1,
+      motivo: 'Recibo no legible en demo smoke.',
+      detalle: [
+        { fecha: '2026-06-13', origen: 'Sucursal', destino: 'Cliente demo', concepto: 'taxi', km: 4, valor_usd: 18 },
+      ],
+    },
+  ].filter((report) => report.employee);
+
+  for (const report of reports) {
+    await client.query(`
+      INSERT INTO informe_movilizacion (
+        tenant_id, empleado_id, periodo, estado, total_usd, dias, detalle_json,
+        anticipo_generado_usd, aprobado_por, aprobado_at, rechazo_motivo
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      ON CONFLICT (tenant_id, empleado_id, periodo) DO UPDATE SET
+        estado = EXCLUDED.estado,
+        total_usd = EXCLUDED.total_usd,
+        dias = EXCLUDED.dias,
+        detalle_json = EXCLUDED.detalle_json,
+        anticipo_generado_usd = EXCLUDED.anticipo_generado_usd,
+        aprobado_por = EXCLUDED.aprobado_por,
+        aprobado_at = EXCLUDED.aprobado_at,
+        rechazo_motivo = EXCLUDED.rechazo_motivo,
+        updated_at = NOW()
+    `, [
+      tenantId,
+      report.employee.id,
+      report.periodo,
+      report.estado,
+      report.total,
+      report.dias,
+      toJson(report.detalle.map((item) => ({ ...item, demo: true }))),
+      report.anticipo || null,
+      report.estado === 'pendiente' ? null : ownerId,
+      report.estado === 'pendiente' ? null : new Date().toISOString(),
+      report.motivo || null,
+    ]);
+  }
+}
+
 function addMinutes(time, minutesToAdd) {
   const [hour, minute] = time.split(':').map(Number);
   const total = hour * 60 + minute + minutesToAdd;
@@ -1248,6 +1320,7 @@ async function verifyDemo() {
       (SELECT COUNT(*)::int FROM route_days WHERE tenant_id = (SELECT id FROM tenant)) AS route_days,
       (SELECT COUNT(*)::int FROM route_stops WHERE tenant_id = (SELECT id FROM tenant)) AS route_stops,
       (SELECT COUNT(*)::int FROM route_visit_marks WHERE tenant_id = (SELECT id FROM tenant)) AS route_visit_marks,
+      (SELECT COUNT(*)::int FROM informe_movilizacion WHERE tenant_id = (SELECT id FROM tenant)) AS mobilization_reports,
       (SELECT COUNT(*)::int FROM marcaciones WHERE tenant_id = (SELECT id FROM tenant)) AS marks,
       (SELECT COUNT(*)::int FROM novedades_asistencia WHERE tenant_id = (SELECT id FROM tenant)) AS novelties,
       (SELECT COUNT(*)::int FROM payroll_periods WHERE tenant_id = (SELECT id FROM tenant) AND anio = 2026 AND status = 'closed') AS closed_periods,
@@ -1265,6 +1338,7 @@ async function verifyDemo() {
     ['route_days', 1],
     ['route_stops', 3],
     ['route_visit_marks', 3],
+    ['mobilization_reports', 3],
     ['closed_periods', 5],
     ['bank_profiles', 2],
   ];
@@ -1318,6 +1392,7 @@ async function seedDemo() {
     await insertOnboarding(client, tenantId, users.owner.id);
     await insertAttendance(client, tenantId, employees, shifts, zones, units, users.owner.id);
     await insertDemoRoutes(client, tenantId, employees, zones, units, users.owner.id);
+    await insertDemoMobilization(client, tenantId, employees, users.owner.id);
     periods = await insertPayrollNovelties(client, tenantId, users.owner.id, employees);
     await db.commit(client);
   } catch (err) {

@@ -16,18 +16,46 @@ function normalizeRequiredBankCode(banco) {
   return String(banco || '').trim().toUpperCase();
 }
 
+function requireFiscalYear(req, res, action) {
+  const anio = Number(req.body.anio);
+  if (!Number.isInteger(anio) || anio < 2020 || anio > 2100) {
+    res.status(400).json({
+      error: 'ANIO_FISCAL_REQUERIDO',
+      message: `Selecciona el año fiscal para ${action}.`,
+      correlationId: req.correlationId,
+    });
+    return null;
+  }
+  return anio;
+}
+
+function requirePeriod(req, res) {
+  const anio = Number(req.body.anio);
+  const mes = Number(req.body.mes);
+  if (!Number.isInteger(anio) || anio < 2020 || anio > 2100) {
+    res.status(400).json({
+      error: 'PERIODO_ANIO_INVALIDO',
+      message: 'Selecciona un año valido para el periodo.',
+      correlationId: req.correlationId,
+    });
+    return null;
+  }
+  if (!Number.isInteger(mes) || mes < 1 || mes > 12) {
+    res.status(400).json({
+      error: 'PERIODO_MES_INVALIDO',
+      message: 'Selecciona un mes valido entre 1 y 12.',
+      correlationId: req.correlationId,
+    });
+    return null;
+  }
+  return { anio, mes };
+}
+
 async function generarRDEP(req, res) {
   try {
     const { tenantId } = req;
-    const { anio } = req.body;
-
-    if (!anio) {
-      return res.status(400).json({
-        error: 'RDEP_ANIO_REQUERIDO',
-        message: 'Selecciona el anio fiscal para generar RDEP.',
-        correlationId: req.correlationId,
-      });
-    }
+    const anio = requireFiscalYear(req, res, 'generar RDEP');
+    if (!anio) return null;
 
     const resultado = await generarXML_RDEP(tenantId, anio);
     return res.json({ success: true, reporte: resultado, correlationId: req.correlationId });
@@ -51,15 +79,8 @@ async function generarRDEP(req, res) {
 async function validarRDEP(req, res) {
   try {
     const { tenantId } = req;
-    const { anio } = req.body;
-
-    if (!anio) {
-      return res.status(400).json({
-        error: 'RDEP_ANIO_REQUERIDO',
-        message: 'Selecciona el anio fiscal para validar RDEP.',
-        correlationId: req.correlationId,
-      });
-    }
+    const anio = requireFiscalYear(req, res, 'validar RDEP');
+    if (!anio) return null;
 
     const resultado = await precheckRDEP(tenantId, anio);
     return res.json({ success: true, precheck: resultado, correlationId: req.correlationId });
@@ -78,11 +99,9 @@ async function validarRDEP(req, res) {
 async function generarSAE(req, res) {
   try {
     const { tenantId } = req;
-    const { anio, mes } = req.body;
-
-    if (!anio || !mes) {
-      return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
-    }
+    const period = requirePeriod(req, res);
+    if (!period) return null;
+    const { anio, mes } = period;
 
     const resultado = await generarXML_SAE(tenantId, anio, mes);
     res.json({ success: true, reporte: resultado, correlationId: req.correlationId });
@@ -174,11 +193,11 @@ async function generarFormulario107Ctrl(req, res) {
 async function generarArchivoBancoCtrl(req, res) {
   try {
     const { tenantId } = req;
-    const { anio, mes, banco } = req.body;
+    const { banco } = req.body;
 
-    if (!anio || !mes) {
-      return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
-    }
+    const period = requirePeriod(req, res);
+    if (!period) return null;
+    const { anio, mes } = period;
     const bancoCodigo = normalizeRequiredBankCode(banco);
     if (!bancoCodigo) {
       return res.status(400).json({
@@ -215,11 +234,11 @@ async function generarArchivoBancoCtrl(req, res) {
 async function validarArchivoBanco(req, res) {
   try {
     const { tenantId } = req;
-    const { anio, mes, banco } = req.body;
+    const { banco } = req.body;
 
-    if (!anio || !mes) {
-      return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
-    }
+    const period = requirePeriod(req, res);
+    if (!period) return null;
+    const { anio, mes } = period;
     const bancoCodigo = normalizeRequiredBankCode(banco);
     if (!bancoCodigo) {
       return res.status(400).json({
@@ -306,11 +325,11 @@ async function reporteAsistencia(req, res) {
 async function exportarNomina(req, res) {
   try {
     const { tenantId } = req;
-    const { anio, mes, reportCode, format, filters } = req.body;
+    const { reportCode, format, filters } = req.body;
 
-    if (!anio || !mes) {
-      return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
-    }
+    const period = requirePeriod(req, res);
+    if (!period) return null;
+    const { anio, mes } = period;
 
     await assertCapability(tenantId, 'advancedReports', {
       userId: req.usuarioId,

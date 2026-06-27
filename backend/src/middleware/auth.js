@@ -1,5 +1,5 @@
 const db = require('../config/database');
-const { signJwt, verifyJwt } = require('../config/jwt');
+const { signUserToken, verifyJwt } = require('../config/jwt');
 
 function userFromClaims(decoded = {}) {
   if (!decoded.userId || !decoded.email || !decoded.rol) return null;
@@ -128,16 +128,7 @@ const requireFreshUser = async (req, res, next) => {
 };
 
 const generateToken = (usuario) => {
-  return signJwt(
-    {
-      userId: usuario.id,
-      tenantId: usuario.tenant_id,
-      email: usuario.email,
-      rol: usuario.rol,
-      emailVerificadoEn: usuario.email_verificado_en || null,
-    },
-    { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
-  );
+  return signUserToken(usuario);
 };
 
 module.exports = {

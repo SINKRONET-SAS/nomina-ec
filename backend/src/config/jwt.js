@@ -27,6 +27,22 @@ function signJwt(payload, options = {}) {
   });
 }
 
+function signUserToken(usuario, options = {}) {
+  return signJwt(
+    {
+      userId: usuario.id,
+      tenantId: usuario.tenant_id || usuario.tenantId || null,
+      email: usuario.email,
+      rol: usuario.rol,
+      emailVerificadoEn: usuario.email_verificado_en || usuario.emailVerificadoEn || null,
+    },
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || '24h',
+      ...options,
+    }
+  );
+}
+
 function verifyJwt(token) {
   return jwt.verify(token, getJwtSecret(), {
     algorithms: [JWT_ALGORITHM],
@@ -37,5 +53,6 @@ module.exports = {
   JWT_ALGORITHM,
   getJwtSecret,
   signJwt,
+  signUserToken,
   verifyJwt,
 };

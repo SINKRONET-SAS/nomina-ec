@@ -126,4 +126,52 @@ describe('paymentController PayPhone gates', () => {
     );
     now.mockRestore();
   });
+
+  test('webhook PayPhone aprobado activa suscripcion de forma backend', async () => {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [{
+          client_transaction_id: 'pay-1',
+          estado: 'PENDING',
+          monto_centavos: 1200,
+          tenant_id: 'tenant-1',
+          plan_id: 'PRO',
+        }],
+      })
+      .mockResolvedValueOnce({
+        rows: [{
+          client_transaction_id: 'pay-1',
+          provider_transaction_id: 'trx-1',
+          tenant_id: 'tenant-1',
+          plan_id: 'PRO',
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [] });
+    const req = {
+      body: {
+        clientTransactionId: 'pay-1',
+        statusCode: 3,
+        transactionId: 'trx-1',
+        amount: 1200,
+      },
+      correlationId: 'corr-webhook',
+    };
+    const res = mockResponse();
+    const next = jest.fn();
+
+    await paymentController.payphoneWebhook(req, res, next);
+
+    expect(db.query).toHaveBeenNthCalledWith(
+      1,
+      'SELECT * FROM transacciones_pago WHERE client_transaction_id = $1 LIMIT 1',
+      ['pay-1']
+    );
+    expect(db.query.mock.calls[1][0]).toContain('UPDATE transacciones_pago');
+    expect(db.query.mock.calls[2][0]).toContain('INSERT INTO suscripciones');
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      processed: true,
+    }));
+    expect(next).not.toHaveBeenCalled();
+  });
 });

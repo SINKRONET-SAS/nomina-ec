@@ -495,6 +495,51 @@ async function resolveProviderConfirmation({ req, tx, clientTransactionId }) {
   };
 }
 
+async function activateSubscriptionForTransaction(approvedTx, confirmation = {}) {
+  await db.query(
+    `INSERT INTO suscripciones (tenant_id, plan_id, estado, inicio_en, renovacion_automatica, metadata)
+     VALUES ($1, $2, 'active', NOW(), true, $3)
+     ON CONFLICT (tenant_id) DO UPDATE SET
+       plan_id = EXCLUDED.plan_id,
+       estado = 'active',
+       renovacion_automatica = true,
+       metadata = EXCLUDED.metadata,
+       updated_at = NOW()`,
+    [
+      approvedTx.tenant_id,
+      approvedTx.plan_id,
+      JSON.stringify({
+        activatedByPayment: approvedTx.client_transaction_id,
+        providerTransactionId: approvedTx.provider_transaction_id || confirmation.providerTransactionId || null,
+        confirmationSource: confirmation.source || 'PAYPHONE_CONFIRM',
+      }),
+    ]
+  );
+}
+
+async function markTransactionApproved({ clientTransactionId, providerTransactionId = null, payload = {}, source = 'PAYPHONE_CONFIRM' }) {
+  const result = await db.query(
+    `UPDATE transacciones_pago
+     SET estado = 'APPROVED',
+         provider_transaction_id = COALESCE($2, provider_transaction_id),
+         metadata = metadata || $3::jsonb,
+         updated_at = NOW()
+     WHERE client_transaction_id = $1
+     RETURNING *`,
+    [
+      clientTransactionId,
+      providerTransactionId || null,
+      JSON.stringify({
+        confirmationSource: source,
+        providerPayload: payload,
+      }),
+    ]
+  );
+  const approvedTx = result.rows[0];
+  await activateSubscriptionForTransaction(approvedTx, { providerTransactionId, source });
+  return approvedTx;
+}
+
 async function confirmPayment(req, res, next) {
   try {
     const clientTransactionId = String(
@@ -544,42 +589,12 @@ async function confirmPayment(req, res, next) {
       });
     }
 
-    const result = await db.query(
-      `UPDATE transacciones_pago
-       SET estado = 'APPROVED',
-           provider_transaction_id = COALESCE($2, provider_transaction_id),
-           metadata = metadata || $3::jsonb,
-           updated_at = NOW()
-       WHERE client_transaction_id = $1
-       RETURNING *`,
-      [
+    await markTransactionApproved({
         clientTransactionId,
-        confirmation.providerTransactionId || null,
-        JSON.stringify({
-          confirmationSource: confirmation.source,
-          providerPayload: confirmation.payload,
-        }),
-      ]
-    );
-    const approvedTx = result.rows[0];
-    await db.query(
-      `INSERT INTO suscripciones (tenant_id, plan_id, estado, inicio_en, renovacion_automatica, metadata)
-       VALUES ($1, $2, 'active', NOW(), true, $3)
-       ON CONFLICT (tenant_id) DO UPDATE SET
-         plan_id = EXCLUDED.plan_id,
-         estado = 'active',
-         renovacion_automatica = true,
-         metadata = EXCLUDED.metadata,
-         updated_at = NOW()`,
-      [
-        approvedTx.tenant_id,
-        approvedTx.plan_id,
-        JSON.stringify({
-          activatedByPayment: approvedTx.client_transaction_id,
-          providerTransactionId: approvedTx.provider_transaction_id || null,
-        }),
-      ]
-    );
+        providerTransactionId: confirmation.providerTransactionId,
+        payload: confirmation.payload,
+        source: confirmation.source,
+    });
 
     res.json({
       success: true,
@@ -590,6 +605,83 @@ async function confirmPayment(req, res, next) {
     });
   } catch (err) {
     next(err);
+  }
+}
+
+async function payphoneWebhook(req, res, next) {
+  try {
+    const payload = req.body || {};
+    const clientTransactionId = String(
+      payload.clientTransactionId || payload.client_transaction_id || payload.clientTxId || ''
+    ).trim();
+    const statusCode = Number(payload.statusCode ?? payload.status_code ?? payload.status);
+    const providerTransactionId = String(payload.transactionId || payload.id || payload.providerTransactionId || '').trim();
+
+    if (!clientTransactionId) {
+      return res.status(400).json({
+        error: 'PAYPHONE_REFERENCIA_REQUERIDA',
+        message: 'La referencia de transaccion es requerida.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    if (statusCode !== 3) {
+      return res.json({
+        success: true,
+        received: true,
+        processed: false,
+        reason: 'PAYPHONE_STATUS_NOT_APPROVED',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const txResult = await db.query(
+      'SELECT * FROM transacciones_pago WHERE client_transaction_id = $1 LIMIT 1',
+      [clientTransactionId]
+    );
+    if (txResult.rows.length === 0) {
+      return res.status(404).json({
+        error: 'PAGO_NO_ENCONTRADO',
+        message: 'No se encontro la transaccion de pago.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const tx = txResult.rows[0];
+    if (tx.estado === 'APPROVED') {
+      return res.json({
+        success: true,
+        received: true,
+        processed: false,
+        idempotent: true,
+        correlationId: req.correlationId,
+      });
+    }
+
+    const providerTotalCents = extractProviderPaymentTotalCents(payload);
+    if (providerTotalCents > 0 && providerTotalCents !== Number(tx.monto_centavos || 0)) {
+      return res.status(409).json({
+        error: 'PAYMENT_AMOUNT_MISMATCH',
+        message: 'El monto confirmado por PayPhone no coincide con el checkout esperado. No se activo el plan.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    await markTransactionApproved({
+      clientTransactionId,
+      providerTransactionId,
+      payload,
+      source: 'PAYPHONE_WEBHOOK',
+    });
+
+    return res.json({
+      success: true,
+      received: true,
+      processed: true,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    return next(err);
   }
 }
 
@@ -630,6 +722,7 @@ module.exports = {
   subscriptionStatus,
   createCheckoutIntent,
   confirmPayment,
+  payphoneWebhook,
   paymentCancelled,
   revokePaymentMethod,
 };
