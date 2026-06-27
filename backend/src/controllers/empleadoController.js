@@ -86,6 +86,16 @@ function redactEmployeeForRole(row, req) {
   return redacted;
 }
 
+function serializeEmployee(row, req) {
+  const empleado = redactEmployeeForRole(row, req);
+  const serialized = {
+    ...empleado,
+    cuenta_bancaria_registrada: Boolean(row.cuenta_bancaria_cifrada),
+  };
+  delete serialized.cuenta_bancaria_cifrada;
+  return serialized;
+}
+
 async function recordSensitiveEmployeeRead(req, { entityId = null, count = 0, scope = 'list' } = {}) {
   if (!hasSensitiveEmployeeAccess(req) || count <= 0) return;
   try {
@@ -158,7 +168,7 @@ async function resolveEmployeeBankCode(tenantId, formaPago, banco) {
   }
 
   const profile = await getBankProfileForTenant(tenantId, bankCode);
-  return profile.profileKey || bankCode;
+  return profile.bankCode || bankCode;
 }
 
 async function resolveConfiguredCode(tenantId, table, code, label, errorCode) {
@@ -414,7 +424,7 @@ async function listar(req, res) {
     `, [tenantId, activoFilter]);
     
     await recordSensitiveEmployeeRead(req, { count: result.rows.length, scope: 'list' });
-    res.json({ success: true, empleados: result.rows.map((row) => redactEmployeeForRole(row, req)) });
+    res.json({ success: true, empleados: result.rows.map((row) => serializeEmployee(row, req)) });
   } catch (err) {
     console.error('[EMPLEADOS] Error:', err);
     res.status(500).json({ error: 'Error interno' });
@@ -459,7 +469,7 @@ async function obtener(req, res) {
     empleado.es_adulto_mayor = (empleado.edad || 0) >= OLDER_ADULT_AGE;
     empleado.dependientes = dependents.rows;
     await recordSensitiveEmployeeRead(req, { entityId: empleado.id, count: 1, scope: 'detail' });
-    res.json({ success: true, empleado: redactEmployeeForRole(empleado, req) });
+    res.json({ success: true, empleado: serializeEmployee(empleado, req) });
   } catch (err) {
     console.error('[EMPLEADOS] Error:', err);
     res.status(500).json({ error: 'Error interno' });
@@ -557,8 +567,8 @@ async function crear(req, res) {
         estado_civil, cargas_familiares, telefono, email_personal
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34)
       RETURNING id, cedula, nombres, apellidos, fecha_nacimiento, position_id, cargo, sueldo_bruto_mensual,
-        jornada_horas_mensuales, gastos_personales_anuales, fecha_ingreso, tipo_contrato, iess_afiliado, iess_tipo_relacion, banco, region_decimo_cuarto,
-        modalidad_fondo_reserva, whatsapp_consent_at,
+        jornada_horas_mensuales, gastos_personales_anuales, fecha_ingreso, tipo_contrato, iess_afiliado, iess_tipo_relacion,
+        banco, tipo_cuenta, forma_pago, region_decimo_cuarto, modalidad_fondo_reserva, whatsapp_consent_at,
         unidad_organizativa_codigo, jornada_codigo, zona_marcacion_codigo
     `, [
       tenantId, cedula, nombres, apellidos, fecha_nacimiento, positionAssignment.positionId, positionAssignment.cargo, departamento || positionAssignment.unidadOrganizativaNombre || '',
@@ -577,6 +587,7 @@ async function crear(req, res) {
     const empleado = result.rows[0];
     empleado.edad = ageInfo.age;
     empleado.es_adulto_mayor = ageInfo.isOlderAdult;
+    empleado.cuenta_bancaria_registrada = Boolean(cuentaCifrada);
     await replaceEmployeeDependents(tenantId, empleado.id, dependientes, cargas_familiares);
     
     // Generar contrato automaticamente
@@ -896,7 +907,9 @@ async function actualizar(req, res) {
       result = await db.query(`
         UPDATE empleados SET ${fields}, updated_at = NOW()
         WHERE id = $${values.length + 1} AND tenant_id = $${values.length + 2}
-        RETURNING id, nombres, apellidos, cargo, sueldo_bruto_mensual
+        RETURNING id, nombres, apellidos, cargo, sueldo_bruto_mensual,
+          banco, tipo_cuenta, forma_pago,
+          cuenta_bancaria_cifrada IS NOT NULL AS cuenta_bancaria_registrada
       `, [...values, id, tenantId]);
     } else {
       result = await db.query('SELECT id FROM empleados WHERE id = $1 AND tenant_id = $2', [id, tenantId]);

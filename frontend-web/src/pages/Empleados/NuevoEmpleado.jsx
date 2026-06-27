@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, FileUp, ShieldCheck } from 'lucide-react';
@@ -35,6 +35,7 @@ const initialForm = {
   banco: '',
   tipo_cuenta: '',
   cuenta_bancaria: '',
+  cuenta_bancaria_registrada: false,
   region_decimo_cuarto: 'sierra_amazonia',
   modalidad_fondo_reserva: 'mensual',
   whatsapp_consent: false,
@@ -101,6 +102,7 @@ function normalizeEmpleado(empleado) {
     banco: empleado.banco || '',
     tipo_cuenta: empleado.tipo_cuenta || '',
     cuenta_bancaria: '',
+    cuenta_bancaria_registrada: Boolean(empleado.cuenta_bancaria_registrada),
     region_decimo_cuarto: empleado.region_decimo_cuarto || 'sierra_amazonia',
     modalidad_fondo_reserva: empleado.modalidad_fondo_reserva || 'mensual',
     whatsapp_consent: Boolean(empleado.whatsapp_consent_at),
@@ -117,6 +119,14 @@ function normalizeEmpleado(empleado) {
       documento_mime_type: '',
     })),
   };
+}
+
+function bankProfileAliases(profile) {
+  return [
+    profile.banco_codigo,
+    profile.banco_nombre,
+    profile.field_map?.profile,
+  ].filter(Boolean).map((value) => String(value).trim().toUpperCase());
 }
 
 function fileToBase64(file) {
@@ -197,7 +207,22 @@ function NuevoEmpleado() {
     },
   });
 
-  const activeBankProfiles = (bankProfilesQuery.data || []).filter((profile) => profile.activo !== false);
+  const activeBankProfiles = useMemo(
+    () => (bankProfilesQuery.data || []).filter((profile) => profile.activo !== false),
+    [bankProfilesQuery.data]
+  );
+
+  useEffect(() => {
+    if (!formData.banco || activeBankProfiles.length === 0) return;
+    const currentBank = String(formData.banco).trim().toUpperCase();
+    const selectedProfile = activeBankProfiles.find((profile) => bankProfileAliases(profile).includes(currentBank));
+    const selectedCode = selectedProfile?.banco_codigo || '';
+    if (selectedCode && selectedCode !== formData.banco) {
+      setFormData((current) => (
+        current.banco === formData.banco ? { ...current, banco: selectedCode } : current
+      ));
+    }
+  }, [activeBankProfiles, formData.banco]);
 
   const workShiftsQuery = useQuery({
     queryKey: ['configuracion', 'workShifts'],
@@ -374,6 +399,7 @@ function NuevoEmpleado() {
   const buildUpdatePayload = () => {
     const { cedula, ...payload } = formData;
     if (!payload.cuenta_bancaria) delete payload.cuenta_bancaria;
+    delete payload.cuenta_bancaria_registrada;
     delete payload.jornada_horas_mensuales;
     payload.whatsapp_consent = Boolean(payload.whatsapp_consent);
     payload.cargas_familiares = Number(payload.cargas_familiares || 0);
@@ -388,9 +414,14 @@ function NuevoEmpleado() {
 
     try {
       if (isEdit) {
+        const replacedBankAccount = Boolean(formData.cuenta_bancaria);
         await authenticatedApi.put('/empleados/' + id, buildUpdatePayload());
         setMessage('Ficha del trabajador actualizada.');
-        setFormData((current) => ({ ...current, cuenta_bancaria: '' }));
+        setFormData((current) => ({
+          ...current,
+          cuenta_bancaria: '',
+          cuenta_bancaria_registrada: current.cuenta_bancaria_registrada || replacedBankAccount,
+        }));
       } else {
         const response = await authenticatedApi.post('/empleados', buildCreatePayload());
         const empleadoId = response.data.empleado?.id;
@@ -671,7 +702,18 @@ function NuevoEmpleado() {
               <option value="OTRA">Otra</option>
             </select>
           </Field>
-          <Field label={isEdit ? 'Nueva cuenta del trabajador' : 'Numero de cuenta del trabajador'} name="cuenta_bancaria" onChange={handleChange} placeholder={isEdit ? 'Dejar vacio para conservar la actual' : ''} value={formData.cuenta_bancaria} />
+          <Field
+            label={isEdit ? 'Nueva cuenta del trabajador' : 'Numero de cuenta del trabajador'}
+            name="cuenta_bancaria"
+            onChange={handleChange}
+            placeholder={isEdit && formData.cuenta_bancaria_registrada ? 'Cuenta registrada; escribir solo para reemplazarla' : ''}
+            value={formData.cuenta_bancaria}
+          />
+          {isEdit && formData.cuenta_bancaria_registrada && !formData.cuenta_bancaria && (
+            <div className={`${FIELD_FULL} rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900`}>
+              Cuenta bancaria registrada para pagos. Por seguridad no se muestra completa; escribe una nueva solo si necesitas reemplazarla.
+            </div>
+          )}
           <label className={`${FIELD_FULL} flex items-start gap-3 rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700`}>
             <input
               checked={Boolean(formData.whatsapp_consent)}
