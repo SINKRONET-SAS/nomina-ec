@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { authenticatedApi } from '../../services/authenticatedApi';
 
+function formatHours(value) {
+  const amount = Number(value || 0);
+  return Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
+}
+
 function ReporteAsistencia() {
   const hoy = new Date();
   const [anio, setAnio] = useState(hoy.getFullYear());
@@ -46,8 +51,8 @@ function ReporteAsistencia() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Empleado</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Días Trabajados</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tardías (min)</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Extras 50% (min)</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Extras 100% (min)</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Extras 50% (horas)</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Extras 100% (horas)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -61,8 +66,8 @@ function ReporteAsistencia() {
                     <td className="px-6 py-4 text-sm">{r.nombre}</td>
                     <td className="px-6 py-4 text-sm">{r.dias_trabajados}</td>
                     <td className="px-6 py-4 text-sm">{r.minutos_tardia}</td>
-                    <td className="px-6 py-4 text-sm">{r.minutos_extra_50}</td>
-                    <td className="px-6 py-4 text-sm">{r.minutos_extra_100}</td>
+                    <td className="px-6 py-4 text-sm">{formatHours(r.horas_extra_50)}</td>
+                    <td className="px-6 py-4 text-sm">{formatHours(r.horas_extra_100)}</td>
                   </tr>
                 ))
               )}

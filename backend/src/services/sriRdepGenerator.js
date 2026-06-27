@@ -89,7 +89,7 @@ function getRdepXsdDoc() {
   return xsdDocCache;
 }
 
-async function loadRdepData(tenantId, anio, mes) {
+async function loadRdepData(tenantId, anio) {
   const tenantResult = await db.query('SELECT * FROM tenants WHERE id = $1', [tenantId]);
   if (tenantResult.rows.length === 0) {
     throw new AppError('Tenant no encontrado', {
@@ -100,23 +100,35 @@ async function loadRdepData(tenantId, anio, mes) {
   const tenant = tenantResult.rows[0];
 
   const nominasResult = await db.query(`
-    SELECT e.cedula, e.nombres, e.apellidos,
-      n.total_ingresos, n.aporte_iess_personal, n.impuesto_renta, n.estado
+    SELECT
+      e.id AS empleado_id,
+      e.cedula,
+      e.nombres,
+      e.apellidos,
+      e.gastos_personales_anuales,
+      e.cargas_familiares,
+      n.mes,
+      n.total_ingresos,
+      n.aporte_iess_personal,
+      n.impuesto_renta,
+      n.estado,
+      n.detalle_calculo
     FROM nominas n
     JOIN empleados e ON n.empleado_id = e.id
     WHERE n.tenant_id = $1
       AND n.anio = $2
-      AND n.mes = $3
       AND n.estado = 'cerrada'
-    ORDER BY e.apellidos, e.nombres
-  `, [tenantId, anio, mes]);
+    ORDER BY e.apellidos, e.nombres, n.mes
+  `, [tenantId, anio]);
 
   return { tenant, nominas: nominasResult.rows };
 }
 
-async function precheckRDEP(tenantId, anio, mes) {
+async function precheckRDEP(tenantId, anio) {
   const xsd = getRdepXsdMetadata();
-  const { tenant, nominas } = await loadRdepData(tenantId, anio, mes);
+  const { tenant, nominas } = await loadRdepData(tenantId, anio);
+  const employeeIds = new Set(nominas.map((row) => row.empleado_id));
+  const periods = new Set(nominas.map((row) => Number(row.mes)).filter(Boolean));
   const checks = [
     {
       code: 'tenant_ruc',
@@ -129,10 +141,16 @@ async function precheckRDEP(tenantId, anio, mes) {
       passed: Boolean(tenant.razon_social),
     },
     {
-      code: 'closed_payroll',
-      label: 'Nomina cerrada para el periodo',
+      code: 'closed_payroll_year',
+      label: 'Nomina cerrada del ejercicio fiscal',
       passed: nominas.length > 0,
-      detail: `${nominas.length} roles cerrados`,
+      detail: `${nominas.length} roles cerrados de ${employeeIds.size} trabajadores en ${periods.size} meses`,
+    },
+    {
+      code: 'annual_scope',
+      label: 'Alcance anual RDEP',
+      passed: periods.size > 0,
+      detail: `Ejercicio fiscal ${Number(anio)}; el mes de pantalla no limita el XML.`,
     },
     {
       code: 'xsd_versioned',
@@ -146,8 +164,9 @@ async function precheckRDEP(tenantId, anio, mes) {
   return {
     ready,
     anio: Number(anio),
-    mes: Number(mes),
-    totalEmpleados: nominas.length,
+    totalEmpleados: employeeIds.size,
+    totalRoles: nominas.length,
+    mesesConNomina: [...periods].sort((a, b) => a - b),
     checks,
     xsd: {
       sha256: xsd.sha256,
@@ -196,6 +215,15 @@ function money(value) {
   return (Number.parseFloat(value || 0) || 0).toFixed(2);
 }
 
+function numberValue(value) {
+  const parsed = Number.parseFloat(value || 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function roundMoney(value) {
+  return Math.round(numberValue(value) * 100) / 100;
+}
+
 function toXsdNameText(value) {
   return String(value || 'NO REGISTRADO')
     .normalize('NFD')
@@ -207,14 +235,56 @@ function toXsdNameText(value) {
     .slice(0, 100) || 'NO REGISTRADO';
 }
 
+function sumDetail(rows, key) {
+  return roundMoney(rows.reduce((total, row) => total + numberValue(row.detalle_calculo?.[key]), 0));
+}
+
+function aggregateAnnualRows(nominas) {
+  const grouped = new Map();
+
+  for (const row of nominas) {
+    const key = row.empleado_id || row.cedula;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key).push(row);
+  }
+
+  return [...grouped.values()].map((rows) => {
+    const first = rows[0];
+    const totalIngresos = roundMoney(rows.reduce((total, row) => total + numberValue(row.total_ingresos), 0));
+    const aporteIess = roundMoney(rows.reduce((total, row) => total + numberValue(row.aporte_iess_personal), 0));
+    const impuestoRenta = roundMoney(rows.reduce((total, row) => total + numberValue(row.impuesto_renta), 0));
+    const fondoReserva = roundMoney(
+      sumDetail(rows, 'fondoReservaPagadoEmpleado') + sumDetail(rows, 'fondoReservaDepositadoIess')
+    );
+    const decimoTercero = sumDetail(rows, 'provisionDecimoTercero');
+    const decimoCuarto = sumDetail(rows, 'provisionDecimoCuarto');
+    const sueldoSalario = Math.max(0, roundMoney(totalIngresos - fondoReserva));
+
+    return {
+      ...first,
+      total_ingresos_anual: totalIngresos,
+      sueldo_salario_anual: sueldoSalario,
+      aporte_iess_anual: aporteIess,
+      impuesto_renta_anual: impuestoRenta,
+      fondo_reserva_anual: fondoReserva,
+      decimo_tercero_anual: decimoTercero,
+      decimo_cuarto_anual: decimoCuarto,
+      gastos_personales_anuales: roundMoney(first.gastos_personales_anuales),
+      meses_reportados: rows.map((row) => Number(row.mes)).sort((a, b) => a - b),
+    };
+  });
+}
+
 function buildRdepRecord(nomina) {
-  const ingresos = money(nomina.total_ingresos);
-  const aporteIess = money(nomina.aporte_iess_personal);
-  const impuestoRenta = money(nomina.impuesto_renta);
+  const ingresos = money(nomina.sueldo_salario_anual);
+  const aporteIess = money(nomina.aporte_iess_anual);
+  const impuestoRenta = money(nomina.impuesto_renta_anual);
+  const baseImponible = Math.max(0, roundMoney(nomina.total_ingresos_anual - nomina.aporte_iess_anual));
 
   return {
     empleado: {
       benGalpg: 'NO',
+      numCargRebGastPers: Math.min(Math.max(Number.parseInt(nomina.cargas_familiares || '0', 10) || 0, 0), 5),
       tipIdRet: 'C',
       idRet: nomina.cedula,
       apellidoTrab: toXsdNameText(nomina.apellidos),
@@ -232,23 +302,26 @@ function buildRdepRecord(nomina) {
     partUtil: '0.00',
     intGrabGen: '0.00',
     impRentEmpl: '0.00',
-    decimTer: '0.00',
-    decimCuar: '0.00',
-    fondoReserva: '0.00',
+    decimTer: money(nomina.decimo_tercero_anual),
+    decimCuar: money(nomina.decimo_cuarto_anual),
+    fondoReserva: money(nomina.fondo_reserva_anual),
     salarioDigno: '0.00',
     otrosIngRenGrav: '0.00',
-    ingGravConEsteEmpl: ingresos,
+    ingGravConEsteEmpl: money(nomina.total_ingresos_anual),
     sisSalNet: 1,
     apoPerIess: aporteIess,
     aporPerIessConOtrosEmpls: '0.00',
     deducVivienda: '0.00',
     deducSalud: '0.00',
+    deducEduca: '0.00',
     deducEducartcult: '0.00',
     deducAliement: '0.00',
     deducVestim: '0.00',
+    deducArtycult: '0.00',
+    deduccionTurismo: '0.00',
     exoDiscap: '0.00',
     exoTerEd: '0.00',
-    basImp: money(Number.parseFloat(ingresos) - Number.parseFloat(aporteIess)),
+    basImp: money(baseImponible),
     impRentCaus: impuestoRenta,
     rebajaGastosPersonales: '0.00',
     impuestoRentaRebajaGastosPersonales: impuestoRenta,
@@ -258,8 +331,8 @@ function buildRdepRecord(nomina) {
   };
 }
 
-async function generarXML_RDEP(tenantId, anio, mes) {
-  const precheck = await precheckRDEP(tenantId, anio, mes);
+async function generarXML_RDEP(tenantId, anio) {
+  const precheck = await precheckRDEP(tenantId, anio);
   if (!precheck.ready) {
     throw new AppError('RDEP no esta listo para generarse. Revisa el precheck del periodo.', {
       code: 'RDEP_PRECHECK_FAILED',
@@ -267,7 +340,8 @@ async function generarXML_RDEP(tenantId, anio, mes) {
       details: { checks: precheck.checks },
     });
   }
-  const { tenant, nominas } = await loadRdepData(tenantId, anio, mes);
+  const { tenant, nominas } = await loadRdepData(tenantId, anio);
+  const annualRecords = aggregateAnnualRows(nominas);
 
   const rdep = {
     rdep: {
@@ -276,7 +350,7 @@ async function generarXML_RDEP(tenantId, anio, mes) {
       tipoEmpleador: 'PRIVADO_MIXTO',
       enteSegSocial: 'IESS',
       retRelDep: {
-        datRetRelDep: nominas.map(buildRdepRecord),
+        datRetRelDep: annualRecords.map(buildRdepRecord),
       },
     },
   };
@@ -290,12 +364,22 @@ async function generarXML_RDEP(tenantId, anio, mes) {
 
   const xmlString = '<?xml version="1.0" encoding="UTF-8"?>\n' + builder.build(rdep);
   const validation = validateRdepXmlAgainstXsdContract(xmlString);
-  const key = `reportes/${tenantId}/sri/RDEP_${anio}${String(mes).padStart(2, '0')}.xml`;
+  const fileName = `RDEP_${anio}.xml`;
+  const key = `reportes/${tenantId}/sri/${fileName}`;
   const url = await s3Upload(Buffer.from(xmlString, 'utf8'), key, 'application/xml');
 
-  console.log(`[RDEP] XML generado para ${tenantId} - ${mes}/${anio}: ${nominas.length} empleados`);
+  console.log(`[RDEP] XML generado para ${tenantId} - ejercicio ${anio}: ${annualRecords.length} empleados`);
 
-  return { url, totalEmpleados: nominas.length, xmlString, validation, precheck };
+  return {
+    url,
+    fileName,
+    contentType: 'application/xml',
+    totalEmpleados: annualRecords.length,
+    totalRoles: nominas.length,
+    xmlString,
+    validation,
+    precheck,
+  };
 }
 
 module.exports = {

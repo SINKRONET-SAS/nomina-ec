@@ -9,7 +9,7 @@ const institutionalReports = [
     type: 'rdep',
     title: 'RDEP - SRI',
     entity: 'Servicio de Rentas Internas',
-    description: 'Anexo de relacion de dependencia para retenciones de impuesto a la renta de empleados.',
+    description: 'Anexo anual de relacion de dependencia para retenciones de impuesto a la renta de empleados.',
     button: 'Generar XML RDEP',
     accent: 'blue',
   },
@@ -87,11 +87,11 @@ function DescargarReportes() {
     setMessage('');
     setError('');
     try {
-      const response = await authenticatedApi.post('/reportes/rdep/precheck', { anio, mes });
+      const response = await authenticatedApi.post('/reportes/rdep/precheck', { anio });
       setRdepPrecheck(response.data.precheck);
       setMessage(response.data.precheck.ready
-        ? 'RDEP listo para generar con validacion estructural activa.'
-        : 'RDEP requiere acciones antes de generar el XML.');
+        ? 'RDEP anual listo para generar con validacion estructural activa.'
+        : 'RDEP anual requiere acciones antes de generar el XML.');
       return response.data.precheck;
     } catch (err) {
       const nextError = err.response?.data?.message || err.response?.data?.error || 'No pudimos validar RDEP.';
@@ -136,7 +136,7 @@ function DescargarReportes() {
     setError('');
     try {
       if (tipo === 'rdep') {
-        const precheck = rdepPrecheck?.anio === anio && rdepPrecheck?.mes === mes ? rdepPrecheck : await validarRdep();
+        const precheck = rdepPrecheck?.anio === anio ? rdepPrecheck : await validarRdep();
         if (!precheck?.ready) {
           setCargando('');
           return;
@@ -158,7 +158,7 @@ function DescargarReportes() {
       };
       const response = await authenticatedApi.post(endpointByType[tipo], {
         anio,
-        mes,
+        mes: tipo === 'rdep' ? undefined : mes,
         empleadoId: tipo === 'form107' ? form107EmpleadoId : undefined,
       });
       const url = response.data.reporte?.url || response.data.reporte?.csvUrl;
@@ -208,7 +208,7 @@ function DescargarReportes() {
       <div>
         <h1 className="text-2xl font-bold text-slate-950">Reportes para entidades publicas</h1>
         <p className="mt-2 max-w-4xl text-sm text-slate-600">
-          Genera reportes propios de nomina para Ecuador. Para SRI se usa RDEP en relacion de dependencia;
+          Genera reportes propios de nomina para Ecuador. Para SRI se usa RDEP anual en relacion de dependencia;
           ATS no se muestra aqui porque corresponde a obligaciones tributarias generales.
         </p>
       </div>
@@ -412,7 +412,7 @@ function DescargarReportes() {
             <div>
               <h2 className="text-lg font-semibold text-slate-950">Revision del reporte para entidades</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Revisa datos del empleador, nomina cerrada y plantilla vigente antes de generar el archivo.
+                Revisa datos del empleador, roles cerrados del ejercicio fiscal y plantilla vigente antes de generar el archivo.
               </p>
             </div>
           </div>
@@ -440,6 +440,9 @@ function DescargarReportes() {
             ))}
             <div className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-700 lg:col-span-2">
               Verificacion tecnica: <span className="font-mono text-xs">{rdepPrecheck.xsd?.sha256}</span>
+              <span className="ml-2 text-xs text-slate-500">
+                {rdepPrecheck.totalEmpleados || 0} trabajadores, {rdepPrecheck.totalRoles || 0} roles cerrados.
+              </span>
             </div>
           </div>
         )}
@@ -472,7 +475,7 @@ function DescargarReportes() {
           <div>
             <h2 className="text-lg font-semibold text-slate-950">Criterio de uso</h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              RDEP se alimenta de roles cerrados, retenciones y datos del empleado. Los reportes externos se deben validar
+              RDEP se alimenta de roles cerrados del anio fiscal, retenciones y datos del empleado. Los reportes externos se deben validar
               con la parametrizacion legal vigente antes de enviarlos a produccion.
             </p>
           </div>

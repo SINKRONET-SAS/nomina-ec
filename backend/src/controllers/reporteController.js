@@ -19,13 +19,17 @@ function normalizeRequiredBankCode(banco) {
 async function generarRDEP(req, res) {
   try {
     const { tenantId } = req;
-    const { anio, mes } = req.body;
+    const { anio } = req.body;
 
-    if (!anio || !mes) {
-      return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
+    if (!anio) {
+      return res.status(400).json({
+        error: 'RDEP_ANIO_REQUERIDO',
+        message: 'Selecciona el anio fiscal para generar RDEP.',
+        correlationId: req.correlationId,
+      });
     }
 
-    const resultado = await generarXML_RDEP(tenantId, anio, mes);
+    const resultado = await generarXML_RDEP(tenantId, anio);
     return res.json({ success: true, reporte: resultado, correlationId: req.correlationId });
   } catch (err) {
     console.error('[REPORTES] Error RDEP', {
@@ -35,20 +39,29 @@ async function generarRDEP(req, res) {
       userId: req.usuarioId || null,
       message: err.message,
     });
-    return res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'REPORTE_RDEP_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
   }
 }
 
 async function validarRDEP(req, res) {
   try {
     const { tenantId } = req;
-    const { anio, mes } = req.body;
+    const { anio } = req.body;
 
-    if (!anio || !mes) {
-      return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
+    if (!anio) {
+      return res.status(400).json({
+        error: 'RDEP_ANIO_REQUERIDO',
+        message: 'Selecciona el anio fiscal para validar RDEP.',
+        correlationId: req.correlationId,
+      });
     }
 
-    const resultado = await precheckRDEP(tenantId, anio, mes);
+    const resultado = await precheckRDEP(tenantId, anio);
     return res.json({ success: true, precheck: resultado, correlationId: req.correlationId });
   } catch (err) {
     console.error('[REPORTES] Error precheck RDEP', {
@@ -261,7 +274,9 @@ async function reporteAsistencia(req, res) {
         COUNT(n.id) as novedades,
         COALESCE(SUM(CASE WHEN n.tipo_novedad = 'atraso' THEN n.minutos ELSE 0 END), 0) as minutos_atraso,
         COALESCE(SUM(CASE WHEN n.tipo_novedad = 'hora_extra_50' THEN n.minutos ELSE 0 END), 0) as minutos_extra_50,
-        COALESCE(SUM(CASE WHEN n.tipo_novedad = 'hora_extra_100' THEN n.minutos ELSE 0 END), 0) as minutos_extra_100
+        COALESCE(SUM(CASE WHEN n.tipo_novedad = 'hora_extra_100' THEN n.minutos ELSE 0 END), 0) as minutos_extra_100,
+        ROUND((COALESCE(SUM(CASE WHEN n.tipo_novedad = 'hora_extra_50' THEN n.minutos ELSE 0 END), 0)::numeric / 60), 2) as horas_extra_50,
+        ROUND((COALESCE(SUM(CASE WHEN n.tipo_novedad = 'hora_extra_100' THEN n.minutos ELSE 0 END), 0)::numeric / 60), 2) as horas_extra_100
       FROM empleados e
       LEFT JOIN marcaciones m ON e.id = m.empleado_id
         AND EXTRACT(YEAR FROM m.timestamp) = $2

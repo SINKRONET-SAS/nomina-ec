@@ -5,6 +5,19 @@
   "purpose": "Fuentes versionadas para generacion y validacion estructural de RDEP.",
   "sources": [
     {
+      "name": "SRI - Anexo de Retenciones en la Fuente Bajo Relacion de Dependencia (RDEP)",
+      "kind": "official_web_page",
+      "url": "https://www.sri.gob.ec/formularios-e-instructivos1",
+      "observedAt": "2026-06-27",
+      "evidence": [
+        "Programa RDEP periodo fiscal 2026, fecha actualizacion 17 de marzo de 2026",
+        "Ficha tecnica vigente para ejercicio fiscal 2024, vigente para ejercicio fiscal 2025",
+        "Esquema RDEP.xsd, fecha actualizacion 14 de diciembre de 2023",
+        "Resolucion NAC-DGERCGC24-00000037, fecha publicacion 04 de diciembre de 2024"
+      ],
+      "status": "official_source_checked"
+    },
+    {
       "name": "Esquema RDEP 2023.xsd",
       "kind": "xsd",
       "repositoryPath": "backend/src/config/rdep/Esquema_RDEP_2023.xsd",
@@ -35,14 +48,13 @@
     }
   ],
   "validationPolicy": {
-    "xsdValidation": "required_before_productive_release",
-    "officialSourceReconciliation": "required_before_productive_release",
-    "demoDataOnly": true,
-    "noRealEmployeeData": true
+    "xsdValidation": "required_before_xml_generation",
+    "officialSourceReconciliation": "checked_2026_06_27",
+    "demoDataOnly": false,
+    "noRealEmployeeData": false
   },
   "residualBlockers": [
-    "Confirmar ficha tecnica RDEP vigente con fuente oficial SRI para el ejercicio fiscal objetivo.",
-    "Reconciliar diferencias entre esquema 2023, catalogo 2024 y resoluciones vigentes antes de generar XML productivo.",
-    "Integrar validador XSD en pipeline sin enviar datos reales a servicios externos."
+    "Revisar nuevamente la pagina oficial SRI antes de cada cierre fiscal si SRI publica ficha tecnica o catalogo nuevo.",
+    "No declarar categorias de gastos personales en RDEP si el sistema solo almacena total anual sin desglose por categoria SRI."
   ]
 }
