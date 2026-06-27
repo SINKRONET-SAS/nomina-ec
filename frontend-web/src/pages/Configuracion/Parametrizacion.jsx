@@ -27,12 +27,10 @@ import {
   createConfigurationResource,
   deleteConfigurationResource,
   fetchConfigurationSummary,
-  generateBankPaymentFile,
   loadMandatoryLegalParameters,
   updateConfigurationResource,
 } from '../../services/configurationApi';
 import { extractApiError } from '../../services/publicApi';
-import { downloadUrl } from '../../utils/downloadUrl';
 
 const workDayOptions = [
   { value: 'monday', label: 'Lunes' },
@@ -1557,97 +1555,6 @@ function BankMappingStructureBuilder({
   );
 }
 
-function BankFileOperationPanel({
-  values,
-  period,
-  onPeriodChange,
-  onGenerate,
-  isGenerating,
-  generatedFile,
-}) {
-  const canGenerate = values.banco_codigo && period.anio && period.mes && !isGenerating;
-
-  return (
-    <div className="mt-5 rounded-md border border-slate-200 bg-white p-4">
-      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-slate-950">Generar archivo del periodo</p>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            Primero guarda la estructura bancaria. Luego, con nominas cerradas o pagadas, genera el archivo plano y el Excel de revision.
-          </p>
-        </div>
-        <div className="rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">
-          Banco operativo: <strong>{values.banco_codigo || 'sin guardar'}</strong>
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-3 md:grid-cols-[120px_120px_minmax(0,1fr)] md:items-end">
-        <label>
-          <span className="text-sm font-medium text-slate-700">Anio</span>
-          <input
-            className="form-control"
-            type="number"
-            value={period.anio}
-            onChange={(event) => onPeriodChange('anio', Number(event.target.value))}
-          />
-        </label>
-        <label>
-          <span className="text-sm font-medium text-slate-700">Mes</span>
-          <select
-            className="form-control"
-            value={period.mes}
-            onChange={(event) => onPeriodChange('mes', Number(event.target.value))}
-          >
-            {Array.from({ length: 12 }, (_, index) => (
-              <option key={index + 1} value={index + 1}>{index + 1}</option>
-            ))}
-          </select>
-        </label>
-        <button
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60"
-          disabled={!canGenerate}
-          type="button"
-          onClick={onGenerate}
-        >
-          <Download className="h-4 w-4" />
-          {isGenerating ? 'Generando...' : 'Generar archivo bancario'}
-        </button>
-      </div>
-
-      {generatedFile && (
-        <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3">
-          <p className="text-sm font-semibold text-emerald-950">
-            Archivo generado: {generatedFile.totalEmpleados} pagos por USD {generatedFile.totalPagos}
-          </p>
-          <p className="mt-1 break-all text-xs text-emerald-800">Checksum: {generatedFile.checksum}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {generatedFile.csvUrl && (
-              <button
-                className="inline-flex min-h-9 items-center gap-2 rounded-md bg-emerald-700 px-3 text-sm font-semibold text-white"
-                type="button"
-                onClick={() => downloadUrl(generatedFile.csvUrl, generatedFile.fileName || `archivo-banco-${period.anio}-${String(period.mes).padStart(2, '0')}.csv`)}
-              >
-                <Download className="h-4 w-4" />
-                Descargar plano
-              </button>
-            )}
-            {generatedFile.excelUrl && (
-              <button
-                className="inline-flex min-h-9 items-center gap-2 rounded-md border border-emerald-300 bg-white px-3 text-sm font-semibold text-emerald-800"
-                type="button"
-                onClick={() => downloadUrl(generatedFile.excelUrl, `revision-banco-${period.anio}-${String(period.mes).padStart(2, '0')}.xlsx`)}
-              >
-                <Download className="h-4 w-4" />
-                Descargar Excel revision
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function BankMappingGroups({ records }) {
   const groups = records.reduce((acc, record) => {
     const code = normalizeBankCode(record.banco_codigo);
@@ -2016,7 +1923,6 @@ function Parametrizacion() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
-  const today = new Date();
   const requestedSection = searchParams.get('seccion');
   const initialForm = formDefinitions.some((definition) => definition.key === requestedSection)
     ? requestedSection
@@ -2024,8 +1930,6 @@ function Parametrizacion() {
   const [activeForm, setActiveForm] = useState(initialForm);
   const [forms, setForms] = useState(buildInitialState);
   const [mandatoryYear, setMandatoryYear] = useState(new Date().getFullYear());
-  const [bankFilePeriod, setBankFilePeriod] = useState({ anio: today.getFullYear(), mes: today.getMonth() + 1 });
-  const [generatedBankFile, setGeneratedBankFile] = useState(null);
   const [editingRecord, setEditingRecord] = useState(null);
   const [pendingDeleteId, setPendingDeleteId] = useState('');
   const [error, setError] = useState('');
@@ -2097,24 +2001,6 @@ function Parametrizacion() {
     onError: (err) => {
       setMessage('');
       setError(extractApiError(err, 'No pudimos cargar los parametros legales obligatorios.'));
-    },
-  });
-
-  const generateBankFileMutation = useMutation({
-    mutationFn: () => generateBankPaymentFile(token, {
-      anio: Number(bankFilePeriod.anio),
-      mes: Number(bankFilePeriod.mes),
-      banco: activeValues.banco_codigo,
-    }),
-    onSuccess: (data) => {
-      setError('');
-      setGeneratedBankFile(data);
-      setMessage(`Archivo bancario generado: ${data.totalEmpleados} pagos por USD ${data.totalPagos}.`);
-    },
-    onError: (err) => {
-      setMessage('');
-      setGeneratedBankFile(null);
-      setError(extractApiError(err, 'No pudimos generar el archivo bancario. Verifica nomina cerrada, cuentas y plan habilitado.'));
     },
   });
 
@@ -2208,16 +2094,10 @@ function Parametrizacion() {
     });
   }
 
-  function updateBankFilePeriod(name, value) {
-    setGeneratedBankFile(null);
-    setBankFilePeriod((current) => ({ ...current, [name]: value }));
-  }
-
   function applyBankProfileToMapping(bancoCodigo) {
     const profile = (summary?.resources?.bankProfiles || []).find(
       (item) => normalizeBankCode(item.banco_codigo) === normalizeBankCode(bancoCodigo)
     );
-    setGeneratedBankFile(null);
     setForms((current) => ({
       ...current,
       homologacion_banco: {
@@ -2231,11 +2111,6 @@ function Parametrizacion() {
 
   function generateBankMappingStructure(structure) {
     generateBankMappingStructureMutation.mutate(structure);
-  }
-
-  function generateBankFile() {
-    setGeneratedBankFile(null);
-    generateBankFileMutation.mutate();
   }
 
   function updateBracket(index, name, value) {
@@ -2289,7 +2164,6 @@ function Parametrizacion() {
     setActiveForm(definitionKey);
     setEditingRecord(null);
     setPendingDeleteId('');
-    setGeneratedBankFile(null);
   }
 
   function startEdit(definition, record) {
@@ -2298,7 +2172,6 @@ function Parametrizacion() {
     setPendingDeleteId('');
     setError('');
     setMessage('');
-    setGeneratedBankFile(null);
     setForms((current) => ({
       ...current,
       [definition.key]: formValuesFromRecord(definition, record),
@@ -2308,7 +2181,6 @@ function Parametrizacion() {
   function cancelEdit() {
     setEditingRecord(null);
     setPendingDeleteId('');
-    setGeneratedBankFile(null);
     setForms((current) => ({
       ...current,
       [activeDefinition.key]: cloneFormValues(activeDefinition.initial),
@@ -2499,20 +2371,10 @@ function Parametrizacion() {
                   ))}
                 </div>
                 {activeDefinition.key === 'banco' && (
-                  <>
-                    <BankFlatFileGuide
-                      values={activeValues}
-                      mappings={mappingsForBank(summary, activeValues.banco_codigo)}
-                    />
-                    <BankFileOperationPanel
-                      values={activeValues}
-                      period={bankFilePeriod}
-                      onPeriodChange={updateBankFilePeriod}
-                      onGenerate={generateBankFile}
-                      isGenerating={generateBankFileMutation.isPending}
-                      generatedFile={generatedBankFile}
-                    />
-                  </>
+                  <BankFlatFileGuide
+                    values={activeValues}
+                    mappings={mappingsForBank(summary, activeValues.banco_codigo)}
+                  />
                 )}
               </>
             )}

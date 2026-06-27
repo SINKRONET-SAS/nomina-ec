@@ -494,7 +494,7 @@ function Dashboard() {
               <Link className="rounded-md bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-teal-50 hover:text-teal-800" to="/dashboard/nomina/reportes">
                 Reportes para entidades
               </Link>
-              <Link className="rounded-md bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-teal-50 hover:text-teal-800" to="/dashboard/configuracion/parametrizacion?seccion=banco">
+              <Link className="rounded-md bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-teal-50 hover:text-teal-800" to="/dashboard/nomina/pagos-bancarios">
                 Pagos bancarios
               </Link>
               <Link className="rounded-md bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-teal-50 hover:text-teal-800" to="/dashboard/documentos/contratos">

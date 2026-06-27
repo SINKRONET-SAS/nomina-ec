@@ -36,6 +36,7 @@ import CerrarMes from './pages/Nomina/CerrarMes';
 import Beneficios from './pages/Nomina/Beneficios';
 import RolesPagos from './pages/Nomina/RolesPagos';
 import DescargarReportes from './pages/Nomina/DescargarReportes';
+import PagosBancarios from './pages/Nomina/PagosBancarios';
 import ContratosGenerados from './pages/Documentos/ContratosGenerados';
 import ActasFiniquito from './pages/Documentos/ActasFiniquito';
 import ActasEntregaDotacion from './pages/Documentos/ActasEntregaDotacion';
@@ -153,6 +154,11 @@ function App() {
               <Route path="nomina/roles" element={
                 <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
                   <RolesPagos />
+                </ProtectedRoute>
+              } />
+              <Route path="nomina/pagos-bancarios" element={
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
+                  <PagosBancarios />
                 </ProtectedRoute>
               } />
               <Route path="nomina/reportes" element={

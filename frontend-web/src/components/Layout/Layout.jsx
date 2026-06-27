@@ -41,7 +41,7 @@ function Layout() {
         { path: '/dashboard/nomina/cerrar', label: 'Cerrar Mes' },
         { path: '/dashboard/nomina/beneficios', label: 'Beneficios y descuentos' },
         { path: '/dashboard/nomina/roles', label: 'Roles de Pago' },
-        { path: '/dashboard/configuracion/parametrizacion?seccion=banco', label: 'Pagos bancarios' },
+        { path: '/dashboard/nomina/pagos-bancarios', label: 'Pagos bancarios' },
         { path: '/dashboard/nomina/reportes', label: 'Reportes Entidades' },
       ]
     },

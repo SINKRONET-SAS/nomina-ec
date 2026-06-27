@@ -1347,7 +1347,7 @@ Runtime cerrado:
 - Novedades permite ingreso manual y carga masiva con plantilla CSV descargable; las novedades por tiempo se expresan como horas redondeadas a 2 decimales en UI/detalle, conservando minutos internamente.
 - Cierre de nomina dispara `sendRolPagoDisponible()` y audita cada intento de email.
 - Pagos conserva PayPhone como proveedor real existente; `PAYMENT_PROVIDER=stripe` queda bloqueado con mensaje claro si se declara sin implementacion completa.
-- Archivo bancario de pago ya no se expone como reporte de entidad: la UI lo lleva a `Pagos bancarios`, consume `/api/pagos/banco`, exige banco explicito y usa homologacion/perfil bancario antes de generar.
+- Archivo bancario de pago ya no se expone como reporte de entidad ni como accion incrustada en Parametrizacion: la UI tiene pantalla operativa `Nomina > Pagos bancarios`, consume `/api/pagos/banco`, exige banco explicito y usa homologacion/perfil bancario antes de generar.
 - `render.yaml` activo mantiene naming Nomina-Ec y variables Stripe no sensibles.
 
 Reglas CDAN26:

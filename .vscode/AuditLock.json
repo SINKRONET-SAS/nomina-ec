@@ -5,25 +5,19 @@
   "status": "completed_local",
   "phaseCompleted": "CDAN26-08",
   "currentPhase": "CDAN26-08-qa-release",
-  "updatedAt": "2026-06-26T23:35:00-05:00",
-  "summary": "CDAN26-00..08 ejecutadas localmente. Correccion incremental: archivo bancario de pago separado de reportes de entidades, banco explicito requerido, endpoint operativo /api/pagos/banco y contexto consolidado actualizado.",
+  "updatedAt": "2026-06-26T23:50:00-05:00",
+  "summary": "CDAN26-00..08 ejecutadas localmente. Correccion incremental: pantalla operativa independiente Nomina > Pagos bancarios; Parametrizacion queda solo para perfil/homologacion; banco explicito requerido y endpoint operativo /api/pagos/banco.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts CDAN26, consolidar CODEX_CONTEXT.md con .github/CODEX_CONTEXT.md, cerrar artefactos de gobierno, commit y push.",
-  "previousAuditLockHash": "71727CE1CD1DEF8E7077E3653D646031BB9AC04480025299F9B4D697843016AC",
+  "previousAuditLockHash": "D0683A774BB03C0BB7CB8C490623D5A289190CE8160AD6016D62E5D0BC53C6D9",
   "filesModifiedSummary": [
     ".github/CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "render.yaml",
-    "backend/src/app.js",
-    "backend/src/controllers/reporteController.js",
-    "backend/src/services/bancoAebGenerator.js",
-    "backend/src/services/bancoAebGenerator.test.js",
-    "docs2/OPENAPI_HAIKY_MINIMO.yaml",
+    "frontend-web/src/App.jsx",
     "frontend-web/src/components/Layout/Layout.jsx",
+    "frontend-web/src/pages/Nomina/PagosBancarios.jsx",
     "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-    "frontend-web/src/pages/Dashboard.jsx",
-    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
-    "frontend-web/src/services/configurationApi.js"
+    "frontend-web/src/pages/Dashboard.jsx"
   ],
   "validationChecks": [
     {
@@ -60,6 +54,11 @@
       "gate": "CDAN26-CONTEXT-CONSOLIDATED",
       "status": "PASS",
       "detail": "CODEX_CONTEXT.md de raiz eliminado; contexto CDAN26 consolidado en .github/CODEX_CONTEXT.md."
+    },
+    {
+      "gate": "CDAN26-BROWSER-SMOKE",
+      "status": "BLOCKED_TOOL",
+      "detail": "Browser integrado no conecto por sandboxCwd sin esquema file URI; build web y contratos cubren la regresion automatica local."
     }
   ],
   "fases": [
@@ -81,5 +80,5 @@
     "Smoke visual con navegador integrado no se completo por falla de conexion de la herramienta; se cubrio con build PWA, contratos y pruebas."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "D0683A774BB03C0BB7CB8C490623D5A289190CE8160AD6016D62E5D0BC53C6D9"
+  "signature": "874D3AEA8F90EC67C59D1015AA40AA5A16B3B42FF8CD50CA122AF46F6E5839C5"
 }
