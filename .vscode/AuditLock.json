@@ -1,84 +1,66 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026",
-  "planCode": "CDAN26",
-  "status": "completed_local",
-  "phaseCompleted": "CDAN26-08",
-  "currentPhase": "CDAN26-08-qa-release",
-  "updatedAt": "2026-06-26T23:50:00-05:00",
-  "summary": "CDAN26-00..08 ejecutadas localmente. Correccion incremental: pantalla operativa independiente Nomina > Pagos bancarios; Parametrizacion queda solo para perfil/homologacion; banco explicito requerido y endpoint operativo /api/pagos/banco.",
+  "plan": "HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V2",
+  "planCode": "CDANV2",
+  "status": "documental_created_runtime_pending_approval",
+  "phaseCompleted": "CDANV2-00",
+  "currentPhase": "CDANV2-01-diagnostico-runtime",
+  "updatedAt": "2026-06-27T00:20:00-05:00",
+  "summary": "CDANV2-00 documental creado para la auditoria V2 nueva. Runtime queda pendiente de aprobacion explicita por fase. SEC-V2-01 queda como falso positivo controlado: no cambiar SBU 2026 a USD 470; mantener USD 482 hasta fuente oficial versionada.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts CDAN26, consolidar CODEX_CONTEXT.md con .github/CODEX_CONTEXT.md, cerrar artefactos de gobierno, commit y push.",
-  "previousAuditLockHash": "D0683A774BB03C0BB7CB8C490623D5A289190CE8160AD6016D62E5D0BC53C6D9",
+  "approvalSource": "Solicitud del usuario: generar plan Haiky para responder a Auditoria Integral Nomina-EC V2, ubicar CODEX_CONTEXT.md en .github, crear prompts por fases en base a RULES.md, commit y push.",
+  "previousAuditLockHash": "874D3AEA8F90EC67C59D1015AA40AA5A16B3B42FF8CD50CA122AF46F6E5839C5",
   "filesModifiedSummary": [
     ".github/CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "frontend-web/src/App.jsx",
-    "frontend-web/src/components/Layout/Layout.jsx",
-    "frontend-web/src/pages/Nomina/PagosBancarios.jsx",
-    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-    "frontend-web/src/pages/Dashboard.jsx"
+    "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026_V2.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/MATRIZ_CDANV2_HALLAZGOS.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/CONTRATO_CDANV2_CIERRE_DEFINITIVO.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/RUNBOOK_CDANV2_QA_RELEASE.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_00_BASELINE.md",
+    "prompts/CDANV2-00-baseline.md",
+    "prompts/CDANV2-01-diagnostico-runtime.md",
+    "prompts/CDANV2-02-auth-jwt-claims.md",
+    "prompts/CDANV2-03-superadmin-seed.md",
+    "prompts/CDANV2-04-reportes-roles.md",
+    "prompts/CDANV2-05-cierre-transaccional-idempotente.md",
+    "prompts/CDANV2-06-revenue-stripe-payphone.md",
+    "prompts/CDANV2-07-lopdp-ux-periodo.md",
+    "prompts/CDANV2-08-qa-release.md"
   ],
   "validationChecks": [
     {
-      "gate": "CDAN26-CONTRACTS",
+      "gate": "CDANV2-CONTRACTS",
       "status": "PASS",
       "detail": "npm.cmd run contracts"
     },
     {
-      "gate": "CDAN26-PRISMA-VALIDATE",
+      "gate": "CDANV2-DOCUMENTAL",
       "status": "PASS",
-      "detail": "npm.cmd run prisma:validate"
+      "detail": "Plan, matriz, contrato, runbook, reporte baseline, prompts y contexto creados sin runtime."
     },
     {
-      "gate": "CDAN26-BACKEND-TESTS",
+      "gate": "CDANV2-CONTEXT-LOCATION",
       "status": "PASS",
-      "detail": "npm.cmd run test:backend: 46 suites, 180 tests."
-    },
-    {
-      "gate": "CDAN26-WEB-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build:web"
-    },
-    {
-      "gate": "CDAN26-BANK-PAYMENT-FILE",
-      "status": "PASS",
-      "detail": "npm.cmd --workspace=backend test -- bancoAebGenerator.test.js --runInBand: 14 tests."
-    },
-    {
-      "gate": "CDAN26-MOBILE-CHECK",
-      "status": "PASS",
-      "detail": "npm.cmd run check:mobile"
-    },
-    {
-      "gate": "CDAN26-CONTEXT-CONSOLIDATED",
-      "status": "PASS",
-      "detail": "CODEX_CONTEXT.md de raiz eliminado; contexto CDAN26 consolidado en .github/CODEX_CONTEXT.md."
-    },
-    {
-      "gate": "CDAN26-BROWSER-SMOKE",
-      "status": "BLOCKED_TOOL",
-      "detail": "Browser integrado no conecto por sandboxCwd sin esquema file URI; build web y contratos cubren la regresion automatica local."
+      "detail": "No se creo CODEX_CONTEXT.md en raiz; contexto CDANV2 consolidado en .github/CODEX_CONTEXT.md."
     }
   ],
   "fases": [
-    { "phase": "CDAN26-00", "status": "completed_documental" },
-    { "phase": "CDAN26-01", "status": "completed_local" },
-    { "phase": "CDAN26-02", "status": "completed_local" },
-    { "phase": "CDAN26-03", "status": "completed_local" },
-    { "phase": "CDAN26-04", "status": "completed_local" },
-    { "phase": "CDAN26-05", "status": "completed_local" },
-    { "phase": "CDAN26-06", "status": "completed_local" },
-    { "phase": "CDAN26-07", "status": "completed_local" },
-    { "phase": "CDAN26-08", "status": "completed_local" }
+    { "phase": "CDANV2-00", "status": "completed_documental" },
+    { "phase": "CDANV2-01", "status": "pending_approval" },
+    { "phase": "CDANV2-02", "status": "pending_approval" },
+    { "phase": "CDANV2-03", "status": "pending_approval" },
+    { "phase": "CDANV2-04", "status": "pending_approval" },
+    { "phase": "CDANV2-05", "status": "pending_approval" },
+    { "phase": "CDANV2-06", "status": "pending_approval" },
+    { "phase": "CDANV2-07", "status": "pending_approval" },
+    { "phase": "CDANV2-08", "status": "pending_approval" }
   ],
   "residualRisk": [
-    "Formulario 107 PDF requiere revision tributaria profesional y ficha SRI vigente antes de presentacion oficial.",
-    "SBU 2026 se consume desde parametros legales vigentes; la auditoria mencionaba USD 460, pero la matriz legal interna vigente usa USD 482.",
-    "Stripe real queda bloqueado si se declara como PAYMENT_PROVIDER=stripe; PayPhone permanece como canal real existente.",
-    "Comunicaciones productivas requieren proveedor SMTP/API real y remitente verificado.",
-    "Smoke visual con navegador integrado no se completo por falla de conexion de la herramienta; se cubrio con build PWA, contratos y pruebas."
+    "Runtime CDANV2 no iniciado; requiere aprobacion explicita por fase.",
+    "Fuente oficial MDT debe archivarse antes de modificar parametros legales productivos.",
+    "Varios hallazgos fuente pueden estar cerrados por CDAN26 y deben reconciliarse en CDANV2-01."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "874D3AEA8F90EC67C59D1015AA40AA5A16B3B42FF8CD50CA122AF46F6E5839C5"
+  "signature": "E175787C52B2B8C4A3F86B37C49D0679C6E1F5DC9A7D5467ACD7090181311573"
 }

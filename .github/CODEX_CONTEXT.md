@@ -1355,3 +1355,49 @@ Reglas CDAN26:
 - `CODEX_CONTEXT.md` no debe quedar en raiz; el contexto consolidado vive en `.github/CODEX_CONTEXT.md`.
 - No prometer validez oficial de Formulario 107 sin revision tributaria profesional.
 - SBU 2026 debe tomarse desde parametros legales vigentes del tenant/anio; la matriz interna actual usa USD 482, aunque la auditoria mencionaba USD 460.
+
+---
+
+## CDANV2 - Cierre definitivo Auditoria Nomina-Ec 2026 V2
+
+Plan: `HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V2`.
+
+Estado: CDANV2-00 documental creado; runtime pendiente de aprobacion por fase.
+
+Fuentes:
+
+- `C:\proyectos web\sinkroniq-cloud-flow\src\pages\AuditoriaNominaEC2026V2.jsx`
+- `C:\proyectos web\sinkroniq-cloud-flow\src\pages\v_nominaec\nominaec_v2_hallazgos.jsx`
+- `C:\proyectos web\sinkroniq-cloud-flow\src\pages\v_nominaec\nominaec_v2_scripts.jsx`
+
+Artefactos:
+
+- `docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026_V2.md`
+- `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/MATRIZ_CDANV2_HALLAZGOS.md`
+- `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/CONTRATO_CDANV2_CIERRE_DEFINITIVO.md`
+- `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/RUNBOOK_CDANV2_QA_RELEASE.md`
+- `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_00_BASELINE.md`
+- `prompts/CDANV2-00-baseline.md` a `prompts/CDANV2-08-qa-release.md`
+- `.vscode/AuditLock.json`
+
+Alcance:
+
+- Auth JWT con claims y verificacion fresca para operaciones criticas.
+- Superadmin y seed inicial seguro.
+- Roles PDF y reportes de nomina sin 500/404.
+- Cierre mensual idempotente con control de carrera.
+- Revenue Stripe solo si webhook firmado esta completo; PayPhone se preserva.
+- LOPDP para auditoria de comunicaciones, UX, ortografia, periodo Ecuador y QA.
+
+Regla SBU 2026:
+
+- `SEC-V2-01` queda como falso positivo controlado.
+- No cambiar SBU 2026 a USD 470.
+- Valor operativo actual: USD 482, sujeto a fuente oficial versionada y revision legal antes de cualquier cambio productivo.
+
+Reglas operativas CDANV2:
+
+- No iniciar runtime sin aprobacion explicita por fase.
+- No crear `CODEX_CONTEXT.md` en raiz; este contexto vive en `.github/CODEX_CONTEXT.md`.
+- No eliminar `docs2`; es gobierno activo de planes Haiky.
+- No aplicar scripts fuente literalmente si contradicen el estado runtime real.
