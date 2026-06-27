@@ -45,7 +45,7 @@ app.get('/health', (req, res) => {
 
 const employeeAppInviteController = require('./controllers/employeeAppInviteController');
 const createAuthRoutes = require('./routes/authRoutes');
-const { authenticateToken, requireRole } = require('./middleware/auth');
+const { authenticateToken, requireFreshUser, requireRole } = require('./middleware/auth');
 const authRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, keyPrefix: 'auth' });
 app.use('/api/auth', createAuthRoutes({ authRateLimit }));
 app.post('/api/mobile/empleado/activar', authRateLimit, employeeAppInviteController.aceptarPublica);
@@ -80,9 +80,9 @@ app.post('/api/privacidad/consentimientos/retirar-todo', privacyController.withd
 app.get('/api/privacidad/consentimientos/historial', privacyController.history);
 app.get('/api/privacidad/exportar', privacyController.exportData);
 app.get('/api/privacidad/exportar/:userId', privacyController.exportData);
-app.post('/api/privacidad/anonimizar/:userId', requireRole('superadmin'), privacyController.anonymize);
+app.post('/api/privacidad/anonimizar/:userId', requireRole('superadmin'), requireFreshUser, privacyController.anonymize);
 app.post('/api/configuracion/onboarding/:stepCode', requireRole('owner', 'admin_rrhh'), configurationController.completeOnboardingStep);
-app.post('/api/configuracion/parametros-legales/obligatorios', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.loadMandatoryLegalParameters);
+app.post('/api/configuracion/parametros-legales/obligatorios', requireRole('superadmin', 'owner', 'admin_rrhh'), requireFreshUser, configurationController.loadMandatoryLegalParameters);
 app.get('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.list);
 app.post('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.create);
 app.put('/api/configuracion/:resource/:id', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.update);
@@ -97,19 +97,19 @@ app.post('/api/integraciones/clientes', requireRole('superadmin', 'owner'), inte
 
 const superadminController = require('./controllers/superadminController');
 app.get('/api/superadmin/overview', requireRole('superadmin'), superadminController.overview);
-app.post('/api/superadmin/incidencias', requireRole('superadmin'), superadminController.createSupportIncident);
-app.put('/api/superadmin/incidencias/:id', requireRole('superadmin'), superadminController.updateSupportIncident);
+app.post('/api/superadmin/incidencias', requireRole('superadmin'), requireFreshUser, superadminController.createSupportIncident);
+app.put('/api/superadmin/incidencias/:id', requireRole('superadmin'), requireFreshUser, superadminController.updateSupportIncident);
 
 app.get('/api/pagos/status', paymentController.subscriptionStatus);
 app.get('/api/pagos/payment-methods', paymentController.listPaymentMethods);
 app.get('/api/pagos/payment-methods/capabilities', paymentController.paymentCapabilities);
 app.get('/api/pagos/capabilities', paymentController.tenantCapabilities);
-app.post('/api/pagos/payment-methods/checkout-intent', requireRole('owner', 'superadmin'), paymentController.createCheckoutIntent);
-app.post('/api/pagos/payment-methods/:paymentMethodId/revoke', requireRole('owner', 'superadmin'), paymentController.revokePaymentMethod);
+app.post('/api/pagos/payment-methods/checkout-intent', requireRole('owner', 'superadmin'), requireFreshUser, paymentController.createCheckoutIntent);
+app.post('/api/pagos/payment-methods/:paymentMethodId/revoke', requireRole('owner', 'superadmin'), requireFreshUser, paymentController.revokePaymentMethod);
 app.get('/api/pagos/planes/admin', requireRole('superadmin', 'owner'), paymentController.listAdminPlans);
-app.post('/api/pagos/planes', requireRole('superadmin'), paymentController.upsertPlan);
-app.put('/api/pagos/planes/:planId', requireRole('superadmin'), paymentController.upsertPlan);
-app.delete('/api/pagos/planes/:planId', requireRole('superadmin'), paymentController.deletePlan);
+app.post('/api/pagos/planes', requireRole('superadmin'), requireFreshUser, paymentController.upsertPlan);
+app.put('/api/pagos/planes/:planId', requireRole('superadmin'), requireFreshUser, paymentController.upsertPlan);
+app.delete('/api/pagos/planes/:planId', requireRole('superadmin'), requireFreshUser, paymentController.deletePlan);
 
 const empleadoController = require('./controllers/empleadoController');
 app.get('/api/empleados', requireRole('owner', 'admin_rrhh', 'supervisor'), empleadoController.listar);
@@ -175,7 +175,7 @@ app.post('/api/nomina/contabilidad/mapeos', requireRole('owner', 'admin_rrhh'), 
 app.put('/api/nomina/contabilidad/mapeos/:id', requireRole('owner', 'admin_rrhh'), payrollAccountingController.updateMapping);
 
 const nominaController = require('./controllers/nominaController');
-app.post('/api/nomina/calcular', requireRole('owner', 'admin_rrhh'), nominaController.calcularMes);
+app.post('/api/nomina/calcular', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.calcularMes);
 app.get('/api/nomina/periodo/:anio/:mes', requireRole('owner', 'admin_rrhh'), nominaController.obtenerEstadoPeriodo);
 app.post('/api/nomina/periodo/abrir', requireRole('owner', 'admin_rrhh'), nominaController.abrirPeriodo);
 app.post('/api/nomina/novedades/lote', requireRole('owner', 'admin_rrhh'), nominaController.crearLoteNovedades);
@@ -183,8 +183,8 @@ app.get('/api/nomina/:id/rol-pdf', nominaController.descargarRolPDF);
 app.get('/api/nomina/:anio/:mes/roles-pdf-transpuesto', requireRole('owner', 'admin_rrhh'), nominaController.descargarRolesTranspuestosPDF);
 app.get('/api/nomina/:anio/:mes', nominaController.listarPorPeriodo);
 app.get('/api/nomina/empleado/:empleadoId/:anio/:mes', nominaController.obtenerPorEmpleado);
-app.post('/api/nomina/cerrar', requireRole('owner', 'admin_rrhh'), nominaController.cerrarMes);
-app.post('/api/nomina/reabrir', requireRole('owner', 'admin_rrhh'), nominaController.reabrirMes);
+app.post('/api/nomina/cerrar', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.cerrarMes);
+app.post('/api/nomina/reabrir', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.reabrirMes);
 
 const documentoLegalController = require('./controllers/documentoLegalController');
 app.get('/api/documentos/contrato/plantillas', requireRole('owner', 'admin_rrhh'), documentoLegalController.listarPlantillasContrato);

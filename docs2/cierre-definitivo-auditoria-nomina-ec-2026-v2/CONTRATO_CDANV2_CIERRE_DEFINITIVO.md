@@ -2,7 +2,7 @@
 
 ## Alcance
 
-Este contrato define las condiciones tecnicas minimas para cerrar los hallazgos V2 nuevos. No autoriza runtime por si mismo; cada fase requiere aprobacion explicita y `AuditLock.json` firmado.
+Este contrato define las condiciones tecnicas minimas para cerrar los hallazgos V2 nuevos. El runtime fue autorizado por solicitud explicita del usuario el 2026-06-27; cada fase queda respaldada por reporte y `AuditLock.json`.
 
 ## Contrato legal SBU
 
@@ -15,6 +15,7 @@ Este contrato define las condiciones tecnicas minimas para cerrar los hallazgos 
 - La autenticacion normal debe evitar consultas innecesarias por request si los claims firmados son suficientes.
 - Las operaciones criticas deben conservar verificacion fresca contra BD o mecanismo equivalente de revocacion.
 - Todo error de auth debe incluir codigo, mensaje, `correlationId` y estado HTTP consistente.
+- Los tokens legados sin claims completos deben seguir funcionando durante ventana de rotacion mediante fallback seguro.
 
 ## Contrato superadmin y seed
 
@@ -33,6 +34,7 @@ Este contrato define las condiciones tecnicas minimas para cerrar los hallazgos 
 - `cerrarMes()` debe ser idempotente ante doble click, doble request o concurrencia.
 - Debe existir bloqueo transaccional o condicion atomica verificable.
 - Notificaciones y auditoria no deben ocultar fallos operativos relevantes.
+- El periodo se bloquea con `SELECT ... FOR UPDATE` antes de cerrar nominas y actualizar saldos del periodo.
 
 ## Contrato pagos
 
@@ -45,3 +47,4 @@ Este contrato define las condiciones tecnicas minimas para cerrar los hallazgos 
 - La auditoria de comunicaciones debe minimizar datos personales.
 - La retencion debe estar documentada por tipo de comunicacion.
 - La purga debe ser auditable y reversible solo mediante backup autorizado, no por flujo normal.
+- Debe existir comando operativo para purgar eventos vencidos por `retention_until`.

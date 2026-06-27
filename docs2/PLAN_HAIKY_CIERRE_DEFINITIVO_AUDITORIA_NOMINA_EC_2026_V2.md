@@ -4,7 +4,7 @@
 |-------|-------|
 | Plan | HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V2 |
 | Codigo | CDANV2 |
-| Estado | CDANV2-00 documental creado; runtime pendiente de aprobacion por fase |
+| Estado | CDANV2-08 ejecutado localmente; QA y push final pendientes |
 | Fuente auditoria | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\AuditoriaNominaEC2026V2.jsx` |
 | Hallazgos | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\v_nominaec\nominaec_v2_hallazgos.jsx` |
 | Scripts fuente | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\v_nominaec\nominaec_v2_scripts.jsx` |
@@ -28,18 +28,18 @@ Cerrar definitivamente la auditoria V2 nueva sin reintroducir falsos positivos n
 | Fase | Prioridad | Estado | Alcance |
 |------|-----------|--------|---------|
 | CDANV2-00 | P0 | completed_documental | Baseline documental, matriz, contrato, runbook, prompts, contexto y AuditLock. |
-| CDANV2-01 | P0 | pending_approval | Diagnostico runtime contra repo real y reconciliacion de falsos positivos. |
-| CDANV2-02 | P0 | pending_approval | Auth JWT con claims y revocacion/fresh-user para operaciones criticas. |
-| CDANV2-03 | P0 | pending_approval | Superadmin y seed inicial seguro sin secretos ni datos reales. |
-| CDANV2-04 | P0 | pending_approval | Roles PDF/reportes de nomina: botones reales, no 500/404. |
-| CDANV2-05 | P0 | pending_approval | Cierre mensual idempotente con bloqueo transaccional y evidencia. |
-| CDANV2-06 | P0 | pending_approval | Revenue: Stripe bloqueado o webhook real; PayPhone preservado. |
-| CDANV2-07 | P1 | pending_approval | LOPDP, UX, ortografia, periodo y reportes visibles. |
-| CDANV2-08 | P0 | pending_approval | QA, contratos, pruebas, build, AuditLock final y release gate. |
+| CDANV2-01 | P0 | completed_runtime | Diagnostico runtime contra repo real y reconciliacion de falsos positivos. |
+| CDANV2-02 | P0 | completed_runtime | Auth JWT con claims y revocacion/fresh-user para operaciones criticas. |
+| CDANV2-03 | P0 | completed_previo | Superadmin y seed inicial seguro sin secretos ni datos reales. |
+| CDANV2-04 | P0 | completed_previo | Roles PDF/reportes de nomina: botones reales, no 500/404. |
+| CDANV2-05 | P0 | completed_runtime | Cierre mensual idempotente con bloqueo transaccional y evidencia. |
+| CDANV2-06 | P0 | completed_previo | Revenue: Stripe bloqueado o webhook real; PayPhone preservado. |
+| CDANV2-07 | P1 | completed_runtime | LOPDP, UX, ortografia, periodo y reportes visibles. |
+| CDANV2-08 | P0 | completed_local | QA, contratos, pruebas, build, AuditLock final y release gate. |
 
 ## No negociables
 
-- No iniciar runtime sin aprobacion explicita por fase.
+- Runtime ejecutado por solicitud explicita del usuario el 2026-06-27.
 - No crear `CODEX_CONTEXT.md` en raiz; el contexto vive en `.github/CODEX_CONTEXT.md`.
 - No aplicar scripts fuente literalmente si contradicen el estado real del repo.
 - No usar SBU 2026 = USD 470 sin fuente oficial vigente y aprobacion legal.

@@ -360,6 +360,7 @@ async function descargarRolesTranspuestosPDF(req, res) {
 }
 
 async function cerrarMes(req, res) {
+  let tx = null;
   try {
     const { tenantId, usuarioId } = req;
     const { anio, mes } = req.body;
@@ -377,7 +378,25 @@ async function cerrarMes(req, res) {
       mode: 'close',
     });
 
-    const result = await db.query(`
+    tx = await db.getClient(tenantId, usuarioId);
+    const periodLock = await tx.query(`
+      SELECT id, status
+      FROM payroll_periods
+      WHERE tenant_id = $1 AND anio = $2 AND mes = $3
+      FOR UPDATE
+    `, [tenantId, anioNumber, mesNumber]);
+
+    if (periodLock.rows[0]?.status !== 'calculated') {
+      await db.rollback(tx);
+      tx = null;
+      return res.status(409).json({
+        error: 'NOMINA_PERIODO_NO_CALCULADO',
+        message: 'Calcula la nomina antes de cerrar el periodo.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const result = await tx.query(`
       UPDATE nominas
       SET estado = 'cerrada', cerrado_en = NOW(), updated_at = NOW()
       WHERE tenant_id = $1 AND anio = $2 AND mes = $3 AND estado = 'borrador'
@@ -406,7 +425,7 @@ async function cerrarMes(req, res) {
           nominaId: row.id,
           monto: amount,
         };
-        const updateResult = await db.query(`
+        const updateResult = await tx.query(`
           UPDATE beneficios_empleados
           SET saldo_pendiente = GREATEST(0, saldo_pendiente - $3::numeric),
               estado = CASE
@@ -441,7 +460,7 @@ async function cerrarMes(req, res) {
       }
     }
 
-    await db.query(`
+    await tx.query(`
       UPDATE payroll_periods
       SET status = 'closed',
           closed_at = NOW(),
@@ -458,6 +477,17 @@ async function cerrarMes(req, res) {
       WHERE tenant_id = $1 AND anio = $2 AND mes = $3
     `, [tenantId, anioNumber, mesNumber, result.rows.length, beneficiosAplicados, beneficiosOmitidos, req.correlationId || null]);
 
+    const employeesResult = result.rows.length > 0
+      ? await tx.query(`
+        SELECT id, tenant_id, nombres, apellidos, email_personal
+        FROM empleados
+        WHERE tenant_id = $1 AND id = ANY($2::uuid[])
+      `, [tenantId, result.rows.map((row) => row.empleado_id)])
+      : { rows: [] };
+
+    await db.commit(tx);
+    tx = null;
+
     await recordAudit({
       tenantId,
       userId: usuarioId,
@@ -468,13 +498,6 @@ async function cerrarMes(req, res) {
       ipAddress: req.ip,
     });
 
-    const employeesResult = result.rows.length > 0
-      ? await db.query(`
-        SELECT id, tenant_id, nombres, apellidos, email_personal
-        FROM empleados
-        WHERE tenant_id = $1 AND id = ANY($2::uuid[])
-      `, [tenantId, result.rows.map((row) => row.empleado_id)])
-      : { rows: [] };
     const employeeById = new Map(employeesResult.rows.map((employee) => [String(employee.id), employee]));
     const communicationResults = [];
 
@@ -524,6 +547,17 @@ async function cerrarMes(req, res) {
       correlationId: req.correlationId,
     });
   } catch (err) {
+    if (tx) {
+      await db.rollback(tx).catch((rollbackErr) => {
+        console.error('[NOMINA] Error revirtiendo transaccion de cierre', {
+          code: rollbackErr.code || 'NOMINA_CIERRE_ROLLBACK_ERROR',
+          statusCode: 500,
+          correlationId: req.correlationId,
+          userId: req.usuarioId || null,
+          message: rollbackErr.message,
+        });
+      });
+    }
     console.error('[NOMINA] Error cerrando mes', {
       code: err.code || 'NOMINA_CIERRE_ERROR',
       statusCode: err.statusCode || 500,

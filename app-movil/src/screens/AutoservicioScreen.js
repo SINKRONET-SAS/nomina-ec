@@ -18,6 +18,18 @@ const MONTH_LABELS = [
   'Diciembre',
 ];
 
+const moneyFormatter = new Intl.NumberFormat('es-EC', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function formatMoney(value) {
+  const amount = Number(value || 0);
+  return moneyFormatter.format(Number.isFinite(amount) ? amount : 0);
+}
+
 function currentPeriodEC() {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Guayaquil',
@@ -124,9 +136,9 @@ export default function AutoservicioScreen() {
           <Text style={styles.detail}>Cargando rol de pagos...</Text>
         ) : nomina ? (
           <>
-            <Text style={styles.money}>${Number(nomina.neto_recibir || 0).toFixed(2)}</Text>
-            <Text style={styles.detail}>Ingresos ${Number(nomina.total_ingresos || 0).toFixed(2)}</Text>
-            <Text style={styles.detail}>Deducciones ${Number(nomina.total_deducciones || 0).toFixed(2)}</Text>
+            <Text style={styles.money}>{formatMoney(nomina.neto_recibir)}</Text>
+            <Text style={styles.detail}>Ingresos {formatMoney(nomina.total_ingresos)}</Text>
+            <Text style={styles.detail}>Deducciones {formatMoney(nomina.total_deducciones)}</Text>
             <Text style={styles.detail}>Estado {nomina.estado}</Text>
           </>
         ) : (

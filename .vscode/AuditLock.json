@@ -2,23 +2,64 @@
   "schemaVersion": 1,
   "plan": "HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V2",
   "planCode": "CDANV2",
-  "status": "targeted_runtime_completed",
-  "phaseCompleted": "CDANV2-07",
-  "currentPhase": "CDANV2-07-lopdp-ux-periodo",
-  "updatedAt": "2026-06-27T07:55:00-05:00",
-  "summary": "Correccion puntual aprobada por usuario: se humanizo la pantalla Roles de Pago, reemplazando textos tecnicos como PDF transpuesto por PDF general y mensajes comerciales normales. CDANV2 integral sigue pendiente de aprobacion por fases para otros runtime.",
+  "status": "completed_local_ready_to_release",
+  "phaseCompleted": "CDANV2-08",
+  "currentPhase": "CDANV2-08-qa-release",
+  "updatedAt": "2026-06-27T08:00:00-05:00",
+  "summary": "Ejecucion integral de todos los prompts CDANV2 autorizada por el usuario. Se cerraron runtime auth JWT por claims, cierre mensual transaccional con SELECT FOR UPDATE, purga LOPDP de eventos de comunicacion vencidos y formato USD Ecuador en autoservicio movil. Superadmin, seed, roles PDF, pagos y reportes quedan reconciliados como cierres previos o FP controlados.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: generar plan Haiky para responder a Auditoria Integral Nomina-EC V2, ubicar CODEX_CONTEXT.md en .github, crear prompts por fases en base a RULES.md, commit y push.",
-  "previousAuditLockHash": "E175787C52B2B8C4A3F86B37C49D0679C6E1F5DC9A7D5467ACD7090181311573",
+  "approvalSource": "Solicitud del usuario: Ejecutar todos los prompts de PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026_V2.md, y su CODEX_CONTEXT.md.",
+  "previousAuditLockHash": "6CB15C3E5D1C70CC0480CD3DAA8087D9D45F4EEE1D782013DD37C46134079517",
   "filesModifiedSummary": [
+    ".github/CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "frontend-web/src/pages/Nomina/RolesPagos.jsx"
+    "app-movil/src/screens/AutoservicioScreen.js",
+    "backend/package.json",
+    "backend/scripts/purge-communication-events.js",
+    "backend/src/app.js",
+    "backend/src/controllers/nominaController.js",
+    "backend/src/controllers/nominaController.test.js",
+    "backend/src/middleware/auth.js",
+    "backend/src/middleware/auth.test.js",
+    "backend/src/services/communicationAuditService.js",
+    "backend/src/services/communicationAuditService.test.js",
+    "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026_V2.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/MATRIZ_CDANV2_HALLAZGOS.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/CONTRATO_CDANV2_CIERRE_DEFINITIVO.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_01_DIAGNOSTICO_RUNTIME.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_02_AUTH_JWT.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_03_SUPERADMIN_SEED.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_04_ROLES_REPORTES.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_05_CIERRE_MENSUAL.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_06_REVENUE_PAGOS.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_07_LOPDP_UX_PERIODO.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_08_QA_RELEASE.md"
   ],
   "validationChecks": [
+    {
+      "gate": "CDANV2-TARGETED-BACKEND",
+      "status": "PASS",
+      "detail": "npm.cmd test -- auth.test.js communicationAuditService.test.js nominaController.test.js --runInBand"
+    },
+    {
+      "gate": "CDANV2-NODE-CHECKS",
+      "status": "PASS",
+      "detail": "node --check auth.js, nominaController.js, communicationAuditService.js y purge-communication-events.js"
+    },
     {
       "gate": "CDANV2-CONTRACTS",
       "status": "PASS",
       "detail": "npm.cmd run contracts"
+    },
+    {
+      "gate": "CDANV2-PRISMA",
+      "status": "PASS",
+      "detail": "npm.cmd run prisma:validate"
+    },
+    {
+      "gate": "CDANV2-BACKEND",
+      "status": "PASS",
+      "detail": "npm.cmd run test:backend; 46 suites, 188 tests"
     },
     {
       "gate": "CDANV2-WEB-BUILD",
@@ -26,27 +67,27 @@
       "detail": "npm.cmd run build:web"
     },
     {
-      "gate": "CDANV2-UX-TEXT",
+      "gate": "CDANV2-MOBILE",
       "status": "PASS",
-      "detail": "RolesPagos.jsx ya no muestra PDF transpuesto ni mensajes backend en textos visibles."
+      "detail": "npm.cmd run check:mobile"
     }
   ],
   "fases": [
     { "phase": "CDANV2-00", "status": "completed_documental" },
-    { "phase": "CDANV2-01", "status": "pending_approval" },
-    { "phase": "CDANV2-02", "status": "pending_approval" },
-    { "phase": "CDANV2-03", "status": "pending_approval" },
-    { "phase": "CDANV2-04", "status": "pending_approval" },
-    { "phase": "CDANV2-05", "status": "pending_approval" },
-    { "phase": "CDANV2-06", "status": "pending_approval" },
-    { "phase": "CDANV2-07", "status": "completed_targeted_runtime" },
-    { "phase": "CDANV2-08", "status": "pending_approval" }
+    { "phase": "CDANV2-01", "status": "completed_runtime" },
+    { "phase": "CDANV2-02", "status": "completed_runtime" },
+    { "phase": "CDANV2-03", "status": "completed_previo" },
+    { "phase": "CDANV2-04", "status": "completed_previo" },
+    { "phase": "CDANV2-05", "status": "completed_runtime" },
+    { "phase": "CDANV2-06", "status": "completed_previo" },
+    { "phase": "CDANV2-07", "status": "completed_runtime" },
+    { "phase": "CDANV2-08", "status": "completed_local" }
   ],
   "residualRisk": [
-    "Runtime integral CDANV2 no iniciado; solo se ejecuto correccion puntual de UX solicitada por el usuario.",
-    "Fuente oficial MDT debe archivarse antes de modificar parametros legales productivos.",
-    "Varios hallazgos fuente pueden estar cerrados por CDAN26 y deben reconciliarse en CDANV2-01."
+    "SEC-V2-01 se mantiene como FP controlado: no se modifica SBU 2026 a USD 470 sin fuente oficial versionada y revision legal.",
+    "Stripe permanece bloqueado visible si no esta completamente configurado; PayPhone sigue como canal real.",
+    "El push remoto debe confirmar que la rama main acepta el commit final."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "6CB15C3E5D1C70CC0480CD3DAA8087D9D45F4EEE1D782013DD37C46134079517"
+  "signature": "B0262BD64951ACA94D0991EF9FB16A0A672F41ADAA941FC3257FE9D4301667DC"
 }

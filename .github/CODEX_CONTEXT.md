@@ -1362,7 +1362,7 @@ Reglas CDAN26:
 
 Plan: `HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V2`.
 
-Estado: CDANV2-00 documental creado; runtime pendiente de aprobacion por fase.
+Estado: CDANV2-08 ejecutado localmente; QA final, commit y push en curso.
 
 Fuentes:
 
@@ -1377,6 +1377,14 @@ Artefactos:
 - `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/CONTRATO_CDANV2_CIERRE_DEFINITIVO.md`
 - `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/RUNBOOK_CDANV2_QA_RELEASE.md`
 - `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_00_BASELINE.md`
+- `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_01_DIAGNOSTICO_RUNTIME.md`
+- `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_02_AUTH_JWT.md`
+- `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_03_SUPERADMIN_SEED.md`
+- `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_04_ROLES_REPORTES.md`
+- `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_05_CIERRE_MENSUAL.md`
+- `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_06_REVENUE_PAGOS.md`
+- `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_07_LOPDP_UX_PERIODO.md`
+- `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_08_QA_RELEASE.md`
 - `prompts/CDANV2-00-baseline.md` a `prompts/CDANV2-08-qa-release.md`
 - `.vscode/AuditLock.json`
 
@@ -1397,7 +1405,15 @@ Regla SBU 2026:
 
 Reglas operativas CDANV2:
 
-- No iniciar runtime sin aprobacion explicita por fase.
+- Runtime ejecutado por solicitud explicita del usuario: "Ejecutar todos los prompts de PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026_V2.md, y su CODEX_CONTEXT.md".
 - No crear `CODEX_CONTEXT.md` en raiz; este contexto vive en `.github/CODEX_CONTEXT.md`.
 - No eliminar `docs2`; es gobierno activo de planes Haiky.
 - No aplicar scripts fuente literalmente si contradicen el estado runtime real.
+
+Cierre ejecutado CDANV2:
+
+- `SEC-V2-02`: `backend/src/middleware/auth.js` usa claims JWT para requests normales, fallback de tokens legados y `requireFreshUser` para operaciones sensibles.
+- `BUG-V2-03`: `backend/src/controllers/nominaController.js` bloquea el periodo con `SELECT ... FOR UPDATE` y cierra roles/beneficios/periodo en una transaccion.
+- `LEG-V2-05`: `backend/src/services/communicationAuditService.js` y `backend/scripts/purge-communication-events.js` agregan purga de eventos vencidos por `retention_until`; script `privacy:purge-communications`.
+- `UX-V2-02`: `app-movil/src/screens/AutoservicioScreen.js` usa `Intl.NumberFormat('es-EC', currency: 'USD')`.
+- Superadmin, seed, Roles PDF, PayPhone/Stripe bloqueado y reportes quedan cerrados por evidencia previa sin duplicar implementacion.

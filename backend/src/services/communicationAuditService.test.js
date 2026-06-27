@@ -94,4 +94,25 @@ describe('communicationAuditService', () => {
       recipientHint: 'example.com',
     });
   });
+
+  test('purga eventos vencidos por fecha de retencion', async () => {
+    queryMock = jest.fn().mockResolvedValue({
+      rows: [{ id: 'event-old-1' }, { id: 'event-old-2' }],
+    });
+    jest.resetModules();
+    jest.doMock('../config/database', () => ({
+      query: queryMock,
+      runWithTenantContext: (_context, callback) => callback(),
+    }));
+    const service = require('./communicationAuditService');
+    const now = new Date('2026-06-27T12:00:00Z');
+
+    const result = await service.purgeExpiredCommunicationEvents({ now });
+
+    expect(queryMock).toHaveBeenCalledWith(
+      expect.stringContaining('DELETE FROM communication_events'),
+      [now]
+    );
+    expect(result).toEqual({ deleted: 2, at: now });
+  });
 });

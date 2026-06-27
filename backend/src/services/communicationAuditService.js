@@ -160,7 +160,22 @@ async function listCommunicationEvents({ tenantId = null, limit = 40 } = {}) {
   }));
 }
 
+async function purgeExpiredCommunicationEvents({ now = new Date() } = {}) {
+  const result = await db.query(`
+    DELETE FROM communication_events
+    WHERE retention_until IS NOT NULL
+      AND retention_until < $1
+    RETURNING id
+  `, [now]);
+
+  return {
+    deleted: result.rows.length,
+    at: now,
+  };
+}
+
 module.exports = {
   listCommunicationEvents,
+  purgeExpiredCommunicationEvents,
   recordCommunicationEvent,
 };
