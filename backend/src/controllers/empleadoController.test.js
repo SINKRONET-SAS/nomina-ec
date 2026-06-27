@@ -7,10 +7,14 @@ jest.mock('../services/auditService', () => ({
 jest.mock('../services/bancoAebGenerator', () => ({
   getBankProfileForTenant: jest.fn(),
 }));
+jest.mock('../services/bankAccountCrypto', () => ({
+  encryptBankAccount: jest.fn((account) => Buffer.from(`encrypted:${account}`)),
+}));
 
 const db = require('../config/database');
 const { recordAudit } = require('../services/auditService');
 const { getBankProfileForTenant } = require('../services/bancoAebGenerator');
+const { encryptBankAccount } = require('../services/bankAccountCrypto');
 const empleadoController = require('./empleadoController');
 
 function mockResponse() {
@@ -200,6 +204,7 @@ describe('empleadoController.actualizar', () => {
 
     await empleadoController.actualizar(req, res);
 
+    expect(encryptBankAccount).toHaveBeenCalledWith('9999999999');
     expect(getBankProfileForTenant).toHaveBeenCalledWith('tenant-1', '2017');
     const [sql, values] = db.query.mock.calls[0];
     expect(sql).toContain('banco =');
