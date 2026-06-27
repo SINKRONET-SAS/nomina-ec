@@ -72,14 +72,30 @@ paths:
       responses:
         "200":
           description: Nomina cerrada
-  /api/reportes/banco:
+  /api/pagos/banco:
     post:
-      summary: Genera archivo bancario
+      summary: Genera archivo bancario de pago
       security:
         - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [anio, mes, banco]
+              properties:
+                anio:
+                  type: integer
+                mes:
+                  type: integer
+                banco:
+                  type: string
       responses:
         "200":
           description: Archivo generado
+        "400":
+          description: Banco requerido
 components:
   securitySchemes:
     bearerAuth:

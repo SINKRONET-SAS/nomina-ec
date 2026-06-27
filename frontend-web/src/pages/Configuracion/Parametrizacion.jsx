@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import {
   Briefcase,
   Building2,
@@ -2014,8 +2015,13 @@ function IncomeTaxTablePreview({ records }) {
 function Parametrizacion() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const today = new Date();
-  const [activeForm, setActiveForm] = useState(formDefinitions[0].key);
+  const requestedSection = searchParams.get('seccion');
+  const initialForm = formDefinitions.some((definition) => definition.key === requestedSection)
+    ? requestedSection
+    : formDefinitions[0].key;
+  const [activeForm, setActiveForm] = useState(initialForm);
   const [forms, setForms] = useState(buildInitialState);
   const [mandatoryYear, setMandatoryYear] = useState(new Date().getFullYear());
   const [bankFilePeriod, setBankFilePeriod] = useState({ anio: today.getFullYear(), mes: today.getMonth() + 1 });
@@ -2171,6 +2177,12 @@ function Parametrizacion() {
   const completion = summary?.onboarding?.completionPercent || 0;
   const records = recordsForDefinition(summary, activeDefinition);
   const legalRecords = summary?.resources?.legalParameters || [];
+
+  useEffect(() => {
+    if (requestedSection && formDefinitions.some((definition) => definition.key === requestedSection)) {
+      selectForm(requestedSection);
+    }
+  }, [requestedSection]);
 
   function updateField(name, value) {
     setForms((current) => {

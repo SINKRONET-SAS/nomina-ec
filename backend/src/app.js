@@ -201,6 +201,8 @@ app.post('/api/reportes/rdep', requireRole('owner', 'admin_rrhh'), reporteContro
 app.post('/api/reportes/formulario-107/precheck', requireRole('owner', 'admin_rrhh'), reporteController.validarFormulario107);
 app.post('/api/reportes/formulario-107', requireRole('owner', 'admin_rrhh'), reporteController.generarFormulario107);
 app.post('/api/reportes/sae', requireRole('owner', 'admin_rrhh'), reporteController.generarSAE);
+app.post('/api/pagos/banco/precheck', requireRole('owner', 'admin_rrhh'), reporteController.validarArchivoBanco);
+app.post('/api/pagos/banco', requireRole('owner', 'admin_rrhh'), reporteController.generarArchivoBanco);
 app.post('/api/reportes/banco/precheck', requireRole('owner', 'admin_rrhh'), reporteController.validarArchivoBanco);
 app.post('/api/reportes/banco', requireRole('owner', 'admin_rrhh'), reporteController.generarArchivoBanco);
 app.post('/api/reportes/nomina/exportar', requireRole('owner', 'admin_rrhh'), reporteController.exportarNomina);

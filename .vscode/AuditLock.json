@@ -5,43 +5,25 @@
   "status": "completed_local",
   "phaseCompleted": "CDAN26-08",
   "currentPhase": "CDAN26-08-qa-release",
-  "updatedAt": "2026-06-26T20:15:00-05:00",
-  "summary": "CDAN26-00..08 ejecutadas localmente. Se cerro calculo transaccional, SBU, Formulario 107 PDF, novedades manuales y carga masiva, horas a 2 decimales, notificacion de rol de pago, pagos con bloqueo Stripe/PayPhone preservado, contexto consolidado en .github y gates principales verdes.",
+  "updatedAt": "2026-06-26T23:35:00-05:00",
+  "summary": "CDAN26-00..08 ejecutadas localmente. Correccion incremental: archivo bancario de pago separado de reportes de entidades, banco explicito requerido, endpoint operativo /api/pagos/banco y contexto consolidado actualizado.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: ejecutar todos los prompts CDAN26, consolidar CODEX_CONTEXT.md con .github/CODEX_CONTEXT.md, cerrar artefactos de gobierno, commit y push.",
-  "previousAuditLockHash": "00890E4F282E38C4BC03360CC891541AD54E7D2BF4B679F96005B9CA91D6E3D1",
+  "previousAuditLockHash": "71727CE1CD1DEF8E7077E3653D646031BB9AC04480025299F9B4D697843016AC",
   "filesModifiedSummary": [
     ".github/CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
     "render.yaml",
     "backend/src/app.js",
-    "backend/src/controllers/nominaController.js",
-    "backend/src/controllers/novedadController.js",
-    "backend/src/controllers/paymentController.js",
     "backend/src/controllers/reporteController.js",
-    "backend/src/services/beneficioEmpleadoService.js",
-    "backend/src/services/calculoNominaService.js",
-    "backend/src/services/calculoNominaService.test.js",
-    "backend/src/services/communicationService.js",
-    "backend/src/services/payrollAccountingService.js",
-    "backend/src/services/payrollNoveltyService.js",
-    "backend/src/services/payrollNoveltyService.cdan26.test.js",
-    "backend/src/services/sriFormulario107Service.js",
-    "backend/src/services/sriFormulario107Service.test.js",
+    "backend/src/services/bancoAebGenerator.js",
+    "backend/src/services/bancoAebGenerator.test.js",
+    "docs2/OPENAPI_HAIKY_MINIMO.yaml",
     "frontend-web/src/components/Layout/Layout.jsx",
-    "frontend-web/src/pages/Asistencia/NovedadesPendientes.jsx",
+    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
+    "frontend-web/src/pages/Dashboard.jsx",
     "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
-    "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026/*.md",
-    "prompts/CDAN26-00-baseline.md",
-    "prompts/CDAN26-01-diagnostico-runtime.md",
-    "prompts/CDAN26-02-seguridad-render-naming.md",
-    "prompts/CDAN26-03-legal-sbu-fondo-superadmin.md",
-    "prompts/CDAN26-04-sri-formulario-107.md",
-    "prompts/CDAN26-05-calculo-transaccional.md",
-    "prompts/CDAN26-06-revenue-pagos.md",
-    "prompts/CDAN26-07-comunicaciones-rol-pago.md",
-    "prompts/CDAN26-08-qa-release.md"
+    "frontend-web/src/services/configurationApi.js"
   ],
   "validationChecks": [
     {
@@ -63,6 +45,11 @@
       "gate": "CDAN26-WEB-BUILD",
       "status": "PASS",
       "detail": "npm.cmd run build:web"
+    },
+    {
+      "gate": "CDAN26-BANK-PAYMENT-FILE",
+      "status": "PASS",
+      "detail": "npm.cmd --workspace=backend test -- bancoAebGenerator.test.js --runInBand: 14 tests."
     },
     {
       "gate": "CDAN26-MOBILE-CHECK",
@@ -94,5 +81,5 @@
     "Smoke visual con navegador integrado no se completo por falla de conexion de la herramienta; se cubrio con build PWA, contratos y pruebas."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "71727CE1CD1DEF8E7077E3653D646031BB9AC04480025299F9B4D697843016AC"
+  "signature": "D0683A774BB03C0BB7CB8C490623D5A289190CE8160AD6016D62E5D0BC53C6D9"
 }

@@ -11,8 +11,21 @@ const { recordAudit } = require('./auditService');
 const { decryptBankAccount } = require('./bankAccountCrypto');
 const AppError = require('../utils/AppError');
 
-async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', context = {}) {
-  const profile = await getBankProfileForTenant(tenantId, banco);
+function assertRequiredBank(banco, context = {}) {
+  const key = normalizeBankKey(banco);
+  if (!key) {
+    throw new AppError('Selecciona el banco antes de generar el archivo de pago.', {
+      code: 'BANCO_REQUERIDO',
+      statusCode: 400,
+      userId: context.userId || null,
+    });
+  }
+  return key;
+}
+
+async function generarArchivoBanco(tenantId, anio, mes, banco, context = {}) {
+  const requestedBank = assertRequiredBank(banco, context);
+  const profile = await getBankProfileForTenant(tenantId, requestedBank);
   const tenantResult = await db.query('SELECT * FROM tenants WHERE id = $1', [tenantId]);
 
   if (tenantResult.rows.length === 0) {
@@ -54,13 +67,13 @@ async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', con
   }
 
   let totalPagos = 0;
-  const bankProfileCache = new Map([[normalizeBankKey(banco), profile]]);
+  const bankProfileCache = new Map([[requestedBank, profile]]);
 
   for (const [index, payroll] of nominasResult.rows.entries()) {
     const cuenta = await decryptBankAccount(payroll.cuenta_bancaria_cifrada);
-    const rowBankKey = normalizeBankKey(payroll.banco || banco);
+    const rowBankKey = normalizeBankKey(payroll.banco || requestedBank);
     if (!bankProfileCache.has(rowBankKey)) {
-      bankProfileCache.set(rowBankKey, await getBankProfileForTenant(tenantId, payroll.banco || banco));
+      bankProfileCache.set(rowBankKey, await getBankProfileForTenant(tenantId, payroll.banco || requestedBank));
     }
     const rowProfile = bankProfileCache.get(rowBankKey);
     const bancoCodigo = rowProfile.bankCode;
@@ -90,7 +103,7 @@ async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', con
   const csvContent = rows.map((row) => row.join(profile.delimiter)).join(profile.lineEnding) + profile.lineEnding;
   const checksum = crypto.createHash('sha256').update(Buffer.from(csvContent, profile.encoding)).digest('hex');
   const descriptor = bankFileDescriptor(profile, anio, mes);
-  const key = `reportes/${tenantId}/banco/${descriptor.fileName}`;
+  const key = `pagos/${tenantId}/banco/${descriptor.fileName}`;
   const url = await s3Upload(Buffer.from(csvContent, profile.encoding), key, descriptor.contentType);
   const excelUrl = await generateReviewWorkbook(nominasResult.rows, tenantId, anio, mes);
 
@@ -102,7 +115,7 @@ async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', con
       action: 'generar_archivo_bancario',
       entity: 'perfiles_bancarios',
       newData: {
-        banco,
+        banco: requestedBank,
         anio,
         mes,
         totalPagos,
@@ -139,7 +152,8 @@ async function generarArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA', con
   };
 }
 
-async function precheckArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA') {
+async function precheckArchivoBanco(tenantId, anio, mes, banco) {
+  const requestedBank = assertRequiredBank(banco);
   const checks = [];
   const tenantResult = await db.query('SELECT id FROM tenants WHERE id = $1', [tenantId]);
   checks.push({
@@ -151,7 +165,7 @@ async function precheckArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA') {
   let profile = null;
   let profileError = '';
   try {
-    profile = await getBankProfileForTenant(tenantId, banco);
+    profile = await getBankProfileForTenant(tenantId, requestedBank);
   } catch (err) {
     profileError = err.message;
   }
@@ -196,7 +210,7 @@ async function precheckArchivoBanco(tenantId, anio, mes, banco = 'PICHINCHA') {
     ready: checks.every((check) => check.passed),
     anio: Number(anio),
     mes: Number(mes),
-    banco: normalizeBankKey(banco || 'PICHINCHA'),
+    banco: requestedBank,
     totalNominasCerradas: totalCerradas,
     totalPagosBancarios: totalConCuenta,
     checks,
@@ -242,7 +256,7 @@ async function generateReviewWorkbook(rows, tenantId, anio, mes) {
   });
 
   const excelBuffer = await workbook.xlsx.writeBuffer();
-  const excelKey = `reportes/${tenantId}/banco/PAGO_NOMINA_${anio}${String(mes).padStart(2, '0')}.xlsx`;
+  const excelKey = `pagos/${tenantId}/banco/PAGO_NOMINA_${anio}${String(mes).padStart(2, '0')}.xlsx`;
   return s3Upload(excelBuffer, excelKey, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 }
 
@@ -352,7 +366,7 @@ function applyBankFieldMappings(profile, mappings = []) {
 }
 
 async function getBankProfileForTenant(tenantId, banco) {
-  const key = normalizeBankKey(banco || 'PICHINCHA');
+  const key = assertRequiredBank(banco);
   const result = await db.query(`
     SELECT *
     FROM perfiles_bancarios

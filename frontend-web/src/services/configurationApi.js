@@ -31,6 +31,6 @@ export async function completeOnboardingStep(_token, stepCode, payload = {}) {
 }
 
 export async function generateBankPaymentFile(_token, payload) {
-  const response = await authenticatedApi.post('/reportes/banco', payload);
+  const response = await authenticatedApi.post('/pagos/banco', payload);
   return response.data?.reporte;
 }

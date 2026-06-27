@@ -126,6 +126,24 @@ describe('bancoAebGenerator', () => {
     expect(generarArchivoBanco.toString()).toContain("n.estado IN ('cerrada', 'pagada')");
   });
 
+  test('requiere banco explicito antes de generar archivo de pago', async () => {
+    await expect(generarArchivoBanco('tenant-1', 2026, 6, '', { userId: 'user-1' }))
+      .rejects
+      .toMatchObject({
+        code: 'BANCO_REQUERIDO',
+        statusCode: 400,
+      });
+  });
+
+  test('requiere banco explicito antes de validar archivo de pago', async () => {
+    await expect(precheckArchivoBanco('tenant-1', 2026, 6, ''))
+      .rejects
+      .toMatchObject({
+        code: 'BANCO_REQUERIDO',
+        statusCode: 400,
+      });
+  });
+
   test('reporta 422 cuando no hay nominas cerradas o pagadas con cuenta bancaria', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [] })

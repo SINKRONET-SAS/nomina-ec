@@ -12,6 +12,10 @@ const {
 const db = require('../config/database');
 const { assertCapability, getTenantPlanCapabilities } = require('../services/planCapabilityService');
 
+function normalizeRequiredBankCode(banco) {
+  return String(banco || '').trim().toUpperCase();
+}
+
 async function generarRDEP(req, res) {
   try {
     const { tenantId } = req;
@@ -162,13 +166,21 @@ async function generarArchivoBancoCtrl(req, res) {
     if (!anio || !mes) {
       return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
     }
+    const bancoCodigo = normalizeRequiredBankCode(banco);
+    if (!bancoCodigo) {
+      return res.status(400).json({
+        error: 'BANCO_REQUERIDO',
+        message: 'Selecciona el banco antes de generar el archivo de pago.',
+        correlationId: req.correlationId,
+      });
+    }
 
     await assertCapability(tenantId, 'bankFiles', {
       userId: req.usuarioId,
       correlationId: req.correlationId,
     });
 
-    const resultado = await generarArchivoBanco(tenantId, anio, mes, banco, {
+    const resultado = await generarArchivoBanco(tenantId, anio, mes, bancoCodigo, {
       correlationId: req.correlationId,
       userId: req.usuarioId,
       ipAddress: req.ip,
@@ -195,10 +207,18 @@ async function validarArchivoBanco(req, res) {
     if (!anio || !mes) {
       return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
     }
+    const bancoCodigo = normalizeRequiredBankCode(banco);
+    if (!bancoCodigo) {
+      return res.status(400).json({
+        error: 'BANCO_REQUERIDO',
+        message: 'Selecciona el banco antes de validar el archivo de pago.',
+        correlationId: req.correlationId,
+      });
+    }
 
     const [capabilities, precheck] = await Promise.all([
       getTenantPlanCapabilities(tenantId),
-      precheckArchivoBanco(tenantId, anio, mes, banco),
+      precheckArchivoBanco(tenantId, anio, mes, bancoCodigo),
     ]);
     const planCheck = {
       code: 'plan_archivos_bancarios',

@@ -153,7 +153,7 @@ function payrollStatus(nominas) {
     return {
       label: 'Nomina cerrada',
       tone: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-      next: 'Puedes emitir roles, archivo bancario y anexos para entidades.',
+      next: 'Puedes emitir roles, preparar pagos bancarios y generar anexos para entidades.',
     };
   }
 
@@ -402,7 +402,7 @@ function Dashboard() {
           <Link className="rounded-md border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50" to="/dashboard/nomina/reportes">
             <Landmark className="h-5 w-5 text-teal-700" />
             <h3 className="mt-3 font-semibold text-slate-950">Reportes</h3>
-            <p className="mt-2 text-sm leading-5 text-slate-600">Roles, archivos bancarios y reportes para entidades cuando aplique.</p>
+            <p className="mt-2 text-sm leading-5 text-slate-600">Roles, pagos bancarios y reportes para entidades cuando aplique.</p>
           </Link>
         </div>
       </section>
@@ -441,7 +441,7 @@ function Dashboard() {
               done={safeCount(nominas) > 0 && rolesClosed === safeCount(nominas)}
               icon={LockKeyhole}
               title="4. Cierre y emision"
-              description="Cierra la nomina y descarga roles, archivo bancario y reportes para entidades."
+              description="Cierra la nomina, descarga roles y prepara pagos bancarios o reportes para entidades."
               href="/dashboard/nomina/roles"
               action={rolesClosed ? 'Ver roles cerrados' : 'Preparar cierre'}
             />
@@ -492,7 +492,10 @@ function Dashboard() {
                 Roles de pago por empleado
               </Link>
               <Link className="rounded-md bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-teal-50 hover:text-teal-800" to="/dashboard/nomina/reportes">
-                Reportes para entidades y archivo bancario
+                Reportes para entidades
+              </Link>
+              <Link className="rounded-md bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-teal-50 hover:text-teal-800" to="/dashboard/configuracion/parametrizacion?seccion=banco">
+                Pagos bancarios
               </Link>
               <Link className="rounded-md bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-teal-50 hover:text-teal-800" to="/dashboard/documentos/contratos">
                 Contratos y documentos laborales

@@ -41,6 +41,7 @@ function Layout() {
         { path: '/dashboard/nomina/cerrar', label: 'Cerrar Mes' },
         { path: '/dashboard/nomina/beneficios', label: 'Beneficios y descuentos' },
         { path: '/dashboard/nomina/roles', label: 'Roles de Pago' },
+        { path: '/dashboard/configuracion/parametrizacion?seccion=banco', label: 'Pagos bancarios' },
         { path: '/dashboard/nomina/reportes', label: 'Reportes Entidades' },
       ]
     },
@@ -67,7 +68,7 @@ function Layout() {
     navigate('/login');
   };
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => `${location.pathname}${location.search}` === path || location.pathname === path;
 
   return (
     <div className="app-shell">
