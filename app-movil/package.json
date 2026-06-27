@@ -7,10 +7,11 @@
                   },
     "scripts":  {
                     "doctor":  "npx expo-doctor",
-                    "ios":  "expo start --ios",
+                    "ios":  "node ./node_modules/expo/bin/cli start --ios",
                     "check:stores":  "node scripts/check-store-readiness.mjs",
-                    "android":  "expo start --android",
-                    "start":  "expo start"
+                    "android":  "node ./node_modules/expo/bin/cli start --android",
+                    "start":  "node ./node_modules/expo/bin/cli start",
+                    "start:lan":  "node ./node_modules/expo/bin/cli start --lan -c"
                 },
     "dependencies":  {
                          "expo-location":  "~19.0.8",
