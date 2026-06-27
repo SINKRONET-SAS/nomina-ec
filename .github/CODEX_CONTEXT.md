@@ -1,6 +1,63 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V3
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V3 |
+| Codigo | CDANV3 |
+| Estado | CDANV3-00 documental creado; runtime pendiente de aprobacion por fase |
+| Fase actual | CDANV3-00 baseline documental |
+| Fuente auditoria | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\AuditoriaNominaEC2026V3.jsx` |
+| Hallazgos | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\v_nominaec\nominaec_v3_hallazgos.jsx` |
+| Scripts | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\v_nominaec\nominaec_v3_scripts.jsx` |
+| Plan doc | `docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026_V3.md` |
+| Matriz | `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v3/MATRIZ_CDANV3_HALLAZGOS.md` |
+| Contrato | `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v3/CONTRATO_CDANV3_CIERRE_DEFINITIVO.md` |
+| Runbook | `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v3/RUNBOOK_CDANV3_QA_RELEASE.md` |
+| Prompts | `.github/prompts/CDANV3-{00..10}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Alcance CDANV3
+
+CDANV3 responde a la auditoria Nomina-EC V3. Prioriza pipeline Render con `seed:admins`, webhook Payphone real, JWT con claims, modulo de gastos de movilizacion con SQLite offline, backend y PWA de aprobacion, empresa DEMO con datos smoke, verificacion de roles/reportes, cron de nomina, periodo Ecuador, textos comerciales y limpieza controlada.
+
+### Confirmado como falso positivo o cierre previo
+
+- `superadminController.js` y `superadminService.js` ya existen.
+- `payrollReportService.js` ya existe con pdfmake, ExcelJS y S3.
+- `seed-superadmin-owner.js` ya existe; la brecha es conectarlo a `render.yaml`.
+- Payphone es el canal activo; no cambiar a Stripe ni prometer Stripe incompleto.
+
+### Fases CDANV3
+
+| Fase | Prioridad | Estado | Resumen |
+|------|-----------|--------|---------|
+| CDANV3-00 | P0 | completed_documental | Baseline, matriz, contrato, runbook, prompts, contexto y AuditLock sin runtime. |
+| CDANV3-01 | P0 | pending_approval | Diagnostico runtime contra repo actual. |
+| CDANV3-02 | P0 | pending_approval | Render ejecuta `seed:admins` de forma segura e idempotente. |
+| CDANV3-03 | P0 | pending_approval | Webhook Payphone con validacion, idempotencia y activacion de plan. |
+| CDANV3-04 | P0 | pending_approval | JWT con claims y verificacion fresca en operaciones criticas. |
+| CDANV3-05 | P0 | pending_approval | SQLite y pantalla mobile de gastos de movilizacion. |
+| CDANV3-06 | P0 | pending_approval | Backend de informes de movilizacion, aprobacion/rechazo y anticipo. |
+| CDANV3-07 | P0 | pending_approval | PWA de aprobacion y empresa DEMO con datos smoke. |
+| CDANV3-08 | P1 | pending_approval | Reportes, cron, periodo Ecuador y UX comercial. |
+| CDANV3-09 | P1 | pending_approval | Limpieza controlada de duplicidad y candidatos sin uso. |
+| CDANV3-10 | P0 | pending_approval | QA, release gate, AuditLock final, commit y push. |
+
+### Reglas CDANV3
+
+- No iniciar runtime sin aprobacion explicita del prompt de fase.
+- Aplicar `RULES.md` en cada archivo `.js`, `.md` y `.json`.
+- No crear `CODEX_CONTEXT.md` en raiz; este contexto vive en `.github/CODEX_CONTEXT.md`.
+- No hardcodear secretos ni datos reales.
+- Payphone debe fallar cerrado si no valida pago, monto, tenant, plan o correlacion.
+- Movilizacion debe quedar visible en mobile/PWA y operar con DEMO smoke.
+- Cada fase requiere pruebas, reporte, `AuditLock.json` firmado y commit `phase: CDANV3-XX task: ...`.
+
+---
+
 ## Open Haiky Plan - HAIKY-AUDITORIA-NOMINA-EC-2026-V2
 
 | Campo | Valor |

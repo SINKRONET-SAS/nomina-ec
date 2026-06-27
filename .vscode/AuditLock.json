@@ -1,93 +1,75 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V2",
-  "planCode": "CDANV2",
-  "status": "completed_local_ready_to_release",
-  "phaseCompleted": "CDANV2-08",
-  "currentPhase": "CDANV2-08-qa-release",
-  "updatedAt": "2026-06-27T08:00:00-05:00",
-  "summary": "Ejecucion integral de todos los prompts CDANV2 autorizada por el usuario. Se cerraron runtime auth JWT por claims, cierre mensual transaccional con SELECT FOR UPDATE, purga LOPDP de eventos de comunicacion vencidos y formato USD Ecuador en autoservicio movil. Superadmin, seed, roles PDF, pagos y reportes quedan reconciliados como cierres previos o FP controlados.",
+  "plan": "HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V3",
+  "planCode": "CDANV3",
+  "status": "completed_documental_runtime_pending_approval",
+  "phaseCompleted": "CDANV3-00",
+  "currentPhase": "CDANV3-01-diagnostico-runtime",
+  "updatedAt": "2026-06-27T13:30:00-05:00",
+  "summary": "Baseline documental CDANV3 creado para responder a la auditoria Nomina-EC V3. Se generaron plan, matriz, contrato, runbook, prompts por fase, contexto en .github/CODEX_CONTEXT.md y AuditLock. No se ejecuto runtime; las fases CDANV3-01..10 quedan pendientes de aprobacion explicita.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: Ejecutar todos los prompts de PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026_V2.md, y su CODEX_CONTEXT.md.",
-  "previousAuditLockHash": "6CB15C3E5D1C70CC0480CD3DAA8087D9D45F4EEE1D782013DD37C46134079517",
+  "approvalSource": "Solicitud del usuario: desplegar plan Haiky V3 en docs2, .github/CODEX_CONTEXT.md, .vscode/AuditLock.json y .github/prompts por fases.",
+  "previousAuditLockHash": "40B02E9350D756A7761B2F64950D8CCE3F5127E36AED57DFE138E415B01774A1",
   "filesModifiedSummary": [
     ".github/CODEX_CONTEXT.md",
+    ".github/prompts/CDANV3-00-baseline-documental.md",
+    ".github/prompts/CDANV3-01-diagnostico-runtime.md",
+    ".github/prompts/CDANV3-02-render-seed-admins.md",
+    ".github/prompts/CDANV3-03-payphone-webhook.md",
+    ".github/prompts/CDANV3-04-auth-jwt-claims.md",
+    ".github/prompts/CDANV3-05-movilizacion-mobile-sqlite.md",
+    ".github/prompts/CDANV3-06-movilizacion-backend.md",
+    ".github/prompts/CDANV3-07-movilizacion-pwa-demo.md",
+    ".github/prompts/CDANV3-08-reportes-cron-ux.md",
+    ".github/prompts/CDANV3-09-limpieza-controlada.md",
+    ".github/prompts/CDANV3-10-qa-release.md",
     ".vscode/AuditLock.json",
-    "app-movil/src/screens/AutoservicioScreen.js",
-    "backend/package.json",
-    "backend/scripts/purge-communication-events.js",
-    "backend/src/app.js",
-    "backend/src/controllers/nominaController.js",
-    "backend/src/controllers/nominaController.test.js",
-    "backend/src/middleware/auth.js",
-    "backend/src/middleware/auth.test.js",
-    "backend/src/services/communicationAuditService.js",
-    "backend/src/services/communicationAuditService.test.js",
-    "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026_V2.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/MATRIZ_CDANV2_HALLAZGOS.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/CONTRATO_CDANV2_CIERRE_DEFINITIVO.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_01_DIAGNOSTICO_RUNTIME.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_02_AUTH_JWT.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_03_SUPERADMIN_SEED.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_04_ROLES_REPORTES.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_05_CIERRE_MENSUAL.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_06_REVENUE_PAGOS.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_07_LOPDP_UX_PERIODO.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_08_QA_RELEASE.md"
+    "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026_V3.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v3/MATRIZ_CDANV3_HALLAZGOS.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v3/CONTRATO_CDANV3_CIERRE_DEFINITIVO.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v3/RUNBOOK_CDANV3_QA_RELEASE.md"
   ],
   "validationChecks": [
     {
-      "gate": "CDANV2-TARGETED-BACKEND",
+      "gate": "CDANV3-RULES-READ",
       "status": "PASS",
-      "detail": "npm.cmd test -- auth.test.js communicationAuditService.test.js nominaController.test.js --runInBand"
+      "detail": "RULES.md leido y aplicado al alcance documental."
     },
     {
-      "gate": "CDANV2-NODE-CHECKS",
+      "gate": "CDANV3-SOURCE-READ",
       "status": "PASS",
-      "detail": "node --check auth.js, nominaController.js, communicationAuditService.js y purge-communication-events.js"
+      "detail": "AuditoriaNominaEC2026V3.jsx, nominaec_v3_hallazgos.jsx y nominaec_v3_scripts.jsx revisados como fuente."
     },
     {
-      "gate": "CDANV2-CONTRACTS",
+      "gate": "CDANV3-DOCUMENTAL-ONLY",
       "status": "PASS",
-      "detail": "npm.cmd run contracts"
+      "detail": "No se modifico runtime backend, frontend-web ni app-movil."
     },
     {
-      "gate": "CDANV2-PRISMA",
+      "gate": "CDANV3-CONTEXT-LOCATION",
       "status": "PASS",
-      "detail": "npm.cmd run prisma:validate"
-    },
-    {
-      "gate": "CDANV2-BACKEND",
-      "status": "PASS",
-      "detail": "npm.cmd run test:backend; 46 suites, 188 tests"
-    },
-    {
-      "gate": "CDANV2-WEB-BUILD",
-      "status": "PASS",
-      "detail": "npm.cmd run build:web"
-    },
-    {
-      "gate": "CDANV2-MOBILE",
-      "status": "PASS",
-      "detail": "npm.cmd run check:mobile"
+      "detail": "CODEX_CONTEXT.md consolidado en .github; no se creo archivo raiz."
     }
   ],
   "fases": [
-    { "phase": "CDANV2-00", "status": "completed_documental" },
-    { "phase": "CDANV2-01", "status": "completed_runtime" },
-    { "phase": "CDANV2-02", "status": "completed_runtime" },
-    { "phase": "CDANV2-03", "status": "completed_previo" },
-    { "phase": "CDANV2-04", "status": "completed_previo" },
-    { "phase": "CDANV2-05", "status": "completed_runtime" },
-    { "phase": "CDANV2-06", "status": "completed_previo" },
-    { "phase": "CDANV2-07", "status": "completed_runtime" },
-    { "phase": "CDANV2-08", "status": "completed_local" }
+    { "phase": "CDANV3-00", "status": "completed_documental" },
+    { "phase": "CDANV3-01", "status": "pending_approval" },
+    { "phase": "CDANV3-02", "status": "pending_approval" },
+    { "phase": "CDANV3-03", "status": "pending_approval" },
+    { "phase": "CDANV3-04", "status": "pending_approval" },
+    { "phase": "CDANV3-05", "status": "pending_approval" },
+    { "phase": "CDANV3-06", "status": "pending_approval" },
+    { "phase": "CDANV3-07", "status": "pending_approval" },
+    { "phase": "CDANV3-08", "status": "pending_approval" },
+    { "phase": "CDANV3-09", "status": "pending_approval" },
+    { "phase": "CDANV3-10", "status": "pending_approval" }
   ],
   "residualRisk": [
-    "SEC-V2-01 se mantiene como FP controlado: no se modifica SBU 2026 a USD 470 sin fuente oficial versionada y revision legal.",
-    "Stripe permanece bloqueado visible si no esta completamente configurado; PayPhone sigue como canal real.",
-    "El push remoto debe confirmar que la rama main acepta el commit final."
+    "Payphone requiere credenciales reales y verificacion de proveedor antes de produccion.",
+    "Movilizacion requiere prueba en dispositivo/Expo Go ademas de checks estaticos.",
+    "La interpretacion laboral/contable de anticipo o reembolso de movilizacion requiere revision profesional.",
+    "Render debe validarse en staging antes de produccion."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "B0262BD64951ACA94D0991EF9FB16A0A672F41ADAA941FC3257FE9D4301667DC"
+  "signature": "3EB0E4D86D86BCFB8FDB34784632AEADBE3EABE8C4277DC7BA93E75984A86861"
 }
