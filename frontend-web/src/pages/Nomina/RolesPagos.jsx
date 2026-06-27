@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { downloadUrl } from '../../utils/downloadUrl';
-import { ECUADOR_TIME_ZONE, currentPeriodEC } from '../../utils/dateFormat';
+import { currentPeriodEC } from '../../utils/dateFormat';
 
 function RolesPagos() {
   const initialPeriod = currentPeriodEC();
@@ -30,7 +30,7 @@ function RolesPagos() {
       const response = await authenticatedApi.get(`/nomina/${id}/rol-pdf`);
       const url = response.data?.url;
       if (!url) {
-        throw new Error('El backend no entrego una URL de descarga.');
+        throw new Error('No recibimos el archivo de descarga.');
       }
       downloadUrl(url, response.data.fileName || `rol-pago-${id}.pdf`);
       setMessage(`Rol listo: ${response.data.fileName || 'PDF generado'}`);
@@ -42,7 +42,7 @@ function RolesPagos() {
     }
   };
 
-  const descargarPDFTranspuesto = async () => {
+  const descargarPDFGeneral = async () => {
     setDownloadingTransposed(true);
     setMessage('');
     setError('');
@@ -50,15 +50,15 @@ function RolesPagos() {
       const response = await authenticatedApi.get(`/nomina/${anio}/${mes}/roles-pdf-transpuesto`);
       const url = response.data?.url;
       if (!url) {
-        throw new Error('El backend no entrego una URL de descarga.');
+        throw new Error('No recibimos el archivo de descarga.');
       }
-      const fileName = response.data.fileName || `roles-pago-transpuesto-${anio}-${String(mes).padStart(2, '0')}.pdf`;
+      const fileName = response.data.fileName || `roles-pago-general-${anio}-${String(mes).padStart(2, '0')}.pdf`;
       downloadUrl(url, fileName);
       const total = response.data.totalEmpleados || nominas?.length || 0;
-      setMessage(`Rol transpuesto listo: ${fileName} (${total} empleados).`);
+      setMessage(`PDF general listo: ${fileName} (${total} empleados).`);
     } catch (err) {
       const apiMessage = err.response?.data?.message || err.response?.data?.error || err.message;
-      setError(apiMessage || 'No pudimos descargar el rol transpuesto del periodo.');
+      setError(apiMessage || 'No pudimos descargar el PDF general del periodo.');
     } finally {
       setDownloadingTransposed(false);
     }
@@ -86,7 +86,7 @@ function RolesPagos() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">Anio</label>
+              <label className="mb-1 block text-sm font-medium">Año</label>
               <input
                 type="number"
                 value={anio}
@@ -97,16 +97,16 @@ function RolesPagos() {
           </div>
           <button
             type="button"
-            onClick={descargarPDFTranspuesto}
+            onClick={descargarPDFGeneral}
             disabled={downloadingTransposed || isLoading || !nominas || nominas.length === 0}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-            title="Descargar rol de pago transpuesto del periodo"
+            title="Descargar PDF general del periodo"
           >
             <Download size={16} />
-            <span>{downloadingTransposed ? 'Generando PDF' : 'PDF transpuesto'}</span>
+            <span>{downloadingTransposed ? 'Generando PDF' : 'PDF general'}</span>
           </button>
         </div>
-        <p className="mt-3 text-xs font-semibold text-slate-500">Periodo inicial calculado en {ECUADOR_TIME_ZONE}.</p>
+        <p className="mt-3 text-xs font-semibold text-slate-500">Período sugerido según la hora de Ecuador.</p>
       </div>
 
       <div className="rounded-lg bg-white shadow">
@@ -126,7 +126,7 @@ function RolesPagos() {
               {isLoading ? (
                 <tr><td colSpan="6" className="px-6 py-4 text-center">Cargando...</td></tr>
               ) : !nominas || nominas.length === 0 ? (
-                <tr><td colSpan="6" className="px-6 py-4 text-center">No hay nominas para este periodo</td></tr>
+                <tr><td colSpan="6" className="px-6 py-4 text-center">No hay nóminas para este período</td></tr>
               ) : (
                 nominas.map((nomina) => (
                   <tr key={nomina.id} className="hover:bg-gray-50">
@@ -144,7 +144,8 @@ function RolesPagos() {
                         type="button"
                         onClick={() => descargarPDF(nomina.id)}
                         disabled={downloadingId === nomina.id}
-                        title="Descargar rol de pago PDF"
+                        title="Descargar rol individual"
+                        aria-label={`Descargar rol individual de ${nomina.nombres} ${nomina.apellidos}`}
                         className="rounded bg-blue-100 p-1 text-blue-600 hover:bg-blue-200 disabled:opacity-50"
                       >
                         <Download size={16} />

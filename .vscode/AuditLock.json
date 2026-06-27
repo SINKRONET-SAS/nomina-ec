@@ -2,31 +2,17 @@
   "schemaVersion": 1,
   "plan": "HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V2",
   "planCode": "CDANV2",
-  "status": "documental_created_runtime_pending_approval",
-  "phaseCompleted": "CDANV2-00",
-  "currentPhase": "CDANV2-01-diagnostico-runtime",
-  "updatedAt": "2026-06-27T00:20:00-05:00",
-  "summary": "CDANV2-00 documental creado para la auditoria V2 nueva. Runtime queda pendiente de aprobacion explicita por fase. SEC-V2-01 queda como falso positivo controlado: no cambiar SBU 2026 a USD 470; mantener USD 482 hasta fuente oficial versionada.",
+  "status": "targeted_runtime_completed",
+  "phaseCompleted": "CDANV2-07",
+  "currentPhase": "CDANV2-07-lopdp-ux-periodo",
+  "updatedAt": "2026-06-27T07:55:00-05:00",
+  "summary": "Correccion puntual aprobada por usuario: se humanizo la pantalla Roles de Pago, reemplazando textos tecnicos como PDF transpuesto por PDF general y mensajes comerciales normales. CDANV2 integral sigue pendiente de aprobacion por fases para otros runtime.",
   "rulesSource": "RULES.md",
   "approvalSource": "Solicitud del usuario: generar plan Haiky para responder a Auditoria Integral Nomina-EC V2, ubicar CODEX_CONTEXT.md en .github, crear prompts por fases en base a RULES.md, commit y push.",
-  "previousAuditLockHash": "874D3AEA8F90EC67C59D1015AA40AA5A16B3B42FF8CD50CA122AF46F6E5839C5",
+  "previousAuditLockHash": "E175787C52B2B8C4A3F86B37C49D0679C6E1F5DC9A7D5467ACD7090181311573",
   "filesModifiedSummary": [
-    ".github/CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026_V2.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/MATRIZ_CDANV2_HALLAZGOS.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/CONTRATO_CDANV2_CIERRE_DEFINITIVO.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/RUNBOOK_CDANV2_QA_RELEASE.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v2/REPORTE_CDANV2_00_BASELINE.md",
-    "prompts/CDANV2-00-baseline.md",
-    "prompts/CDANV2-01-diagnostico-runtime.md",
-    "prompts/CDANV2-02-auth-jwt-claims.md",
-    "prompts/CDANV2-03-superadmin-seed.md",
-    "prompts/CDANV2-04-reportes-roles.md",
-    "prompts/CDANV2-05-cierre-transaccional-idempotente.md",
-    "prompts/CDANV2-06-revenue-stripe-payphone.md",
-    "prompts/CDANV2-07-lopdp-ux-periodo.md",
-    "prompts/CDANV2-08-qa-release.md"
+    "frontend-web/src/pages/Nomina/RolesPagos.jsx"
   ],
   "validationChecks": [
     {
@@ -35,14 +21,14 @@
       "detail": "npm.cmd run contracts"
     },
     {
-      "gate": "CDANV2-DOCUMENTAL",
+      "gate": "CDANV2-WEB-BUILD",
       "status": "PASS",
-      "detail": "Plan, matriz, contrato, runbook, reporte baseline, prompts y contexto creados sin runtime."
+      "detail": "npm.cmd run build:web"
     },
     {
-      "gate": "CDANV2-CONTEXT-LOCATION",
+      "gate": "CDANV2-UX-TEXT",
       "status": "PASS",
-      "detail": "No se creo CODEX_CONTEXT.md en raiz; contexto CDANV2 consolidado en .github/CODEX_CONTEXT.md."
+      "detail": "RolesPagos.jsx ya no muestra PDF transpuesto ni mensajes backend en textos visibles."
     }
   ],
   "fases": [
@@ -53,14 +39,14 @@
     { "phase": "CDANV2-04", "status": "pending_approval" },
     { "phase": "CDANV2-05", "status": "pending_approval" },
     { "phase": "CDANV2-06", "status": "pending_approval" },
-    { "phase": "CDANV2-07", "status": "pending_approval" },
+    { "phase": "CDANV2-07", "status": "completed_targeted_runtime" },
     { "phase": "CDANV2-08", "status": "pending_approval" }
   ],
   "residualRisk": [
-    "Runtime CDANV2 no iniciado; requiere aprobacion explicita por fase.",
+    "Runtime integral CDANV2 no iniciado; solo se ejecuto correccion puntual de UX solicitada por el usuario.",
     "Fuente oficial MDT debe archivarse antes de modificar parametros legales productivos.",
     "Varios hallazgos fuente pueden estar cerrados por CDAN26 y deben reconciliarse en CDANV2-01."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "E175787C52B2B8C4A3F86B37C49D0679C6E1F5DC9A7D5467ACD7090181311573"
+  "signature": "6CB15C3E5D1C70CC0480CD3DAA8087D9D45F4EEE1D782013DD37C46134079517"
 }
