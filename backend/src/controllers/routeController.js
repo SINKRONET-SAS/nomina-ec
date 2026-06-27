@@ -137,14 +137,60 @@ async function exportCsv(req, res, next) {
   }
 }
 
+async function report(req, res, next) {
+  try {
+    const reporte = await routeVisitService.getRouteReportRows({
+      tenantId: req.tenantId,
+      fechaInicio: req.query.fechaInicio || req.query.desde,
+      fechaFin: req.query.fechaFin || req.query.hasta,
+    });
+    return res.json({ success: true, reporte, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function exportXlsx(req, res, next) {
+  try {
+    const buffer = await routeVisitService.exportRouteReportXlsx({
+      tenantId: req.tenantId,
+      fechaInicio: req.query.fechaInicio || req.query.desde,
+      fechaFin: req.query.fechaFin || req.query.hasta,
+    });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="rutas-mercaderistas.xlsx"');
+    return res.send(buffer);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function exportPdf(req, res, next) {
+  try {
+    const buffer = await routeVisitService.exportRouteReportPdf({
+      tenantId: req.tenantId,
+      fechaInicio: req.query.fechaInicio || req.query.desde,
+      fechaFin: req.query.fechaFin || req.query.hasta,
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="rutas-mercaderistas.pdf"');
+    return res.send(buffer);
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   createDay,
   createSite,
   deleteSite,
   exportCsv,
+  exportPdf,
+  exportXlsx,
   listDays,
   listExceptions,
   listSites,
+  report,
   reviewException,
   updateSite,
 };

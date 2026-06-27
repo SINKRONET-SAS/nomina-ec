@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, Edit3, MapPin, Plus, Route, Save, Trash2 } from 'lucide-react';
+import { Download, Edit3, FileSpreadsheet, FileText, MapPin, Plus, Route, Save, Trash2 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 import {
   createRouteDay,
   deleteRouteSite,
-  downloadRouteCsv,
+  downloadRouteReport,
+  fetchRouteReport,
   fetchRouteDays,
   fetchRouteExceptions,
   fetchRouteSites,
@@ -73,6 +74,8 @@ function Stat({ label, value }) {
 function RutasCampo() {
   const queryClient = useQueryClient();
   const [fecha, setFecha] = useState(todayEc());
+  const [fechaInicioReporte, setFechaInicioReporte] = useState(todayEc());
+  const [fechaFinReporte, setFechaFinReporte] = useState(todayEc());
   const [siteForm, setSiteForm] = useState(emptySite);
   const [editingSiteId, setEditingSiteId] = useState(null);
   const [routeForm, setRouteForm] = useState({ empleadoId: '', fecha: todayEc() });
@@ -83,6 +86,10 @@ function RutasCampo() {
   const sitesQuery = useQuery({ queryKey: ['route-sites'], queryFn: fetchRouteSites });
   const daysQuery = useQuery({ queryKey: ['route-days', fecha], queryFn: () => fetchRouteDays({ fecha }) });
   const exceptionsQuery = useQuery({ queryKey: ['route-exceptions', fecha], queryFn: () => fetchRouteExceptions({ fecha }) });
+  const routeReportQuery = useQuery({
+    queryKey: ['route-report', fechaInicioReporte, fechaFinReporte],
+    queryFn: () => fetchRouteReport({ fechaInicio: fechaInicioReporte, fechaFin: fechaFinReporte }),
+  });
   const employeesQuery = useQuery({
     queryKey: ['empleados-activos-rutas'],
     queryFn: async () => {
@@ -94,6 +101,7 @@ function RutasCampo() {
   const sites = sitesQuery.data || [];
   const routeDays = daysQuery.data || [];
   const exceptions = exceptionsQuery.data || [];
+  const routeReport = routeReportQuery.data || { rows: [], total: 0 };
   const employees = employeesQuery.data || [];
 
   const activeSites = useMemo(() => sites.filter((site) => site.status === 'activo'), [sites]);
@@ -154,15 +162,19 @@ function RutasCampo() {
     setSelectedSiteId('');
   };
 
-  const exportCsv = async () => {
+  const downloadBlob = (blob, fileName) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportReport = async (format) => {
     try {
-      const blob = await downloadRouteCsv({ fechaInicio: fecha, fechaFin: fecha });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `rutas-${fecha}.csv`;
-      link.click();
-      URL.revokeObjectURL(url);
+      const blob = await downloadRouteReport(format, { fechaInicio: fechaInicioReporte, fechaFin: fechaFinReporte });
+      downloadBlob(blob, `rutas-${fechaInicioReporte}-${fechaFinReporte}.${format}`);
     } catch (err) {
       setError(extractApiError(err, 'No pudimos exportar rutas.'));
     }
@@ -181,9 +193,6 @@ function RutasCampo() {
           </div>
           <div className="flex flex-wrap gap-2">
             <input className={CONTROL} type="date" value={fecha} onChange={(event) => setFecha(event.target.value)} />
-            <button className="inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={exportCsv} type="button">
-              <Download size={16} /> Exportar CSV
-            </button>
           </div>
         </div>
         <div className="mt-6 grid gap-3 md:grid-cols-4">
@@ -195,6 +204,71 @@ function RutasCampo() {
       </section>
 
       {error ? <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</div> : null}
+
+      <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">Reporte de entradas y salidas</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Consulta las llegadas y salidas registradas en cada sitio visitado dentro del rango seleccionado.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="grid gap-1 text-sm font-semibold text-slate-700">
+              Desde
+              <input className={CONTROL} type="date" value={fechaInicioReporte} onChange={(event) => setFechaInicioReporte(event.target.value)} />
+            </label>
+            <label className="grid gap-1 text-sm font-semibold text-slate-700">
+              Hasta
+              <input className={CONTROL} type="date" value={fechaFinReporte} onChange={(event) => setFechaFinReporte(event.target.value)} />
+            </label>
+            <button className="inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => exportReport('pdf')} type="button">
+              <FileText size={16} /> PDF
+            </button>
+            <button className="inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => exportReport('csv')} type="button">
+              <Download size={16} /> CSV
+            </button>
+            <button className="inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => exportReport('xlsx')} type="button">
+              <FileSpreadsheet size={16} /> Excel
+            </button>
+          </div>
+        </div>
+        <div className="mt-4 overflow-auto">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+              <tr>
+                <th className="px-3 py-2 text-left">Fecha</th>
+                <th className="px-3 py-2 text-left">Empleado</th>
+                <th className="px-3 py-2 text-left">Sitio</th>
+                <th className="px-3 py-2 text-left">Llegada</th>
+                <th className="px-3 py-2 text-left">Salida</th>
+                <th className="px-3 py-2 text-left">Estado</th>
+                <th className="px-3 py-2 text-left">Zona</th>
+                <th className="px-3 py-2 text-left">Excepciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {routeReport.rows.map((row, index) => (
+                <tr key={`${row.fecha}-${row.cedula}-${row.sitio}-${index}`}>
+                  <td className="px-3 py-2">{row.fecha}</td>
+                  <td className="px-3 py-2">
+                    <p className="font-semibold text-slate-900">{row.empleado}</p>
+                    <p className="text-xs text-slate-500">{row.cedula}</p>
+                  </td>
+                  <td className="px-3 py-2">{row.sitio || 'No programada'}</td>
+                  <td className="px-3 py-2">{row.llegada || 'Pendiente'}</td>
+                  <td className="px-3 py-2">{row.salida || 'Pendiente'}</td>
+                  <td className="px-3 py-2">{row.estado}</td>
+                  <td className="px-3 py-2">{row.dentroZona ? 'Dentro' : `Fuera (${row.distanciaMaximaMetros} m)`}</td>
+                  <td className="px-3 py-2">{row.excepciones}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {routeReportQuery.isLoading ? <p className="rounded-md bg-slate-50 p-4 text-sm text-slate-500">Cargando reporte...</p> : null}
+          {!routeReportQuery.isLoading && routeReport.rows.length === 0 ? <p className="rounded-md bg-slate-50 p-4 text-sm text-slate-500">No hay entradas o salidas registradas en el rango seleccionado.</p> : null}
+        </div>
+      </section>
 
       <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">

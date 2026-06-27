@@ -1,4 +1,7 @@
 const db = require('../config/database');
+const ExcelJS = require('exceljs');
+const pdfmake = require('pdfmake/build/pdfmake');
+pdfmake.vfs = require('pdfmake/build/vfs_fonts');
 const AppError = require('../utils/AppError');
 const { recordAudit } = require('./auditService');
 const { dateInEcuador, ensurePayrollPeriodForDate } = require('./monthlyPeriodService');
@@ -34,6 +37,27 @@ function parseNumber(value, fallback = null) {
 
 function jsonParam(value) {
   return JSON.stringify(value || {});
+}
+
+function routeReportValue(value) {
+  return value === null || typeof value === 'undefined' ? '' : value;
+}
+
+function mapRouteReportRow(row = {}) {
+  return {
+    fecha: routeReportValue(row.operational_date),
+    cedula: routeReportValue(row.cedula),
+    empleado: routeReportValue(row.empleado),
+    cargo: routeReportValue(row.cargo),
+    sitio: routeReportValue(row.sitio),
+    estado: routeReportValue(row.estado_parada),
+    noProgramada: Boolean(row.is_unplanned),
+    llegada: routeReportValue(row.llegada),
+    salida: routeReportValue(row.salida),
+    dentroZona: row.dentro_zona !== false,
+    distanciaMaximaMetros: Math.round(Number(row.distancia_maxima || 0)),
+    excepciones: Number(row.excepciones || 0),
+  };
 }
 
 function mapSite(row = {}) {
@@ -1143,7 +1167,7 @@ async function reviewRouteException({ tenantId, exceptionId, payload, user, cont
   return result.rows[0];
 }
 
-async function exportRouteReportCsv({ tenantId, fechaInicio, fechaFin }) {
+async function getRouteReportRows({ tenantId, fechaInicio, fechaFin }) {
   const from = normalizeDate(fechaInicio);
   const to = normalizeDate(fechaFin || fechaInicio || from);
   const result = await db.query(`
@@ -1172,34 +1196,110 @@ async function exportRouteReportCsv({ tenantId, fechaInicio, fechaFin }) {
     ORDER BY rd.operational_date, empleado, rs.sequence_order
   `, [tenantId, from, to]);
 
+  return {
+    fechaInicio: from,
+    fechaFin: to,
+    total: result.rows.length,
+    rows: result.rows.map(mapRouteReportRow),
+  };
+}
+
+function routeReportHeaders() {
+  return [
+    ['fecha', 'Fecha'],
+    ['cedula', 'Cedula'],
+    ['empleado', 'Empleado'],
+    ['cargo', 'Cargo'],
+    ['sitio', 'Sitio'],
+    ['estado', 'Estado'],
+    ['noProgramada', 'No programada'],
+    ['llegada', 'Llegada'],
+    ['salida', 'Salida'],
+    ['dentroZona', 'Dentro de zona'],
+    ['distanciaMaximaMetros', 'Distancia maxima m'],
+    ['excepciones', 'Excepciones'],
+  ];
+}
+
+function routeReportCell(row, key) {
+  if (key === 'noProgramada' || key === 'dentroZona') return row[key] ? 'SI' : 'NO';
+  return row[key] ?? '';
+}
+
+async function exportRouteReportCsv({ tenantId, fechaInicio, fechaFin }) {
+  const report = await getRouteReportRows({ tenantId, fechaInicio, fechaFin });
   const headers = ['fecha', 'cedula', 'empleado', 'cargo', 'sitio', 'estado', 'no_programada', 'llegada', 'salida', 'dentro_zona', 'distancia_maxima_m', 'excepciones'];
   const escape = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
   const lines = [
     headers.join(','),
-    ...result.rows.map((row) => [
-      row.operational_date,
-      row.cedula,
-      row.empleado,
-      row.cargo,
-      row.sitio,
-      row.estado_parada,
-      row.is_unplanned ? 'SI' : 'NO',
-      row.llegada || '',
-      row.salida || '',
-      row.dentro_zona ? 'SI' : 'NO',
-      Math.round(Number(row.distancia_maxima || 0)),
-      row.excepciones,
-    ].map(escape).join(',')),
+    ...report.rows.map((row) => routeReportHeaders().map(([key]) => routeReportCell(row, key)).map(escape).join(',')),
   ];
   return lines.join('\n');
+}
+
+async function exportRouteReportXlsx({ tenantId, fechaInicio, fechaFin }) {
+  const report = await getRouteReportRows({ tenantId, fechaInicio, fechaFin });
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Nomina-Ec';
+  workbook.created = new Date();
+  const sheet = workbook.addWorksheet('Rutas de campo');
+  sheet.columns = routeReportHeaders().map(([key, header]) => ({
+    header,
+    key,
+    width: key === 'empleado' || key === 'sitio' ? 28 : 18,
+  }));
+  sheet.addRows(report.rows.map((row) => Object.fromEntries(
+    routeReportHeaders().map(([key]) => [key, routeReportCell(row, key)])
+  )));
+  sheet.getRow(1).font = { bold: true };
+  sheet.views = [{ state: 'frozen', ySplit: 1 }];
+  return Buffer.from(await workbook.xlsx.writeBuffer());
+}
+
+function createPdfBuffer(docDefinition) {
+  return new Promise((resolve) => {
+    pdfmake.createPdf(docDefinition).getBuffer((buffer) => resolve(buffer));
+  });
+}
+
+async function exportRouteReportPdf({ tenantId, fechaInicio, fechaFin }) {
+  const report = await getRouteReportRows({ tenantId, fechaInicio, fechaFin });
+  const headers = routeReportHeaders();
+  const body = [
+    headers.map(([, header]) => ({ text: header, bold: true, fillColor: '#e2e8f0' })),
+    ...report.rows.map((row) => headers.map(([key]) => String(routeReportCell(row, key)))),
+  ];
+  return createPdfBuffer({
+    pageOrientation: 'landscape',
+    pageMargins: [24, 32, 24, 32],
+    content: [
+      { text: 'Reporte de rutas de campo', style: 'title' },
+      { text: `Periodo: ${report.fechaInicio} a ${report.fechaFin}`, margin: [0, 0, 0, 10] },
+      {
+        table: {
+          headerRows: 1,
+          widths: [48, 58, 100, 70, 100, 58, 50, 72, 72, 48, 56, 48],
+          body,
+        },
+        layout: 'lightHorizontalLines',
+      },
+    ],
+    styles: {
+      title: { fontSize: 16, bold: true, margin: [0, 0, 0, 6] },
+    },
+    defaultStyle: { fontSize: 7 },
+  });
 }
 
 module.exports = {
   createRouteDay,
   createRouteSite,
   deleteRouteSite,
+  exportRouteReportPdf,
   exportRouteReportCsv,
+  exportRouteReportXlsx,
   getRouteDay,
+  getRouteReportRows,
   listRouteDays,
   listRouteExceptions,
   listRouteSites,

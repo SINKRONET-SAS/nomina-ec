@@ -140,7 +140,10 @@ app.get('/api/rutas/dias', requireRole('owner', 'admin_rrhh', 'supervisor'), rou
 app.post('/api/rutas/dias', requireRole('owner', 'admin_rrhh', 'supervisor'), routeController.createDay);
 app.get('/api/rutas/excepciones', requireRole('owner', 'admin_rrhh', 'supervisor'), routeController.listExceptions);
 app.put('/api/rutas/excepciones/:id', requireRole('owner', 'admin_rrhh', 'supervisor'), routeController.reviewException);
+app.get('/api/rutas/reporte', requireRole('owner', 'admin_rrhh', 'supervisor'), routeController.report);
 app.get('/api/rutas/reporte.csv', requireRole('owner', 'admin_rrhh', 'supervisor'), routeController.exportCsv);
+app.get('/api/rutas/reporte.xlsx', requireRole('owner', 'admin_rrhh', 'supervisor'), routeController.exportXlsx);
+app.get('/api/rutas/reporte.pdf', requireRole('owner', 'admin_rrhh', 'supervisor'), routeController.exportPdf);
 
 const mobileController = require('./controllers/mobileController');
 app.get('/api/mobile/me', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.perfil);

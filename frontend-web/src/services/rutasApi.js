@@ -44,3 +44,16 @@ export async function downloadRouteCsv(params = {}) {
   });
   return response.data;
 }
+
+export async function fetchRouteReport(params = {}) {
+  const response = await authenticatedApi.get('/rutas/reporte', { params });
+  return response.data.reporte || { rows: [], total: 0 };
+}
+
+export async function downloadRouteReport(format, params = {}) {
+  const response = await authenticatedApi.get(`/rutas/reporte.${format}`, {
+    params,
+    responseType: 'blob',
+  });
+  return response.data;
+}
