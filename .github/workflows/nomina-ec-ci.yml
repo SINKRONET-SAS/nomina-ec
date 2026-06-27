@@ -28,10 +28,6 @@ jobs:
         ports:
           - 6379:6379
 
-    defaults:
-      run:
-        working-directory: backend
-
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/nomina_ec_ci?schema=public
       DB_SSL: "false"
@@ -45,10 +41,10 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: backend/package-lock.json
-      - run: npm ci
-      - run: npx prisma validate
-      - run: npm run db:migrate
-      - run: npm test -- --runInBand
+      - run: npm ci --prefix backend
+      - run: npm --prefix backend run prisma:validate
+      - run: npm --prefix backend run db:migrate
+      - run: npm --prefix backend test -- --runInBand
 
   frontend:
     runs-on: ubuntu-latest
