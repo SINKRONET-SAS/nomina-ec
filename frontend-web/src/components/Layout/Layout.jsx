@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Mail, Settings2, LogOut, Menu, ShieldCheck, X } from 'lucide-react';
+import { LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Mail, Settings2, LogOut, Menu, ShieldCheck, X, Home } from 'lucide-react';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -124,14 +124,27 @@ function Layout() {
           })}
         </nav>
         
-        <div className="shrink-0 border-t bg-white p-4">
-          <div className="flex items-center justify-between">
+        <div className="shrink-0 space-y-3 border-t bg-white p-4">
+          <Link
+            to="/"
+            onClick={() => setSidebarOpen(false)}
+            className="flex min-h-10 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            <Home size={18} />
+            Sitio publico
+          </Link>
+          <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium">{usuario?.nombres}</p>
               <p className="text-xs text-gray-500">{usuario?.rol}</p>
             </div>
-            <button onClick={handleLogout} className="p-2 text-gray-500 hover:text-red-600">
+            <button
+              onClick={handleLogout}
+              className="inline-flex min-h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold text-gray-600 hover:bg-red-50 hover:text-red-700"
+              type="button"
+            >
               <LogOut size={20} />
+              Salir
             </button>
           </div>
         </div>
@@ -145,10 +158,22 @@ function Layout() {
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden">
               <Menu size={24} />
             </button>
-            <div className="flex items-center space-x-4">
+            <div className="flex min-w-0 items-center gap-3">
               <span className="text-sm text-gray-600">
                 {new Date().toLocaleDateString('es-EC', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </span>
+              <Link className="hidden min-h-10 items-center gap-2 rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:inline-flex" to="/">
+                <Home size={17} />
+                Sitio publico
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="hidden min-h-10 items-center gap-2 rounded-md bg-slate-900 px-3 text-sm font-semibold text-white hover:bg-slate-800 sm:inline-flex"
+                type="button"
+              >
+                <LogOut size={17} />
+                Salir
+              </button>
             </div>
           </div>
         </header>
