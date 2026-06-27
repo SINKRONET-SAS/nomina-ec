@@ -311,7 +311,7 @@ async function sendEmail({
   }
 
   if (!config.configured) {
-    if (config.devMode) {
+    if (config.devMode && !required) {
       return auditDelivery(
         devDelivery('email', template, { correlationId, userId, to: recipient }),
         { tenantId, userId, correlationId, recipient, purpose, flow, required }
@@ -325,7 +325,7 @@ async function sendEmail({
       configured: false,
       template,
       missing: config.missing,
-      reason: config.productionBlocked ? 'production_provider_required' : 'provider_not_configured',
+      reason: config.productionBlocked || required ? 'production_provider_required' : 'provider_not_configured',
     };
 
     await auditDelivery(result, { tenantId, userId, correlationId, recipient, purpose, flow, required });
@@ -575,7 +575,7 @@ async function sendPasswordReset({ to, code, name, correlationId, userId, tenant
   });
 }
 
-async function sendEmployeeInvite({ employee, invite, correlationId, userId }) {
+async function sendEmployeeInvite({ employee, invite, correlationId, userId, requiredEmail = false }) {
   const name = [employee?.nombres, employee?.apellidos].filter(Boolean).join(' ') || 'empleado';
   const tenantId = employee?.tenant_id || employee?.tenantId || invite?.tenantId || null;
   const content = employeeInviteEmailTemplate({
@@ -596,6 +596,7 @@ async function sendEmployeeInvite({ employee, invite, correlationId, userId }) {
     tenantId,
     purpose: 'activacion_app_asistencia',
     flow: 'empleado_invitacion_app',
+    required: requiredEmail,
   }));
 
   if (hasWhatsAppConsent(employee)) {

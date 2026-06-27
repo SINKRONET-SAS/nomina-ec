@@ -73,6 +73,41 @@ describe('communicationService', () => {
     }));
   });
 
+  test('bloquea invitacion requerida aunque el modo desarrollo este activo', async () => {
+    const service = loadService({ NODE_ENV: 'development', COMMUNICATION_DEV_MODE: 'true' });
+
+    await expect(service.sendEmployeeInvite({
+      employee: {
+        tenant_id: 'tenant-1',
+        nombres: 'Marco',
+        apellidos: 'Demo',
+        email_personal: 'marco@example.com',
+      },
+      invite: {
+        email: 'marco@example.com',
+        code: 'OPS-1234',
+        activationUrl: 'https://app.example.com/activar',
+      },
+      correlationId: 'corr-required',
+      userId: 'user-required',
+      requiredEmail: true,
+    })).rejects.toMatchObject({
+      code: 'COMM_SMTP_NOT_CONFIGURED',
+      statusCode: 503,
+    });
+
+    expect(createTransportMock).not.toHaveBeenCalled();
+    expect(recordCommunicationEventMock).toHaveBeenCalledWith(expect.objectContaining({
+      channel: 'email',
+      template: 'employee_app_invite',
+      status: 'not_configured',
+      metadata: expect.objectContaining({
+        required: true,
+        reason: 'production_provider_required',
+      }),
+    }));
+  });
+
   test('bloquea correo requerido en produccion si SMTP real no esta configurado', async () => {
     const service = loadService({
       NODE_ENV: 'production',

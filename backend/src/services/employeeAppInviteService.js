@@ -540,14 +540,15 @@ async function createEmployeeInvitation({ tenantId, empleadoId, userId, correlat
       ipAddress,
     });
 
-    await db.commit(client);
     const invite = invitePublicPayload(inviteResult.rows[0], code);
     invite.delivery = await sendEmployeeInvite({
       employee,
       invite,
       correlationId,
       userId,
+      requiredEmail: true,
     });
+    await db.commit(client);
     return invite;
   } catch (err) {
     await db.rollback(client);
@@ -622,14 +623,15 @@ async function resendEmployeeInvitation({ tenantId, inviteId, userId, correlatio
       ipAddress,
     });
 
-    await db.commit(client);
     const invite = invitePublicPayload(updated.rows[0], code);
     invite.delivery = await sendEmployeeInvite({
       employee: existing.rows[0],
       invite,
       correlationId,
       userId,
+      requiredEmail: true,
     });
+    await db.commit(client);
     return invite;
   } catch (err) {
     await db.rollback(client);
