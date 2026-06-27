@@ -173,8 +173,10 @@ function RutasCampo() {
 
   const exportReport = async (format) => {
     try {
+      setError('');
       const blob = await downloadRouteReport(format, { fechaInicio: fechaInicioReporte, fechaFin: fechaFinReporte });
       downloadBlob(blob, `rutas-${fechaInicioReporte}-${fechaFinReporte}.${format}`);
+      setError('');
     } catch (err) {
       setError(extractApiError(err, 'No pudimos exportar rutas.'));
     }
