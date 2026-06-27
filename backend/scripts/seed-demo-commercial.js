@@ -694,7 +694,7 @@ async function insertEmployees(client, tenantId, users, units, importBatchId) {
       employee.estadoCivil,
       employee.cargasFamiliares,
       employee.region,
-      employee.email === DEMO_USERS.employee.email ? new Date() : null,
+      employee.email === users.employee.email ? new Date() : null,
       employee.telefono,
       employee.email,
       importBatchId,
@@ -964,12 +964,15 @@ async function insertDemoRoutes(client, tenantId, employees, zones, units, owner
 
   await client.query('DELETE FROM route_stops WHERE tenant_id = $1 AND route_day_id = $2', [tenantId, routeDay.rows[0].id]);
   for (const [index, site] of siteIds.entries()) {
-    await client.query(`
+    const status = index === 0 ? 'completed' : index === 1 ? 'in_site' : 'pending';
+    const result = await client.query(`
       INSERT INTO route_stops (
         tenant_id, route_day_id, site_id, sequence_order,
-        planned_start_time, planned_end_time, status, required_evidence, notes
+        planned_start_time, planned_end_time, status, required_evidence, notes,
+        started_at, completed_at
       )
-      VALUES ($1,$2,$3,$4,$5,$6,'pending',$7,$8)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      RETURNING id
     `, [
       tenantId,
       routeDay.rows[0].id,
@@ -977,10 +980,81 @@ async function insertDemoRoutes(client, tenantId, employees, zones, units, owner
       index + 1,
       site.start,
       site.end,
+      status,
       toJson({ gps: true, foto: false, qr: false }),
       'Parada demo para validar llegada, salida, omision y visita no programada.',
+      index <= 1 ? localTimestamp(routeDate, addMinutes(site.start, 5)) : null,
+      index === 0 ? localTimestamp(routeDate, addMinutes(site.start, 45)) : null,
     ]);
+
+    if (index <= 1) {
+      await client.query(`
+        INSERT INTO route_visit_marks (
+          tenant_id, empleado_id, route_day_id, route_stop_id, site_id, period_id,
+          operational_date, mark_type, device_timestamp, server_timestamp,
+          latitude, longitude, accuracy_meters, within_geofence, distance_meters,
+          status, comment, source, audit_correlation_id, metadata
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,'arrival',$8,$8,$9,$10,18,true,12,'valid',$11,'demo_seed',$12,$13)
+      `, [
+        tenantId,
+        routeEmployee.id,
+        routeDay.rows[0].id,
+        result.rows[0].id,
+        site.id,
+        period.id,
+        routeDate,
+        localTimestamp(routeDate, addMinutes(site.start, 5)),
+        site.latitude,
+        site.longitude,
+        'Llegada demo para smoke de reporte de rutas.',
+        correlationId,
+        toJson(demoMetadata({ routeSmoke: true, markType: 'arrival', siteCode: site.code })),
+      ]);
+    }
+
+    if (index === 0) {
+      await client.query(`
+        INSERT INTO route_visit_marks (
+          tenant_id, empleado_id, route_day_id, route_stop_id, site_id, period_id,
+          operational_date, mark_type, device_timestamp, server_timestamp,
+          latitude, longitude, accuracy_meters, within_geofence, distance_meters,
+          status, comment, source, audit_correlation_id, metadata
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,'departure',$8,$8,$9,$10,21,true,16,'valid',$11,'demo_seed',$12,$13)
+      `, [
+        tenantId,
+        routeEmployee.id,
+        routeDay.rows[0].id,
+        result.rows[0].id,
+        site.id,
+        period.id,
+        routeDate,
+        localTimestamp(routeDate, addMinutes(site.start, 45)),
+        site.latitude,
+        site.longitude,
+        'Salida demo para smoke de reporte de rutas.',
+        correlationId,
+        toJson(demoMetadata({ routeSmoke: true, markType: 'departure', siteCode: site.code })),
+      ]);
+    }
   }
+
+  await client.query(`
+    UPDATE route_days
+    SET status = 'in_progress',
+        updated_at = NOW(),
+        metadata = metadata || $3::jsonb
+    WHERE tenant_id = $1
+      AND id = $2
+  `, [
+    tenantId,
+    routeDay.rows[0].id,
+    toJson(demoMetadata({
+      routeSmoke: true,
+      scenario: '1 parada completa, 1 llegada sin salida, 1 pendiente',
+    })),
+  ]);
 }
 
 function addMinutes(time, minutesToAdd) {
@@ -1173,6 +1247,7 @@ async function verifyDemo() {
       (SELECT COUNT(*)::int FROM route_sites WHERE tenant_id = (SELECT id FROM tenant) AND status = 'activo') AS route_sites,
       (SELECT COUNT(*)::int FROM route_days WHERE tenant_id = (SELECT id FROM tenant)) AS route_days,
       (SELECT COUNT(*)::int FROM route_stops WHERE tenant_id = (SELECT id FROM tenant)) AS route_stops,
+      (SELECT COUNT(*)::int FROM route_visit_marks WHERE tenant_id = (SELECT id FROM tenant)) AS route_visit_marks,
       (SELECT COUNT(*)::int FROM marcaciones WHERE tenant_id = (SELECT id FROM tenant)) AS marks,
       (SELECT COUNT(*)::int FROM novedades_asistencia WHERE tenant_id = (SELECT id FROM tenant)) AS novelties,
       (SELECT COUNT(*)::int FROM payroll_periods WHERE tenant_id = (SELECT id FROM tenant) AND anio = 2026 AND status = 'closed') AS closed_periods,
@@ -1189,8 +1264,9 @@ async function verifyDemo() {
     ['route_sites', 3],
     ['route_days', 1],
     ['route_stops', 3],
+    ['route_visit_marks', 3],
     ['closed_periods', 5],
-    ['bank_profiles', 1],
+    ['bank_profiles', 2],
   ];
   for (const [key, expected] of expectations) {
     if (Number(row[key]) !== expected) {
