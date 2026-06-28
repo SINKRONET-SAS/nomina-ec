@@ -4,6 +4,7 @@
 const db = require('../config/database');
 const AppError = require('../utils/AppError');
 const { getLegalParameters } = require('../config/legal-ecuador');
+const logger = require('../utils/logger');
 
 const VALIDATED_SOURCE_STATUS = 'validado_oficial';
 const PENDING_SOURCE_STATUS = 'pendiente_validacion_oficial';
@@ -256,12 +257,13 @@ function assertLegalParametersReadyForProduction(legalParameters, context = {}) 
   const sourceStatus = legalParameters?.sourceStatus || PENDING_SOURCE_STATUS;
 
   if (!requiresOfficialLegalValidation()) {
-    console.log('[LEGAL] Validacion oficial de parametros omitida por configuracion de entorno', {
+    logger.info({
+      code: 'LEGAL_PARAMETERS_VALIDATION_SKIPPED',
       correlationId: process.env.CORRELATION_ID || 'legal-parameters',
       anio: context.year || null,
       tenantId: context.tenantId || null,
       operacion: context.operation || 'calculo_legal',
-    });
+    }, 'Validacion oficial de parametros omitida por configuracion de entorno');
     return;
   }
 

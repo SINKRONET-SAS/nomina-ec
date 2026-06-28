@@ -1,108 +1,140 @@
 {
-    "schemaVersion":  1,
-    "plan":  "HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V6",
-    "planCode":  "CDANV6",
-    "status":  "completed_documental_runtime_pending_approval",
-    "phaseCompleted":  "CDANV6-00",
-    "currentPhase":  "CDANV6-01-pending-approval",
-    "updatedAt":  "2026-06-28T08:29:42-05:00",
-    "summary":  "CDANV6 crea el cierre documental para 9 hallazgos de auditoria: mensajes friendly, RDEP XSD, ortografia UI, logs, split Parametrizacion, PWA maskable, LOPDP GPS, sueldo dia 31 y politica docs2/AuditLock. No se ejecuto runtime.",
-    "rulesSource":  "RULES.md",
-    "approvalSource":  "Solicitud del usuario: generar plan Haiky en docs2, .github/CODEX_CONTEXT.md, .vscode/AuditLock.json y .github/prompts por fases en base a RULES.md.",
-    "previousAuditLockHash":  "04E599DFFDA9CBCD056FE32A910FC21978176DEF2652EB2A4E594BD432AEA113",
-    "filesModifiedSummary":  [
-                                 ".github/CODEX_CONTEXT.md",
-                                 ".github/prompts/CDANV6-00-baseline-documental.md",
-                                 ".github/prompts/CDANV6-01-diagnostico-runtime.md",
-                                 ".github/prompts/CDANV6-02-mensajes-friendly.md",
-                                 ".github/prompts/CDANV6-03-rdep-xsd.md",
-                                 ".github/prompts/CDANV6-04-ui-ortografia.md",
-                                 ".github/prompts/CDANV6-05-logs-estructurados.md",
-                                 ".github/prompts/CDANV6-06-parametrizacion-split.md",
-                                 ".github/prompts/CDANV6-07-pwa-maskable.md",
-                                 ".github/prompts/CDANV6-08-lopdp-gps-sueldo31.md",
-                                 ".github/prompts/CDANV6-09-gobierno-qa-release.md",
-                                 "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026_V6.md",
-                                 "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/MATRIZ_CDANV6_HALLAZGOS.md",
-                                 "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/CONTRATO_CDANV6_CIERRE_DEFINITIVO.md",
-                                 "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/RUNBOOK_CDANV6_QA_RELEASE.md",
-                                 "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_00_BASELINE.md",
-                                 ".vscode/AuditLock.json"
-                             ],
-    "validationChecks":  [
-                             {
-                                 "gate":  "CDANV6-RULES-READ",
-                                 "status":  "PASS",
-                                 "detail":  "RULES.md leido y aplicado al alcance documental."
-                             },
-                             {
-                                 "gate":  "CDANV6-SOURCES-REVIEWED",
-                                 "status":  "PASS",
-                                 "detail":  "Informe de auditoria y fixes 1 a 9 revisados como insumo, sin aplicacion runtime."
-                             },
-                             {
-                                 "gate":  "CDANV6-CONTEXT-LOCATION",
-                                 "status":  "PASS",
-                                 "detail":  "CODEX_CONTEXT actualizado solo en .github/CODEX_CONTEXT.md."
-                             },
-                             {
-                                 "gate":  "CDANV6-PROMPTS",
-                                 "status":  "PASS",
-                                 "detail":  "Prompts CDANV6-00 a CDANV6-09 creados en .github/prompts."
-                             },
-                             {
-                                 "gate":  "CDANV6-RUNTIME",
-                                 "status":  "PASS",
-                                 "detail":  "No se inicio runtime; fases 01 a 09 quedan pending_approval."
-                             }
-                         ],
-    "fases":  [
-                  {
-                      "phase":  "CDANV6-00",
-                      "status":  "completed_documental"
-                  },
-                  {
-                      "phase":  "CDANV6-01",
-                      "status":  "pending_approval"
-                  },
-                  {
-                      "phase":  "CDANV6-02",
-                      "status":  "pending_approval"
-                  },
-                  {
-                      "phase":  "CDANV6-03",
-                      "status":  "pending_approval"
-                  },
-                  {
-                      "phase":  "CDANV6-04",
-                      "status":  "pending_approval"
-                  },
-                  {
-                      "phase":  "CDANV6-05",
-                      "status":  "pending_approval"
-                  },
-                  {
-                      "phase":  "CDANV6-06",
-                      "status":  "pending_approval"
-                  },
-                  {
-                      "phase":  "CDANV6-07",
-                      "status":  "pending_approval"
-                  },
-                  {
-                      "phase":  "CDANV6-08",
-                      "status":  "pending_approval"
-                  },
-                  {
-                      "phase":  "CDANV6-09",
-                      "status":  "pending_approval"
-                  }
-              ],
-    "residualRisk":  [
-                         "RDEP requiere fuente oficial SRI vigente y revision tributaria antes de XML productivo.",
-                         "HAL-9 requiere decision explicita antes de mover, ignorar o retirar docs2/AuditLock del repo publico.",
-                         "Las fases runtime requieren aprobacion explicita y QA por fase."
-                     ],
-    "signatureAlgorithm":  "SHA256(previousAuditLockHash + updatedAt)",
-    "signature":  "A76BCE7CFB5FB785127EB34445D188D54B92A335F953F7B50B89E4E7445D9627"
+  "schemaVersion": 1,
+  "plan": "HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V6",
+  "planCode": "CDANV6",
+  "status": "completed_local_qa_green",
+  "phaseCompleted": "CDANV6-09",
+  "currentPhase": "CDANV6-09-completed",
+  "updatedAt": "2026-06-28T09:17:29-05:00",
+  "summary": "CDANV6-01..09 ejecutadas localmente: mensajes friendly, RDEP XSD reconciliado, UI comercial, logs sin console.log operativo, split Parametrizacion, PWA maskable, aviso LOPDP GPS, sueldo dia 31 con tope 30 y politica docs2/AuditLock documentada.",
+  "rulesSource": "RULES.md",
+  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts de acuerdo a HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V6 y CODEX_CONTEXT.md.",
+  "previousAuditLockHash": "4218EBBD3313D0DE9D527A20C8104642D9ECED259AFE6B8087F1C5E3AA3D3B66",
+  "filesModifiedSummary": [
+    ".github/CODEX_CONTEXT.md",
+    ".gitignore",
+    ".vscode/AuditLock.json",
+    "README.md",
+    "app-movil/src/screens/MarcacionScreen.js",
+    "backend/package.json",
+    "backend/scripts/verify-rdep-xsd-source.js",
+    "backend/src/app.js",
+    "backend/src/config/rdep/rdep-source-manifest.json",
+    "backend/src/config/user-message-catalog.json",
+    "backend/src/services/liquidacionService.js",
+    "backend/src/services/sriRdepGenerator.js",
+    "backend/src/utils/logger.js",
+    "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026_V6.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/POLITICA_CDANV6_ARTEFACTOS_PUBLICOS.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_01_DIAGNOSTICO_RUNTIME.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_02_MENSAJES_FRIENDLY.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_03_RDEP_XSD.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_04_UI_ORTOGRAFIA.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_05_LOGS_ESTRUCTURADOS.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_06_PARAMETRIZACION_SPLIT.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_07_PWA_MASKABLE.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_08_LOPDP_GPS_SUELDO31.md",
+    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_09_QA_RELEASE.md",
+    "frontend-web/pwa.config.js",
+    "frontend-web/public/icon-192-maskable.png",
+    "frontend-web/public/icon-512-maskable.png",
+    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
+    "frontend-web/src/pages/Configuracion/parametrizacion/Field.jsx",
+    "frontend-web/src/pages/Configuracion/parametrizacion/IncomeTaxTableFields.jsx",
+    "frontend-web/src/pages/Configuracion/parametrizacion/LegalParametersPreview.jsx",
+    "frontend-web/src/pages/Configuracion/parametrizacion/legalParameterDisplay.js",
+    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
+    "scripts/verify-system-contracts.mjs"
+  ],
+  "validationChecks": [
+    {
+      "gate": "CDANV6-RDEP-SOURCE",
+      "status": "PASS",
+      "detail": "npm.cmd --workspace=backend run rdep:verify-source"
+    },
+    {
+      "gate": "CDANV6-CONTRACTS",
+      "status": "PASS",
+      "detail": "npm.cmd run contracts"
+    },
+    {
+      "gate": "CDANV6-PRISMA",
+      "status": "PASS",
+      "detail": "npm.cmd run prisma:validate"
+    },
+    {
+      "gate": "CDANV6-BACKEND-TEST",
+      "status": "PASS",
+      "detail": "npm.cmd --workspace=backend test -- --runInBand; 49 suites, 204 tests"
+    },
+    {
+      "gate": "CDANV6-WEB-BUILD",
+      "status": "PASS",
+      "detail": "npm.cmd --workspace=frontend-web run build; manifest PWA generado con maskable PNG"
+    },
+    {
+      "gate": "CDANV6-MOBILE-CHECK",
+      "status": "PASS",
+      "detail": "npm.cmd run check:mobile"
+    },
+    {
+      "gate": "CDANV6-UTF8-NO-BOM",
+      "status": "PASS",
+      "detail": "29 archivos .js/.jsx/.mjs/.md/.json revisados"
+    },
+    {
+      "gate": "CDANV6-DIFF-CHECK",
+      "status": "PASS",
+      "detail": "git diff --check sin errores; solo avisos CRLF esperados en Windows"
+    }
+  ],
+  "fases": [
+    {
+      "phase": "CDANV6-00",
+      "status": "completed_documental"
+    },
+    {
+      "phase": "CDANV6-01",
+      "status": "completed_local"
+    },
+    {
+      "phase": "CDANV6-02",
+      "status": "completed_local"
+    },
+    {
+      "phase": "CDANV6-03",
+      "status": "completed_local"
+    },
+    {
+      "phase": "CDANV6-04",
+      "status": "completed_local"
+    },
+    {
+      "phase": "CDANV6-05",
+      "status": "completed_local"
+    },
+    {
+      "phase": "CDANV6-06",
+      "status": "completed_local"
+    },
+    {
+      "phase": "CDANV6-07",
+      "status": "completed_local"
+    },
+    {
+      "phase": "CDANV6-08",
+      "status": "completed_local"
+    },
+    {
+      "phase": "CDANV6-09",
+      "status": "completed_local"
+    }
+  ],
+  "residualRisk": [
+    "RDEP requiere revision tributaria profesional antes de envio oficial.",
+    "Texto LOPDP GPS requiere validacion legal del responsable antes de despliegue productivo.",
+    "Migrar docs2/AuditLock a repositorio privado requiere decision de gobierno, inventario y hash de cierre."
+  ],
+  "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
+  "signature": "02D7DE805F9FA3E411A9BBC7C7F80ED3E1304CE407F9D450268EC853F042359A"
 }

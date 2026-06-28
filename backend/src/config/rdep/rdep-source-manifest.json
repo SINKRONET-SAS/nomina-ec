@@ -8,14 +8,14 @@
       "name": "SRI - Anexo de Retenciones en la Fuente Bajo Relacion de Dependencia (RDEP)",
       "kind": "official_web_page",
       "url": "https://www.sri.gob.ec/formularios-e-instructivos1",
-      "observedAt": "2026-06-27",
+      "observedAt": "2026-06-28",
       "evidence": [
         "Programa RDEP periodo fiscal 2026, fecha actualizacion 17 de marzo de 2026",
         "Ficha tecnica vigente para ejercicio fiscal 2024, vigente para ejercicio fiscal 2025",
-        "Esquema RDEP.xsd, fecha actualizacion 14 de diciembre de 2023",
+        "Esquema RDEP.xsd, fecha actualizacion 14 de diciembre de 2023, verificado nuevamente el 28 de junio de 2026",
         "Resolucion NAC-DGERCGC24-00000037, fecha publicacion 04 de diciembre de 2024"
       ],
-      "status": "official_source_checked"
+      "status": "official_source_checked_cdanv6"
     },
     {
       "name": "Esquema RDEP 2023.xsd",
@@ -49,7 +49,8 @@
   ],
   "validationPolicy": {
     "xsdValidation": "required_before_xml_generation",
-    "officialSourceReconciliation": "checked_2026_06_27",
+    "officialSourceReconciliation": "checked_2026_06_28",
+    "verificationScript": "backend/scripts/verify-rdep-xsd-source.js",
     "demoDataOnly": false,
     "noRealEmployeeData": false
   },

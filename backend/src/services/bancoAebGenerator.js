@@ -10,6 +10,7 @@ const { roundMoney, toMoneyString } = require('../utils/money');
 const { recordAudit } = require('./auditService');
 const { decryptBankAccount } = require('./bankAccountCrypto');
 const AppError = require('../utils/AppError');
+const logger = require('../utils/logger');
 
 function assertRequiredBank(banco, context = {}) {
   const key = normalizeBankKey(banco);
@@ -132,7 +133,16 @@ async function generarArchivoBanco(tenantId, anio, mes, banco, context = {}) {
     });
   }
 
-  console.log(`[BANCO] Archivo generado para ${tenantId} - ${mes}/${anio}: ${nominasResult.rows.length} pagos`);
+  logger.info({
+    code: 'BANK_FILE_GENERATED',
+    correlationId: context.correlationId || process.env.CORRELATION_ID || 'bank-file-generator',
+    userId: context.userId || null,
+    tenantId,
+    anio,
+    mes,
+    totalPagos: nominasResult.rows.length,
+    banco: requestedBank,
+  }, 'Archivo bancario generado');
 
   return {
     csvUrl: url,

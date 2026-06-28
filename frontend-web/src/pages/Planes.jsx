@@ -54,7 +54,6 @@ function Planes() {
     }
 
     if (!token) {
-      console.log('[PAGOS] Usuario sin sesion redirigido a registro para seleccionar plan', { planId });
       navigate(`/registro?plan=${encodeURIComponent(planId)}`);
       return;
     }

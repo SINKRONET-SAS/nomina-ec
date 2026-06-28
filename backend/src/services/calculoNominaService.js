@@ -15,6 +15,7 @@ const {
   persistPayrollCalculationLines,
 } = require('./payrollAccountingService');
 const { getApprovedPayrollNoveltyImpacts } = require('./payrollNoveltyService');
+const logger = require('../utils/logger');
 
 const FOURTEENTH_REGION_PARAMETERS = {
   costa_galapagos: 'decimo_cuarto_costa_galapagos',
@@ -113,7 +114,14 @@ function assertWeeklyOvertimeLimit(weeklyOvertimeMinutes = {}, payrollParameters
 
 async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
   validarPeriodoNomina(anio, mes);
-  console.log(`[NOMINA] Calculando ${mes}/${anio} para tenant ${tenantId}`);
+  logger.info({
+    code: 'PAYROLL_CALCULATION_STARTED',
+    correlationId: context.correlationId || process.env.CORRELATION_ID || 'nomina-mensual',
+    userId: context.userId || null,
+    tenantId,
+    anio,
+    mes,
+  }, 'Calculo de nomina iniciado');
   const executor = context.dbClient || db;
 
   const batch = await createPayrollCalculationBatch({

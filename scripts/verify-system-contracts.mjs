@@ -84,7 +84,7 @@ assert(!exists('CODEX_CONTEXT.md'), 'CODEX_CONTEXT.md no debe quedar en raiz pub
 assert(exists('.github/CODEX_CONTEXT.md'), 'CODEX_CONTEXT.md debe estar ubicado bajo .github/.');
 assert(!renderYaml.includes(forbiddenLegacyDbName), 'render.yaml no debe exponer nombre interno legacy de base de datos.');
 assert(!renderYaml.includes(forbiddenLegacyDbUser), 'render.yaml no debe exponer usuario interno legacy de base de datos.');
-assert(renderYaml.includes('nomina-ec-api'), 'render.yaml debe nombrar el servicio API como Nomina-Ec.');
+assert(renderYaml.includes('sknomina-api'), 'render.yaml debe nombrar el servicio API como SKNOMINA.');
 
 const frontendResources = unique(regexValues(parametrizacion, /resource:\s*'([^']+)'/g));
 for (const resource of frontendResources) {
@@ -158,7 +158,7 @@ assert(
 assert(configurationService.includes('DISTINCT ON (LOWER(BTRIM(code)))'), 'Backend debe deduplicar tipos de novedad por codigo normalizado.');
 assert(parametrizacion.includes('dedupeNoveltyRecords'), 'La PWA debe defender la lista de tipos de novedad contra duplicados.');
 assert(parametrizacion.includes('Valores legales'), 'La PWA debe separar valores legales de cuentas contables.');
-assert(parametrizacion.includes('Cuentas contables de nomina'), 'La PWA debe exponer cuentas contables de nomina sin duplicar parametros legales.');
+assert(parametrizacion.includes('Cuentas contables de nómina'), 'La PWA debe exponer cuentas contables de nómina sin duplicar parámetros legales.');
 
 assert(schema.includes('acta_entrega_dotacion'), 'Prisma debe declarar el tipo documental acta_entrega_dotacion.');
 assert(schema.includes('model EquipmentDeliveryAct'), 'Prisma debe declarar EquipmentDeliveryAct.');
@@ -211,7 +211,7 @@ assert(payphoneGatewayService.includes('/api/button/Prepare'), 'PayPhone debe pr
 assert(payphoneGatewayService.includes('/api/button/V2/Confirm'), 'PayPhone debe confirmar pago contra API real Confirm.');
 assert(payphoneGatewayService.includes('Content-Length'), 'Gateway PayPhone debe enviar Content-Length para evitar chunked.');
 assert(payphoneGatewayService.includes('BACKEND_PUBLIC_URL'), 'PayPhone debe exigir callback backend publico HTTPS.');
-assert(paymentReferenceService.includes('nominaec-'), 'Pagos deben usar referencia unica Nomina-Ec parseable.');
+assert(paymentReferenceService.includes('sknomina-'), 'Pagos deben usar referencia única SKNOMINA parseable.');
 assert(paymentController.includes('createPayPhonePayment'), 'Checkout debe llamar gateway PayPhone real.');
 assert(paymentController.includes('confirmPayPhonePayment'), 'Confirmacion debe consultar PayPhone antes de activar plan.');
 assert(paymentController.includes('PAYMENT_AMOUNT_MISMATCH'), 'Confirmacion debe bloquear monto PayPhone distinto al checkout.');

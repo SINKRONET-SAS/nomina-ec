@@ -144,14 +144,14 @@ function payrollStatus(nominas) {
     return {
       label: 'Sin roles calculados',
       tone: 'bg-amber-50 text-amber-800 border-amber-200',
-      next: 'Calcula la nomina del periodo para generar roles y valores de pago.',
+      next: 'Calcula la nómina del periodo para generar roles y valores de pago.',
     };
   }
 
   const closed = nominas.filter((row) => row.estado === 'cerrada' || row.cerrada).length;
   if (closed === nominas.length) {
     return {
-      label: 'Nomina cerrada',
+      label: 'Nómina cerrada',
       tone: 'bg-emerald-50 text-emerald-800 border-emerald-200',
       next: 'Puedes emitir roles, preparar pagos bancarios y generar anexos para entidades.',
     };
@@ -288,7 +288,7 @@ function Dashboard() {
       icon: Users,
       label: 'Empleados activos',
       value: safeCount(activeEmployees),
-      detail: safeCount(activeEmployees) ? 'Base laboral para el calculo' : 'Registra empleados para operar nomina',
+      detail: safeCount(activeEmployees) ? 'Base laboral para el cálculo' : 'Registra empleados para operar nómina',
       href: '/dashboard/empleados',
       tone: 'bg-blue-50 text-blue-700',
     },
@@ -312,7 +312,7 @@ function Dashboard() {
       icon: Clock,
       label: 'Novedades pendientes',
       value: safeCount(data?.novedades),
-      detail: 'Afectan calculo, asistencia o soportes',
+      detail: 'Afectan cálculo, asistencia o soportes',
       href: '/dashboard/asistencia/novedades',
       tone: 'bg-amber-50 text-amber-700',
     },
@@ -324,10 +324,10 @@ function Dashboard() {
       <section className="soft-panel p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Operacion de nomina</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Operación de nómina</p>
             <h1 className="mt-2 text-2xl font-semibold text-slate-950">Periodo {period.label}</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Administra el ciclo mensual: empleados activos, novedades, calculo de roles,
+              Administra el ciclo mensual: empleados activos, novedades, cálculo de roles,
               cierre, pagos y reportes para entidades.
             </p>
           </div>
@@ -343,7 +343,7 @@ function Dashboard() {
           <div className="flex flex-wrap gap-2">
             <Link className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white" to="/dashboard/nomina/cerrar">
               <DollarSign className="h-4 w-4" />
-              Calcular nomina
+              Calcular nómina
             </Link>
             <Link className="inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:border-teal-300" to="/dashboard/empleados/nuevo">
               <UserPlus className="h-4 w-4" />
@@ -376,7 +376,7 @@ function Dashboard() {
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Preparacion del cierre</p>
             <h2 className="mt-1 text-lg font-semibold text-slate-950">Lo importante para cerrar el mes</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Revisa la informacion laboral, las novedades, los parametros y las salidas antes de calcular roles.
+              Revisa la información laboral, las novedades, los parámetros y las salidas antes de calcular roles.
             </p>
           </div>
           <Link className="inline-flex min-h-10 items-center justify-center rounded-md bg-teal-700 px-4 text-sm font-semibold text-white" to="/dashboard/nomina/cerrar">
@@ -396,8 +396,8 @@ function Dashboard() {
           </Link>
           <Link className="rounded-md border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50" to="/dashboard/configuracion/parametrizacion">
             <Settings2 className="h-5 w-5 text-teal-700" />
-            <h3 className="mt-3 font-semibold text-slate-950">Configuracion</h3>
-            <p className="mt-2 text-sm leading-5 text-slate-600">Empresa, jornada, zonas, bancos y parametros laborales vigentes.</p>
+            <h3 className="mt-3 font-semibold text-slate-950">Configuración</h3>
+            <p className="mt-2 text-sm leading-5 text-slate-600">Empresa, jornada, zonas, bancos y parámetros laborales vigentes.</p>
           </Link>
           <Link className="rounded-md border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50" to="/dashboard/nomina/reportes">
             <Landmark className="h-5 w-5 text-teal-700" />
@@ -410,7 +410,7 @@ function Dashboard() {
         <div className="soft-panel p-6">
           <div className="mb-4 flex items-center gap-3">
             <CalendarClock className="h-5 w-5 text-teal-700" />
-            <h2 className="text-lg font-semibold text-slate-950">Ciclo mensual de nomina</h2>
+            <h2 className="text-lg font-semibold text-slate-950">Ciclo mensual de nómina</h2>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <Step
@@ -432,7 +432,7 @@ function Dashboard() {
             <Step
               done={safeCount(nominas) > 0}
               icon={DollarSign}
-              title="3. Calculo de roles"
+              title="3. Cálculo de roles"
               description="Genera ingresos, descuentos, IESS, impuesto a la renta y neto a pagar."
               href="/dashboard/nomina/cerrar"
               action={safeCount(nominas) > 0 ? 'Recalcular o revisar' : 'Calcular periodo'}
@@ -440,8 +440,8 @@ function Dashboard() {
             <Step
               done={safeCount(nominas) > 0 && rolesClosed === safeCount(nominas)}
               icon={LockKeyhole}
-              title="4. Cierre y emision"
-              description="Cierra la nomina, descarga roles y prepara pagos bancarios o reportes para entidades."
+              title="4. Cierre y emisión"
+              description="Cierra la nómina, descarga roles y prepara pagos bancarios o reportes para entidades."
               href="/dashboard/nomina/roles"
               action={rolesClosed ? 'Ver roles cerrados' : 'Preparar cierre'}
             />
@@ -452,11 +452,11 @@ function Dashboard() {
           <div className="soft-panel p-6">
             <div className="mb-4 flex items-center gap-3">
               <Settings2 className="h-5 w-5 text-teal-700" />
-              <h2 className="text-lg font-semibold text-slate-950">Configuracion laboral</h2>
+              <h2 className="text-lg font-semibold text-slate-950">Configuración laboral</h2>
             </div>
             <div className="rounded-md bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-medium text-slate-700">Configuracion lista</span>
+                <span className="text-sm font-medium text-slate-700">Configuración lista</span>
                 <span className="font-semibold text-teal-800">{isLoading ? '...' : `${completion}%`}</span>
               </div>
               <div className="mt-3 h-2 rounded-full bg-white">
@@ -467,7 +467,7 @@ function Dashboard() {
               {isLoading ? (
                 <p className="text-sm text-slate-500">Cargando validaciones...</p>
               ) : missingQa.length === 0 ? (
-                <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">Configuracion minima lista para operar.</p>
+                <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">Configuración mínima lista para operar.</p>
               ) : (
                 missingQa.slice(0, 3).map((item) => (
                   <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" key={item.code}>
@@ -478,14 +478,14 @@ function Dashboard() {
             </div>
             <Link className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:border-teal-300" to="/dashboard/configuracion/parametrizacion">
               <Settings2 className="h-4 w-4" />
-              Revisar configuracion
+              Revisar configuración
             </Link>
           </div>
 
           <div className="soft-panel p-6">
             <div className="mb-4 flex items-center gap-3">
               <Landmark className="h-5 w-5 text-teal-700" />
-              <h2 className="text-lg font-semibold text-slate-950">Salidas de nomina</h2>
+              <h2 className="text-lg font-semibold text-slate-950">Salidas de nómina</h2>
             </div>
             <div className="grid gap-2">
               <Link className="rounded-md bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-teal-50 hover:text-teal-800" to="/dashboard/nomina/roles">
@@ -517,7 +517,7 @@ function Dashboard() {
             <div className="flex gap-3">
               <AlertCircle className="h-5 w-5 shrink-0 text-amber-700" />
               <p className="text-sm leading-6 text-amber-900">
-                Revisa los parametros laborales y las novedades pendientes antes de cerrar el periodo.
+                Revisa los parámetros laborales y las novedades pendientes antes de cerrar el periodo.
                 {bankFilesAllowed ? ' Tu plan permite archivos bancarios.' : ' El plan actual no permite archivos bancarios.'}
               </p>
             </div>

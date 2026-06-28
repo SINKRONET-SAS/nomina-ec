@@ -7,8 +7,8 @@
 |-------|-------|
 | Plan | HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V6 |
 | Codigo | CDANV6 |
-| Estado | CDANV6-00 documental creado; runtime pendiente de aprobacion por fase |
-| Fase actual | CDANV6-00 baseline documental |
+| Estado | CDANV6-01..09 ejecutadas localmente; QA verde |
+| Fase actual | CDANV6-09 cierre QA release |
 | Fuente auditoria | `C:\Users\proam\Downloads\files (5)\informe_auditoria_nomina_ec.md` |
 | Fixes fuente | `C:\Users\proam\Downloads\files (5)\fix_1_*.js` a `fix_9_*.sh` |
 | Plan doc | `docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026_V6.md` |
@@ -21,6 +21,28 @@
 ### Alcance CDANV6
 
 CDANV6 responde a la auditoria integral Nomina-Ec con 9 hallazgos verificados: catalogo de mensajes friendly, reconciliacion XSD RDEP, ortografia UI, logs de produccion, split de Parametrizacion, iconos PWA maskable, aviso LOPDP GPS mobile, calculo de sueldo pendiente en dia 31 y politica de exposicion de `docs2/`/`AuditLock.json`.
+
+### Runtime CDANV6
+
+- Mensajes friendly: `backend/src/config/user-message-catalog.json` queda sin mensajes friendly vacios y con accion siguiente.
+- RDEP: `precheckRDEP()` valida hash XSD y manifiesto SRI `checked_2026_06_28`; la PWA muestra la reconciliacion antes de generar XML.
+- UI: copy visible corregido en dashboard, reportes, operacion, planes, PWA config y README.
+- Logs: `console.log` no operativo removido de `backend/src`, `frontend-web/src` y `app-movil/src`; puntos tocados usan logger estructurado.
+- Parametrizacion: helpers/componentes extraidos a `frontend-web/src/pages/Configuracion/parametrizacion/`.
+- PWA: PNG maskable 192/512 agregados y manifest generado con `purpose: maskable`.
+- Mobile/legal: aviso LOPDP previo a GPS y sueldo pendiente con tope de 30 dias para salida dia 31.
+- HAL-9: `docs2/` y `.vscode/AuditLock.json` se mantienen por trazabilidad; se ignoran anexos locales/privados.
+
+### Validacion CDANV6
+
+- `npm.cmd --workspace=backend run rdep:verify-source`: PASS.
+- `npm.cmd run contracts`: PASS.
+- `npm.cmd run prisma:validate`: PASS.
+- `npm.cmd --workspace=backend test -- --runInBand`: PASS, 49 suites, 204 tests.
+- `npm.cmd --workspace=frontend-web run build`: PASS.
+- `npm.cmd run check:mobile`: PASS.
+- UTF-8 sin BOM: PASS, 29 archivos revisados.
+- `git diff --check`: PASS con avisos CRLF esperados en Windows.
 
 ### Reglas CDANV6
 
@@ -39,15 +61,15 @@ CDANV6 responde a la auditoria integral Nomina-Ec con 9 hallazgos verificados: c
 | Fase | Prioridad | Estado | Resumen |
 |------|-----------|--------|---------|
 | CDANV6-00 | P0 | completed_documental | Plan, matriz, contrato, runbook, prompts, contexto y AuditLock sin runtime. |
-| CDANV6-01 | P0 | pending_approval | Diagnostico runtime de los 9 hallazgos. |
-| CDANV6-02 | P0 | pending_approval | Catalogo de mensajes friendly y consumidores. |
-| CDANV6-03 | P0 | pending_approval | XSD RDEP, manifest SHA-256 y gate productivo. |
-| CDANV6-04 | P1 | pending_approval | Ortografia UI y lenguaje comercial visible. |
-| CDANV6-05 | P1 | pending_approval | Limpieza de logs y logger estructurado. |
-| CDANV6-06 | P2 | pending_approval | Split controlado de Parametrizacion. |
-| CDANV6-07 | P1 | pending_approval | Iconos PWA maskable PNG 192/512. |
-| CDANV6-08 | P0 | pending_approval | Aviso LOPDP GPS y sueldo pendiente dia 31. |
-| CDANV6-09 | P0 | pending_approval | Gobierno repo publico, QA final, commit y push. |
+| CDANV6-01 | P0 | completed_local | Diagnostico runtime de los 9 hallazgos. |
+| CDANV6-02 | P0 | completed_local | Catalogo de mensajes friendly y consumidores. |
+| CDANV6-03 | P0 | completed_local | XSD RDEP, manifest SHA-256 y gate productivo. |
+| CDANV6-04 | P1 | completed_local | Ortografia UI y lenguaje comercial visible. |
+| CDANV6-05 | P1 | completed_local | Limpieza de logs y logger estructurado. |
+| CDANV6-06 | P2 | completed_local | Split controlado de Parametrizacion. |
+| CDANV6-07 | P1 | completed_local | Iconos PWA maskable PNG 192/512. |
+| CDANV6-08 | P0 | completed_local | Aviso LOPDP GPS y sueldo pendiente dia 31. |
+| CDANV6-09 | P0 | completed_local | Gobierno repo publico, QA final, commit y push. |
 
 ---
 

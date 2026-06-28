@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 const AppError = require('../utils/AppError');
 const { recordCommunicationEvent } = require('./communicationAuditService');
+const logger = require('../utils/logger');
 
 const EMAIL_FROM_NAME = process.env.SMTP_FROM_NAME || 'SKNOMINA';
 const DEFAULT_WHATSAPP_LANGUAGE = process.env.WHATSAPP_TEMPLATE_LANGUAGE || 'es';
@@ -237,7 +238,7 @@ function getTransporter() {
 }
 
 function devDelivery(channel, template, payload = {}) {
-  console.log('[COMUNICACIONES] Entrega registrada en modo desarrollo', {
+  logger.info({
     code: 'COMMUNICATION_DEV_DELIVERY',
     statusCode: 200,
     correlationId: payload.correlationId || null,
@@ -245,7 +246,7 @@ function devDelivery(channel, template, payload = {}) {
     channel,
     template,
     to: payload.to ? redact(payload.to) : null,
-  });
+  }, 'Entrega registrada en modo desarrollo');
 
   return {
     channel,

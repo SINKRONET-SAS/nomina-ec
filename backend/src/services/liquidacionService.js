@@ -30,7 +30,8 @@ async function calcularLiquidacion(empleadoId, tenantId, causaTerminacion, optio
   const diasServicio = Math.max(0, Math.floor((fechaSalida - fechaIngreso) / 86400000) + 1);
   const aniosServicio = diasServicio / 365.25;
   const sueldoDiario = sueldo / 30;
-  const sueldoPendiente = roundMoney(sueldoDiario * fechaSalida.getDate());
+  const diasPendientesMes = calcularDiasPendientesMes(fechaSalida);
+  const sueldoPendiente = roundMoney(sueldoDiario * diasPendientesMes);
   const diasDecimoTercero = calcularDiasDecimoTercero(fechaIngreso, fechaSalida);
   const diasDecimoCuarto = Math.min(diasServicio % 365, 365);
   const decimoTercero = roundMoney(sueldo * (diasDecimoTercero / 360));
@@ -61,6 +62,7 @@ async function calcularLiquidacion(empleadoId, tenantId, causaTerminacion, optio
     total: toMoneyString(total),
     detalle: {
       diasServicio,
+      diasPendientesMes,
       diasDecimoTercero,
       diasDecimoCuarto,
       fechaSalida: fechaSalida.toISOString().slice(0, 10),
@@ -104,6 +106,11 @@ function calcularDiasVacacionesPendientes(fechaIngreso, fechaSalida, payrollPara
     additionalDays,
     totalDays: baseDays + additionalDays,
   };
+}
+
+function calcularDiasPendientesMes(fechaSalida) {
+  const day = new Date(fechaSalida).getDate();
+  return Math.max(0, Math.min(day, 30));
 }
 
 function calcularDiasDecimoTercero(fechaIngreso, fechaSalida) {
@@ -165,6 +172,7 @@ async function verificarDevolucionEquipos(empleadoId, tenantId) {
 
 module.exports = {
   calcularLiquidacion,
+  calcularDiasPendientesMes,
   verificarDevolucionEquipos,
   calcularDiasDecimoTercero,
   calcularDiasVacacionesPendientes,

@@ -2,7 +2,7 @@
 
 Codigo: `CDANV6`
 Fecha: 2026-06-28
-Estado: `CDANV6-00 documental creado; runtime pendiente de aprobacion por fase`
+Estado: `CDANV6-01..09 ejecutadas localmente; QA verde; commit y push en curso`
 
 ## Fuentes
 
@@ -52,15 +52,15 @@ Cerrar definitivamente los 9 hallazgos de la auditoria integral Nomina-Ec V6 sin
 | Fase | Prioridad | Estado | Objetivo |
 |------|-----------|--------|----------|
 | CDANV6-00 | P0 | completed_documental | Crear plan, matriz, contrato, runbook, prompts, contexto y AuditLock sin runtime. |
-| CDANV6-01 | P0 | pending_approval | Baseline runtime y contraste de los 9 hallazgos contra repo actual. |
-| CDANV6-02 | P0 | pending_approval | Humanizar catalogo de mensajes y verificar consumidores web/mobile/backend. |
-| CDANV6-03 | P0 | pending_approval | Reconciliar RDEP XSD, catalogos, manifiesto SHA-256 y gate productivo. |
-| CDANV6-04 | P1 | pending_approval | Corregir ortografia UI y limpiar mensajes tecnicos visibles. |
-| CDANV6-05 | P1 | pending_approval | Limpiar `console.log` no operativo y adoptar logger estructurado donde aplique. |
-| CDANV6-06 | P2 | pending_approval | Dividir `Parametrizacion.jsx` en componentes/helpers con build verde. |
-| CDANV6-07 | P1 | pending_approval | Agregar iconos maskable PNG y validar manifest PWA. |
-| CDANV6-08 | P0 | pending_approval | Agregar aviso LOPDP GPS movil y corregir sueldo diario dia 31. |
-| CDANV6-09 | P0 | pending_approval | Resolver politica docs2/AuditLock, QA final, reporte, commit y push. |
+| CDANV6-01 | P0 | completed_local | Baseline runtime y contraste de los 9 hallazgos contra repo actual. |
+| CDANV6-02 | P0 | completed_local | Humanizar catalogo de mensajes y verificar consumidores web/mobile/backend. |
+| CDANV6-03 | P0 | completed_local | Reconciliar RDEP XSD, catalogos, manifiesto SHA-256 y gate productivo. |
+| CDANV6-04 | P1 | completed_local | Corregir ortografia UI y limpiar mensajes tecnicos visibles. |
+| CDANV6-05 | P1 | completed_local | Limpiar `console.log` no operativo y adoptar logger estructurado donde aplique. |
+| CDANV6-06 | P2 | completed_local | Dividir `Parametrizacion.jsx` en componentes/helpers con build verde. |
+| CDANV6-07 | P1 | completed_local | Agregar iconos maskable PNG y validar manifest PWA. |
+| CDANV6-08 | P0 | completed_local | Agregar aviso LOPDP GPS movil y corregir sueldo diario dia 31. |
+| CDANV6-09 | P0 | completed_local | Resolver politica docs2/AuditLock, QA final, reporte, commit y push. |
 
 ## Gates esperados por cierre runtime
 
@@ -80,6 +80,7 @@ Cerrar definitivamente los 9 hallazgos de la auditoria integral Nomina-Ec V6 sin
 - Contrato: `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/CONTRATO_CDANV6_CIERRE_DEFINITIVO.md`
 - Runbook: `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/RUNBOOK_CDANV6_QA_RELEASE.md`
 - Baseline: `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_00_BASELINE.md`
+- Reportes runtime: `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_01_DIAGNOSTICO_RUNTIME.md` .. `REPORTE_CDANV6_09_QA_RELEASE.md`
 - Prompts: `.github/prompts/CDANV6-{00..09}-*.md`
 
 ## Riesgos residuales controlados

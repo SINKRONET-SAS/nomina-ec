@@ -3,6 +3,7 @@
 // ============================================================
 const { Pool } = require('pg');
 const { AsyncLocalStorage } = require('async_hooks');
+const logger = require('../utils/logger');
 require('dotenv').config();
 
 const poolConfig = process.env.DATABASE_URL
@@ -29,7 +30,7 @@ const tenantContextStorage = new AsyncLocalStorage();
 
 pool.on('connect', () => {
   if (process.env.NODE_ENV === 'development') {
-    console.log('[DB] Nueva conexion establecida');
+    logger.info({ code: 'DB_CONNECTION_OPENED', correlationId: 'db-pool' }, 'Nueva conexion PostgreSQL establecida');
   }
 });
 
@@ -50,11 +51,12 @@ async function runQueryOnPool(text, params) {
   const duration = Date.now() - start;
 
   if (process.env.NODE_ENV === 'development') {
-    console.log('[DB] Query ejecutada', {
+    logger.info({
+      code: 'DB_QUERY_EXECUTED',
       text: text.substring(0, 100),
       duration: `${duration}ms`,
       rows: result.rowCount,
-    });
+    }, 'Query ejecutada');
   }
 
   return result;
@@ -77,12 +79,13 @@ async function runQueryWithTenantContext(context, text, params) {
 
     const duration = Date.now() - start;
     if (process.env.NODE_ENV === 'development') {
-      console.log('[DB] Query ejecutada con contexto tenant', {
+      logger.info({
+        code: 'DB_TENANT_QUERY_EXECUTED',
         text: text.substring(0, 100),
         duration: `${duration}ms`,
         rows: result.rowCount,
         tenantId: context.tenantId,
-      });
+      }, 'Query ejecutada con contexto tenant');
     }
 
     return result;

@@ -9,6 +9,7 @@ const {
   assertLegalParametersReadyForProduction,
   getLegalParametersForTenant,
 } = require('./legalParameterService');
+const logger = require('../utils/logger');
 
 /**
  * Genera el XML del SAE para declaración al IESS
@@ -94,7 +95,14 @@ async function generarXML_SAE(tenantId, anio, mes) {
   const key = `reportes/${tenantId}/iess/SAE_${anio}${String(mes).padStart(2, '0')}.xml`;
   const url = await s3Upload(Buffer.from(xmlString, 'utf8'), key, 'application/xml');
   
-  console.log(`[SAE] XML generado para ${tenantId} - ${mes}/${anio}: ${nominasResult.rows.length} empleados`);
+  logger.info({
+    code: 'SAE_XML_GENERATED',
+    correlationId: process.env.CORRELATION_ID || 'sae-generator',
+    tenantId,
+    anio,
+    mes,
+    totalEmpleados: nominasResult.rows.length,
+  }, 'XML SAE generado');
   
   return { url, totalEmpleados: nominasResult.rows.length, xmlString };
 }

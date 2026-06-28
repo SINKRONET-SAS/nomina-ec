@@ -171,10 +171,10 @@ function PlanesGestion() {
   return (
     <div className="space-y-6">
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-slate-950">Gestion de planes</h1>
+        <h1 className="text-2xl font-semibold text-slate-950">Gestión de planes</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-          Administra el catalogo comercial con validacion previa. Las capacidades guardadas aqui alimentan el
-          enforcement backend de SKNOMINA: archivos bancarios, reportes avanzados y limites operativos.
+          Administra el catálogo comercial con validación previa. Las capacidades guardadas aquí alimentan el
+          control backend de SKNOMINA: archivos bancarios, reportes avanzados y límites operativos.
         </p>
       </section>
 
@@ -325,7 +325,7 @@ function PlanesGestion() {
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-sm font-semibold uppercase text-slate-500">Incidencias abiertas</p>
               <p className="mt-2 text-3xl font-semibold text-slate-950">{(overviewQuery.data?.incidents || []).filter((item) => item.status !== 'cerrada').length}</p>
-              <p className="mt-1 text-sm text-slate-600">Seguimiento operativo sin modificar la nomina de la empresa.</p>
+              <p className="mt-1 text-sm text-slate-600">Seguimiento operativo sin modificar la nómina de la empresa.</p>
             </div>
           </div>
 

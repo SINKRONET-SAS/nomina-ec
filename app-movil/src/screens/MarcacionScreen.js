@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as Location from 'expo-location';
 import { mobileAPI } from '../services/api';
 
@@ -27,6 +27,7 @@ export default function MarcacionScreen({ onLogout }) {
   const [ultimaMarcacion, setUltimaMarcacion] = useState(null);
   const [status, setStatus] = useState({ type: 'info', text: 'Preparando asistencia móvil.' });
   const [permissionStatus, setPermissionStatus] = useState('checking');
+  const [gpsNoticeAccepted, setGpsNoticeAccepted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -48,12 +49,46 @@ export default function MarcacionScreen({ onLogout }) {
     return styles.statusInfo;
   }, [status.type]);
 
+  const confirmarAvisoGps = async () => {
+    if (gpsNoticeAccepted) return true;
+
+    return new Promise((resolve) => {
+      Alert.alert(
+        'Uso de ubicacion para asistencia',
+        'SKNOMINA usara tu ubicacion GPS solo para registrar la hora y el lugar de tu marcacion laboral. Tu empleador trata estos datos para control de asistencia, conforme a la LOPDP y la relacion laboral. Puedes cancelar; en ese caso la marcacion movil no se registrara.',
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+            onPress: () => resolve(false),
+          },
+          {
+            text: 'Continuar',
+            onPress: () => {
+              setGpsNoticeAccepted(true);
+              resolve(true);
+            },
+          },
+        ],
+        { cancelable: false }
+      );
+    });
+  };
+
   const verificarPermisoUbicacion = async () => {
     setPermissionStatus('checking');
     const current = await Location.getForegroundPermissionsAsync();
     if (current.status === 'granted') {
       setPermissionStatus('granted');
       return true;
+    }
+
+    const noticeAccepted = await confirmarAvisoGps();
+    if (!noticeAccepted) {
+      setPermissionStatus('denied');
+      setUbicacion(null);
+      setStatus({ type: 'error', text: 'No se solicito GPS porque cancelaste el aviso de privacidad. Solicita a RRHH registrar una novedad manual si corresponde.' });
+      return false;
     }
 
     const requested = await Location.requestForegroundPermissionsAsync();

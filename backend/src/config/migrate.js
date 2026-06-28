@@ -3,6 +3,7 @@
 // ============================================================
 const { spawn } = require('child_process');
 const path = require('path');
+const logger = require('../utils/logger');
 
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
@@ -10,12 +11,12 @@ function runMigration() {
   const databaseUrl = process.env.DATABASE_URL;
 
   if (!databaseUrl) {
-    console.error('[DB] DATABASE_URL no configurada para ejecutar migraciones', {
+    logger.error({
       code: 'DATABASE_URL_REQUIRED',
       statusCode: 500,
       correlationId: process.env.CORRELATION_ID || 'db-migrate',
       userId: process.env.USER_ID || null,
-    });
+    }, 'DATABASE_URL no configurada para ejecutar migraciones');
     process.exit(1);
   }
 
@@ -32,40 +33,43 @@ function runMigration() {
       stdio: 'inherit',
     });
   } catch (err) {
-    console.error('[DB] Error creando proceso de migraciones Prisma', {
+    logger.error({
       code: err.code || 'PRISMA_MIGRATE_SPAWN_ERROR',
       statusCode: 500,
       correlationId: process.env.CORRELATION_ID || 'db-migrate',
       userId: process.env.USER_ID || null,
-      message: err.message,
-    });
+    }, err.message || 'Error creando proceso de migraciones Prisma');
     process.exit(1);
   }
 
   child.on('error', (err) => {
-    console.error('[DB] Error iniciando migraciones Prisma', {
+    logger.error({
       code: err.code || 'PRISMA_MIGRATE_START_ERROR',
       statusCode: 500,
       correlationId: process.env.CORRELATION_ID || 'db-migrate',
       userId: process.env.USER_ID || null,
-      message: err.message,
-    });
+    }, err.message || 'Error iniciando migraciones Prisma');
     process.exit(1);
   });
 
   child.on('exit', (code) => {
     if (code !== 0) {
-      console.error('[DB] Migraciones Prisma finalizaron con error', {
+      logger.error({
         code: 'PRISMA_MIGRATE_FAILED',
         statusCode: 500,
         correlationId: process.env.CORRELATION_ID || 'db-migrate',
         userId: process.env.USER_ID || null,
         exitCode: code,
-      });
+      }, 'Migraciones Prisma finalizaron con error');
       process.exit(code || 1);
     }
 
-    console.log('[DB] Migraciones Prisma aplicadas correctamente');
+    logger.info({
+      code: 'PRISMA_MIGRATE_APPLIED',
+      statusCode: 200,
+      correlationId: process.env.CORRELATION_ID || 'db-migrate',
+      userId: process.env.USER_ID || null,
+    }, 'Migraciones Prisma aplicadas correctamente');
   });
 }
 

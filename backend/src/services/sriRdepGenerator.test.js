@@ -59,6 +59,9 @@ describe('sriRdepGenerator', () => {
     expect(result.xsd.sha256).toHaveLength(64);
     expect(result.xsd.rootName).toBe('rdep');
     expect(result.xsd.validationMode).toBe('xsd_schema_validation');
+    expect(result.xsd.officialSourceReconciliation).toBe('checked_2026_06_28');
+    expect(result.xsd.hashMatchesManifest).toBe(true);
+    expect(result.checks.find((check) => check.code === 'official_source_reconciled').passed).toBe(true);
     expect(result.checks.every((check) => check.passed)).toBe(true);
   });
 

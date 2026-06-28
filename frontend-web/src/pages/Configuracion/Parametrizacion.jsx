@@ -22,6 +22,10 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import Field from './parametrizacion/Field';
+import IncomeTaxTableFields from './parametrizacion/IncomeTaxTableFields';
+import { IncomeTaxTablePreview, LegalParametersPreview } from './parametrizacion/LegalParametersPreview';
+import { normalizeIncomeTaxBrackets } from './parametrizacion/legalParameterDisplay';
 import {
   completeOnboardingStep,
   createConfigurationResource,
@@ -222,7 +226,7 @@ const formDefinitions = [
   {
     key: 'legal',
     title: 'Valores legales',
-    description: 'Registra SBU, tasas IESS, tabla IR u otro valor legal aplicable para calculos. No contiene cuentas contables.',
+    description: 'Registra SBU, tasas IESS, tabla IR u otro valor legal aplicable para cálculos. No contiene cuentas contables.',
     icon: Scale,
     resource: 'legalParameters',
     stepCode: 'legal',
@@ -305,7 +309,7 @@ const formDefinitions = [
   {
     key: 'novedad',
     title: 'Tipo de novedad',
-    description: 'Define permisos, descuentos, horas extras, faltas u otros eventos de nomina.',
+    description: 'Define permisos, descuentos, horas extras, faltas u otros eventos de nómina.',
     icon: ShieldCheck,
     resource: 'noveltyTypes',
     stepCode: 'novedades',
@@ -314,7 +318,7 @@ const formDefinitions = [
       { name: 'name', label: 'Nombre', placeholder: 'Hora extra 50%', required: true },
       { name: 'category', label: 'Categoria', type: 'select', options: ['ingreso', 'descuento', 'permiso', 'ausencia', 'ajuste'] },
       { name: 'payroll_impact', label: 'Impacto', type: 'select', options: ['ingreso', 'descuento', 'informativo'] },
-      { name: 'calculation_mode', label: 'Forma de calculo', type: 'select', options: [
+      { name: 'calculation_mode', label: 'Forma de cálculo', type: 'select', options: [
         { value: 'amount', label: 'Monto directo' },
         { value: 'minutes_hourly', label: 'Minutos x valor hora' },
         { value: 'minutes_hourly_1_5', label: 'Minutos x hora 50%' },
@@ -324,7 +328,7 @@ const formDefinitions = [
       ] },
       { name: 'affects_iess', label: 'Afecta IESS', type: 'checkbox' },
       { name: 'affects_income_tax', label: 'Afecta IR', type: 'checkbox' },
-      { name: 'affects_decimos', label: 'Afecta decimos', type: 'checkbox' },
+      { name: 'affects_decimos', label: 'Afecta décimos', type: 'checkbox' },
       { name: 'affects_vacation', label: 'Afecta vacaciones', type: 'checkbox' },
       { name: 'affects_bank_file', label: 'Afecta pago bancario', type: 'checkbox' },
       { name: 'requires_evidence', label: 'Requiere respaldo', type: 'checkbox' },
@@ -548,8 +552,8 @@ const formDefinitions = [
   },
   {
     key: 'contabilidad',
-    title: 'Cuentas contables de nomina',
-    description: 'Define debe/haber por concepto calculado de nomina. Consume los conceptos operativos y no duplica los valores legales.',
+    title: 'Cuentas contables de nómina',
+    description: 'Define debe/haber por concepto calculado de nómina. Consume los conceptos operativos y no duplica los valores legales.',
     icon: Landmark,
     resource: 'payrollAccountingMappings',
     stepCode: 'contabilidad',
@@ -603,12 +607,12 @@ const formDefinitions = [
     saveLabel: 'Guardar cuenta contable',
     updateLabel: 'Actualizar cuenta contable',
     recordsTitle: 'Cuentas contables vigentes',
-    emptyText: 'Aun no hay cuentas contables de nomina. Carga defaults editables para todos los conceptos calculados.',
+    emptyText: 'Aun no hay cuentas contables de nómina. Carga defaults editables para todos los conceptos calculados.',
   },
   {
     key: 'banco',
     title: 'Banco y archivo plano',
-    description: 'Selecciona una plantilla bancaria real para generar archivos de pago de nomina.',
+    description: 'Selecciona una plantilla bancaria real para generar archivos de pago de nómina.',
     icon: CreditCard,
     resource: 'bankProfiles',
     stepCode: 'bancos',
@@ -669,7 +673,7 @@ const formDefinitions = [
   {
     key: 'usuarios',
     title: 'Usuarios y roles',
-    description: 'Define la matriz minima de usuarios y permisos para operar nomina con trazabilidad.',
+    description: 'Define la matriz mínima de usuarios y permisos para operar nómina con trazabilidad.',
     icon: UserCog,
     resource: 'catalogs',
     stepCode: 'usuarios',
@@ -1177,134 +1181,6 @@ function formValuesFromRecord(definition, record) {
   }
 }
 
-function Field({ field, value, onChange, options = [] }) {
-  const baseClass = 'form-control';
-  const fieldClass = field.wide ? 'form-field-full' : 'form-field-third';
-
-  if (field.type === 'textarea') {
-    return (
-      <label className={fieldClass}>
-        <span className="text-sm font-medium text-slate-700">{field.label}</span>
-        <textarea
-          className="form-textarea"
-          value={value}
-          onChange={(event) => onChange(field.name, event.target.value)}
-          placeholder={field.placeholder}
-        />
-      </label>
-    );
-  }
-
-  if (field.type === 'select') {
-    return (
-      <label className={fieldClass}>
-        <span className="text-sm font-medium text-slate-700">{field.label}</span>
-        <select className={baseClass} value={value} onChange={(event) => onChange(field.name, event.target.value)}>
-          {field.options.map((option) => (
-            <option key={option.value || option} value={option.value || option}>{option.label || option}</option>
-          ))}
-        </select>
-      </label>
-    );
-  }
-
-  if (field.type === 'payrollConceptSelect') {
-    return (
-      <label className={fieldClass}>
-        <span className="text-sm font-medium text-slate-700">{field.label}</span>
-        <select
-          className={baseClass}
-          value={value}
-          onChange={(event) => onChange(field.name, event.target.value)}
-          required={field.required}
-          disabled={options.length === 0}
-        >
-          <option value="">{options.length === 0 ? 'Sin conceptos disponibles' : 'Selecciona un concepto'}</option>
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>{option.label}</option>
-          ))}
-        </select>
-      </label>
-    );
-  }
-
-  if (field.type === 'resourceSelect') {
-    return (
-      <label className={fieldClass}>
-        <span className="text-sm font-medium text-slate-700">{field.label}</span>
-        <select
-          className={baseClass}
-          value={value}
-          onChange={(event) => onChange(field.name, event.target.value)}
-          required={field.required}
-          disabled={options.length === 0}
-        >
-          <option value="">{options.length === 0 ? field.emptyLabel || 'Primero crea un registro' : field.selectLabel || 'Selecciona una opcion'}</option>
-          {options.map((option) => (
-            <option key={option.id} value={option.id}>{option.name} ({option.code})</option>
-          ))}
-        </select>
-      </label>
-    );
-  }
-
-  if (field.type === 'multiCheckbox') {
-    const selected = Array.isArray(value) ? value : [];
-    return (
-      <fieldset className={field.wide ? 'form-field-full' : 'form-field-third'}>
-        <legend className="text-sm font-medium text-slate-700">{field.label}</legend>
-        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          {field.options.map((option) => (
-            <label className="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700" key={option.value}>
-              <input
-                className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-700"
-                type="checkbox"
-                checked={selected.includes(option.value)}
-                onChange={(event) => {
-                  const next = event.target.checked
-                    ? [...selected, option.value]
-                    : selected.filter((item) => item !== option.value);
-                  onChange(field.name, next);
-                }}
-              />
-              <span>{option.label}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
-    );
-  }
-
-  if (field.type === 'checkbox') {
-    return (
-      <label className="form-field-third flex h-10 items-center gap-3 self-end rounded-md border border-slate-200 px-3 text-sm">
-        <input
-          className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-700"
-          type="checkbox"
-          checked={Boolean(value)}
-          onChange={(event) => onChange(field.name, event.target.checked)}
-        />
-        <span className="text-sm font-medium text-slate-700">{field.label}</span>
-      </label>
-    );
-  }
-
-  return (
-    <label className={fieldClass}>
-      <span className="text-sm font-medium text-slate-700">{field.label}</span>
-      <input
-        className={baseClass}
-        type={field.type || 'text'}
-        step={field.step}
-        value={value}
-        onChange={(event) => onChange(field.name, event.target.value)}
-        placeholder={field.placeholder}
-        required={field.required}
-      />
-    </label>
-  );
-}
-
 function BankFlatFileGuide({ values, mappings = [] }) {
   const template = BANK_TEMPLATE_PREVIEWS[values.template] || BANK_TEMPLATE_PREVIEWS.generico;
   const visibleColumns = mappings.length > 0
@@ -1323,7 +1199,7 @@ function BankFlatFileGuide({ values, mappings = [] }) {
           <p className="text-sm font-semibold text-teal-950">Archivo plano que se generara</p>
           <h4 className="mt-1 text-base font-semibold text-slate-950">{template.title}</h4>
           <p className="mt-1 text-sm leading-6 text-slate-700">
-            Fuente: {template.source}. El sistema toma nominas cerradas/pagadas, descifra la cuenta solo en memoria y arma estas columnas.
+            Fuente: {template.source}. El sistema toma nóminas cerradas/pagadas, descifra la cuenta solo en memoria y arma estas columnas.
           </p>
         </div>
         <div className="rounded-md bg-white px-3 py-2 text-xs text-slate-600">
@@ -1589,332 +1465,6 @@ function BankMappingGroups({ records }) {
           </div>
         );
       })}
-    </div>
-  );
-}
-
-function IncomeTaxTableFields({ values, onFieldChange, onBracketChange, onAddBracket, onRemoveBracket }) {
-  const inputClass = 'form-control';
-
-  return (
-    <div className="space-y-5">
-      <div className="form-grid">
-        <label className="form-field-third">
-          <span className="text-sm font-medium text-slate-700">Anio fiscal</span>
-          <input
-            className={inputClass}
-            type="number"
-            value={values.period_year}
-            onChange={(event) => onFieldChange('period_year', event.target.value)}
-            required
-          />
-        </label>
-        <label className="form-field-third">
-          <span className="text-sm font-medium text-slate-700">Fuente oficial</span>
-          <input
-            className={inputClass}
-            value={values.source_name}
-            onChange={(event) => onFieldChange('source_name', event.target.value)}
-            placeholder="SRI"
-          />
-        </label>
-        <label className="form-field-third">
-          <span className="text-sm font-medium text-slate-700">URL de respaldo</span>
-          <input
-            className={inputClass}
-            type="url"
-            value={values.source_url}
-            onChange={(event) => onFieldChange('source_url', event.target.value)}
-            placeholder="https://www.sri.gob.ec/..."
-          />
-        </label>
-        <label className="form-field-third">
-          <span className="text-sm font-medium text-slate-700">Fecha de fuente</span>
-          <input
-            className={inputClass}
-            type="date"
-            value={values.source_date}
-            onChange={(event) => onFieldChange('source_date', event.target.value)}
-          />
-        </label>
-      </div>
-
-      <div className="overflow-x-auto rounded-md border border-slate-200">
-        <table className="min-w-[760px] w-full text-left text-sm">
-          <thead className="bg-slate-50 text-slate-600">
-            <tr>
-              <th className="px-3 py-2 font-semibold">Fraccion basica</th>
-              <th className="px-3 py-2 font-semibold">Exceso hasta</th>
-              <th className="px-3 py-2 font-semibold">Impuesto fraccion basica</th>
-              <th className="px-3 py-2 font-semibold">Porcentaje decimal</th>
-              <th className="w-14 px-3 py-2" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {values.brackets.map((bracket, index) => (
-              <tr key={`ir-${index}`}>
-                <td className="px-3 py-2">
-                  <input
-                    className={inputClass}
-                    type="number"
-                    step="0.01"
-                    value={bracket.from}
-                    onChange={(event) => onBracketChange(index, 'from', event.target.value)}
-                    required
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <input
-                    className={inputClass}
-                    type="number"
-                    step="0.01"
-                    value={bracket.to}
-                    onChange={(event) => onBracketChange(index, 'to', event.target.value)}
-                    placeholder="Sin limite"
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <input
-                    className={inputClass}
-                    type="number"
-                    step="0.01"
-                    value={bracket.baseTax}
-                    onChange={(event) => onBracketChange(index, 'baseTax', event.target.value)}
-                    required
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <input
-                    className={inputClass}
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="1"
-                    value={bracket.rate}
-                    onChange={(event) => onBracketChange(index, 'rate', event.target.value)}
-                    placeholder="0.05"
-                    required
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <button
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-700 disabled:opacity-40"
-                    type="button"
-                    disabled={values.brackets.length === 1}
-                    onClick={() => onRemoveBracket(index)}
-                    title="Eliminar intervalo"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <button
-        className="inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-teal-700 hover:border-teal-300"
-        type="button"
-        onClick={onAddBracket}
-      >
-        <Plus className="h-4 w-4" />
-        Agregar intervalo
-      </button>
-
-      <label className="block">
-        <span className="text-sm font-medium text-slate-700">Notas de revision</span>
-        <textarea
-          className="form-textarea"
-          value={values.notes}
-          onChange={(event) => onFieldChange('notes', event.target.value)}
-          placeholder="Resolucion, ejercicio fiscal, observaciones de validacion..."
-        />
-      </label>
-    </div>
-  );
-}
-
-function formatCurrency(value) {
-  if (value === null || typeof value === 'undefined' || value === '') return 'Sin limite';
-  return Number(value).toLocaleString('es-EC', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-function formatRate(value) {
-  const rate = Number(value || 0);
-  return `${(rate * 100).toLocaleString('es-EC', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  })}%`;
-}
-
-function normalizeIncomeTaxBrackets(record) {
-  return Array.isArray(record?.value?.brackets) ? record.value.brackets : [];
-}
-
-function legalParameterValue(record) {
-  const value = record?.value || {};
-
-  if (record?.parameter_key === 'income_tax_table') {
-    return `${normalizeIncomeTaxBrackets(record).length} tramos`;
-  }
-
-  if (typeof value.amount !== 'undefined') {
-    if (String(record.unit || '').includes('porcentaje')) {
-      return formatRate(value.amount);
-    }
-    return `${formatCurrency(value.amount)} ${record.unit || ''}`.trim();
-  }
-
-  if (typeof value.rate !== 'undefined' || typeof value.paymentMonth !== 'undefined' || typeof value.startsAfterMonths !== 'undefined') {
-    return [
-      typeof value.rate !== 'undefined' ? `tasa ${formatRate(value.rate)}` : '',
-      typeof value.amount !== 'undefined' ? `base ${formatCurrency(value.amount)}` : '',
-      typeof value.paymentMonth !== 'undefined' ? `mes pago ${value.paymentMonth}` : '',
-      typeof value.startsAfterMonths !== 'undefined' ? `desde mes ${value.startsAfterMonths + 1}` : '',
-      value.region || '',
-      value.calculationBase || '',
-    ].filter(Boolean).join(' - ');
-  }
-
-  return JSON.stringify(value);
-}
-
-function labelLegalParameter(key) {
-  const labels = {
-    sbu: 'Salario basico unificado',
-    iess_aporte_personal: 'IESS personal',
-    iess_aporte_patronal: 'IESS patronal',
-    jornada_horas_mensuales: 'Horas mensuales valor hora',
-    jornada_maxima_semanal: 'Jornada maxima semanal',
-    provision_vacaciones: 'Provision vacaciones',
-    vacaciones_dias_anuales: 'Vacaciones anuales',
-    decimo_tercero: 'Decimo tercero',
-    decimo_cuarto_costa_galapagos: 'Decimo cuarto Costa/Galapagos',
-    decimo_cuarto_sierra_amazonia: 'Decimo cuarto Sierra/Amazonia',
-    fondo_reserva: 'Fondo de reserva',
-    income_tax_table: 'Tabla impuesto a la renta',
-    tabla_impuesto_renta: 'Tabla impuesto a la renta',
-  };
-
-  return labels[key] || key;
-}
-
-function latestLegalParameters(records) {
-  const byKey = new Map();
-
-  [...records]
-    .sort((a, b) => {
-      if (Number(b.period_year) !== Number(a.period_year)) return Number(b.period_year) - Number(a.period_year);
-      return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
-    })
-    .forEach((record) => {
-      if (!byKey.has(record.parameter_key)) {
-        byKey.set(record.parameter_key, record);
-      }
-    });
-
-  return [...byKey.values()];
-}
-
-function LegalParametersPreview({ records }) {
-  const parameters = latestLegalParameters(records);
-
-  if (parameters.length === 0) {
-    return (
-      <div className="mt-4 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
-        Carga los parametros obligatorios para ver aqui la matriz legal completa usada por el motor.
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-4 overflow-hidden rounded-md border border-slate-200">
-      <div className="border-b border-slate-200 bg-slate-50 px-3 py-2">
-        <p className="text-sm font-semibold text-slate-900">Parametros legales visibles</p>
-        <p className="mt-1 text-xs text-slate-500">Ultima version por codigo, con estado y fuente.</p>
-      </div>
-      <div className="max-h-[520px] overflow-auto">
-        <table className="w-full min-w-[680px] text-left text-xs">
-          <thead className="sticky top-0 bg-white text-slate-500 shadow-sm">
-            <tr>
-              <th className="px-3 py-2 font-semibold">Parametro</th>
-              <th className="px-3 py-2 font-semibold">Anio</th>
-              <th className="px-3 py-2 font-semibold">Valor usado</th>
-              <th className="px-3 py-2 font-semibold">Estado</th>
-              <th className="px-3 py-2 font-semibold">Fuente</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {parameters.map((record) => (
-              <tr key={record.id}>
-                <td className="px-3 py-2 font-semibold text-slate-800">{labelLegalParameter(record.parameter_key)}</td>
-                <td className="px-3 py-2 font-mono">{record.period_year}</td>
-                <td className="px-3 py-2 font-mono">{legalParameterValue(record)}</td>
-                <td className="px-3 py-2">{record.validation_status}</td>
-                <td className="px-3 py-2">{record.source_name || '-'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function IncomeTaxTablePreview({ records }) {
-  const latest = [...records].sort((a, b) => {
-    if (Number(b.period_year) !== Number(a.period_year)) return Number(b.period_year) - Number(a.period_year);
-    return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
-  })[0];
-  const brackets = normalizeIncomeTaxBrackets(latest);
-
-  if (!latest || brackets.length === 0) {
-    return (
-      <div className="mt-4 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
-        Carga o registra la tabla IR para verla completa aqui.
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-4 overflow-hidden rounded-md border border-slate-200">
-      <div className="border-b border-slate-200 bg-slate-50 px-3 py-2">
-        <p className="text-sm font-semibold text-slate-900">Tabla IR visible {latest.period_year}</p>
-        <p className="mt-1 text-xs text-slate-500">
-          {latest.validation_status} - {latest.source_name || 'sin fuente registrada'}
-        </p>
-      </div>
-      <div className="max-h-[420px] overflow-auto">
-        <table className="w-full min-w-[560px] text-left text-xs">
-          <thead className="sticky top-0 bg-white text-slate-500 shadow-sm">
-            <tr>
-              <th className="px-3 py-2 font-semibold">Fraccion basica</th>
-              <th className="px-3 py-2 font-semibold">Exceso hasta</th>
-              <th className="px-3 py-2 font-semibold">Impuesto</th>
-              <th className="px-3 py-2 font-semibold">%</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {brackets.map((bracket, index) => (
-              <tr key={`${latest.id}-${index}`}>
-                <td className="px-3 py-2 font-mono">{formatCurrency(bracket.from ?? bracket.fraccion_basica)}</td>
-                <td className="px-3 py-2 font-mono">{formatCurrency(bracket.to ?? bracket.exceso_hasta)}</td>
-                <td className="px-3 py-2 font-mono">{formatCurrency(bracket.baseTax ?? bracket.impuesto_fraccion_basica)}</td>
-                <td className="px-3 py-2 font-mono">{formatRate(bracket.rate ?? bracket.porcentaje)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {latest.notes && (
-        <p className="border-t border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
-          {latest.notes}
-        </p>
-      )}
     </div>
   );
 }
@@ -2208,7 +1758,7 @@ function Parametrizacion() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Configuracion de la empresa</p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Parametriza la nomina con datos visibles</h1>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Parametriza la nómina con datos visibles</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
               Ingresa parametros laborales, novedades, estructura, zonas y jornadas. Cada unidad organizativa debe
               quedar vinculada a una zona de marcacion antes de usarse en asistencia productiva.
@@ -2238,7 +1788,7 @@ function Parametrizacion() {
             <h2 className="text-lg font-semibold text-teal-950">Carga de valores legales obligatorios</h2>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-teal-900">
               Carga SBU, aportes IESS, jornada, vacaciones y tabla de impuesto a la renta del anio seleccionado
-              como parametros revisables. Incluye decimos tercero/cuarto y fondo de reserva. No reemplaza la validacion
+              como parámetros revisables. Incluye décimos tercero/cuarto y fondo de reserva. No reemplaza la validación
               contra fuente oficial vigente.
             </p>
           </div>
@@ -2277,10 +1827,10 @@ function Parametrizacion() {
         <div className="mt-4 grid gap-3 lg:grid-cols-2">
           <div className="rounded-md border border-teal-100 bg-teal-50 px-4 py-3 text-sm leading-6 text-teal-950">
             <p className="font-semibold">Valores legales</p>
-            <p>SBU, IESS, impuesto a la renta, decimos, jornada y reglas que alimentan el calculo.</p>
+            <p>SBU, IESS, impuesto a la renta, décimos, jornada y reglas que alimentan el cálculo.</p>
           </div>
           <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
-            <p className="font-semibold text-slate-950">Cuentas contables de nomina</p>
+            <p className="font-semibold text-slate-950">Cuentas contables de nómina</p>
             <p>Debe/haber por cada concepto calculado, con vigencia y centro de costo del tenant.</p>
           </div>
         </div>

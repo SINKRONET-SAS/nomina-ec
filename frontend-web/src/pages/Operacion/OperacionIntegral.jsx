@@ -31,7 +31,7 @@ const API_SCOPE_OPTIONS = [
   { value: 'employees.read', label: 'Empleados' },
   { value: 'attendance.write', label: 'Asistencia' },
   { value: 'novelties.write', label: 'Novedades' },
-  { value: 'payroll.read', label: 'Nomina' },
+  { value: 'payroll.read', label: 'Nómina' },
 ];
 
 function scopeLabel(value) {
@@ -48,18 +48,18 @@ const MODULES = [
     action: 'Configurar empresa',
     ready: ({ counts }) => counts.empresa > 0,
     activeDescription: 'Registro operativo del empleador disponible para contratos, roles, RDEP y archivos oficiales.',
-    pendingDescription: 'Registra RUC, razon social, representante, direccion y correo administrativo en parametrizacion.',
+    pendingDescription: 'Registra RUC, razón social, representante, dirección y correo administrativo en parametrización.',
   },
   {
     key: 'legal',
-    title: 'Parametros legales',
+    title: 'Parámetros legales',
     icon: Landmark,
     owner: 'Empresa',
     href: '/dashboard/configuracion/parametrizacion',
-    action: 'Cargar parametros',
+    action: 'Cargar parámetros',
     ready: ({ counts }) => counts.legalParameters > 0,
-    activeDescription: 'Hay parametros legales versionados; se deben revisar antes de calculos productivos.',
-    pendingDescription: 'Carga SBU, IESS, decimos, fondo de reserva, vacaciones y tabla IR desde el boton obligatorio.',
+    activeDescription: 'Hay parámetros legales versionados; se deben revisar antes de cálculos productivos.',
+    pendingDescription: 'Carga SBU, IESS, décimos, fondo de reserva, vacaciones y tabla IR desde el botón obligatorio.',
   },
   {
     key: 'bancos',
@@ -81,7 +81,7 @@ const MODULES = [
     action: 'Configurar accesos',
     ready: ({ counts }) => counts.usuarios > 0,
     activeDescription: 'Matriz inicial de usuarios y roles registrada para trazabilidad operativa.',
-    pendingDescription: 'Define administrador, RRHH, supervisor y accesos de empleado segun responsabilidad.',
+    pendingDescription: 'Define administrador, RRHH, supervisor y accesos de empleado según responsabilidad.',
   },
   {
     key: 'rdep',
@@ -127,8 +127,8 @@ const MODULES = [
     href: '/dashboard/asistencia/reporte',
     action: 'Revisar asistencia',
     ready: ({ counts }) => counts.workZones > 0 && counts.workShifts > 0,
-    activeDescription: 'Zonas y jornadas estan configuradas para registrar asistencia.',
-    pendingDescription: 'Configura zonas de marcacion y jornadas antes de usar asistencia productiva.',
+    activeDescription: 'Zonas y jornadas están configuradas para registrar asistencia.',
+    pendingDescription: 'Configura zonas de marcación y jornadas antes de usar asistencia productiva.',
   },
   {
     key: 'apertura',
@@ -138,7 +138,7 @@ const MODULES = [
     href: '/dashboard/nomina/cerrar',
     action: 'Abrir periodo',
     ready: () => true,
-    activeDescription: 'Periodo mensual, novedades, calculo y cierre se operan desde pantallas visibles.',
+    activeDescription: 'Periodo mensual, novedades, cálculo y cierre se operan desde pantallas visibles.',
     pendingDescription: 'Abre el periodo antes de cargar novedades y calcular roles.',
   },
   {
@@ -161,7 +161,7 @@ const MODULES = [
     action: 'Generar reportes',
     ready: ({ counts }) => counts.legalParameters > 0,
     activeDescription: 'Reportes institucionales visibles para revisar y descargar.',
-    pendingDescription: 'Completa parametros legales antes de generar reportes oficiales o bancarios.',
+    pendingDescription: 'Completa parámetros legales antes de generar reportes oficiales o bancarios.',
   },
   {
     key: 'dashboard',
@@ -171,8 +171,8 @@ const MODULES = [
     href: '/dashboard',
     action: 'Ver dashboard',
     ready: ({ completion }) => completion > 0,
-    activeDescription: 'Dashboard toma datos reales de empleados, nomina, asistencia, planes y configuracion.',
-    pendingDescription: 'Completa la parametrizacion minima para que el dashboard tenga senales operativas.',
+    activeDescription: 'Dashboard toma datos reales de empleados, nómina, asistencia, planes y configuración.',
+    pendingDescription: 'Completa la parametrización mínima para que el dashboard tenga señales operativas.',
   },
   {
     key: 'mensajes',
@@ -184,7 +184,7 @@ const MODULES = [
     ready: () => false,
     blocked: true,
     activeDescription: '',
-    pendingDescription: 'Los mensajes deben explicar que ocurrio y que accion tomar.',
+    pendingDescription: 'Los mensajes deben explicar qué ocurrió y qué acción tomar.',
   },
 ];
 
@@ -332,7 +332,7 @@ function ApiClientsPanel({ clients = [], createMutation, canManage }) {
               id="api-client-name"
               maxLength={80}
               onChange={(event) => setName(event.target.value)}
-              placeholder="ERP interno, app asistencia, BI nomina"
+              placeholder="ERP interno, app asistencia, BI nómina"
               value={name}
             />
 
@@ -468,7 +468,7 @@ function OperacionIntegral() {
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Centro de trabajo</p>
             <h1 className="mt-2 text-2xl font-semibold text-slate-950">Operaciones de SKNOMINA</h1>
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
-              Accede a las configuraciones y flujos que sostienen empleados, asistencia, nomina,
+              Accede a las configuraciones y flujos que sostienen empleados, asistencia, nómina,
               reportes e integraciones.
             </p>
           </div>
@@ -482,7 +482,7 @@ function OperacionIntegral() {
               <p className="mt-1 text-2xl font-semibold text-amber-900">{isLoading ? '...' : blockedCount}</p>
             </div>
             <div className="rounded-md bg-teal-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase text-teal-700">Configuracion</p>
+              <p className="text-xs font-semibold uppercase text-teal-700">Configuración</p>
               <p className="mt-1 text-2xl font-semibold text-teal-900">{isLoading ? '...' : `${completion}%`}</p>
             </div>
           </div>
@@ -497,12 +497,12 @@ function OperacionIntegral() {
 
       <section className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
         <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-950">Estado de configuracion</h2>
+          <h2 className="text-lg font-semibold text-slate-950">Estado de configuración</h2>
           <div className="mt-4 space-y-3">
             <ReadinessBar value={completion} />
             <div className="grid gap-2 text-sm">
               <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Empresa</span><strong>{counts.empresa}</strong></p>
-              <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Parametros legales</span><strong>{counts.legalParameters}</strong></p>
+              <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Parámetros legales</span><strong>{counts.legalParameters}</strong></p>
               <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Bancos</span><strong>{counts.bankProfiles}</strong></p>
               <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Usuarios y roles</span><strong>{counts.usuarios}</strong></p>
               <p className="flex justify-between rounded-md bg-slate-50 px-3 py-2"><span>Integraciones</span><strong>{counts.apiClients}</strong></p>

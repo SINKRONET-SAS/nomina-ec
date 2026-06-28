@@ -9,6 +9,7 @@ const { getBankProfileForTenant } = require('../services/bancoAebGenerator');
 const { s3Upload } = require('../config/s3');
 const { generarContrato } = require('../services/templateGenerator');
 const { getEmployeeHistory } = require('../services/employeeHistoryService');
+const logger = require('../utils/logger');
 const {
   commitEmployeeImport,
   listEmployeeImportBatches,
@@ -750,7 +751,13 @@ async function crear(req, res) {
     if (tenant.rows.length > 0) {
       try {
         await generarContrato(empleado, tenant.rows[0], tipo_contrato || 'indefinido');
-        console.log(`[CONTRATO] Generado para empleado ${empleado.id}`);
+        logger.info({
+          code: 'EMPLOYEE_CONTRACT_GENERATED',
+          correlationId: req.correlationId || 'empleado-contrato',
+          userId: req.usuarioId || null,
+          tenantId,
+          empleadoId: empleado.id,
+        }, 'Contrato generado para empleado');
       } catch (err) {
         console.error('[CONTRATO] Error generando contrato:', err.message);
       }

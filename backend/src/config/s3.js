@@ -11,6 +11,7 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const crypto = require('crypto');
 const fs = require('fs/promises');
 const path = require('path');
+const logger = require('../utils/logger');
 require('dotenv').config();
 
 const BUCKET = process.env.AWS_S3_BUCKET || 'sknomina-documents';
@@ -196,7 +197,10 @@ async function localUpload(buffer, key, contentType) {
     size: Buffer.byteLength(buffer),
     createdAt: new Date().toISOString(),
   }, null, 2));
-  console.log('[LOCAL_STORAGE] Archivo guardado', { key: normalizeStorageKey(key) });
+  logger.info({
+    code: 'LOCAL_STORAGE_FILE_SAVED',
+    key: normalizeStorageKey(key),
+  }, 'Archivo guardado en almacenamiento local');
   return buildLocalObjectUrl(key);
 }
 
@@ -255,7 +259,7 @@ const s3Upload = async (buffer, key, contentType = 'application/octet-stream') =
       ContentType: contentType,
       ACL: 'private',
     }));
-    console.log('[S3] Archivo subido', { key });
+    logger.info({ code: 'S3_FILE_UPLOADED', key }, 'Archivo subido a almacenamiento S3');
     return buildObjectLocation(key);
   } catch (err) {
     if (canFallbackToLocalStorage()) {
@@ -333,7 +337,10 @@ const s3SignedUrl = async (key, expiresIn = 3600) => {
 const s3Delete = async (key) => {
   if (isLocalStorageEnabled()) {
     await localDelete(key);
-    console.log('[LOCAL_STORAGE] Archivo eliminado', { key: normalizeStorageKey(key) });
+    logger.info({
+      code: 'LOCAL_STORAGE_FILE_DELETED',
+      key: normalizeStorageKey(key),
+    }, 'Archivo eliminado de almacenamiento local');
     return;
   }
 
@@ -342,7 +349,7 @@ const s3Delete = async (key) => {
       Bucket: BUCKET,
       Key: key,
     }));
-    console.log('[S3] Archivo eliminado', { key });
+    logger.info({ code: 'S3_FILE_DELETED', key }, 'Archivo eliminado de almacenamiento S3');
   } catch (err) {
     logS3Error('eliminar archivo', key, err);
     throw new Error(`Error al eliminar archivo de S3: ${err.message}`);

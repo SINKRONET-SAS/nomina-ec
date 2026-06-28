@@ -15,6 +15,7 @@
     "privacy:purge-communications": "node scripts/purge-communication-events.js",
     "cron:start": "node src/config/cron-jobs.js",
     "verify:rls:render": "node scripts/verify-rls-render.js",
+    "rdep:verify-source": "node scripts/verify-rdep-xsd-source.js",
     "test": "jest"
   },
   "dependencies": {

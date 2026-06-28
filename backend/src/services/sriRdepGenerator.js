@@ -10,8 +10,10 @@ const { XMLBuilder, XMLParser } = require('fast-xml-parser');
 const { s3Upload } = require('../config/s3');
 const db = require('../config/database');
 const AppError = require('../utils/AppError');
+const logger = require('../utils/logger');
 
 const RDEP_XSD_PATH = path.join(__dirname, '..', 'config', 'rdep', 'Esquema_RDEP_2023.xsd');
+const RDEP_MANIFEST_PATH = path.join(__dirname, '..', 'config', 'rdep', 'rdep-source-manifest.json');
 const XSD_VALIDATION_MODE = 'xsd_schema_validation';
 
 function asArray(value) {
@@ -60,6 +62,44 @@ function getRdepXsdContract(content) {
 }
 
 let xsdDocCache = null;
+
+function getRdepSourceManifest() {
+  if (!fs.existsSync(RDEP_MANIFEST_PATH)) {
+    throw new AppError('No se encontro el manifiesto de fuente oficial RDEP.', {
+      code: 'RDEP_SOURCE_MANIFEST_NOT_FOUND',
+      statusCode: 500,
+      details: { path: RDEP_MANIFEST_PATH },
+    });
+  }
+
+  try {
+    return JSON.parse(fs.readFileSync(RDEP_MANIFEST_PATH, 'utf8'));
+  } catch (error) {
+    throw new AppError('El manifiesto de fuente oficial RDEP no pudo leerse.', {
+      code: 'RDEP_SOURCE_MANIFEST_INVALID',
+      statusCode: 500,
+      details: { path: RDEP_MANIFEST_PATH, reason: error.message },
+    });
+  }
+}
+
+function getRdepSourceMetadata(xsd) {
+  const manifest = getRdepSourceManifest();
+  const officialSource = (manifest.sources || []).find((source) => source.kind === 'official_web_page');
+  const xsdSource = (manifest.sources || []).find((source) => source.kind === 'xsd');
+  const manifestSha256 = String(xsdSource?.sha256 || '').toLowerCase();
+  const officialSourceReconciliation = manifest.validationPolicy?.officialSourceReconciliation || '';
+
+  return {
+    observedAt: officialSource?.observedAt || manifest.observedAt || '',
+    officialSourceUrl: officialSource?.url || '',
+    sourceStatus: officialSource?.status || '',
+    officialSourceReconciliation,
+    verificationScript: manifest.validationPolicy?.verificationScript || '',
+    manifestSha256,
+    hashMatchesManifest: Boolean(manifestSha256 && manifestSha256 === xsd.sha256),
+  };
+}
 
 function getRdepXsdMetadata() {
   if (!fs.existsSync(RDEP_XSD_PATH)) {
@@ -126,6 +166,7 @@ async function loadRdepData(tenantId, anio) {
 
 async function precheckRDEP(tenantId, anio) {
   const xsd = getRdepXsdMetadata();
+  const source = getRdepSourceMetadata(xsd);
   const { tenant, nominas } = await loadRdepData(tenantId, anio);
   const employeeIds = new Set(nominas.map((row) => row.empleado_id));
   const periods = new Set(nominas.map((row) => Number(row.mes)).filter(Boolean));
@@ -158,6 +199,12 @@ async function precheckRDEP(tenantId, anio) {
       passed: Boolean(xsd.sha256),
       detail: xsd.sha256,
     },
+    {
+      code: 'official_source_reconciled',
+      label: 'Fuente oficial SRI reconciliada',
+      passed: source.hashMatchesManifest && String(source.officialSourceReconciliation).startsWith('checked_'),
+      detail: `${source.officialSourceReconciliation || 'pendiente'}; ${source.observedAt || 'sin fecha de revision'}`,
+    },
   ];
   const ready = checks.every((check) => check.passed);
 
@@ -172,6 +219,11 @@ async function precheckRDEP(tenantId, anio) {
       sha256: xsd.sha256,
       rootName: xsd.rootName,
       validationMode: xsd.validationMode,
+      observedAt: source.observedAt,
+      officialSourceUrl: source.officialSourceUrl,
+      sourceStatus: source.sourceStatus,
+      officialSourceReconciliation: source.officialSourceReconciliation,
+      hashMatchesManifest: source.hashMatchesManifest,
     },
   };
 }
@@ -368,7 +420,13 @@ async function generarXML_RDEP(tenantId, anio) {
   const key = `reportes/${tenantId}/sri/${fileName}`;
   const url = await s3Upload(Buffer.from(xmlString, 'utf8'), key, 'application/xml');
 
-  console.log(`[RDEP] XML generado para ${tenantId} - ejercicio ${anio}: ${annualRecords.length} empleados`);
+  logger.info({
+    code: 'RDEP_XML_GENERATED',
+    correlationId: process.env.CORRELATION_ID || 'rdep-generator',
+    tenantId,
+    anio,
+    totalEmpleados: annualRecords.length,
+  }, 'XML RDEP generado');
 
   return {
     url,

@@ -22,6 +22,10 @@ yarn-error.log*
 .cache/
 coverage/
 backend/storage/
+docs2/private/
+docs2/_local/
+.vscode/AuditLock.local.json
+*.local.auditlock.json
 
 # Python y temporales
 __pycache__/

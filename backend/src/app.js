@@ -8,6 +8,7 @@ const morgan = require('morgan');
 const AppError = require('./utils/AppError');
 const correlationId = require('./middleware/correlationId');
 const { createRateLimiter } = require('./middleware/rateLimit');
+const logger = require('./utils/logger');
 require('dotenv').config();
 
 const app = express();
@@ -230,13 +231,12 @@ app.use((err, req, res, next) => {
   const code = err.code || err.name || 'ERROR_INTERNO';
   const correlation = err.correlationId || req.correlationId;
 
-  console.error('[ERROR]', {
+  logger.error({
     code,
     statusCode,
     correlationId: correlation,
     userId: req.usuario?.id || null,
-    message: err.message,
-  });
+  }, err.message || 'Error interno del servidor');
 
   if (err.message && err.message.includes('Regla irrenunciable')) {
     return res.status(403).json({
@@ -299,12 +299,15 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log('============================================================');
-  console.log('  SKNOMINA - Backend SaaS de nomina Ecuador');
-  console.log(`  Puerto: ${PORT}`);
-  console.log(`  Entorno: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`  URL: http://localhost:${PORT}`);
-  console.log('============================================================');
+  logger.info({
+    code: 'APP_STARTED',
+    statusCode: 200,
+    correlationId: 'app-startup',
+    userId: null,
+    port: PORT,
+    environment: process.env.NODE_ENV || 'development',
+    url: `http://localhost:${PORT}`,
+  }, 'SKNOMINA backend iniciado');
 });
 
 module.exports = app;

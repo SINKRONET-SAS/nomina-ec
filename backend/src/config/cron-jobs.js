@@ -5,9 +5,10 @@ const cron = require('node-cron');
 const { calcularNominaMensual } = require('../services/calculoNominaService');
 const { ensurePayrollPeriodForDate, todayInEcuador } = require('../services/monthlyPeriodService');
 const db = require('../config/database');
+const logger = require('../utils/logger');
 
 function iniciarCronJobs() {
-  console.log('[CRON] Iniciando trabajos programados...');
+  logger.info({ code: 'CRON_JOBS_STARTING', correlationId: 'cron-startup' }, 'Iniciando trabajos programados');
 
   cron.schedule('0 22 * * 1-5', runCron('cron-marcaciones-faltantes', verificarMarcacionesFaltantes), {
     timezone: 'America/Guayaquil',
@@ -18,7 +19,7 @@ function iniciarCronJobs() {
     const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
 
     if (hoy.getDate() !== ultimoDia) {
-      console.log('[CRON] Calculo mensual omitido porque no es ultimo dia del mes');
+      logger.info({ code: 'CRON_MONTHLY_PAYROLL_SKIPPED', correlationId: 'cron-nomina-mensual' }, 'Calculo mensual omitido porque no es ultimo dia del mes');
       return;
     }
 
@@ -35,7 +36,7 @@ function iniciarCronJobs() {
     timezone: 'America/Guayaquil',
   });
 
-  console.log('[CRON] Trabajos programados iniciados correctamente');
+  logger.info({ code: 'CRON_JOBS_STARTED', correlationId: 'cron-startup' }, 'Trabajos programados iniciados correctamente');
 }
 
 function runCron(correlationId, handler) {
@@ -97,7 +98,12 @@ async function verificarMarcacionesFaltantes() {
       `, [empleado.id, tenant.id, period.id, period.periodoNomina, fechaNovedad]);
     }
 
-    console.log(`[CRON] Marcaciones faltantes tenant ${tenant.id}: ${empleados.rows.length}`);
+    logger.info({
+      code: 'CRON_MISSING_MARKS_CREATED',
+      correlationId: process.env.CORRELATION_ID || 'cron-marcaciones-faltantes',
+      tenantId: tenant.id,
+      totalEmpleados: empleados.rows.length,
+    }, 'Novedades por marcaciones faltantes generadas');
   }
 }
 
@@ -106,7 +112,13 @@ async function calcularNominaTodosTenants(anio, mes) {
 
   for (const tenant of tenants.rows) {
     try {
-      console.log(`[CRON] Calculando nomina para tenant ${tenant.id} - ${mes}/${anio}`);
+      logger.info({
+        code: 'CRON_PAYROLL_CALCULATION_STARTED',
+        correlationId: process.env.CORRELATION_ID || 'cron-nomina-mensual',
+        tenantId: tenant.id,
+        anio,
+        mes,
+      }, 'Calculo de nomina iniciado por cron');
       await calcularNominaMensual(tenant.id, anio, mes);
     } catch (err) {
       console.error('[CRON] Error calculando nomina tenant', {
@@ -127,19 +139,24 @@ async function alertaDecimos() {
   const tipo = mes === 12 ? 'decimo_tercero' : (mes === 3 || mes === 8 ? 'decimo_cuarto' : null);
 
   if (!tipo) {
-    console.log('[CRON] No hay alerta de decimos para este mes');
+    logger.info({ code: 'CRON_DECIMOS_ALERT_SKIPPED', correlationId: 'cron-alerta-decimos' }, 'No hay alerta de decimos para este mes');
     return;
   }
 
   for (const tenant of tenants.rows) {
-    console.log(`[CRON] Alerta ${tipo} pendiente de envio para tenant ${tenant.id}`);
+    logger.info({
+      code: 'CRON_DECIMOS_ALERT_PENDING',
+      correlationId: 'cron-alerta-decimos',
+      tenantId: tenant.id,
+      tipo,
+    }, 'Alerta de decimos pendiente de envio');
   }
 }
 
 if (require.main === module) {
   iniciarCronJobs();
   setInterval(() => {
-    console.log('[CRON] heartbeat');
+    logger.info({ code: 'CRON_HEARTBEAT', correlationId: 'cron-heartbeat' }, 'Heartbeat de trabajos programados');
   }, 60000);
 }
 

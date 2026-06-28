@@ -3,6 +3,7 @@ const {
   calcularDiasDecimoTercero,
   calcularFondoReservaLiquidacion,
   calcularDiasVacacionesPendientes,
+  calcularDiasPendientesMes,
   calcularIndemnizacionDespidoIntempestivo,
 } = require('./liquidacionService');
 
@@ -69,5 +70,11 @@ describe('liquidacionService formulas', () => {
     );
 
     expect(value).toBeGreaterThan(0);
+  });
+
+  test('limita sueldo pendiente a maximo treinta dias en meses de treinta y un dias', () => {
+    expect(calcularDiasPendientesMes(new Date('2026-01-31T00:00:00'))).toBe(30);
+    expect(calcularDiasPendientesMes(new Date('2026-01-30T00:00:00'))).toBe(30);
+    expect(calcularDiasPendientesMes(new Date('2026-02-28T00:00:00'))).toBe(28);
   });
 });

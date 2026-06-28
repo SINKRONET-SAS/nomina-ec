@@ -74,7 +74,6 @@ export function AuthProvider({ children }) {
     const storedToken = localStorage.getItem('token');
 
     if (!storedToken) {
-      console.log('[AUTH] No existe token local para refrescar sesión.');
       setCargando(false);
       return;
     }

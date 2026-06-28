@@ -9,7 +9,7 @@ const institutionalReports = [
     type: 'rdep',
     title: 'RDEP - SRI',
     entity: 'Servicio de Rentas Internas',
-    description: 'Anexo anual de relacion de dependencia para retenciones de impuesto a la renta de empleados.',
+    description: 'Anexo anual de relación de dependencia para retenciones de impuesto a la renta de empleados.',
     button: 'Generar XML RDEP',
     accent: 'blue',
   },
@@ -17,7 +17,7 @@ const institutionalReports = [
     type: 'form107',
     title: 'Formulario 107 - SRI',
     entity: 'Servicio de Rentas Internas',
-    description: 'PDF individual anual por trabajador con resumen de ingresos y retenciones de relacion de dependencia.',
+    description: 'PDF individual anual por trabajador con resumen de ingresos y retenciones de relación de dependencia.',
     button: 'Generar PDF 107',
     accent: 'blue',
   },
@@ -25,16 +25,16 @@ const institutionalReports = [
     type: 'sae',
     title: 'SAE - IESS',
     entity: 'Instituto Ecuatoriano de Seguridad Social',
-    description: 'Avisos y aportes de empleados en relacion de dependencia para el IESS.',
+    description: 'Avisos y aportes de empleados en relación de dependencia para el IESS.',
     button: 'Generar XML SAE',
     accent: 'green',
   },
 ];
 
 const pendingRequirements = [
-  'Ministerio del Trabajo: reportes laborales que dependan de la obligacion aplicable al empleador.',
-  'Contraloria, UAFE u otra entidad publica: formatos habilitados segun actividad, tipo de empresa y periodo.',
-  'Anexos SRI distintos a RDEP: se tratan como obligaciones tributarias generales, no como reportes de nomina.',
+  'Ministerio del Trabajo: reportes laborales que dependan de la obligación aplicable al empleador.',
+  'Contraloría, UAFE u otra entidad pública: formatos habilitados según actividad, tipo de empresa y periodo.',
+  'Anexos SRI distintos a RDEP: se tratan como obligaciones tributarias generales, no como reportes de nómina.',
 ];
 
 const accentClasses = {
@@ -90,7 +90,7 @@ function DescargarReportes() {
       const response = await authenticatedApi.post('/reportes/rdep/precheck', { anio });
       setRdepPrecheck(response.data.precheck);
       setMessage(response.data.precheck.ready
-        ? 'RDEP anual listo para generar con validacion estructural activa.'
+        ? 'RDEP anual listo para generar con validación estructural activa.'
         : 'RDEP anual requiere acciones antes de generar el XML.');
       return response.data.precheck;
     } catch (err) {
@@ -191,9 +191,9 @@ function DescargarReportes() {
       if (url) {
         downloadUrl(url, response.data.reporte?.fileName || `${reportCode}-${anio}-${mes}.${format}`);
       }
-      setMessage(`Reporte de nomina generado: ${response.data.reporte?.totalFilas || 0} filas.`);
+      setMessage(`Reporte de nómina generado: ${response.data.reporte?.totalFilas || 0} filas.`);
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.error || 'Error al exportar reporte de nomina');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Error al exportar reporte de nómina');
     } finally {
       setCargando('');
     }
@@ -217,7 +217,7 @@ function DescargarReportes() {
       }
       setMessage(`Consolidado anual generado: ${response.data.reporte?.totalFilas || 0} filas.`);
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.error || 'Error al exportar consolidado anual de nomina');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Error al exportar consolidado anual de nómina');
     } finally {
       setCargando('');
     }
@@ -230,10 +230,10 @@ function DescargarReportes() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-950">Reportes para entidades publicas</h1>
+        <h1 className="text-2xl font-bold text-slate-950">Reportes para entidades públicas</h1>
         <p className="mt-2 max-w-4xl text-sm text-slate-600">
-          Genera reportes propios de nomina para Ecuador. Para SRI se usa RDEP anual en relacion de dependencia;
-          ATS no se muestra aqui porque corresponde a obligaciones tributarias generales.
+          Genera reportes propios de nómina para Ecuador. Para SRI se usa RDEP anual en relación de dependencia;
+          ATS no se muestra aquí porque corresponde a obligaciones tributarias generales.
         </p>
       </div>
 
@@ -255,7 +255,7 @@ function DescargarReportes() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700">Anio</label>
+            <label className="block text-sm font-medium text-slate-700">Año</label>
             <input
               type="number"
               value={anio}
@@ -342,7 +342,7 @@ function DescargarReportes() {
           <div className="flex items-start gap-3">
             <FileSpreadsheet className="mt-1 h-5 w-5 text-teal-700" />
             <div>
-              <h2 className="text-lg font-semibold text-slate-950">Reportes internos de nomina</h2>
+              <h2 className="text-lg font-semibold text-slate-950">Reportes internos de nómina</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
                 Exporta resumen, detalle por empleado, matriz empleados por conceptos y reportes contables con filtros por persona, departamento, cargo o centro de costo.
               </p>
@@ -383,7 +383,7 @@ function DescargarReportes() {
               <option value="PAYROLL_DETAIL_TABULAR">Detalle tabular</option>
               <option value="PAYROLL_EMPLOYEE_DETAIL">Detalle por empleado</option>
               <option value="PAYROLL_BENEFITS_MATRIX">Matriz empleados x beneficios</option>
-              <option value="PAYROLL_SUMMARY">Resumen de nomina</option>
+              <option value="PAYROLL_SUMMARY">Resumen de nómina</option>
               <option value="PAYROLL_ACCOUNTING_REPORT">Reporte contable</option>
             </select>
           </div>
@@ -443,7 +443,7 @@ function DescargarReportes() {
           <div className="flex items-start gap-3">
             <ShieldCheck className="mt-1 h-5 w-5 text-teal-700" />
             <div>
-              <h2 className="text-lg font-semibold text-slate-950">Revision del reporte para entidades</h2>
+              <h2 className="text-lg font-semibold text-slate-950">Revisión del reporte para entidades</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
                 Revisa datos del empleador, roles cerrados del ejercicio fiscal y plantilla vigente antes de generar el archivo.
               </p>
@@ -472,9 +472,12 @@ function DescargarReportes() {
               </div>
             ))}
             <div className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-700 lg:col-span-2">
-              Verificacion tecnica: <span className="font-mono text-xs">{rdepPrecheck.xsd?.sha256}</span>
+              Verificación técnica: <span className="font-mono text-xs">{rdepPrecheck.xsd?.sha256}</span>
               <span className="ml-2 text-xs text-slate-500">
                 {rdepPrecheck.totalEmpleados || 0} trabajadores, {rdepPrecheck.totalRoles || 0} roles cerrados.
+              </span>
+              <span className="mt-1 block text-xs text-slate-500">
+                Fuente SRI: {rdepPrecheck.xsd?.officialSourceReconciliation || 'pendiente'}; hash local {rdepPrecheck.xsd?.hashMatchesManifest ? 'coincide' : 'pendiente de revisión'}.
               </span>
             </div>
           </div>
@@ -486,9 +489,9 @@ function DescargarReportes() {
         <div className="flex items-start gap-3">
           <Landmark className="mt-1 h-5 w-5 text-teal-700" />
           <div>
-            <h2 className="text-lg font-semibold text-slate-950">Otros requerimientos de entidades publicas</h2>
+            <h2 className="text-lg font-semibold text-slate-950">Otros requerimientos de entidades públicas</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Estos formatos deben habilitarse por entidad, actividad economica y periodo antes de generar archivos oficiales.
+              Estos formatos deben habilitarse por entidad, actividad económica y periodo antes de generar archivos oficiales.
             </p>
           </div>
         </div>
@@ -508,8 +511,8 @@ function DescargarReportes() {
           <div>
             <h2 className="text-lg font-semibold text-slate-950">Criterio de uso</h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              RDEP se alimenta de roles cerrados del anio fiscal, retenciones y datos del empleado. Los reportes externos se deben validar
-              con la parametrizacion legal vigente antes de enviarlos a produccion.
+              RDEP se alimenta de roles cerrados del año fiscal, retenciones y datos del empleado. Los reportes externos se deben validar
+              con la parametrización legal vigente antes de enviarlos a producción.
             </p>
           </div>
         </div>

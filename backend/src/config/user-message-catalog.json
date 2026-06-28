@@ -8,24 +8,32 @@
       "code": "RDEP_SOURCE_OUTDATED",
       "technical": "RDEP XSD source requires reconciliation",
       "userMessage": "Antes de generar el RDEP productivo necesitamos confirmar la ficha tecnica vigente del SRI para este ejercicio fiscal.",
+      "friendly": "Antes de generar el RDEP productivo necesitamos confirmar la ficha tecnica vigente del SRI para este ejercicio fiscal.",
+      "nextAction": "Ejecuta la validacion RDEP y verifica que el esquema XSD coincida con la fuente oficial del SRI.",
       "severity": "warning"
     },
     {
       "code": "BANK_FILE_PROFILE_MISSING",
       "technical": "Bank profile not configured",
       "userMessage": "Configura la ficha tecnica del banco antes de generar el archivo de pagos.",
+      "friendly": "Configura la ficha tecnica del banco antes de generar el archivo de pagos.",
+      "nextAction": "Ve a Nomina > Pagos bancarios y selecciona un banco con homologacion guardada.",
       "severity": "error"
     },
     {
       "code": "ATTENDANCE_GPS_PERMISSION_DENIED",
       "technical": "GPS permission denied",
       "userMessage": "No pudimos registrar la ubicacion. Revisa el permiso de ubicacion o registra una novedad manual para aprobacion.",
+      "friendly": "No pudimos registrar la ubicacion. Revisa el permiso de ubicacion o registra una novedad manual para aprobacion.",
+      "nextAction": "Activa el permiso de ubicacion del dispositivo y vuelve a intentar la marcacion.",
       "severity": "warning"
     },
     {
       "code": "IMPORT_EMPLOYEES_HAS_ERRORS",
       "technical": "Employee import prevalidation failed",
       "userMessage": "La carga tiene filas por corregir. Descarga el reporte, ajusta los datos y vuelve a intentar.",
+      "friendly": "La carga tiene filas por corregir. Descarga el reporte, ajusta los datos y vuelve a intentar.",
+      "nextAction": "Descarga el reporte de errores, corrige la plantilla y vuelve a prevalidar antes de importar.",
       "severity": "error"
     }
   ],
