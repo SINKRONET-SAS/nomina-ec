@@ -27,6 +27,7 @@ import Dashboard from './pages/Dashboard';
 import LineaBaseOperativa from './pages/Operacion/LineaBaseOperativa';
 import OperacionIntegral from './pages/Operacion/OperacionIntegral';
 import MovilizacionAprobacion from './pages/Operacion/MovilizacionAprobacion';
+import PermisosOperacion from './pages/Operacion/PermisosOperacion';
 import ListaEmpleados from './pages/Empleados/ListaEmpleados';
 import HistorialEmpleado from './pages/Empleados/HistorialEmpleado';
 import NuevoEmpleado from './pages/Empleados/NuevoEmpleado';
@@ -105,6 +106,11 @@ function App() {
               <Route path="operacion/movilizacion" element={
                 <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
                   <MovilizacionAprobacion />
+                </ProtectedRoute>
+              } />
+              <Route path="operacion/permisos" element={
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
+                  <PermisosOperacion />
                 </ProtectedRoute>
               } />
               

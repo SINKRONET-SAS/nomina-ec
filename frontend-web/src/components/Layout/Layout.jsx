@@ -35,11 +35,12 @@ function Layout() {
       ]
     },
     {
-      label: 'Operacion',
+      label: 'Operación',
       icon: Route,
       roles: ['owner', 'admin_rrhh'],
       submenu: [
-        { path: '/dashboard/operacion/movilizacion', label: 'Movilizacion' },
+        { path: '/dashboard/operacion/permisos', label: 'Permisos' },
+        { path: '/dashboard/operacion/movilizacion', label: 'Movilización' },
       ]
     },
     {

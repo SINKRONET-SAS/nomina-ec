@@ -46,9 +46,9 @@ export default function MovilizacionAprobacion() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Movilizacion</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Movilización</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Revisa los informes enviados desde la app movil y define el anticipo aprobado para nomina.
+          Revisa los informes enviados desde la app móvil y define el anticipo aprobado para nómina.
         </p>
       </div>
 
@@ -80,7 +80,7 @@ export default function MovilizacionAprobacion() {
 
       {informesQuery.isError && (
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          No pudimos cargar los informes de movilizacion.
+          No pudimos cargar los informes de movilización.
         </div>
       )}
 
