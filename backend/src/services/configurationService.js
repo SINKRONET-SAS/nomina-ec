@@ -734,7 +734,7 @@ async function loadMandatoryLegalParameters(year, user, context = {}) {
       payload.parameter_key,
       JSON.stringify(payload.value),
       payload.unit,
-      payload.sourceName || `Parametros base Nomina-Ec ${periodYear}`,
+      payload.sourceName || `Parametros base SKNOMINA ${periodYear}`,
       payload.sourceUrl || 'https://www.sri.gob.ec/formularios-e-instructivos1',
       payload.validationStatus || 'pendiente_validacion_oficial',
       payload.validationStatus === 'validado_oficial'

@@ -25,12 +25,12 @@ function buildSubscriptionPaymentReference({ tenantId, userId, planId, nonce = D
     throw err;
   }
 
-  return `nominaec-${shortId(tenantId)}-${shortId(userId)}-${normalizedPlanId}-${normalizedNonce}`;
+  return `sknomina-${shortId(tenantId)}-${shortId(userId)}-${normalizedPlanId}-${normalizedNonce}`;
 }
 
 function parseSubscriptionPaymentReference(reference) {
   const raw = String(reference || '').trim();
-  const match = /^nominaec-([A-Z0-9]+)-([A-Z0-9]+)-([A-Z0-9_]+)-([0-9a-f]+)$/i.exec(raw);
+  const match = /^sknomina-([A-Z0-9]+)-([A-Z0-9]+)-([A-Z0-9_]+)-([0-9a-f]+)$/i.exec(raw);
   if (!match) return null;
   return {
     kind: 'SUBSCRIPTION',

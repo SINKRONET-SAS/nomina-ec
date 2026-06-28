@@ -68,7 +68,7 @@ function Register() {
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-teal-700 text-white">
               <Building2 size={19} />
             </span>
-            Nómina-Ec
+            SKNOMINA
           </Link>
           <h1 className="max-w-xl text-5xl font-semibold leading-tight text-slate-950">
             Crea tu empresa y empieza con un flujo operativo real.
@@ -94,7 +94,7 @@ function Register() {
           <div className="mb-7 flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Registro comercial</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950">Crear cuenta en Nómina-Ec</h2>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950">Crear cuenta en SKNOMINA</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
                 Datos mínimos para activar la empresa y el usuario propietario.
               </p>
@@ -171,7 +171,7 @@ function Register() {
           <div className="mt-6 space-y-3 rounded-md bg-slate-50 p-4">
             <label className="flex gap-3 text-sm text-slate-700">
               <input className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600" type="checkbox" required checked={form.acceptedTerms} onChange={(e) => update('acceptedTerms', e.target.checked)} />
-              <span>Acepto los términos de servicio de Nómina-Ec.</span>
+              <span>Acepto los términos de servicio de SKNOMINA.</span>
             </label>
             <label className="flex gap-3 text-sm text-slate-700">
               <input className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600" type="checkbox" required checked={form.acceptedPrivacy} onChange={(e) => update('acceptedPrivacy', e.target.checked)} />

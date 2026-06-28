@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Ejecutor de migraciones Prisma
+// SKNOMINA - Ejecutor de migraciones Prisma
 // ============================================================
 const { spawn } = require('child_process');
 const path = require('path');

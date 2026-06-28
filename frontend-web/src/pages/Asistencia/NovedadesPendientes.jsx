@@ -180,6 +180,8 @@ function NovedadesPendientes() {
               <option value="hora_extra_100">Hora extra 100%</option>
               <option value="bono_desempeno">Bono de desempeno</option>
               <option value="comision">Comision</option>
+              <option value="permiso_con_sueldo">Permiso con sueldo</option>
+              <option value="permiso_sin_sueldo">Permiso sin sueldo</option>
               <option value="falta">Falta injustificada</option>
               <option value="atraso">Atraso</option>
               <option value="salida_temprana">Salida temprana</option>

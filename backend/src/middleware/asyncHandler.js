@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Envoltura de controladores async
+// SKNOMINA - Envoltura de controladores async
 // ============================================================
 
 function asyncHandler(handler) {

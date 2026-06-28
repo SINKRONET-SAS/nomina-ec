@@ -143,7 +143,7 @@ describe('communicationService', () => {
       SMTP_USER: 'mailer@example.com',
       SMTP_PASSWORD: 'secret',
       SMTP_FROM_EMAIL: 'notificaciones@example.com',
-      SMTP_FROM_NAME: 'Nomina-Ec',
+      SMTP_FROM_NAME: 'SKNOMINA',
     });
     sendMailMock.mockResolvedValue({ messageId: 'smtp-message-1' });
 
@@ -165,7 +165,7 @@ describe('communicationService', () => {
     }));
     expect(sendMailMock).toHaveBeenCalledWith(expect.objectContaining({
       to: 'usuario@example.com',
-      subject: 'Recuperacion de clave Nomina-Ec',
+      subject: 'Recuperacion de clave SKNOMINA',
       disableFileAccess: true,
       disableUrlAccess: true,
     }));
@@ -197,8 +197,8 @@ describe('communicationService', () => {
 
     const result = await service.sendWhatsAppTemplate({
       to: '0999999999',
-      templateName: 'nomina_ec_employee_invite',
-      variables: ['Maria', 'ADM-1234', 'nominaec://employee/activate?code=ADM-1234'],
+      templateName: 'sknomina_employee_invite',
+      variables: ['Maria', 'ADM-1234', 'sknomina://employee/activate?code=ADM-1234'],
       template: 'employee_app_invite',
       correlationId: 'corr-3',
       userId: 'user-3',
@@ -208,7 +208,7 @@ describe('communicationService', () => {
     const [, request] = global.fetch.mock.calls[0];
     const payload = JSON.parse(request.body);
     expect(payload.to).toBe('593999999999');
-    expect(payload.template.name).toBe('nomina_ec_employee_invite');
+    expect(payload.template.name).toBe('sknomina_employee_invite');
     expect(recordCommunicationEventMock).toHaveBeenCalledWith(expect.objectContaining({
       channel: 'whatsapp',
       status: 'sent',
@@ -251,7 +251,7 @@ describe('communicationService', () => {
       WHATSAPP_GRAPH_API_VERSION: 'v23.0',
       WHATSAPP_ACCESS_TOKEN: 'token-test',
       WHATSAPP_PHONE_NUMBER_ID: 'phone-id',
-      WHATSAPP_TEMPLATE_EMPLOYEE_INVITE: 'nomina_ec_employee_invite',
+      WHATSAPP_TEMPLATE_EMPLOYEE_INVITE: 'sknomina_employee_invite',
     });
     global.fetch = jest.fn();
 

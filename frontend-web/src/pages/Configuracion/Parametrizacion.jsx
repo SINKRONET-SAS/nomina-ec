@@ -65,7 +65,7 @@ const BANK_TEMPLATE_PREVIEWS = {
       ['7', 'CUENTA_BENEFICIARIO', 'cuenta cifrada del trabajador', '10 digitos'],
       ['8', 'VALOR', 'nominas.neto_recibir', 'Decimal 2'],
       ['9', 'CONCEPTO', 'Periodo de nomina', 'Texto max 30'],
-      ['10', 'REFERENCIA', 'Referencia unica Nomina-Ec', 'Texto max 20'],
+      ['10', 'REFERENCIA', 'Referencia unica SKNOMINA', 'Texto max 20'],
     ],
     example: 'D;C;1710034065;MARIA DEMO RUIZ;2013;AH;0012345678;850.00;NOMINA 06/2026;NOM9B230E040001',
   },
@@ -1494,7 +1494,7 @@ function BankMappingStructureBuilder({
             <thead className="bg-white text-slate-500">
               <tr>
                 <th className="px-3 py-2 font-semibold">Pos.</th>
-                <th className="px-3 py-2 font-semibold">Campo Nomina-Ec</th>
+                <th className="px-3 py-2 font-semibold">Campo SKNOMINA</th>
                 <th className="px-3 py-2 font-semibold">Campo banco</th>
                 <th className="px-3 py-2 font-semibold">Formato</th>
                 <th className="px-3 py-2 font-semibold">Req.</th>
@@ -2028,7 +2028,7 @@ function Parametrizacion() {
           metadata: {
             source: Array.isArray(activeValues.uploadedStructure) && activeValues.uploadedStructure.length > 0
               ? 'archivo_plano_modelo'
-              : 'plantilla_nomina_ec',
+              : 'plantilla_sknomina',
             template: activeValues.template,
           },
         };

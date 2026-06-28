@@ -1,8 +1,8 @@
 {
-  "name": "nomina-ec-system",
+  "name": "sknomina-system",
   "version": "1.0.0",
   "private": true,
-  "description": "Nomina-Ec como un solo sistema: backend, PWA web y app movil gobernados desde la raiz.",
+  "description": "SKNOMINA como un solo sistema: backend, PWA web y app movil gobernados desde la raiz.",
   "workspaces": [
     "backend",
     "frontend-web",

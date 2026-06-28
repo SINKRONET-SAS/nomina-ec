@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Formulario 107 individual SRI
+// SKNOMINA - Formulario 107 individual SRI
 // ============================================================
 const pdfmake = require('pdfmake/build/pdfmake');
 pdfmake.vfs = require('pdfmake/build/vfs_fonts');
@@ -227,7 +227,7 @@ async function buildFormulario107Pdf({ data, anio, context = {} }) {
         layout: 'lightHorizontalLines',
       },
       {
-        text: 'Documento generado desde Nomina-Ec con base en roles de pago registrados. Debe validarse contra la ficha tecnica SRI vigente antes de presentacion oficial.',
+        text: 'Documento generado desde SKNOMINA con base en roles de pago registrados. Debe validarse contra la ficha tecnica SRI vigente antes de presentacion oficial.',
         style: 'warning',
         margin: [0, 16, 0, 0],
       },

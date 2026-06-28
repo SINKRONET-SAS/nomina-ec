@@ -252,7 +252,7 @@ function buildPayrollRoleDocDefinition(row) {
         margin: [0, 0, 0, 16],
       },
       {
-        text: `Plantilla rol_pago_nomina_ec v2026.06. Documento generado por Nomina-Ec. Fecha: ${generatedAt}.`,
+        text: `Plantilla rol_pago_sknomina v2026.06. Documento generado por SKNOMINA. Fecha: ${generatedAt}.`,
         style: 'audit',
       },
     ],
@@ -412,7 +412,7 @@ function buildPayrollRoleTransposedDocDefinition({ rows, anio, mes } = {}) {
       margin: [0, 0, 0, 14],
     },
     {
-      text: `Plantilla rol_pago_transpuesto_nomina_ec v2026.06. Documento generado por Nomina-Ec. Fecha: ${generatedAt}.`,
+      text: `Plantilla rol_pago_transpuesto_sknomina v2026.06. Documento generado por SKNOMINA. Fecha: ${generatedAt}.`,
       style: 'audit',
     }
   );

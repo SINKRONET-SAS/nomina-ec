@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Servicio de auditoria
+// SKNOMINA - Servicio de auditoria
 // ============================================================
 const db = require('../config/database');
 

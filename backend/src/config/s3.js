@@ -1,5 +1,5 @@
 // ============================================================
-// Nómina-Ec - Configuración de AWS S3 / DigitalOcean Spaces
+// SKNOMINA - Configuración de AWS S3 / DigitalOcean Spaces
 // ============================================================
 const {
   DeleteObjectCommand,
@@ -13,7 +13,7 @@ const fs = require('fs/promises');
 const path = require('path');
 require('dotenv').config();
 
-const BUCKET = process.env.AWS_S3_BUCKET || 'nomina-ec-documents';
+const BUCKET = process.env.AWS_S3_BUCKET || 'sknomina-documents';
 const REGION = process.env.AWS_REGION || 'us-east-1';
 const ENDPOINT = process.env.AWS_S3_ENDPOINT || undefined;
 const LOCAL_STORAGE_DIR = process.env.LOCAL_STORAGE_DIR
@@ -125,7 +125,7 @@ function decodeLocalStorageKey(encodedKey) {
 function localSigningSecret() {
   return cleanEnv(process.env.LOCAL_STORAGE_SIGNING_SECRET)
     || cleanEnv(process.env.JWT_SECRET)
-    || 'nomina-ec-local-storage-development-secret';
+    || 'sknomina-local-storage-development-secret';
 }
 
 function signLocalStoragePayload(payload) {

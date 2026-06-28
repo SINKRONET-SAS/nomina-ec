@@ -1,4 +1,4 @@
-// Nómina-Ec - Servicio de geolocalización (App móvil)
+// SKNOMINA - Servicio de geolocalización (App móvil)
 import * as Location from 'expo-location';
 
 export async function obtenerUbicacionActual() {

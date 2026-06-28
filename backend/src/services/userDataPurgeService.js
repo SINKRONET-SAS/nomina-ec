@@ -5,7 +5,7 @@ const AppError = require('../utils/AppError');
 
 function anonymizedEmailFor(userId) {
   const hash = crypto.createHash('sha256').update(String(userId)).digest('hex').slice(0, 12);
-  return `eliminado+${hash}@nomina-ec.local`;
+  return `eliminado+${hash}@sknomina.local`;
 }
 
 async function findUser({ targetUserId }) {

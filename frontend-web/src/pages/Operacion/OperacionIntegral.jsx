@@ -466,7 +466,7 @@ function OperacionIntegral() {
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Centro de trabajo</p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Operaciones de Nomina-Ec</h1>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Operaciones de SKNOMINA</h1>
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
               Accede a las configuraciones y flujos que sostienen empleados, asistencia, nomina,
               reportes e integraciones.

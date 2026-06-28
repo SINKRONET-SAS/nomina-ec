@@ -86,7 +86,7 @@ function Landing() {
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-teal-700 text-white">
               <Building2 size={19} />
             </span>
-            Nomina-Ec
+            SKNOMINA
           </Link>
           <nav className="flex items-center gap-3">
             <Link className="text-sm font-semibold text-slate-700 hover:text-slate-950" to="/precios">Planes</Link>
@@ -111,7 +111,7 @@ function Landing() {
               Paga sueldos, controla horarios y deja evidencia sin enredarte cada mes.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600">
-              Nomina-Ec concentra empleados, asistencia, roles de pago, documentos, zonas de marcacion,
+              SKNOMINA concentra empleados, asistencia, roles de pago, documentos, zonas de marcacion,
               archivo bancario, reportes para entidades publicas y auditoria por usuario.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
@@ -250,7 +250,7 @@ function Landing() {
             <p className="text-sm font-semibold uppercase text-teal-800">Proteccion de datos</p>
             <h2 className="mt-2 text-2xl font-semibold text-slate-950">Los datos de tus empleados se tratan con controles claros</h2>
             <p className="mt-4 text-sm leading-7 text-slate-600">
-              Nomina-Ec separa empresas, minimiza evidencias sensibles y mantiene historial de acciones.
+              SKNOMINA separa empresas, minimiza evidencias sensibles y mantiene historial de acciones.
               Tu empresa administra la relacion laboral y los consentimientos de cada trabajador.
             </p>
           </div>
@@ -272,7 +272,7 @@ function Landing() {
 
       <footer className="border-t border-slate-200 bg-white">
         <div className="page-container flex flex-wrap items-center justify-between gap-3 py-6 text-sm text-slate-600">
-          <span>Nomina-Ec</span>
+          <span>SKNOMINA</span>
           <div className="flex gap-4">
             <Link className="font-semibold text-slate-700" to="/soporte">Soporte</Link>
             <Link className="font-semibold text-slate-700" to="/terminos">Terminos</Link>

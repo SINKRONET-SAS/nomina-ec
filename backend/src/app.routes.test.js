@@ -14,4 +14,11 @@ describe('app route order', () => {
     expect(rolPdfIndex).toBeLessThan(periodIndex);
     expect(rolTranspuestoPdfIndex).toBeLessThan(periodIndex);
   });
+
+  test('GET de retorno de pago no activa planes con confirmPayment', () => {
+    const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
+    expect(source).toContain("app.get('/api/pagos/confirm', paymentController.paymentReturn)");
+    expect(source).toContain("app.post('/api/pagos/webhook', paymentController.confirmPayment)");
+    expect(source).not.toContain("app.get('/api/pagos/confirm', paymentController.confirmPayment)");
+  });
 });

@@ -69,6 +69,20 @@ const DEFAULT_NOVELTY_RULES = {
     calculationMode: 'minutes_hourly',
     affectsBankFile: true,
   },
+  permiso_con_sueldo: {
+    name: 'Permiso con sueldo',
+    payrollImpact: 'informativo',
+    calculationMode: 'informational',
+    conceptCode: 'permiso_con_sueldo',
+    affectsBankFile: false,
+  },
+  permiso_sin_sueldo: {
+    name: 'Permiso sin sueldo',
+    payrollImpact: 'descuento',
+    calculationMode: 'absence_day',
+    conceptCode: 'descuento_permiso_sin_sueldo',
+    affectsBankFile: true,
+  },
 };
 
 const VALID_PAYROLL_IMPACTS = new Set(['ingreso', 'descuento', 'informativo']);

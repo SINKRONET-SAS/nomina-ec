@@ -1,7 +1,7 @@
 {
-  "name": "nomina-ec-backend",
+  "name": "sknomina-backend",
   "version": "1.0.0",
-  "description": "Nómina-Ec - Backend API",
+  "description": "SKNOMINA - Backend API",
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",

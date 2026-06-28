@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Reportes tabulares de nomina
+// SKNOMINA - Reportes tabulares de nomina
 // ============================================================
 const ExcelJS = require('exceljs');
 const pdfmake = require('pdfmake/build/pdfmake');
@@ -228,7 +228,7 @@ function addPositionFilter(where, params, value) {
 
 async function buildWorkbook({ tenant, anio, mes, exportRows, reportCode, filters, context }) {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'Nomina-Ec';
+  workbook.creator = 'SKNOMINA';
   workbook.created = new Date();
   workbook.modified = new Date();
 

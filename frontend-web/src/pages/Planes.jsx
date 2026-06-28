@@ -81,7 +81,7 @@ function Planes() {
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-teal-700 text-white">
               <Building2 size={19} />
             </span>
-            Nómina-Ec
+            SKNOMINA
           </Link>
           <Link className="secondary-button" to="/login">Iniciar sesión</Link>
         </div>

@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Trabajos Programados
+// SKNOMINA - Trabajos Programados
 // ============================================================
 const cron = require('node-cron');
 const { calcularNominaMensual } = require('../services/calculoNominaService');

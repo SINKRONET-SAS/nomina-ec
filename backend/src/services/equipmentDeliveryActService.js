@@ -153,7 +153,7 @@ async function buildActPdf({ employee, tenant, items, fechaEntrega, observacione
     pageMargins: [36, 42, 36, 42],
     content: [
       { text: 'ACTA DE ENTREGA DE DOTACION Y EQUIPOS', style: 'title' },
-      { text: 'Documento generado por Nomina-Ec', style: 'audit', alignment: 'center', margin: [0, 0, 0, 16] },
+      { text: 'Documento generado por SKNOMINA', style: 'audit', alignment: 'center', margin: [0, 0, 0, 16] },
       {
         columns: [
           {
@@ -331,7 +331,7 @@ async function generateEquipmentDeliveryAct({
 
     const acta = actResult.rows[0];
     const metadata = {
-      source: 'sistema_nomina_ec',
+      source: 'sistema_sknomina',
       documentKind: 'acta_entrega_dotacion',
       equipmentDeliveryActId: acta.id,
       storageKey: key,

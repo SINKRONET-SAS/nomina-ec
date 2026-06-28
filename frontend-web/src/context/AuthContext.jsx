@@ -110,7 +110,7 @@ export function AuthProvider({ children }) {
     } catch (err) {
       throw normalizeAuthError(err.response?.data || {
         error: 'Error de conexión',
-        message: 'No se pudo conectar con Nómina-Ec.',
+        message: 'No se pudo conectar con SKNOMINA.',
       });
     }
   };

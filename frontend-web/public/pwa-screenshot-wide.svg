@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-label="Panel operativo de Nómina-Ec con datos ficticios">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-label="Panel operativo de SKNOMINA con datos ficticios">
   <rect width="1280" height="720" fill="#f8fafc"/>
   <rect x="72" y="58" width="1136" height="604" rx="18" fill="#fff" stroke="#dbe3eb"/>
-  <text x="112" y="124" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#0f172a">Nómina-Ec</text>
+  <text x="112" y="124" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#0f172a">SKNOMINA</text>
   <text x="112" y="164" font-family="Arial, sans-serif" font-size="18" fill="#475569">Cierre junio 2026 · Empresa demo Ecuador · datos ficticios</text>
   <rect x="112" y="208" width="328" height="118" rx="12" fill="#ecfeff" stroke="#99f6e4"/>
   <rect x="476" y="208" width="328" height="118" rx="12" fill="#f8fafc" stroke="#dbe3eb"/>

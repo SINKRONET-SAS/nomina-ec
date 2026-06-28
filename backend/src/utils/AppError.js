@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Error estructurado de aplicacion
+// SKNOMINA - Error estructurado de aplicacion
 // ============================================================
 
 class AppError extends Error {

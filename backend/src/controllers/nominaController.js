@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Controlador de Nomina
+// SKNOMINA - Controlador de Nomina
 // ============================================================
 const db = require('../config/database');
 const { calcularNominaMensual } = require('../services/calculoNominaService');

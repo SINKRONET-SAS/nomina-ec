@@ -44,7 +44,7 @@ const tenantResolver = async (req, res, next) => {
       if (result.rows.length === 0) {
         return res.status(403).json({
           error: 'TENANT_INACTIVO',
-          message: 'La empresa no está activa en Nómina-Ec.',
+          message: 'La empresa no está activa en SKNOMINA.',
           correlationId: req.correlationId,
         });
       }

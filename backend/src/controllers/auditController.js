@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Controlador de Auditoria
+// SKNOMINA - Controlador de Auditoria
 // ============================================================
 const db = require('../config/database');
 

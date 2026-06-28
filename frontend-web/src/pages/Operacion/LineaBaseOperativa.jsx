@@ -25,7 +25,7 @@ function LineaBaseOperativa() {
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Configuracion operativa</p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Checklist para operar Nomina-Ec</h1>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Checklist para operar SKNOMINA</h1>
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
               Revisa que la empresa, los empleados, la asistencia, la nomina y los reportes tengan la informacion
               necesaria antes de cerrar el periodo.

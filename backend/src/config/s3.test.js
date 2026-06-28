@@ -93,7 +93,7 @@ describe('almacenamiento local para desarrollo', () => {
 
   beforeEach(async () => {
     jest.resetModules();
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'nomina-ec-storage-'));
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'sknomina-storage-'));
     process.env.STORAGE_DRIVER = 'local';
     process.env.LOCAL_STORAGE_DIR = tempDir;
     process.env.PORT = '3999';

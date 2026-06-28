@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Middleware de Reglas Irrenunciables
+// SKNOMINA - Middleware de Reglas Irrenunciables
 // Estas reglas NO PUEDEN ser desactivadas por ningún cliente
 // ============================================================
 

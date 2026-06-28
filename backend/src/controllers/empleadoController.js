@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Controlador de Empleados
+// SKNOMINA - Controlador de Empleados
 // ============================================================
 const db = require('../config/database');
 const { validarCedula } = require('../utils/validarCedula');
@@ -8,6 +8,7 @@ const { recordAudit } = require('../services/auditService');
 const { getBankProfileForTenant } = require('../services/bancoAebGenerator');
 const { s3Upload } = require('../config/s3');
 const { generarContrato } = require('../services/templateGenerator');
+const { getEmployeeHistory } = require('../services/employeeHistoryService');
 const {
   commitEmployeeImport,
   listEmployeeImportBatches,
@@ -473,6 +474,44 @@ async function obtener(req, res) {
   } catch (err) {
     console.error('[EMPLEADOS] Error:', err);
     res.status(500).json({ error: 'Error interno' });
+  }
+}
+
+async function historial(req, res) {
+  try {
+    if (!ensureEmployeeReadRole(req, res)) return;
+    const { id } = req.params;
+    const employee = await db.query(
+      'SELECT id FROM empleados WHERE id = $1 AND tenant_id = $2 LIMIT 1',
+      [id, req.tenantId]
+    );
+    if (employee.rows.length === 0) {
+      return res.status(404).json({
+        error: 'EMPLEADO_NO_ENCONTRADO',
+        message: 'Empleado no encontrado para el tenant actual.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const history = await getEmployeeHistory({
+      tenantId: req.tenantId,
+      empleadoId: id,
+      limit: req.query.limit,
+    });
+    return res.json({ success: true, history, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[EMPLEADOS] Error consultando historial', {
+      code: err.code || 'EMPLEADO_HISTORIAL_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'EMPLEADO_HISTORIAL_ERROR',
+      message: err.message || 'No pudimos consultar el historial laboral.',
+      correlationId: req.correlationId,
+    });
   }
 }
 
@@ -959,6 +998,7 @@ async function terminar(req, res) {
 module.exports = {
   listar,
   obtener,
+  historial,
   crear,
   actualizar,
   terminar,

@@ -41,7 +41,7 @@ function ActasFiniquito() {
         <p className="font-semibold">Registro SUT/MDT pendiente de gestion externa</p>
         <p className="mt-1">
           Los contratos y actas de finiquito deben revisarse frente a la obligacion laboral aplicable y registrarse en el
-          Sistema Unico de Trabajo del Ministerio del Trabajo cuando corresponda. Nomina-Ec deja la evidencia lista,
+          Sistema Unico de Trabajo del Ministerio del Trabajo cuando corresponda. SKNOMINA deja la evidencia lista,
           pero no marca el documento como registrado sin confirmacion externa o credenciales oficiales.
         </p>
       </section>

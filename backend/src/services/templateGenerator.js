@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Generador de contratos legales versionados
+// SKNOMINA - Generador de contratos legales versionados
 // ============================================================
 const fs = require('fs');
 const path = require('path');
@@ -323,7 +323,7 @@ function buildContractContext({ employee, tenant, template, legalParameters, yea
       sourceStatus: legalParameters.sourceStatus || 'pendiente_validacion_oficial',
     },
     system: {
-      product: 'Nomina-Ec',
+      product: 'SKNOMINA',
     },
   };
 }
@@ -487,7 +487,7 @@ async function generarContrato(empleado, tenant, tipoContrato = DEFAULT_TEMPLATE
   const key = `documentos/${tenant.id}/${employee.id}/contratos/${template.templateKey}_${Date.now()}.pdf`;
   const url = await s3Upload(pdfBuffer, key, 'application/pdf');
   const metadata = {
-    source: 'sistema_nomina_ec',
+    source: 'sistema_sknomina',
     documentKind: 'contrato',
     templateKey: template.templateKey,
     templateDisplayName: template.displayName,

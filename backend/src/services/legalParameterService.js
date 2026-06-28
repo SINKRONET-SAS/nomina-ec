@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Parametros legales versionados
+// SKNOMINA - Parametros legales versionados
 // ============================================================
 const db = require('../config/database');
 const AppError = require('../utils/AppError');

@@ -1,5 +1,5 @@
 // ============================================================
-// Nómina-Ec - Entrada principal del frontend web
+// SKNOMINA - Entrada principal del frontend web
 // ============================================================
 import React from 'react';
 import { createRoot } from 'react-dom/client';

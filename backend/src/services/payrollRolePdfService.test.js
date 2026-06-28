@@ -151,7 +151,7 @@ describe('payrollRolePdfService', () => {
     expect(serialized).toContain('Almeida Carla');
     expect(serialized).toContain('Benitez Marco');
     expect(serialized).toContain('$1315.00');
-    expect(serialized).toContain('rol_pago_transpuesto_nomina_ec');
+    expect(serialized).toContain('rol_pago_transpuesto_sknomina');
   });
 
   test('genera rol transpuesto por periodo y sube un unico PDF consolidado', async () => {

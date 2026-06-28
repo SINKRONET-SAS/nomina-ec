@@ -1,5 +1,5 @@
 // ============================================================
-// Nómina-Ec - Layout principal
+// SKNOMINA - Layout principal
 // ============================================================
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
@@ -83,7 +83,7 @@ function Layout() {
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 transform flex-col bg-white shadow-lg ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-200 ease-in-out lg:translate-x-0`}>
         <div className="flex h-16 shrink-0 items-center justify-between border-b px-6">
-          <h1 className="text-xl font-bold text-teal-700">Nómina-Ec</h1>
+          <h1 className="text-xl font-bold text-teal-700">SKNOMINA</h1>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden">
             <X size={20} />
           </button>

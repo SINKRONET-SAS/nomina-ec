@@ -174,7 +174,7 @@ function PlanesGestion() {
         <h1 className="text-2xl font-semibold text-slate-950">Gestion de planes</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
           Administra el catalogo comercial con validacion previa. Las capacidades guardadas aqui alimentan el
-          enforcement backend de Nomina-Ec: archivos bancarios, reportes avanzados y limites operativos.
+          enforcement backend de SKNOMINA: archivos bancarios, reportes avanzados y limites operativos.
         </p>
       </section>
 

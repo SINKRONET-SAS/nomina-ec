@@ -12,7 +12,7 @@ function hashSecret() {
   return process.env.COMMUNICATION_EVENT_HASH_SECRET
     || process.env.EMPLOYEE_INVITE_SECRET
     || process.env.JWT_SECRET
-    || 'nomina-ec-local-communication-audit';
+    || 'sknomina-local-communication-audit';
 }
 
 function normalizeRecipient(value) {

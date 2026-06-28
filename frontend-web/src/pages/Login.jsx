@@ -1,5 +1,5 @@
 // ============================================================
-// Nómina-Ec - Página de login
+// SKNOMINA - Página de login
 // ============================================================
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -39,7 +39,7 @@ function Login() {
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-teal-500 text-slate-950">
               <Building2 size={19} />
             </span>
-            Nómina-Ec
+            SKNOMINA
           </Link>
 
           <div className="max-w-xl">
@@ -73,7 +73,7 @@ function Login() {
               <span className="flex h-9 w-9 items-center justify-center rounded-md bg-teal-700 text-white">
                 <Building2 size={19} />
               </span>
-              Nómina-Ec
+              SKNOMINA
             </Link>
             <Link className="ml-auto text-sm font-semibold text-teal-800" to="/precios">
               Ver planes
@@ -87,7 +87,7 @@ function Login() {
               </div>
               <h2 className="mt-5 text-2xl font-semibold text-slate-950">Iniciar sesión</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Ingresa al panel operativo de Nómina-Ec.
+                Ingresa al panel operativo de SKNOMINA.
               </p>
             </div>
 

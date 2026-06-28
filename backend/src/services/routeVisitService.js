@@ -1240,7 +1240,7 @@ async function exportRouteReportCsv({ tenantId, fechaInicio, fechaFin }) {
 async function exportRouteReportXlsx({ tenantId, fechaInicio, fechaFin }) {
   const report = await getRouteReportRows({ tenantId, fechaInicio, fechaFin });
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'Nomina-Ec';
+  workbook.creator = 'SKNOMINA';
   workbook.created = new Date();
   const sheet = workbook.addWorksheet('Rutas de campo');
   sheet.columns = routeReportHeaders().map(([key, header]) => ({

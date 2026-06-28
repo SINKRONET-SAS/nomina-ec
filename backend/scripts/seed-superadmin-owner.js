@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Seed seguro de SUPERADMIN y OWNER demo opcional
+// SKNOMINA - Seed seguro de SUPERADMIN y OWNER demo opcional
 // ============================================================
 const bcrypt = require('bcryptjs');
 const { Client } = require('pg');

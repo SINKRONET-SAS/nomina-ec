@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - CorrelationId por solicitud
+// SKNOMINA - CorrelationId por solicitud
 // ============================================================
 const { v4: uuidv4 } = require('uuid');
 

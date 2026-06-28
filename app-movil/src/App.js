@@ -1,4 +1,4 @@
-// Nómina-Ec - App móvil (React Native + Expo)
+// SKNOMINA - App móvil (React Native + Expo)
 // App.js - Componente principal
 import React, { useState, useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -10,6 +10,7 @@ import LoginScreen from './screens/LoginScreen';
 import MarcacionScreen from './screens/MarcacionScreen';
 import MisMarcacionesScreen from './screens/MisMarcacionesScreen';
 import AutoservicioScreen from './screens/AutoservicioScreen';
+import PermisosScreen from './screens/PermisosScreen';
 import RutaHoyScreen from './screens/RutaHoyScreen';
 import GastosMovilizacionScreen from './screens/GastosMovilizacionScreen';
 import { initMovilizacionDB } from './db/movilizacion';
@@ -18,8 +19,9 @@ const tabs = [
   { id: 'marcar', label: 'Marcar' },
   { id: 'ruta', label: 'Ruta' },
   { id: 'movilizacion', label: 'Moviliz.' },
+  { id: 'permisos', label: 'Permisos' },
   { id: 'historial', label: 'Historial' },
-  { id: 'autoservicio', label: 'Mi Nomina' },
+  { id: 'autoservicio', label: 'Mi Nómina' },
 ];
 
 function EmployeeAppShell({ onLogout }) {
@@ -28,6 +30,7 @@ function EmployeeAppShell({ onLogout }) {
   const renderScreen = () => {
     if (activeTab === 'ruta') return <RutaHoyScreen />;
     if (activeTab === 'movilizacion') return <GastosMovilizacionScreen />;
+    if (activeTab === 'permisos') return <PermisosScreen />;
     if (activeTab === 'historial') return <MisMarcacionesScreen />;
     if (activeTab === 'autoservicio') return <AutoservicioScreen />;
     return <MarcacionScreen onLogout={onLogout} />;
@@ -134,9 +137,9 @@ const styles = StyleSheet.create({
     borderTopColor: '#e2e8f0',
     borderTopWidth: 1,
     flexDirection: 'row',
-    gap: 8,
+    gap: 4,
     paddingBottom: 12,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     paddingTop: 10,
   },
   tabButton: {
@@ -154,8 +157,9 @@ const styles = StyleSheet.create({
   },
   tabText: {
     color: '#334155',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '800',
+    textAlign: 'center',
   },
   tabTextActive: {
     color: '#ffffff',

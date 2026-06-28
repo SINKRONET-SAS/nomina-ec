@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const CONSENT_KEY = 'nomina_ec_cookie_consent_v2026_06';
+const CONSENT_KEY = 'sknomina_cookie_consent_v2026_06';
 
 function readConsent() {
   try {

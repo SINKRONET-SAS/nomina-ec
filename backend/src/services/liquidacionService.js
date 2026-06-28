@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Servicio de Liquidacion y Finiquito
+// SKNOMINA - Servicio de Liquidacion y Finiquito
 // ============================================================
 const db = require('../config/database');
 const AppError = require('../utils/AppError');

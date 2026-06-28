@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Rate limiting simple en memoria
+// SKNOMINA - Rate limiting simple en memoria
 // ============================================================
 
 function createRateLimiter({ windowMs, max, keyPrefix }) {

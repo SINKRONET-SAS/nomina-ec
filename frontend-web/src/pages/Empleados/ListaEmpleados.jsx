@@ -7,6 +7,7 @@ import {
   Copy,
   Edit,
   FileSpreadsheet,
+  History,
   Link as LinkIcon,
   Plus,
   RotateCcw,
@@ -534,6 +535,9 @@ function ListaEmpleados() {
                         <div className="flex flex-wrap gap-2">
                           <Link className="text-teal-700 hover:text-teal-900" to={`/dashboard/empleados/${empleado.id}/editar`} title="Editar empleado">
                             <Edit size={16} />
+                          </Link>
+                          <Link className="text-slate-700 hover:text-slate-950" to={`/dashboard/empleados/${empleado.id}/historial`} title="Historial laboral">
+                            <History size={16} />
                           </Link>
                           <Link className="text-red-600 hover:text-red-800" to={`/dashboard/empleados/${empleado.id}/terminar`} title="Terminar empleado">
                             <UserX size={16} />

@@ -36,12 +36,12 @@
   },
   "users": [
     {
-      "email": "owner.demo@nomina-ec.local",
+      "email": "owner.demo@sknomina.local",
       "role": "OWNER_ADMIN",
       "passwordPolicy": "generated_by_environment_secret"
     },
     {
-      "email": "operador.demo@nomina-ec.local",
+      "email": "operador.demo@sknomina.local",
       "role": "NOMINA_OPERADOR",
       "passwordPolicy": "generated_by_environment_secret"
     }

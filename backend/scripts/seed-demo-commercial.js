@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Seed comercial DCEN26
+// SKNOMINA - Seed comercial DCEN26
 // ============================================================
 const crypto = require('crypto');
 const fs = require('fs');
@@ -9,7 +9,7 @@ require('dotenv').config();
 
 const correlationId = process.env.CORRELATION_ID || `dcen26-demo-${Date.now()}`;
 const demoCode = 'DCEN26';
-const demoDomain = process.env.DEMO_EMAIL_DOMAIN || 'demo.nomina-ec.local';
+const demoDomain = process.env.DEMO_EMAIL_DOMAIN || 'demo.sknomina.local';
 const demoRuc = process.env.DEMO_TENANT_RUC || '1799999999001';
 const demoPlanId = 'demo_comercial_2026';
 const credentialsPath = path.join(__dirname, '..', '.demo-credentials.json');
@@ -225,7 +225,7 @@ async function insertCommercialPlan(client) {
       updated_at = NOW()
   `, [
     demoPlanId,
-    'Demo Comercial Nomina-Ec',
+    'Demo Comercial SKNOMINA',
     'Plan interno para presentaciones comerciales con datos ficticios.',
     0,
     toJson(demoMetadata({ commercialDemo: true })),
@@ -242,8 +242,8 @@ async function insertTenant(client) {
     RETURNING id
   `, [
     demoRuc,
-    'EMPRESA DEMO NOMINA EC S.A.',
-    'Demo Nomina-Ec',
+    'EMPRESA DEMO SKNOMINA S.A.',
+    'Demo SKNOMINA',
     toJson(demoMetadata({
       codigo: 'EMPRESA_DEMO_COMERCIAL',
       ambiente: 'demo_comercial',
@@ -330,7 +330,7 @@ async function insertBankProfile(client, tenantId) {
       tenant_id, banco_codigo, banco_nombre, delimiter, encoding, date_format,
       include_header, include_trailer, field_map, activo
     )
-    VALUES ($1,'DEMO','Banco Demo Nomina-Ec',';','utf8','YYYYMMDD',true,true,$2,true)
+    VALUES ($1,'DEMO','Banco Demo SKNOMINA',';','utf8','YYYYMMDD',true,true,$2,true)
     RETURNING id
   `, [tenantId, toJson({
     profile: 'DEMO',

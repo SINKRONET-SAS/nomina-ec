@@ -1,6 +1,6 @@
 {
     "version": "1.0.0",
-    "name": "nomina-ec-app",
+    "name": "sknomina-app",
     "overrides": {
         "uuid": "^11.1.1",
         "form-data": "^4.0.6"

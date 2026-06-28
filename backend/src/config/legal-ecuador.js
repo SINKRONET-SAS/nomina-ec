@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Parametros legales Ecuador
+// SKNOMINA - Parametros legales Ecuador
 // ============================================================
 
 const LEGAL_PARAMETERS = {

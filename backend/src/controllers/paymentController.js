@@ -691,9 +691,31 @@ async function paymentCancelled(req, res) {
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pago cancelado</title></head>
 <body style="font-family:Arial,sans-serif;padding:32px;text-align:center;color:#243042">
   <h1>Pago cancelado</h1>
-  <p>No se activo ningun plan. Puedes cerrar esta ventana y volver a Nomina-Ec.</p>
+  <p>No se activo ningun plan. Puedes cerrar esta ventana y volver a SKNOMINA.</p>
 </body>
 </html>`);
+}
+
+async function paymentReturn(req, res) {
+  const clientTransactionId = String(req.query.clientTransactionId || req.query.clientTxId || '').trim();
+  res.status(200).send(`<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pago recibido</title></head>
+<body style="font-family:Arial,sans-serif;padding:32px;text-align:center;color:#243042">
+  <h1>Pago recibido</h1>
+  <p>SKNOMINA registro el retorno del proveedor. La activacion del plan se procesa solo con confirmacion segura POST o webhook.</p>
+  <p style="font-family:monospace;background:#f1f5f9;padding:12px;border-radius:8px">${escapeHtml(clientTransactionId || 'sin referencia')}</p>
+</body>
+</html>`);
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 async function revokePaymentMethod(req, res, next) {
@@ -722,6 +744,7 @@ module.exports = {
   subscriptionStatus,
   createCheckoutIntent,
   confirmPayment,
+  paymentReturn,
   payphoneWebhook,
   paymentCancelled,
   revokePaymentMethod,

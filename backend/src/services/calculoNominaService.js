@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Motor de Calculo de Nomina Mensual
+// SKNOMINA - Motor de Calculo de Nomina Mensual
 // Ecuador
 // ============================================================
 const db = require('../config/database');

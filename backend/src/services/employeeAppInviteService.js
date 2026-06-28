@@ -62,7 +62,7 @@ function addDays(date, days) {
 }
 
 function buildActivationUrl(code) {
-  const base = String(process.env.MOBILE_APP_ACTIVATION_URL || 'nominaec://employee/activate').trim();
+  const base = String(process.env.MOBILE_APP_ACTIVATION_URL || 'sknomina://employee/activate').trim();
   const separator = base.includes('?') ? '&' : '?';
   return `${base}${separator}code=${encodeURIComponent(code)}`;
 }

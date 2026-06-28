@@ -183,7 +183,7 @@ export default function LoginScreen({ onLogin }) {
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.card}>
-        <Text style={styles.title}>Nomina-Ec</Text>
+        <Text style={styles.title}>SKNOMINA</Text>
         <Text style={styles.subtitle}>Asistencia movil para empleados</Text>
 
         <View style={styles.tabs}>

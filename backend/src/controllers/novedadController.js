@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Controlador de Novedades
+// SKNOMINA - Controlador de Novedades
 // ============================================================
 const db = require('../config/database');
 const { recordAudit } = require('../services/auditService');

@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Utilidades monetarias
+// SKNOMINA - Utilidades monetarias
 // ============================================================
 
 function roundMoney(value) {

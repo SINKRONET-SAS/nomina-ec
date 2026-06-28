@@ -1,5 +1,5 @@
 // ============================================================
-// Nómina-Ec - Aplicacion principal backend
+// SKNOMINA - Aplicacion principal backend
 // ============================================================
 const express = require('express');
 const cors = require('cors');
@@ -36,7 +36,7 @@ app.use((req, res, next) => {
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
-    service: 'Nómina-Ec Backend',
+    service: 'SKNOMINA Backend',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
     correlationId: req.correlationId,
@@ -52,7 +52,7 @@ app.post('/api/mobile/empleado/activar', authRateLimit, employeeAppInviteControl
 
 const paymentController = require('./controllers/paymentController');
 app.get('/api/pagos/planes', paymentController.listPublicPlans);
-app.get('/api/pagos/confirm', paymentController.confirmPayment);
+app.get('/api/pagos/confirm', paymentController.paymentReturn);
 app.get('/api/pagos/cancelado', paymentController.paymentCancelled);
 app.post('/api/pagos/webhook', paymentController.confirmPayment);
 app.post('/api/pagos/webhook/payphone', paymentController.payphoneWebhook);
@@ -122,6 +122,7 @@ app.post('/api/empleados/importar/preview', requireRole('owner', 'admin_rrhh'), 
 app.post('/api/empleados/importar/confirmar', requireRole('owner', 'admin_rrhh'), empleadoController.confirmarImportacion);
 app.delete('/api/empleados/importar/lotes/:batchId', requireRole('owner', 'admin_rrhh'), empleadoController.revertirImportacion);
 app.get('/api/empleados/:id', requireRole('owner', 'admin_rrhh', 'supervisor'), empleadoController.obtener);
+app.get('/api/empleados/:id/historial', requireRole('owner', 'admin_rrhh', 'supervisor'), empleadoController.historial);
 app.post('/api/empleados', requireRole('owner', 'admin_rrhh'), empleadoController.crear);
 app.put('/api/empleados/:id', requireRole('owner', 'admin_rrhh'), empleadoController.actualizar);
 app.post('/api/empleados/:id/app-invitacion', requireRole('owner', 'admin_rrhh'), employeeAppInviteController.crear);
@@ -157,6 +158,8 @@ app.get('/api/mobile/me', requireRole('empleado', 'owner', 'admin_rrhh'), mobile
 app.get('/api/mobile/asistencia/resumen', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.resumenAsistencia);
 app.post('/api/mobile/marcaciones', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.registrarMarcacionMovil);
 app.get('/api/mobile/ruta/hoy', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.rutaHoy);
+app.get('/api/mobile/historial', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.historial);
+app.post('/api/mobile/permisos', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.solicitarPermiso);
 app.post('/api/mobile/ruta/paradas/:stopId/llegada', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.registrarLlegadaRuta);
 app.post('/api/mobile/ruta/paradas/:stopId/salida', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.registrarSalidaRuta);
 app.post('/api/mobile/ruta/paradas/:stopId/omitir', requireRole('empleado', 'owner', 'admin_rrhh'), mobileController.omitirParadaRuta);
@@ -296,7 +299,7 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
   console.log('============================================================');
-  console.log('  Nómina-Ec - Backend SaaS de nomina Ecuador');
+  console.log('  SKNOMINA - Backend SaaS de nomina Ecuador');
   console.log(`  Puerto: ${PORT}`);
   console.log(`  Entorno: ${process.env.NODE_ENV || 'development'}`);
   console.log(`  URL: http://localhost:${PORT}`);

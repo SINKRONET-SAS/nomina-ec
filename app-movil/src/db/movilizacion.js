@@ -3,7 +3,7 @@ import * as SQLite from 'expo-sqlite';
 let db = null;
 
 function database() {
-  if (!db) db = SQLite.openDatabaseSync('nomina_ec.db');
+  if (!db) db = SQLite.openDatabaseSync('sknomina.db');
   return db;
 }
 

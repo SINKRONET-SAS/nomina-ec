@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Panel operativo de nomina
+// SKNOMINA - Panel operativo de nomina
 // ============================================================
 import React, { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';

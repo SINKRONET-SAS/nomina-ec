@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Preparacion local de PostgreSQL
+// SKNOMINA - Preparacion local de PostgreSQL
 // ============================================================
 const { Client } = require('pg');
 
@@ -13,9 +13,9 @@ const adminConfig = {
 };
 
 const roles = [
-  { name: 'nomina_ec_app', password: 'nomina_ec_app_local' },
-  { name: 'nomina_ec_migration', password: 'nomina_ec_migration_local' },
-  { name: 'nomina_ec_readonly', password: 'nomina_ec_readonly_local' },
+  { name: 'sknomina_app', password: 'sknomina_app_local' },
+  { name: 'sknomina_migration', password: 'sknomina_migration_local' },
+  { name: 'sknomina_readonly', password: 'sknomina_readonly_local' },
 ];
 
 async function ensureRole(client, role) {
@@ -31,26 +31,26 @@ async function ensureRole(client, role) {
 }
 
 async function ensureDatabase(client) {
-  const result = await client.query('SELECT 1 FROM pg_database WHERE datname = $1', ['nomina_ec']);
+  const result = await client.query('SELECT 1 FROM pg_database WHERE datname = $1', ['sknomina']);
 
   if (result.rowCount > 0) {
-    console.log('[DB] Base local verificada: nomina_ec');
+    console.log('[DB] Base local verificada: sknomina');
     return;
   }
 
-  await client.query('CREATE DATABASE nomina_ec OWNER nomina_ec_migration');
-  console.log('[DB] Base local creada: nomina_ec');
+  await client.query('CREATE DATABASE sknomina OWNER sknomina_migration');
+  console.log('[DB] Base local creada: sknomina');
 }
 
 async function configureDatabase() {
-  const client = new Client({ ...adminConfig, database: 'nomina_ec' });
+  const client = new Client({ ...adminConfig, database: 'sknomina' });
   await client.connect();
 
   try {
     await client.query('CREATE EXTENSION IF NOT EXISTS pgcrypto');
-    await client.query('GRANT CONNECT ON DATABASE nomina_ec TO nomina_ec_app, nomina_ec_readonly');
-    await client.query('GRANT USAGE ON SCHEMA public TO nomina_ec_app, nomina_ec_readonly');
-    await client.query('GRANT CREATE ON SCHEMA public TO nomina_ec_migration');
+    await client.query('GRANT CONNECT ON DATABASE sknomina TO sknomina_app, sknomina_readonly');
+    await client.query('GRANT USAGE ON SCHEMA public TO sknomina_app, sknomina_readonly');
+    await client.query('GRANT CREATE ON SCHEMA public TO sknomina_migration');
     console.log('[DB] Extensiones y privilegios locales verificados');
   } finally {
     await client.end();

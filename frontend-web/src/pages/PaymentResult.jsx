@@ -15,7 +15,7 @@ function PaymentResult() {
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-teal-700 text-white">
               <Building2 size={19} />
             </span>
-            Nómina-Ec
+            SKNOMINA
           </Link>
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
             {mock ? <Clock3 size={28} /> : <CheckCircle2 size={28} />}

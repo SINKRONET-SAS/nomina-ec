@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Generador de XML SAE para IESS
+// SKNOMINA - Generador de XML SAE para IESS
 // Sistema de Aviso de Entrada/Salida
 // ============================================================
 const { XMLBuilder } = require('fast-xml-parser');

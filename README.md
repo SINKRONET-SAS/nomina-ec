@@ -1,6 +1,6 @@
-# Nomina-Ec - Sistema de nomina Ecuador
+# SKNOMINA - Sistema de nomina Ecuador
 
-Nomina-Ec es un solo sistema operativo para nomina, asistencia, documentos laborales, reportes y app movil. El codigo esta organizado como monorepo con tres workspaces, pero no son tres productos separados:
+SKNOMINA es un solo sistema operativo para nomina, asistencia, documentos laborales, reportes y app movil. El codigo esta organizado como monorepo con tres workspaces, pero no son tres productos separados:
 
 - `backend`: API, PostgreSQL, Prisma, calculo de nomina, auditoria, reportes e integraciones.
 - `frontend-web`: PWA administrativa para operar empleados, parametrizacion, novedades, nomina y reportes.

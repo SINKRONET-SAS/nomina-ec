@@ -49,7 +49,7 @@ function ForgotPassword() {
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-teal-700 text-white">
               <Building2 size={19} />
             </span>
-            Nómina-Ec
+            SKNOMINA
           </Link>
           <div className="flex h-11 w-11 items-center justify-center rounded-md bg-teal-50 text-teal-800">
             <KeyRound size={22} />

@@ -1,5 +1,5 @@
 // ============================================================
-// Nómina-Ec - Frontend web
+// SKNOMINA - Frontend web
 // App.jsx - Componente Principal
 // ============================================================
 import React from 'react';
@@ -28,6 +28,7 @@ import LineaBaseOperativa from './pages/Operacion/LineaBaseOperativa';
 import OperacionIntegral from './pages/Operacion/OperacionIntegral';
 import MovilizacionAprobacion from './pages/Operacion/MovilizacionAprobacion';
 import ListaEmpleados from './pages/Empleados/ListaEmpleados';
+import HistorialEmpleado from './pages/Empleados/HistorialEmpleado';
 import NuevoEmpleado from './pages/Empleados/NuevoEmpleado';
 import TerminarEmpleado from './pages/Empleados/TerminarEmpleado';
 import NovedadesPendientes from './pages/Asistencia/NovedadesPendientes';
@@ -121,6 +122,11 @@ function App() {
               <Route path="empleados/:id/editar" element={
                 <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
                   <NuevoEmpleado />
+                </ProtectedRoute>
+              } />
+              <Route path="empleados/:id/historial" element={
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh', 'supervisor']}>
+                  <HistorialEmpleado />
                 </ProtectedRoute>
               } />
               <Route path="empleados/:id/terminar" element={

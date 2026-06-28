@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Controlador de Documentos Legales
+// SKNOMINA - Controlador de Documentos Legales
 // ============================================================
 const db = require('../config/database');
 const { generarContrato, listContractTemplates } = require('../services/templateGenerator');

@@ -100,7 +100,7 @@ export const pwaWorkbox = {
       urlPattern: ({ request }) => request.mode === 'navigate',
       handler: 'NetworkFirst',
       options: {
-        cacheName: 'nonomina-ec-shell',
+        cacheName: 'nosknomina-shell',
         networkTimeoutSeconds: 5,
       },
     },

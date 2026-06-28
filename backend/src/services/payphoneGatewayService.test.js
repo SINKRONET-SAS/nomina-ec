@@ -44,7 +44,7 @@ describe('payphoneGatewayService', () => {
         ivaCentavos: 150,
         moneda: 'USD',
       },
-      reference: 'nominaec-TENANT-USER-PRO-1234567890',
+      reference: 'sknomina-TENANT-USER-PRO-1234567890',
       post,
     });
 
@@ -55,7 +55,7 @@ describe('payphoneGatewayService', () => {
         amountWithTax: 1000,
         tax: 150,
         storeId: 12345,
-        clientTransactionId: 'nominaec-TENANT-USER-PRO-1234567890',
+        clientTransactionId: 'sknomina-TENANT-USER-PRO-1234567890',
         responseUrl: buildConfirmationUrl('https://api.nomina.example'),
       }),
       expect.objectContaining({ Authorization: 'Bearer token-real' }),

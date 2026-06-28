@@ -1,6 +1,40 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-CIERRE-DEFINITIVO-AUDITORIA-SKNOMINA-2026-V4
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-CIERRE-DEFINITIVO-AUDITORIA-SKNOMINA-2026-V4 |
+| Codigo | CDANV4 |
+| Estado | Ejecutado localmente; QA especifica backend PASS |
+| Fase actual | CDANV4-05 QA release |
+| Fuente auditoria | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\AuditoriaNominaEC2026V4.jsx` |
+| Scripts | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\v_nominaec\nominaec_v4_scripts.jsx` |
+| Hallazgos | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\v_nominaec\nominaec_v4_hallazgos.jsx` |
+| Plan doc | `docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_SKNOMINA_2026_V4.md` |
+| Matriz | `docs2/cierre-definitivo-auditoria-sknomina-2026-v4/MATRIZ_CDANV4_HALLAZGOS.md` |
+| Contrato | `docs2/cierre-definitivo-auditoria-sknomina-2026-v4/CONTRATO_CDANV4_CIERRE_DEFINITIVO.md` |
+| Runbook | `docs2/cierre-definitivo-auditoria-sknomina-2026-v4/RUNBOOK_CDANV4_QA_RELEASE.md` |
+| Prompts | `.github/prompts/CDANV4-{00..05}-*.md` |
+
+### Alcance CDANV4
+
+CDANV4 cierra la auditoria V4 sobre el repo real. Se verifico que rol PDF y `sendRolPagoDisponible()` ya estaban cerrados previamente. Se corrigio el retorno GET de pagos para que no active planes, se agregaron permisos remunerados/no remunerados como novedades pendientes, se expuso historial laboral agrupado en PWA/mobile, se rehizo autoservicio mobile en tres tabs y se reemplazo la marca activa NOMINA-EC por SKNOMINA.
+
+### Decisiones
+
+- “Mi Nómina” es etiqueta funcional de autoservicio y no se cambia a SKNOMINA.
+- SKNOMINA es la marca visible del producto, correos, metadatos PWA/mobile, Render, documentos generados y textos legales activos.
+- Los planes historicos previos pueden conservar nombres antiguos como evidencia; el runtime activo no debe reintroducir NOMINA-EC.
+
+### Validacion CDANV4
+
+- `npm.cmd --workspace=backend test -- app.routes.test.js mobileController.test.js paymentController.test.js payrollRolePdfService.test.js communicationService.test.js payphoneGatewayService.test.js`: PASS, 6 suites, 22 tests.
+- Pendientes antes de push final: `prisma:validate`, `build:web`, `check:mobile`.
+
+---
+
 ## Open Haiky Plan - HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V3
 
 | Campo | Valor |

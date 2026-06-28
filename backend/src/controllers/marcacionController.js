@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Controlador de Marcaciones
+// SKNOMINA - Controlador de Marcaciones
 // ============================================================
 const db = require('../config/database');
 const { validarMarcacion } = require('../services/marcacionValidator');

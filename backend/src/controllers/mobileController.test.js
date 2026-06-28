@@ -11,13 +11,32 @@ jest.mock('../services/employeeAppInviteService', () => ({
   resolveLinkedEmployee: jest.fn(),
 }));
 
+jest.mock('../services/auditService', () => ({
+  recordAudit: jest.fn(),
+}));
+
+jest.mock('../services/employeeHistoryService', () => ({
+  getEmployeeHistory: jest.fn(),
+}));
+
+jest.mock('../services/monthlyPeriodService', () => ({
+  ensurePayrollPeriodForDate: jest.fn(),
+}));
+
+jest.mock('../services/payrollNoveltyService', () => ({
+  ensureNoveltyTypeAllowed: jest.fn(),
+}));
+
 const db = require('../config/database');
 const { validarMarcacion } = require('../services/marcacionValidator');
+const { recordAudit } = require('../services/auditService');
 const {
   resolveAttendanceReadiness,
   resolveLinkedEmployee,
 } = require('../services/employeeAppInviteService');
-const { registrarMarcacionMovil, resolveEmployee } = require('./mobileController');
+const { ensurePayrollPeriodForDate } = require('../services/monthlyPeriodService');
+const { ensureNoveltyTypeAllowed } = require('../services/payrollNoveltyService');
+const { registrarMarcacionMovil, resolveEmployee, solicitarPermiso } = require('./mobileController');
 
 function mockResponse() {
   const res = {};
@@ -28,7 +47,7 @@ function mockResponse() {
 
 const reqBase = {
   tenantId: 'tenant-1',
-  usuario: { email: 'empleado.demo@nomina-ec.local', rol: 'empleado' },
+  usuario: { email: 'empleado.demo@sknomina.local', rol: 'empleado' },
   usuarioId: 'user-1',
   correlationId: 'corr-1',
   ip: '127.0.0.1',
@@ -40,11 +59,14 @@ describe('mobileController', () => {
     validarMarcacion.mockReset();
     resolveAttendanceReadiness.mockReset();
     resolveLinkedEmployee.mockReset();
+    recordAudit.mockReset();
+    ensurePayrollPeriodForDate.mockReset();
+    ensureNoveltyTypeAllowed.mockReset();
   });
 
   test('resolveEmployee vincula usuario por employee_app_links', async () => {
     resolveLinkedEmployee.mockResolvedValueOnce({
-      employee: { id: 'emp-1', email_personal: 'empleado.demo@nomina-ec.local' },
+      employee: { id: 'emp-1', email_personal: 'empleado.demo@sknomina.local' },
       linkSource: 'employee_app_link',
     });
     resolveAttendanceReadiness.mockResolvedValueOnce({
@@ -95,7 +117,7 @@ describe('mobileController', () => {
 
   test('registrarMarcacionMovil usa empleado resuelto, no userId', async () => {
     resolveLinkedEmployee.mockResolvedValueOnce({
-      employee: { id: 'emp-1', email_personal: 'empleado.demo@nomina-ec.local' },
+      employee: { id: 'emp-1', email_personal: 'empleado.demo@sknomina.local' },
       linkSource: 'employee_app_link',
     });
     resolveAttendanceReadiness.mockResolvedValueOnce({
@@ -122,6 +144,72 @@ describe('mobileController', () => {
       accuracy: 15,
       source: 'mobile',
     }));
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  test('solicitarPermiso crea novedad pendiente sin sueldo desde mobile', async () => {
+    resolveLinkedEmployee.mockResolvedValueOnce({
+      employee: { id: 'emp-1', email_personal: 'empleado.demo@sknomina.local' },
+      linkSource: 'employee_app_link',
+    });
+    resolveAttendanceReadiness.mockResolvedValueOnce({
+      readiness: {
+        ready: true,
+        blockers: [],
+        workZone: null,
+        organizationUnit: null,
+        workShift: null,
+      },
+    });
+    ensurePayrollPeriodForDate.mockResolvedValueOnce({
+      id: 'period-1',
+      periodoNomina: '2026-06',
+      status: 'open',
+    });
+    ensureNoveltyTypeAllowed.mockResolvedValueOnce({
+      code: 'permiso_sin_sueldo',
+      payrollImpact: 'descuento',
+    });
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'nov-1',
+        empleado_id: 'emp-1',
+        fecha: '2026-06-20',
+        tipo_novedad: 'permiso_sin_sueldo',
+        minutos: 240,
+        estado: 'pendiente',
+      }],
+    });
+    recordAudit.mockResolvedValueOnce(undefined);
+    const req = {
+      ...reqBase,
+      body: {
+        fechaInicio: '2026-06-20',
+        fechaFin: '2026-06-20',
+        remunerado: false,
+        minutos: 240,
+        motivo: 'Cita medica',
+      },
+    };
+    const res = mockResponse();
+
+    await solicitarPermiso(req, res);
+
+    expect(ensureNoveltyTypeAllowed).toHaveBeenCalledWith(expect.objectContaining({
+      tipoNovedad: 'permiso_sin_sueldo',
+      anio: 2026,
+      mes: 6,
+    }));
+    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO novedades_asistencia'), expect.arrayContaining([
+      'emp-1',
+      'tenant-1',
+      'period-1',
+      '2026-06',
+      '2026-06-20',
+      'permiso_sin_sueldo',
+      240,
+      '[Solicitud mobile] Cita medica',
+    ]));
     expect(res.status).toHaveBeenCalledWith(201);
   });
 });

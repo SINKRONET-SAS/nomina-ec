@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Generador de XML RDEP para SRI
+// SKNOMINA - Generador de XML RDEP para SRI
 // Anexo de relacion de dependencia
 // ============================================================
 const crypto = require('crypto');

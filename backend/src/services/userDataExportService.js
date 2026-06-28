@@ -160,7 +160,7 @@ async function exportUserData({
   return {
     generatedAt: new Date().toISOString(),
     version: 'LOPDP-EXPORT-2026-06',
-    retentionNotice: 'Nomina-Ec entrega los datos personales disponibles para el titular. Documentos laborales, tributarios y de seguridad social pueden conservarse durante los plazos exigidos por normativa aplicable.',
+    retentionNotice: 'SKNOMINA entrega los datos personales disponibles para el titular. Documentos laborales, tributarios y de seguridad social pueden conservarse durante los plazos exigidos por normativa aplicable.',
     usuario: publicUser(user),
     empresa: normalizeRows(tenantResult.rows),
     empleado: normalizeRows(employeesResult.rows),

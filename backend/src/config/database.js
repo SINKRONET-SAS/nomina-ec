@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Configuracion de Base de Datos PostgreSQL
+// SKNOMINA - Configuracion de Base de Datos PostgreSQL
 // ============================================================
 const { Pool } = require('pg');
 const { AsyncLocalStorage } = require('async_hooks');
@@ -13,7 +13,7 @@ const poolConfig = process.env.DATABASE_URL
   : {
       host: process.env.DB_HOST || 'localhost',
       port: Number.parseInt(process.env.DB_PORT || '5432', 10),
-      database: process.env.DB_NAME || 'nomina_ec',
+      database: process.env.DB_NAME || 'sknomina',
       user: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASSWORD || 'postgres',
       ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,

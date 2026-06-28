@@ -1,5 +1,5 @@
 // ============================================================
-// Nomina-Ec - Generador de Archivo Bancario
+// SKNOMINA - Generador de Archivo Bancario
 // ============================================================
 const crypto = require('crypto');
 const ExcelJS = require('exceljs');

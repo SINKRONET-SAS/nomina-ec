@@ -55,7 +55,7 @@ describe('userDataPurgeService', () => {
         rows: [{
           id: 'user-2',
           tenant_id: 'tenant-1',
-          email: 'eliminado+demo@nomina-ec.local',
+          email: 'eliminado+demo@sknomina.local',
           rol: 'admin_rrhh',
           nombres: 'ELIMINADO',
           apellidos: 'LOPDP',

@@ -2,7 +2,7 @@ const nodemailer = require('nodemailer');
 const AppError = require('../utils/AppError');
 const { recordCommunicationEvent } = require('./communicationAuditService');
 
-const EMAIL_FROM_NAME = process.env.SMTP_FROM_NAME || 'Nomina-Ec';
+const EMAIL_FROM_NAME = process.env.SMTP_FROM_NAME || 'SKNOMINA';
 const DEFAULT_WHATSAPP_LANGUAGE = process.env.WHATSAPP_TEMPLATE_LANGUAGE || 'es';
 const DEFAULT_COMMUNICATION_PROVIDER = 'smtp';
 const DEVELOPMENT_DELIVERY_PROVIDER = 'development_log';
@@ -345,11 +345,11 @@ async function sendEmail({
   try {
     const info = await transporter.sendMail({
       from: {
-        name: sanitizeHeader(config.fromName, 'Nomina-Ec'),
+        name: sanitizeHeader(config.fromName, 'SKNOMINA'),
         address: normalizeEmail(config.fromEmail),
       },
       to: recipient,
-      subject: sanitizeHeader(subject, 'Notificacion Nomina-Ec'),
+      subject: sanitizeHeader(subject, 'Notificacion SKNOMINA'),
       text,
       html,
       disableFileAccess: true,
@@ -513,16 +513,16 @@ async function sendWhatsAppTemplate({
 function verificationEmailTemplate({ code, name }) {
   const safeName = sanitizeHeader(name, 'usuario');
   return {
-    subject: 'Codigo de verificacion Nomina-Ec',
-    text: `Hola ${safeName}.\n\nTu codigo de verificacion de Nomina-Ec es: ${code}\nVence en 24 horas.\n\nSi no solicitaste este acceso, ignora este mensaje.`,
-    html: `<p>Hola ${safeName}.</p><p>Tu codigo de verificacion de Nomina-Ec es:</p><p style="font-size:22px;font-weight:700;letter-spacing:3px">${code}</p><p>Vence en 24 horas.</p><p>Si no solicitaste este acceso, ignora este mensaje.</p>`,
+    subject: 'Codigo de verificacion SKNOMINA',
+    text: `Hola ${safeName}.\n\nTu codigo de verificacion de SKNOMINA es: ${code}\nVence en 24 horas.\n\nSi no solicitaste este acceso, ignora este mensaje.`,
+    html: `<p>Hola ${safeName}.</p><p>Tu codigo de verificacion de SKNOMINA es:</p><p style="font-size:22px;font-weight:700;letter-spacing:3px">${code}</p><p>Vence en 24 horas.</p><p>Si no solicitaste este acceso, ignora este mensaje.</p>`,
   };
 }
 
 function resetEmailTemplate({ code, name }) {
   const safeName = sanitizeHeader(name, 'usuario');
   return {
-    subject: 'Recuperacion de clave Nomina-Ec',
+    subject: 'Recuperacion de clave SKNOMINA',
     text: `Hola ${safeName}.\n\nTu codigo para restablecer la clave es: ${code}\nVence en 30 minutos.\n\nSi no solicitaste este cambio, contacta al administrador de tu empresa.`,
     html: `<p>Hola ${safeName}.</p><p>Tu codigo para restablecer la clave es:</p><p style="font-size:22px;font-weight:700;letter-spacing:3px">${code}</p><p>Vence en 30 minutos.</p><p>Si no solicitaste este cambio, contacta al administrador de tu empresa.</p>`,
   };
@@ -531,9 +531,9 @@ function resetEmailTemplate({ code, name }) {
 function employeeInviteEmailTemplate({ employeeName, code, activationUrl, expiresAt }) {
   const safeName = sanitizeHeader(employeeName, 'empleado');
   return {
-    subject: 'Activa tu app de asistencia Nomina-Ec',
-    text: `Hola ${safeName}.\n\nRRHH habilito tu acceso a la app de asistencia Nomina-Ec.\nCodigo: ${code}\nLink: ${activationUrl}\nVigente hasta: ${expiresAt || 'fecha registrada por RRHH'}.\n\nNo compartas este codigo.`,
-    html: `<p>Hola ${safeName}.</p><p>RRHH habilito tu acceso a la app de asistencia Nomina-Ec.</p><p><strong>Codigo:</strong> ${code}</p><p><a href="${activationUrl}">Abrir activacion</a></p><p>Vigente hasta: ${expiresAt || 'fecha registrada por RRHH'}.</p><p>No compartas este codigo.</p>`,
+    subject: 'Activa tu app de asistencia SKNOMINA',
+    text: `Hola ${safeName}.\n\nRRHH habilito tu acceso a la app de asistencia SKNOMINA.\nCodigo: ${code}\nLink: ${activationUrl}\nVigente hasta: ${expiresAt || 'fecha registrada por RRHH'}.\n\nNo compartas este codigo.`,
+    html: `<p>Hola ${safeName}.</p><p>RRHH habilito tu acceso a la app de asistencia SKNOMINA.</p><p><strong>Codigo:</strong> ${code}</p><p><a href="${activationUrl}">Abrir activacion</a></p><p>Vigente hasta: ${expiresAt || 'fecha registrada por RRHH'}.</p><p>No compartas este codigo.</p>`,
   };
 }
 
@@ -542,8 +542,8 @@ function payrollRoleAvailableEmailTemplate({ employeeName, anio, mes, roleUrl })
   const period = `${String(mes).padStart(2, '0')}/${anio}`;
   return {
     subject: `Rol de pago disponible ${period}`,
-    text: `Hola ${safeName}.\n\nTu rol de pago del periodo ${period} esta disponible en Nomina-Ec.\n${roleUrl ? `Puedes revisarlo aqui: ${roleUrl}\n` : ''}\nSi tienes dudas, contacta a RRHH.`,
-    html: `<p>Hola ${safeName}.</p><p>Tu rol de pago del periodo <strong>${period}</strong> esta disponible en Nomina-Ec.</p>${roleUrl ? `<p><a href="${roleUrl}">Revisar rol de pago</a></p>` : ''}<p>Si tienes dudas, contacta a RRHH.</p>`,
+    text: `Hola ${safeName}.\n\nTu rol de pago del periodo ${period} esta disponible en SKNOMINA.\n${roleUrl ? `Puedes revisarlo aqui: ${roleUrl}\n` : ''}\nSi tienes dudas, contacta a RRHH.`,
+    html: `<p>Hola ${safeName}.</p><p>Tu rol de pago del periodo <strong>${period}</strong> esta disponible en SKNOMINA.</p>${roleUrl ? `<p><a href="${roleUrl}">Revisar rol de pago</a></p>` : ''}<p>Si tienes dudas, contacta a RRHH.</p>`,
   };
 }
 
@@ -658,9 +658,9 @@ async function sendRolPagoDisponible({ employee, payroll, correlationId, userId,
 async function sendTestEmail({ to, correlationId, userId, tenantId }) {
   return sendEmail({
     to,
-    subject: 'Prueba SMTP Nomina-Ec',
-    text: 'El canal SMTP de Nomina-Ec esta operativo para correos transaccionales.',
-    html: '<p>El canal SMTP de Nomina-Ec esta operativo para correos transaccionales.</p>',
+    subject: 'Prueba SMTP SKNOMINA',
+    text: 'El canal SMTP de SKNOMINA esta operativo para correos transaccionales.',
+    html: '<p>El canal SMTP de SKNOMINA esta operativo para correos transaccionales.</p>',
     template: 'smtp_test',
     correlationId,
     userId,

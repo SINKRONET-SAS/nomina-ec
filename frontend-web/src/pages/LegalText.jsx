@@ -6,13 +6,13 @@ const version = 'LOPDP-2026-06';
 const content = {
   '/privacidad': {
     title: 'Política de privacidad',
-    intro: 'Nómina-Ec trata datos personales laborales para operar nómina, asistencia, documentos, auditoría, archivo bancario y reportes requeridos por entidades públicas ecuatorianas.',
+    intro: 'SKNOMINA trata datos personales laborales para operar nómina, asistencia, documentos, auditoría, archivo bancario y reportes requeridos por entidades públicas ecuatorianas.',
     sections: [
-      ['Responsable', 'Cada empresa contratante actúa como responsable del tratamiento de los datos de sus trabajadores. Nómina-Ec actúa como proveedor tecnológico y encargado cuando procesa datos por cuenta de la empresa.'],
+      ['Responsable', 'Cada empresa contratante actúa como responsable del tratamiento de los datos de sus trabajadores. SKNOMINA actúa como proveedor tecnológico y encargado cuando procesa datos por cuenta de la empresa.'],
       ['Finalidades', 'Registro de empresas, administración de usuarios, marcaciones, roles de pago, documentos laborales, reportes RDEP/IESS, soporte, seguridad, auditoría y cumplimiento contractual.'],
       ['Base de tratamiento', 'Ejecución contractual, obligaciones laborales, obligaciones legales aplicables y consentimiento cuando se trate de cookies o analítica no esencial.'],
       ['Datos tratados', 'Identificación, contacto, datos laborales, novedades, asistencia, geolocalización de marcación, evidencia fotográfica cuando la empresa la active, cuentas bancarias para pago y trazabilidad de auditoría.'],
-      ['Derechos del titular', 'El titular puede solicitar acceso, rectificación, eliminación, oposición, portabilidad, suspensión del tratamiento y retiro de consentimiento mediante los canales de soporte de su empresa o de Nómina-Ec.'],
+      ['Derechos del titular', 'El titular puede solicitar acceso, rectificación, eliminación, oposición, portabilidad, suspensión del tratamiento y retiro de consentimiento mediante los canales de soporte de su empresa o de SKNOMINA.'],
       ['Retención', 'Los datos se conservan por el tiempo necesario para obligaciones laborales, tributarias, seguridad, auditoría y defensa de reclamaciones. La empresa debe definir su política final de retención.'],
       ['Incidentes', 'Los incidentes de seguridad se gestionan con registro, contención, análisis, comunicación a responsables y notificación a autoridades o titulares cuando corresponda.'],
       ['Transferencias y procesadores', 'Los proveedores de infraestructura, pagos, correo, soporte o analítica deben estar inventariados y sujetos a acuerdos de tratamiento de datos cuando aplique.'],
@@ -21,11 +21,11 @@ const content = {
   },
   '/terminos': {
     title: 'Términos de servicio',
-    intro: 'El uso de Nómina-Ec está sujeto a configuración segura por empresa, validación legal Ecuador y activación comercial del plan contratado.',
+    intro: 'El uso de SKNOMINA está sujeto a configuración segura por empresa, validación legal Ecuador y activación comercial del plan contratado.',
     sections: [
       ['Uso autorizado', 'El servicio debe usarse para operaciones laborales legítimas y con usuarios autorizados por la empresa.'],
       ['Configuración', 'Antes de producción se deben completar datos de empresa, usuarios y roles, bancos, archivo plano, parámetros legales y políticas aplicables.'],
-      ['Limitaciones', 'Nómina-Ec no garantiza aprobación automática de entidades públicas ni reemplaza asesoría legal, laboral, tributaria o de protección de datos.'],
+      ['Limitaciones', 'SKNOMINA no garantiza aprobación automática de entidades públicas ni reemplaza asesoría legal, laboral, tributaria o de protección de datos.'],
       ['Pagos y planes', 'Los planes comerciales, periodos de prueba y pagos se rigen por la oferta vigente y las condiciones aceptadas por la empresa contratante.'],
       ['Suspensión', 'El servicio puede restringirse por incumplimiento contractual, uso indebido, riesgo de seguridad, plan vencido o mandato legal.'],
     ],
@@ -35,14 +35,14 @@ const content = {
     intro: 'Los titulares y empresas pueden solicitar eliminación o bloqueo de cuenta conforme a sus obligaciones laborales, contractuales y legales.',
     sections: [
       ['Solicitud', 'La solicitud debe enviarse desde el canal de soporte autorizado, indicando empresa, usuario, correo y alcance requerido.'],
-      ['Validación', 'Nómina-Ec verificará identidad y autorización antes de ejecutar eliminación, bloqueo o anonimización.'],
+      ['Validación', 'SKNOMINA verificará identidad y autorización antes de ejecutar eliminación, bloqueo o anonimización.'],
       ['Restricciones', 'Algunos datos laborales pueden conservarse por obligaciones legales, auditoría, defensa de reclamaciones o requerimientos de entidades públicas.'],
       ['Plazo operativo', 'La respuesta operativa inicial se registra con trazabilidad y responsable asignado.'],
     ],
   },
   '/soporte': {
     title: 'Soporte',
-    intro: 'Soporte operativo para empresas que evalúan o usan Nómina-Ec.',
+    intro: 'Soporte operativo para empresas que evalúan o usan SKNOMINA.',
     sections: [
       ['Canales', 'Use el canal comercial o técnico definido en su contrato o solicitud de demo.'],
       ['Prioridad', 'Incidentes de seguridad, acceso, cierre de nómina y pagos tienen prioridad operativa.'],
