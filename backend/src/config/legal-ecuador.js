@@ -5,11 +5,47 @@
 const LEGAL_PARAMETERS = {
   2026: {
     sourceStatus: 'pendiente_validacion_oficial',
+    validatedFields: [
+      'incomeTax',
+      'payroll.unifiedBaseSalary',
+      'payroll.personalIessRate',
+      'payroll.employerIessRate',
+    ],
+    pendingValidation: [
+      'payroll.fourteenthSalaryCostaGalapagosPeriodStartMonth',
+      'payroll.fourteenthSalarySierraAmazoniaPeriodStartMonth',
+      'payroll.reserveFundStartsAfterMonths',
+      'payroll.maxWeeklyOvertimeHours',
+      'payroll.personalExpenseDeductionLimit',
+    ],
+    validationSources: [
+      {
+        field: 'incomeTax',
+        source: 'SRI Resolucion NAC-DGERCGC25-00000043',
+        status: 'confirmado',
+      },
+      {
+        field: 'payroll.unifiedBaseSalary',
+        source: 'Ministerio del Trabajo - SBU 2026 USD 482',
+        status: 'confirmado',
+      },
+      {
+        field: 'payroll.personalIessRate',
+        source: 'IESS - Servicios y prestaciones',
+        status: 'confirmado',
+      },
+      {
+        field: 'payroll.employerIessRate',
+        source: 'IESS - Servicios y prestaciones',
+        status: 'confirmado',
+      },
+    ],
     notes: [
       'Valores migrados desde docs/CUMPLIMIENTO_LEGAL.md.',
       'Tabla IR 2026 confirmada contra PDF SRI: Resolucion Nro. NAC-DGERCGC25-00000043, Segundo Suplemento del Registro Oficial No. 194, 30/12/2025.',
       'SBU 2026 confirmado en noticia oficial del Ministerio del Trabajo: USD 482.',
       'Aportes IESS confirmados contra pagina oficial IESS Servicios y prestaciones: afiliado 9.45% y empleador 11.15%.',
+      'sourceStatus permanece pendiente hasta cargar parametros versionados con validacion oficial completa por tenant/anio.',
       'Otros parametros laborales requieren validacion final con abogado laboral y contador ecuatoriano antes de produccion.',
     ],
     payroll: {

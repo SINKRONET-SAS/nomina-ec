@@ -24,6 +24,16 @@ coverage/
 backend/storage/
 docs2/private/
 docs2/_local/
+docs2/**/private/
+docs2/**/_local/
+docs2/**/evidencias-locales/
+docs2/**/*.pdf
+docs2/**/*.xls
+docs2/**/*.xlsx
+docs2/**/*.zip
+docs2/**/*.png
+docs2/**/*.jpg
+docs2/**/*.jpeg
 .vscode/AuditLock.local.json
 *.local.auditlock.json
 

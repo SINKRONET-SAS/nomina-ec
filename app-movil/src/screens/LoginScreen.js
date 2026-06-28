@@ -83,17 +83,17 @@ export default function LoginScreen({ onLogin }) {
     const code = activation.inviteCode.trim().toUpperCase();
 
     if (!normalizedEmail || !code || !activation.password || !activation.confirmPassword) {
-      Alert.alert('Datos requeridos', 'Ingresa email, codigo, clave y confirmacion.');
+      Alert.alert('Datos requeridos', 'Ingresa email, código, clave y confirmación.');
       return;
     }
 
     if (activation.password !== activation.confirmPassword) {
-      Alert.alert('Clave no coincide', 'La confirmacion debe ser igual a la clave.');
+      Alert.alert('Clave no coincide', 'La confirmación debe ser igual a la clave.');
       return;
     }
 
     if (!activation.acceptedPrivacy || !activation.lopdpConsent || !activation.geolocationConsent) {
-      Alert.alert('Consentimiento requerido', 'Acepta privacidad, tratamiento de datos y geolocalizacion para usar asistencia movil.');
+      Alert.alert('Consentimiento requerido', 'Acepta privacidad, tratamiento de datos y geolocalización para usar asistencia móvil.');
       return;
     }
 
@@ -112,7 +112,7 @@ export default function LoginScreen({ onLogin }) {
       if (!token) {
         throw new Error('La activacion fue aceptada, pero el backend no devolvio token.');
       }
-      await onLogin(token);
+      await onLogin(token, response.data);
     } catch (err) {
       Alert.alert('No se pudo activar', getErrorMessage(err, 'Solicita a RRHH un codigo nuevo.'));
     } finally {
@@ -134,9 +134,9 @@ export default function LoginScreen({ onLogin }) {
       if (!token) {
         throw new Error('El backend autentico la solicitud pero no devolvio token.');
       }
-      await onLogin(token);
+      await onLogin(token, response.data);
     } catch (err) {
-      Alert.alert('No se pudo iniciar sesion', getErrorMessage(err, 'Credenciales invalidas.'));
+      Alert.alert('No se pudo iniciar sesión', getErrorMessage(err, 'Credenciales inválidas.'));
     } finally {
       setLoading(false);
     }
@@ -171,10 +171,10 @@ export default function LoginScreen({ onLogin }) {
     setLoading(true);
     try {
       const response = await authAPI.resetPassword({ email: normalizedEmail, code: resetCode, password });
-      Alert.alert('Clave actualizada', response.data?.message || 'Ya puede iniciar sesion.');
+      Alert.alert('Clave actualizada', response.data?.message || 'Ya puede iniciar sesión.');
       setMode('login');
     } catch (err) {
-      Alert.alert('No se pudo actualizar', getErrorMessage(err, 'Codigo invalido o expirado.'));
+      Alert.alert('No se pudo actualizar', getErrorMessage(err, 'Código inválido o expirado.'));
     } finally {
       setLoading(false);
     }
@@ -184,7 +184,7 @@ export default function LoginScreen({ onLogin }) {
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.card}>
         <Text style={styles.title}>SKNOMINA</Text>
-        <Text style={styles.subtitle}>Asistencia movil para empleados</Text>
+        <Text style={styles.subtitle}>Asistencia móvil para empleados</Text>
 
         <View style={styles.tabs}>
           {['activar', 'login', 'recuperar'].map((item) => (

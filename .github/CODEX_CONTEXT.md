@@ -1,6 +1,44 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-CIERRE-APK-AAB-SUPERADMIN-SKNOMINA-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-CIERRE-APK-AAB-SUPERADMIN-SKNOMINA-2026 |
+| Codigo | APK26 |
+| Estado | APK26-01..09 ejecutadas localmente; QA verde |
+| Fase actual | APK26-09 cierre QA release |
+| Fuente auditoria | `C:\Users\proam\Downloads\files (7)\informe_auditoria_nomina_ec_v3.md` |
+| Fixes fuente | `C:\Users\proam\Downloads\files (7)\fix_1_*.js` a `fix_9_*.js` |
+| Plan doc | `docs2/PLAN_HAIKY_CIERRE_APK_AAB_SUPERADMIN_SKNOMINA_2026.md` |
+| Matriz | `docs2/cierre-apk-aab-superadmin-sknomina-2026/MATRIZ_APK26_HALLAZGOS.md` |
+| Contrato | `docs2/cierre-apk-aab-superadmin-sknomina-2026/CONTRATO_APK26_CIERRE_PLAY_SUPERADMIN.md` |
+| Runbook | `docs2/cierre-apk-aab-superadmin-sknomina-2026/RUNBOOK_APK26_QA_RELEASE.md` |
+| Prompts | `.github/prompts/APK26-{00..09}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Decisiones APK26
+
+- HAL-1 queda reclasificado: Expo SDK 54 usa Android `targetSdkVersion` 36 segun documentacion oficial; Google Play exige API 35+ desde 2025-08-31. No se fuerza upgrade a SDK 56 en este cierre.
+- Expo Doctor rechaza `android.privacyPolicyUrl`; la URL de privacidad Android queda en `extra.androidPrivacyPolicyUrl` y se valida con `check:mobile`.
+- `Superadmin.jsx` ya no es wrapper de `PlanesGestion`: ahora tiene consola fundador con vision general, empresas, incidencias y tab de planes.
+- Mobile consume `/mobile/me` y diferencia rol empleado vs owner/admin_rrhh/superadmin.
+- `sourceStatus` legal permanece `pendiente_validacion_oficial` hasta fuente versionada oficial completa; se agregan `validatedFields`, `pendingValidation` y `validationSources`.
+- `docs2/` y `.vscode/AuditLock.json` se mantienen por trazabilidad Haiky; `.gitignore` bloquea anexos locales/privados y binarios sensibles futuros.
+
+### Validacion APK26
+
+- `npm.cmd run contracts`: PASS.
+- `npm.cmd run prisma:validate`: PASS.
+- `npm.cmd --workspace=backend test -- --runInBand`: PASS, 51 suites, 212 tests.
+- `npm.cmd --workspace=frontend-web run build`: PASS.
+- `npm.cmd run check:mobile`: PASS.
+- `npx.cmd expo-doctor` en `app-movil`: PASS, 18/18 checks.
+- `git diff --check`: PASS con avisos CRLF esperados en Windows.
+
+---
+
 ## Open Haiky Plan - HAIKY-MIGRACION-SALDOS-INICIALES-FACTURACION-SKNOMINA-2026
 
 | Campo | Valor |

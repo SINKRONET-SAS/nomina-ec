@@ -1,132 +1,126 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-MIGRACION-SALDOS-INICIALES-FACTURACION-SKNOMINA-2026",
-  "planCode": "MSF26",
+  "plan": "HAIKY-CIERRE-APK-AAB-SUPERADMIN-SKNOMINA-2026",
+  "planCode": "APK26",
   "status": "completed_local",
-  "phaseCompleted": "MSF26-08",
-  "currentPhase": "MSF26-release-ready",
-  "updatedAt": "2026-06-28T15:29:02-05:00",
-  "summary": "MSF26 ejecuto diagnostico, modelo, carga de saldos iniciales, PWA de onboarding, cliente API facturador, rutina fiscal idempotente, PWA fiscal, migracion PostgreSQL y QA local. No se guardaron secretos ni se emitieron facturas reales.",
+  "phaseCompleted": "APK26-09",
+  "currentPhase": "APK26-release-ready",
+  "updatedAt": "2026-06-28T16:25:00-05:00",
+  "summary": "APK26 ejecuto diagnostico, metadatos Play Store, consola fundador Superadmin, ortografia UI, diferenciacion mobile por rol, metadatos legales, politica docs2/AuditLock, reportes de fase y QA local. No se guardaron secretos ni se forzo upgrade Expo innecesario.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts MSF26 para saldos iniciales y facturacion con SINKRONET FACTURADOR.",
-  "previousAuditLockHash": "074422B3D09A4A7A3D98687B2773C4E1CA6B85A09ADDD5E2F0C3C738F78E72B9",
+  "approvalSource": "Solicitud del usuario: generar plan Haiky y ejecutar todos los prompts para auditoria app AAB/APK, superadmin y cierre Play Store.",
+  "previousAuditLockHash": "BB0395C8E45FE5E3BF99B13F9EA0AC70863AF5C3B74A428B24E4BD80236AC8A7",
   "filesModifiedSummary": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/MSF26-00-baseline-documental.md",
-    ".github/prompts/MSF26-01-diagnostico-runtime.md",
-    ".github/prompts/MSF26-02-modelo-saldos-iniciales.md",
-    ".github/prompts/MSF26-03-carga-saldos-runtime.md",
-    ".github/prompts/MSF26-04-pwa-onboarding-saldos.md",
-    ".github/prompts/MSF26-05-contrato-api-facturador.md",
-    ".github/prompts/MSF26-06-rutina-facturacion.md",
-    ".github/prompts/MSF26-07-pwa-facturacion.md",
-    ".github/prompts/MSF26-08-qa-release.md",
+    ".github/prompts/APK26-00-baseline-documental.md",
+    ".github/prompts/APK26-01-diagnostico-runtime.md",
+    ".github/prompts/APK26-02-metadatos-play-store.md",
+    ".github/prompts/APK26-03-superadmin-fundador.md",
+    ".github/prompts/APK26-04-ortografia-ui.md",
+    ".github/prompts/APK26-05-mobile-roles.md",
+    ".github/prompts/APK26-06-legal-status.md",
+    ".github/prompts/APK26-07-politica-repo.md",
+    ".github/prompts/APK26-08-parametrizacion-fcm.md",
+    ".github/prompts/APK26-09-qa-release.md",
+    ".gitignore",
     ".vscode/AuditLock.json",
-    "backend/prisma/migrations/20260628143000_msf26_initial_balances_fiscal_billing/migration.sql",
-    "backend/src/app.js",
-    "backend/src/app.routes.test.js",
-    "backend/src/controllers/fiscalBillingController.js",
-    "backend/src/controllers/initialBalanceController.js",
-    "backend/src/controllers/paymentController.js",
-    "backend/src/controllers/paymentController.test.js",
-    "backend/src/services/calculoNominaService.js",
-    "backend/src/services/facturadorClient.js",
-    "backend/src/services/fiscalInvoiceService.js",
-    "backend/src/services/fiscalInvoiceService.test.js",
-    "backend/src/services/initialBalanceService.js",
-    "backend/src/services/initialBalanceService.test.js",
-    "frontend-web/src/App.jsx",
-    "frontend-web/src/components/Layout/Layout.jsx",
-    "frontend-web/src/pages/Facturacion/FacturacionFiscal.jsx",
-    "frontend-web/src/pages/Onboarding/SaldosIniciales.jsx",
-    "docs2/PLAN_HAIKY_MIGRACION_SALDOS_INICIALES_FACTURACION_SKNOMINA_2026.md",
-    "docs2/migracion-saldos-iniciales-facturacion-sknomina-2026/"
+    "app-movil/app.json",
+    "app-movil/scripts/check-store-readiness.mjs",
+    "app-movil/src/App.js",
+    "app-movil/src/screens/LoginScreen.js",
+    "backend/src/config/legal-ecuador.js",
+    "backend/src/services/legalParameterService.test.js",
+    "frontend-web/src/pages/Operacion/OperacionIntegral.jsx",
+    "frontend-web/src/pages/PlanesGestion.jsx",
+    "frontend-web/src/pages/Superadmin.jsx",
+    "docs2/PLAN_HAIKY_CIERRE_APK_AAB_SUPERADMIN_SKNOMINA_2026.md",
+    "docs2/cierre-apk-aab-superadmin-sknomina-2026/"
   ],
   "validationChecks": [
     {
-      "gate": "MSF26-CONTRACTS",
+      "gate": "APK26-CONTRACTS",
       "status": "PASS",
       "detail": "npm.cmd run contracts"
     },
     {
-      "gate": "MSF26-PRISMA-VALIDATE",
+      "gate": "APK26-PRISMA-VALIDATE",
       "status": "PASS",
       "detail": "npm.cmd run prisma:validate"
     },
     {
-      "gate": "MSF26-BACKEND-TESTS",
+      "gate": "APK26-BACKEND-TESTS",
       "status": "PASS",
       "detail": "npm.cmd --workspace=backend test -- --runInBand; 51 suites, 212 tests"
     },
     {
-      "gate": "MSF26-WEB-BUILD",
+      "gate": "APK26-WEB-BUILD",
       "status": "PASS",
       "detail": "npm.cmd --workspace=frontend-web run build"
     },
     {
-      "gate": "MSF26-MOBILE-CHECK",
+      "gate": "APK26-MOBILE-CHECK",
       "status": "PASS",
       "detail": "npm.cmd run check:mobile"
     },
     {
-      "gate": "MSF26-MIGRATE-DEPLOY",
+      "gate": "APK26-EXPO-DOCTOR",
       "status": "PASS",
-      "detail": ".\\node_modules\\.bin\\prisma.cmd migrate deploy --schema prisma\\schema.prisma aplicado en PostgreSQL local plan_haiky"
+      "detail": "npx.cmd expo-doctor en app-movil; 18/18 checks"
     },
     {
-      "gate": "MSF26-UTF8-BOM",
-      "status": "PASS",
-      "detail": "Archivos modificados revisados sin BOM"
-    },
-    {
-      "gate": "MSF26-DIFF-CHECK",
+      "gate": "APK26-DIFF-CHECK",
       "status": "PASS",
       "detail": "git diff --check sin errores; avisos CRLF esperados en Windows"
     }
   ],
   "fases": [
     {
-      "phase": "MSF26-00",
+      "phase": "APK26-00",
       "status": "completed_documental"
     },
     {
-      "phase": "MSF26-01",
+      "phase": "APK26-01",
       "status": "completed_local"
     },
     {
-      "phase": "MSF26-02",
+      "phase": "APK26-02",
       "status": "completed_local"
     },
     {
-      "phase": "MSF26-03",
+      "phase": "APK26-03",
       "status": "completed_local"
     },
     {
-      "phase": "MSF26-04",
+      "phase": "APK26-04",
       "status": "completed_local"
     },
     {
-      "phase": "MSF26-05",
+      "phase": "APK26-05",
       "status": "completed_local"
     },
     {
-      "phase": "MSF26-06",
+      "phase": "APK26-06",
       "status": "completed_local"
     },
     {
-      "phase": "MSF26-07",
+      "phase": "APK26-07",
       "status": "completed_local"
     },
     {
-      "phase": "MSF26-08",
+      "phase": "APK26-08",
+      "status": "completed_local"
+    },
+    {
+      "phase": "APK26-09",
       "status": "completed_local"
     }
   ],
   "residualRisk": [
-    "La emision real depende de URL, credencial API, secreto webhook, certificado, secuenciales, disponibilidad Render y disponibilidad SRI en SINKRONET FACTURADOR.",
-    "Los saldos iniciales de clientes reales requieren respaldo y aprobacion contable/laboral antes de aplicar commit.",
-    "SKNOMINA conserva solicitud, estado y referencias fiscales; la fuente fiscal sigue siendo SINKRONET FACTURADOR."
+    "SDK 56 queda como mejora futura; APK26 confirma que SDK 54 no bloquea target API porque Expo declara targetSdkVersion 36.",
+    "La politica de privacidad Android debe cargarse tambien en Play Console durante el alta de la ficha de tienda.",
+    "FCM/google-services.json sigue fuera de alcance hasta activar push notifications productivas.",
+    "La verificacion visual con navegador integrado no pudo iniciarse por fallo de sandbox REPL; Vite build y gates funcionales quedaron verdes."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "BB0395C8E45FE5E3BF99B13F9EA0AC70863AF5C3B74A428B24E4BD80236AC8A7"
+  "signature": "1163AAE95FE1A5587A7AB0D43F0BEA49B060F228ED2C2DA223E7DF3B25E0E802"
 }

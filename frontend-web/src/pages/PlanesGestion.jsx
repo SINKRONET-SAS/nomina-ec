@@ -45,11 +45,11 @@ function normalizeDraft(plan = {}) {
 function validateDraft(draft) {
   const errors = [];
   if (!/^[A-Z0-9_]{3,40}$/.test(String(draft.id || '').trim().toUpperCase())) {
-    errors.push('El ID debe tener 3 a 40 caracteres: letras, numeros o guion bajo.');
+    errors.push('El ID debe tener 3 a 40 caracteres: letras, números o guion bajo.');
   }
   if (!String(draft.nombre || '').trim()) errors.push('El nombre es requerido.');
   if (Number(draft.precioMensualCentavos) < 0) errors.push('El precio no puede ser negativo.');
-  if (draft.empleadosMax !== '' && Number(draft.empleadosMax) < 0) errors.push('El limite de empleados no puede ser negativo.');
+  if (draft.empleadosMax !== '' && Number(draft.empleadosMax) < 0) errors.push('El límite de empleados no puede ser negativo.');
   if (Number(draft.empresasMax) < 1) errors.push('Debe permitir al menos una empresa.');
   if (Number(draft.usuariosMax) < 1) errors.push('Debe permitir al menos un usuario.');
   return errors;
@@ -59,7 +59,7 @@ function price(cents) {
   return `$${(Number(cents || 0) / 100).toFixed(2)}`;
 }
 
-function PlanesGestion() {
+function PlanesGestion({ showSuperadminConsole = true }) {
   const queryClient = useQueryClient();
   const { usuario } = useAuth();
   const [draft, setDraft] = useState(EMPTY_PLAN);
@@ -194,7 +194,7 @@ function PlanesGestion() {
               <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={draft.nombre} onChange={(event) => updateField('nombre', event.target.value)} />
             </label>
             <label className="sm:col-span-2">
-              <span className="text-sm font-medium text-slate-700">Descripcion</span>
+              <span className="text-sm font-medium text-slate-700">Descripción</span>
               <textarea className="mt-1 min-h-20 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={draft.descripcion} onChange={(event) => updateField('descripcion', event.target.value)} />
             </label>
             <label>
@@ -207,7 +207,7 @@ function PlanesGestion() {
             </label>
             <label>
               <span className="text-sm font-medium text-slate-700">Empleados max.</span>
-              <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="0" placeholder="Sin limite" value={draft.empleadosMax} onChange={(event) => updateField('empleadosMax', event.target.value)} />
+              <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="0" placeholder="Sin límite" value={draft.empleadosMax} onChange={(event) => updateField('empleadosMax', event.target.value)} />
             </label>
             <label>
               <span className="text-sm font-medium text-slate-700">Empresas max.</span>
@@ -270,11 +270,11 @@ function PlanesGestion() {
                       <p className="text-xs text-slate-500">{plan.id}</p>
                     </td>
                     <td className="px-4 py-3 text-right">{price(plan.precioMensualCentavos)}</td>
-                    <td className="px-4 py-3">Emp. {plan.empleadosMax || 'sin limite'} | Empresas {plan.empresasMax} | Usuarios {plan.usuariosMax}</td>
+                    <td className="px-4 py-3">Emp. {plan.empleadosMax || 'sin límite'} | Empresas {plan.empresasMax} | Usuarios {plan.usuariosMax}</td>
                     <td className="px-4 py-3">
                       {(plan.archivosBancarios ? 'Bancos' : 'Sin bancos')} | {(plan.reportesAvanzados ? 'Reportes avanzados' : 'Reportes base')}
                     </td>
-                    <td className="px-4 py-3">{plan.activo ? 'Activo' : 'Inactivo'} | {plan.publico ? 'Publico' : 'Interno'}</td>
+                    <td className="px-4 py-3">{plan.activo ? 'Activo' : 'Inactivo'} | {plan.publico ? 'Público' : 'Interno'}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-teal-700" type="button" onClick={() => setDraft(normalizeDraft(plan))} title="Editar plan">
@@ -293,7 +293,7 @@ function PlanesGestion() {
         </div>
       </section>
 
-      {isSuperadmin && (
+      {isSuperadmin && showSuperadminConsole && (
         <section className="space-y-4">
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center gap-2">
@@ -315,7 +315,7 @@ function PlanesGestion() {
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-sm font-semibold uppercase text-slate-500">Planes</p>
               <p className="mt-2 text-3xl font-semibold text-slate-950">{overviewQuery.data?.plans?.total || 0}</p>
-              <p className="mt-1 text-sm text-slate-600">Activos {overviewQuery.data?.plans?.activos || 0} | Publicos {overviewQuery.data?.plans?.publicos || 0}</p>
+              <p className="mt-1 text-sm text-slate-600">Activos {overviewQuery.data?.plans?.activos || 0} | Públicos {overviewQuery.data?.plans?.publicos || 0}</p>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-sm font-semibold uppercase text-slate-500">Empresas</p>
@@ -390,11 +390,11 @@ function PlanesGestion() {
                   <option value="baja">Baja</option>
                   <option value="media">Media</option>
                   <option value="alta">Alta</option>
-                  <option value="critica">Critica</option>
+                  <option value="critica">Crítica</option>
                 </select>
               </label>
               <label className="mt-3 block text-sm font-semibold text-slate-700">
-                Descripcion
+                Descripción
                 <textarea className="mt-1 min-h-24 w-full rounded-md border border-slate-300 px-3 py-2" value={incidentDraft.description} onChange={(event) => updateIncidentField('description', event.target.value)} />
               </label>
               <button className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={!incidentDraft.title.trim() || createIncidentMutation.isPending} type="submit">
@@ -416,7 +416,7 @@ function PlanesGestion() {
                     <th className="px-4 py-3">Owner</th>
                     <th className="px-4 py-3">Severidad</th>
                     <th className="px-4 py-3">Estado</th>
-                    <th className="px-4 py-3">Accion</th>
+                    <th className="px-4 py-3">Acción</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">

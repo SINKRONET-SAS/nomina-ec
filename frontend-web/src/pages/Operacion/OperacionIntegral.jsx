@@ -117,7 +117,7 @@ const MODULES = [
     ready: ({ counts }) => counts.apiClients > 0,
     gatedByRoles: ['owner', 'superadmin'],
     activeDescription: 'Integraciones externas activas con permisos definidos y trazabilidad.',
-    pendingDescription: 'Crea al menos una credencial de integracion para conectar sistemas externos.',
+    pendingDescription: 'Crea al menos una credencial de integración para conectar sistemas externos.',
   },
   {
     key: 'asistencia',
@@ -149,8 +149,8 @@ const MODULES = [
     href: '/dashboard/empleados',
     action: 'Importar empleados',
     ready: () => true,
-    activeDescription: 'Flujo visible con plantilla, carga CSV/TSV, prevalidacion, errores por fila, confirmacion y lote auditable.',
-    pendingDescription: 'Carga empleados con prevalidacion antes de confirmar el lote.',
+    activeDescription: 'Flujo visible con plantilla, carga CSV/TSV, prevalidación, errores por fila, confirmación y lote auditable.',
+    pendingDescription: 'Carga empleados con prevalidación antes de confirmar el lote.',
   },
   {
     key: 'reportes',
@@ -317,7 +317,7 @@ function ApiClientsPanel({ clients = [], createMutation, canManage }) {
 
       {!canManage && (
         <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-          Esta seccion requiere permisos administrativos para administrar integraciones.
+          Esta sección requiere permisos administrativos para administrar integraciones.
         </div>
       )}
 
@@ -355,7 +355,7 @@ function ApiClientsPanel({ clients = [], createMutation, canManage }) {
 
             {createMutation.isError && (
               <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
-                {extractApiError(createMutation.error, 'No pudimos crear la integracion. Revisa los datos e intenta nuevamente.')}
+                {extractApiError(createMutation.error, 'No pudimos crear la integración. Revisa los datos e intenta nuevamente.')}
               </div>
             )}
 
@@ -365,7 +365,7 @@ function ApiClientsPanel({ clients = [], createMutation, canManage }) {
               type="submit"
             >
               <Plus className="h-4 w-4" />
-              {createMutation.isPending ? 'Creando integracion' : 'Crear integracion'}
+              {createMutation.isPending ? 'Creando integración' : 'Crear integración'}
             </button>
           </form>
 
@@ -374,7 +374,7 @@ function ApiClientsPanel({ clients = [], createMutation, canManage }) {
             <div className="mt-3 space-y-2">
               {clients.length === 0 && (
                 <p className="rounded-md bg-slate-50 px-3 py-3 text-sm text-slate-600">
-                  Todavia no hay integraciones externas para esta empresa.
+                  Todavía no hay integraciones externas para esta empresa.
                 </p>
               )}
               {clients.map((client) => (
@@ -398,7 +398,7 @@ function ApiClientsPanel({ clients = [], createMutation, canManage }) {
 
       {createdKey && (
         <div className="mt-5 rounded-md border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm font-semibold text-amber-900">Clave de integracion creada. Se muestra una sola vez.</p>
+          <p className="text-sm font-semibold text-amber-900">Clave de integración creada. Se muestra una sola vez.</p>
           <div className="mt-3 flex flex-col gap-2 md:flex-row md:items-center">
             <code className="min-h-10 flex-1 overflow-auto rounded-md bg-white px-3 py-2 text-sm text-slate-800">{createdKey}</code>
             <button className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white" onClick={copyKey} type="button">
@@ -491,7 +491,7 @@ function OperacionIntegral() {
 
       {isError && (
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
-          {extractApiError(error, 'No pudimos cargar el estado operativo. Revisa la sesion e intenta nuevamente.')}
+          {extractApiError(error, 'No pudimos cargar el estado operativo. Revisa la sesión e intenta nuevamente.')}
         </div>
       )}
 
@@ -559,7 +559,7 @@ function OperacionIntegral() {
 
       {isApiClientsError && (
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
-          {extractApiError(apiClientsError, 'No pudimos cargar los clientes API. Revisa la sesion e intenta nuevamente.')}
+          {extractApiError(apiClientsError, 'No pudimos cargar los clientes API. Revisa la sesión e intenta nuevamente.')}
         </div>
       )}
 

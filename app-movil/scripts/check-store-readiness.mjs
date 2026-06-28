@@ -17,6 +17,14 @@ if (!appConfig.android?.package) {
   fail('android.package no esta definido.');
 }
 
+if (!appConfig.description || appConfig.description.trim().length < 30) {
+  fail('expo.description debe describir comercialmente la app para tienda.');
+}
+
+if (!appConfig.extra?.androidPrivacyPolicyUrl?.startsWith('https://')) {
+  fail('extra.androidPrivacyPolicyUrl debe apuntar a una politica publica HTTPS para Play Console.');
+}
+
 if (!appConfig.ios?.bundleIdentifier) {
   fail('ios.bundleIdentifier no esta definido.');
 }
