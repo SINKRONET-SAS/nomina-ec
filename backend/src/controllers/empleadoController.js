@@ -24,6 +24,8 @@ const MIN_EMPLOYEE_AGE = 18;
 const OLDER_ADULT_AGE = 65;
 const DEPENDENT_DOCUMENT_MAX_BYTES = 5 * 1024 * 1024;
 const DEPENDENT_DOCUMENT_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png']);
+const EMPLOYEE_CROQUIS_MAX_BYTES = 5 * 1024 * 1024;
+const EMPLOYEE_CROQUIS_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const EMPLOYEE_SENSITIVE_READ_ROLES = new Set(['owner', 'admin_rrhh', 'superadmin']);
 const EMPLOYEE_READ_ROLES = new Set(['owner', 'admin_rrhh', 'supervisor', 'superadmin']);
 const IESS_RELATION_TYPES = new Set([
@@ -59,6 +61,57 @@ function normalizeIessAffiliated(value) {
 function normalizeIessRelationType(value) {
   const normalized = String(value || 'relacion_dependencia').trim().toLowerCase();
   return IESS_RELATION_TYPES.has(normalized) ? normalized : null;
+}
+
+function normalizeOptionalText(value, maxLength = 255) {
+  return String(value || '').trim().slice(0, maxLength);
+}
+
+function normalizeEmail(value, fieldLabel = 'email') {
+  const email = normalizeOptionalText(value, 255).toLowerCase();
+  if (!email) return '';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    const err = new Error(`Registra un ${fieldLabel} valido.`);
+    err.code = 'EMPLEADO_EMAIL_INVALIDO';
+    err.statusCode = 400;
+    throw err;
+  }
+  return email;
+}
+
+function normalizeCoordinate(value, { min, max, label }) {
+  if (typeof value === 'undefined' || value === null || value === '') return null;
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue) || numberValue < min || numberValue > max) {
+    const err = new Error(`${label} debe estar entre ${min} y ${max}.`);
+    err.code = 'EMPLEADO_COORDENADA_INVALIDA';
+    err.statusCode = 400;
+    throw err;
+  }
+  return Number(numberValue.toFixed(7));
+}
+
+function normalizeHomeReference(body) {
+  const keys = [
+    'referencia_no_convive_nombres',
+    'referencia_no_convive_email',
+    'referencia_no_convive_telefono',
+  ];
+  const hasReferencePayload = keys.some((key) => Object.prototype.hasOwnProperty.call(body, key));
+  if (!hasReferencePayload) return;
+
+  body.referencia_no_convive_nombres = normalizeOptionalText(body.referencia_no_convive_nombres, 160);
+  body.referencia_no_convive_email = normalizeEmail(body.referencia_no_convive_email, 'email de la referencia');
+  body.referencia_no_convive_telefono = normalizeOptionalText(body.referencia_no_convive_telefono, 40);
+}
+
+function normalizeHomeCoordinates(body) {
+  if (Object.prototype.hasOwnProperty.call(body, 'domicilio_lat')) {
+    body.domicilio_lat = normalizeCoordinate(body.domicilio_lat, { min: -90, max: 90, label: 'Latitud del domicilio' });
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'domicilio_lng')) {
+    body.domicilio_lng = normalizeCoordinate(body.domicilio_lng, { min: -180, max: 180, label: 'Longitud del domicilio' });
+  }
 }
 
 function ensureEmployeeReadRole(req, res) {
@@ -324,6 +377,45 @@ async function uploadDependentDocument(tenantId, employeeId, dependent, index) {
   return s3Upload(buffer, key, mimeType);
 }
 
+async function uploadEmployeeCroquis(tenantId, employeeId, payload) {
+  if (!payload.croquis_domicilio_base64) return null;
+
+  const mimeType = payload.croquis_domicilio_mime_type || 'image/png';
+  if (!EMPLOYEE_CROQUIS_TYPES.has(mimeType)) {
+    const err = new Error('El croquis del domicilio debe ser una imagen JPG, PNG o WebP.');
+    err.code = 'EMPLEADO_CROQUIS_TIPO_INVALIDO';
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const cleanBase64 = String(payload.croquis_domicilio_base64).replace(/^data:[^;]+;base64,/, '');
+  const buffer = Buffer.from(cleanBase64, 'base64');
+  if (buffer.length === 0 || buffer.length > EMPLOYEE_CROQUIS_MAX_BYTES) {
+    const err = new Error('El croquis del domicilio debe pesar hasta 5 MB.');
+    err.code = 'EMPLEADO_CROQUIS_TAMANO_INVALIDO';
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const defaultName = mimeType === 'image/jpeg' ? 'croquis-domicilio.jpg' : 'croquis-domicilio.png';
+  const safeName = String(payload.croquis_domicilio_nombre || defaultName)
+    .replace(/[^a-zA-Z0-9_.-]/g, '_')
+    .slice(0, 120);
+  const key = `documentos/${tenantId}/${employeeId}/domicilio/${Date.now()}_${safeName}`;
+  const url = await s3Upload(buffer, key, mimeType);
+
+  return {
+    url,
+    metadata: {
+      originalName: payload.croquis_domicilio_nombre || safeName,
+      mimeType,
+      sizeBytes: buffer.length,
+      source: 'ficha_trabajador',
+      documentUse: 'croquis_domicilio_ruta_principal',
+    },
+  };
+}
+
 function normalizeDependents(dependientes = [], cargasFamiliares = 0) {
   const expected = Number(cargasFamiliares || 0);
   if (expected <= 0) return [];
@@ -518,6 +610,7 @@ async function historial(req, res) {
 async function crear(req, res) {
   try {
     const { tenantId } = req;
+    const profileData = { ...(req.body || {}) };
     const {
       cedula, nombres, apellidos, fecha_nacimiento, cargo, position_id, cargo_codigo, departamento,
       sueldo_bruto_mensual, fecha_ingreso, tipo_contrato,
@@ -527,7 +620,7 @@ async function crear(req, res) {
       jornada_codigo, unidad_organizativa_codigo, zona_marcacion_codigo,
       direccion, ciudad_codigo, provincia_codigo, estado_civil, cargas_familiares, dependientes, telefono, email,
       whatsapp_consent
-    } = req.body;
+    } = profileData;
     
     // Validaciones
     if (!validarCedula(cedula)) {
@@ -564,6 +657,8 @@ async function crear(req, res) {
       });
     }
     const normalizedIessAffiliated = normalizeIessAffiliated(iess_afiliado);
+    normalizeHomeReference(profileData);
+    normalizeHomeCoordinates(profileData);
 
     const normalizedBankCode = await resolveEmployeeBankCode(tenantId, forma_pago, banco);
     const normalizedWorkShiftCode = await resolveConfiguredCode(tenantId, 'work_shifts', jornada_codigo, 'La jornada', 'EMPLEADO_JORNADA_INVALIDA');
@@ -603,12 +698,16 @@ async function crear(req, res) {
         cuenta_bancaria_cifrada, banco, tipo_cuenta, forma_pago,
         region_decimo_cuarto, modalidad_fondo_reserva, whatsapp_consent_at,
         direccion_domicilio, provincia_codigo, ciudad_codigo, ciudad_domicilio, provincia_domicilio,
-        estado_civil, cargas_familiares, telefono, email_personal
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34)
+        referencia_no_convive_nombres, referencia_no_convive_email, referencia_no_convive_telefono,
+        domicilio_lat, domicilio_lng, estado_civil, cargas_familiares, telefono, email_personal
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39)
       RETURNING id, cedula, nombres, apellidos, fecha_nacimiento, position_id, cargo, sueldo_bruto_mensual,
         jornada_horas_mensuales, gastos_personales_anuales, fecha_ingreso, tipo_contrato, iess_afiliado, iess_tipo_relacion,
         banco, tipo_cuenta, forma_pago, region_decimo_cuarto, modalidad_fondo_reserva, whatsapp_consent_at,
-        unidad_organizativa_codigo, jornada_codigo, zona_marcacion_codigo
+        unidad_organizativa_codigo, jornada_codigo, zona_marcacion_codigo,
+        direccion_domicilio, provincia_codigo, ciudad_codigo, ciudad_domicilio, provincia_domicilio,
+        referencia_no_convive_nombres, referencia_no_convive_email, referencia_no_convive_telefono,
+        domicilio_lat, domicilio_lng, croquis_domicilio_url
     `, [
       tenantId, cedula, nombres, apellidos, fecha_nacimiento, positionAssignment.positionId, positionAssignment.cargo, departamento || positionAssignment.unidadOrganizativaNombre || '',
       positionAssignment.unidadOrganizativaCodigo, normalizedWorkShiftCode, normalizedWorkZoneCode,
@@ -620,6 +719,11 @@ async function crear(req, res) {
       cuentaCifrada, normalizedBankCode, tipo_cuenta || '', forma_pago || 'transferencia', normalizedRegion,
       normalizedReserveFundMode, whatsapp_consent ? new Date() : null,
       direccion || '', location.provincia_codigo, location.ciudad_codigo, location.ciudad_nombre, location.provincia_nombre,
+      profileData.referencia_no_convive_nombres || '',
+      profileData.referencia_no_convive_email || '',
+      profileData.referencia_no_convive_telefono || '',
+      profileData.domicilio_lat,
+      profileData.domicilio_lng,
       estado_civil || '', Number(cargas_familiares || 0), telefono || '', email || ''
     ]);
     
@@ -627,6 +731,18 @@ async function crear(req, res) {
     empleado.edad = ageInfo.age;
     empleado.es_adulto_mayor = ageInfo.isOlderAdult;
     empleado.cuenta_bancaria_registrada = Boolean(cuentaCifrada);
+    const croquis = await uploadEmployeeCroquis(tenantId, empleado.id, profileData);
+    if (croquis) {
+      await db.query(`
+        UPDATE empleados
+        SET croquis_domicilio_url = $1,
+            croquis_domicilio_metadata = $2,
+            updated_at = NOW()
+        WHERE id = $3 AND tenant_id = $4
+      `, [croquis.url, JSON.stringify(croquis.metadata), empleado.id, tenantId]);
+      empleado.croquis_domicilio_url = croquis.url;
+      empleado.croquis_domicilio_metadata = croquis.metadata;
+    }
     await replaceEmployeeDependents(tenantId, empleado.id, dependientes, cargas_familiares);
     
     // Generar contrato automaticamente
@@ -815,6 +931,11 @@ async function actualizar(req, res) {
       ciudad_codigo: 'ciudad_codigo',
       ciudad_domicilio: 'ciudad_domicilio',
       provincia_domicilio: 'provincia_domicilio',
+      referencia_no_convive_nombres: 'referencia_no_convive_nombres',
+      referencia_no_convive_email: 'referencia_no_convive_email',
+      referencia_no_convive_telefono: 'referencia_no_convive_telefono',
+      domicilio_lat: 'domicilio_lat',
+      domicilio_lng: 'domicilio_lng',
       estado_civil: 'estado_civil',
       cargas_familiares: 'cargas_familiares',
       telefono: 'telefono',
@@ -866,6 +987,8 @@ async function actualizar(req, res) {
       body.whatsapp_consent_at = body.whatsapp_consent ? new Date() : null;
       delete body.whatsapp_consent;
     }
+    normalizeHomeReference(body);
+    normalizeHomeCoordinates(body);
     if (Object.prototype.hasOwnProperty.call(body, 'banco') || Object.prototype.hasOwnProperty.call(body, 'forma_pago')) {
       body.banco = await resolveEmployeeBankCode(
         tenantId,
@@ -925,6 +1048,23 @@ async function actualizar(req, res) {
       body.provincia_domicilio = location.provincia_nombre;
       body.ciudad_domicilio = location.ciudad_nombre;
     }
+    if (body.croquis_domicilio_base64) {
+      const existingEmployee = await db.query(
+        'SELECT id FROM empleados WHERE id = $1 AND tenant_id = $2 LIMIT 1',
+        [id, tenantId]
+      );
+      if (existingEmployee.rows.length === 0) {
+        return res.status(404).json({ error: 'Empleado no encontrado' });
+      }
+      const croquis = await uploadEmployeeCroquis(tenantId, id, body);
+      body.croquis_domicilio_url = croquis.url;
+      body.croquis_domicilio_metadata = JSON.stringify(croquis.metadata);
+      updateColumns.croquis_domicilio_url = 'croquis_domicilio_url';
+      updateColumns.croquis_domicilio_metadata = 'croquis_domicilio_metadata';
+    }
+    delete body.croquis_domicilio_base64;
+    delete body.croquis_domicilio_nombre;
+    delete body.croquis_domicilio_mime_type;
     if (Object.prototype.hasOwnProperty.call(body, 'cargas_familiares')) {
       body.cargas_familiares = Number(body.cargas_familiares || 0);
     }
@@ -948,6 +1088,8 @@ async function actualizar(req, res) {
         WHERE id = $${values.length + 1} AND tenant_id = $${values.length + 2}
         RETURNING id, nombres, apellidos, cargo, sueldo_bruto_mensual,
           banco, tipo_cuenta, forma_pago,
+          referencia_no_convive_nombres, referencia_no_convive_email, referencia_no_convive_telefono,
+          domicilio_lat, domicilio_lng, croquis_domicilio_url,
           cuenta_bancaria_cifrada IS NOT NULL AS cuenta_bancaria_registrada
       `, [...values, id, tenantId]);
     } else {

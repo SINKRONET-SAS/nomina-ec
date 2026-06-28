@@ -219,4 +219,56 @@ describe('empleadoController.actualizar', () => {
       }),
     });
   });
+
+  test('guarda referencia externa y ubicacion domiciliaria en la ficha', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'emp-1',
+        nombres: 'Ana',
+        apellidos: 'Perez',
+        cargo: 'Analista',
+        sueldo_bruto_mensual: '1000.00',
+        referencia_no_convive_nombres: 'Maria Gomez',
+        referencia_no_convive_email: 'maria@example.com',
+        referencia_no_convive_telefono: '0999999999',
+        domicilio_lat: '-0.1806530',
+        domicilio_lng: '-78.4678340',
+      }],
+    });
+    const req = {
+      tenantId: 'tenant-1',
+      params: { id: 'emp-1' },
+      body: {
+        referencia_no_convive_nombres: ' Maria Gomez ',
+        referencia_no_convive_email: 'MARIA@EXAMPLE.COM',
+        referencia_no_convive_telefono: '0999999999',
+        domicilio_lat: '-0.180653',
+        domicilio_lng: '-78.467834',
+      },
+      usuario: { rol: 'owner' },
+      usuarioId: 'user-1',
+      correlationId: 'corr-home',
+    };
+    const res = mockResponse();
+
+    await empleadoController.actualizar(req, res);
+
+    const [sql, values] = db.query.mock.calls[0];
+    expect(sql).toContain('referencia_no_convive_nombres =');
+    expect(sql).toContain('domicilio_lat =');
+    expect(values).toEqual(expect.arrayContaining([
+      'Maria Gomez',
+      'maria@example.com',
+      '0999999999',
+      -0.180653,
+      -78.467834,
+    ]));
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      empleado: expect.objectContaining({
+        referencia_no_convive_nombres: 'Maria Gomez',
+        domicilio_lat: '-0.1806530',
+      }),
+    });
+  });
 });

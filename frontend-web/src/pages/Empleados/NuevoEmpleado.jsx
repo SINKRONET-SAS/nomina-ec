@@ -29,6 +29,15 @@ const initialForm = {
   ciudad_codigo: '',
   ciudad_domicilio: '',
   provincia_domicilio: '',
+  referencia_no_convive_nombres: '',
+  referencia_no_convive_email: '',
+  referencia_no_convive_telefono: '',
+  domicilio_lat: '',
+  domicilio_lng: '',
+  croquis_domicilio_base64: '',
+  croquis_domicilio_nombre: '',
+  croquis_domicilio_mime_type: '',
+  croquis_domicilio_url: '',
   telefono: '',
   email_personal: '',
   forma_pago: 'transferencia',
@@ -96,6 +105,15 @@ function normalizeEmpleado(empleado) {
     ciudad_codigo: empleado.ciudad_codigo || '',
     ciudad_domicilio: empleado.ciudad_domicilio || '',
     provincia_domicilio: empleado.provincia_domicilio || '',
+    referencia_no_convive_nombres: empleado.referencia_no_convive_nombres || '',
+    referencia_no_convive_email: empleado.referencia_no_convive_email || '',
+    referencia_no_convive_telefono: empleado.referencia_no_convive_telefono || '',
+    domicilio_lat: empleado.domicilio_lat || '',
+    domicilio_lng: empleado.domicilio_lng || '',
+    croquis_domicilio_base64: '',
+    croquis_domicilio_nombre: empleado.croquis_domicilio_url ? 'Croquis cargado' : '',
+    croquis_domicilio_mime_type: '',
+    croquis_domicilio_url: empleado.croquis_domicilio_url || '',
     telefono: empleado.telefono || '',
     email_personal: empleado.email_personal || '',
     forma_pago: empleado.forma_pago || 'transferencia',
@@ -138,6 +156,8 @@ function fileToBase64(file) {
   });
 }
 
+const CROQUIS_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const CROQUIS_MAX_BYTES = 5 * 1024 * 1024;
 const CONTROL_CLASS = 'form-control';
 const FILE_CONTROL_CLASS = 'form-file';
 const TEXTAREA_CLASS = 'form-textarea';
@@ -362,6 +382,26 @@ function NuevoEmpleado() {
     }));
   };
 
+  const handleCroquisFile = async (file) => {
+    if (!file) return;
+    setError('');
+    if (!CROQUIS_IMAGE_TYPES.has(file.type)) {
+      setError('Adjunta el croquis del domicilio en JPG, PNG o WebP.');
+      return;
+    }
+    if (file.size > CROQUIS_MAX_BYTES) {
+      setError('El croquis del domicilio debe pesar hasta 5 MB.');
+      return;
+    }
+    const contenidoBase64 = await fileToBase64(file);
+    setFormData((current) => ({
+      ...current,
+      croquis_domicilio_base64: contenidoBase64,
+      croquis_domicilio_nombre: file.name,
+      croquis_domicilio_mime_type: file.type,
+    }));
+  };
+
   const buildCreatePayload = () => ({
     cedula: formData.cedula,
     nombres: formData.nombres,
@@ -384,6 +424,14 @@ function NuevoEmpleado() {
     direccion: formData.direccion_domicilio,
     provincia_codigo: formData.provincia_codigo,
     ciudad_codigo: formData.ciudad_codigo,
+    referencia_no_convive_nombres: formData.referencia_no_convive_nombres,
+    referencia_no_convive_email: formData.referencia_no_convive_email,
+    referencia_no_convive_telefono: formData.referencia_no_convive_telefono,
+    domicilio_lat: formData.domicilio_lat,
+    domicilio_lng: formData.domicilio_lng,
+    croquis_domicilio_base64: formData.croquis_domicilio_base64,
+    croquis_domicilio_nombre: formData.croquis_domicilio_nombre,
+    croquis_domicilio_mime_type: formData.croquis_domicilio_mime_type,
     telefono: formData.telefono,
     email: formData.email_personal,
     forma_pago: formData.forma_pago,
@@ -401,6 +449,12 @@ function NuevoEmpleado() {
     if (!payload.cuenta_bancaria) delete payload.cuenta_bancaria;
     delete payload.cuenta_bancaria_registrada;
     delete payload.jornada_horas_mensuales;
+    delete payload.croquis_domicilio_url;
+    if (!payload.croquis_domicilio_base64) {
+      delete payload.croquis_domicilio_base64;
+      delete payload.croquis_domicilio_nombre;
+      delete payload.croquis_domicilio_mime_type;
+    }
     payload.whatsapp_consent = Boolean(payload.whatsapp_consent);
     payload.cargas_familiares = Number(payload.cargas_familiares || 0);
     return payload;
@@ -415,12 +469,19 @@ function NuevoEmpleado() {
     try {
       if (isEdit) {
         const replacedBankAccount = Boolean(formData.cuenta_bancaria);
-        await authenticatedApi.put('/empleados/' + id, buildUpdatePayload());
+        const response = await authenticatedApi.put('/empleados/' + id, buildUpdatePayload());
+        const updatedEmployee = response.data.empleado || {};
         setMessage('Ficha del trabajador actualizada.');
         setFormData((current) => ({
           ...current,
           cuenta_bancaria: '',
           cuenta_bancaria_registrada: current.cuenta_bancaria_registrada || replacedBankAccount,
+          croquis_domicilio_base64: '',
+          croquis_domicilio_mime_type: '',
+          croquis_domicilio_url: updatedEmployee.croquis_domicilio_url || current.croquis_domicilio_url,
+          croquis_domicilio_nombre: updatedEmployee.croquis_domicilio_url
+            ? 'Croquis cargado'
+            : current.croquis_domicilio_nombre,
         }));
       } else {
         const response = await authenticatedApi.post('/empleados', buildCreatePayload());
@@ -556,10 +617,6 @@ function NuevoEmpleado() {
         )}
 
         <Section title="Domicilio" description="Ubicacion declarada por el trabajador para documentos laborales y contacto.">
-          <label className={`block ${FIELD_FULL}`}>
-            <span className="text-sm font-medium text-slate-700">Domicilio</span>
-            <textarea className={TEXTAREA_CLASS} name="direccion_domicilio" onChange={handleChange} value={formData.direccion_domicilio} />
-          </label>
           <Field label="Provincia" name="provincia_codigo" onChange={(event) => setFormData((current) => ({ ...current, provincia_codigo: event.target.value, ciudad_codigo: '' }))} required value={formData.provincia_codigo}>
             <select className={CONTROL_CLASS} name="provincia_codigo" onChange={(event) => setFormData((current) => ({ ...current, provincia_codigo: event.target.value, ciudad_codigo: '' }))} required value={formData.provincia_codigo}>
               <option value="">{provincesQuery.isLoading ? 'Cargando provincias...' : 'Seleccionar provincia...'}</option>
@@ -576,6 +633,28 @@ function NuevoEmpleado() {
               ))}
             </select>
           </Field>
+          <label className={`block ${FIELD_FULL}`}>
+            <span className="text-sm font-medium text-slate-700">Direccion del domicilio *</span>
+            <textarea className={TEXTAREA_CLASS} name="direccion_domicilio" onChange={handleChange} required value={formData.direccion_domicilio} />
+          </label>
+          <Field label="Latitud del domicilio" name="domicilio_lat" onChange={handleChange} placeholder="-0.180653" required step="0.0000001" type="number" value={formData.domicilio_lat} />
+          <Field label="Longitud del domicilio" name="domicilio_lng" onChange={handleChange} placeholder="-78.467834" required step="0.0000001" type="number" value={formData.domicilio_lng} />
+          <label className={`block ${FIELD_FULL}`}>
+            <span className="text-sm font-medium text-slate-700">Croquis de llegada al domicilio</span>
+            <input accept="image/jpeg,image/png,image/webp" className={FILE_CONTROL_CLASS} onChange={(event) => handleCroquisFile(event.target.files?.[0])} type="file" />
+            {formData.croquis_domicilio_nombre && <p className="mt-1 text-xs text-slate-500">{formData.croquis_domicilio_nombre}</p>}
+            {formData.croquis_domicilio_url && (
+              <a className="mt-2 inline-flex text-sm font-semibold text-teal-700 hover:text-teal-900" href={formData.croquis_domicilio_url} rel="noreferrer" target="_blank">
+                Ver croquis registrado
+              </a>
+            )}
+          </label>
+        </Section>
+
+        <Section title="Referencia de alguien que no viva con usted" description="Contacto personal externo al domicilio del trabajador.">
+          <Field label="Nombres completos" name="referencia_no_convive_nombres" onChange={handleChange} required value={formData.referencia_no_convive_nombres} />
+          <Field label="Email" name="referencia_no_convive_email" onChange={handleChange} required type="email" value={formData.referencia_no_convive_email} />
+          <Field label="Telefono" name="referencia_no_convive_telefono" onChange={handleChange} required value={formData.referencia_no_convive_telefono} />
         </Section>
 
         <Section title="Relacion laboral" description="Datos base para nomina, beneficios, contratos y reportes.">
