@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Building2, Eye, EyeOff, KeyRound, Mail } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, KeyRound, Mail } from 'lucide-react';
 import { extractApiError, forgotPassword, resetPassword } from '../services/publicApi';
+import BrandLogo from '../components/Brand/BrandLogo';
 
 function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -46,10 +47,7 @@ function ForgotPassword() {
       <div className="page-container flex min-h-screen items-center justify-center py-8">
         <section className="soft-panel w-full max-w-xl p-6 sm:p-8">
           <Link className="mb-8 inline-flex items-center gap-3 font-semibold text-slate-950" to="/">
-            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-teal-700 text-white">
-              <Building2 size={19} />
-            </span>
-            SKNOMINA
+            <BrandLogo imageClassName="h-10 w-10" />
           </Link>
           <div className="flex h-11 w-11 items-center justify-center rounded-md bg-teal-50 text-teal-800">
             <KeyRound size={22} />

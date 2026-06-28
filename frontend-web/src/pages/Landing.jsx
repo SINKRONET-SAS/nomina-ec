@@ -16,8 +16,9 @@ import {
   Smartphone,
   UsersRound,
 } from 'lucide-react';
+import BrandLogo, { BRAND_NAME } from '../components/Brand/BrandLogo';
 
-const BRAND = 'SKNOMINA';
+const BRAND = BRAND_NAME;
 
 const flow = [
   {
@@ -99,14 +100,6 @@ const trust = [
   'Cada operación queda con responsable, fecha y auditoría.',
 ];
 
-function BrandMark({ compact = false }) {
-  return (
-    <span className={`flex shrink-0 items-center justify-center rounded-md bg-teal-700 text-white ${compact ? 'h-9 w-9' : 'h-10 w-10'}`}>
-      <Building2 size={compact ? 18 : 20} />
-    </span>
-  );
-}
-
 function ProductScene() {
   const employees = [
     ['Carla Almeida', 'Aprobado', '$684.89'],
@@ -124,7 +117,7 @@ function ProductScene() {
         <div className="rounded-lg border border-slate-200 bg-white/95 p-5 shadow-2xl shadow-slate-200/70">
           <div className="flex items-start justify-between gap-5 border-b border-slate-200 pb-4">
             <div className="flex items-center gap-3">
-              <BrandMark compact />
+              <BrandLogo imageClassName="h-10 w-10" showText={false} />
               <div>
                 <p className="text-sm font-semibold text-slate-950">{BRAND}</p>
                 <p className="text-xs text-slate-500">Cierre mensual Ecuador</p>
@@ -188,8 +181,7 @@ function Landing() {
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="page-container flex h-16 items-center justify-between gap-4">
           <Link className="flex min-w-0 items-center gap-3 font-semibold text-slate-950" to="/">
-            <BrandMark compact />
-            <span className="truncate">{BRAND}</span>
+            <BrandLogo imageClassName="h-10 w-10" />
           </Link>
           <nav className="flex items-center gap-2 sm:gap-3">
             <Link className="hidden text-sm font-semibold text-slate-700 hover:text-slate-950 sm:inline-flex" to="/precios">Planes</Link>

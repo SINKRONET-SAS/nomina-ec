@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Mail, Settings2, LogOut, Menu, ShieldCheck, X, Home, Route } from 'lucide-react';
+import BrandLogo from '../Brand/BrandLogo';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -83,7 +84,9 @@ function Layout() {
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 transform flex-col bg-white shadow-lg ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-200 ease-in-out lg:translate-x-0`}>
         <div className="flex h-16 shrink-0 items-center justify-between border-b px-6">
-          <h1 className="text-xl font-bold text-teal-700">SKNOMINA</h1>
+          <Link className="min-w-0" to="/dashboard" onClick={() => setSidebarOpen(false)}>
+            <BrandLogo imageClassName="h-10 w-10" textClassName="text-xl font-bold text-teal-700" />
+          </Link>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden">
             <X size={20} />
           </button>

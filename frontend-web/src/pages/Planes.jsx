@@ -4,6 +4,7 @@ import { ArrowRight, Banknote, Building2, CheckCircle2 } from 'lucide-react';
 import { extractApiError, fetchPlans, startCheckout } from '../services/publicApi';
 import { fetchPlanCapabilities } from '../services/beneficiosApi';
 import { useAuth } from '../context/AuthContext';
+import BrandLogo from '../components/Brand/BrandLogo';
 
 function formatPrice(plan) {
   if (!plan.precioMensualCentavos) return plan.id === 'CORPORATIVO' ? 'Contrato' : '$0.00';
@@ -77,10 +78,7 @@ function Planes() {
       <header className="border-b border-slate-200 bg-white">
         <div className="page-container flex h-16 items-center justify-between gap-4">
           <Link className="flex items-center gap-3 font-semibold text-slate-950" to="/">
-            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-teal-700 text-white">
-              <Building2 size={19} />
-            </span>
-            SKNOMINA
+            <BrandLogo imageClassName="h-10 w-10" />
           </Link>
           <Link className="secondary-button" to="/login">Iniciar sesión</Link>
         </div>

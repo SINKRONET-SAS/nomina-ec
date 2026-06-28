@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, UserRound } from 'lucide-react';
 import { extractApiError, publicRegister } from '../services/publicApi';
 import { useAuth } from '../context/AuthContext';
+import BrandLogo from '../components/Brand/BrandLogo';
 
 const LOPDP_VERSION = 'LOPDP-2026-06';
 
@@ -65,10 +66,7 @@ function Register() {
       <div className="page-container grid min-h-screen gap-8 py-8 lg:grid-cols-[.88fr_1.12fr] lg:items-center">
         <section className="hidden lg:block">
           <Link className="mb-12 inline-flex items-center gap-3 font-semibold text-slate-950" to="/">
-            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-teal-700 text-white">
-              <Building2 size={19} />
-            </span>
-            SKNOMINA
+            <BrandLogo imageClassName="h-10 w-10" />
           </Link>
           <h1 className="max-w-xl text-5xl font-semibold leading-tight text-slate-950">
             Crea tu empresa y empieza con un flujo operativo real.

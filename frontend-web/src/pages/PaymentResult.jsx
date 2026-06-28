@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Building2, CheckCircle2, Clock3 } from 'lucide-react';
+import { CheckCircle2, Clock3 } from 'lucide-react';
+import BrandLogo from '../components/Brand/BrandLogo';
 
 function PaymentResult() {
   const [params] = useSearchParams();
@@ -12,10 +13,7 @@ function PaymentResult() {
       <div className="page-container flex min-h-screen items-center justify-center py-8">
         <section className="soft-panel w-full max-w-xl p-6 text-center sm:p-8">
           <Link className="mx-auto mb-8 inline-flex items-center gap-3 font-semibold text-slate-950" to="/">
-            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-teal-700 text-white">
-              <Building2 size={19} />
-            </span>
-            SKNOMINA
+            <BrandLogo imageClassName="h-10 w-10" />
           </Link>
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
             {mock ? <Clock3 size={28} /> : <CheckCircle2 size={28} />}

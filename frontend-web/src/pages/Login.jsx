@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import BrandLogo from '../components/Brand/BrandLogo';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -36,10 +37,7 @@ function Login() {
       <section className="hidden min-h-screen bg-slate-950 text-white lg:block">
         <div className="flex h-full flex-col justify-between px-10 py-8">
           <Link className="inline-flex items-center gap-3 text-sm font-semibold" to="/">
-            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-teal-500 text-slate-950">
-              <Building2 size={19} />
-            </span>
-            SKNOMINA
+            <BrandLogo imageClassName="h-11 w-11" textClassName="text-white" />
           </Link>
 
           <div className="max-w-xl">
@@ -70,10 +68,7 @@ function Login() {
         <div className="mx-auto w-full max-w-md">
           <div className="mb-8 flex items-center justify-between">
             <Link className="inline-flex items-center gap-3 font-semibold text-slate-950 lg:hidden" to="/">
-              <span className="flex h-9 w-9 items-center justify-center rounded-md bg-teal-700 text-white">
-                <Building2 size={19} />
-              </span>
-              SKNOMINA
+              <BrandLogo imageClassName="h-10 w-10" />
             </Link>
             <Link className="ml-auto text-sm font-semibold text-teal-800" to="/precios">
               Ver planes
