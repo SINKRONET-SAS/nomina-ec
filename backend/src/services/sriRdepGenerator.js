@@ -111,11 +111,12 @@ function getRdepXsdMetadata() {
   }
 
   const content = fs.readFileSync(RDEP_XSD_PATH, 'utf8');
+  const canonicalContent = content.replace(/\r\n?/g, '\n');
   const contract = getRdepXsdContract(content);
   return {
     path: RDEP_XSD_PATH,
     content,
-    sha256: crypto.createHash('sha256').update(content, 'utf8').digest('hex'),
+    sha256: crypto.createHash('sha256').update(canonicalContent, 'utf8').digest('hex'),
     rootName: contract.rootName,
     rootType: contract.rootType,
     validationMode: XSD_VALIDATION_MODE,

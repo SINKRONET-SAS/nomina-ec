@@ -5,7 +5,8 @@ const path = require('path');
 const manifestPath = path.join(__dirname, '..', 'src', 'config', 'rdep', 'rdep-source-manifest.json');
 
 function sha256File(filePath) {
-  return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+  const content = fs.readFileSync(filePath, 'utf8').replace(/\r\n?/g, '\n');
+  return crypto.createHash('sha256').update(content, 'utf8').digest('hex');
 }
 
 function main() {
