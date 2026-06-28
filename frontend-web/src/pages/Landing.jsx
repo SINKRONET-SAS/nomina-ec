@@ -37,6 +37,11 @@ const flow = [
     text: 'Marcaciones móviles, rutas de campo, novedades, horas extra y evidencias del periodo.',
   },
   {
+    icon: CalendarCheck2,
+    title: 'Gestiona permisos',
+    text: 'El trabajador solicita permisos desde la app; RRHH revisa si son con o sin sueldo y deja la novedad trazable.',
+  },
+  {
     icon: ClipboardCheck,
     title: 'Calcula y cierra el mes',
     text: 'Roles de pago, fondo de reserva, aportes IESS, retenciones y neto a recibir.',
@@ -55,7 +60,7 @@ const flow = [
 
 const modules = [
   ['Nómina Ecuador', 'Cálculo mensual, roles, beneficios, descuentos y cierre controlado.'],
-  ['Asistencia y rutas', 'Marcación móvil, sitios visitados, entradas, salidas y excepciones.'],
+  ['Operación móvil', 'Marcación móvil, permisos con o sin sueldo, rutas de campo y evidencias del periodo.'],
   ['Bancos y pagos', 'Perfiles bancarios, homologación y archivo de pago por periodo.'],
   ['Documentos', 'Contratos, actas, roles PDF, finiquitos y soportes por trabajador.'],
   ['Legal y SRI', 'Parámetros por año, RDEP, Formulario 107 e informes auditables.'],
@@ -164,9 +169,15 @@ function ProductScene() {
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white/95 p-4 shadow-lg shadow-slate-200/60">
-            <p className="text-xs font-semibold uppercase text-slate-500">Rutas de campo</p>
-            <div className="mt-4 flex h-[116px] items-center justify-center rounded-md border border-slate-200 bg-slate-50">
-              <MapPinned className="h-10 w-10 text-teal-700" />
+            <p className="text-xs font-semibold uppercase text-slate-500">Operación móvil</p>
+            <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3">
+              <div className="flex h-[58px] items-center justify-center">
+                <MapPinned className="h-9 w-9 text-teal-700" />
+              </div>
+              <div className="mt-2 space-y-1 text-sm font-medium text-slate-700">
+                <p>Permisos desde la app</p>
+                <p>Rutas de campo</p>
+              </div>
             </div>
           </div>
         </div>
@@ -210,7 +221,8 @@ function Landing() {
             </p>
             <p className="mt-5 max-w-lg text-base leading-8 text-slate-700">
               Una plataforma para RRHH y administración: fichas laborales completas, roles de pago,
-              archivo bancario por banco, rutas de campo, RDEP, Formulario 107, SAE IESS y auditoría por usuario.
+              permisos con o sin sueldo, archivo bancario por banco, rutas de campo, RDEP,
+              Formulario 107, SAE IESS y auditoría por usuario.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link className="primary-button" to="/registro">Empezar prueba <ArrowRight size={18} /></Link>
@@ -241,7 +253,7 @@ function Landing() {
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
             {[
-              [CalendarCheck2, 'Asistencia', 'Horas, rutas y novedades'],
+              [CalendarCheck2, 'Asistencia y permisos', 'Horas, rutas, permisos y novedades'],
               [Landmark, 'Entidades', 'SRI, IESS y bancos'],
               [ShieldCheck, 'Auditoría', 'Responsable y evidencia'],
             ].map(([Icon, title, text]) => (
@@ -280,8 +292,8 @@ function Landing() {
             <p className="text-sm font-semibold uppercase text-amber-300">Producto local</p>
             <h2 className="mt-2 text-3xl font-semibold leading-tight">Lo importante queda listo antes de presionar cerrar mes.</h2>
             <p className="mt-4 text-sm leading-7 text-slate-300">
-              {BRAND} no vende solo una calculadora. Ordena parametrización, documentos, novedades,
-              bancos y reportes para que el cierre tenga respaldo operacional.
+              {BRAND} no vende solo una calculadora. Ordena parametrización, permisos, documentos,
+              novedades, bancos y reportes para que el cierre tenga respaldo operacional.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
