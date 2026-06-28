@@ -1,5 +1,6 @@
 const {
   buildConfirmationUrl,
+  confirmPayPhonePayment,
   createPayPhonePayment,
   isPayPhoneMockMode,
 } = require('./payphoneGatewayService');
@@ -62,5 +63,26 @@ describe('payphoneGatewayService', () => {
       12000
     );
     expect(result.paymentUrl).toBe('https://pay.payphonetodoesposible.com/checkout/card');
+  });
+
+  test('confirma pagos llamando a la Confirmation API de PayPhone', async () => {
+    const post = jest.fn(async () => ({ statusCode: 3, transactionId: 'payphone-tx-1' }));
+
+    const result = await confirmPayPhonePayment({
+      id: 123,
+      clientTxId: 'sknomina-TENANT-USER-PRO-1234567890',
+      post,
+    });
+
+    expect(post).toHaveBeenCalledWith(
+      'https://pay.payphonetodoesposible.com/api/button/V2/Confirm',
+      {
+        id: 123,
+        clientTxId: 'sknomina-TENANT-USER-PRO-1234567890',
+      },
+      expect.objectContaining({ Authorization: 'Bearer token-real' }),
+      12000
+    );
+    expect(result.statusCode).toBe(3);
   });
 });

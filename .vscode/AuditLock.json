@@ -1,108 +1,100 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-CIERRE-DEFINITIVO-AUDITORIA-SKNOMINA-2026-V4",
-  "planCode": "CDANV4",
+  "plan": "HAIKY-CIERRE-DEFINITIVO-AUDITORIA-SKNOMINA-2026-V5",
+  "planCode": "CDANV5",
   "status": "completed_local_qa_with_build_process_note",
-  "phaseCompleted": "CDANV4-05",
+  "phaseCompleted": "CDANV5-05",
   "currentPhase": "commit-and-push",
-  "updatedAt": "2026-06-27T23:46:48-05:00",
-  "summary": "CDANV4 ejecuto cierre V4: pagos GET informativo, permisos como novedades, historial laboral PWA/mobile, autoservicio mobile con tres tabs y renombre runtime activo a SKNOMINA conservando Mi Nomina como etiqueta funcional con ortografia correcta. Prisma y mobile PASS; build web genero dist pero el proceso padre quedo colgado despues del exito impreso.",
+  "updatedAt": "2026-06-28T00:30:00-05:00",
+  "summary": "CDANV5 contrasto auditoria V5 contra runtime real: SBU 2026 queda en USD 482, PayPhone usa Confirmation API y no HMAC local, Mi Nómina se conserva como etiqueta funcional con ortografia correcta. Se agrego consolidado anual de nomina backend/PWA y sugerencia de ruta desde domicilio en mobile.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: generar plan Haiky V4, prompts por fases, ejecutar el plan considerando CODEX_CONTEXT.md, commit y push.",
-  "previousAuditLockHash": "D9E533E004F07ABFF7014BAF037A5277F793F0A502A1E93DFB6D0BAC2AC1A3F4",
+  "approvalSource": "Solicitud del usuario: generar plan Haiky V5, prompts por fases, ejecutar el plan considerando CODEX_CONTEXT.md, ejecutar prompts, commit y push.",
+  "previousAuditLockHash": "CB9540A04785539A9EC39925CD6958E646F26CC6758D2F8209BB846133EB256A",
   "filesModifiedSummary": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/CDANV4-00-baseline.md",
-    ".github/prompts/CDANV4-01-pagos-webhook.md",
-    ".github/prompts/CDANV4-02-permisos-novedades.md",
-    ".github/prompts/CDANV4-03-historial-empleado.md",
-    ".github/prompts/CDANV4-04-sknomina-branding.md",
-    ".github/prompts/CDANV4-05-qa-release.md",
-    "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_SKNOMINA_2026_V4.md",
-    "docs2/cierre-definitivo-auditoria-sknomina-2026-v4/MATRIZ_CDANV4_HALLAZGOS.md",
-    "docs2/cierre-definitivo-auditoria-sknomina-2026-v4/CONTRATO_CDANV4_CIERRE_DEFINITIVO.md",
-    "docs2/cierre-definitivo-auditoria-sknomina-2026-v4/RUNBOOK_CDANV4_QA_RELEASE.md",
-    "docs2/cierre-definitivo-auditoria-sknomina-2026-v4/REPORTE_CDANV4_CIERRE_RUNTIME.md",
+    ".github/prompts/CDANV5-00-baseline.md",
+    ".github/prompts/CDANV5-01-legal-payphone.md",
+    ".github/prompts/CDANV5-02-reportes-anuales.md",
+    ".github/prompts/CDANV5-03-mobile-movilizacion.md",
+    ".github/prompts/CDANV5-04-documentacion.md",
+    ".github/prompts/CDANV5-05-qa-release.md",
+    "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_SKNOMINA_2026_V5.md",
+    "docs2/cierre-definitivo-auditoria-sknomina-2026-v5/MATRIZ_CDANV5_HALLAZGOS.md",
+    "docs2/cierre-definitivo-auditoria-sknomina-2026-v5/RUNBOOK_CDANV5_QA_RELEASE.md",
     "backend/src/app.js",
-    "backend/src/controllers/paymentController.js",
-    "backend/src/controllers/mobileController.js",
-    "backend/src/controllers/empleadoController.js",
-    "backend/src/services/employeeHistoryService.js",
-    "backend/src/services/payrollNoveltyService.js",
-    "backend/src/services/paymentReferenceService.js",
-    "frontend-web/src/pages/Empleados/HistorialEmpleado.jsx",
-    "frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
-    "frontend-web/src/pages/Asistencia/NovedadesPendientes.jsx",
-    "app-movil/src/screens/PermisosScreen.js",
-    "app-movil/src/screens/AutoservicioScreen.js",
-    "app-movil/src/App.js",
-    "runtime branding files for SKNOMINA in backend, frontend-web, app-movil, render.yaml and package locks"
+    "backend/src/controllers/reporteController.js",
+    "backend/src/controllers/reporteController.test.js",
+    "backend/src/services/payrollReportService.js",
+    "backend/src/services/payphoneGatewayService.test.js",
+    "backend/src/app.routes.test.js",
+    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
+    "app-movil/src/screens/GastosMovilizacionScreen.js"
   ],
   "validationChecks": [
     {
-      "gate": "CDANV4-RULES-READ",
+      "gate": "CDANV5-RULES-READ",
       "status": "PASS",
       "detail": "RULES.md leido y aplicado al alcance."
     },
     {
-      "gate": "CDANV4-ROL-PDF",
+      "gate": "CDANV5-SBU-482",
       "status": "PASS",
-      "detail": "Ruta /api/nomina/:id/rol-pdf ya registrada y protegida por test de orden de rutas."
+      "detail": "backend/src/config/legal-ecuador.js mantiene unifiedBaseSalary 482 para 2026; no se aplico 509."
     },
     {
-      "gate": "CDANV4-COMMUNICATION",
+      "gate": "CDANV5-PAYPHONE-CONFIRMATION-API",
       "status": "PASS",
-      "detail": "sendRolPagoDisponible existe y tests de communicationService pasan."
+      "detail": "payphoneGatewayService.test.js confirma uso de /api/button/V2/Confirm."
     },
     {
-      "gate": "CDANV4-PAYMENT-GET",
+      "gate": "CDANV5-CONSOLIDADO-ANUAL",
       "status": "PASS",
-      "detail": "GET /api/pagos/confirm usa paymentReturn y no confirmPayment."
+      "detail": "app.routes.test.js y reporteController.test.js cubren ruta, capability y servicio."
     },
     {
-      "gate": "CDANV4-BACKEND-SPECIFIC-TESTS",
+      "gate": "CDANV5-MOBILE-RUTA-SUGERIDA",
       "status": "PASS",
-      "detail": "6 suites backend, 22 tests: app.routes, mobileController, paymentController, payrollRolePdfService, communicationService, payphoneGatewayService."
+      "detail": "Gastos de movilizacion precarga origen/destino desde perfil y ruta del dia."
     },
     {
-      "gate": "CDANV4-PRISMA-VALIDATE",
+      "gate": "CDANV5-BACKEND-SPECIFIC-TESTS",
+      "status": "PASS",
+      "detail": "3 suites backend, 8 tests: app.routes, reporteController y payphoneGatewayService."
+    },
+    {
+      "gate": "CDANV5-PRISMA-VALIDATE",
       "status": "PASS",
       "detail": "npm.cmd run prisma:validate valido schema Prisma."
     },
     {
-      "gate": "CDANV4-BUILD-WEB",
-      "status": "PASS_WITH_PROCESS_NOTE",
-      "detail": "Vite genero dist y mostro built in 1m 7s; el proceso padre quedo colgado posterior y se cerro por PID."
-    },
-    {
-      "gate": "CDANV4-MOBILE-CHECK",
+      "gate": "CDANV5-MOBILE-CHECK",
       "status": "PASS",
       "detail": "npm.cmd run check:mobile verifico configuracion, identificadores, URLs y assets."
     },
     {
-      "gate": "CDANV4-DIFF-CHECK",
-      "status": "PASS",
-      "detail": "git diff --check sin errores; solo advertencias LF/CRLF de Windows."
+      "gate": "CDANV5-BUILD-WEB",
+      "status": "PASS_WITH_PROCESS_NOTE",
+      "detail": "Vite genero dist y mostro built in 20.25s; el proceso padre quedo retenido y se cerro por PID."
     },
     {
-      "gate": "CDANV4-BRANDING-RUNTIME-RG",
+      "gate": "CDANV5-DIFF-CHECK",
       "status": "PASS",
-      "detail": "Sin coincidencias activas de NOMINA-EC/nomina-ec/nominaec en runtime revisado."
+      "detail": "git diff --check sin errores; solo advertencias LF/CRLF de Windows."
     }
   ],
   "fases": [
-    { "phase": "CDANV4-00", "status": "completed" },
-    { "phase": "CDANV4-01", "status": "completed" },
-    { "phase": "CDANV4-02", "status": "completed" },
-    { "phase": "CDANV4-03", "status": "completed" },
-    { "phase": "CDANV4-04", "status": "completed" },
-    { "phase": "CDANV4-05", "status": "completed_local_qa_with_build_process_note" }
+    { "phase": "CDANV5-00", "status": "completed" },
+    { "phase": "CDANV5-01", "status": "completed" },
+    { "phase": "CDANV5-02", "status": "completed" },
+    { "phase": "CDANV5-03", "status": "completed" },
+    { "phase": "CDANV5-04", "status": "completed" },
+    { "phase": "CDANV5-05", "status": "completed_local_qa_with_build_process_note" }
   ],
   "residualRisk": [
-    "El cambio de scheme y bundle/package mobile a SKNOMINA debe coordinarse antes de publicar si existen builds previos en tiendas.",
-    "Los dominios sknomina.com/api.sknomina.com deben existir antes de produccion.",
-    "Build web genero artefactos pero el proceso padre no cerro limpio; revisar entorno de npm/Vite si se repite en CI."
+    "La revision legal/contable ecuatoriana sigue requerida antes de produccion.",
+    "PayPhone requiere credenciales reales y validacion de ambiente antes de cobro productivo.",
+    "Movilizacion avanzada necesita aprobacion PWA, anticipos e integracion contable completa para cierre productivo."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "F79FC9DAC76E466930931D26ACDB0FAD65D141D01587A0C1C78953529929139E"
+  "signature": "74E36D6DD22652A3B657C19ADB0447C7628DB4ADA620877B4A7996194CEBE26C"
 }

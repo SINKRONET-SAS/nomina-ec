@@ -199,6 +199,30 @@ function DescargarReportes() {
     }
   };
 
+  const exportarConsolidadoAnual = async () => {
+    setCargando('nomina-anual');
+    setMessage('');
+    setError('');
+    try {
+      const response = await authenticatedApi.get(`/reportes/nomina/${anio}/consolidado`, {
+        params: {
+          reportCode,
+          filters: JSON.stringify(filters),
+        },
+      });
+      const url = response.data.reporte?.url;
+
+      if (url) {
+        downloadUrl(url, response.data.reporte?.fileName || `PAYROLL_ANUAL_${reportCode}_${anio}.xlsx`);
+      }
+      setMessage(`Consolidado anual generado: ${response.data.reporte?.totalFilas || 0} filas.`);
+    } catch (err) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Error al exportar consolidado anual de nomina');
+    } finally {
+      setCargando('');
+    }
+  };
+
   const updateFilter = (key, value) => {
     setFilters((current) => ({ ...current, [key]: value }));
   };
@@ -332,6 +356,15 @@ function DescargarReportes() {
           >
             <Download className="h-4 w-4" />
             {cargando === 'nomina-export' ? 'Exportando...' : 'Exportar'}
+          </button>
+          <button
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-teal-200 px-4 text-sm font-semibold text-teal-700 hover:border-teal-400 disabled:opacity-60"
+            type="button"
+            disabled={cargando === 'nomina-anual' || reportCode === 'PAYROLL_SUMMARY'}
+            onClick={exportarConsolidadoAnual}
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            {cargando === 'nomina-anual' ? 'Generando...' : 'Consolidado anual'}
           </button>
         </div>
 

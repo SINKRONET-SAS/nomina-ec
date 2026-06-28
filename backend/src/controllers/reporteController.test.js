@@ -17,6 +17,7 @@ jest.mock('../services/bancoAebGenerator', () => ({
 }));
 
 jest.mock('../services/payrollReportService', () => ({
+  generarConsolidadoAnualNomina: jest.fn(),
   generarReporteNomina: jest.fn(),
 }));
 
@@ -31,7 +32,9 @@ jest.mock('../services/planCapabilityService', () => ({
 }));
 
 const db = require('../config/database');
-const { reporteAsistencia } = require('./reporteController');
+const payrollReportService = require('../services/payrollReportService');
+const planCapabilityService = require('../services/planCapabilityService');
+const { exportarConsolidadoAnual, reporteAsistencia } = require('./reporteController');
 
 function createResponse() {
   return {
@@ -81,5 +84,47 @@ describe('reporteController reporteAsistencia', () => {
       horas_extra_50: '1.50',
       horas_extra_100: '2.25',
     });
+  });
+});
+
+describe('reporteController exportarConsolidadoAnual', () => {
+  beforeEach(() => {
+    payrollReportService.generarConsolidadoAnualNomina.mockReset();
+    planCapabilityService.assertCapability.mockReset();
+  });
+
+  test('exporta consolidado anual con filtros y capability de reportes avanzados', async () => {
+    planCapabilityService.assertCapability.mockResolvedValueOnce(true);
+    payrollReportService.generarConsolidadoAnualNomina.mockResolvedValueOnce({
+      url: 'local://consolidado.xlsx',
+      fileName: 'PAYROLL_ANUAL_2026.xlsx',
+      totalFilas: 12,
+    });
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-anual',
+      ip: '127.0.0.1',
+      params: { anio: '2026' },
+      query: {
+        reportCode: 'PAYROLL_DETAIL_TABULAR',
+        filters: JSON.stringify({ department: 'OPS' }),
+      },
+    };
+    const res = createResponse();
+
+    await exportarConsolidadoAnual(req, res);
+
+    expect(planCapabilityService.assertCapability).toHaveBeenCalledWith('tenant-1', 'advancedReports', expect.objectContaining({
+      correlationId: 'corr-anual',
+      userId: 'user-1',
+    }));
+    expect(payrollReportService.generarConsolidadoAnualNomina).toHaveBeenCalledWith(expect.objectContaining({
+      anio: 2026,
+      filters: { department: 'OPS' },
+      reportCode: 'PAYROLL_DETAIL_TABULAR',
+    }));
+    expect(res.statusCode).toBe(200);
+    expect(res.body.reporte.fileName).toBe('PAYROLL_ANUAL_2026.xlsx');
   });
 });

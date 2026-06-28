@@ -47,6 +47,41 @@ const emptyForm = () => ({
   concepto: 'taxi',
 });
 
+function firstText(...values) {
+  return values.map((value) => String(value || '').trim()).find(Boolean) || '';
+}
+
+function employeeHomeLabel(profile) {
+  const employee = profile?.employee || profile?.empleado || profile || {};
+  return firstText(
+    employee.direccionDomicilio,
+    employee.direccion_domicilio,
+    employee.direccion,
+    [employee.ciudad_domicilio, employee.provincia_domicilio].filter(Boolean).join(', '),
+    'Domicilio registrado'
+  );
+}
+
+function stopLabel(stop) {
+  return firstText(
+    stop?.site?.name,
+    stop?.site?.address,
+    stop?.unplannedName,
+    stop?.unplannedAddress,
+    stop?.name,
+    stop?.address
+  );
+}
+
+function buildRouteSuggestion(profile, route) {
+  const firstPendingStop = (route?.stops || []).find((stop) => !['completed', 'cancelled', 'omitted'].includes(stop.status));
+  const firstStop = firstPendingStop || (route?.stops || [])[0];
+  return {
+    origen: employeeHomeLabel(profile),
+    destino: stopLabel(firstStop) || 'Primer punto de la ruta',
+  };
+}
+
 export default function GastosMovilizacionScreen() {
   const periodo = currentPeriodEC();
   const [gastos, setGastos] = useState([]);
@@ -55,6 +90,7 @@ export default function GastosMovilizacionScreen() {
   const [saving, setSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [routeSuggestion, setRouteSuggestion] = useState({ origen: '', destino: '' });
 
   const recargar = useCallback(async () => {
     const [rows, summary] = await Promise.all([
@@ -68,6 +104,46 @@ export default function GastosMovilizacionScreen() {
   useEffect(() => {
     recargar().finally(() => setLoading(false));
   }, [recargar]);
+
+  const cargarSugerenciaRuta = useCallback(async () => {
+    try {
+      const [profileResponse, routeResponse] = await Promise.all([
+        mobileAPI.me(),
+        mobileAPI.routeToday(),
+      ]);
+      setRouteSuggestion(buildRouteSuggestion(profileResponse.data || {}, routeResponse.data?.route || null));
+    } catch (err) {
+      console.error('No se pudo cargar sugerencia de movilizacion:', {
+        code: err.response?.data?.error || 'MOVILIZACION_RUTA_SUGERIDA_ERROR',
+        statusCode: err.response?.status || 500,
+        correlationId: err.response?.data?.correlationId || 'mobile-local',
+        userId: null,
+        message: err.message,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    cargarSugerenciaRuta();
+  }, [cargarSugerenciaRuta]);
+
+  const abrirModalGasto = () => {
+    const base = emptyForm();
+    setForm({
+      ...base,
+      origen: routeSuggestion.origen || base.origen,
+      destino: routeSuggestion.destino || base.destino,
+    });
+    setModalVisible(true);
+  };
+
+  const usarRutaSugerida = () => {
+    setForm((current) => ({
+      ...current,
+      origen: routeSuggestion.origen || current.origen,
+      destino: routeSuggestion.destino || current.destino,
+    }));
+  };
 
   const agregar = async () => {
     const valor = Number(form.valor_usd);
@@ -169,7 +245,7 @@ export default function GastosMovilizacionScreen() {
           <View style={[styles.row, item.estado !== 'pendiente' && styles.sentRow]}>
             <View style={styles.rowBody}>
               <Text style={styles.route}>{item.origen} -> {item.destino}</Text>
-              <Text style={styles.detail}>{item.fecha} · {item.concepto} · {item.estado}</Text>
+              <Text style={styles.detail}>{item.fecha} - {item.concepto} - {item.estado}</Text>
             </View>
             <Text style={styles.amount}>${Number(item.valor_usd || 0).toFixed(2)}</Text>
             {item.estado === 'pendiente' && (
@@ -182,7 +258,7 @@ export default function GastosMovilizacionScreen() {
       />
 
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => setModalVisible(true)}>
+        <TouchableOpacity style={styles.secondaryButton} onPress={abrirModalGasto}>
           <Text style={styles.secondaryText}>Agregar gasto</Text>
         </TouchableOpacity>
         {pendientes && (
@@ -196,6 +272,15 @@ export default function GastosMovilizacionScreen() {
         <View style={styles.overlay}>
           <ScrollView style={styles.modal}>
             <Text style={styles.modalTitle}>Nuevo gasto</Text>
+            {routeSuggestion.origen || routeSuggestion.destino ? (
+              <View style={styles.suggestionBox}>
+                <Text style={styles.suggestionLabel}>Ruta sugerida</Text>
+                <Text style={styles.suggestionText}>{routeSuggestion.origen} - {routeSuggestion.destino}</Text>
+                <TouchableOpacity style={styles.suggestionButton} onPress={usarRutaSugerida}>
+                  <Text style={styles.suggestionButtonText}>Usar sugerencia</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
             {[
               ['fecha', 'Fecha'],
               ['origen', 'Origen'],
@@ -259,6 +344,11 @@ const styles = StyleSheet.create({
   secondaryText: { color: '#0f766e', fontWeight: '900' },
   sentRow: { opacity: 0.62 },
   subtitle: { color: '#64748b', fontSize: 12, marginBottom: 12 },
+  suggestionBox: { backgroundColor: '#ecfdf5', borderColor: '#99f6e4', borderRadius: 8, borderWidth: 1, marginBottom: 12, padding: 12 },
+  suggestionButton: { alignItems: 'center', alignSelf: 'flex-start', borderColor: '#0f766e', borderRadius: 8, borderWidth: 1, marginTop: 8, minHeight: 34, justifyContent: 'center', paddingHorizontal: 12 },
+  suggestionButtonText: { color: '#0f766e', fontSize: 12, fontWeight: '900' },
+  suggestionLabel: { color: '#0f766e', fontSize: 12, fontWeight: '900', marginBottom: 4 },
+  suggestionText: { color: '#0f172a', fontSize: 13, fontWeight: '700' },
   summary: { backgroundColor: '#fff', borderRadius: 12, flexDirection: 'row', gap: 40, marginBottom: 12, padding: 16 },
   summaryLabel: { color: '#64748b', fontSize: 11 },
   summaryValue: { color: '#0f172a', fontSize: 22, fontWeight: '900' },

@@ -117,6 +117,124 @@ async function generarReporteNomina({
   };
 }
 
+async function generarConsolidadoAnualNomina({
+  tenantId,
+  anio,
+  reportCode = 'PAYROLL_DETAIL_TABULAR',
+  filters = {},
+  context = {},
+}) {
+  const normalizedReportCode = String(reportCode || '').trim().toUpperCase();
+  if (!REPORT_TYPES[normalizedReportCode] || normalizedReportCode === 'PAYROLL_SUMMARY') {
+    throw new Error(`Reporte anual de nomina no soportado: ${reportCode}`);
+  }
+
+  const tenant = await getTenant(tenantId);
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'SKNOMINA';
+  workbook.created = new Date();
+  workbook.modified = new Date();
+  const reportOptions = {};
+  if (normalizedReportCode === 'PAYROLL_ACCOUNTING_REPORT') {
+    reportOptions.accountingMappings = await getAccountingMappings(tenantId, {
+      anio: Number(anio),
+      mes: null,
+      userId: context.userId || null,
+    });
+  }
+
+  const annualSummary = {
+    totalFilas: 0,
+    totalIngresos: 0,
+    totalDeducciones: 0,
+    netoRecibir: 0,
+    costoEmpleador: 0,
+  };
+
+  for (let mes = 1; mes <= 12; mes += 1) {
+    const rows = await getPayrollRows(tenantId, Number(anio), mes, filters);
+    if (rows.length === 0) continue;
+
+    const exportRows = rowsForReport(rows, normalizedReportCode, Number(anio), mes, reportOptions);
+    const sheet = workbook.addWorksheet(`${String(mes).padStart(2, '0')}-${anio}`);
+    sheet.columns = getWorkbookColumns(normalizedReportCode, exportRows);
+    sheet.views = [{ state: 'frozen', ySplit: 1 }];
+    exportRows.forEach((row) => sheet.addRow(row));
+    sheet.getRow(1).font = { bold: true };
+    sheet.autoFilter = {
+      from: { row: 1, column: 1 },
+      to: { row: 1, column: sheet.columns.length },
+    };
+
+    const monthSummary = summarizeRows(rows);
+    annualSummary.totalFilas += exportRows.length;
+    annualSummary.totalIngresos += monthSummary.totalIngresos;
+    annualSummary.totalDeducciones += monthSummary.totalDeducciones;
+    annualSummary.netoRecibir += monthSummary.netoRecibir;
+    annualSummary.costoEmpleador += monthSummary.costoEmpleador;
+  }
+
+  if (annualSummary.totalFilas === 0) {
+    throw new Error(`No hay nominas para el anio ${anio} y filtros solicitados.`);
+  }
+
+  const auditSheet = workbook.addWorksheet('Auditoria');
+  auditSheet.columns = [
+    { header: 'Campo', key: 'campo', width: 30 },
+    { header: 'Valor', key: 'valor', width: 90 },
+  ];
+  [
+    ['Empresa', tenant.razon_social],
+    ['RUC', tenant.ruc || ''],
+    ['Anio', String(anio)],
+    ['Reporte', normalizedReportCode],
+    ['Formato', 'xlsx'],
+    ['Filtros', JSON.stringify(sanitizeFilters(filters))],
+    ['Total filas', String(annualSummary.totalFilas)],
+    ['Total ingresos', toMoneyString(annualSummary.totalIngresos)],
+    ['Total deducciones', toMoneyString(annualSummary.totalDeducciones)],
+    ['Neto recibir', toMoneyString(annualSummary.netoRecibir)],
+    ['Costo empleador', toMoneyString(annualSummary.costoEmpleador)],
+    ['Generado en', new Date().toISOString()],
+    ['Correlation ID', context.correlationId || ''],
+  ].forEach(([campo, valor]) => auditSheet.addRow({ campo, valor }));
+  auditSheet.getRow(1).font = { bold: true };
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const scopeSuffix = buildScopeSuffix(filters);
+  const fileName = `PAYROLL_ANUAL_${normalizedReportCode}_${anio}${scopeSuffix}.xlsx`;
+  const key = `reportes/${tenantId}/nomina/anual/${fileName}`;
+  const url = await s3Upload(buffer, key, XLSX_MIME);
+
+  if (context.correlationId) {
+    await recordAudit({
+      tenantId,
+      userId: context.userId || null,
+      correlationId: context.correlationId,
+      action: 'generar_reporte_nomina_anual',
+      entity: 'nominas',
+      newData: {
+        anio: Number(anio),
+        reportCode: normalizedReportCode,
+        format: 'xlsx',
+        totalFilas: annualSummary.totalFilas,
+        filters: sanitizeFilters(filters),
+      },
+      ipAddress: context.ipAddress || null,
+    });
+  }
+
+  return {
+    url,
+    fileName,
+    contentType: XLSX_MIME,
+    reportCode: normalizedReportCode,
+    format: 'xlsx',
+    totalFilas: annualSummary.totalFilas,
+    resumen: annualSummary,
+  };
+}
+
 async function getTenant(tenantId) {
   const result = await db.query('SELECT id, ruc, razon_social, nombre_comercial FROM tenants WHERE id = $1', [tenantId]);
   if (result.rows.length === 0) {
@@ -666,6 +784,7 @@ function buildScopeSuffix(filters = {}) {
 
 module.exports = {
   generarReporteNomina,
+  generarConsolidadoAnualNomina,
   getPayrollRows,
   summarizeRows,
   REPORT_TYPES,

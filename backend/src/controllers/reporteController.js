@@ -4,7 +4,10 @@
 const { generarXML_RDEP, precheckRDEP } = require('../services/sriRdepGenerator');
 const { generarXML_SAE } = require('../services/iessSaeGenerator');
 const { generarArchivoBanco, precheckArchivoBanco } = require('../services/bancoAebGenerator');
-const { generarReporteNomina } = require('../services/payrollReportService');
+const {
+  generarConsolidadoAnualNomina,
+  generarReporteNomina,
+} = require('../services/payrollReportService');
 const {
   generarFormulario107,
   precheckFormulario107,
@@ -363,6 +366,55 @@ async function exportarNomina(req, res) {
   }
 }
 
+async function exportarConsolidadoAnual(req, res) {
+  try {
+    const { tenantId } = req;
+    const anio = Number(req.params.anio);
+    const { reportCode, filters } = req.query;
+
+    if (!Number.isInteger(anio) || anio < 2020 || anio > 2100) {
+      return res.status(400).json({
+        error: 'PERIODO_ANIO_INVALIDO',
+        message: 'Selecciona un anio valido para el consolidado anual.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    await assertCapability(tenantId, 'advancedReports', {
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+    });
+
+    const parsedFilters = filters ? JSON.parse(filters) : {};
+    const resultado = await generarConsolidadoAnualNomina({
+      tenantId,
+      anio,
+      reportCode: reportCode || 'PAYROLL_DETAIL_TABULAR',
+      filters: parsedFilters,
+      context: {
+        correlationId: req.correlationId,
+        userId: req.usuarioId,
+        ipAddress: req.ip,
+      },
+    });
+
+    return res.json({ success: true, reporte: resultado, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[REPORTES] Error exportando consolidado anual de nomina', {
+      code: err.code || 'REPORTE_NOMINA_ANUAL_EXPORT_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'REPORTE_NOMINA_ANUAL_EXPORT_ERROR',
+      message: err.message,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
 module.exports = {
   generarRDEP,
   validarRDEP,
@@ -373,4 +425,5 @@ module.exports = {
   validarArchivoBanco,
   reporteAsistencia,
   exportarNomina,
+  exportarConsolidadoAnual,
 };

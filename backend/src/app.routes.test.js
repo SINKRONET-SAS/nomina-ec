@@ -21,4 +21,10 @@ describe('app route order', () => {
     expect(source).toContain("app.post('/api/pagos/webhook', paymentController.confirmPayment)");
     expect(source).not.toContain("app.get('/api/pagos/confirm', paymentController.confirmPayment)");
   });
+
+  test('expone consolidado anual de nomina desde reportes', () => {
+    const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
+    expect(source).toContain("app.get('/api/reportes/nomina/:anio/consolidado'");
+    expect(source).toContain('reporteController.exportarConsolidadoAnual');
+  });
 });

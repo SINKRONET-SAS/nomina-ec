@@ -1,6 +1,52 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-CIERRE-DEFINITIVO-AUDITORIA-SKNOMINA-2026-V5
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-CIERRE-DEFINITIVO-AUDITORIA-SKNOMINA-2026-V5 |
+| Codigo | CDANV5 |
+| Estado | Ejecutado localmente; QA en curso |
+| Fase actual | CDANV5-05 QA release |
+| Fuente auditoria | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\AuditoriaNominaEC2026V5.jsx` |
+| Scripts | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\v_nominaec\nominaec_v5_scripts.jsx` |
+| Hallazgos | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\v_nominaec\nominaec_v5_hallazgos.jsx` |
+| Plan doc | `docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_SKNOMINA_2026_V5.md` |
+| Matriz | `docs2/cierre-definitivo-auditoria-sknomina-2026-v5/MATRIZ_CDANV5_HALLAZGOS.md` |
+| Runbook | `docs2/cierre-definitivo-auditoria-sknomina-2026-v5/RUNBOOK_CDANV5_QA_RELEASE.md` |
+| Prompts | `.github/prompts/CDANV5-{00..05}-*.md` |
+
+### Alcance CDANV5
+
+CDANV5 contrasta la auditoria V5 contra el runtime ya corregido por V4 y por planes anteriores. Se descartan los scripts que indican SBU 509, HMAC PayPhone local y LORTI Art. 9 numeral 3 para movilizacion. La ejecucion V5 agrega consolidado anual real en backend/PWA y sugerencia editable de ruta desde domicilio en mobile.
+
+### Decisiones CDANV5
+
+- SBU 2026 operativo: USD 482. No cambiar a USD 509 ni regresar a USD 470.
+- PayPhone se valida llamando a Confirmation API (`/api/button/V2/Confirm`); no inventar `x-payphone-signature`.
+- Movilizacion/viaticos deben modelarse como ingreso no gravado segun LORTI Art. 9 numeral 11 cuando aplique.
+- "Mi Nómina" es etiqueta funcional y se conserva; solo se corrige ortografia si aparece sin tilde.
+- NOMINA-EC debe reemplazarse por SKNOMINA en runtime activo de marca/producto, no en evidencias historicas.
+
+### Runtime CDANV5
+
+- `backend/src/services/payrollReportService.js`: `generarConsolidadoAnualNomina`.
+- `backend/src/controllers/reporteController.js`: `exportarConsolidadoAnual`.
+- `backend/src/app.js`: `GET /api/reportes/nomina/:anio/consolidado`.
+- `frontend-web/src/pages/Nomina/DescargarReportes.jsx`: boton "Consolidado anual".
+- `app-movil/src/screens/GastosMovilizacionScreen.js`: sugerencia origen/destino desde perfil y ruta del dia.
+
+### Gates CDANV5 esperados
+
+- `npm.cmd --workspace=backend test -- app.routes.test.js reporteController.test.js payphoneGatewayService.test.js --runInBand`
+- `npm.cmd run prisma:validate`
+- `npm.cmd --workspace=frontend-web run build`
+- `npm.cmd run check:mobile`
+- `git diff --check`
+
+---
+
 ## Open Haiky Plan - HAIKY-CIERRE-DEFINITIVO-AUDITORIA-SKNOMINA-2026-V4
 
 | Campo | Valor |

@@ -219,6 +219,7 @@ app.post('/api/pagos/banco', requireRole('owner', 'admin_rrhh'), reporteControll
 app.post('/api/reportes/banco/precheck', requireRole('owner', 'admin_rrhh'), reporteController.validarArchivoBanco);
 app.post('/api/reportes/banco', requireRole('owner', 'admin_rrhh'), reporteController.generarArchivoBanco);
 app.post('/api/reportes/nomina/exportar', requireRole('owner', 'admin_rrhh'), reporteController.exportarNomina);
+app.get('/api/reportes/nomina/:anio/consolidado', requireRole('owner', 'admin_rrhh'), reporteController.exportarConsolidadoAnual);
 app.get('/api/reportes/asistencia/:anio/:mes', reporteController.reporteAsistencia);
 
 const auditController = require('./controllers/auditController');
