@@ -1,6 +1,82 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-MIGRACION-SALDOS-INICIALES-FACTURACION-SKNOMINA-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-MIGRACION-SALDOS-INICIALES-FACTURACION-SKNOMINA-2026 |
+| Codigo | MSF26 |
+| Estado | MSF26-01..08 ejecutadas localmente; QA verde |
+| Fase actual | MSF26-08 cierre QA release |
+| Requerimiento fuente | Carga de saldos iniciales para nuevos clientes y facturacion tributaria usando SINKRONET FACTURADOR alojado en Render. |
+| Repo facturador consultivo | `C:\proyectos web\sinkroniq-mobile` |
+| Plan doc | `docs2/PLAN_HAIKY_MIGRACION_SALDOS_INICIALES_FACTURACION_SKNOMINA_2026.md` |
+| Matriz | `docs2/migracion-saldos-iniciales-facturacion-sknomina-2026/MATRIZ_MSF26_REQUERIMIENTOS.md` |
+| Contrato | `docs2/migracion-saldos-iniciales-facturacion-sknomina-2026/CONTRATO_MSF26_MIGRACION_FACTURACION.md` |
+| Runbook | `docs2/migracion-saldos-iniciales-facturacion-sknomina-2026/RUNBOOK_MSF26_QA_RELEASE.md` |
+| Baseline | `docs2/migracion-saldos-iniciales-facturacion-sknomina-2026/REPORTE_MSF26_00_BASELINE.md` |
+| Prompts | `.github/prompts/MSF26-{00..08}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Alcance MSF26
+
+MSF26 cierra dos brechas comerciales: onboarding de clientes nuevos mediante carga de saldos iniciales y facturacion fiscal de servicios SKNOMINA delegada a SINKRONET FACTURADOR. La carga de saldos debe operar con lote, staging, dry-run, errores por fila, aprobacion, reversa, auditoria y PWA visible. La facturacion debe operar por contrato API server-to-server, idempotencia, readiness fail-closed, webhook firmado y UI de estado fiscal.
+
+### Runtime MSF26
+
+- Saldos iniciales: migracion `20260628143000_msf26_initial_balances_fiscal_billing`, servicio `initialBalanceService`, controlador `initialBalanceController` y PWA `/dashboard/onboarding/saldos-iniciales`.
+- Plantillas: CSV/XLSX versionadas `MSF26-v1` con catalogo de saldos, ejemplo y descarga desde PWA.
+- Dry-run/commit/reversa: lote con hash, errores por fila, bloqueo de periodos cerrados, auditoria y `requireFreshUser` en acciones sensibles.
+- Motor nomina: lee saldos `committed` como ajustes iniciales en periodos abiertos y deja evidencia en `detalle_calculo.saldosIniciales`.
+- Facturacion: cliente `facturadorClient`, servicio `fiscalInvoiceService`, controlador `fiscalBillingController` y PWA `/dashboard/facturacion`.
+- Payphone: al aprobar pago se activa suscripcion y se encola solicitud fiscal idempotente sin romper el pago si el facturador esta bloqueado.
+- Webhook fiscal: `POST /api/facturacion/webhook/facturador` con firma HMAC SHA-256 y cuerpo crudo de Express.
+
+### Validacion MSF26
+
+- `npm.cmd run contracts`: PASS.
+- `npm.cmd run prisma:validate`: PASS.
+- `npm.cmd --workspace=backend test -- --runInBand`: PASS, 51 suites, 212 tests.
+- `npm.cmd --workspace=frontend-web run build`: PASS.
+- `npm.cmd run check:mobile`: PASS.
+- `.\node_modules\.bin\prisma.cmd migrate deploy --schema prisma\schema.prisma`: PASS en PostgreSQL local `plan_haiky`.
+- UTF-8 sin BOM: PASS.
+- `git diff --check`: PASS con avisos CRLF esperados en Windows.
+
+### Evidencia consultiva MSF26
+
+- `C:\proyectos web\sinkroniq-mobile\app.json` identifica la aplicacion como `Sinkronet Facturador`.
+- `backend/package.json` declara `Backend Facturacion Electronica Ecuador - Sinkronet`.
+- `backend/src/index.js` expone `/api/facturas`, `/api/comprobantes`, `/api/secuenciales` y `/api/health`.
+- Existen servicios de XML, XSD, firma, worker y colas de factura; MSF26 debe integrarse por API, no por copia de codigo ni acceso directo a base.
+
+### Reglas MSF26
+
+- No iniciar runtime sin aprobacion explicita del prompt de fase.
+- No emitir facturas reales ni llamar Render productivo en fase documental o diagnostica.
+- No guardar secretos, tokens, URLs privadas, certificados ni credenciales en repo.
+- No recalcular ni modificar periodos cerrados al cargar saldos iniciales.
+- SINKRONET FACTURADOR es la fuente fiscal; SKNOMINA guarda solicitud, estado y referencias.
+- Todo bloqueo por facturador, Render, SRI, certificado, perfil fiscal o credenciales debe quedar visible en PWA.
+- Cada fase debe cerrar con pruebas, reporte, `AuditLock.json` firmado y commit `phase: MSF26-XX task: ...` cuando se ejecute runtime.
+
+### Fases MSF26
+
+| Fase | Prioridad | Estado | Resumen |
+|------|-----------|--------|---------|
+| MSF26-00 | P0 | completed_documental | Plan, matriz, contrato, runbook, prompts, contexto y AuditLock sin runtime. |
+| MSF26-01 | P0 | completed_local | Diagnostico runtime SKNOMINA y SINKRONET FACTURADOR. |
+| MSF26-02 | P0 | completed_local | Modelo de saldos iniciales, staging, plantillas y rollback. |
+| MSF26-03 | P0 | completed_local | Carga de saldos con dry-run, commit atomico, reversa y auditoria. |
+| MSF26-04 | P0 | completed_local | PWA de onboarding de saldos iniciales. |
+| MSF26-05 | P0 | completed_local | Cliente API y readiness hacia SINKRONET FACTURADOR. |
+| MSF26-06 | P0 | completed_local | Rutina facturable, cola/reintentos, conciliacion y webhook firmado. |
+| MSF26-07 | P1 | completed_local | PWA de facturacion fiscal, documentos, errores y reintentos. |
+| MSF26-08 | P0 | completed_local | QA, migraciones, smoke seguro, AuditLock final y release. |
+
+---
+
 ## Open Haiky Plan - HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V6
 
 | Campo | Valor |

@@ -27,4 +27,15 @@ describe('app route order', () => {
     expect(source).toContain("app.get('/api/reportes/nomina/:anio/consolidado'");
     expect(source).toContain('reporteController.exportarConsolidadoAnual');
   });
+
+  test('expone rutas MSF26 para saldos iniciales y facturacion fiscal', () => {
+    const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
+
+    expect(source).toContain("app.get('/api/onboarding/saldos-iniciales/plantilla.csv'");
+    expect(source).toContain("app.post('/api/onboarding/saldos-iniciales/dry-run'");
+    expect(source).toContain("app.post('/api/onboarding/saldos-iniciales/lotes/:batchId/commit'");
+    expect(source).toContain("app.post('/api/facturacion/webhook/facturador'");
+    expect(source).toContain("app.get('/api/facturacion/status'");
+    expect(source).toContain("app.post('/api/facturacion/transacciones/:paymentTransactionId/emitir'");
+  });
 });

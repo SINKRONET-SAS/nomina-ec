@@ -1,140 +1,132 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V6",
-  "planCode": "CDANV6",
-  "status": "completed_local_qa_green",
-  "phaseCompleted": "CDANV6-09",
-  "currentPhase": "CDANV6-09-completed",
-  "updatedAt": "2026-06-28T09:17:29-05:00",
-  "summary": "CDANV6-01..09 ejecutadas localmente: mensajes friendly, RDEP XSD reconciliado, UI comercial, logs sin console.log operativo, split Parametrizacion, PWA maskable, aviso LOPDP GPS, sueldo dia 31 con tope 30 y politica docs2/AuditLock documentada.",
+  "plan": "HAIKY-MIGRACION-SALDOS-INICIALES-FACTURACION-SKNOMINA-2026",
+  "planCode": "MSF26",
+  "status": "completed_local",
+  "phaseCompleted": "MSF26-08",
+  "currentPhase": "MSF26-release-ready",
+  "updatedAt": "2026-06-28T15:29:02-05:00",
+  "summary": "MSF26 ejecuto diagnostico, modelo, carga de saldos iniciales, PWA de onboarding, cliente API facturador, rutina fiscal idempotente, PWA fiscal, migracion PostgreSQL y QA local. No se guardaron secretos ni se emitieron facturas reales.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts de acuerdo a HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V6 y CODEX_CONTEXT.md.",
-  "previousAuditLockHash": "4218EBBD3313D0DE9D527A20C8104642D9ECED259AFE6B8087F1C5E3AA3D3B66",
+  "approvalSource": "Solicitud del usuario: ejecutar todos los prompts MSF26 para saldos iniciales y facturacion con SINKRONET FACTURADOR.",
+  "previousAuditLockHash": "074422B3D09A4A7A3D98687B2773C4E1CA6B85A09ADDD5E2F0C3C738F78E72B9",
   "filesModifiedSummary": [
     ".github/CODEX_CONTEXT.md",
-    ".gitignore",
+    ".github/prompts/MSF26-00-baseline-documental.md",
+    ".github/prompts/MSF26-01-diagnostico-runtime.md",
+    ".github/prompts/MSF26-02-modelo-saldos-iniciales.md",
+    ".github/prompts/MSF26-03-carga-saldos-runtime.md",
+    ".github/prompts/MSF26-04-pwa-onboarding-saldos.md",
+    ".github/prompts/MSF26-05-contrato-api-facturador.md",
+    ".github/prompts/MSF26-06-rutina-facturacion.md",
+    ".github/prompts/MSF26-07-pwa-facturacion.md",
+    ".github/prompts/MSF26-08-qa-release.md",
     ".vscode/AuditLock.json",
-    "README.md",
-    "app-movil/src/screens/MarcacionScreen.js",
-    "backend/package.json",
-    "backend/scripts/verify-rdep-xsd-source.js",
+    "backend/prisma/migrations/20260628143000_msf26_initial_balances_fiscal_billing/migration.sql",
     "backend/src/app.js",
-    "backend/src/config/rdep/rdep-source-manifest.json",
-    "backend/src/config/user-message-catalog.json",
-    "backend/src/services/liquidacionService.js",
-    "backend/src/services/sriRdepGenerator.js",
-    "backend/src/utils/logger.js",
-    "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026_V6.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/POLITICA_CDANV6_ARTEFACTOS_PUBLICOS.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_01_DIAGNOSTICO_RUNTIME.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_02_MENSAJES_FRIENDLY.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_03_RDEP_XSD.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_04_UI_ORTOGRAFIA.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_05_LOGS_ESTRUCTURADOS.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_06_PARAMETRIZACION_SPLIT.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_07_PWA_MASKABLE.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_08_LOPDP_GPS_SUELDO31.md",
-    "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_09_QA_RELEASE.md",
-    "frontend-web/pwa.config.js",
-    "frontend-web/public/icon-192-maskable.png",
-    "frontend-web/public/icon-512-maskable.png",
-    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-    "frontend-web/src/pages/Configuracion/parametrizacion/Field.jsx",
-    "frontend-web/src/pages/Configuracion/parametrizacion/IncomeTaxTableFields.jsx",
-    "frontend-web/src/pages/Configuracion/parametrizacion/LegalParametersPreview.jsx",
-    "frontend-web/src/pages/Configuracion/parametrizacion/legalParameterDisplay.js",
-    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
-    "scripts/verify-system-contracts.mjs"
+    "backend/src/app.routes.test.js",
+    "backend/src/controllers/fiscalBillingController.js",
+    "backend/src/controllers/initialBalanceController.js",
+    "backend/src/controllers/paymentController.js",
+    "backend/src/controllers/paymentController.test.js",
+    "backend/src/services/calculoNominaService.js",
+    "backend/src/services/facturadorClient.js",
+    "backend/src/services/fiscalInvoiceService.js",
+    "backend/src/services/fiscalInvoiceService.test.js",
+    "backend/src/services/initialBalanceService.js",
+    "backend/src/services/initialBalanceService.test.js",
+    "frontend-web/src/App.jsx",
+    "frontend-web/src/components/Layout/Layout.jsx",
+    "frontend-web/src/pages/Facturacion/FacturacionFiscal.jsx",
+    "frontend-web/src/pages/Onboarding/SaldosIniciales.jsx",
+    "docs2/PLAN_HAIKY_MIGRACION_SALDOS_INICIALES_FACTURACION_SKNOMINA_2026.md",
+    "docs2/migracion-saldos-iniciales-facturacion-sknomina-2026/"
   ],
   "validationChecks": [
     {
-      "gate": "CDANV6-RDEP-SOURCE",
-      "status": "PASS",
-      "detail": "npm.cmd --workspace=backend run rdep:verify-source"
-    },
-    {
-      "gate": "CDANV6-CONTRACTS",
+      "gate": "MSF26-CONTRACTS",
       "status": "PASS",
       "detail": "npm.cmd run contracts"
     },
     {
-      "gate": "CDANV6-PRISMA",
+      "gate": "MSF26-PRISMA-VALIDATE",
       "status": "PASS",
       "detail": "npm.cmd run prisma:validate"
     },
     {
-      "gate": "CDANV6-BACKEND-TEST",
+      "gate": "MSF26-BACKEND-TESTS",
       "status": "PASS",
-      "detail": "npm.cmd --workspace=backend test -- --runInBand; 49 suites, 204 tests"
+      "detail": "npm.cmd --workspace=backend test -- --runInBand; 51 suites, 212 tests"
     },
     {
-      "gate": "CDANV6-WEB-BUILD",
+      "gate": "MSF26-WEB-BUILD",
       "status": "PASS",
-      "detail": "npm.cmd --workspace=frontend-web run build; manifest PWA generado con maskable PNG"
+      "detail": "npm.cmd --workspace=frontend-web run build"
     },
     {
-      "gate": "CDANV6-MOBILE-CHECK",
+      "gate": "MSF26-MOBILE-CHECK",
       "status": "PASS",
       "detail": "npm.cmd run check:mobile"
     },
     {
-      "gate": "CDANV6-UTF8-NO-BOM",
+      "gate": "MSF26-MIGRATE-DEPLOY",
       "status": "PASS",
-      "detail": "29 archivos .js/.jsx/.mjs/.md/.json revisados"
+      "detail": ".\\node_modules\\.bin\\prisma.cmd migrate deploy --schema prisma\\schema.prisma aplicado en PostgreSQL local plan_haiky"
     },
     {
-      "gate": "CDANV6-DIFF-CHECK",
+      "gate": "MSF26-UTF8-BOM",
       "status": "PASS",
-      "detail": "git diff --check sin errores; solo avisos CRLF esperados en Windows"
+      "detail": "Archivos modificados revisados sin BOM"
+    },
+    {
+      "gate": "MSF26-DIFF-CHECK",
+      "status": "PASS",
+      "detail": "git diff --check sin errores; avisos CRLF esperados en Windows"
     }
   ],
   "fases": [
     {
-      "phase": "CDANV6-00",
+      "phase": "MSF26-00",
       "status": "completed_documental"
     },
     {
-      "phase": "CDANV6-01",
+      "phase": "MSF26-01",
       "status": "completed_local"
     },
     {
-      "phase": "CDANV6-02",
+      "phase": "MSF26-02",
       "status": "completed_local"
     },
     {
-      "phase": "CDANV6-03",
+      "phase": "MSF26-03",
       "status": "completed_local"
     },
     {
-      "phase": "CDANV6-04",
+      "phase": "MSF26-04",
       "status": "completed_local"
     },
     {
-      "phase": "CDANV6-05",
+      "phase": "MSF26-05",
       "status": "completed_local"
     },
     {
-      "phase": "CDANV6-06",
+      "phase": "MSF26-06",
       "status": "completed_local"
     },
     {
-      "phase": "CDANV6-07",
+      "phase": "MSF26-07",
       "status": "completed_local"
     },
     {
-      "phase": "CDANV6-08",
-      "status": "completed_local"
-    },
-    {
-      "phase": "CDANV6-09",
+      "phase": "MSF26-08",
       "status": "completed_local"
     }
   ],
   "residualRisk": [
-    "RDEP requiere revision tributaria profesional antes de envio oficial.",
-    "Texto LOPDP GPS requiere validacion legal del responsable antes de despliegue productivo.",
-    "Migrar docs2/AuditLock a repositorio privado requiere decision de gobierno, inventario y hash de cierre."
+    "La emision real depende de URL, credencial API, secreto webhook, certificado, secuenciales, disponibilidad Render y disponibilidad SRI en SINKRONET FACTURADOR.",
+    "Los saldos iniciales de clientes reales requieren respaldo y aprobacion contable/laboral antes de aplicar commit.",
+    "SKNOMINA conserva solicitud, estado y referencias fiscales; la fuente fiscal sigue siendo SINKRONET FACTURADOR."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "02D7DE805F9FA3E411A9BBC7C7F80ED3E1304CE407F9D450268EC853F042359A"
+  "signature": "BB0395C8E45FE5E3BF99B13F9EA0AC70863AF5C3B74A428B24E4BD80236AC8A7"
 }

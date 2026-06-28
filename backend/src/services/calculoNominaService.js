@@ -10,6 +10,7 @@ const {
   getLegalParametersForTenant,
 } = require('./legalParameterService');
 const { getApprovedDeductions } = require('./beneficioEmpleadoService');
+const { getCommittedInitialBalanceEffects } = require('./initialBalanceService');
 const {
   ensureDefaultPayrollAccountingMappings,
   persistPayrollCalculationLines,
@@ -256,11 +257,23 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   const bonosDesempeno = roundMoney(noveltyImpact.amountByConcept.bono_desempeno || 0);
   const comisiones = roundMoney(noveltyImpact.amountByConcept.comision || 0);
   const descuentoFaltas = roundMoney(noveltyImpact.amountByConcept.descuento_faltas || 0);
+  const initialBalanceEffects = await getCommittedInitialBalanceEffects({
+    tenantId,
+    empleadoId: emp.id,
+    anio,
+    mes,
+    dbClient: options.dbClient || null,
+  });
 
   const ingresosBase = roundMoney(sueldoProporcional + noveltyImpact.totals.incomeAffectsIess);
   const ingresosRenta = roundMoney(sueldoProporcional + noveltyImpact.totals.incomeAffectsIncomeTax);
   const fondoReserva = calcularFondoReserva(emp, ingresosBase, anio, mes, payrollParameters);
-  const totalIngresos = roundMoney(ingresosBase + noveltyImpact.totals.incomeNotAffectsIess + fondoReserva.montoPagadoEmpleado);
+  const totalIngresos = roundMoney(
+    ingresosBase
+    + noveltyImpact.totals.incomeNotAffectsIess
+    + fondoReserva.montoPagadoEmpleado
+    + initialBalanceEffects.beneficioRecurrente
+  );
   const iessApplicability = resolveIessApplicability(emp, payrollParameters);
   const aporteIess = roundMoney(ingresosBase * iessApplicability.personalRate);
   const aportePatronal = roundMoney(ingresosBase * iessApplicability.employerRate);
@@ -290,9 +303,16 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   const benefitDeductions = await getApprovedDeductions(tenantId, emp.id, anio, mes, {
     dbClient: options.dbClient || null,
   });
-  const anticipos = benefitDeductions.anticipos;
-  const prestamos = benefitDeductions.prestamos;
-  const totalDeducciones = roundMoney(aporteIess + impuestoRenta + noveltyImpact.totals.deductions + anticipos + prestamos);
+  const anticipos = roundMoney(benefitDeductions.anticipos + initialBalanceEffects.anticipos);
+  const prestamos = roundMoney(benefitDeductions.prestamos + initialBalanceEffects.prestamos);
+  const totalDeducciones = roundMoney(
+    aporteIess
+    + impuestoRenta
+    + noveltyImpact.totals.deductions
+    + initialBalanceEffects.descuentoRecurrente
+    + anticipos
+    + prestamos
+  );
   const netoRecibir = roundMoney(totalIngresos - totalDeducciones);
 
   if (netoRecibir < 0) {
@@ -354,6 +374,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     anticipos,
     prestamos,
     beneficiosDescontados: benefitDeductions.items,
+    saldosIniciales: initialBalanceEffects,
     totalIngresos,
     totalDeducciones,
     netoRecibir,

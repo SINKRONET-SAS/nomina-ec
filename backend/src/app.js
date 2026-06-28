@@ -21,7 +21,12 @@ app.use(cors({
   credentials: true,
 }));
 app.use(morgan('combined'));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+  limit: '10mb',
+  verify: (req, _res, buf) => {
+    req.rawBody = buf?.toString('utf8') || '';
+  },
+}));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const tenantResolver = require('./middleware/tenantResolver');
@@ -52,11 +57,13 @@ app.use('/api/auth', createAuthRoutes({ authRateLimit }));
 app.post('/api/mobile/empleado/activar', authRateLimit, employeeAppInviteController.aceptarPublica);
 
 const paymentController = require('./controllers/paymentController');
+const fiscalBillingController = require('./controllers/fiscalBillingController');
 app.get('/api/pagos/planes', paymentController.listPublicPlans);
 app.get('/api/pagos/confirm', paymentController.paymentReturn);
 app.get('/api/pagos/cancelado', paymentController.paymentCancelled);
 app.post('/api/pagos/webhook', paymentController.confirmPayment);
 app.post('/api/pagos/webhook/payphone', paymentController.payphoneWebhook);
+app.post('/api/facturacion/webhook/facturador', fiscalBillingController.webhook);
 
 const storageController = require('./controllers/storageController');
 app.get('/api/storage/local/:encodedKey', storageController.descargarLocal);
@@ -112,6 +119,9 @@ app.get('/api/pagos/planes/admin', requireRole('superadmin', 'owner'), paymentCo
 app.post('/api/pagos/planes', requireRole('superadmin'), requireFreshUser, paymentController.upsertPlan);
 app.put('/api/pagos/planes/:planId', requireRole('superadmin'), requireFreshUser, paymentController.upsertPlan);
 app.delete('/api/pagos/planes/:planId', requireRole('superadmin'), requireFreshUser, paymentController.deletePlan);
+app.get('/api/facturacion/status', requireRole('superadmin', 'owner', 'admin_rrhh'), fiscalBillingController.status);
+app.get('/api/facturacion/documentos', requireRole('superadmin', 'owner', 'admin_rrhh'), fiscalBillingController.list);
+app.post('/api/facturacion/transacciones/:paymentTransactionId/emitir', requireRole('superadmin', 'owner'), requireFreshUser, fiscalBillingController.emitForTransaction);
 
 const empleadoController = require('./controllers/empleadoController');
 app.get('/api/empleados', requireRole('owner', 'admin_rrhh', 'supervisor'), empleadoController.listar);
@@ -128,6 +138,15 @@ app.post('/api/empleados', requireRole('owner', 'admin_rrhh'), empleadoControlle
 app.put('/api/empleados/:id', requireRole('owner', 'admin_rrhh'), empleadoController.actualizar);
 app.post('/api/empleados/:id/app-invitacion', requireRole('owner', 'admin_rrhh'), employeeAppInviteController.crear);
 app.post('/api/empleados/:id/terminar', requireRole('owner', 'admin_rrhh'), empleadoController.terminar);
+
+const initialBalanceController = require('./controllers/initialBalanceController');
+app.get('/api/onboarding/saldos-iniciales/plantilla.csv', requireRole('owner', 'admin_rrhh'), initialBalanceController.downloadTemplateCsv);
+app.get('/api/onboarding/saldos-iniciales/plantilla.xlsx', requireRole('owner', 'admin_rrhh'), initialBalanceController.downloadTemplateXlsx);
+app.get('/api/onboarding/saldos-iniciales/lotes', requireRole('owner', 'admin_rrhh'), initialBalanceController.list);
+app.post('/api/onboarding/saldos-iniciales/dry-run', requireRole('owner', 'admin_rrhh'), initialBalanceController.dryRun);
+app.get('/api/onboarding/saldos-iniciales/lotes/:batchId', requireRole('owner', 'admin_rrhh'), initialBalanceController.detail);
+app.post('/api/onboarding/saldos-iniciales/lotes/:batchId/commit', requireRole('owner', 'admin_rrhh'), requireFreshUser, initialBalanceController.commit);
+app.post('/api/onboarding/saldos-iniciales/lotes/:batchId/revertir', requireRole('owner', 'admin_rrhh'), requireFreshUser, initialBalanceController.revert);
 
 const marcacionController = require('./controllers/marcacionController');
 app.post('/api/marcaciones', marcacionController.registrar);

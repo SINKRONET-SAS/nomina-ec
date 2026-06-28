@@ -9,6 +9,7 @@ const {
   isPayPhoneMockMode,
   resolveBackendPublicUrl,
 } = require('../services/payphoneGatewayService');
+const { queueInvoiceForApprovedTransaction } = require('../services/fiscalInvoiceService');
 
 function normalizePlan(row) {
   return {
@@ -517,7 +518,14 @@ async function activateSubscriptionForTransaction(approvedTx, confirmation = {})
   );
 }
 
-async function markTransactionApproved({ clientTransactionId, providerTransactionId = null, payload = {}, source = 'PAYPHONE_CONFIRM' }) {
+async function markTransactionApproved({
+  clientTransactionId,
+  providerTransactionId = null,
+  payload = {},
+  source = 'PAYPHONE_CONFIRM',
+  correlationId = 'payment-confirm',
+  userId = null,
+}) {
   const result = await db.query(
     `UPDATE transacciones_pago
      SET estado = 'APPROVED',
@@ -537,6 +545,10 @@ async function markTransactionApproved({ clientTransactionId, providerTransactio
   );
   const approvedTx = result.rows[0];
   await activateSubscriptionForTransaction(approvedTx, { providerTransactionId, source });
+  await queueInvoiceForApprovedTransaction(approvedTx, {
+    correlationId,
+    userId: userId || approvedTx?.usuario_id || null,
+  });
   return approvedTx;
 }
 
@@ -594,6 +606,8 @@ async function confirmPayment(req, res, next) {
         providerTransactionId: confirmation.providerTransactionId,
         payload: confirmation.payload,
         source: confirmation.source,
+        correlationId: req.correlationId,
+        userId: tx.usuario_id || null,
     });
 
     res.json({
@@ -672,6 +686,8 @@ async function payphoneWebhook(req, res, next) {
       providerTransactionId,
       payload,
       source: 'PAYPHONE_WEBHOOK',
+      correlationId: req.correlationId,
+      userId: tx.usuario_id || null,
     });
 
     return res.json({

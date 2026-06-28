@@ -28,6 +28,8 @@ import LineaBaseOperativa from './pages/Operacion/LineaBaseOperativa';
 import OperacionIntegral from './pages/Operacion/OperacionIntegral';
 import MovilizacionAprobacion from './pages/Operacion/MovilizacionAprobacion';
 import PermisosOperacion from './pages/Operacion/PermisosOperacion';
+import SaldosIniciales from './pages/Onboarding/SaldosIniciales';
+import FacturacionFiscal from './pages/Facturacion/FacturacionFiscal';
 import ListaEmpleados from './pages/Empleados/ListaEmpleados';
 import HistorialEmpleado from './pages/Empleados/HistorialEmpleado';
 import NuevoEmpleado from './pages/Empleados/NuevoEmpleado';
@@ -140,6 +142,11 @@ function App() {
                   <TerminarEmpleado />
                 </ProtectedRoute>
               } />
+              <Route path="onboarding/saldos-iniciales" element={
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
+                  <SaldosIniciales />
+                </ProtectedRoute>
+              } />
               
               {/* Asistencia */}
               <Route path="asistencia/novedades" element={
@@ -224,6 +231,11 @@ function App() {
               <Route path="planes" element={
                 <ProtectedRoute requiredRole={['superadmin']}>
                   <PlanesGestion />
+                </ProtectedRoute>
+              } />
+              <Route path="facturacion" element={
+                <ProtectedRoute requiredRole={['superadmin', 'owner', 'admin_rrhh']}>
+                  <FacturacionFiscal />
                 </ProtectedRoute>
               } />
               <Route path="superadmin" element={

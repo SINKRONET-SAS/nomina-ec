@@ -22,6 +22,7 @@ function Layout() {
       submenu: [
         { path: '/dashboard/empleados', label: 'Lista de Empleados' },
         { path: '/dashboard/empleados/nuevo', label: 'Nuevo Empleado' },
+        { path: '/dashboard/onboarding/saldos-iniciales', label: 'Saldos iniciales' },
       ]
     },
     {
@@ -67,6 +68,7 @@ function Layout() {
     },
     { path: '/dashboard/configuracion/parametrizacion', icon: Settings2, label: 'Parametrización', roles: ['superadmin', 'owner', 'admin_rrhh'] },
     { path: '/dashboard/configuracion/comunicaciones', icon: Mail, label: 'Comunicaciones', roles: ['superadmin', 'owner', 'admin_rrhh'] },
+    { path: '/dashboard/facturacion', icon: CreditCard, label: 'Facturación', roles: ['superadmin', 'owner', 'admin_rrhh'] },
     { path: '/dashboard/auditoria', icon: ShieldCheck, label: 'Auditoría', roles: ['superadmin', 'owner'] },
     { path: '/dashboard/privacidad', icon: ShieldCheck, label: 'Privacidad', roles: ['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado'] },
     { path: '/dashboard/superadmin', icon: CreditCard, label: 'Superadmin', roles: ['superadmin'] },

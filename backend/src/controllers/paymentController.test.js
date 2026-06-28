@@ -1,8 +1,12 @@
 jest.mock('../config/database', () => ({
   query: jest.fn(),
 }));
+jest.mock('../services/fiscalInvoiceService', () => ({
+  queueInvoiceForApprovedTransaction: jest.fn().mockResolvedValue(null),
+}));
 
 const db = require('../config/database');
+const { queueInvoiceForApprovedTransaction } = require('../services/fiscalInvoiceService');
 const paymentController = require('./paymentController');
 
 function mockResponse() {
@@ -168,6 +172,10 @@ describe('paymentController PayPhone gates', () => {
     );
     expect(db.query.mock.calls[1][0]).toContain('UPDATE transacciones_pago');
     expect(db.query.mock.calls[2][0]).toContain('INSERT INTO suscripciones');
+    expect(queueInvoiceForApprovedTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ client_transaction_id: 'pay-1' }),
+      expect.objectContaining({ correlationId: 'corr-webhook' })
+    );
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       success: true,
       processed: true,
