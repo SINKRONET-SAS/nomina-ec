@@ -1,100 +1,108 @@
 {
-  "schemaVersion": 1,
-  "plan": "HAIKY-CIERRE-DEFINITIVO-AUDITORIA-SKNOMINA-2026-V5",
-  "planCode": "CDANV5",
-  "status": "completed_local_qa_with_build_process_note",
-  "phaseCompleted": "CDANV5-05",
-  "currentPhase": "commit-and-push",
-  "updatedAt": "2026-06-28T00:30:00-05:00",
-  "summary": "CDANV5 contrasto auditoria V5 contra runtime real: SBU 2026 queda en USD 482, PayPhone usa Confirmation API y no HMAC local, Mi Nómina se conserva como etiqueta funcional con ortografia correcta. Se agrego consolidado anual de nomina backend/PWA y sugerencia de ruta desde domicilio en mobile.",
-  "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: generar plan Haiky V5, prompts por fases, ejecutar el plan considerando CODEX_CONTEXT.md, ejecutar prompts, commit y push.",
-  "previousAuditLockHash": "CB9540A04785539A9EC39925CD6958E646F26CC6758D2F8209BB846133EB256A",
-  "filesModifiedSummary": [
-    ".github/CODEX_CONTEXT.md",
-    ".github/prompts/CDANV5-00-baseline.md",
-    ".github/prompts/CDANV5-01-legal-payphone.md",
-    ".github/prompts/CDANV5-02-reportes-anuales.md",
-    ".github/prompts/CDANV5-03-mobile-movilizacion.md",
-    ".github/prompts/CDANV5-04-documentacion.md",
-    ".github/prompts/CDANV5-05-qa-release.md",
-    "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_SKNOMINA_2026_V5.md",
-    "docs2/cierre-definitivo-auditoria-sknomina-2026-v5/MATRIZ_CDANV5_HALLAZGOS.md",
-    "docs2/cierre-definitivo-auditoria-sknomina-2026-v5/RUNBOOK_CDANV5_QA_RELEASE.md",
-    "backend/src/app.js",
-    "backend/src/controllers/reporteController.js",
-    "backend/src/controllers/reporteController.test.js",
-    "backend/src/services/payrollReportService.js",
-    "backend/src/services/payphoneGatewayService.test.js",
-    "backend/src/app.routes.test.js",
-    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
-    "app-movil/src/screens/GastosMovilizacionScreen.js"
-  ],
-  "validationChecks": [
-    {
-      "gate": "CDANV5-RULES-READ",
-      "status": "PASS",
-      "detail": "RULES.md leido y aplicado al alcance."
-    },
-    {
-      "gate": "CDANV5-SBU-482",
-      "status": "PASS",
-      "detail": "backend/src/config/legal-ecuador.js mantiene unifiedBaseSalary 482 para 2026; no se aplico 509."
-    },
-    {
-      "gate": "CDANV5-PAYPHONE-CONFIRMATION-API",
-      "status": "PASS",
-      "detail": "payphoneGatewayService.test.js confirma uso de /api/button/V2/Confirm."
-    },
-    {
-      "gate": "CDANV5-CONSOLIDADO-ANUAL",
-      "status": "PASS",
-      "detail": "app.routes.test.js y reporteController.test.js cubren ruta, capability y servicio."
-    },
-    {
-      "gate": "CDANV5-MOBILE-RUTA-SUGERIDA",
-      "status": "PASS",
-      "detail": "Gastos de movilizacion precarga origen/destino desde perfil y ruta del dia."
-    },
-    {
-      "gate": "CDANV5-BACKEND-SPECIFIC-TESTS",
-      "status": "PASS",
-      "detail": "3 suites backend, 8 tests: app.routes, reporteController y payphoneGatewayService."
-    },
-    {
-      "gate": "CDANV5-PRISMA-VALIDATE",
-      "status": "PASS",
-      "detail": "npm.cmd run prisma:validate valido schema Prisma."
-    },
-    {
-      "gate": "CDANV5-MOBILE-CHECK",
-      "status": "PASS",
-      "detail": "npm.cmd run check:mobile verifico configuracion, identificadores, URLs y assets."
-    },
-    {
-      "gate": "CDANV5-BUILD-WEB",
-      "status": "PASS_WITH_PROCESS_NOTE",
-      "detail": "Vite genero dist y mostro built in 20.25s; el proceso padre quedo retenido y se cerro por PID."
-    },
-    {
-      "gate": "CDANV5-DIFF-CHECK",
-      "status": "PASS",
-      "detail": "git diff --check sin errores; solo advertencias LF/CRLF de Windows."
-    }
-  ],
-  "fases": [
-    { "phase": "CDANV5-00", "status": "completed" },
-    { "phase": "CDANV5-01", "status": "completed" },
-    { "phase": "CDANV5-02", "status": "completed" },
-    { "phase": "CDANV5-03", "status": "completed" },
-    { "phase": "CDANV5-04", "status": "completed" },
-    { "phase": "CDANV5-05", "status": "completed_local_qa_with_build_process_note" }
-  ],
-  "residualRisk": [
-    "La revision legal/contable ecuatoriana sigue requerida antes de produccion.",
-    "PayPhone requiere credenciales reales y validacion de ambiente antes de cobro productivo.",
-    "Movilizacion avanzada necesita aprobacion PWA, anticipos e integracion contable completa para cierre productivo."
-  ],
-  "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "74E36D6DD22652A3B657C19ADB0447C7628DB4ADA620877B4A7996194CEBE26C"
+    "schemaVersion":  1,
+    "plan":  "HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V6",
+    "planCode":  "CDANV6",
+    "status":  "completed_documental_runtime_pending_approval",
+    "phaseCompleted":  "CDANV6-00",
+    "currentPhase":  "CDANV6-01-pending-approval",
+    "updatedAt":  "2026-06-28T08:29:42-05:00",
+    "summary":  "CDANV6 crea el cierre documental para 9 hallazgos de auditoria: mensajes friendly, RDEP XSD, ortografia UI, logs, split Parametrizacion, PWA maskable, LOPDP GPS, sueldo dia 31 y politica docs2/AuditLock. No se ejecuto runtime.",
+    "rulesSource":  "RULES.md",
+    "approvalSource":  "Solicitud del usuario: generar plan Haiky en docs2, .github/CODEX_CONTEXT.md, .vscode/AuditLock.json y .github/prompts por fases en base a RULES.md.",
+    "previousAuditLockHash":  "04E599DFFDA9CBCD056FE32A910FC21978176DEF2652EB2A4E594BD432AEA113",
+    "filesModifiedSummary":  [
+                                 ".github/CODEX_CONTEXT.md",
+                                 ".github/prompts/CDANV6-00-baseline-documental.md",
+                                 ".github/prompts/CDANV6-01-diagnostico-runtime.md",
+                                 ".github/prompts/CDANV6-02-mensajes-friendly.md",
+                                 ".github/prompts/CDANV6-03-rdep-xsd.md",
+                                 ".github/prompts/CDANV6-04-ui-ortografia.md",
+                                 ".github/prompts/CDANV6-05-logs-estructurados.md",
+                                 ".github/prompts/CDANV6-06-parametrizacion-split.md",
+                                 ".github/prompts/CDANV6-07-pwa-maskable.md",
+                                 ".github/prompts/CDANV6-08-lopdp-gps-sueldo31.md",
+                                 ".github/prompts/CDANV6-09-gobierno-qa-release.md",
+                                 "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026_V6.md",
+                                 "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/MATRIZ_CDANV6_HALLAZGOS.md",
+                                 "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/CONTRATO_CDANV6_CIERRE_DEFINITIVO.md",
+                                 "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/RUNBOOK_CDANV6_QA_RELEASE.md",
+                                 "docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/REPORTE_CDANV6_00_BASELINE.md",
+                                 ".vscode/AuditLock.json"
+                             ],
+    "validationChecks":  [
+                             {
+                                 "gate":  "CDANV6-RULES-READ",
+                                 "status":  "PASS",
+                                 "detail":  "RULES.md leido y aplicado al alcance documental."
+                             },
+                             {
+                                 "gate":  "CDANV6-SOURCES-REVIEWED",
+                                 "status":  "PASS",
+                                 "detail":  "Informe de auditoria y fixes 1 a 9 revisados como insumo, sin aplicacion runtime."
+                             },
+                             {
+                                 "gate":  "CDANV6-CONTEXT-LOCATION",
+                                 "status":  "PASS",
+                                 "detail":  "CODEX_CONTEXT actualizado solo en .github/CODEX_CONTEXT.md."
+                             },
+                             {
+                                 "gate":  "CDANV6-PROMPTS",
+                                 "status":  "PASS",
+                                 "detail":  "Prompts CDANV6-00 a CDANV6-09 creados en .github/prompts."
+                             },
+                             {
+                                 "gate":  "CDANV6-RUNTIME",
+                                 "status":  "PASS",
+                                 "detail":  "No se inicio runtime; fases 01 a 09 quedan pending_approval."
+                             }
+                         ],
+    "fases":  [
+                  {
+                      "phase":  "CDANV6-00",
+                      "status":  "completed_documental"
+                  },
+                  {
+                      "phase":  "CDANV6-01",
+                      "status":  "pending_approval"
+                  },
+                  {
+                      "phase":  "CDANV6-02",
+                      "status":  "pending_approval"
+                  },
+                  {
+                      "phase":  "CDANV6-03",
+                      "status":  "pending_approval"
+                  },
+                  {
+                      "phase":  "CDANV6-04",
+                      "status":  "pending_approval"
+                  },
+                  {
+                      "phase":  "CDANV6-05",
+                      "status":  "pending_approval"
+                  },
+                  {
+                      "phase":  "CDANV6-06",
+                      "status":  "pending_approval"
+                  },
+                  {
+                      "phase":  "CDANV6-07",
+                      "status":  "pending_approval"
+                  },
+                  {
+                      "phase":  "CDANV6-08",
+                      "status":  "pending_approval"
+                  },
+                  {
+                      "phase":  "CDANV6-09",
+                      "status":  "pending_approval"
+                  }
+              ],
+    "residualRisk":  [
+                         "RDEP requiere fuente oficial SRI vigente y revision tributaria antes de XML productivo.",
+                         "HAL-9 requiere decision explicita antes de mover, ignorar o retirar docs2/AuditLock del repo publico.",
+                         "Las fases runtime requieren aprobacion explicita y QA por fase."
+                     ],
+    "signatureAlgorithm":  "SHA256(previousAuditLockHash + updatedAt)",
+    "signature":  "A76BCE7CFB5FB785127EB34445D188D54B92A335F953F7B50B89E4E7445D9627"
 }

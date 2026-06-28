@@ -1,6 +1,56 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V6
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-CIERRE-DEFINITIVO-AUDITORIA-NOMINA-EC-2026-V6 |
+| Codigo | CDANV6 |
+| Estado | CDANV6-00 documental creado; runtime pendiente de aprobacion por fase |
+| Fase actual | CDANV6-00 baseline documental |
+| Fuente auditoria | `C:\Users\proam\Downloads\files (5)\informe_auditoria_nomina_ec.md` |
+| Fixes fuente | `C:\Users\proam\Downloads\files (5)\fix_1_*.js` a `fix_9_*.sh` |
+| Plan doc | `docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_NOMINA_EC_2026_V6.md` |
+| Matriz | `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/MATRIZ_CDANV6_HALLAZGOS.md` |
+| Contrato | `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/CONTRATO_CDANV6_CIERRE_DEFINITIVO.md` |
+| Runbook | `docs2/cierre-definitivo-auditoria-nomina-ec-2026-v6/RUNBOOK_CDANV6_QA_RELEASE.md` |
+| Prompts | `.github/prompts/CDANV6-{00..09}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Alcance CDANV6
+
+CDANV6 responde a la auditoria integral Nomina-Ec con 9 hallazgos verificados: catalogo de mensajes friendly, reconciliacion XSD RDEP, ortografia UI, logs de produccion, split de Parametrizacion, iconos PWA maskable, aviso LOPDP GPS mobile, calculo de sueldo pendiente en dia 31 y politica de exposicion de `docs2/`/`AuditLock.json`.
+
+### Reglas CDANV6
+
+- No iniciar runtime sin aprobacion explicita por fase.
+- Aplicar `RULES.md` en cada archivo `.js`, `.md` y `.json`.
+- No aplicar los `fix_*` descargados literalmente; contrastarlos contra repo real.
+- No crear `CODEX_CONTEXT.md` en raiz; este contexto vive en `.github/CODEX_CONTEXT.md`.
+- Mantener este archivo sin secretos, tokens, URLs privadas, usuarios reales o credenciales.
+- No cambiar SBU 2026 por esta auditoria: la fuente auditada confirma USD 482.
+- RDEP productivo debe fallar cerrado si XSD/catalogo/ficha tecnica SRI no estan reconciliados.
+- HAL-9 requiere decision explicita antes de mover, ignorar o retirar `docs2/` y `.vscode/AuditLock.json`.
+- Cada fase debe cerrar con pruebas, reporte, `AuditLock.json` firmado y commit `phase: CDANV6-XX task: ...`.
+
+### Fases CDANV6
+
+| Fase | Prioridad | Estado | Resumen |
+|------|-----------|--------|---------|
+| CDANV6-00 | P0 | completed_documental | Plan, matriz, contrato, runbook, prompts, contexto y AuditLock sin runtime. |
+| CDANV6-01 | P0 | pending_approval | Diagnostico runtime de los 9 hallazgos. |
+| CDANV6-02 | P0 | pending_approval | Catalogo de mensajes friendly y consumidores. |
+| CDANV6-03 | P0 | pending_approval | XSD RDEP, manifest SHA-256 y gate productivo. |
+| CDANV6-04 | P1 | pending_approval | Ortografia UI y lenguaje comercial visible. |
+| CDANV6-05 | P1 | pending_approval | Limpieza de logs y logger estructurado. |
+| CDANV6-06 | P2 | pending_approval | Split controlado de Parametrizacion. |
+| CDANV6-07 | P1 | pending_approval | Iconos PWA maskable PNG 192/512. |
+| CDANV6-08 | P0 | pending_approval | Aviso LOPDP GPS y sueldo pendiente dia 31. |
+| CDANV6-09 | P0 | pending_approval | Gobierno repo publico, QA final, commit y push. |
+
+---
+
 ## Open Haiky Plan - HAIKY-CIERRE-DEFINITIVO-AUDITORIA-SKNOMINA-2026-V5
 
 | Campo | Valor |
