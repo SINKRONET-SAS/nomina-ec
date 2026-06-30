@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Banknote, Building2, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Banknote, CheckCircle2 } from 'lucide-react';
 import { extractApiError, fetchPlans, startCheckout } from '../services/publicApi';
 import { fetchPlanCapabilities } from '../services/beneficiosApi';
 import { useAuth } from '../context/AuthContext';
 import BrandLogo from '../components/Brand/BrandLogo';
-
-function formatPrice(plan) {
-  if (!plan.precioMensualCentavos) return plan.id === 'CORPORATIVO' ? 'Contrato' : '$0.00';
-  return `$${(plan.precioMensualCentavos / 100).toFixed(2)}/mes`;
-}
+import {
+  formatPublicPlanPrice,
+  normalizeBrandText,
+  normalizePublicPlans,
+  publicPlanActionLabel,
+} from '../config/publicPlanPresentation';
 
 function Planes() {
   const [planes, setPlanes] = useState([]);
@@ -24,10 +25,13 @@ function Planes() {
   useEffect(() => {
     fetchPlans()
       .then((payload) => {
-        setPlanes(payload.plans || []);
+        setPlanes(normalizePublicPlans(payload.plans));
         setPaymentCapabilities(payload.paymentCapabilities || null);
       })
-      .catch((err) => setError(extractApiError(err, 'No se pudieron cargar los planes.')));
+      .catch((err) => {
+        setPlanes(normalizePublicPlans());
+        setError(extractApiError(err, 'No se pudieron cargar los planes. Mostramos el catálogo base mientras el servicio responde.'));
+      });
   }, []);
 
   useEffect(() => {
@@ -86,11 +90,11 @@ function Planes() {
 
       <section className="page-container py-12">
         <div className="max-w-3xl">
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Planes y PayPhone</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Planes SKNOMINA</p>
           <h1 className="mt-3 text-4xl font-semibold text-slate-950">Elige capacidad según tu operación.</h1>
           <p className="mt-4 text-lg leading-8 text-slate-600">
-            Los planes vienen desde la API. Si ya iniciaste sesión, el botón abre el checkout;
-            si no, crea la empresa con el plan preseleccionado.
+            Este es el mismo catálogo que se resume en la página principal. Si ya iniciaste sesión,
+            el botón abre el checkout; si no, crea la empresa con el plan preseleccionado.
           </p>
         </div>
 
@@ -98,7 +102,7 @@ function Planes() {
         {capabilitiesError && <div className="mt-6 status-error">{capabilitiesError}</div>}
         {capabilities && (
           <div className="mt-6 rounded-md border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
-            Plan activo: <strong>{capabilities.planNombre}</strong>. Archivos bancarios: {capabilities.allowed?.bankFiles ? 'habilitados' : 'bloqueados'}.
+            Plan activo: <strong>{normalizeBrandText(capabilities.planNombre)}</strong>. Archivos bancarios: {capabilities.allowed?.bankFiles ? 'habilitados' : 'bloqueados'}.
           </div>
         )}
         {paymentCapabilities?.checkoutAvailable === false && (
@@ -121,7 +125,7 @@ function Planes() {
                   <Banknote size={20} />
                 </span>
               </div>
-              <p className="mt-6 text-3xl font-semibold text-slate-950">{formatPrice(plan)}</p>
+              <p className="mt-6 text-3xl font-semibold text-slate-950">{formatPublicPlanPrice(plan)}</p>
               <ul className="mt-5 space-y-3 text-sm text-slate-700">
                 <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-teal-700" />Empleados: {plan.empleadosMax || 'pactado'}</li>
                 <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-teal-700" />Empresas: {plan.empresasMax}</li>
@@ -133,7 +137,7 @@ function Planes() {
                 disabled={loadingPlan === plan.id || checkoutBlocked}
                 onClick={() => handleCheckout(plan.id)}
               >
-                {checkoutBlocked ? 'Checkout no configurado' : loadingPlan === plan.id ? 'Abriendo checkout...' : plan.id === 'TRIAL' ? 'Empezar prueba' : 'Activar plan'}
+                {checkoutBlocked ? 'Checkout no configurado' : loadingPlan === plan.id ? 'Abriendo checkout...' : publicPlanActionLabel(plan)}
                 {loadingPlan !== plan.id && <ArrowRight size={18} />}
               </button>
             </article>

@@ -1,4 +1,4 @@
--- Fases 20-26: marca Nomina-Ec, auth publico, planes y PayPhone.
+-- Fases 20-26: marca SKNOMINA, auth publico, planes y PayPhone.
 
 CREATE TABLE IF NOT EXISTS "password_reset_tokens" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
@@ -145,7 +145,7 @@ INSERT INTO "planes_comerciales" (
   "empresas_max", "usuarios_max", "archivos_bancarios", "reportes_avanzados",
   "soporte", "orden", "metadata"
 ) VALUES
-  ('TRIAL', 'Prueba', 'Evaluacion controlada de Nomina-Ec para validar la operacion inicial.', 0, 10, 1, 2, false, false, 'comunidad', 10, '{"trialDays": 14}'),
+  ('TRIAL', 'Prueba', 'Evaluacion controlada de SKNOMINA para validar la operacion inicial.', 0, 10, 1, 2, false, false, 'comunidad', 10, '{"trialDays": 14}'),
   ('MICRO', 'Micro', 'Nomina mensual para negocios pequenos con una empresa activa.', 1900, 25, 1, 3, true, false, 'email', 20, '{}'),
   ('PYME', 'Pyme', 'Gestion recurrente de nomina, reportes y archivos bancarios.', 4900, 100, 3, 8, true, true, 'prioritario', 30, '{}'),
   ('EMPRESA', 'Empresa', 'Operacion multiempresa con auditoria visible y soporte ampliado.', 9900, 500, 10, 20, true, true, 'prioritario', 40, '{}'),

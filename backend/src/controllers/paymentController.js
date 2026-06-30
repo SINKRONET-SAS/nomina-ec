@@ -14,8 +14,8 @@ const { queueInvoiceForApprovedTransaction } = require('../services/fiscalInvoic
 function normalizePlan(row) {
   return {
     id: row.id,
-    nombre: row.nombre,
-    descripcion: row.descripcion,
+    nombre: normalizeBrandText(row.nombre),
+    descripcion: normalizeBrandText(row.descripcion),
     precioMensualCentavos: row.precio_mensual_centavos,
     precioMensual: Number(row.precio_mensual_centavos || 0) / 100,
     moneda: row.moneda,
@@ -31,6 +31,14 @@ function normalizePlan(row) {
     orden: row.orden,
     metadata: row.metadata || {},
   };
+}
+
+function normalizeBrandText(value) {
+  return String(value || '')
+    .replace(/N[oó]mina-EC/gi, 'SKNOMINA')
+    .replace(/N[oó]mina-Ec/gi, 'SKNOMINA')
+    .replace(/Nomina-Ec/gi, 'SKNOMINA')
+    .replace(/Nomina-EC/gi, 'SKNOMINA');
 }
 
 async function listPublicPlans(_req, res, next) {

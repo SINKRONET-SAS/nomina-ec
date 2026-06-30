@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -17,6 +17,12 @@ import {
   UsersRound,
 } from 'lucide-react';
 import BrandLogo, { BRAND_NAME } from '../components/Brand/BrandLogo';
+import { fetchPlans } from '../services/publicApi';
+import {
+  formatPublicPlanPrice,
+  normalizePublicPlans,
+  publicPlanActionLabel,
+} from '../config/publicPlanPresentation';
 
 const BRAND = BRAND_NAME;
 
@@ -72,30 +78,6 @@ const metrics = [
   ['3', 'entidades cubiertas'],
   ['100%', 'trazabilidad'],
   ['EC', 'reglas locales'],
-];
-
-const offer = [
-  {
-    name: 'Prueba operativa',
-    price: '$0',
-    text: 'Valida empresa, empleados, asistencia, roles y reportes antes de pagar.',
-    action: 'Crear cuenta',
-    to: '/registro?plan=TRIAL',
-  },
-  {
-    name: 'PYME Ecuador',
-    price: 'Plan mensual',
-    text: 'Gestiona nómina, bancos, documentos y reportes para equipos en crecimiento.',
-    action: 'Ver planes',
-    to: '/precios',
-  },
-  {
-    name: 'Operación regulada',
-    price: 'A medida',
-    text: 'Multiempresa, soporte, parametrización y acompañamiento para cierres exigentes.',
-    action: 'Hablar con ventas',
-    to: '/soporte',
-  },
 ];
 
 const trust = [
@@ -187,6 +169,24 @@ function ProductScene() {
 }
 
 function Landing() {
+  const [publicPlans, setPublicPlans] = useState(() => normalizePublicPlans().slice(0, 3));
+
+  useEffect(() => {
+    let mounted = true;
+    fetchPlans()
+      .then((payload) => {
+        if (!mounted) return;
+        setPublicPlans(normalizePublicPlans(payload.plans).slice(0, 3));
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setPublicPlans(normalizePublicPlans().slice(0, 3));
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <main className="app-shell bg-white">
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
@@ -313,16 +313,19 @@ function Landing() {
       <section className="page-container py-12">
         <div className="mb-7 max-w-3xl">
           <p className="text-sm font-semibold uppercase text-teal-800">Planes</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-950">Empieza con una prueba y escala cuando tu operación lo pida</h2>
+          <h2 className="mt-2 text-2xl font-semibold text-slate-950">Empieza con una prueba y escala con el mismo catálogo de precios</h2>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            Esta vista resume los primeros planes publicados. El detalle completo y el checkout viven en la página de precios.
+          </p>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
-          {offer.map((item, index) => (
-            <article className={`rounded-lg border p-5 shadow-sm ${index === 1 ? 'border-teal-300 bg-teal-50' : 'border-slate-200 bg-white'}`} key={item.name}>
-              <h3 className="text-lg font-semibold text-slate-950">{item.name}</h3>
-              <p className="mt-3 text-2xl font-semibold text-teal-800">{item.price}</p>
-              <p className="mt-3 min-h-20 text-sm leading-6 text-slate-600">{item.text}</p>
-              <Link className={index === 1 ? 'primary-button mt-5 w-full' : 'secondary-button mt-5 w-full'} to={item.to}>
-                {item.action}
+          {publicPlans.map((plan, index) => (
+            <article className={`rounded-lg border p-5 shadow-sm ${index === 1 ? 'border-teal-300 bg-teal-50' : 'border-slate-200 bg-white'}`} key={plan.id}>
+              <h3 className="text-lg font-semibold text-slate-950">{plan.nombre}</h3>
+              <p className="mt-3 text-2xl font-semibold text-teal-800">{formatPublicPlanPrice(plan)}</p>
+              <p className="mt-3 min-h-20 text-sm leading-6 text-slate-600">{plan.descripcion}</p>
+              <Link className={index === 1 ? 'primary-button mt-5 w-full' : 'secondary-button mt-5 w-full'} to={plan.id === 'TRIAL' ? '/registro?plan=TRIAL' : '/precios'}>
+                {plan.id === 'TRIAL' ? 'Crear cuenta' : publicPlanActionLabel(plan)}
               </Link>
             </article>
           ))}
