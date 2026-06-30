@@ -1,98 +1,83 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-CIERRE-DEFINITIVO-AUDITORIA-SKNOMINA-2026-V6-SINKFLOW",
-  "planCode": "CDANV6S",
+  "plan": "HAIKY-CIERRE-APK-AAB-SKNOMINA-2026-V5",
+  "planCode": "APK26V5",
   "status": "completed_local_qa",
-  "phaseCompleted": "CDANV6S-05",
+  "phaseCompleted": "APK26V5-04",
   "currentPhase": "commit-and-push",
-  "updatedAt": "2026-06-29T20:20:00-05:00",
-  "summary": "CDANV6S contrasta la auditoria V6 de sinkroniq-cloud-flow contra el repo real: Render seed admins, PayPhone productivo, rol PDF, email de rol, permisos mobile y movilizacion SQLite ya estan cerrados o cubiertos por contratos equivalentes.",
+  "updatedAt": "2026-06-29T21:10:00-05:00",
+  "summary": "APK26V5 cierra auditoria v5: Parametrizacion.jsx se reduce de forma real extrayendo modelo, se corrige ortografia visible en empleados y docs2/ se excluye del tracking publico.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: generar plan Haiky V6 sinkflow, prompts por fases, ejecutar el plan considerando CODEX_CONTEXT.md, finalmente commit y push.",
-  "previousAuditLockHash": "48CB359EA5658489FA26DDBBAA012E15A0424CD59D65B6E94189EBAFC2EC1A77",
+  "approvalSource": "Solicitud del usuario: generar plan Haiky APK/AAB v5, prompts por fases, ejecutar el plan considerando CODEX_CONTEXT.md, finalmente commit y push.",
+  "previousAuditLockHash": "D596C4883E304F3F6CEF13D9B8DFB30184C422FAA791C52380858A5A0B11E1B6",
   "filesModifiedSummary": [
+    ".gitignore",
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/CDANV6S-00-baseline.md",
-    ".github/prompts/CDANV6S-01-render-payphone.md",
-    ".github/prompts/CDANV6S-02-rol-email.md",
-    ".github/prompts/CDANV6S-03-mobile.md",
-    ".github/prompts/CDANV6S-04-gobierno.md",
-    ".github/prompts/CDANV6S-05-qa-release.md",
-    "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_SKNOMINA_2026_V6_SINKFLOW.md",
-    "docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/MATRIZ_CDANV6S_HALLAZGOS.md",
-    "docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/RUNBOOK_CDANV6S_QA_RELEASE.md",
-    "docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/REPORTE_CDANV6S_00_BASELINE.md",
-    "docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/REPORTE_CDANV6S_01_RENDER_PAYPHONE.md",
-    "docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/REPORTE_CDANV6S_02_ROL_EMAIL.md",
-    "docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/REPORTE_CDANV6S_03_MOBILE.md",
-    "docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/REPORTE_CDANV6S_04_GOBIERNO.md",
-    "docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/REPORTE_CDANV6S_05_QA_RELEASE.md"
+    ".github/prompts/APK26V5-00-baseline.md",
+    ".github/prompts/APK26V5-01-parametrizacion-reduce.md",
+    ".github/prompts/APK26V5-02-ortografia-empleados.md",
+    ".github/prompts/APK26V5-03-docs2-public-governance.md",
+    ".github/prompts/APK26V5-04-qa-release.md",
+    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
+    "frontend-web/src/pages/Configuracion/parametrizacion/parametrizacionModel.jsx",
+    "frontend-web/src/pages/Empleados/NuevoEmpleado.jsx",
+    "frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
+    "docs2/ removed from git tracking; files remain local"
   ],
   "validationChecks": [
     {
-      "gate": "CDANV6S-RULES-READ",
+      "gate": "APK26V5-RULES-READ",
       "status": "PASS",
       "detail": "RULES.md leido y aplicado."
     },
     {
-      "gate": "CDANV6S-RENDER-SEED",
+      "gate": "APK26V5-PARAMETRIZACION-SPLIT",
       "status": "PASS",
-      "detail": "render.yaml ya ejecuta npm run seed:admins en buildCommand."
+      "detail": "Parametrizacion.jsx bajo de 1949 a 861 lineas; modelo extraido a parametrizacionModel.jsx."
     },
     {
-      "gate": "CDANV6S-PAYPHONE-ENV",
+      "gate": "APK26V5-ORTOGRAFIA-EMPLEADOS",
       "status": "PASS",
-      "detail": "render.yaml ya declara PAYPHONE_TOKEN, PAYPHONE_STORE_ID, base API, provider y webhook secret."
+      "detail": "rg no encuentra las cadenas auditadas sin tilde en NuevoEmpleado.jsx ni ListaEmpleados.jsx."
     },
     {
-      "gate": "CDANV6S-ROL-PDF",
+      "gate": "APK26V5-DOCS2-GITIGNORE",
       "status": "PASS",
-      "detail": "Ruta /api/nomina/:id/rol-pdf, controlador y servicio PDF existen."
+      "detail": ".gitignore incluye docs2/ completo."
     },
     {
-      "gate": "CDANV6S-EMAIL-ROL",
+      "gate": "APK26V5-DOCS2-UNTRACK",
       "status": "PASS",
-      "detail": "sendRolPagoDisponible existe y cerrarMes lo invoca."
+      "detail": "git rm -r --cached docs2/ ejecutado; git ls-files docs2/ devuelve 0."
     },
     {
-      "gate": "CDANV6S-MOBILE",
+      "gate": "APK26V5-BUILD-WEB",
       "status": "PASS",
-      "detail": "PermisosScreen, GastosMovilizacionScreen, expo-sqlite y /api/mobile/permisos existen."
+      "detail": ".\\node_modules\\.bin\\vite.cmd build emitio dist y built in 1m 4s; el proceso post-build no libero prompt y se cerro por PID tras salida verde."
     },
     {
-      "gate": "CDANV6S-QA-BACKEND",
+      "gate": "APK26V5-AUTH-REGRESSION",
       "status": "PASS",
-      "detail": "npm.cmd --workspace=backend test -- app.routes.test.js nominaController.test.js communicationService.test.js payrollRolePdfService.test.js mobileController.test.js --runInBand: 5 suites, 23 tests."
+      "detail": "npm.cmd --workspace=backend test -- authController.test.js --runInBand: 1 suite, 5 tests."
     },
     {
-      "gate": "CDANV6S-QA-MOBILE",
-      "status": "PASS",
-      "detail": "npm.cmd run check:mobile verifico configuracion, identificadores, URLs y assets."
-    },
-    {
-      "gate": "CDANV6S-PRISMA",
-      "status": "PASS",
-      "detail": "npm.cmd run prisma:validate: schema valido."
-    },
-    {
-      "gate": "CDANV6S-DIFF-CHECK",
+      "gate": "APK26V5-DIFF-CHECK",
       "status": "PASS",
       "detail": "git diff --check sin errores; solo avisos LF/CRLF esperados en Windows."
     }
   ],
   "fases": [
-    { "phase": "CDANV6S-00", "status": "completed" },
-    { "phase": "CDANV6S-01", "status": "completed" },
-    { "phase": "CDANV6S-02", "status": "completed" },
-    { "phase": "CDANV6S-03", "status": "completed" },
-    { "phase": "CDANV6S-04", "status": "completed" },
-    { "phase": "CDANV6S-05", "status": "completed_local_qa" }
+    { "phase": "APK26V5-00", "status": "completed" },
+    { "phase": "APK26V5-01", "status": "completed" },
+    { "phase": "APK26V5-02", "status": "completed" },
+    { "phase": "APK26V5-03", "status": "completed" },
+    { "phase": "APK26V5-04", "status": "completed_local_qa" }
   ],
   "residualRisk": [
-    "Probar PayPhone con credenciales reales en staging antes de cobros productivos.",
-    "Probar APK/AAB en Android 15 antes de Play Console.",
-    "Si un auditor externo exige nombres literales, mantener mapeo de contrato equivalente antes de crear alias no consumidos."
+    "Mover el historial completo de docs2/ a un repositorio privado si se requiere conservar versionado interno.",
+    "Validar manualmente edicion de parametros legales y tabla IR en PWA antes de release comercial.",
+    "Probar APK/AAB en Android 15 antes de Play Console."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "717972937E4E70A19720650547EDBBD9761CC9DC69B5D723E356C20A1C8BCCAE"
+  "signature": "FD2F528B21E3694FB6E431300D85361C99590C3E06DE8BFD3010D100C1CF6B96"
 }

@@ -546,7 +546,7 @@ function NuevoEmpleado() {
       {error && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
 
       <form onSubmit={handleSubmit} className="max-w-7xl space-y-5 rounded-lg bg-white p-5 shadow sm:p-6">
-        <Section title="Identificacion y contacto" description="Datos personales relevantes para la relacion laboral y comunicaciones.">
+        <Section title="Identificación y contacto" description="Datos personales relevantes para la relación laboral y comunicaciones.">
           <Field className={FIELD_THIRD} disabled={isEdit} label="Cedula" maxLength="10" name="cedula" onChange={handleChange} required value={formData.cedula} />
           <Field className={FIELD_THIRD} label="Nombres" name="nombres" onChange={handleChange} required value={formData.nombres} />
           <Field className={FIELD_THIRD} label="Apellidos" name="apellidos" onChange={handleChange} required value={formData.apellidos} />
@@ -587,7 +587,7 @@ function NuevoEmpleado() {
                   <h3 className={FIELD_FULL + ' text-sm font-semibold text-slate-900'}>Carga familiar {index + 1}</h3>
                   <Field className="lg:col-span-4" label="Nombres" name={`dependiente-${index}-nombres`} onChange={(event) => handleDependentChange(index, 'nombres', event.target.value)} required value={dependent.nombres} />
                   <Field className="lg:col-span-4" label="Apellidos" name={`dependiente-${index}-apellidos`} onChange={(event) => handleDependentChange(index, 'apellidos', event.target.value)} value={dependent.apellidos} />
-                  <Field className="lg:col-span-4" label="Identificacion" name={`dependiente-${index}-identificacion`} onChange={(event) => handleDependentChange(index, 'identificacion', event.target.value)} value={dependent.identificacion} />
+                  <Field className="lg:col-span-4" label="Identificación" name={`dependiente-${index}-identificacion`} onChange={(event) => handleDependentChange(index, 'identificacion', event.target.value)} value={dependent.identificacion} />
                   <Field className="lg:col-span-4" label="Parentesco" name={`dependiente-${index}-parentesco`} onChange={(event) => handleDependentChange(index, 'parentesco', event.target.value)} value={dependent.parentesco}>
                     <select className={CONTROL_CLASS} onChange={(event) => handleDependentChange(index, 'parentesco', event.target.value)} value={dependent.parentesco}>
                       <option value="hijo">Hijo/a</option>
@@ -616,7 +616,7 @@ function NuevoEmpleado() {
           </Section>
         )}
 
-        <Section title="Domicilio" description="Ubicacion declarada por el trabajador para documentos laborales y contacto.">
+        <Section title="Domicilio" description="Ubicación declarada por el trabajador para documentos laborales y contacto.">
           <Field label="Provincia" name="provincia_codigo" onChange={(event) => setFormData((current) => ({ ...current, provincia_codigo: event.target.value, ciudad_codigo: '' }))} required value={formData.provincia_codigo}>
             <select className={CONTROL_CLASS} name="provincia_codigo" onChange={(event) => setFormData((current) => ({ ...current, provincia_codigo: event.target.value, ciudad_codigo: '' }))} required value={formData.provincia_codigo}>
               <option value="">{provincesQuery.isLoading ? 'Cargando provincias...' : 'Seleccionar provincia...'}</option>
@@ -657,7 +657,7 @@ function NuevoEmpleado() {
           <Field label="Telefono" name="referencia_no_convive_telefono" onChange={handleChange} required value={formData.referencia_no_convive_telefono} />
         </Section>
 
-        <Section title="Relacion laboral" description="Datos base para nomina, beneficios, contratos y reportes.">
+        <Section title="Relación laboral" description="Datos base para nómina, beneficios, contratos y reportes.">
           <Field label="Departamento o unidad" name="departamento" onChange={handleChange} value={formData.departamento} />
           <Field label="Unidad organizativa" name="unidad_organizativa_codigo" onChange={handleChange} value={formData.unidad_organizativa_codigo}>
             <select className={CONTROL_CLASS} name="unidad_organizativa_codigo" onChange={handleChange} value={formData.unidad_organizativa_codigo}>
@@ -685,7 +685,7 @@ function NuevoEmpleado() {
               ))}
             </select>
           </Field>
-          <Field label="Zona de marcacion" name="zona_marcacion_codigo" onChange={handleChange} value={formData.zona_marcacion_codigo}>
+          <Field label="Zona de marcación" name="zona_marcacion_codigo" onChange={handleChange} value={formData.zona_marcacion_codigo}>
             <select className={CONTROL_CLASS} name="zona_marcacion_codigo" onChange={handleChange} value={formData.zona_marcacion_codigo}>
               <option value="">{workZonesQuery.isLoading ? 'Cargando zonas...' : 'Seleccionar zona parametrizada...'}</option>
               {activeWorkZones.map((zone) => (
@@ -715,7 +715,7 @@ function NuevoEmpleado() {
               <option value="hora">Por hora</option>
             </select>
           </Field>
-          <Field label="Tipo relacion IESS" name="iess_tipo_relacion" onChange={handleChange} value={formData.iess_tipo_relacion}>
+          <Field label="Tipo relación IESS" name="iess_tipo_relacion" onChange={handleChange} value={formData.iess_tipo_relacion}>
             <select className={CONTROL_CLASS} name="iess_tipo_relacion" onChange={handleChange} value={formData.iess_tipo_relacion}>
               <option value="relacion_dependencia">Relacion de dependencia</option>
               <option value="jornada_parcial_permanente">Jornada parcial permanente</option>

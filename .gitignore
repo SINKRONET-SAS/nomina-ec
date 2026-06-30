@@ -22,6 +22,7 @@ yarn-error.log*
 .cache/
 coverage/
 backend/storage/
+docs2/
 docs2/private/
 docs2/_local/
 docs2/**/private/

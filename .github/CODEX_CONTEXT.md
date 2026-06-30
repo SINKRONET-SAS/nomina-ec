@@ -1,6 +1,40 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-CIERRE-APK-AAB-SKNOMINA-2026-V5
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-CIERRE-APK-AAB-SKNOMINA-2026-V5 |
+| Codigo | APK26V5 |
+| Estado | Ejecutado localmente; QA verde |
+| Fase actual | APK26V5-04 QA release |
+| Fuente auditoria | `C:\Users\proam\Downloads\files (2)\informe_auditoria_nomina_ec_v5.md` |
+| Plan local | `docs2/PLAN_HAIKY_CIERRE_APK_AAB_SKNOMINA_2026_V5.md` |
+| Prompts | `.github/prompts/APK26V5-{00..04}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Alcance APK26V5
+
+APK26V5 cierra los hallazgos vivos del informe v5: reduccion real de `Parametrizacion.jsx`, ortografia visible en empleados y gobierno de `docs2/` en repo publico. El plan se genero localmente en `docs2`, pero `docs2/` queda excluido del tracking porque HAL-V5-5 lo clasifica como exposicion critica persistente.
+
+### Decisiones APK26V5
+
+- No tocar `calculoNominaService.js`; la auditoria lo verifico correcto.
+- No cambiar payloads ni contrato de parametros legales/tabla IR.
+- `Parametrizacion.jsx` baja de 1949 a 861 lineas con extraccion de modelo a `parametrizacionModel.jsx`.
+- `docs2/` pasa a evidencia local no versionada; la trazabilidad publica minima queda en `.github`, prompts y AuditLock.
+- "Mi Nomina" no se reemplaza por SKNOMINA; solo se corrige ortografia visible cuando aplique.
+
+### Gates APK26V5
+
+- `.\node_modules\.bin\vite.cmd build` en `frontend-web`: PASS, Vite genero `dist` y emitio `built in 1m 4s`; el proceso post-build no libero el prompt y se cerro por PID tras salida verde.
+- `npm.cmd --workspace=backend test -- authController.test.js --runInBand`: PASS, 1 suite y 5 tests.
+- `git diff --check`: PASS con avisos LF/CRLF esperados en Windows.
+- `git ls-files docs2/ | Measure-Object -Line`: PASS, 0 archivos.
+
+---
+
 ## Open Haiky Plan - HAIKY-CIERRE-DEFINITIVO-AUDITORIA-SKNOMINA-2026-V6-SINKFLOW
 
 | Campo | Valor |

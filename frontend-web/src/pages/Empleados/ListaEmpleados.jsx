@@ -198,7 +198,7 @@ function ImportPanel({ onImported }) {
 
           {(previewMutation.isError || commitMutation.isError || rollbackMutation.isError) && (
             <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
-              {extractApiError(previewMutation.error || commitMutation.error || rollbackMutation.error, 'No pudimos procesar la accion. Revisa el lote e intenta nuevamente.')}
+              {extractApiError(previewMutation.error || commitMutation.error || rollbackMutation.error, 'No pudimos procesar la acción. Revisa el lote e intenta nuevamente.')}
             </div>
           )}
         </div>
@@ -240,7 +240,7 @@ function ImportPanel({ onImported }) {
               <tr>
                 <th className="px-4 py-3 text-left">Fila</th>
                 <th className="px-4 py-3 text-left">Estado</th>
-                <th className="px-4 py-3 text-left">Identificacion</th>
+                <th className="px-4 py-3 text-left">Identificación</th>
                 <th className="px-4 py-3 text-left">Empleado</th>
                 <th className="px-4 py-3 text-left">Cargo</th>
                 <th className="px-4 py-3 text-left">Sueldo</th>
@@ -452,7 +452,7 @@ function ListaEmpleados() {
 
         {(invitationsQuery.isError || inviteMutation.isError || resendMutation.isError || revokeMutation.isError) && (
           <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
-            {extractApiError(invitationsQuery.error || inviteMutation.error || resendMutation.error || revokeMutation.error, 'No pudimos gestionar invitaciones de app. Revisa la configuracion e intenta nuevamente.')}
+            {extractApiError(invitationsQuery.error || inviteMutation.error || resendMutation.error || revokeMutation.error, 'No pudimos gestionar invitaciones de app. Revisa la configuración e intenta nuevamente.')}
           </div>
         )}
       </section>
