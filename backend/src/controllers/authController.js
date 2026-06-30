@@ -10,13 +10,32 @@ const {
 const { CONSENT_SCOPES, LOPDP_VERSION } = require('../services/privacyConsentService');
 
 const OWNER_LOPDP_VERSION = 'LOPDP-2026-06';
+const AUTH_ROLE_PRIORITY = new Map([
+  ['superadmin', 5],
+  ['owner', 4],
+  ['admin_rrhh', 3],
+  ['supervisor', 2],
+  ['empleado', 1],
+]);
+
+function normalizeRole(role) {
+  return String(role || '').trim().toLowerCase();
+}
+
+function rolePriority(role) {
+  return AUTH_ROLE_PRIORITY.get(normalizeRole(role)) || 0;
+}
+
+function pickAuthenticatedUser(users) {
+  return [...users].sort((a, b) => rolePriority(b.rol) - rolePriority(a.rol))[0];
+}
 
 function buildUserPayload(usuario) {
   return {
     id: usuario.id,
     tenantId: usuario.tenant_id,
     email: usuario.email,
-    rol: usuario.rol,
+    rol: normalizeRole(usuario.rol),
     nombres: usuario.nombres,
     apellidos: usuario.apellidos,
     emailVerificadoEn: usuario.email_verificado_en || null,
@@ -189,7 +208,7 @@ async function login(req, res, next) {
       });
     }
 
-    const usuario = matchingUsers[0];
+    const usuario = pickAuthenticatedUser(matchingUsers);
     await db.query('UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = $1', [usuario.id]);
 
     const token = generateToken(usuario);

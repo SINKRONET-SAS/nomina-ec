@@ -1,6 +1,10 @@
 const db = require('../config/database');
 const { signUserToken, verifyJwt } = require('../config/jwt');
 
+function normalizeRole(role) {
+  return String(role || '').trim().toLowerCase();
+}
+
 function userFromClaims(decoded = {}) {
   if (!decoded.userId || !decoded.email || !decoded.rol) return null;
 
@@ -8,7 +12,7 @@ function userFromClaims(decoded = {}) {
     id: decoded.userId,
     tenantId: decoded.tenantId || null,
     email: decoded.email,
-    rol: decoded.rol,
+    rol: normalizeRole(decoded.rol),
     emailVerificadoEn: decoded.emailVerificadoEn || null,
   };
 }
@@ -32,7 +36,7 @@ async function loadActiveUser(userId) {
     id: usuario.id,
     tenantId: usuario.tenant_id,
     email: usuario.email,
-    rol: usuario.rol,
+    rol: normalizeRole(usuario.rol),
     emailVerificadoEn: usuario.email_verificado_en || null,
   };
 }

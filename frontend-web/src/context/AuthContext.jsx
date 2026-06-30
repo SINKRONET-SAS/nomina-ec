@@ -5,7 +5,12 @@ import { API_URL } from '../services/apiBase';
 const AuthContext = createContext(null);
 
 function normalizeUser(payload) {
-  return payload?.usuario || payload?.user || null;
+  const user = payload?.usuario || payload?.user || null;
+  if (!user) return null;
+  return {
+    ...user,
+    rol: String(user.rol || '').trim().toLowerCase(),
+  };
 }
 
 function normalizeAuthError(data) {
@@ -27,7 +32,7 @@ function normalizeAuthError(data) {
 function readStoredUser() {
   try {
     const raw = localStorage.getItem('usuario');
-    return raw ? JSON.parse(raw) : null;
+    return raw ? normalizeUser({ usuario: JSON.parse(raw) }) : null;
   } catch (err) {
     console.error('[AUTH] No se pudo leer usuario local', {
       message: err.message,

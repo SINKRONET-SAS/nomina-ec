@@ -14,13 +14,15 @@ jest.mock('bcryptjs', () => ({
 
 jest.mock('../config/jwt', () => ({
   signJwt: jest.fn().mockReturnValue('token-test'),
+  signUserToken: jest.fn().mockReturnValue('token-test'),
   verifyJwt: jest.fn(),
 }));
 
 const db = require('../config/database');
 const { sendEmailVerification } = require('../services/communicationService');
 const { verifyJwt } = require('../config/jwt');
-const { refreshToken, register } = require('./authController');
+const bcrypt = require('bcryptjs');
+const { login, refreshToken, register } = require('./authController');
 
 function createResponse() {
   return {
@@ -127,6 +129,67 @@ describe('authController register', () => {
       ['tenant-destino', 'admin@example.com']
     );
     expect(db.query.mock.calls[1][1][0]).toBe('tenant-destino');
+  });
+});
+
+describe('authController login', () => {
+  beforeEach(() => {
+    db.query.mockReset();
+    bcrypt.compare.mockReset();
+  });
+
+  test('prioriza owner si el mismo correo y clave tambien calzan con empleado', async () => {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'user-employee',
+            tenant_id: 'tenant-1',
+            email: 'marco@example.com',
+            rol: 'empleado',
+            nombres: 'Marco',
+            apellidos: 'Empleado',
+            password_hash: 'hash-employee',
+            activo: true,
+            email_verificado_en: null,
+            created_at: new Date('2026-06-29T12:00:00Z'),
+          },
+          {
+            id: 'user-owner',
+            tenant_id: 'tenant-1',
+            email: 'marco@example.com',
+            rol: 'owner',
+            nombres: 'Marco',
+            apellidos: 'Owner',
+            password_hash: 'hash-owner',
+            activo: true,
+            email_verificado_en: null,
+            created_at: new Date('2026-06-01T12:00:00Z'),
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [] });
+    bcrypt.compare.mockResolvedValue(true);
+    const req = {
+      body: { email: 'marco@example.com', password: 'secret', tenantRuc: '0999999999001' },
+      correlationId: 'corr-login-1',
+    };
+    const res = createResponse();
+    const next = jest.fn();
+
+    await login(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.usuario).toMatchObject({
+      id: 'user-owner',
+      rol: 'owner',
+    });
+    expect(db.query).toHaveBeenNthCalledWith(
+      2,
+      'UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = $1',
+      ['user-owner']
+    );
   });
 });
 
