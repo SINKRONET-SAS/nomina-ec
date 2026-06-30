@@ -1,6 +1,43 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-CIERRE-DEFINITIVO-AUDITORIA-SKNOMINA-2026-V6-SINKFLOW
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-CIERRE-DEFINITIVO-AUDITORIA-SKNOMINA-2026-V6-SINKFLOW |
+| Codigo | CDANV6S |
+| Estado | Ejecutado localmente; QA especifica verde |
+| Fase actual | CDANV6S-05 QA release |
+| Fuente auditoria | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\AuditoriaNominaEC2026V6.jsx` |
+| Scripts | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\v_nominaec\nominaec_v6_scripts.jsx` |
+| Hallazgos | `C:\proyectos web\sinkroniq-cloud-flow\src\pages\v_nominaec\nominaec_v6_hallazgos.jsx` |
+| Plan doc | `docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_SKNOMINA_2026_V6_SINKFLOW.md` |
+| Matriz | `docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/MATRIZ_CDANV6S_HALLAZGOS.md` |
+| Runbook | `docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/RUNBOOK_CDANV6S_QA_RELEASE.md` |
+| Prompts | `.github/prompts/CDANV6S-{00..05}-*.md` |
+
+### Alcance CDANV6S
+
+CDANV6S contrasta la auditoria V6 de `sinkroniq-cloud-flow` contra el runtime actual de `nuevo_nomina`. La lectura directa confirma que los hallazgos citados como criticos ya estan cerrados o cubiertos por contratos equivalentes en este repo: Render ejecuta `seed:admins`, PayPhone tiene variables productivas declaradas, rol PDF tiene ruta/controlador/servicio, email de rol usa `sendRolPagoDisponible`, mobile tiene permisos y movilizacion SQLite.
+
+### Decisiones CDANV6S
+
+- No aplicar scripts externos literalmente si contradicen el repo real.
+- `sendRolPagoDisponible` es el contrato activo para notificar rol de pago; no se crea `sendRolPagoEmail` solo por nombre.
+- `generatePayrollRolePdf` es el contrato activo para PDF individual; no se crea `generarRolPagoIndividual` solo por nombre.
+- "Mi Nomina" es etiqueta funcional; no se cambia a SKNOMINA, salvo correccion ortografica a "Mi Nomina" con tilde en runtime activo cuando corresponda.
+- NOMINA-EC no debe reintroducirse como marca activa; SKNOMINA es la marca del producto.
+
+### Gates CDANV6S esperados
+
+- `npm.cmd --workspace=backend test -- app.routes.test.js nominaController.test.js communicationService.test.js payrollRolePdfService.test.js mobileController.test.js --runInBand`: PASS, 5 suites y 23 tests.
+- `npm.cmd run prisma:validate`: PASS.
+- `npm.cmd run check:mobile`: PASS.
+- `git diff --check`: PASS con avisos LF/CRLF esperados en Windows.
+
+---
+
 ## Open Haiky Plan - HAIKY-CIERRE-APK-AAB-SKNOMINA-2026-V4
 
 | Campo | Valor |

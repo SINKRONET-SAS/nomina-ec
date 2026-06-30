@@ -1,99 +1,98 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-CIERRE-APK-AAB-SKNOMINA-2026-V4",
-  "planCode": "APK26V4",
+  "plan": "HAIKY-CIERRE-DEFINITIVO-AUDITORIA-SKNOMINA-2026-V6-SINKFLOW",
+  "planCode": "CDANV6S",
   "status": "completed_local_qa",
-  "phaseCompleted": "APK26V4-05",
+  "phaseCompleted": "CDANV6S-05",
   "currentPhase": "commit-and-push",
-  "updatedAt": "2026-06-29T01:10:00-05:00",
-  "summary": "APK26V4 cierra auditoria APK/AAB v4: targetSdkVersion 35 explicito y validado, extractApiError deduplicado, anexos binarios sensibles de docs2 retirados del tracking, sourceStatus legal en validado_parcial y arquitectura fiscal SINKRONET FACTURADOR documentada como externa.",
+  "updatedAt": "2026-06-29T20:20:00-05:00",
+  "summary": "CDANV6S contrasta la auditoria V6 de sinkroniq-cloud-flow contra el repo real: Render seed admins, PayPhone productivo, rol PDF, email de rol, permisos mobile y movilizacion SQLite ya estan cerrados o cubiertos por contratos equivalentes.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: generar plan Haiky APK/AAB v4, prompts por fases, ejecutar el plan considerando CODEX_CONTEXT.md, commit y push.",
-  "previousAuditLockHash": "E354A17B5F95585D04A798F47B80EF2186229677AAFDBD85C2792FB8D13C084A",
+  "approvalSource": "Solicitud del usuario: generar plan Haiky V6 sinkflow, prompts por fases, ejecutar el plan considerando CODEX_CONTEXT.md, finalmente commit y push.",
+  "previousAuditLockHash": "48CB359EA5658489FA26DDBBAA012E15A0424CD59D65B6E94189EBAFC2EC1A77",
   "filesModifiedSummary": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/APK26V4-00-baseline.md",
-    ".github/prompts/APK26V4-01-play-store-target.md",
-    ".github/prompts/APK26V4-02-ui-route-guards.md",
-    ".github/prompts/APK26V4-03-docs2-public-governance.md",
-    ".github/prompts/APK26V4-04-legal-facturador.md",
-    ".github/prompts/APK26V4-05-qa-release.md",
-    "docs2/PLAN_HAIKY_CIERRE_APK_AAB_SKNOMINA_2026_V4.md",
-    "docs2/cierre-apk-aab-sknomina-2026-v4/MATRIZ_APK26V4_HALLAZGOS.md",
-    "docs2/cierre-apk-aab-sknomina-2026-v4/RUNBOOK_APK26V4_QA_RELEASE.md",
-    "app-movil/app.json",
-    "app-movil/scripts/check-store-readiness.mjs",
-    "frontend-web/src/pages/Facturacion/FacturacionFiscal.jsx",
-    "frontend-web/src/pages/Onboarding/SaldosIniciales.jsx",
-    "backend/src/config/legal-ecuador.js",
-    "backend/src/services/facturadorClient.js",
-    "docs2 binary attachments removed from git index"
+    ".github/prompts/CDANV6S-00-baseline.md",
+    ".github/prompts/CDANV6S-01-render-payphone.md",
+    ".github/prompts/CDANV6S-02-rol-email.md",
+    ".github/prompts/CDANV6S-03-mobile.md",
+    ".github/prompts/CDANV6S-04-gobierno.md",
+    ".github/prompts/CDANV6S-05-qa-release.md",
+    "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_AUDITORIA_SKNOMINA_2026_V6_SINKFLOW.md",
+    "docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/MATRIZ_CDANV6S_HALLAZGOS.md",
+    "docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/RUNBOOK_CDANV6S_QA_RELEASE.md",
+    "docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/REPORTE_CDANV6S_00_BASELINE.md",
+    "docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/REPORTE_CDANV6S_01_RENDER_PAYPHONE.md",
+    "docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/REPORTE_CDANV6S_02_ROL_EMAIL.md",
+    "docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/REPORTE_CDANV6S_03_MOBILE.md",
+    "docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/REPORTE_CDANV6S_04_GOBIERNO.md",
+    "docs2/cierre-definitivo-auditoria-sknomina-2026-v6-sinkflow/REPORTE_CDANV6S_05_QA_RELEASE.md"
   ],
   "validationChecks": [
     {
-      "gate": "APK26V4-RULES-READ",
+      "gate": "CDANV6S-RULES-READ",
       "status": "PASS",
       "detail": "RULES.md leido y aplicado."
     },
     {
-      "gate": "APK26V4-TARGET-SDK",
+      "gate": "CDANV6S-RENDER-SEED",
       "status": "PASS",
-      "detail": "android.targetSdkVersion 35 agregado y check-store-readiness actualizado."
+      "detail": "render.yaml ya ejecuta npm run seed:admins en buildCommand."
     },
     {
-      "gate": "APK26V4-EXTRACT-API-ERROR",
+      "gate": "CDANV6S-PAYPHONE-ENV",
       "status": "PASS",
-      "detail": "FacturacionFiscal y SaldosIniciales importan helper canonico desde publicApi."
+      "detail": "render.yaml ya declara PAYPHONE_TOKEN, PAYPHONE_STORE_ID, base API, provider y webhook secret."
     },
     {
-      "gate": "APK26V4-DOCS2-BINARIES",
+      "gate": "CDANV6S-ROL-PDF",
       "status": "PASS",
-      "detail": "7 anexos PDF/PNG sensibles retirados del tracking; permanecen locales por .gitignore."
+      "detail": "Ruta /api/nomina/:id/rol-pdf, controlador y servicio PDF existen."
     },
     {
-      "gate": "APK26V4-ROUTE-GUARDS",
+      "gate": "CDANV6S-EMAIL-ROL",
       "status": "PASS",
-      "detail": "HAL-N4 ya estaba cerrado: saldos iniciales y facturacion tienen requiredRole alineado al backend."
+      "detail": "sendRolPagoDisponible existe y cerrarMes lo invoca."
     },
     {
-      "gate": "APK26V4-LEGAL-STATUS",
+      "gate": "CDANV6S-MOBILE",
       "status": "PASS",
-      "detail": "sourceStatus actualizado a validado_parcial conservando pendingValidation."
+      "detail": "PermisosScreen, GastosMovilizacionScreen, expo-sqlite y /api/mobile/permisos existen."
     },
     {
-      "gate": "APK26V4-MOBILE-CHECK",
+      "gate": "CDANV6S-QA-BACKEND",
       "status": "PASS",
-      "detail": "npm.cmd run check:mobile verifico metadatos, assets y targetSdkVersion 35."
+      "detail": "npm.cmd --workspace=backend test -- app.routes.test.js nominaController.test.js communicationService.test.js payrollRolePdfService.test.js mobileController.test.js --runInBand: 5 suites, 23 tests."
     },
     {
-      "gate": "APK26V4-BACKEND-PAYMENT-TEST",
+      "gate": "CDANV6S-QA-MOBILE",
       "status": "PASS",
-      "detail": "npm.cmd --workspace=backend test -- paymentController.test.js --runInBand: 1 suite, 4 tests."
+      "detail": "npm.cmd run check:mobile verifico configuracion, identificadores, URLs y assets."
     },
     {
-      "gate": "APK26V4-BUILD-WEB",
+      "gate": "CDANV6S-PRISMA",
       "status": "PASS",
-      "detail": "npm.cmd --workspace=frontend-web run build: Vite built in 1m 8s y genero PWA."
+      "detail": "npm.cmd run prisma:validate: schema valido."
     },
     {
-      "gate": "APK26V4-DIFF-CHECK",
+      "gate": "CDANV6S-DIFF-CHECK",
       "status": "PASS",
-      "detail": "git diff --check sin errores; solo advertencias LF/CRLF de Windows."
+      "detail": "git diff --check sin errores; solo avisos LF/CRLF esperados en Windows."
     }
   ],
   "fases": [
-    { "phase": "APK26V4-00", "status": "completed" },
-    { "phase": "APK26V4-01", "status": "completed" },
-    { "phase": "APK26V4-02", "status": "completed" },
-    { "phase": "APK26V4-03", "status": "completed" },
-    { "phase": "APK26V4-04", "status": "completed" },
-    { "phase": "APK26V4-05", "status": "completed_local_qa" }
+    { "phase": "CDANV6S-00", "status": "completed" },
+    { "phase": "CDANV6S-01", "status": "completed" },
+    { "phase": "CDANV6S-02", "status": "completed" },
+    { "phase": "CDANV6S-03", "status": "completed" },
+    { "phase": "CDANV6S-04", "status": "completed" },
+    { "phase": "CDANV6S-05", "status": "completed_local_qa" }
   ],
   "residualRisk": [
-    "Probar APK en Android 15 antes de Play Console por edge-to-edge y teclado.",
-    "Coordinar SINKRONET_FACTURADOR_TIMEOUT_MS con la ventana real de procesamiento del facturador externo.",
-    "Migrar gobierno Haiky a repositorio privado antes de retirar documentos markdown de docs2."
+    "Probar PayPhone con credenciales reales en staging antes de cobros productivos.",
+    "Probar APK/AAB en Android 15 antes de Play Console.",
+    "Si un auditor externo exige nombres literales, mantener mapeo de contrato equivalente antes de crear alias no consumidos."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "687440296EDE8FEF81B011223884CC51797BC3B50A080DF4CBC91E0805CE82F3"
+  "signature": "717972937E4E70A19720650547EDBBD9761CC9DC69B5D723E356C20A1C8BCCAE"
 }
