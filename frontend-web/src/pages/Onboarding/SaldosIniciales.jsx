@@ -2,13 +2,10 @@ import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, RefreshCcw, RotateCcw, Upload } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
+import { extractApiError } from '../../services/publicApi';
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function extractApiError(error, fallback) {
-  return error?.response?.data?.message || error?.message || fallback;
 }
 
 function splitCsvLine(line) {

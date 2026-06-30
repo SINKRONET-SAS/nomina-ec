@@ -4,7 +4,7 @@
 
 const LEGAL_PARAMETERS = {
   2026: {
-    sourceStatus: 'pendiente_validacion_oficial',
+    sourceStatus: 'validado_parcial',
     validatedFields: [
       'incomeTax',
       'payroll.unifiedBaseSalary',
@@ -45,7 +45,7 @@ const LEGAL_PARAMETERS = {
       'Tabla IR 2026 confirmada contra PDF SRI: Resolucion Nro. NAC-DGERCGC25-00000043, Segundo Suplemento del Registro Oficial No. 194, 30/12/2025.',
       'SBU 2026 confirmado en noticia oficial del Ministerio del Trabajo: USD 482.',
       'Aportes IESS confirmados contra pagina oficial IESS Servicios y prestaciones: afiliado 9.45% y empleador 11.15%.',
-      'sourceStatus permanece pendiente hasta cargar parametros versionados con validacion oficial completa por tenant/anio.',
+      'sourceStatus es validado_parcial: IR 2026, SBU e IESS confirmados; otros parametros requieren validacion final por tenant/anio.',
       'Otros parametros laborales requieren validacion final con abogado laboral y contador ecuatoriano antes de produccion.',
     ],
     payroll: {

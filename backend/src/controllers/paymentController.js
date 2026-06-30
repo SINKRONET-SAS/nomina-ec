@@ -24,6 +24,7 @@ function normalizePlan(row) {
     usuariosMax: row.usuarios_max,
     archivosBancarios: row.archivos_bancarios,
     reportesAvanzados: row.reportes_avanzados,
+    apiAccess: row.api_access,
     soporte: row.soporte,
     publico: row.publico,
     activo: row.activo,
@@ -97,6 +98,7 @@ function validatePlanPayload(body) {
     usuariosMax: Math.max(1, Math.round(Number(body.usuariosMax || 3))),
     archivosBancarios: Boolean(body.archivosBancarios),
     reportesAvanzados: Boolean(body.reportesAvanzados),
+    apiAccess: Boolean(body.apiAccess),
     soporte: String(body.soporte || 'comunidad'),
     publico: body.publico !== false,
     activo: body.activo !== false,
@@ -147,9 +149,9 @@ async function upsertPlan(req, res, next) {
     const result = await db.query(
       `INSERT INTO planes_comerciales (
         id, nombre, descripcion, precio_mensual_centavos, empleados_max, empresas_max,
-        usuarios_max, archivos_bancarios, reportes_avanzados, soporte, publico, activo, orden, metadata
+        usuarios_max, archivos_bancarios, reportes_avanzados, api_access, soporte, publico, activo, orden, metadata
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
       ON CONFLICT (id) DO UPDATE SET
         nombre = EXCLUDED.nombre,
         descripcion = EXCLUDED.descripcion,
@@ -159,6 +161,7 @@ async function upsertPlan(req, res, next) {
         usuarios_max = EXCLUDED.usuarios_max,
         archivos_bancarios = EXCLUDED.archivos_bancarios,
         reportes_avanzados = EXCLUDED.reportes_avanzados,
+        api_access = EXCLUDED.api_access,
         soporte = EXCLUDED.soporte,
         publico = EXCLUDED.publico,
         activo = EXCLUDED.activo,
@@ -176,6 +179,7 @@ async function upsertPlan(req, res, next) {
         payload.usuariosMax,
         payload.archivosBancarios,
         payload.reportesAvanzados,
+        payload.apiAccess,
         payload.soporte,
         payload.publico,
         payload.activo,
@@ -203,9 +207,9 @@ function insertCommercialPlan(payload) {
   return db.query(
     `INSERT INTO planes_comerciales (
       id, nombre, descripcion, precio_mensual_centavos, empleados_max, empresas_max,
-      usuarios_max, archivos_bancarios, reportes_avanzados, soporte, publico, activo, orden, metadata
+      usuarios_max, archivos_bancarios, reportes_avanzados, api_access, soporte, publico, activo, orden, metadata
     )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
     RETURNING *`,
     [
       payload.id,
@@ -217,6 +221,7 @@ function insertCommercialPlan(payload) {
       payload.usuariosMax,
       payload.archivosBancarios,
       payload.reportesAvanzados,
+      payload.apiAccess,
       payload.soporte,
       payload.publico,
       payload.activo,

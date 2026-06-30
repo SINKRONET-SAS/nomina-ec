@@ -216,6 +216,7 @@ model CommercialPlan {
   usuariosMax           Int                  @default(3) @map("usuarios_max")
   archivosBancarios     Boolean              @default(false) @map("archivos_bancarios")
   reportesAvanzados     Boolean              @default(false) @map("reportes_avanzados")
+  apiAccess             Boolean              @default(false) @map("api_access")
   soporte               String               @default("comunidad") @db.VarChar(80)
   publico               Boolean              @default(true)
   activo                Boolean              @default(true)

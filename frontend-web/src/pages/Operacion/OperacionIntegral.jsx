@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { fetchConfigurationSummary } from '../../services/configurationApi';
+import { fetchPlanCapabilities } from '../../services/beneficiosApi';
 import { createApiClient, fetchApiClients } from '../../services/integracionesApi';
 import { extractApiError } from '../../services/publicApi';
 
@@ -206,6 +207,15 @@ function buildCounts(summary) {
 }
 
 function moduleState(module, context, role) {
+  if (module.key === 'api' && role === 'owner' && !context.capabilities?.allowed?.apiAccess) {
+    return {
+      label: 'Bloqueado por plan',
+      tone: 'border-amber-200 bg-amber-50 text-amber-900',
+      icon: LockKeyhole,
+      description: 'El plan actual no incluye acceso a la API externa. Activalo desde la consola fundador.',
+    };
+  }
+
   if (module.gatedByRoles && !module.gatedByRoles.includes(role)) {
     return {
       label: 'Restringido por rol',
@@ -264,7 +274,7 @@ function ReadinessBar({ value }) {
   );
 }
 
-function ApiClientsPanel({ clients = [], createMutation, canManage }) {
+function ApiClientsPanel({ clients = [], createMutation, canManage, disabledReason = '' }) {
   const [name, setName] = useState('');
   const [scopes, setScopes] = useState(['employees.read']);
   const [createdKey, setCreatedKey] = useState(null);
@@ -317,7 +327,7 @@ function ApiClientsPanel({ clients = [], createMutation, canManage }) {
 
       {!canManage && (
         <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-          Esta sección requiere permisos administrativos para administrar integraciones.
+          {disabledReason || 'Esta sección requiere permisos administrativos para administrar integraciones.'}
         </div>
       )}
 
@@ -430,13 +440,22 @@ function OperacionIntegral() {
 
   const canManageApi = ['owner', 'superadmin'].includes(usuario?.rol);
   const {
+    data: planCapabilities,
+  } = useQuery({
+    queryKey: ['plan-capabilities'],
+    queryFn: fetchPlanCapabilities,
+    enabled: Boolean(token) && usuario?.rol === 'owner',
+    retry: false,
+  });
+  const apiAccessAllowed = usuario?.rol === 'superadmin' || Boolean(planCapabilities?.allowed?.apiAccess);
+  const {
     data: apiClients = [],
     error: apiClientsError,
     isError: isApiClientsError,
   } = useQuery({
     queryKey: ['api-clients'],
     queryFn: fetchApiClients,
-    enabled: Boolean(token) && canManageApi,
+    enabled: Boolean(token) && canManageApi && apiAccessAllowed,
     retry: false,
   });
 
@@ -452,8 +471,12 @@ function OperacionIntegral() {
     apiClients: apiClients.length,
   }), [summary, apiClients.length]);
   const completion = summary?.onboarding?.completionPercent || 0;
-  const context = { counts, completion };
-  const enrichedModules = MODULES.map((module) => ({
+  const context = { counts, completion, capabilities: planCapabilities };
+  const visibleModules = MODULES.filter((module) => {
+    if (module.gatedByRole && module.gatedByRole !== usuario?.rol) return false;
+    return true;
+  });
+  const enrichedModules = visibleModules.map((module) => ({
     ...module,
     state: moduleState(module, context, usuario?.rol),
   }));
@@ -563,7 +586,12 @@ function OperacionIntegral() {
         </div>
       )}
 
-      <ApiClientsPanel clients={apiClients} createMutation={createApiClientMutation} canManage={canManageApi} />
+      <ApiClientsPanel
+        clients={apiClients}
+        createMutation={createApiClientMutation}
+        canManage={canManageApi && apiAccessAllowed}
+        disabledReason={canManageApi && !apiAccessAllowed ? 'El plan actual no incluye acceso a la API externa.' : ''}
+      />
     </div>
   );
 }

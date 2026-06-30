@@ -36,6 +36,7 @@ function getFacturadorReadiness() {
     provider: 'SINKRONET_FACTURADOR',
     invoicePath: config.invoicePath,
     healthPath: config.healthPath,
+    timeoutMs: config.timeoutMs,
     webhookSecretConfigured: config.webhookSecretConfigured,
   };
 }

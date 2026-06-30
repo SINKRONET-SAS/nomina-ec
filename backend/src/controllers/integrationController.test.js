@@ -6,8 +6,13 @@ jest.mock('../services/auditService', () => ({
   recordAudit: jest.fn(),
 }));
 
+jest.mock('../services/planCapabilityService', () => ({
+  assertCapability: jest.fn(),
+}));
+
 const db = require('../config/database');
 const { recordAudit } = require('../services/auditService');
+const { assertCapability } = require('../services/planCapabilityService');
 const {
   createApiClient,
   listApiClients,
@@ -25,6 +30,8 @@ describe('integrationController', () => {
   beforeEach(() => {
     db.query.mockReset();
     recordAudit.mockReset();
+    assertCapability.mockReset();
+    assertCapability.mockResolvedValue({ allowed: { apiAccess: true } });
   });
 
   test('normalizeScopes filtra scopes no permitidos y acepta csv', () => {
@@ -39,6 +46,7 @@ describe('integrationController', () => {
     await listApiClients(req, res);
 
     expect(db.query).toHaveBeenCalledWith(expect.stringContaining('FROM api_clients'), ['tenant-1']);
+    expect(assertCapability).toHaveBeenCalledWith('tenant-1', 'apiAccess', { userId: undefined });
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
   });
 
@@ -76,6 +84,28 @@ describe('integrationController', () => {
       action: 'integraciones.api_client.create',
       tenantId: 'tenant-1',
     }));
+  });
+
+  test('bloquea crear cliente API si el plan no incluye API externa', async () => {
+    const error = new Error('El plan actual no incluye esta funcionalidad.');
+    error.code = 'PLAN_CAPABILITY_BLOCKED';
+    error.statusCode = 402;
+    error.details = { capability: 'apiAccess', planId: 'TRIAL' };
+    assertCapability.mockRejectedValueOnce(error);
+    const req = {
+      body: { name: 'ERP DEMO', scopes: ['employees.read'] },
+      tenantId: 'tenant-1',
+      usuario: { rol: 'owner' },
+      usuarioId: 'user-1',
+      correlationId: 'corr-1',
+    };
+    const res = mockResponse();
+
+    await createApiClient(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(402);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'PLAN_CAPABILITY_BLOCKED' }));
+    expect(db.query).not.toHaveBeenCalled();
   });
 
   test('rechaza crear cliente sin scopes validos', async () => {

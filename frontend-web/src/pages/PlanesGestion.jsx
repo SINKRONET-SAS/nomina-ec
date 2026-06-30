@@ -16,6 +16,7 @@ const EMPTY_PLAN = {
   usuariosMax: 3,
   archivosBancarios: false,
   reportesAvanzados: false,
+  apiAccess: false,
   soporte: 'comunidad',
   publico: true,
   activo: true,
@@ -34,6 +35,7 @@ function normalizeDraft(plan = {}) {
     usuariosMax: plan.usuariosMax ?? 3,
     archivosBancarios: Boolean(plan.archivosBancarios),
     reportesAvanzados: Boolean(plan.reportesAvanzados),
+    apiAccess: Boolean(plan.apiAccess),
     soporte: plan.soporte || 'comunidad',
     publico: plan.publico !== false,
     activo: plan.activo !== false,
@@ -224,6 +226,7 @@ function PlanesGestion({ showSuperadminConsole = true }) {
             {[
               ['archivosBancarios', 'Archivos bancarios'],
               ['reportesAvanzados', 'Reportes avanzados'],
+              ['apiAccess', 'Acceso API externa'],
               ['publico', 'Visible publico'],
               ['activo', 'Activo'],
             ].map(([name, label]) => (
@@ -273,6 +276,8 @@ function PlanesGestion({ showSuperadminConsole = true }) {
                     <td className="px-4 py-3">Emp. {plan.empleadosMax || 'sin límite'} | Empresas {plan.empresasMax} | Usuarios {plan.usuariosMax}</td>
                     <td className="px-4 py-3">
                       {(plan.archivosBancarios ? 'Bancos' : 'Sin bancos')} | {(plan.reportesAvanzados ? 'Reportes avanzados' : 'Reportes base')}
+                      {' | '}
+                      {plan.apiAccess ? 'API externa' : 'Sin API'}
                     </td>
                     <td className="px-4 py-3">{plan.activo ? 'Activo' : 'Inactivo'} | {plan.publico ? 'Público' : 'Interno'}</td>
                     <td className="px-4 py-3">

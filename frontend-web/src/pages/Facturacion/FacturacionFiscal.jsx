@@ -2,10 +2,7 @@ import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, CheckCircle2, FileText, RefreshCcw, RotateCcw } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
-
-function extractApiError(error, fallback) {
-  return error?.response?.data?.message || error?.message || fallback;
-}
+import { extractApiError } from '../../services/publicApi';
 
 function statusLabel(status) {
   const labels = {
@@ -62,10 +59,10 @@ export default function FacturacionFiscal() {
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-800">Facturación fiscal</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-800">Consola interna SINKRONET</p>
         <h1 className="mt-1 text-2xl font-bold text-slate-900">SINKRONET FACTURADOR</h1>
         <p className="mt-1 text-sm text-slate-600">
-          SKNOMINA solicita facturas por API server-to-server y conserva el estado fiscal, referencias y errores visibles.
+          Herramienta de soporte para revisar solicitudes fiscales generadas por pagos aprobados y reenviarlas al facturador externo.
         </p>
       </div>
 
@@ -73,9 +70,9 @@ export default function FacturacionFiscal() {
         <div className="rounded-md border border-slate-200 bg-white p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="font-semibold text-slate-900">Estado del facturador</h2>
+              <h2 className="font-semibold text-slate-900">Estado de integración</h2>
               <p className="mt-1 text-sm text-slate-600">
-          La emisión real queda bloqueada si falta configuración, credencial, certificado o disponibilidad del facturador.
+                La emisión real depende de configuración, credencial, certificado y disponibilidad del servicio facturador externo.
               </p>
             </div>
             <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold ${readiness?.ready ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>
@@ -108,7 +105,7 @@ export default function FacturacionFiscal() {
         <div className="rounded-md border border-slate-200 bg-white p-4">
           <h2 className="font-semibold text-slate-900">Reintento manual</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Usa el ID interno de una transacción aprobada si necesitas solicitar o reintentar la factura.
+            Usa el ID interno de una transacción aprobada solo para soporte fundador o contingencia operativa.
           </p>
           <div className="mt-4 space-y-3">
             <input
@@ -139,7 +136,7 @@ export default function FacturacionFiscal() {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-semibold text-slate-900">Solicitudes fiscales</h2>
-            <p className="mt-1 text-sm text-slate-600">Estados devueltos por SINKRONET FACTURADOR y referencias para soporte.</p>
+            <p className="mt-1 text-sm text-slate-600">Estados técnicos devueltos por el facturador externo para seguimiento interno.</p>
           </div>
           <button
             className="inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"

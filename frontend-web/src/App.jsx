@@ -234,7 +234,7 @@ function App() {
                 </ProtectedRoute>
               } />
               <Route path="facturacion" element={
-                <ProtectedRoute requiredRole={['superadmin', 'owner', 'admin_rrhh']}>
+                <ProtectedRoute requiredRole={['superadmin']}>
                   <FacturacionFiscal />
                 </ProtectedRoute>
               } />

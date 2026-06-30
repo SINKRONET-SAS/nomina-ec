@@ -1,6 +1,40 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-CIERRE-APK-AAB-SKNOMINA-2026-V4
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-CIERRE-APK-AAB-SKNOMINA-2026-V4 |
+| Codigo | APK26V4 |
+| Estado | Ejecutado localmente; QA en curso |
+| Fase actual | APK26V4-05 QA release |
+| Fuente auditoria | `C:\Users\proam\Downloads\files (2)\informe_auditoria_nomina_ec_v4.md` |
+| Checklist | `C:\Users\proam\Downloads\files (2)\apk_aab_checklist_v4.js` |
+| Fixes | `C:\Users\proam\Downloads\files (2)\fix_n1_*.js` a `fix_n5_*.js` |
+| Plan doc | `docs2/PLAN_HAIKY_CIERRE_APK_AAB_SKNOMINA_2026_V4.md` |
+| Matriz | `docs2/cierre-apk-aab-sknomina-2026-v4/MATRIZ_APK26V4_HALLAZGOS.md` |
+| Runbook | `docs2/cierre-apk-aab-sknomina-2026-v4/RUNBOOK_APK26V4_QA_RELEASE.md` |
+| Prompts | `.github/prompts/APK26V4-{00..05}-*.md` |
+
+### Decisiones APK26V4
+
+- HAL-N1: `app-movil/app.json` declara `android.targetSdkVersion: 35`; `check-store-readiness.mjs` falla si el target baja de 35.
+- HAL-N2: `extractApiError` es deduplicacion cosmetica de mensajes UI. No afecta facturacion fiscal, XML, IVA, firma, SRI ni el cliente server-to-server.
+- HAL-N3: no se elimina el gobierno Haiky pedido en `docs2`; se retiran del tracking anexos binarios sensibles ya cubiertos por `.gitignore`.
+- HAL-N4: cerrado previo; `App.jsx` ya alinea saldos iniciales y facturacion con los roles backend.
+- HAL-N5: `sourceStatus` queda `validado_parcial`; `validatedFields` y `pendingValidation` permanecen separados.
+- SINKRONET FACTURADOR conserva toda la complejidad fiscal; SKNOMINA observa, reintenta y registra estados.
+
+### Validacion esperada APK26V4
+
+- `npm.cmd run check:mobile`
+- `npm.cmd --workspace=frontend-web run build`
+- `npm.cmd --workspace=backend test -- paymentController.test.js --runInBand`
+- `git diff --check`
+
+---
+
 ## Open Haiky Plan - HAIKY-CIERRE-APK-AAB-SUPERADMIN-SKNOMINA-2026
 
 | Campo | Valor |

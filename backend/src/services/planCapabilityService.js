@@ -4,6 +4,7 @@ const AppError = require('../utils/AppError');
 const CAPABILITY_FIELDS = {
   bankFiles: 'archivos_bancarios',
   advancedReports: 'reportes_avanzados',
+  apiAccess: 'api_access',
 };
 
 async function getTenantPlanCapabilities(tenantId) {
@@ -25,6 +26,7 @@ async function getTenantPlanCapabilities(tenantId) {
       allowed: {
         bankFiles: false,
         advancedReports: false,
+        apiAccess: false,
       },
       limits: {
         employeesMax: 0,
@@ -41,6 +43,7 @@ async function getTenantPlanCapabilities(tenantId) {
     allowed: {
       bankFiles: Boolean(plan.archivos_bancarios),
       advancedReports: Boolean(plan.reportes_avanzados),
+      apiAccess: Boolean(plan.api_access),
     },
     limits: {
       employeesMax: plan.empleados_max,

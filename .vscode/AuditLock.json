@@ -1,126 +1,99 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-CIERRE-APK-AAB-SUPERADMIN-SKNOMINA-2026",
-  "planCode": "APK26",
-  "status": "completed_local",
-  "phaseCompleted": "APK26-09",
-  "currentPhase": "APK26-release-ready",
-  "updatedAt": "2026-06-28T16:25:00-05:00",
-  "summary": "APK26 ejecuto diagnostico, metadatos Play Store, consola fundador Superadmin, ortografia UI, diferenciacion mobile por rol, metadatos legales, politica docs2/AuditLock, reportes de fase y QA local. No se guardaron secretos ni se forzo upgrade Expo innecesario.",
+  "plan": "HAIKY-CIERRE-APK-AAB-SKNOMINA-2026-V4",
+  "planCode": "APK26V4",
+  "status": "completed_local_qa",
+  "phaseCompleted": "APK26V4-05",
+  "currentPhase": "commit-and-push",
+  "updatedAt": "2026-06-29T01:10:00-05:00",
+  "summary": "APK26V4 cierra auditoria APK/AAB v4: targetSdkVersion 35 explicito y validado, extractApiError deduplicado, anexos binarios sensibles de docs2 retirados del tracking, sourceStatus legal en validado_parcial y arquitectura fiscal SINKRONET FACTURADOR documentada como externa.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: generar plan Haiky y ejecutar todos los prompts para auditoria app AAB/APK, superadmin y cierre Play Store.",
-  "previousAuditLockHash": "BB0395C8E45FE5E3BF99B13F9EA0AC70863AF5C3B74A428B24E4BD80236AC8A7",
+  "approvalSource": "Solicitud del usuario: generar plan Haiky APK/AAB v4, prompts por fases, ejecutar el plan considerando CODEX_CONTEXT.md, commit y push.",
+  "previousAuditLockHash": "E354A17B5F95585D04A798F47B80EF2186229677AAFDBD85C2792FB8D13C084A",
   "filesModifiedSummary": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/APK26-00-baseline-documental.md",
-    ".github/prompts/APK26-01-diagnostico-runtime.md",
-    ".github/prompts/APK26-02-metadatos-play-store.md",
-    ".github/prompts/APK26-03-superadmin-fundador.md",
-    ".github/prompts/APK26-04-ortografia-ui.md",
-    ".github/prompts/APK26-05-mobile-roles.md",
-    ".github/prompts/APK26-06-legal-status.md",
-    ".github/prompts/APK26-07-politica-repo.md",
-    ".github/prompts/APK26-08-parametrizacion-fcm.md",
-    ".github/prompts/APK26-09-qa-release.md",
-    ".gitignore",
-    ".vscode/AuditLock.json",
+    ".github/prompts/APK26V4-00-baseline.md",
+    ".github/prompts/APK26V4-01-play-store-target.md",
+    ".github/prompts/APK26V4-02-ui-route-guards.md",
+    ".github/prompts/APK26V4-03-docs2-public-governance.md",
+    ".github/prompts/APK26V4-04-legal-facturador.md",
+    ".github/prompts/APK26V4-05-qa-release.md",
+    "docs2/PLAN_HAIKY_CIERRE_APK_AAB_SKNOMINA_2026_V4.md",
+    "docs2/cierre-apk-aab-sknomina-2026-v4/MATRIZ_APK26V4_HALLAZGOS.md",
+    "docs2/cierre-apk-aab-sknomina-2026-v4/RUNBOOK_APK26V4_QA_RELEASE.md",
     "app-movil/app.json",
     "app-movil/scripts/check-store-readiness.mjs",
-    "app-movil/src/App.js",
-    "app-movil/src/screens/LoginScreen.js",
+    "frontend-web/src/pages/Facturacion/FacturacionFiscal.jsx",
+    "frontend-web/src/pages/Onboarding/SaldosIniciales.jsx",
     "backend/src/config/legal-ecuador.js",
-    "backend/src/services/legalParameterService.test.js",
-    "frontend-web/src/pages/Operacion/OperacionIntegral.jsx",
-    "frontend-web/src/pages/PlanesGestion.jsx",
-    "frontend-web/src/pages/Superadmin.jsx",
-    "docs2/PLAN_HAIKY_CIERRE_APK_AAB_SUPERADMIN_SKNOMINA_2026.md",
-    "docs2/cierre-apk-aab-superadmin-sknomina-2026/"
+    "backend/src/services/facturadorClient.js",
+    "docs2 binary attachments removed from git index"
   ],
   "validationChecks": [
     {
-      "gate": "APK26-CONTRACTS",
+      "gate": "APK26V4-RULES-READ",
       "status": "PASS",
-      "detail": "npm.cmd run contracts"
+      "detail": "RULES.md leido y aplicado."
     },
     {
-      "gate": "APK26-PRISMA-VALIDATE",
+      "gate": "APK26V4-TARGET-SDK",
       "status": "PASS",
-      "detail": "npm.cmd run prisma:validate"
+      "detail": "android.targetSdkVersion 35 agregado y check-store-readiness actualizado."
     },
     {
-      "gate": "APK26-BACKEND-TESTS",
+      "gate": "APK26V4-EXTRACT-API-ERROR",
       "status": "PASS",
-      "detail": "npm.cmd --workspace=backend test -- --runInBand; 51 suites, 212 tests"
+      "detail": "FacturacionFiscal y SaldosIniciales importan helper canonico desde publicApi."
     },
     {
-      "gate": "APK26-WEB-BUILD",
+      "gate": "APK26V4-DOCS2-BINARIES",
       "status": "PASS",
-      "detail": "npm.cmd --workspace=frontend-web run build"
+      "detail": "7 anexos PDF/PNG sensibles retirados del tracking; permanecen locales por .gitignore."
     },
     {
-      "gate": "APK26-MOBILE-CHECK",
+      "gate": "APK26V4-ROUTE-GUARDS",
       "status": "PASS",
-      "detail": "npm.cmd run check:mobile"
+      "detail": "HAL-N4 ya estaba cerrado: saldos iniciales y facturacion tienen requiredRole alineado al backend."
     },
     {
-      "gate": "APK26-EXPO-DOCTOR",
+      "gate": "APK26V4-LEGAL-STATUS",
       "status": "PASS",
-      "detail": "npx.cmd expo-doctor en app-movil; 18/18 checks"
+      "detail": "sourceStatus actualizado a validado_parcial conservando pendingValidation."
     },
     {
-      "gate": "APK26-DIFF-CHECK",
+      "gate": "APK26V4-MOBILE-CHECK",
       "status": "PASS",
-      "detail": "git diff --check sin errores; avisos CRLF esperados en Windows"
+      "detail": "npm.cmd run check:mobile verifico metadatos, assets y targetSdkVersion 35."
+    },
+    {
+      "gate": "APK26V4-BACKEND-PAYMENT-TEST",
+      "status": "PASS",
+      "detail": "npm.cmd --workspace=backend test -- paymentController.test.js --runInBand: 1 suite, 4 tests."
+    },
+    {
+      "gate": "APK26V4-BUILD-WEB",
+      "status": "PASS",
+      "detail": "npm.cmd --workspace=frontend-web run build: Vite built in 1m 8s y genero PWA."
+    },
+    {
+      "gate": "APK26V4-DIFF-CHECK",
+      "status": "PASS",
+      "detail": "git diff --check sin errores; solo advertencias LF/CRLF de Windows."
     }
   ],
   "fases": [
-    {
-      "phase": "APK26-00",
-      "status": "completed_documental"
-    },
-    {
-      "phase": "APK26-01",
-      "status": "completed_local"
-    },
-    {
-      "phase": "APK26-02",
-      "status": "completed_local"
-    },
-    {
-      "phase": "APK26-03",
-      "status": "completed_local"
-    },
-    {
-      "phase": "APK26-04",
-      "status": "completed_local"
-    },
-    {
-      "phase": "APK26-05",
-      "status": "completed_local"
-    },
-    {
-      "phase": "APK26-06",
-      "status": "completed_local"
-    },
-    {
-      "phase": "APK26-07",
-      "status": "completed_local"
-    },
-    {
-      "phase": "APK26-08",
-      "status": "completed_local"
-    },
-    {
-      "phase": "APK26-09",
-      "status": "completed_local"
-    }
+    { "phase": "APK26V4-00", "status": "completed" },
+    { "phase": "APK26V4-01", "status": "completed" },
+    { "phase": "APK26V4-02", "status": "completed" },
+    { "phase": "APK26V4-03", "status": "completed" },
+    { "phase": "APK26V4-04", "status": "completed" },
+    { "phase": "APK26V4-05", "status": "completed_local_qa" }
   ],
   "residualRisk": [
-    "SDK 56 queda como mejora futura; APK26 confirma que SDK 54 no bloquea target API porque Expo declara targetSdkVersion 36.",
-    "La politica de privacidad Android debe cargarse tambien en Play Console durante el alta de la ficha de tienda.",
-    "FCM/google-services.json sigue fuera de alcance hasta activar push notifications productivas.",
-    "La verificacion visual con navegador integrado no pudo iniciarse por fallo de sandbox REPL; Vite build y gates funcionales quedaron verdes."
+    "Probar APK en Android 15 antes de Play Console por edge-to-edge y teclado.",
+    "Coordinar SINKRONET_FACTURADOR_TIMEOUT_MS con la ventana real de procesamiento del facturador externo.",
+    "Migrar gobierno Haiky a repositorio privado antes de retirar documentos markdown de docs2."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "1163AAE95FE1A5587A7AB0D43F0BEA49B060F228ED2C2DA223E7DF3B25E0E802"
+  "signature": "687440296EDE8FEF81B011223884CC51797BC3B50A080DF4CBC91E0805CE82F3"
 }

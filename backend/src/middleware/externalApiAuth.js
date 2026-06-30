@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const db = require('../config/database');
+const { assertCapability } = require('../services/planCapabilityService');
 
 function hashApiKey(apiKey) {
   return crypto.createHash('sha256').update(String(apiKey || ''), 'utf8').digest('hex');
@@ -50,8 +51,17 @@ async function authenticateExternalApi(req, res, next) {
     };
     req.tenantId = client.tenant_id;
     req.usuarioId = null;
+    await assertCapability(client.tenant_id, 'apiAccess', { userId: null });
     return next();
   } catch (err) {
+    if (err.code === 'PLAN_CAPABILITY_BLOCKED') {
+      return res.status(err.statusCode || 402).json({
+        error: err.code,
+        message: 'El plan actual no incluye acceso a la API externa.',
+        correlationId: req.correlationId,
+        details: err.details,
+      });
+    }
     console.error('[API_V1] Error autenticando cliente externo', {
       code: err.code || 'API_AUTH_ERROR',
       statusCode: 500,

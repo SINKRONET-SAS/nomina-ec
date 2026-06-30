@@ -33,6 +33,10 @@ if (!Number.isInteger(appConfig.android?.versionCode)) {
   fail('android.versionCode debe ser numerico.');
 }
 
+if (!Number.isInteger(appConfig.android?.targetSdkVersion) || appConfig.android.targetSdkVersion < 35) {
+  fail('android.targetSdkVersion debe ser 35 o superior para Play Console.');
+}
+
 if (!appConfig.ios?.buildNumber) {
   fail('ios.buildNumber no esta definido.');
 }

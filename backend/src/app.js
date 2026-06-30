@@ -115,13 +115,13 @@ app.get('/api/pagos/payment-methods/capabilities', paymentController.paymentCapa
 app.get('/api/pagos/capabilities', paymentController.tenantCapabilities);
 app.post('/api/pagos/payment-methods/checkout-intent', requireRole('owner', 'superadmin'), requireFreshUser, paymentController.createCheckoutIntent);
 app.post('/api/pagos/payment-methods/:paymentMethodId/revoke', requireRole('owner', 'superadmin'), requireFreshUser, paymentController.revokePaymentMethod);
-app.get('/api/pagos/planes/admin', requireRole('superadmin', 'owner'), paymentController.listAdminPlans);
+app.get('/api/pagos/planes/admin', requireRole('superadmin'), paymentController.listAdminPlans);
 app.post('/api/pagos/planes', requireRole('superadmin'), requireFreshUser, paymentController.upsertPlan);
 app.put('/api/pagos/planes/:planId', requireRole('superadmin'), requireFreshUser, paymentController.upsertPlan);
 app.delete('/api/pagos/planes/:planId', requireRole('superadmin'), requireFreshUser, paymentController.deletePlan);
-app.get('/api/facturacion/status', requireRole('superadmin', 'owner', 'admin_rrhh'), fiscalBillingController.status);
-app.get('/api/facturacion/documentos', requireRole('superadmin', 'owner', 'admin_rrhh'), fiscalBillingController.list);
-app.post('/api/facturacion/transacciones/:paymentTransactionId/emitir', requireRole('superadmin', 'owner'), requireFreshUser, fiscalBillingController.emitForTransaction);
+app.get('/api/facturacion/status', requireRole('superadmin'), fiscalBillingController.status);
+app.get('/api/facturacion/documentos', requireRole('superadmin'), fiscalBillingController.list);
+app.post('/api/facturacion/transacciones/:paymentTransactionId/emitir', requireRole('superadmin'), requireFreshUser, fiscalBillingController.emitForTransaction);
 
 const empleadoController = require('./controllers/empleadoController');
 app.get('/api/empleados', requireRole('owner', 'admin_rrhh', 'supervisor'), empleadoController.listar);

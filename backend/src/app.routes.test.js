@@ -35,7 +35,7 @@ describe('app route order', () => {
     expect(source).toContain("app.post('/api/onboarding/saldos-iniciales/dry-run'");
     expect(source).toContain("app.post('/api/onboarding/saldos-iniciales/lotes/:batchId/commit'");
     expect(source).toContain("app.post('/api/facturacion/webhook/facturador'");
-    expect(source).toContain("app.get('/api/facturacion/status'");
-    expect(source).toContain("app.post('/api/facturacion/transacciones/:paymentTransactionId/emitir'");
+    expect(source).toContain("app.get('/api/facturacion/status', requireRole('superadmin')");
+    expect(source).toContain("app.post('/api/facturacion/transacciones/:paymentTransactionId/emitir', requireRole('superadmin')");
   });
 });

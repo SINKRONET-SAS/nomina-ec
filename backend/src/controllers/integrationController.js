@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const db = require('../config/database');
 const { recordAudit } = require('../services/auditService');
+const { assertCapability } = require('../services/planCapabilityService');
 const { hashApiKey } = require('../middleware/externalApiAuth');
 
 const ALLOWED_SCOPES = new Set([
@@ -32,6 +33,9 @@ async function listApiClients(req, res) {
     if (!tenantId) {
       return res.status(400).json({ error: 'TENANT_REQUERIDO', message: 'Selecciona un tenant para listar clientes API.', correlationId: req.correlationId });
     }
+    if (req.usuario?.rol !== 'superadmin') {
+      await assertCapability(tenantId, 'apiAccess', { userId: req.usuarioId });
+    }
 
     const result = await db.query(`
       SELECT id, name, scopes, active, rate_limit_per_minute, created_at, updated_at
@@ -42,6 +46,14 @@ async function listApiClients(req, res) {
 
     return res.json({ success: true, data: result.rows, correlationId: req.correlationId });
   } catch (err) {
+    if (err.code === 'PLAN_CAPABILITY_BLOCKED') {
+      return res.status(err.statusCode || 402).json({
+        error: err.code,
+        message: 'El plan actual no incluye acceso a la API externa.',
+        correlationId: req.correlationId,
+        details: err.details,
+      });
+    }
     console.error('[INTEGRACIONES] Error listando clientes API', {
       code: err.code || 'API_CLIENT_LIST_ERROR',
       statusCode: 500,
@@ -64,6 +76,9 @@ async function createApiClient(req, res) {
     }
     if (!name || normalizedScopes.length === 0) {
       return res.status(400).json({ error: 'API_CLIENT_INVALID', message: 'Nombre y al menos un scope valido son requeridos.', correlationId: req.correlationId });
+    }
+    if (req.usuario?.rol !== 'superadmin') {
+      await assertCapability(tenantId, 'apiAccess', { userId: req.usuarioId });
     }
 
     const apiKey = generateApiKey();
@@ -98,6 +113,14 @@ async function createApiClient(req, res) {
       correlationId: req.correlationId,
     });
   } catch (err) {
+    if (err.code === 'PLAN_CAPABILITY_BLOCKED') {
+      return res.status(err.statusCode || 402).json({
+        error: err.code,
+        message: 'El plan actual no incluye acceso a la API externa.',
+        correlationId: req.correlationId,
+        details: err.details,
+      });
+    }
     console.error('[INTEGRACIONES] Error creando cliente API', {
       code: err.code || 'API_CLIENT_CREATE_ERROR',
       statusCode: 500,
