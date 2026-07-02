@@ -81,6 +81,18 @@ function getPeriod() {
   };
 }
 
+function canManageEmployees(role) {
+  return ['owner', 'admin_rrhh', 'supervisor'].includes(role);
+}
+
+function canManagePayroll(role) {
+  return ['owner', 'admin_rrhh'].includes(role);
+}
+
+function canManageConfiguration(role) {
+  return ['superadmin', 'owner', 'admin_rrhh'].includes(role);
+}
+
 async function loadDashboardData(role) {
   const period = getPeriod();
   const [
@@ -93,11 +105,11 @@ async function loadDashboardData(role) {
     capacidadesResult,
     auditoriaResult,
   ] = await Promise.all([
-    optionalGet('/empleados'),
-    optionalGet('/novedades/pendientes'),
-    optionalGet('/marcaciones/hoy'),
-    optionalGet('/configuracion/resumen'),
-    optionalGet(`/nomina/${period.year}/${period.month}`),
+    canManageEmployees(role) ? optionalGet('/empleados') : Promise.resolve({ ok: false }),
+    canManageEmployees(role) ? optionalGet('/novedades/pendientes') : Promise.resolve({ ok: false }),
+    canManageEmployees(role) ? optionalGet('/marcaciones/hoy') : Promise.resolve({ ok: false }),
+    canManageConfiguration(role) ? optionalGet('/configuracion/resumen') : Promise.resolve({ ok: false }),
+    canManagePayroll(role) ? optionalGet(`/nomina/${period.year}/${period.month}`) : Promise.resolve({ ok: false }),
     optionalGet('/pagos/status'),
     optionalGet('/pagos/capabilities'),
     ['owner', 'superadmin'].includes(role) ? optionalGet('/auditoria?limit=5') : Promise.resolve({ ok: false }),
@@ -259,6 +271,7 @@ function EmailVerificationBanner({ email }) {
 function Dashboard() {
   const { usuario } = useAuth();
   const role = usuario?.rol;
+  const isEmployeeSession = role === 'empleado';
   const canAudit = ['owner', 'superadmin'].includes(role);
 
   const { data, isLoading } = useQuery({
@@ -282,6 +295,31 @@ function Dashboard() {
     ? `${data.subscription.planNombre || data.subscription.planId} - ${data.subscription.estado}`
     : 'Sin suscripcion activa registrada';
   const bankFilesAllowed = Boolean(data?.capabilities?.allowed?.bankFiles);
+
+  if (isEmployeeSession) {
+    return (
+      <div className="space-y-6">
+        <EmailVerificationBanner email={usuario?.email} />
+        <section className="soft-panel p-6">
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Acceso de empleado</p>
+          <h1 className="mt-2 text-2xl font-semibold text-slate-950">Tu cuenta laboral sigue activa</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            Este ingreso esta operando como empleado. Las funciones administrativas de nomina, empleados y reportes
+            se mantienen para cuentas owner o RRHH.
+          </p>
+          <div className="mt-5 rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            Si tambien administras la empresa, activa tu acceso de empleado con el mismo correo y la misma clave
+            administrativa para conservar una sola identidad y no perder el menu de gestion en PWA.
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:border-teal-300" to="/dashboard/privacidad">
+              Revisar privacidad
+            </Link>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   const summaryCards = [
     {

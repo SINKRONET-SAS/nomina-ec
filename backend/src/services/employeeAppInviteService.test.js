@@ -1,6 +1,43 @@
 process.env.EMPLOYEE_INVITE_SECRET = process.env.EMPLOYEE_INVITE_SECRET || 'test-employee-invite-secret-32-chars';
 
+jest.mock('../config/database', () => ({
+  query: jest.fn(),
+  pool: {
+    connect: jest.fn(),
+  },
+}));
+
+jest.mock('bcryptjs', () => ({
+  hash: jest.fn(),
+  compare: jest.fn(),
+}));
+
+jest.mock('../middleware/auth', () => ({
+  generateToken: jest.fn().mockReturnValue('token-test'),
+}));
+
+jest.mock('./communicationService', () => ({
+  sendEmployeeInvite: jest.fn(),
+}));
+
+jest.mock('./privacyConsentService', () => ({
+  LOPDP_VERSION: 'LOPDP-2026-06',
+  CONSENT_SCOPES: [
+    {
+      scope: 'privacy_notice',
+      defaultActive: true,
+      legalBasis: 'consent',
+      required: true,
+      withdrawable: false,
+    },
+  ],
+}));
+
+const db = require('../config/database');
+const bcrypt = require('bcryptjs');
+
 const {
+  acceptEmployeeInvitation,
   buildReadiness,
   employeeReadinessSelect,
   hashInviteCode,
@@ -8,6 +45,13 @@ const {
 } = require('./employeeAppInviteService');
 
 describe('employeeAppInviteService', () => {
+  beforeEach(() => {
+    db.query.mockReset();
+    db.pool.connect.mockReset();
+    bcrypt.hash.mockReset();
+    bcrypt.compare.mockReset();
+  });
+
   test('normaliza codigos de invitacion sin simbolos ni minusculas', () => {
     expect(normalizeInviteCode(' adm-12 ab ')).toBe('ADM12AB');
   });
@@ -90,5 +134,114 @@ describe('employeeAppInviteService', () => {
 
     expect(readiness.ready).toBe(true);
     expect(readiness.blockers).not.toContain('jornada_mensual_empleado_requerida');
+  });
+
+  test('acceptEmployeeInvitation reutiliza owner existente y preserva su rol', async () => {
+    const client = {
+      query: jest.fn(),
+      release: jest.fn(),
+    };
+    db.pool.connect.mockResolvedValue(client);
+    bcrypt.compare.mockResolvedValue(true);
+    client.query.mockImplementation(async (sql) => {
+      const text = String(sql);
+
+      if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') {
+        return { rows: [] };
+      }
+
+      if (text.includes('FROM employee_app_invites i')) {
+        return {
+          rows: [{
+            id: 'invite-1',
+            tenant_id: 'tenant-1',
+            empleado_id: 'emp-1',
+            cedula: '1712345678',
+            nombres: 'Marco',
+            apellidos: 'Proano',
+            email: 'marco@example.com',
+            email_personal: 'marco@example.com',
+            activo: true,
+          }],
+        };
+      }
+
+      if (text.includes('FROM empleados e')) {
+        return {
+          rows: [{
+            id: 'emp-1',
+            tenant_id: 'tenant-1',
+            departamento: 'ADM',
+            email_personal: 'marco@example.com',
+            organization_unit_id: 'ou-1',
+            work_zone_id: 'zone-1',
+            work_shift_id: 'shift-1',
+            work_shift_weekly_hours: 40,
+          }],
+        };
+      }
+
+      if (text.includes('SELECT * FROM usuarios')) {
+        return {
+          rows: [{
+            id: 'user-owner',
+            tenant_id: 'tenant-1',
+            email: 'marco@example.com',
+            rol: 'owner',
+            nombres: 'Marco',
+            apellidos: 'Proano',
+            password_hash: 'hash-owner',
+          }],
+        };
+      }
+
+      if (text.includes('UPDATE employee_app_links')) {
+        return { rows: [] };
+      }
+
+      if (text.includes('INSERT INTO employee_app_links')) {
+        return {
+          rows: [{
+            id: 'link-1',
+            status: 'ACTIVE',
+          }],
+        };
+      }
+
+      if (
+        text.includes('INSERT INTO consent_preferences')
+        || text.includes('UPDATE employee_app_invites')
+        || text.includes('INSERT INTO audit_logs')
+      ) {
+        return { rows: [] };
+      }
+
+      throw new Error(`Unexpected query in test: ${text}`);
+    });
+
+    const result = await acceptEmployeeInvitation({
+      inviteCode: 'ADM-12AB',
+      email: 'marco@example.com',
+      password: 'secreto123',
+      acceptedPrivacy: true,
+      lopdpConsent: true,
+      geolocationConsent: true,
+    }, {
+      correlationId: 'corr-1',
+      ipAddress: '127.0.0.1',
+    });
+
+    expect(result.usuario).toMatchObject({
+      id: 'user-owner',
+      rol: 'owner',
+      email: 'marco@example.com',
+    });
+    expect(result.link).toMatchObject({
+      id: 'link-1',
+      status: 'ACTIVE',
+    });
+    expect(bcrypt.compare).toHaveBeenCalledWith('secreto123', 'hash-owner');
+    expect(client.query.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO usuarios'))).toBe(false);
+    expect(client.release).toHaveBeenCalled();
   });
 });

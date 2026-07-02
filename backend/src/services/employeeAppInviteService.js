@@ -811,13 +811,8 @@ async function acceptEmployeeInvitation(payload = {}, requestMeta = {}) {
     let usuario = userResult.rows[0];
 
     if (usuario) {
-      if (usuario.rol !== 'empleado') {
-        throw new AppError('El correo ya pertenece a un usuario administrativo. Usa otro correo o solicita soporte.', {
-          code: 'EMPLOYEE_APP_EMAIL_ROLE_CONFLICT',
-          statusCode: 409,
-        });
-      }
-
+      // Si la persona ya opera como owner/admin/supervisor en el tenant,
+      // reutilizamos esa identidad para no degradar permisos en PWA.
       const passwordOk = await bcrypt.compare(password, usuario.password_hash);
       if (!passwordOk) {
         throw new AppError('No pudimos activar la invitacion. Revisa el codigo o solicita uno nuevo a RRHH.', {

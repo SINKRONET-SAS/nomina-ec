@@ -1,6 +1,7 @@
 const db = require('../config/database');
 const AppError = require('../utils/AppError');
 const { recordAudit } = require('../services/auditService');
+const { resolveLinkedEmployee } = require('../services/employeeAppInviteService');
 
 function normalizePeriod(value) {
   const period = String(value || '').trim();
@@ -37,34 +38,26 @@ function normalizeDetail(value) {
 }
 
 async function resolveEmployeeId(req) {
-  if (req.usuario?.rol === 'empleado') {
-    const result = await db.query(
-      `SELECT id
-       FROM empleados
-       WHERE tenant_id = $1
-         AND LOWER(email_personal) = LOWER($2)
-         AND activo = true
-       ORDER BY created_at DESC
-       LIMIT 1`,
-      [req.tenantId, req.usuario.email]
-    );
-    if (result.rows.length === 0) {
-      throw new AppError('No encontramos una ficha laboral activa asociada a tu usuario.', {
-        code: 'MOVILIZACION_EMPLEADO_NO_ASOCIADO',
-        statusCode: 403,
-      });
-    }
-    return result.rows[0].id;
+  const employeeId = String(req.body.empleadoId || req.query.empleadoId || '').trim();
+  if (employeeId) {
+    return employeeId;
   }
 
-  const employeeId = String(req.body.empleadoId || req.query.empleadoId || '').trim();
-  if (!employeeId) {
-    throw new AppError('Selecciona el trabajador del informe de movilizacion.', {
-      code: 'MOVILIZACION_EMPLEADO_REQUERIDO',
-      statusCode: 400,
+  if (['empleado', 'owner', 'admin_rrhh'].includes(req.usuario?.rol)) {
+    const { employee } = await resolveLinkedEmployee({
+      tenantId: req.tenantId,
+      userId: req.usuarioId || req.usuario?.id || null,
+      email: req.usuario?.email,
+      role: req.usuario?.rol,
+      requireExplicitLink: true,
     });
+    return employee.id;
   }
-  return employeeId;
+
+  throw new AppError('Selecciona el trabajador del informe de movilizacion.', {
+    code: 'MOVILIZACION_EMPLEADO_REQUERIDO',
+    statusCode: 400,
+  });
 }
 
 async function auditMovilizacion(req, action, entityId, newData) {
