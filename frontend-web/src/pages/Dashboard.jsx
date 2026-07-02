@@ -24,7 +24,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { authenticatedApi } from '../services/authenticatedApi';
 import { confirmEmailVerification, extractApiError, requestEmailVerification } from '../services/publicApi';
-import { currentPeriodEC } from '../utils/dateFormat';
+import { currentPeriodEC, formatDateEC, formatDateTimeEC, todayISOEC } from '../utils/dateFormat';
 
 const monthNames = [
   'Enero',
@@ -93,7 +93,51 @@ function canManageConfiguration(role) {
   return ['superadmin', 'owner', 'admin_rrhh'].includes(role);
 }
 
+async function loadEmployeeDashboardData() {
+  const period = getPeriod();
+  const [
+    profileResult,
+    attendanceResult,
+    routeResult,
+    payrollResult,
+    mobilizationResult,
+  ] = await Promise.all([
+    optionalGet('/mobile/me'),
+    optionalGet('/mobile/asistencia/resumen'),
+    optionalGet('/mobile/ruta/hoy'),
+    optionalGet(`/mobile/nomina/${period.year}/${period.month}`),
+    optionalGet('/movilizacion/mis-informes'),
+  ]);
+
+  return {
+    period,
+    employeeWorkspace: {
+      profile: profileResult.data?.employee || attendanceResult.data?.employee || null,
+      user: profileResult.data?.user || null,
+      attendance: {
+        marcaciones: pickArray(attendanceResult.data, ['marcaciones', 'items']),
+        novedades: pickArray(attendanceResult.data, ['novedades', 'items']),
+      },
+      route: routeResult.data?.route || null,
+      routeMessage: routeResult.data?.message || null,
+      payroll: payrollResult.data?.nomina || null,
+      movilizacion: pickArray(mobilizationResult.data, ['informes', 'items']),
+      health: {
+        profile: profileResult.ok,
+        attendance: attendanceResult.ok,
+        route: routeResult.ok,
+        payroll: payrollResult.ok,
+        movilizacion: mobilizationResult.ok,
+      },
+    },
+  };
+}
+
 async function loadDashboardData(role) {
+  if (role === 'empleado') {
+    return loadEmployeeDashboardData();
+  }
+
   const period = getPeriod();
   const [
     empleadosResult,
@@ -273,12 +317,30 @@ function Dashboard() {
   const role = usuario?.rol;
   const isEmployeeSession = role === 'empleado';
   const canAudit = ['owner', 'superadmin'].includes(role);
+  const [permisoDraft, setPermisoDraft] = useState(() => ({
+    fechaInicio: todayISOEC(),
+    fechaFin: todayISOEC(),
+    motivo: '',
+    minutos: 480,
+    remunerado: true,
+  }));
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['dashboard-nomina-operativa', role],
     queryFn: () => loadDashboardData(role),
     enabled: Boolean(role),
     retry: false,
+  });
+
+  const permisoMutation = useMutation({
+    mutationFn: async (payload) => authenticatedApi.post('/mobile/permisos', payload),
+    onSuccess: async () => {
+      setPermisoDraft((current) => ({
+        ...current,
+        motivo: '',
+      }));
+      await refetch();
+    },
   });
 
   const period = data?.period || getPeriod();
@@ -297,24 +359,294 @@ function Dashboard() {
   const bankFilesAllowed = Boolean(data?.capabilities?.allowed?.bankFiles);
 
   if (isEmployeeSession) {
+    const employeeWorkspace = data?.employeeWorkspace || {};
+    const employee = employeeWorkspace.profile;
+    const attendanceMarks = employeeWorkspace.attendance?.marcaciones || [];
+    const attendanceNovelties = employeeWorkspace.attendance?.novedades || [];
+    const route = employeeWorkspace.route;
+    const movilizacion = employeeWorkspace.movilizacion || [];
+    const payroll = employeeWorkspace.payroll;
+    const employeeHealth = employeeWorkspace.health || {};
+
+    const employeeSummaryCards = [
+      {
+        icon: Users,
+        label: 'Ficha laboral',
+        value: employee?.cargo || employee?.departamento || 'Activa',
+        detail: employee?.app_link_source === 'employee_app_link' ? 'Vinculada a tu usuario' : 'Acceso laboral disponible',
+        tone: 'bg-blue-50 text-blue-700',
+      },
+      {
+        icon: Clock,
+        label: 'Marcaciones recientes',
+        value: safeCount(attendanceMarks),
+        detail: safeCount(attendanceMarks) ? 'Ultimas registradas en tu jornada' : 'Sin marcaciones recientes',
+        tone: 'bg-cyan-50 text-cyan-700',
+      },
+      {
+        icon: ClipboardCheck,
+        label: 'Novedades',
+        value: safeCount(attendanceNovelties),
+        detail: safeCount(attendanceNovelties) ? 'Permisos o novedades registradas' : 'Sin novedades pendientes',
+        tone: 'bg-amber-50 text-amber-700',
+      },
+      {
+        icon: DollarSign,
+        label: `Rol ${period.label}`,
+        value: payroll ? money(payroll.neto_recibir) : 'Pendiente',
+        detail: payroll ? `Estado: ${payroll.estado || 'generado'}` : 'Aun no hay rol publicado para este periodo',
+        tone: 'bg-emerald-50 text-emerald-700',
+      },
+    ];
+
+    const submitPermiso = async () => {
+      await permisoMutation.mutateAsync({
+        fechaInicio: permisoDraft.fechaInicio,
+        fechaFin: permisoDraft.fechaFin,
+        motivo: permisoDraft.motivo,
+        minutos: Number(permisoDraft.minutos || 0),
+        remunerado: permisoDraft.remunerado,
+      });
+    };
+
     return (
       <div className="space-y-6">
         <EmailVerificationBanner email={usuario?.email} />
         <section className="soft-panel p-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Acceso de empleado</p>
-          <h1 className="mt-2 text-2xl font-semibold text-slate-950">Tu cuenta laboral sigue activa</h1>
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Acceso PWA de empleado</p>
+          <h1 className="mt-2 text-2xl font-semibold text-slate-950">
+            {employee ? `${employee.nombres || ''} ${employee.apellidos || ''}`.trim() : 'Tu cuenta laboral sigue activa'}
+          </h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Este ingreso esta operando como empleado. Las funciones administrativas de nomina, empleados y reportes
-            se mantienen para cuentas owner o RRHH.
+            Este usuario fue habilitado para la PWA con rol empleado. Desde aqui puedes revisar tu jornada,
+            tus novedades, el rol del periodo y el estado de tus informes de movilizacion.
           </p>
           <div className="mt-5 rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-700">
-            Si tambien administras la empresa, activa tu acceso de empleado con el mismo correo y la misma clave
-            administrativa para conservar una sola identidad y no perder el menu de gestion en PWA.
+            Solo los empleados creados tambien como usuarios pueden entrar a la PWA. Los usuarios que no son
+            empleados siguen operando segun su rol, y los empleados sin usuario mantienen acceso solo desde la app.
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2 text-sm text-slate-600">
+            <span className="rounded-md bg-slate-100 px-3 py-2">Cargo: {employee?.cargo || 'Sin cargo'}</span>
+            <span className="rounded-md bg-slate-100 px-3 py-2">Departamento: {employee?.departamento || 'Sin departamento'}</span>
+            <span className="rounded-md bg-slate-100 px-3 py-2">Cedula: {employee?.cedula || '-'}</span>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:border-teal-300" to="/dashboard/privacidad">
               Revisar privacidad
             </Link>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {employeeSummaryCards.map((card) => (
+            <div className="soft-panel p-5" key={card.label}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm text-slate-500">{card.label}</p>
+                  <p className="mt-2 text-2xl font-semibold text-slate-950">{isLoading ? '...' : card.value}</p>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">{isLoading ? '' : card.detail}</p>
+                </div>
+                <span className={`rounded-md p-3 ${card.tone}`}>
+                  <card.icon size={24} />
+                </span>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <div className="soft-panel p-6">
+            <div className="flex items-center gap-3">
+              <Clock className="h-5 w-5 text-teal-700" />
+              <h2 className="text-lg font-semibold text-slate-950">Asistencia reciente</h2>
+            </div>
+            {!employeeHealth.attendance ? (
+              <p className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                No pudimos cargar el resumen de asistencia para esta sesion.
+              </p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {attendanceMarks.slice(0, 5).map((mark) => (
+                  <div className="rounded-md border border-slate-200 px-4 py-3" key={mark.id}>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-semibold text-slate-950">{mark.tipo_marcacion || mark.tipo || 'Marcacion'}</p>
+                      <span className="text-xs text-slate-500">{formatDateTimeEC(mark.timestamp)}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {mark.dentro_perimetro === false ? 'Fuera de perimetro' : 'Dentro de perimetro'}
+                      {Number.isFinite(Number(mark.distancia_metros))
+                        ? ` · ${Math.round(Number(mark.distancia_metros || 0))} m`
+                        : ''}
+                    </p>
+                  </div>
+                ))}
+                {attendanceMarks.length === 0 && (
+                  <p className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    No hay marcaciones recientes en esta cuenta.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="soft-panel p-6">
+            <div className="flex items-center gap-3">
+              <CalendarClock className="h-5 w-5 text-teal-700" />
+              <h2 className="text-lg font-semibold text-slate-950">Ruta de hoy</h2>
+            </div>
+            {!employeeHealth.route ? (
+              <p className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                No pudimos consultar la ruta asignada.
+              </p>
+            ) : route ? (
+              <div className="mt-4 space-y-3">
+                <div className="rounded-md bg-slate-50 p-4">
+                  <p className="text-sm text-slate-500">Estado</p>
+                  <p className="mt-1 text-lg font-semibold text-slate-950">{route.status || 'planned'}</p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Pendientes: {route.totals?.pending || 0} · En sitio: {route.totals?.inSite || 0} · Completadas: {route.totals?.completed || 0}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  {(route.stops || []).slice(0, 4).map((stop) => (
+                    <div className="rounded-md border border-slate-200 px-4 py-3" key={stop.id}>
+                      <p className="font-semibold text-slate-950">
+                        {stop.site?.name || stop.unplannedName || 'Parada'}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        {stop.site?.address || stop.unplannedAddress || 'Sin direccion'} · {stop.status || 'pending'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-4 rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                {employeeWorkspace.routeMessage || 'No tienes ruta asignada para hoy.'}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+          <div className="soft-panel p-6">
+            <div className="flex items-center gap-3">
+              <ClipboardCheck className="h-5 w-5 text-teal-700" />
+              <h2 className="text-lg font-semibold text-slate-950">Solicitar permiso</h2>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <label className="text-sm text-slate-600">
+                Fecha inicio
+                <input
+                  className="mt-1 min-h-10 w-full rounded-md border border-slate-300 px-3 py-2"
+                  type="date"
+                  value={permisoDraft.fechaInicio}
+                  onChange={(event) => setPermisoDraft((current) => ({ ...current, fechaInicio: event.target.value }))}
+                />
+              </label>
+              <label className="text-sm text-slate-600">
+                Fecha fin
+                <input
+                  className="mt-1 min-h-10 w-full rounded-md border border-slate-300 px-3 py-2"
+                  type="date"
+                  value={permisoDraft.fechaFin}
+                  onChange={(event) => setPermisoDraft((current) => ({ ...current, fechaFin: event.target.value }))}
+                />
+              </label>
+              <label className="text-sm text-slate-600">
+                Minutos
+                <input
+                  className="mt-1 min-h-10 w-full rounded-md border border-slate-300 px-3 py-2"
+                  type="number"
+                  min="1"
+                  max="1440"
+                  value={permisoDraft.minutos}
+                  onChange={(event) => setPermisoDraft((current) => ({ ...current, minutos: event.target.value }))}
+                />
+              </label>
+              <label className="flex items-center gap-3 pt-6 text-sm text-slate-700">
+                <input
+                  checked={permisoDraft.remunerado}
+                  type="checkbox"
+                  onChange={(event) => setPermisoDraft((current) => ({ ...current, remunerado: event.target.checked }))}
+                />
+                Permiso remunerado
+              </label>
+            </div>
+            <label className="mt-3 block text-sm text-slate-600">
+              Motivo
+              <textarea
+                className="mt-1 min-h-28 w-full rounded-md border border-slate-300 px-3 py-2"
+                value={permisoDraft.motivo}
+                onChange={(event) => setPermisoDraft((current) => ({ ...current, motivo: event.target.value }))}
+                placeholder="Describe el motivo del permiso"
+              />
+            </label>
+            {(permisoMutation.isError) && (
+              <p className="mt-3 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
+                {extractApiError(permisoMutation.error, 'No pudimos registrar tu permiso.')}
+              </p>
+            )}
+            {permisoMutation.isSuccess && (
+              <p className="mt-3 rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                Solicitud registrada. La novedad quedo pendiente de revision.
+              </p>
+            )}
+            <div className="mt-4">
+              <button
+                className="inline-flex min-h-10 items-center justify-center rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300"
+                disabled={permisoMutation.isPending || !permisoDraft.fechaInicio || !permisoDraft.fechaFin || !permisoDraft.motivo.trim()}
+                onClick={submitPermiso}
+                type="button"
+              >
+                {permisoMutation.isPending ? 'Registrando...' : 'Solicitar permiso'}
+              </button>
+            </div>
+          </div>
+
+          <div className="soft-panel p-6">
+            <div className="flex items-center gap-3">
+              <FileText className="h-5 w-5 text-teal-700" />
+              <h2 className="text-lg font-semibold text-slate-950">Movilizacion y rol</h2>
+            </div>
+            <div className="mt-4 space-y-3">
+              <div className="rounded-md border border-slate-200 p-4">
+                <p className="text-sm text-slate-500">Rol del periodo</p>
+                {payroll ? (
+                  <>
+                    <p className="mt-1 text-lg font-semibold text-slate-950">{money(payroll.neto_recibir)}</p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Ingresos: {money(payroll.total_ingresos)} · Deducciones: {money(payroll.total_deducciones)}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600">Estado: {payroll.estado || 'generado'}</p>
+                  </>
+                ) : (
+                  <p className="mt-1 text-sm text-slate-600">Aun no hay rol publicado para {period.label}.</p>
+                )}
+              </div>
+              <div className="rounded-md border border-slate-200 p-4">
+                <p className="text-sm text-slate-500">Informes de movilizacion</p>
+                <div className="mt-3 space-y-2">
+                  {movilizacion.slice(0, 5).map((report) => (
+                    <div className="rounded-md bg-slate-50 px-3 py-2" key={report.id}>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-semibold text-slate-950">{report.periodo || '-'}</span>
+                        <span className="text-xs uppercase tracking-wide text-slate-500">{report.estado || 'pendiente'}</span>
+                      </div>
+                      <p className="mt-1 text-sm text-slate-600">
+                        Total: {money(report.total_usd)} · Dias: {report.dias || 0}
+                        {report.created_at ? ` · ${formatDateEC(report.created_at)}` : ''}
+                      </p>
+                    </div>
+                  ))}
+                  {movilizacion.length === 0 && (
+                    <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                      No tienes informes de movilizacion registrados.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       </div>
