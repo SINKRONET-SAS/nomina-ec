@@ -10,6 +10,30 @@ const {
   resolveLinkedEmployee,
 } = require('../services/employeeAppInviteService');
 
+async function resolveTenantSummary(tenantId) {
+  const result = await db.query(
+    `SELECT id, ruc, razon_social
+     FROM tenants
+     WHERE id = $1
+     LIMIT 1`,
+    [tenantId]
+  );
+
+  if (!result.rows[0]) {
+    return {
+      id: tenantId,
+      ruc: null,
+      razonSocial: null,
+    };
+  }
+
+  return {
+    id: result.rows[0].id,
+    ruc: result.rows[0].ruc || null,
+    razonSocial: result.rows[0].razon_social || null,
+  };
+}
+
 async function resolveEmployee(req) {
   const { employee, linkSource } = await resolveLinkedEmployee({
     tenantId: req.tenantId,
@@ -57,9 +81,11 @@ async function resolveEmployee(req) {
 async function perfil(req, res) {
   try {
     const employee = await resolveEmployee(req);
+    const tenant = await resolveTenantSummary(req.tenantId);
     return res.json({
       success: true,
       employee,
+      tenant,
       user: { email: req.usuario.email, rol: req.usuario.rol },
       correlationId: req.correlationId,
     });

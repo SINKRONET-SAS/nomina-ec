@@ -361,6 +361,7 @@ function Dashboard() {
   if (isEmployeeSession) {
     const employeeWorkspace = data?.employeeWorkspace || {};
     const employee = employeeWorkspace.profile;
+    const employeeTenant = employeeWorkspace.tenant || null;
     const attendanceMarks = employeeWorkspace.attendance?.marcaciones || [];
     const attendanceNovelties = employeeWorkspace.attendance?.novedades || [];
     const route = employeeWorkspace.route;
@@ -412,23 +413,22 @@ function Dashboard() {
     return (
       <div className="space-y-6">
         <EmailVerificationBanner email={usuario?.email} />
-        <section className="soft-panel p-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Acceso PWA de empleado</p>
+        <section className="soft-panel p-6" id="mi-jornada">
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Tu espacio de trabajo</p>
           <h1 className="mt-2 text-2xl font-semibold text-slate-950">
             {employee ? `${employee.nombres || ''} ${employee.apellidos || ''}`.trim() : 'Tu cuenta laboral sigue activa'}
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Este usuario fue habilitado para la PWA con rol empleado. Desde aqui puedes revisar tu jornada,
-            tus novedades, el rol del periodo y el estado de tus informes de movilizacion.
+            Aquí ves tu información dentro de {employeeTenant?.razonSocial || usuario?.tenantRazonSocial || 'tu empresa actual'}:
+            jornada, permisos, ruta y rol del periodo.
           </p>
-          <div className="mt-5 rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-700">
-            Solo los empleados creados tambien como usuarios pueden entrar a la PWA. Los usuarios que no son
-            empleados siguen operando segun su rol, y los empleados sin usuario mantienen acceso solo desde la app.
-          </div>
           <div className="mt-4 flex flex-wrap gap-2 text-sm text-slate-600">
+            <span className="rounded-md bg-slate-100 px-3 py-2">
+              Empresa: {employeeTenant?.razonSocial || usuario?.tenantRazonSocial || 'No definida'}
+            </span>
             <span className="rounded-md bg-slate-100 px-3 py-2">Cargo: {employee?.cargo || 'Sin cargo'}</span>
             <span className="rounded-md bg-slate-100 px-3 py-2">Departamento: {employee?.departamento || 'Sin departamento'}</span>
-            <span className="rounded-md bg-slate-100 px-3 py-2">Cedula: {employee?.cedula || '-'}</span>
+            <span className="rounded-md bg-slate-100 px-3 py-2">Cédula: {employee?.cedula || '-'}</span>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:border-teal-300" to="/dashboard/privacidad">
@@ -454,7 +454,7 @@ function Dashboard() {
           ))}
         </section>
 
-        <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]" id="mi-ruta">
           <div className="soft-panel p-6">
             <div className="flex items-center gap-3">
               <Clock className="h-5 w-5 text-teal-700" />
@@ -529,7 +529,7 @@ function Dashboard() {
         </section>
 
         <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-          <div className="soft-panel p-6">
+          <div className="soft-panel p-6" id="mis-permisos">
             <div className="flex items-center gap-3">
               <ClipboardCheck className="h-5 w-5 text-teal-700" />
               <h2 className="text-lg font-semibold text-slate-950">Solicitar permiso</h2>
@@ -604,7 +604,7 @@ function Dashboard() {
             </div>
           </div>
 
-          <div className="soft-panel p-6">
+          <div className="soft-panel p-6" id="mi-nomina">
             <div className="flex items-center gap-3">
               <FileText className="h-5 w-5 text-teal-700" />
               <h2 className="text-lg font-semibold text-slate-950">Movilizacion y rol</h2>
@@ -625,7 +625,7 @@ function Dashboard() {
                 )}
               </div>
               <div className="rounded-md border border-slate-200 p-4">
-                <p className="text-sm text-slate-500">Informes de movilizacion</p>
+                <p className="text-sm text-slate-500">Informes de movilización</p>
                 <div className="mt-3 space-y-2">
                   {movilizacion.slice(0, 5).map((report) => (
                     <div className="rounded-md bg-slate-50 px-3 py-2" key={report.id}>
@@ -641,7 +641,7 @@ function Dashboard() {
                   ))}
                   {movilizacion.length === 0 && (
                     <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                      No tienes informes de movilizacion registrados.
+                      No tienes informes de movilización registrados.
                     </p>
                   )}
                 </div>

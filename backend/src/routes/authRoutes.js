@@ -15,6 +15,7 @@ function createAuthRoutes({ authRateLimit }) {
   router.post('/email-verification/confirm', authRateLimit, authController.confirmEmailVerification);
   router.post('/register', authRateLimit, authenticateToken, requireRole('superadmin', 'owner'), authController.register);
   router.get('/email-verification/status', authenticateToken, authController.emailVerificationStatus);
+  router.get('/session-context', authenticateToken, authController.sessionContext);
 
   return router;
 }

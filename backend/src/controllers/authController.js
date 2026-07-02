@@ -34,6 +34,8 @@ function buildUserPayload(usuario) {
   return {
     id: usuario.id,
     tenantId: usuario.tenant_id,
+    tenantRuc: usuario.tenant_ruc || null,
+    tenantRazonSocial: usuario.tenant_razon_social || null,
     email: usuario.email,
     rol: normalizeRole(usuario.rol),
     nombres: usuario.nombres,
@@ -449,9 +451,14 @@ async function refreshToken(req, res, next) {
 
     const decoded = verifyJwt(token);
     const result = await db.query(
-      `SELECT id, tenant_id, email, rol, nombres, apellidos, password_hash, activo, email_verificado_en, created_at
-       FROM usuarios
-       WHERE id = $1 AND activo = true`,
+      `SELECT
+         u.id, u.tenant_id, u.email, u.rol, u.nombres, u.apellidos,
+         u.password_hash, u.activo, u.email_verificado_en, u.created_at,
+         t.ruc AS tenant_ruc,
+         t.razon_social AS tenant_razon_social
+       FROM usuarios u
+       LEFT JOIN tenants t ON t.id = u.tenant_id
+       WHERE u.id = $1 AND u.activo = true`,
       [decoded.userId]
     );
 
@@ -680,6 +687,59 @@ async function emailVerificationStatus(req, res) {
   });
 }
 
+async function sessionContext(req, res, next) {
+  try {
+    const result = await db.query(
+      `SELECT
+         u.id, u.tenant_id, u.email, u.rol, u.nombres, u.apellidos, u.email_verificado_en,
+         t.ruc AS tenant_ruc,
+         t.razon_social AS tenant_razon_social,
+         owner_user.nombres AS owner_nombres,
+         owner_user.apellidos AS owner_apellidos
+       FROM usuarios u
+       LEFT JOIN tenants t ON t.id = u.tenant_id
+       LEFT JOIN LATERAL (
+         SELECT o.nombres, o.apellidos
+         FROM usuarios o
+         WHERE o.tenant_id = u.tenant_id
+           AND o.rol = 'owner'
+           AND o.activo = true
+         ORDER BY o.created_at ASC
+         LIMIT 1
+       ) owner_user ON true
+       WHERE u.id = $1 AND u.activo = true
+       LIMIT 1`,
+      [req.usuarioId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({
+        error: 'AUTH_USUARIO_INACTIVO',
+        message: 'Usuario no encontrado o inactivo.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const usuario = result.rows[0];
+    const user = buildUserPayload(usuario);
+
+    return res.json({
+      success: true,
+      user,
+      usuario: user,
+      tenant: {
+        id: usuario.tenant_id,
+        ruc: usuario.tenant_ruc || null,
+        razonSocial: usuario.tenant_razon_social || null,
+        ownerName: [usuario.owner_nombres, usuario.owner_apellidos].filter(Boolean).join(' ').trim() || null,
+      },
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   login,
   register,
@@ -690,4 +750,5 @@ module.exports = {
   requestEmailVerification,
   confirmEmailVerification,
   emailVerificationStatus,
+  sessionContext,
 };

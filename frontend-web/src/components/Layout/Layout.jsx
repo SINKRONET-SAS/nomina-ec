@@ -2,19 +2,45 @@
 // SKNOMINA - Layout principal
 // ============================================================
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Mail, Settings2, LogOut, Menu, ShieldCheck, X, Home, Route } from 'lucide-react';
 import BrandLogo from '../Brand/BrandLogo';
+import { authenticatedApi } from '../../services/authenticatedApi';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { usuario, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const sessionContextQuery = useQuery({
+    queryKey: ['session-context', usuario?.id, usuario?.tenantId, usuario?.rol],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/auth/session-context');
+      return response.data;
+    },
+    enabled: Boolean(usuario),
+    retry: false,
+  });
+  const sessionTenant = sessionContextQuery.data?.tenant || null;
+  const effectiveTenantName = sessionTenant?.razonSocial || usuario?.tenantRazonSocial || null;
+  const effectiveTenantRuc = sessionTenant?.ruc || usuario?.tenantRuc || null;
+  const effectiveOwnerName = sessionTenant?.ownerName || null;
 
   const menuItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Inicio', roles: ['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado'] },
+    {
+      label: 'Mi espacio',
+      icon: Users,
+      roles: ['empleado'],
+      submenu: [
+        { path: '/dashboard#mi-jornada', label: 'Mi jornada' },
+        { path: '/dashboard#mi-ruta', label: 'Ruta y marcaciones' },
+        { path: '/dashboard#mis-permisos', label: 'Permisos' },
+        { path: '/dashboard#mi-nomina', label: 'Rol y movilización' },
+      ]
+    },
     {
       label: 'Empleados',
       icon: Users,
@@ -80,7 +106,7 @@ function Layout() {
     navigate('/login');
   };
 
-  const isActive = (path) => `${location.pathname}${location.search}` === path || location.pathname === path;
+  const isActive = (path) => `${location.pathname}${location.search}${location.hash}` === path || location.pathname === path;
 
   return (
     <div className="app-shell">
@@ -145,12 +171,20 @@ function Layout() {
             className="flex min-h-10 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
             <Home size={18} />
-            Sitio publico
+            Sitio público
           </Link>
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium">{usuario?.nombres}</p>
               <p className="text-xs text-gray-500">{usuario?.rol}</p>
+              {effectiveTenantName && (
+                <p className="mt-1 max-w-[170px] truncate text-xs text-slate-500" title={effectiveTenantName}>
+                  {effectiveTenantName}
+                </p>
+              )}
+              {effectiveTenantRuc && (
+                <p className="text-[11px] text-slate-400">RUC {effectiveTenantRuc}</p>
+              )}
             </div>
             <button
               onClick={handleLogout}
@@ -168,7 +202,7 @@ function Layout() {
       <div className="lg:ml-64">
         {/* Header */}
         <header className="bg-white shadow-sm">
-          <div className="flex items-center justify-between h-16 px-6">
+          <div className="flex h-16 items-center justify-between gap-4 px-6">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden">
               <Menu size={24} />
             </button>
@@ -176,9 +210,22 @@ function Layout() {
               <span className="text-sm text-gray-600">
                 {new Date().toLocaleDateString('es-EC', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </span>
+              {usuario?.rol === 'empleado' && effectiveTenantName && (
+                <div className="hidden min-w-0 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 lg:block">
+                  <p className="truncate text-sm font-semibold text-slate-900" title={effectiveTenantName}>
+                    Estás en {effectiveTenantName}
+                  </p>
+                  <p className="truncate text-xs text-slate-600" title={effectiveOwnerName || ''}>
+                    {effectiveOwnerName ? `La administra ${effectiveOwnerName}` : 'La administra el responsable de la empresa'}
+                    {effectiveTenantRuc ? ` - RUC ${effectiveTenantRuc}` : ''}
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
               <Link className="hidden min-h-10 items-center gap-2 rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:inline-flex" to="/">
                 <Home size={17} />
-                Sitio publico
+                Sitio público
               </Link>
               <button
                 onClick={handleLogout}
