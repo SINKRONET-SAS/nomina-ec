@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -340,6 +340,19 @@ function BankMappingGroups({ records }) {
   );
 }
 
+function dedupeNoveltyRecords(records = []) {
+  const seen = new Set();
+  return records.filter((record) => {
+    const code = String(record.code || record.tipo_novedad || record.name || record.id || '')
+      .trim()
+      .toLowerCase();
+    if (!code) return true;
+    if (seen.has(code)) return false;
+    seen.add(code);
+    return true;
+  });
+}
+
 function Parametrizacion() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
@@ -482,7 +495,10 @@ function Parametrizacion() {
   const activeValues = forms[activeDefinition.key];
   const isEditingActiveRecord = editingRecord?.definitionKey === activeDefinition.key;
   const completion = summary?.onboarding?.completionPercent || 0;
-  const records = recordsForDefinition(summary, activeDefinition);
+  const baseRecords = recordsForDefinition(summary, activeDefinition);
+  const records = activeDefinition.resource === 'noveltyTypes'
+    ? dedupeNoveltyRecords(baseRecords)
+    : baseRecords;
   const legalRecords = summary?.resources?.legalParameters || [];
 
   useEffect(() => {
@@ -701,7 +717,7 @@ function Parametrizacion() {
             <p>SBU, IESS, impuesto a la renta, dÃ©cimos, jornada y reglas que alimentan el cÃ¡lculo.</p>
           </div>
           <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
-            <p className="font-semibold text-slate-950">Cuentas contables de nÃ³mina</p>
+            <p className="font-semibold text-slate-950">Cuentas contables de nómina</p>
             <p>Debe/haber por cada concepto calculado, con vigencia y centro de costo del tenant.</p>
           </div>
         </div>

@@ -5,6 +5,15 @@ function normalizeRole(role) {
   return String(role || '').trim().toLowerCase();
 }
 
+const TENANT_OPERATION_ROLES = new Set(['owner', 'admin_rrhh', 'supervisor']);
+
+function canUseTenantOperationRole(usuario, requiredRoles) {
+  const role = normalizeRole(usuario?.rol);
+  const hasTenant = Boolean(usuario?.tenantId);
+  if (role !== 'superadmin' || !hasTenant) return false;
+  return requiredRoles.some((requiredRole) => TENANT_OPERATION_ROLES.has(requiredRole));
+}
+
 function userFromClaims(decoded = {}) {
   if (!decoded.userId || !decoded.email || !decoded.rol) return null;
 
@@ -95,7 +104,10 @@ const requireRole = (...roles) => {
       });
     }
 
-    if (!roles.includes(req.usuario.rol)) {
+    const normalizedRoles = roles.map(normalizeRole);
+    const role = normalizeRole(req.usuario.rol);
+
+    if (!normalizedRoles.includes(role) && !canUseTenantOperationRole(req.usuario, normalizedRoles)) {
       return res.status(403).json({
         error: 'PERMISO_DENEGADO',
         message: `No tiene permisos para realizar esta acción. Roles requeridos: ${roles.join(', ')}`,
@@ -139,5 +151,6 @@ module.exports = {
   authenticateToken,
   requireFreshUser,
   requireRole,
+  canUseTenantOperationRole,
   generateToken,
 };

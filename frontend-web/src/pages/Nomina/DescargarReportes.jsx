@@ -65,6 +65,7 @@ function DescargarReportes() {
   const [cargando, setCargando] = useState('');
   const [rdepPrecheck, setRdepPrecheck] = useState(null);
   const [form107Precheck, setForm107Precheck] = useState(null);
+  const [saePrecheck, setSaePrecheck] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -130,6 +131,27 @@ function DescargarReportes() {
     }
   };
 
+  const validarSae = async () => {
+    setCargando('sae-precheck');
+    setMessage('');
+    setError('');
+    try {
+      const response = await authenticatedApi.post('/reportes/sae/precheck', { anio, mes });
+      setSaePrecheck(response.data.precheck);
+      setMessage(response.data.precheck.ready
+        ? 'SAE IESS listo para generar con periodo cerrado y contrato vigente.'
+        : 'SAE IESS requiere acciones antes de generar el XML.');
+      return response.data.precheck;
+    } catch (err) {
+      const nextError = err.response?.data?.message || err.response?.data?.error || 'No pudimos validar SAE IESS.';
+      setError(nextError);
+      setSaePrecheck(null);
+      return null;
+    } finally {
+      setCargando('');
+    }
+  };
+
   const generarReporte = async (tipo) => {
     setCargando(tipo);
     setMessage('');
@@ -146,6 +168,15 @@ function DescargarReportes() {
         const precheck = form107Precheck?.anio === anio && form107Precheck?.empleadoId === form107EmpleadoId
           ? form107Precheck
           : await validarFormulario107();
+        if (!precheck?.ready) {
+          setCargando('');
+          return;
+        }
+      }
+      if (tipo === 'sae') {
+        const precheck = saePrecheck?.anio === anio && saePrecheck?.mes === mes
+          ? saePrecheck
+          : await validarSae();
         if (!precheck?.ready) {
           setCargando('');
           return;
@@ -246,7 +277,10 @@ function DescargarReportes() {
             <label className="block text-sm font-medium text-slate-700">Mes</label>
             <select
               value={mes}
-              onChange={(event) => setMes(parseInt(event.target.value, 10))}
+              onChange={(event) => {
+                setMes(parseInt(event.target.value, 10));
+                setSaePrecheck(null);
+              }}
               className="mt-1 rounded-lg border border-slate-300 px-3 py-2"
             >
               {Array.from({ length: 12 }, (_, index) => (
@@ -259,7 +293,12 @@ function DescargarReportes() {
             <input
               type="number"
               value={anio}
-              onChange={(event) => setAnio(parseInt(event.target.value, 10))}
+              onChange={(event) => {
+                setAnio(parseInt(event.target.value, 10));
+                setRdepPrecheck(null);
+                setForm107Precheck(null);
+                setSaePrecheck(null);
+              }}
               className="mt-1 rounded-lg border border-slate-300 px-3 py-2"
             />
           </div>
@@ -332,6 +371,17 @@ function DescargarReportes() {
                 <Download size={20} className="mr-2" />
                 {cargando === report.type ? 'Generando...' : report.button}
               </button>
+              {report.type === 'sae' && (
+                <button
+                  onClick={validarSae}
+                  disabled={cargando === 'sae-precheck'}
+                  className="mt-3 flex w-full items-center justify-center rounded-lg border border-teal-200 px-4 py-2 text-sm font-semibold text-teal-700 hover:border-teal-400 disabled:opacity-50"
+                  type="button"
+                >
+                  <ShieldCheck size={18} className="mr-2" />
+                  {cargando === 'sae-precheck' ? 'Validando...' : 'Validar SAE IESS'}
+                </button>
+              )}
             </article>
           );
         })}
@@ -478,6 +528,29 @@ function DescargarReportes() {
               </span>
               <span className="mt-1 block text-xs text-slate-500">
                 Fuente SRI: {rdepPrecheck.xsd?.officialSourceReconciliation || 'pendiente'}; hash local {rdepPrecheck.xsd?.hashMatchesManifest ? 'coincide' : 'pendiente de revisión'}.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {saePrecheck && (
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {saePrecheck.checks.map((check) => (
+              <div className={`flex items-start gap-3 rounded-md px-4 py-3 ${check.passed ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900'}`} key={check.code}>
+                {check.passed ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />}
+                <div>
+                  <p className="text-sm font-semibold">{check.label}</p>
+                  {check.detail && <p className="mt-1 text-xs opacity-80">{check.detail}</p>}
+                </div>
+              </div>
+            ))}
+            <div className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-700 lg:col-span-2">
+              SAE IESS: <span className="font-mono text-xs">{saePrecheck.manifest?.version}</span>
+              <span className="ml-2 text-xs text-slate-500">
+                {saePrecheck.totalEmpleados || 0} trabajadores, periodo {String(saePrecheck.mes).padStart(2, '0')}/{saePrecheck.anio}.
+              </span>
+              <span className="mt-1 block text-xs text-slate-500">
+                Fuente IESS: {saePrecheck.manifest?.officialSourceReconciliation || 'pendiente'}; {saePrecheck.manifest?.schemaPolicy || ''}
               </span>
             </div>
           </div>

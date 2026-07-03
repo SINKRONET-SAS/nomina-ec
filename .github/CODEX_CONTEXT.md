@@ -1,6 +1,70 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-CIERRE-DEFINITIVO-DIAGNOSTICO-PRELIMINAR-SKNOMINA-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-CIERRE-DEFINITIVO-DIAGNOSTICO-PRELIMINAR-SKNOMINA-2026 |
+| Codigo | DPS26 |
+| Estado | DPS26-01 a DPS26-10 ejecutadas localmente; QA verde; commit final en curso |
+| Fase actual | DPS26-10 qa-release |
+| Requerimiento fuente | Diagnostico preliminar de SINKRONET-SAS/nomina-ec sobre cumplimiento laboral Ecuador 2026, tributario, motor de nomina, inmutabilidad, seguridad, PWA, app movil, reportes y mantenimiento. |
+| Plan doc | `docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_DIAGNOSTICO_PRELIMINAR_SKNOMINA_2026.md` |
+| Matriz | `docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/MATRIZ_DPS26_HALLAZGOS.md` |
+| Contrato | `docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/CONTRATO_DPS26_CIERRE_DEFINITIVO.md` |
+| Runbook | `docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/RUNBOOK_DPS26_QA_RELEASE.md` |
+| Baseline | `docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/REPORTE_DPS26_00_BASELINE.md` |
+| Prompts | `.github/prompts/DPS26-{00..10}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Alcance DPS26
+
+DPS26 transforma el diagnostico preliminar en un cierre por fases del producto completo: backend, PWA, app movil, landing, planes, reportes, documentacion y despliegue. El foco P0 es que las promesas de cumplimiento Ecuador 2026 no queden como texto comercial sin evidencia ejecutable.
+
+### Promesa P0 de reportes oficiales
+
+La promesa visible "Entrega reportes oficiales: RDEP, Formulario 107, SAE IESS y reportes internos con datos trazables" queda clasificada como obligacion P0 de producto. RDEP, Formulario 107 PDF individual anual, SAE IESS y reportes internos deben validarse contra formatos vigentes 2026, reconciliar totales y bloquear descarga productiva si falta fuente tecnica, catalogo, estructura o evidencia.
+
+### Reglas operativas DPS26
+
+- No iniciar runtime sin aprobacion explicita del prompt de fase.
+- Aplicar `RULES.md` en cada archivo `.js`, `.md` y `.json`.
+- No guardar secretos, tokens, URLs privadas, certificados ni credenciales.
+- No cambiar parametros legales 2026 sin fuente oficial, prueba y reporte de impacto.
+- No prometer ATS como reporte de nomina productivo sin confirmar alcance real.
+- Todo bloqueo legal, tributario, tenant, seguridad, PWA o app movil debe quedar visible con lenguaje comercial normal.
+- Cada fase runtime debe cerrar con pruebas, reporte y `AuditLock.json` firmado.
+
+### Cambios locales previos reforzados
+
+Antes de DPS26 habia cambios runtime locales no commiteados que reforzaban el plan. DPS26-01 a DPS26-10 los contrasto contra el repo real, descarto ruido y los cerro con pruebas:
+
+- Fundador/superadmin con tenant operativo: seed, middleware RBAC, utilidades de acceso, dashboard y menu.
+- Planes y landing: catalogo publico compartido, presentacion comercial de planes, precios visibles en landing y gestion superadmin.
+- Login/rutas/pago: enlaces de Planes, Sitio publico y Resultado de pago.
+- Readiness operativo: responsables y tests asociados.
+
+DPS26-05, DPS26-06, DPS26-07 y DPS26-10 reforzaron estos cambios con pruebas antes de commit.
+
+### Fases DPS26
+
+| Fase | Prioridad | Estado | Resumen |
+|------|-----------|--------|---------|
+| DPS26-00 | P0 | completed_documental | Plan, matriz, contrato, runbook, prompts, contexto y AuditLock sin runtime. |
+| DPS26-01 | P0 | completed_local | Contraste README, landing, PWA, app y backend contra codigo real. |
+| DPS26-02 | P0 | completed_local | Matriz laboral Ecuador 2026. |
+| DPS26-03 | P0 | completed_local | Motor de nomina trazable e inmutable. |
+| DPS26-04 | P0 | completed_local | Cumplimiento tributario aplicable. |
+| DPS26-05 | P0 | completed_local | Inmutabilidad, auditoria, RLS, tenant, cifrado, JWT y logs. |
+| DPS26-06 | P1 | completed_local | Paridad comercial, landing, planes, PWA y app. |
+| DPS26-07 | P1 | completed_local | Flujos PWA criticos. |
+| DPS26-08 | P1 | completed_local | App movil GPS/foto, privacidad y stores. |
+| DPS26-09 | P0 | completed_local | RDEP, Formulario 107 PDF, SAE IESS y reportes internos trazables. |
+| DPS26-10 | P0 | completed_local | QA final, dependencias, observabilidad, docs, AuditLock y release. |
+
+---
+
 ## Open Haiky Plan - HAIKY-CIERRE-APK-AAB-SKNOMINA-2026-V5
 
 | Campo | Valor |
@@ -1845,3 +1909,46 @@ Cierre ejecutado CDANV2:
 - `LEG-V2-05`: `backend/src/services/communicationAuditService.js` y `backend/scripts/purge-communication-events.js` agregan purga de eventos vencidos por `retention_until`; script `privacy:purge-communications`.
 - `UX-V2-02`: `app-movil/src/screens/AutoservicioScreen.js` usa `Intl.NumberFormat('es-EC', currency: 'USD')`.
 - Superadmin, seed, Roles PDF, PayPhone/Stripe bloqueado y reportes quedan cerrados por evidencia previa sin duplicar implementacion.
+---
+
+## DPS26 - Cierre definitivo diagnostico preliminar SKNOMINA 2026
+
+Plan: `HAIKY-CIERRE-DEFINITIVO-DIAGNOSTICO-PRELIMINAR-SKNOMINA-2026`.
+
+Estado: DPS26-01 a DPS26-10 ejecutado localmente; commit final preparado.
+
+Artefactos:
+
+- `docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_DIAGNOSTICO_PRELIMINAR_SKNOMINA_2026.md`
+- `docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/MATRIZ_DPS26_HALLAZGOS.md`
+- `docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/CONTRATO_DPS26_CIERRE_DEFINITIVO.md`
+- `docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/RUNBOOK_DPS26_QA_RELEASE.md`
+- `docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/REPORTE_DPS26_00_BASELINE.md`
+- `docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/REPORTE_DPS26_01_10_CIERRE_RUNTIME.md`
+- `.github/prompts/DPS26-00-baseline-documental.md` a `.github/prompts/DPS26-10-qa-release.md`
+- `.vscode/AuditLock.json`
+
+Runtime cerrado:
+
+- Reportes oficiales 2026 reforzados: RDEP mantiene XSD/manifiesto y precheck anual; Formulario 107 PDF usa roles cerrados del ejercicio fiscal y base consistente con RDEP; SAE IESS agrega precheck mensual, manifiesto versionado, bloqueo fail-closed, hash SHA-256, archivo nombrado y panel visible en PWA.
+- Reportes internos se conservan como exportaciones trazables por codigo de reporte, filtros, usuario y capability comercial.
+- Landing y planes quedan con una sola fuente de verdad de catalogo: `frontend-web/src/components/PublicPlansCatalog.jsx`, usado por landing; `/precios` redirige al ancla publica sin duplicar logica ni checkout.
+- Superadmin/fundador conserva tenant operativo, seed, RBAC y acceso a gestion de planes; owners conservan operacion tenant.
+- Parametrizacion deduplica tipos de novedad en PWA y separa valores legales de cuentas contables de nomina.
+- App movil queda alineada con Expo managed: `android.targetSdkVersion` no se declara en `app.json`; `check-store-readiness` valida SDK compatible y URLs/assets de tienda.
+
+Gates DPS26 ejecutados:
+
+- `npm.cmd run contracts`: PASS.
+- `npm.cmd run prisma:validate`: PASS.
+- `npm.cmd --workspace=backend test -- --runInBand`: PASS, 51 suites, 222 tests.
+- `npm.cmd --workspace=frontend-web run build`: PASS.
+- `npm.cmd run check:mobile`: PASS.
+- `npx.cmd expo-doctor`: PASS, 18/18 checks.
+- `git diff --check`: PASS.
+- UTF-8 sin BOM de archivos JS/MD/JSON/MJS modificados: PASS.
+
+Riesgo residual DPS26:
+
+- RDEP, Formulario 107 y SAE IESS deben validarse por profesional tributario/laboral antes de presentacion oficial real.
+- SAE IESS queda protegido por contrato versionado y precheck, pero no sustituye validacion en portal/proceso IESS aplicable.

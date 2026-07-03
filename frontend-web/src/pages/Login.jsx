@@ -70,7 +70,7 @@ function Login() {
             <Link className="inline-flex items-center gap-3 font-semibold text-slate-950 lg:hidden" to="/">
               <BrandLogo imageClassName="h-10 w-10" />
             </Link>
-            <Link className="ml-auto text-sm font-semibold text-teal-800" to="/precios">
+            <Link className="ml-auto text-sm font-semibold text-teal-800" to="/#planes">
               Ver planes
             </Link>
           </div>

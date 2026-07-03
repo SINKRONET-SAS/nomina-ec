@@ -71,6 +71,7 @@ const privacyConsentService = read('backend/src/services/privacyConsentService.j
 const userDataExportService = read('backend/src/services/userDataExportService.js');
 const userDataPurgeService = read('backend/src/services/userDataPurgeService.js');
 const planesPublicos = read('frontend-web/src/pages/Planes.jsx');
+const publicPlansCatalog = read('frontend-web/src/components/PublicPlansCatalog.jsx');
 const planesGestion = read('frontend-web/src/pages/PlanesGestion.jsx');
 const privacidadCuenta = read('frontend-web/src/pages/PrivacidadCuenta.jsx');
 const privacyApi = read('frontend-web/src/services/privacyApi.js');
@@ -217,7 +218,10 @@ assert(paymentController.includes('confirmPayPhonePayment'), 'Confirmacion debe 
 assert(paymentController.includes('PAYMENT_AMOUNT_MISMATCH'), 'Confirmacion debe bloquear monto PayPhone distinto al checkout.');
 assert(paymentController.includes('versionedFromActiveSubscriptions'), 'Gestion de planes debe versionar cuando existen suscripciones activas.');
 assert(app.includes("'/api/pagos/cancelado'"), 'Backend debe exponer cancelacion PayPhone.');
-assert(planesPublicos.includes('checkoutAvailable === false'), 'PWA debe bloquear CTA cuando PayPhone no esta configurado.');
+assert(
+  `${planesPublicos}\n${publicPlansCatalog}`.includes('checkoutAvailable === false'),
+  'PWA debe bloquear CTA cuando PayPhone no esta configurado.'
+);
 assert(beneficiosApi.includes('return response.data;'), 'Gestion de planes debe recibir meta de versionado desde backend.');
 assert(planesGestion.includes('Plan versionado como'), 'Superadmin debe informar versionado de planes con suscriptores.');
 

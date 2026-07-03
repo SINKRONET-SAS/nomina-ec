@@ -3,6 +3,7 @@ import { join } from 'node:path';
 
 const root = process.cwd();
 const appConfig = JSON.parse(readFileSync(join(root, 'app.json'), 'utf8')).expo;
+const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 
 function fail(message) {
   console.error(`[LPA26-STORES] ${message}`);
@@ -33,8 +34,14 @@ if (!Number.isInteger(appConfig.android?.versionCode)) {
   fail('android.versionCode debe ser numerico.');
 }
 
-if (!Number.isInteger(appConfig.android?.targetSdkVersion) || appConfig.android.targetSdkVersion < 35) {
-  fail('android.targetSdkVersion debe ser 35 o superior para Play Console.');
+if (Object.prototype.hasOwnProperty.call(appConfig.android || {}, 'targetSdkVersion')) {
+  fail('android.targetSdkVersion no debe declararse en app.json managed; Expo lo resuelve por SDK/build.');
+}
+
+const expoVersion = String(packageJson.dependencies?.expo || packageJson.devDependencies?.expo || '');
+const expoSdkMajor = Number.parseInt(expoVersion.match(/\d+/)?.[0] || '', 10);
+if (!Number.isInteger(expoSdkMajor) || expoSdkMajor < 54) {
+  fail('Expo SDK debe ser 54 o superior para cumplir target Android 35 en builds de tienda.');
 }
 
 if (!appConfig.ios?.buildNumber) {

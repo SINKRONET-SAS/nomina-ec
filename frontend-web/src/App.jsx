@@ -2,8 +2,8 @@
 // SKNOMINA - Frontend web
 // App.jsx - Componente Principal
 // ============================================================
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
@@ -20,6 +20,7 @@ import PaymentResult from './pages/PaymentResult';
 import LegalText from './pages/LegalText';
 import NotFound from './pages/NotFound';
 import CookieConsent from './components/Privacy/CookieConsent';
+import { hasRoleAccess } from './utils/access';
 import Parametrizacion from './pages/Configuracion/Parametrizacion';
 import Comunicaciones from './pages/Configuracion/Comunicaciones';
 import Auditoria from './pages/Auditoria';
@@ -63,11 +64,32 @@ function ProtectedRoute({ children, requiredRole }) {
     return <Navigate to="/login" replace />;
   }
   
-  if (requiredRole && !requiredRole.includes(usuario.rol)) {
+  if (requiredRole && !hasRoleAccess(usuario, requiredRole)) {
     return <Navigate to="/dashboard" replace />;
   }
   
   return children;
+}
+
+function ScrollToHash() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!location.hash) {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      return;
+    }
+
+    const targetId = decodeURIComponent(location.hash.replace('#', ''));
+    window.setTimeout(() => {
+      const target = document.getElementById(targetId);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 80);
+  }, [location.pathname, location.hash]);
+
+  return null;
 }
 
 function App() {
@@ -75,6 +97,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
+          <ScrollToHash />
           <Routes>
             {/* Rutas públicas */}
             <Route path="/" element={<Landing />} />

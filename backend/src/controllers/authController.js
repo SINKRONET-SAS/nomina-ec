@@ -201,7 +201,9 @@ async function login(req, res, next) {
       });
     }
 
-    if (matchingUsers.length > 1 && !tenantHint.tenantId && !tenantHint.tenantRuc) {
+    const superadminMatch = matchingUsers.find((row) => normalizeRole(row.rol) === 'superadmin');
+
+    if (matchingUsers.length > 1 && !tenantHint.tenantId && !tenantHint.tenantRuc && !superadminMatch) {
       return res.status(409).json({
         error: 'AUTH_TENANT_REQUIRED',
         message: 'Este correo existe en mas de una empresa. Ingresa el RUC de la empresa para continuar.',
@@ -210,7 +212,7 @@ async function login(req, res, next) {
       });
     }
 
-    const usuario = pickAuthenticatedUser(matchingUsers);
+    const usuario = superadminMatch || pickAuthenticatedUser(matchingUsers);
     await db.query('UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = $1', [usuario.id]);
 
     const token = generateToken(usuario);

@@ -196,8 +196,9 @@ function PlanesGestion({ showSuperadminConsole = true }) {
               <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={draft.nombre} onChange={(event) => updateField('nombre', event.target.value)} />
             </label>
             <label className="sm:col-span-2">
-              <span className="text-sm font-medium text-slate-700">Descripción</span>
+              <span className="text-sm font-medium text-slate-700">Promesa comercial</span>
               <textarea className="mt-1 min-h-20 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={draft.descripcion} onChange={(event) => updateField('descripcion', event.target.value)} />
+              <span className="mt-1 block text-xs leading-5 text-slate-500">Texto visible en la landing para explicar a quién ayuda el plan.</span>
             </label>
             <label>
               <span className="text-sm font-medium text-slate-700">Precio mensual centavos</span>

@@ -9,6 +9,7 @@ jest.mock('../services/sriRdepGenerator', () => ({
 
 jest.mock('../services/iessSaeGenerator', () => ({
   generarXML_SAE: jest.fn(),
+  precheckSAE: jest.fn(),
 }));
 
 jest.mock('../services/bancoAebGenerator', () => ({

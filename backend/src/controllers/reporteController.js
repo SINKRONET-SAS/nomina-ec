@@ -2,7 +2,7 @@
 // SKNOMINA - Controlador de Reportes
 // ============================================================
 const { generarXML_RDEP, precheckRDEP } = require('../services/sriRdepGenerator');
-const { generarXML_SAE } = require('../services/iessSaeGenerator');
+const { generarXML_SAE, precheckSAE } = require('../services/iessSaeGenerator');
 const { generarArchivoBanco, precheckArchivoBanco } = require('../services/bancoAebGenerator');
 const {
   generarConsolidadoAnualNomina,
@@ -117,6 +117,32 @@ async function generarSAE(req, res) {
       message: err.message,
     });
     res.status(err.statusCode || 500).json({ error: err.message, correlationId: req.correlationId });
+  }
+}
+
+async function validarSAE(req, res) {
+  try {
+    const { tenantId } = req;
+    const period = requirePeriod(req, res);
+    if (!period) return null;
+    const { anio, mes } = period;
+
+    const resultado = await precheckSAE(tenantId, anio, mes);
+    return res.json({ success: true, precheck: resultado, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[REPORTES] Error precheck SAE', {
+      code: err.code || 'SAE_PRECHECK_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'SAE_PRECHECK_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
   }
 }
 
@@ -421,6 +447,7 @@ module.exports = {
   generarFormulario107: generarFormulario107Ctrl,
   validarFormulario107,
   generarSAE,
+  validarSAE,
   generarArchivoBanco: generarArchivoBancoCtrl,
   validarArchivoBanco,
   reporteAsistencia,

@@ -31,19 +31,64 @@ function hasAllEnv(names) {
   return names.every((name) => Boolean(process.env[name]));
 }
 
+function optionalEnv(name) {
+  return String(process.env[name] || '').trim();
+}
+
+async function upsertTenant(client, tenant) {
+  const result = await client.query(`
+    INSERT INTO tenants (ruc, razon_social, nombre_comercial, configuracion)
+    VALUES ($1, $2, $3, $4)
+    ON CONFLICT (ruc) DO UPDATE SET
+      razon_social = EXCLUDED.razon_social,
+      nombre_comercial = EXCLUDED.nombre_comercial,
+      configuracion = tenants.configuracion || EXCLUDED.configuracion,
+      activo = true,
+      updated_at = NOW()
+    RETURNING id
+  `, [
+    tenant.ruc,
+    tenant.razonSocial,
+    tenant.nombreComercial || tenant.razonSocial,
+    JSON.stringify(tenant.configuracion || {}),
+  ]);
+
+  return result.rows[0];
+}
+
 async function upsertUser(client, user) {
   const passwordHash = await bcrypt.hash(user.password, 10);
+  const email = String(user.email || '').trim().toLowerCase();
+  const existing = user.tenantId
+    ? await client.query(
+      'SELECT id FROM usuarios WHERE tenant_id = $1 AND lower(email) = lower($2) LIMIT 1',
+      [user.tenantId, email]
+    )
+    : await client.query(
+      'SELECT id FROM usuarios WHERE tenant_id IS NULL AND lower(email) = lower($1) AND rol = $2 ORDER BY created_at ASC LIMIT 1',
+      [email, user.role]
+    );
+
+  if (existing.rows[0]) {
+    await client.query(`
+      UPDATE usuarios
+      SET tenant_id = $1,
+          email = $2,
+          password_hash = $3,
+          rol = $4,
+          nombres = $5,
+          apellidos = $6,
+          activo = true,
+          updated_at = NOW()
+      WHERE id = $7
+    `, [user.tenantId, email, passwordHash, user.role, user.names, user.lastNames, existing.rows[0].id]);
+    return;
+  }
+
   await client.query(`
     INSERT INTO usuarios (tenant_id, email, password_hash, rol, nombres, apellidos)
     VALUES ($1, $2, $3, $4, $5, $6)
-    ON CONFLICT (tenant_id, email) DO UPDATE SET
-      password_hash = EXCLUDED.password_hash,
-      rol = EXCLUDED.rol,
-      nombres = EXCLUDED.nombres,
-      apellidos = EXCLUDED.apellidos,
-      activo = true,
-      updated_at = NOW()
-  `, [user.tenantId, user.email, passwordHash, user.role, user.names, user.lastNames]);
+  `, [user.tenantId, email, passwordHash, user.role, user.names, user.lastNames]);
 }
 
 async function main() {
@@ -51,8 +96,22 @@ async function main() {
   await client.connect();
 
   try {
+    let founderTenantId = null;
+    if (hasAllEnv(['FOUNDER_TENANT_RUC', 'FOUNDER_TENANT_RAZON_SOCIAL'])) {
+      const founderTenant = await upsertTenant(client, {
+        ruc: requireEnv('FOUNDER_TENANT_RUC'),
+        razonSocial: requireEnv('FOUNDER_TENANT_RAZON_SOCIAL'),
+        nombreComercial: optionalEnv('FOUNDER_TENANT_NOMBRE_COMERCIAL') || requireEnv('FOUNDER_TENANT_RAZON_SOCIAL'),
+        configuracion: {
+          founderTenant: true,
+          seedSource: 'seed-superadmin-owner',
+        },
+      });
+      founderTenantId = founderTenant.id;
+    }
+
     await upsertUser(client, {
-      tenantId: null,
+      tenantId: founderTenantId,
       email: requireEnv('SUPERADMIN_EMAIL'),
       password: requireEnv('SUPERADMIN_PASSWORD'),
       role: 'superadmin',
@@ -62,27 +121,24 @@ async function main() {
 
     const ownerEnvNames = ['OWNER_TENANT_RUC', 'OWNER_TENANT_RAZON_SOCIAL', 'OWNER_EMAIL', 'OWNER_PASSWORD'];
     if (!hasAllEnv(ownerEnvNames)) {
-      console.log('[SEED] SUPERADMIN verificado. OWNER omitido: la empresa cliente debe registrarse desde la aplicacion.');
+      console.log(founderTenantId
+        ? '[SEED] SUPERADMIN fundador verificado con tenant propio. OWNER cliente omitido.'
+        : '[SEED] SUPERADMIN tecnico verificado sin tenant fundador. OWNER cliente omitido.'
+      );
       return;
     }
 
-    const tenantResult = await client.query(`
-      INSERT INTO tenants (ruc, razon_social, nombre_comercial)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (ruc) DO UPDATE SET
-        razon_social = EXCLUDED.razon_social,
-        nombre_comercial = EXCLUDED.nombre_comercial,
-        activo = true,
-        updated_at = NOW()
-      RETURNING id
-    `, [
-      requireEnv('OWNER_TENANT_RUC'),
-      requireEnv('OWNER_TENANT_RAZON_SOCIAL'),
-      process.env.OWNER_TENANT_NOMBRE_COMERCIAL || requireEnv('OWNER_TENANT_RAZON_SOCIAL'),
-    ]);
+    const tenantResult = await upsertTenant(client, {
+      ruc: requireEnv('OWNER_TENANT_RUC'),
+      razonSocial: requireEnv('OWNER_TENANT_RAZON_SOCIAL'),
+      nombreComercial: optionalEnv('OWNER_TENANT_NOMBRE_COMERCIAL') || requireEnv('OWNER_TENANT_RAZON_SOCIAL'),
+      configuracion: {
+        seedSource: 'seed-superadmin-owner',
+      },
+    });
 
     await upsertUser(client, {
-      tenantId: tenantResult.rows[0].id,
+      tenantId: tenantResult.id,
       email: requireEnv('OWNER_EMAIL'),
       password: requireEnv('OWNER_PASSWORD'),
       role: 'owner',

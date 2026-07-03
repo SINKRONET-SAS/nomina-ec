@@ -2,11 +2,11 @@ const { getLegalParameters } = require('../config/legal-ecuador');
 const { detectLegalParameterDivergence, mergeVersionedParameters } = require('./legalParameterService');
 
 describe('parametros legales Ecuador AIV50', () => {
-  test('mantiene tasas IESS configuradas con fuente pendiente de validacion', () => {
+  test('mantiene tasas IESS configuradas con validacion parcial documentada', () => {
     const legal = getLegalParameters(2026);
     expect(legal.payroll.personalIessRate).toBeCloseTo(0.0945, 4);
     expect(legal.payroll.employerIessRate).toBeCloseTo(0.1115, 4);
-    expect(legal.sourceStatus).toBe('pendiente_validacion_oficial');
+    expect(legal.sourceStatus).toBe('validado_parcial');
     expect(legal.validatedFields).toEqual(expect.arrayContaining([
       'incomeTax',
       'payroll.unifiedBaseSalary',

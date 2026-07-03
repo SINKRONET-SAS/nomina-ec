@@ -32,7 +32,7 @@ function PaymentResult() {
             <Link className="primary-button" to="/dashboard">
               Ir al panel
             </Link>
-            <Link className="secondary-button" to="/precios">
+            <Link className="secondary-button" to="/#planes">
               Revisar planes
             </Link>
           </div>

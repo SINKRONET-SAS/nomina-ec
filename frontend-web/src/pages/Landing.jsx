@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -17,12 +17,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import BrandLogo, { BRAND_NAME } from '../components/Brand/BrandLogo';
-import { fetchPlans } from '../services/publicApi';
-import {
-  formatPublicPlanPrice,
-  normalizePublicPlans,
-  publicPlanActionLabel,
-} from '../config/publicPlanPresentation';
+import PublicPlansCatalog from '../components/PublicPlansCatalog';
 
 const BRAND = BRAND_NAME;
 
@@ -169,23 +164,11 @@ function ProductScene() {
 }
 
 function Landing() {
-  const [publicPlans, setPublicPlans] = useState(() => normalizePublicPlans().slice(0, 3));
-
-  useEffect(() => {
-    let mounted = true;
-    fetchPlans()
-      .then((payload) => {
-        if (!mounted) return;
-        setPublicPlans(normalizePublicPlans(payload.plans).slice(0, 3));
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setPublicPlans(normalizePublicPlans().slice(0, 3));
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const scrollToPlans = (event) => {
+    event.preventDefault();
+    window.history.replaceState(null, '', '/#planes');
+    document.getElementById('planes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <main className="app-shell bg-white">
@@ -195,7 +178,7 @@ function Landing() {
             <BrandLogo imageClassName="h-10 w-10" />
           </Link>
           <nav className="flex items-center gap-2 sm:gap-3">
-            <Link className="hidden text-sm font-semibold text-slate-700 hover:text-slate-950 sm:inline-flex" to="/precios">Planes</Link>
+            <Link className="hidden text-sm font-semibold text-slate-700 hover:text-slate-950 sm:inline-flex" onClick={scrollToPlans} to="/#planes">Planes</Link>
             <Link className="hidden text-sm font-semibold text-slate-700 hover:text-slate-950 sm:inline-flex" to="/soporte">Soporte</Link>
             <Link className="secondary-button min-h-10 px-3" to="/login">
               <LogIn size={17} />
@@ -227,7 +210,7 @@ function Landing() {
             <div className="mt-7 flex flex-wrap gap-3">
               <Link className="primary-button" to="/registro">Empezar prueba <ArrowRight size={18} /></Link>
               <Link className="secondary-button" to="/login">Ingresar a la PWA <LogIn size={18} /></Link>
-              <Link className="secondary-button" to="/precios">Ver planes</Link>
+              <Link className="secondary-button" onClick={scrollToPlans} to="/#planes">Ver planes</Link>
             </div>
             <div className="mt-8 grid max-w-lg grid-cols-2 gap-3 sm:grid-cols-4">
               {metrics.map(([value, label]) => (
@@ -267,7 +250,7 @@ function Landing() {
         </div>
       </section>
 
-      <section className="page-container py-12">
+      <section className="page-container py-12" id="operacion">
         <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase text-teal-800">Ruta operativa</p>
@@ -310,26 +293,15 @@ function Landing() {
         </div>
       </section>
 
-      <section className="page-container py-12">
+      <section className="page-container py-12" id="planes">
         <div className="mb-7 max-w-3xl">
           <p className="text-sm font-semibold uppercase text-teal-800">Planes</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-950">Empieza con una prueba y escala con el mismo catálogo de precios</h2>
+          <h2 className="mt-2 text-2xl font-semibold text-slate-950">Elige el plan para operar tu nómina.</h2>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            Esta vista resume los primeros planes publicados. El detalle completo y el checkout viven en la página de precios.
+            Empieza con una prueba y sube de plan cuando necesites más empleados, empresas o reportes.
           </p>
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          {publicPlans.map((plan, index) => (
-            <article className={`rounded-lg border p-5 shadow-sm ${index === 1 ? 'border-teal-300 bg-teal-50' : 'border-slate-200 bg-white'}`} key={plan.id}>
-              <h3 className="text-lg font-semibold text-slate-950">{plan.nombre}</h3>
-              <p className="mt-3 text-2xl font-semibold text-teal-800">{formatPublicPlanPrice(plan)}</p>
-              <p className="mt-3 min-h-20 text-sm leading-6 text-slate-600">{plan.descripcion}</p>
-              <Link className={index === 1 ? 'primary-button mt-5 w-full' : 'secondary-button mt-5 w-full'} to={plan.id === 'TRIAL' ? '/registro?plan=TRIAL' : '/precios'}>
-                {plan.id === 'TRIAL' ? 'Crear cuenta' : publicPlanActionLabel(plan)}
-              </Link>
-            </article>
-          ))}
-        </div>
+        <PublicPlansCatalog />
       </section>
 
       <section className="border-t border-slate-200 bg-slate-50">

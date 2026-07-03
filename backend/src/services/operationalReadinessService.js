@@ -54,13 +54,13 @@ async function getTenantPayrollReadiness({ tenantId, anio, mes, mode = 'diagnost
     FROM usuarios
     WHERE tenant_id = $1
       AND activo = true
-      AND rol IN ('owner', 'admin_rrhh')
+      AND rol IN ('owner', 'admin_rrhh', 'superadmin')
   `, [tenantId]);
   const ownerSummary = ownerResult.rows[0] || { owners: 0, owners_verificados: 0 };
   if (Number(ownerSummary.owners || 0) === 0) {
-    addIssue(blockers, 'TENANT_SIN_OWNER', 'La empresa no tiene OWNER o RRHH activo.', { tenantId });
+    addIssue(blockers, 'TENANT_SIN_OWNER', 'La empresa no tiene responsable activo.', { tenantId });
   } else if (Number(ownerSummary.owners_verificados || 0) === 0) {
-    addIssue(blockers, 'OWNER_EMAIL_NO_VERIFICADO', 'Verifica el correo de un OWNER/RRHH antes de procesar nomina.', { tenantId });
+    addIssue(blockers, 'OWNER_EMAIL_NO_VERIFICADO', 'Verifica el correo del responsable antes de procesar nomina.', { tenantId });
   }
 
   const periodResult = await db.query(`

@@ -1,83 +1,137 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-CIERRE-APK-AAB-SKNOMINA-2026-V5",
-  "planCode": "APK26V5",
-  "status": "completed_local_qa",
-  "phaseCompleted": "APK26V5-04",
-  "currentPhase": "commit-and-push",
-  "updatedAt": "2026-06-29T21:10:00-05:00",
-  "summary": "APK26V5 cierra auditoria v5: Parametrizacion.jsx se reduce de forma real extrayendo modelo, se corrige ortografia visible en empleados y docs2/ se excluye del tracking publico.",
+  "plan": "HAIKY-CIERRE-DEFINITIVO-DIAGNOSTICO-PRELIMINAR-SKNOMINA-2026",
+  "planCode": "DPS26",
+  "status": "DPS26-10_runtime_completed_commit_pending",
+  "phaseCompleted": "DPS26-10",
+  "currentPhase": "completed",
+  "updatedAt": "2026-07-02T21:44:10-05:00",
+  "summary": "DPS26-01 a DPS26-10 ejecutadas localmente. Se reforzo la promesa P0 de reportes oficiales 2026, se cerro SAE IESS con precheck fail-closed, se alineo Formulario 107 PDF con roles cerrados y base RDEP, se consolido el catalogo publico de planes como fuente unica de verdad y se preservo la separacion fundador/owner con tenant operativo.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: generar plan Haiky APK/AAB v5, prompts por fases, ejecutar el plan considerando CODEX_CONTEXT.md, finalmente commit y push.",
-  "previousAuditLockHash": "D596C4883E304F3F6CEF13D9B8DFB30184C422FAA791C52380858A5A0B11E1B6",
-  "filesModifiedSummary": [
-    ".gitignore",
+  "approvalSource": "Solicitud del usuario: Ejecutar todos los prompts de PLAN_HAIKY_CIERRE_DEFINITIVO_DIAGNOSTICO_PRELIMINAR_SKNOMINA_2026.md, de acuerdo a CODEX_CONTEXT.md, al final commit.",
+  "previousAuditLockHash": "4DAA4D5CE660846B756FE89030E02EC73E291D052CA65168AE5F7E1C7E327376",
+  "filesModified": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/APK26V5-00-baseline.md",
-    ".github/prompts/APK26V5-01-parametrizacion-reduce.md",
-    ".github/prompts/APK26V5-02-ortografia-empleados.md",
-    ".github/prompts/APK26V5-03-docs2-public-governance.md",
-    ".github/prompts/APK26V5-04-qa-release.md",
+    ".github/prompts/DPS26-00-baseline-documental.md",
+    ".github/prompts/DPS26-01-contraste-runtime.md",
+    ".github/prompts/DPS26-02-legal-laboral-ecuador.md",
+    ".github/prompts/DPS26-03-motor-nomina.md",
+    ".github/prompts/DPS26-04-tributario-sri.md",
+    ".github/prompts/DPS26-05-inmutabilidad-seguridad.md",
+    ".github/prompts/DPS26-06-paridad-comercial.md",
+    ".github/prompts/DPS26-07-pwa-procesos-criticos.md",
+    ".github/prompts/DPS26-08-mobile-gps-foto-stores.md",
+    ".github/prompts/DPS26-09-reportes-oficiales.md",
+    ".github/prompts/DPS26-10-qa-release.md",
+    ".vscode/AuditLock.json",
+    "app-movil/app.json",
+    "app-movil/scripts/check-store-readiness.mjs",
+    "backend/.env.example",
+    "backend/scripts/seed-superadmin-owner.js",
+    "backend/src/app.js",
+    "backend/src/app.routes.test.js",
+    "backend/src/config/iess/sae-source-manifest.json",
+    "backend/src/controllers/authController.js",
+    "backend/src/controllers/authController.test.js",
+    "backend/src/controllers/reporteController.js",
+    "backend/src/controllers/reporteController.test.js",
+    "backend/src/middleware/auth.js",
+    "backend/src/services/iessSaeGenerator.js",
+    "backend/src/services/iessSaeGenerator.test.js",
+    "backend/src/services/legalParameterService.test.js",
+    "backend/src/services/operationalReadinessService.js",
+    "backend/src/services/sriFormulario107Service.js",
+    "frontend-web/src/App.jsx",
+    "frontend-web/src/components/Layout/Layout.jsx",
+    "frontend-web/src/components/PublicPlansCatalog.jsx",
+    "frontend-web/src/config/publicPlanPresentation.js",
     "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-    "frontend-web/src/pages/Configuracion/parametrizacion/parametrizacionModel.jsx",
-    "frontend-web/src/pages/Empleados/NuevoEmpleado.jsx",
-    "frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
-    "docs2/ removed from git tracking; files remain local"
+    "frontend-web/src/pages/Dashboard.jsx",
+    "frontend-web/src/pages/Landing.jsx",
+    "frontend-web/src/pages/Login.jsx",
+    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
+    "frontend-web/src/pages/PaymentResult.jsx",
+    "frontend-web/src/pages/Planes.jsx",
+    "frontend-web/src/pages/PlanesGestion.jsx",
+    "frontend-web/src/utils/access.js",
+    "scripts/verify-system-contracts.mjs",
+    "docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/REPORTE_DPS26_01_10_CIERRE_RUNTIME.md"
+  ],
+  "filesModifiedSummary": [
+    "Prompts DPS26-00 a DPS26-10 creados en .github/prompts y contexto actualizado en .github/CODEX_CONTEXT.md.",
+    "SAE IESS queda con manifiesto versionado, precheck mensual, bloqueo fail-closed, hash SHA-256 y endpoint de validacion.",
+    "Formulario 107 PDF queda anclado a roles cerrados del ejercicio fiscal y base consistente con RDEP.",
+    "La PWA muestra validaciones RDEP/Formulario 107/SAE antes de generar archivos oficiales.",
+    "Landing, planes, login y resultado de pago usan el catalogo publico compartido sin duplicar flujo ni checkout.",
+    "Superadmin/fundador mantiene tenant operativo y capacidades de gestion separadas de owners.",
+    "Parametrizacion deduplica tipos de novedad y corrige copy de cuentas contables de nomina.",
+    "App movil queda alineada con Expo managed y check:mobile valida readiness sin targetSdkVersion invalido en app.json."
   ],
   "validationChecks": [
     {
-      "gate": "APK26V5-RULES-READ",
+      "gate": "npm.cmd run contracts",
       "status": "PASS",
-      "detail": "RULES.md leido y aplicado."
+      "detail": "Contratos del sistema verificados, incluyendo catalogo publico de planes y checkout bloqueado cuando no esta configurado."
     },
     {
-      "gate": "APK26V5-PARAMETRIZACION-SPLIT",
+      "gate": "npm.cmd run prisma:validate",
       "status": "PASS",
-      "detail": "Parametrizacion.jsx bajo de 1949 a 861 lineas; modelo extraido a parametrizacionModel.jsx."
+      "detail": "Schema Prisma valido."
     },
     {
-      "gate": "APK26V5-ORTOGRAFIA-EMPLEADOS",
+      "gate": "npm.cmd --workspace=backend test -- --runInBand",
       "status": "PASS",
-      "detail": "rg no encuentra las cadenas auditadas sin tilde en NuevoEmpleado.jsx ni ListaEmpleados.jsx."
+      "detail": "51 suites, 222 tests."
     },
     {
-      "gate": "APK26V5-DOCS2-GITIGNORE",
+      "gate": "npm.cmd --workspace=frontend-web run build",
       "status": "PASS",
-      "detail": ".gitignore incluye docs2/ completo."
+      "detail": "Build Vite/PWA completado."
     },
     {
-      "gate": "APK26V5-DOCS2-UNTRACK",
+      "gate": "npm.cmd run check:mobile",
       "status": "PASS",
-      "detail": "git rm -r --cached docs2/ ejecutado; git ls-files docs2/ devuelve 0."
+      "detail": "Readiness mobile completado sin declarar targetSdkVersion invalido en Expo managed."
     },
     {
-      "gate": "APK26V5-BUILD-WEB",
+      "gate": "npx.cmd expo-doctor",
       "status": "PASS",
-      "detail": ".\\node_modules\\.bin\\vite.cmd build emitio dist y built in 1m 4s; el proceso post-build no libero prompt y se cerro por PID tras salida verde."
+      "detail": "18/18 checks."
     },
     {
-      "gate": "APK26V5-AUTH-REGRESSION",
+      "gate": "git diff --check",
       "status": "PASS",
-      "detail": "npm.cmd --workspace=backend test -- authController.test.js --runInBand: 1 suite, 5 tests."
+      "detail": "Sin errores de whitespace; solo avisos CRLF esperados en Windows."
     },
     {
-      "gate": "APK26V5-DIFF-CHECK",
+      "gate": "UTF8-NO-BOM",
       "status": "PASS",
-      "detail": "git diff --check sin errores; solo avisos LF/CRLF esperados en Windows."
+      "detail": "29 archivos JS/MD/JSON/MJS modificados verificados sin BOM."
     }
   ],
   "fases": [
-    { "phase": "APK26V5-00", "status": "completed" },
-    { "phase": "APK26V5-01", "status": "completed" },
-    { "phase": "APK26V5-02", "status": "completed" },
-    { "phase": "APK26V5-03", "status": "completed" },
-    { "phase": "APK26V5-04", "status": "completed_local_qa" }
+    { "phase": "DPS26-00", "status": "completed_documental" },
+    { "phase": "DPS26-01", "status": "completed_local" },
+    { "phase": "DPS26-02", "status": "completed_local" },
+    { "phase": "DPS26-03", "status": "completed_local" },
+    { "phase": "DPS26-04", "status": "completed_local" },
+    { "phase": "DPS26-05", "status": "completed_local" },
+    { "phase": "DPS26-06", "status": "completed_local" },
+    { "phase": "DPS26-07", "status": "completed_local" },
+    { "phase": "DPS26-08", "status": "completed_local" },
+    { "phase": "DPS26-09", "status": "completed_local" },
+    { "phase": "DPS26-10", "status": "completed_local" }
+  ],
+  "closedCommercialPromises": [
+    "Entrega reportes oficiales: RDEP, Formulario 107, SAE IESS y reportes internos con datos trazables queda tratada como promesa P0.",
+    "Los reportes oficiales bloquean generacion productiva cuando faltan fuente tecnica, periodo cerrado, datos de empleador, catalogo o reconciliacion.",
+    "Los planes visibles en landing y gestion superadmin comparten fuente de presentacion y evitan duplicidad de codigo de catalogo publico."
   ],
   "residualRisk": [
-    "Mover el historial completo de docs2/ a un repositorio privado si se requiere conservar versionado interno.",
-    "Validar manualmente edicion de parametros legales y tabla IR en PWA antes de release comercial.",
-    "Probar APK/AAB en Android 15 antes de Play Console."
+    "RDEP, Formulario 107 y SAE IESS requieren validacion tributaria/laboral profesional antes de presentacion oficial real.",
+    "SAE IESS queda protegido por contrato versionado y precheck, pero no sustituye validacion en portal o proceso IESS aplicable.",
+    "docs2 permanece como evidencia local ignorada por git; si se requiere publicarlo, debe hacerse con aprobacion explicita."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "FD2F528B21E3694FB6E431300D85361C99590C3E06DE8BFD3010D100C1CF6B96"
+  "signature": "C41B2903A8CF9092C9495DA3C258A96411951A140B589D154C3FE9E385C70A7E"
 }

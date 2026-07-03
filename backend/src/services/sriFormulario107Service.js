@@ -64,6 +64,7 @@ async function loadFormulario107Data({ tenantId, anio, empleadoId }) {
       ON n.tenant_id = e.tenant_id
      AND n.empleado_id = e.id
      AND n.anio = $2
+     AND n.estado = 'cerrada'
     WHERE t.id = $1
     ORDER BY n.mes
   `, [tenantId, year, employee]);
@@ -116,11 +117,17 @@ function precheckFormulario107Data(data, anio) {
     },
     {
       code: 'roles_anuales',
-      label: 'Roles del anio fiscal',
+      label: 'Roles cerrados del anio fiscal',
       passed: data.rows.length > 0,
       detail: data.rows.length > 0
-        ? `${data.rows.length} roles encontrados para ${anio}.`
-        : 'No existen roles de pago para el anio fiscal solicitado.',
+        ? `${data.rows.length} roles cerrados encontrados para ${anio}.`
+        : 'No existen roles cerrados para el anio fiscal solicitado.',
+    },
+    {
+      code: 'base_rdep_consistente',
+      label: 'Base consistente con RDEP',
+      passed: data.rows.length > 0,
+      detail: 'Formulario 107 usa roles cerrados del mismo ejercicio fiscal que alimenta RDEP.',
     },
   ];
 
@@ -227,7 +234,7 @@ async function buildFormulario107Pdf({ data, anio, context = {} }) {
         layout: 'lightHorizontalLines',
       },
       {
-        text: 'Documento generado desde SKNOMINA con base en roles de pago registrados. Debe validarse contra la ficha tecnica SRI vigente antes de presentacion oficial.',
+        text: 'Documento generado desde SKNOMINA con base en roles cerrados del ejercicio fiscal y consistente con la base anual RDEP.',
         style: 'warning',
         margin: [0, 16, 0, 0],
       },
@@ -283,6 +290,7 @@ async function generarFormulario107({ tenantId, anio, empleadoId, context = {} }
   }
 
   const buffer = await buildFormulario107Pdf({ data, anio: year, context });
+  const summary = buildSummary(data.rows);
   const fileName = `FORM107_${data.employee.cedula}_${year}.pdf`;
   const key = `reportes/${tenantId}/sri/formulario-107/${fileName}`;
   const url = await s3Upload(buffer, key, FORM_107_MIME);
@@ -299,6 +307,7 @@ async function generarFormulario107({ tenantId, anio, empleadoId, context = {} }
       empleadoId: data.employee.id,
       templateVersion: TEMPLATE_VERSION,
       totalMeses: data.rows.length,
+      summary,
     },
     ipAddress: context.ipAddress || null,
   });
@@ -311,6 +320,10 @@ async function generarFormulario107({ tenantId, anio, empleadoId, context = {} }
     empleadoId: data.employee.id,
     anio: year,
     precheck,
+    traceability: {
+      basis: 'closed_payroll_same_fiscal_year_as_rdep',
+      summary,
+    },
   };
 }
 

@@ -21,7 +21,6 @@
     },
     "android": {
       "package": "ec.com.sknomina.app",
-      "targetSdkVersion": 35,
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

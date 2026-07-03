@@ -28,6 +28,17 @@ describe('app route order', () => {
     expect(source).toContain('reporteController.exportarConsolidadoAnual');
   });
 
+  test('expone precheck SAE IESS antes de generar XML oficial', () => {
+    const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
+    const precheckIndex = source.indexOf("app.post('/api/reportes/sae/precheck'");
+    const generateIndex = source.indexOf("app.post('/api/reportes/sae',");
+
+    expect(precheckIndex).toBeGreaterThanOrEqual(0);
+    expect(generateIndex).toBeGreaterThanOrEqual(0);
+    expect(precheckIndex).toBeLessThan(generateIndex);
+    expect(source).toContain('reporteController.validarSAE');
+  });
+
   test('expone rutas MSF26 para saldos iniciales y facturacion fiscal', () => {
     const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
 
@@ -37,5 +48,14 @@ describe('app route order', () => {
     expect(source).toContain("app.post('/api/facturacion/webhook/facturador'");
     expect(source).toContain("app.get('/api/facturacion/status', requireRole('superadmin')");
     expect(source).toContain("app.post('/api/facturacion/transacciones/:paymentTransactionId/emitir', requireRole('superadmin')");
+  });
+
+  test('restringe gestion de planes comerciales a superadmin', () => {
+    const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
+
+    expect(source).toContain("app.get('/api/pagos/planes/admin', requireRole('superadmin'), paymentController.listAdminPlans)");
+    expect(source).toContain("app.post('/api/pagos/planes', requireRole('superadmin'), requireFreshUser, paymentController.upsertPlan)");
+    expect(source).toContain("app.put('/api/pagos/planes/:planId', requireRole('superadmin'), requireFreshUser, paymentController.upsertPlan)");
+    expect(source).toContain("app.delete('/api/pagos/planes/:planId', requireRole('superadmin'), requireFreshUser, paymentController.deletePlan)");
   });
 });

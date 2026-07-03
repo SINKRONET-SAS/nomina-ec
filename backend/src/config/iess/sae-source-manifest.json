@@ -1,0 +1,37 @@
+{
+  "name": "SAE IESS payroll export contract",
+  "country": "EC",
+  "year": 2026,
+  "observedAt": "2026-07-03",
+  "version": "SAE-IESS-2026-DPS26",
+  "sources": [
+    {
+      "kind": "official_institution",
+      "name": "Instituto Ecuatoriano de Seguridad Social",
+      "url": "https://www.iess.gob.ec/",
+      "status": "official_source_checked_2026",
+      "observedAt": "2026-07-03"
+    },
+    {
+      "kind": "internal_structural_contract",
+      "name": "SKNOMINA SAE monthly payroll export",
+      "sha256": "runtime-generated",
+      "status": "versioned_contract",
+      "observedAt": "2026-07-03"
+    }
+  ],
+  "validationPolicy": {
+    "officialSourceReconciliation": "checked_2026_07_03",
+    "schemaPolicy": "No public XSD is bundled for SAE. SKNOMINA gates generation with employer data, closed payroll, IESS rates and a versioned XML contract before download.",
+    "runtimeGate": "fail_closed_when_manifest_or_closed_payroll_missing"
+  },
+  "requiredFields": [
+    "empleador.ruc",
+    "empleador.razonSocial",
+    "empleador.periodo",
+    "detalleAportantes.aportante.identificacion",
+    "detalleAportantes.aportante.sueldo",
+    "detalleAportantes.aportante.aportePersonal",
+    "detalleAportantes.aportante.aportePatronal"
+  ]
+}

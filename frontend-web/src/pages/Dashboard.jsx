@@ -25,6 +25,7 @@ import { useAuth } from '../context/AuthContext';
 import { authenticatedApi } from '../services/authenticatedApi';
 import { confirmEmailVerification, extractApiError, requestEmailVerification } from '../services/publicApi';
 import { currentPeriodEC, formatDateEC, formatDateTimeEC, todayISOEC } from '../utils/dateFormat';
+import { hasRoleAccess } from '../utils/access';
 
 const monthNames = [
   'Enero',
@@ -81,16 +82,16 @@ function getPeriod() {
   };
 }
 
-function canManageEmployees(role) {
-  return ['owner', 'admin_rrhh', 'supervisor'].includes(role);
+function canManageEmployees(user) {
+  return hasRoleAccess(user, ['owner', 'admin_rrhh', 'supervisor']);
 }
 
-function canManagePayroll(role) {
-  return ['owner', 'admin_rrhh'].includes(role);
+function canManagePayroll(user) {
+  return hasRoleAccess(user, ['owner', 'admin_rrhh']);
 }
 
-function canManageConfiguration(role) {
-  return ['superadmin', 'owner', 'admin_rrhh'].includes(role);
+function canManageConfiguration(user) {
+  return hasRoleAccess(user, ['superadmin', 'owner', 'admin_rrhh']);
 }
 
 async function loadEmployeeDashboardData() {
@@ -133,7 +134,8 @@ async function loadEmployeeDashboardData() {
   };
 }
 
-async function loadDashboardData(role) {
+async function loadDashboardData(user) {
+  const role = user?.rol;
   if (role === 'empleado') {
     return loadEmployeeDashboardData();
   }
@@ -149,14 +151,14 @@ async function loadDashboardData(role) {
     capacidadesResult,
     auditoriaResult,
   ] = await Promise.all([
-    canManageEmployees(role) ? optionalGet('/empleados') : Promise.resolve({ ok: false }),
-    canManageEmployees(role) ? optionalGet('/novedades/pendientes') : Promise.resolve({ ok: false }),
-    canManageEmployees(role) ? optionalGet('/marcaciones/hoy') : Promise.resolve({ ok: false }),
-    canManageConfiguration(role) ? optionalGet('/configuracion/resumen') : Promise.resolve({ ok: false }),
-    canManagePayroll(role) ? optionalGet(`/nomina/${period.year}/${period.month}`) : Promise.resolve({ ok: false }),
+    canManageEmployees(user) ? optionalGet('/empleados') : Promise.resolve({ ok: false }),
+    canManageEmployees(user) ? optionalGet('/novedades/pendientes') : Promise.resolve({ ok: false }),
+    canManageEmployees(user) ? optionalGet('/marcaciones/hoy') : Promise.resolve({ ok: false }),
+    canManageConfiguration(user) ? optionalGet('/configuracion/resumen') : Promise.resolve({ ok: false }),
+    canManagePayroll(user) ? optionalGet(`/nomina/${period.year}/${period.month}`) : Promise.resolve({ ok: false }),
     optionalGet('/pagos/status'),
     optionalGet('/pagos/capabilities'),
-    ['owner', 'superadmin'].includes(role) ? optionalGet('/auditoria?limit=5') : Promise.resolve({ ok: false }),
+    hasRoleAccess(user, ['owner', 'superadmin']) ? optionalGet('/auditoria?limit=5') : Promise.resolve({ ok: false }),
   ]);
 
   const empleados = pickArray(empleadosResult.data, ['empleados', 'items']);
@@ -316,7 +318,7 @@ function Dashboard() {
   const { usuario } = useAuth();
   const role = usuario?.rol;
   const isEmployeeSession = role === 'empleado';
-  const canAudit = ['owner', 'superadmin'].includes(role);
+  const canAudit = hasRoleAccess(usuario, ['owner', 'superadmin']);
   const [permisoDraft, setPermisoDraft] = useState(() => ({
     fechaInicio: todayISOEC(),
     fechaFin: todayISOEC(),
@@ -326,8 +328,8 @@ function Dashboard() {
   }));
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['dashboard-nomina-operativa', role],
-    queryFn: () => loadDashboardData(role),
+    queryKey: ['dashboard-nomina-operativa', role, usuario?.tenantId],
+    queryFn: () => loadDashboardData(usuario),
     enabled: Boolean(role),
     retry: false,
   });

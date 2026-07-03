@@ -191,6 +191,65 @@ describe('authController login', () => {
       ['user-owner']
     );
   });
+
+  test('prioriza superadmin sin pedir RUC cuando el correo tambien existe en una empresa', async () => {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'user-owner',
+            tenant_id: 'tenant-1',
+            tenant_ruc: '0999999999001',
+            tenant_razon_social: 'Empresa Demo',
+            email: 'info@sinkronet.com.ec',
+            rol: 'owner',
+            nombres: 'Owner',
+            apellidos: 'Tenant',
+            password_hash: 'hash-owner',
+            activo: true,
+            email_verificado_en: null,
+            created_at: new Date('2026-06-29T12:00:00Z'),
+          },
+          {
+            id: 'user-superadmin',
+            tenant_id: null,
+            tenant_ruc: null,
+            tenant_razon_social: null,
+            email: 'info@sinkronet.com.ec',
+            rol: 'superadmin',
+            nombres: 'Super',
+            apellidos: 'Admin',
+            password_hash: 'hash-superadmin',
+            activo: true,
+            email_verificado_en: null,
+            created_at: new Date('2026-06-01T12:00:00Z'),
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [] });
+    bcrypt.compare.mockResolvedValue(true);
+    const req = {
+      body: { email: 'info@sinkronet.com.ec', password: 'secret', tenantRuc: '' },
+      correlationId: 'corr-login-superadmin',
+    };
+    const res = createResponse();
+    const next = jest.fn();
+
+    await login(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.usuario).toMatchObject({
+      id: 'user-superadmin',
+      rol: 'superadmin',
+      tenantId: null,
+    });
+    expect(db.query).toHaveBeenNthCalledWith(
+      2,
+      'UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = $1',
+      ['user-superadmin']
+    );
+  });
 });
 
 describe('authController refreshToken', () => {

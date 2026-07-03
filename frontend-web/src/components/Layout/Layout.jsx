@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Mail, Settings2, LogOut, Menu, ShieldCheck, X, Home, Route } from 'lucide-react';
 import BrandLogo from '../Brand/BrandLogo';
 import { authenticatedApi } from '../../services/authenticatedApi';
+import { hasRoleAccess, sessionRoleLabel } from '../../utils/access';
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -98,7 +99,7 @@ function Layout() {
     { path: '/dashboard/auditoria', icon: ShieldCheck, label: 'Auditoría', roles: ['superadmin', 'owner'] },
     { path: '/dashboard/privacidad', icon: ShieldCheck, label: 'Privacidad', roles: ['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado'] },
     { path: '/dashboard/superadmin', icon: CreditCard, label: 'Superadmin', roles: ['superadmin'] },
-    { path: '/precios', icon: CreditCard, label: 'Planes', roles: ['superadmin', 'owner'] },
+    { path: '/dashboard/planes', icon: CreditCard, label: 'Gestión de planes', roles: ['superadmin'] },
   ];
 
   const handleLogout = () => {
@@ -123,7 +124,7 @@ function Layout() {
         
         <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
           {menuItems.map((item, idx) => {
-            if (!item.roles.includes(usuario?.rol)) return null;
+            if (!hasRoleAccess(usuario, item.roles)) return null;
             
             if (item.submenu) {
               return (
@@ -176,7 +177,7 @@ function Layout() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium">{usuario?.nombres}</p>
-              <p className="text-xs text-gray-500">{usuario?.rol}</p>
+              <p className="text-xs text-gray-500">{sessionRoleLabel(usuario)}</p>
               {effectiveTenantName && (
                 <p className="mt-1 max-w-[170px] truncate text-xs text-slate-500" title={effectiveTenantName}>
                   {effectiveTenantName}
