@@ -13,6 +13,7 @@ const {
   RESOURCE_CONFIG,
   createResource,
   deleteResource,
+  syncLegalParametersFromGlobal,
   listResource,
 } = require('./configurationService');
 
@@ -228,5 +229,59 @@ describe('configurationService metadata', () => {
       },
     });
     expect(recordAudit).not.toHaveBeenCalled();
+  });
+});
+
+describe('configurationService legal parameter sync', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('owner sincroniza parametros globales hacia su tenant sin carga manual', async () => {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'global-sbu',
+          tenant_id: null,
+          country_code: 'EC',
+          region_code: 'NACIONAL',
+          period_year: 2026,
+          parameter_key: 'sbu',
+          value: { amount: 470 },
+          unit: 'USD',
+          rounding_mode: 'half_up_2',
+          validation_status: 'validado_oficial',
+          source_name: 'Acuerdo ministerial',
+          source_url: 'https://www.trabajo.gob.ec/',
+          source_date: '2026-01-01',
+          valid_from: '2026-01-01',
+          notes: 'SBU oficial',
+          approved_by: '99999999-9999-9999-9999-999999999999',
+          approved_at: '2026-01-02T00:00:00.000Z',
+        }],
+      })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'tenant-sbu',
+          tenant_id: ownerUser.tenantId,
+          parameter_key: 'sbu',
+        }],
+      });
+    recordAudit.mockResolvedValueOnce();
+
+    const result = await syncLegalParametersFromGlobal(2026, ownerUser, { correlationId: 'corr-sync' });
+
+    expect(result).toEqual(expect.objectContaining({
+      periodYear: 2026,
+      sourceScope: 'global',
+      tenantCount: 1,
+      parameterCount: 1,
+    }));
+    expect(db.query.mock.calls[1][0]).toContain('ON CONFLICT');
+    expect(db.query.mock.calls[1][1][0]).toBe(ownerUser.tenantId);
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'configuracion.sincronizar_parametros_legales_globales',
+      tenantId: ownerUser.tenantId,
+    }));
   });
 });

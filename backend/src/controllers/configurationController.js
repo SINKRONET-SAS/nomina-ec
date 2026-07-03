@@ -104,6 +104,23 @@ async function loadMandatoryLegalParameters(req, res, next) {
   }
 }
 
+async function syncLegalParametersFromGlobal(req, res, next) {
+  try {
+    const data = await configurationService.syncLegalParametersFromGlobal(
+      req.body?.year || new Date().getFullYear(),
+      req.usuario,
+      requestContext(req),
+      {
+        allTenants: Boolean(req.body?.allTenants),
+        tenantId: req.body?.tenantId || null,
+      }
+    );
+    return res.status(201).json({ data, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   summary,
   list,
@@ -113,4 +130,5 @@ module.exports = {
   onboarding,
   completeOnboardingStep,
   loadMandatoryLegalParameters,
+  syncLegalParametersFromGlobal,
 };

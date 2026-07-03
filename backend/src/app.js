@@ -92,6 +92,7 @@ app.get('/api/privacidad/exportar/:userId', privacyController.exportData);
 app.post('/api/privacidad/anonimizar/:userId', requireRole('superadmin'), requireFreshUser, privacyController.anonymize);
 app.post('/api/configuracion/onboarding/:stepCode', requireRole('owner', 'admin_rrhh'), configurationController.completeOnboardingStep);
 app.post('/api/configuracion/parametros-legales/obligatorios', requireRole('superadmin', 'owner', 'admin_rrhh'), requireFreshUser, configurationController.loadMandatoryLegalParameters);
+app.post('/api/configuracion/parametros-legales/sincronizar-globales', requireRole('superadmin', 'owner'), requireFreshUser, configurationController.syncLegalParametersFromGlobal);
 app.get('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.list);
 app.post('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.create);
 app.put('/api/configuracion/:resource/:id', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.update);

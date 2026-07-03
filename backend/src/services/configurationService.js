@@ -802,6 +802,131 @@ async function loadMandatoryLegalParameters(year, user, context = {}) {
   return { periodYear, count: rows.length, rows };
 }
 
+
+async function syncLegalParametersFromGlobal(year, user, context = {}, options = {}) {
+  ensureWriteAllowed(user);
+  const periodYear = Number(year);
+
+  if (!Number.isInteger(periodYear) || periodYear < 2000 || periodYear > 2100) {
+    throw new AppError('El anio fiscal para sincronizar parametros legales no es valido.', {
+      code: 'LEGAL_PARAMETERS_YEAR_INVALID',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+
+  const explicitTenantId = options.tenantId || null;
+  const targetTenantIds = [];
+
+  if (user.rol === 'superadmin' && options.allTenants) {
+    const tenants = await db.query(`
+      SELECT id
+      FROM tenants
+      WHERE activo = true
+      ORDER BY created_at ASC
+    `);
+    targetTenantIds.push(...tenants.rows.map((row) => row.id));
+  } else if (user.rol === 'superadmin' && explicitTenantId) {
+    targetTenantIds.push(explicitTenantId);
+  } else {
+    targetTenantIds.push(resolveTenantId(user, {}));
+  }
+
+  if (targetTenantIds.length === 0) {
+    throw new AppError('No existen empresas activas para sincronizar parametros legales.', {
+      code: 'LEGAL_PARAMETERS_SYNC_NO_TENANTS',
+      statusCode: 404,
+      userId: user.id,
+    });
+  }
+
+  const globalResult = await db.query(`
+    SELECT *
+    FROM legal_parameter_versions
+    WHERE tenant_id IS NULL
+      AND country_code = 'EC'
+      AND region_code = 'NACIONAL'
+      AND period_year = $1
+      AND valid_to IS NULL
+    ORDER BY parameter_key, valid_from DESC, updated_at DESC, created_at DESC
+  `, [periodYear]);
+
+  if (globalResult.rows.length === 0) {
+    throw new AppError('No hay parametros legales globales publicados para el anio indicado.', {
+      code: 'LEGAL_PARAMETERS_GLOBAL_SOURCE_EMPTY',
+      statusCode: 404,
+      userId: user.id,
+    });
+  }
+
+  const synced = [];
+  for (const tenantId of targetTenantIds) {
+    const tenantRows = [];
+    for (const source of globalResult.rows) {
+      const params = [
+        tenantId,
+        source.country_code,
+        source.region_code,
+        source.period_year,
+        source.parameter_key,
+        JSON.stringify(source.value),
+        source.unit,
+        source.rounding_mode,
+        source.validation_status,
+        source.source_name,
+        source.source_url,
+        source.source_date,
+        source.valid_from,
+        source.notes,
+        source.approved_by,
+        source.approved_at,
+        user.id,
+      ];
+      const result = await db.query(`
+        INSERT INTO legal_parameter_versions (
+          tenant_id, country_code, region_code, period_year, parameter_key, value, unit,
+          rounding_mode, validation_status, source_name, source_url, source_date, valid_from,
+          valid_to, notes, approved_by, approved_at, created_by
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NULL, $14, $15, $16, $17)
+        ON CONFLICT (
+          COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid),
+          country_code, region_code, period_year, parameter_key
+        ) WHERE valid_to IS NULL
+        DO UPDATE SET
+          value = EXCLUDED.value,
+          unit = EXCLUDED.unit,
+          rounding_mode = EXCLUDED.rounding_mode,
+          validation_status = EXCLUDED.validation_status,
+          source_name = EXCLUDED.source_name,
+          source_url = EXCLUDED.source_url,
+          source_date = EXCLUDED.source_date,
+          valid_from = EXCLUDED.valid_from,
+          notes = CONCAT(EXCLUDED.notes, ' Sincronizado desde parametros globales por SUPERADMIN.'),
+          approved_by = EXCLUDED.approved_by,
+          approved_at = EXCLUDED.approved_at,
+          updated_at = now()
+        RETURNING *
+      `, params);
+      tenantRows.push(result.rows[0]);
+    }
+
+    await recordAudit({
+      tenantId,
+      userId: user.id,
+      correlationId: context.correlationId,
+      action: 'configuracion.sincronizar_parametros_legales_globales',
+      entity: 'legal_parameter_versions',
+      entityId: null,
+      newData: { periodYear, count: tenantRows.length, parameterKeys: tenantRows.map((row) => row.parameter_key) },
+      ipAddress: context.ipAddress,
+    });
+    synced.push({ tenantId, count: tenantRows.length, parameterKeys: tenantRows.map((row) => row.parameter_key) });
+  }
+
+  return { periodYear, sourceScope: 'global', tenantCount: synced.length, parameterCount: globalResult.rows.length, synced };
+}
+
 async function listResource(resource, user) {
   const config = getResourceConfig(resource);
   const tenantId = user.tenantId || null;
@@ -1519,6 +1644,7 @@ module.exports = {
   RESOURCE_CONFIG,
   ONBOARDING_STEPS,
   loadMandatoryLegalParameters,
+  syncLegalParametersFromGlobal,
   listResource,
   createResource,
   updateResource,
