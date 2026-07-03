@@ -7,7 +7,7 @@ databases:
 services:
   - type: web
     name: sknomina-api
-    env: node
+    runtime: node
     rootDir: backend
     plan: starter
     buildCommand: npm ci && npm run db:migrate && npm run seed:admins
@@ -25,7 +25,17 @@ services:
       - key: REDIS_URL
         sync: false
       - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      - key: EMPLOYEE_INVITE_SECRET
+        generateValue: true
+      - key: EMPLOYEE_APP_INVITE_TTL_DAYS
+        value: "7"
+      - key: BANK_ACCOUNT_ENCRYPTION_KEY
         sync: false
+      - key: REQUIRE_VALIDATED_LEGAL_PARAMETERS
+        value: "true"
       - key: SUPERADMIN_EMAIL
         sync: false
       - key: SUPERADMIN_PASSWORD
@@ -34,12 +44,28 @@ services:
         value: Super
       - key: SUPERADMIN_LAST_NAMES
         value: Admin
+      - key: OWNER_TENANT_RUC
+        sync: false
+      - key: OWNER_TENANT_RAZON_SOCIAL
+        sync: false
+      - key: OWNER_TENANT_NOMBRE_COMERCIAL
+        sync: false
+      - key: OWNER_EMAIL
+        sync: false
+      - key: OWNER_PASSWORD
+        sync: false
+      - key: OWNER_NAMES
+        sync: false
+      - key: OWNER_LAST_NAMES
+        sync: false
       - key: FRONTEND_URL
-        sync: false
+        value: https://sknomina-frontend.onrender.com
       - key: APP_PUBLIC_URL
-        sync: false
+        value: https://sknomina-frontend.onrender.com
       - key: BACKEND_PUBLIC_URL
-        sync: false
+        value: https://sknomina-api.onrender.com
+      - key: MOBILE_APP_ACTIVATION_URL
+        value: sknomina://employee/activate
       - key: PAYPHONE_API_BASE
         value: https://pay.payphonetodoesposible.com
       - key: PAYPHONE_TOKEN
@@ -52,10 +78,26 @@ services:
         value: "12000"
       - key: PAYMENT_PROVIDER
         value: payphone
+      - key: COMMERCIAL_IVA_RATE
+        value: "0.15"
+      - key: PROVIDER_INVOICE_IVA_RATE
+        value: "0.15"
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+      - key: SINKRONET_FACTURADOR_BASE_URL
+        sync: false
+      - key: SINKRONET_FACTURADOR_API_KEY
+        sync: false
+      - key: SINKRONET_FACTURADOR_INVOICE_PATH
+        value: /api/facturas
+      - key: SINKRONET_FACTURADOR_HEALTH_PATH
+        value: /api/health
+      - key: SINKRONET_FACTURADOR_WEBHOOK_SECRET
+        sync: false
+      - key: SINKRONET_FACTURADOR_TIMEOUT_MS
+        value: "15000"
       - key: SMTP_ENABLED
         sync: false
       - key: COMMUNICATION_PROVIDER
@@ -67,7 +109,7 @@ services:
       - key: COMMUNICATION_RETENTION_DAYS
         value: "365"
       - key: COMMUNICATION_EVENT_HASH_SECRET
-        sync: false
+        generateValue: true
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
@@ -104,6 +146,8 @@ services:
         sync: false
       - key: WHATSAPP_TEMPLATE_SYSTEM_TEST
         sync: false
+      - key: STORAGE_DRIVER
+        value: s3
       - key: AWS_ACCESS_KEY_ID
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
@@ -115,7 +159,7 @@ services:
 
   - type: worker
     name: sknomina-worker-cron
-    env: node
+    runtime: node
     rootDir: backend
     plan: starter
     buildCommand: npm ci && npm run db:migrate
@@ -132,7 +176,19 @@ services:
       - key: REDIS_URL
         sync: false
       - key: JWT_SECRET
-        sync: false
+        fromService:
+          type: web
+          name: sknomina-api
+          envVarKey: JWT_SECRET
+      - key: BANK_ACCOUNT_ENCRYPTION_KEY
+        fromService:
+          type: web
+          name: sknomina-api
+          envVarKey: BANK_ACCOUNT_ENCRYPTION_KEY
+      - key: REQUIRE_VALIDATED_LEGAL_PARAMETERS
+        value: "true"
+      - key: STORAGE_DRIVER
+        value: s3
       - key: AWS_ACCESS_KEY_ID
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
@@ -144,10 +200,14 @@ services:
 
   - type: web
     name: sknomina-frontend
-    env: static
+    runtime: static
     rootDir: frontend-web
     buildCommand: npm ci && npm run build
-    staticPublishPath: dist
+    staticPublishPath: ./dist
     envVars:
       - key: VITE_API_URL
-        sync: false
+        value: https://sknomina-api.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
