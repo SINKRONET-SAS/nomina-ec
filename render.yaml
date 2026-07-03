@@ -48,6 +48,14 @@ services:
         value: Super
       - key: SUPERADMIN_LAST_NAMES
         value: Admin
+      # Tenant fundador: si se definen, el SUPERADMIN opera nomina en su propia empresa.
+      - key: FOUNDER_TENANT_RUC
+        sync: false
+      - key: FOUNDER_TENANT_RAZON_SOCIAL
+        sync: false
+      - key: FOUNDER_TENANT_NOMBRE_COMERCIAL
+        sync: false
+      # Owner cliente demo (opcional): crea un segundo tenant con usuario owner.
       - key: OWNER_TENANT_RUC
         sync: false
       - key: OWNER_TENANT_RAZON_SOCIAL
