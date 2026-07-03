@@ -8,6 +8,8 @@ services:
   - type: web
     name: sknomina-api
     runtime: node
+    domains:
+      - api.sknomina.com
     rootDir: backend
     plan: starter
     buildCommand: npm ci && npm run db:migrate && npm run seed:admins
@@ -61,11 +63,11 @@ services:
       - key: OWNER_LAST_NAMES
         sync: false
       - key: FRONTEND_URL
-        value: https://sknomina-frontend.onrender.com
+        value: https://sknomina.com
       - key: APP_PUBLIC_URL
-        value: https://sknomina-frontend.onrender.com
+        value: https://sknomina.com
       - key: BACKEND_PUBLIC_URL
-        value: https://sknomina-api.onrender.com
+        value: https://api.sknomina.com
       - key: MOBILE_APP_ACTIVATION_URL
         value: sknomina://employee/activate
       - key: PAYPHONE_API_BASE
@@ -205,6 +207,8 @@ services:
   - type: web
     name: sknomina-frontend
     runtime: static
+    domains:
+      - sknomina.com
     rootDir: frontend-web
     buildCommand: npm ci --include=optional && npm install @rollup/rollup-linux-x64-gnu@4.61.1 --no-save --no-audit --no-fund && npm run build
     staticPublishPath: ./dist
@@ -212,7 +216,7 @@ services:
       - key: NODE_VERSION
         value: "22.19.0"
       - key: VITE_API_URL
-        value: https://sknomina-api.onrender.com/api
+        value: https://api.sknomina.com/api
     routes:
       - type: rewrite
         source: /*
