@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Banknote, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Banknote } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import PlanFunctionalityList from './PlanFunctionalityList';
 import { extractApiError, fetchPlans, startCheckout } from '../services/publicApi';
 import {
   formatPublicPlanPrice,
   getPlanCommercialPromise,
-  getPlanHighlights,
   normalizePublicPlans,
   publicPlanActionLabel,
 } from '../config/publicPlanPresentation';
@@ -16,6 +16,7 @@ function PublicPlansCatalog() {
   const [paymentCapabilities, setPaymentCapabilities] = useState(null);
   const [error, setError] = useState('');
   const [loadingPlan, setLoadingPlan] = useState('');
+  const [checkoutPlanId, setCheckoutPlanId] = useState('');
   const { token } = useAuth();
   const navigate = useNavigate();
 
@@ -49,6 +50,12 @@ function PublicPlansCatalog() {
       return;
     }
 
+    if (checkoutPlanId !== planId) {
+      setCheckoutPlanId(planId);
+      setError('');
+      return;
+    }
+
     setError('');
     setLoadingPlan(planId);
     try {
@@ -75,7 +82,7 @@ function PublicPlansCatalog() {
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {plans.map((plan, index) => {
           const checkoutBlocked = plan.id !== 'TRIAL' && paymentCapabilities?.checkoutAvailable === false;
-          const highlights = getPlanHighlights(plan);
+          const checkoutSelected = checkoutPlanId === plan.id;
           return (
             <article className={`soft-panel flex flex-col p-6 ${index === 1 ? 'border-teal-300 bg-teal-50' : ''}`} key={plan.id}>
               <div className="flex items-start justify-between gap-4">
@@ -88,25 +95,24 @@ function PublicPlansCatalog() {
                 </span>
               </div>
               <p className="mt-6 text-3xl font-semibold text-slate-950">{formatPublicPlanPrice(plan)}</p>
-              <ul className="mt-5 space-y-3 text-sm text-slate-700">
-                {highlights.map((highlight) => (
-                  <li className="flex items-center gap-2" key={highlight}>
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-700" />
-                    <span>{highlight}</span>
-                  </li>
-                ))}
-                <li className="flex items-center gap-2 text-xs text-slate-500">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-700" />
-                  <span>{plan.empleadosMax || 'Capacidad pactada'} empleados · {plan.usuariosMax || 'usuarios pactados'} usuarios</span>
-                </li>
-              </ul>
+              <div className="mt-5">
+                <PlanFunctionalityList compact plan={plan} />
+              </div>
+              {checkoutSelected && (
+                <div className="mt-5 rounded-md border border-teal-200 bg-white p-4 text-sm text-slate-700">
+                  <p className="font-semibold text-slate-950">Resumen de checkout</p>
+                  <p className="mt-1 leading-6">
+                    Se abrira PayPhone para activar {plan.nombre} con las funcionalidades listadas en esta tarjeta.
+                  </p>
+                </div>
+              )}
               <button
                 className="primary-button mt-6 w-full"
                 disabled={loadingPlan === plan.id || checkoutBlocked}
                 onClick={() => handleCheckout(plan.id)}
                 type="button"
               >
-                {checkoutBlocked ? 'Checkout no configurado' : loadingPlan === plan.id ? 'Abriendo checkout...' : publicPlanActionLabel(plan)}
+                {checkoutBlocked ? 'Checkout no configurado' : loadingPlan === plan.id ? 'Abriendo checkout...' : checkoutSelected ? 'Continuar a PayPhone' : publicPlanActionLabel(plan)}
                 {loadingPlan !== plan.id && <ArrowRight size={18} />}
               </button>
             </article>

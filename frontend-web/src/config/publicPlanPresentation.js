@@ -84,6 +84,9 @@ export function normalizePublicPlan(plan = {}) {
     id: String(plan.id || '').trim().toUpperCase(),
     nombre: normalizeBrandText(plan.nombre),
     descripcion: normalizeBrandText(plan.descripcion),
+    archivosBancarios: Boolean(plan.archivosBancarios),
+    reportesAvanzados: Boolean(plan.reportesAvanzados),
+    apiAccess: Boolean(plan.apiAccess),
     appMovil: Boolean(plan.appMovil),
     rutasCampo: Boolean(plan.rutasCampo),
   };
@@ -134,4 +137,66 @@ export function getPlanHighlights(plan = {}) {
     `Empleados: ${plan.empleadosMax || 'pactado'}`,
     `Empresas: ${plan.empresasMax || 1}`,
   ].slice(0, 4);
+}
+
+export function getPlanFunctionality(plan = {}) {
+  const support = plan.soporte ? `Soporte ${String(plan.soporte).toLowerCase()}` : 'Soporte segun plan';
+  return [
+    {
+      key: 'payroll',
+      label: 'Nomina mensual, roles y novedades',
+      enabled: true,
+      group: 'base',
+    },
+    {
+      key: 'attendance',
+      label: 'Asistencia y marcaciones',
+      enabled: true,
+      group: 'base',
+    },
+    {
+      key: 'mobileApp',
+      label: 'App movil para empleados',
+      enabled: Boolean(plan.appMovil),
+      group: 'operacion',
+    },
+    {
+      key: 'fieldRoutes',
+      label: 'Rutas de campo y visitas por tienda',
+      enabled: Boolean(plan.rutasCampo),
+      group: 'operacion',
+    },
+    {
+      key: 'bankFiles',
+      label: 'Archivo bancario de pagos',
+      enabled: Boolean(plan.archivosBancarios),
+      group: 'nomina',
+    },
+    {
+      key: 'advancedReports',
+      label: 'Reportes avanzados y trazabilidad',
+      enabled: Boolean(plan.reportesAvanzados),
+      group: 'reportes',
+    },
+    {
+      key: 'apiAccess',
+      label: 'API externa para integraciones',
+      enabled: Boolean(plan.apiAccess),
+      group: 'integraciones',
+    },
+    {
+      key: 'support',
+      label: support,
+      enabled: true,
+      group: 'soporte',
+    },
+  ];
+}
+
+export function getPlanLimits(plan = {}) {
+  return [
+    `${plan.empleadosMax || 'Capacidad pactada'} empleados`,
+    `${plan.empresasMax || 1} empresa${Number(plan.empresasMax || 1) === 1 ? '' : 's'}`,
+    `${plan.usuariosMax || 'Usuarios pactados'} usuarios`,
+  ];
 }

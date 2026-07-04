@@ -74,6 +74,7 @@ const userDataPurgeService = read('backend/src/services/userDataPurgeService.js'
 const planesPublicos = read('frontend-web/src/pages/Planes.jsx');
 const publicPlansCatalog = read('frontend-web/src/components/PublicPlansCatalog.jsx');
 const publicPlanPresentation = read('frontend-web/src/config/publicPlanPresentation.js');
+const registroWeb = read('frontend-web/src/pages/Register.jsx');
 const planesGestion = read('frontend-web/src/pages/PlanesGestion.jsx');
 const rutasCampo = read('frontend-web/src/pages/Asistencia/RutasCampo.jsx');
 const privacidadCuenta = read('frontend-web/src/pages/PrivacidadCuenta.jsx');
@@ -236,6 +237,10 @@ assert(app.includes("'/api/mobile/me', requireRole('empleado', 'owner', 'admin_r
 assert(app.includes("'/api/mobile/ruta/hoy', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan"), 'Rutas dentro de app movil deben exigir app y rutas.');
 assert(planesGestion.includes('appMovil') && planesGestion.includes('rutasCampo'), 'Gestion de planes debe mostrar canales app movil y rutas de campo.');
 assert(publicPlanPresentation.includes('App movil de asistencia') && publicPlanPresentation.includes('Rutas de campo'), 'Catalogo publico debe comunicar app movil y rutas cuando el plan las ofrece.');
+assert(publicPlanPresentation.includes('getPlanFunctionality'), 'Catalogo publico debe exponer matriz de funcionalidades por plan.');
+assert(publicPlansCatalog.includes('PlanFunctionalityList'), 'Sitio publico debe mostrar funcionalidades ofrecidas por cada plan.');
+assert(publicPlansCatalog.includes('Resumen de checkout') && publicPlansCatalog.includes('Continuar a PayPhone'), 'Checkout publico debe mostrar resumen antes de redirigir a PayPhone.');
+assert(registroWeb.includes('PlanFunctionalityList') && registroWeb.includes('Resumen de checkout'), 'Registro/checkout debe mostrar funcionalidades del plan seleccionado.');
 assert(rutasCampo.includes('fetchPlanCapabilities') && rutasCampo.includes('Canal bloqueado por plan'), 'Pantalla de rutas debe mostrar bloqueo comercial del plan.');
 assert(app.includes("'/api/pagos/cancelado'"), 'Backend debe exponer cancelacion PayPhone.');
 assert(

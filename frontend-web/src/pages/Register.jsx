@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, UserRound } from 'lucide-react';
-import { extractApiError, publicRegister } from '../services/publicApi';
+import PlanFunctionalityList from '../components/PlanFunctionalityList';
+import { formatPublicPlanPrice, normalizePublicPlans } from '../config/publicPlanPresentation';
+import { extractApiError, fetchPlans, publicRegister } from '../services/publicApi';
 import { useAuth } from '../context/AuthContext';
 import BrandLogo from '../components/Brand/BrandLogo';
 
@@ -25,10 +27,31 @@ function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [plans, setPlans] = useState(() => normalizePublicPlans());
   const { setSessionFromPayload } = useAuth();
   const navigate = useNavigate();
 
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const selectedPlan = useMemo(
+    () => plans.find((plan) => plan.id === String(form.planId || '').trim().toUpperCase()) || normalizePublicPlans().find((plan) => plan.id === 'TRIAL'),
+    [form.planId, plans]
+  );
+
+  useEffect(() => {
+    let mounted = true;
+    fetchPlans()
+      .then((payload) => {
+        if (!mounted) return;
+        setPlans(normalizePublicPlans(payload.plans));
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setPlans(normalizePublicPlans());
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -118,11 +141,26 @@ function Register() {
             <label className="space-y-2">
               <span className="auth-label">Plan</span>
               <select className="auth-input" value={form.planId} onChange={(e) => update('planId', e.target.value)}>
-                {['TRIAL', 'MICRO', 'PYME', 'EMPRESA', 'CORPORATIVO'].map((plan) => (
-                  <option key={plan} value={plan}>{plan}</option>
+                {plans.map((plan) => (
+                  <option key={plan.id} value={plan.id}>{plan.nombre} - {formatPublicPlanPrice(plan)}</option>
                 ))}
               </select>
             </label>
+            {selectedPlan && (
+              <section className="rounded-md border border-slate-200 bg-white p-4 md:col-span-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-teal-800">Resumen de checkout</p>
+                    <h3 className="mt-1 text-lg font-semibold text-slate-950">{selectedPlan.nombre}</h3>
+                    <p className="mt-1 text-sm leading-6 text-slate-600">{selectedPlan.descripcion}</p>
+                  </div>
+                  <p className="text-xl font-semibold text-slate-950">{formatPublicPlanPrice(selectedPlan)}</p>
+                </div>
+                <div className="mt-4">
+                  <PlanFunctionalityList compact plan={selectedPlan} />
+                </div>
+              </section>
+            )}
             <label className="space-y-2">
               <span className="auth-label">Nombres</span>
               <div className="relative">
