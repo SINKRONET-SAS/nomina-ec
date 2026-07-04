@@ -194,7 +194,7 @@ function Comunicaciones() {
         <ChannelCard
           icon={MessageCircle}
           title="WhatsApp Business"
-          description="Canal complementario para activar la app movil de asistencia y futuras acciones operativas."
+          description="Canal complementario para activar la app móvil de asistencia y futuras acciones operativas."
           channel={whatsapp}
         >
           <Definition label="Graph API" value={whatsapp.graphApiVersion} />
@@ -269,7 +269,7 @@ function Comunicaciones() {
           </p>
           <dl className="mt-4 grid gap-3 text-sm">
             <Definition label="Contenido de mensajes" value={compliance.storesMessageContent ? 'almacenado' : 'no almacenado'} />
-            <Definition label="Codigos de verificacion" value={compliance.storesVerificationCodes ? 'almacenados' : 'solo hash operativo'} />
+            <Definition label="Códigos de verificación" value={compliance.storesVerificationCodes ? 'almacenados' : 'solo hash operativo'} />
             <Definition label="Retencion eventos" value={`${compliance.eventRetentionDays || 365} dias`} />
             <Definition label="Base de control" value={compliance.legalBasis || 'LOPDP_EC'} />
           </dl>

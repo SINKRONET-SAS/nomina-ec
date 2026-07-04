@@ -54,8 +54,8 @@ export default function MarcacionScreen({ onLogout }) {
 
     return new Promise((resolve) => {
       Alert.alert(
-        'Uso de ubicacion para asistencia',
-        'SKNOMINA usara tu ubicacion GPS solo para registrar la hora y el lugar de tu marcacion laboral. Tu empleador trata estos datos para control de asistencia, conforme a la LOPDP y la relacion laboral. Puedes cancelar; en ese caso la marcacion movil no se registrara.',
+        'Uso de ubicación para asistencia',
+        'SKNOMINA usará tu ubicación GPS solo para registrar la hora y el lugar de tu marcación laboral. Tu empleador trata estos datos para control de asistencia, conforme a la LOPDP y la relación laboral. Puedes cancelar; en ese caso la marcación móvil no se registrará.',
         [
           {
             text: 'Cancelar',
@@ -87,7 +87,7 @@ export default function MarcacionScreen({ onLogout }) {
     if (!noticeAccepted) {
       setPermissionStatus('denied');
       setUbicacion(null);
-      setStatus({ type: 'error', text: 'No se solicito GPS porque cancelaste el aviso de privacidad. Solicita a RRHH registrar una novedad manual si corresponde.' });
+      setStatus({ type: 'error', text: 'No se solicitó GPS porque cancelaste el aviso de privacidad. Solicita a RRHH registrar una novedad manual si corresponde.' });
       return false;
     }
 
@@ -220,17 +220,17 @@ export default function MarcacionScreen({ onLogout }) {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardLabel}>GPS y ubicacion actual</Text>
+        <Text style={styles.cardLabel}>GPS y ubicación actual</Text>
         <Text style={gpsReady ? styles.cardDetail : styles.warningText}>
           Permiso GPS: {permissionStatus === 'checking' ? 'verificando' : (gpsReady ? 'activo' : 'bloqueado')}
         </Text>
         {ubicacion ? (
-          <Text style={styles.mono}>Lat {ubicacion.lat.toFixed(6)} | Lng {ubicacion.lng.toFixed(6)} | Precision {Math.round(ubicacion.accuracy || 0)} m</Text>
+          <Text style={styles.mono}>Lat {ubicacion.lat.toFixed(6)} | Lng {ubicacion.lng.toFixed(6)} | Precisión {Math.round(ubicacion.accuracy || 0)} m</Text>
         ) : (
-          <Text style={styles.cardDetail}>Ubicacion pendiente</Text>
+          <Text style={styles.cardDetail}>Ubicación pendiente</Text>
         )}
         <TouchableOpacity style={styles.secondaryButton} onPress={obtenerUbicacion}>
-          <Text style={styles.secondaryButtonText}>{gpsReady ? 'Actualizar ubicacion' : 'Reintentar permiso GPS'}</Text>
+          <Text style={styles.secondaryButtonText}>{gpsReady ? 'Actualizar ubicación' : 'Reintentar permiso GPS'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -386,16 +386,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   startButton: {
-    backgroundColor: '#0f766e',
+    backgroundColor: '#16a34a',
   },
   endButton: {
-    backgroundColor: '#b91c1c',
+    backgroundColor: '#dc2626',
   },
   lunchStartButton: {
-    backgroundColor: '#0369a1',
+    backgroundColor: '#d97706',
   },
   lunchEndButton: {
-    backgroundColor: '#0f766e',
+    backgroundColor: '#0369a1',
   },
   disabledButton: {
     backgroundColor: '#cbd5e1',

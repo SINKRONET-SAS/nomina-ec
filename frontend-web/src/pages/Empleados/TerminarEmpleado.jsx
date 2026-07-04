@@ -36,8 +36,8 @@ function TerminarEmpleado() {
           <h2 className="mb-4 text-lg font-semibold">Detalle de Liquidacion</h2>
           <div className="space-y-2">
             <p><strong>Empleado:</strong> {resultado.nombre}</p>
-            <p><strong>Cedula:</strong> {resultado.cedula}</p>
-            <p><strong>Anios de servicio:</strong> {resultado.aniosServicio}</p>
+            <p><strong>Cédula:</strong> {resultado.cedula}</p>
+            <p><strong>Años de servicio:</strong> {resultado.aniosServicio}</p>
             <hr className="my-4" />
             <div className="grid grid-cols-2 gap-2">
               <p>Sueldo pendiente:</p><p className="text-right">${resultado.liquidacion.sueldoPendiente}</p>

@@ -38,7 +38,7 @@ function requirePeriod(req, res) {
   if (!Number.isInteger(anio) || anio < 2020 || anio > 2100) {
     res.status(400).json({
       error: 'PERIODO_ANIO_INVALIDO',
-      message: 'Selecciona un año valido para el periodo.',
+      message: 'Selecciona un año válido para el período.',
       correlationId: req.correlationId,
     });
     return null;
@@ -46,7 +46,7 @@ function requirePeriod(req, res) {
   if (!Number.isInteger(mes) || mes < 1 || mes > 12) {
     res.status(400).json({
       error: 'PERIODO_MES_INVALIDO',
-      message: 'Selecciona un mes valido entre 1 y 12.',
+      message: 'Selecciona un mes válido entre 1 y 12.',
       correlationId: req.correlationId,
     });
     return null;
@@ -154,7 +154,7 @@ async function validarFormulario107(req, res) {
     if (!anio || !empleadoId) {
       return res.status(400).json({
         error: 'FORM107_PARAMETROS_REQUERIDOS',
-        message: 'Anio y empleado son requeridos para validar Formulario 107.',
+        message: 'Año y empleado son requeridos para validar Formulario 107.',
         correlationId: req.correlationId,
       });
     }
@@ -186,7 +186,7 @@ async function generarFormulario107Ctrl(req, res) {
     if (!anio || !empleadoId) {
       return res.status(400).json({
         error: 'FORM107_PARAMETROS_REQUERIDOS',
-        message: 'Anio y empleado son requeridos para generar Formulario 107.',
+        message: 'Año y empleado son requeridos para generar Formulario 107.',
         correlationId: req.correlationId,
       });
     }
@@ -381,7 +381,7 @@ async function exportarNomina(req, res) {
 
     return res.json({ success: true, reporte: resultado, correlationId: req.correlationId });
   } catch (err) {
-    console.error('[REPORTES] Error exportando nomina', {
+    console.error('[REPORTES] Error exportando nómina', {
       code: err.code || 'REPORTE_NOMINA_EXPORT_ERROR',
       statusCode: err.statusCode || 500,
       correlationId: req.correlationId,
@@ -401,7 +401,7 @@ async function exportarConsolidadoAnual(req, res) {
     if (!Number.isInteger(anio) || anio < 2020 || anio > 2100) {
       return res.status(400).json({
         error: 'PERIODO_ANIO_INVALIDO',
-        message: 'Selecciona un anio valido para el consolidado anual.',
+        message: 'Selecciona un año válido para el consolidado anual.',
         correlationId: req.correlationId,
       });
     }
@@ -426,7 +426,7 @@ async function exportarConsolidadoAnual(req, res) {
 
     return res.json({ success: true, reporte: resultado, correlationId: req.correlationId });
   } catch (err) {
-    console.error('[REPORTES] Error exportando consolidado anual de nomina', {
+    console.error('[REPORTES] Error exportando consolidado anual de nómina', {
       code: err.code || 'REPORTE_NOMINA_ANUAL_EXPORT_ERROR',
       statusCode: err.statusCode || 500,
       correlationId: req.correlationId,

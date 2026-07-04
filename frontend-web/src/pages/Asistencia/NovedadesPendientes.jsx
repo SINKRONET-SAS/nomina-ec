@@ -40,7 +40,7 @@ function NovedadesPendientes() {
   const crearMutation = useMutation({
     mutationFn: (payload) => authenticatedApi.post('/novedades', payload),
     onSuccess: () => {
-      setMessage('Novedad manual registrada para revision.');
+      setMessage('Novedad manual registrada para revisión.');
       setError('');
       setForm(initialForm);
       queryClient.invalidateQueries({ queryKey: ['novedades-pendientes'] });
@@ -128,7 +128,7 @@ function NovedadesPendientes() {
       <div>
         <h1 className="text-2xl font-bold text-slate-950">Novedades manuales y pendientes</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Registra ajustes manuales de nomina o asistencia y aprueba los pendientes antes de calcular el periodo.
+          Registra ajustes manuales de nómina o asistencia y aprueba los pendientes antes de calcular el período.
         </p>
       </div>
       {message && <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}
@@ -178,8 +178,8 @@ function NovedadesPendientes() {
             >
               <option value="hora_extra_50">Hora extra 50%</option>
               <option value="hora_extra_100">Hora extra 100%</option>
-              <option value="bono_desempeno">Bono de desempeno</option>
-              <option value="comision">Comision</option>
+              <option value="bono_desempeno">Bono de desempeño</option>
+              <option value="comision">Comisión</option>
               <option value="permiso_con_sueldo">Permiso con sueldo</option>
               <option value="permiso_sin_sueldo">Permiso sin sueldo</option>
               <option value="falta">Falta injustificada</option>
@@ -210,7 +210,7 @@ function NovedadesPendientes() {
             />
           </label>
           <label className="block text-sm font-medium text-slate-700 md:col-span-2 xl:col-span-3">
-            Justificacion
+            Justificación
             <textarea
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
               rows="3"

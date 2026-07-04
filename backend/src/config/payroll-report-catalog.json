@@ -2,18 +2,18 @@
   "schemaVersion": 1,
   "planCode": "ONI26",
   "phase": "ONI26-12",
-  "purpose": "Catalogo de reportes de nomina y exportaciones auditables.",
+  "purpose": "Catálogo de reportes de nómina y exportaciones auditables.",
   "reports": [
     {
       "code": "PAYROLL_SUMMARY",
-      "name": "Resumen de nomina",
+      "name": "Resumen de nómina",
       "exports": ["pdf", "xlsx", "csv"],
       "permissions": ["reports.read", "reports.export"],
       "filters": ["periodId", "departmentId", "costCenterId"]
     },
     {
       "code": "PAYROLL_DETAIL_TABULAR",
-      "name": "Detalle tabular de nomina",
+      "name": "Detalle tabular de nómina",
       "exports": ["xlsx", "csv"],
       "permissions": ["reports.export"],
       "filters": ["periodId", "employeeId", "departmentId"]

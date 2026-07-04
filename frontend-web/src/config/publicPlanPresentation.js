@@ -2,7 +2,7 @@ export const FALLBACK_PUBLIC_PLANS = [
   {
     id: 'TRIAL',
     nombre: 'Prueba',
-    descripcion: 'Valida el ciclo completo de nomina, asistencia, roles y reportes antes de pagar.',
+    descripcion: 'Valida el ciclo completo de nómina, asistencia, roles y reportes antes de pagar.',
     precioMensualCentavos: 0,
     empleadosMax: 10,
     empresasMax: 1,
@@ -15,7 +15,7 @@ export const FALLBACK_PUBLIC_PLANS = [
   {
     id: 'MICRO',
     nombre: 'Micro',
-    descripcion: 'Opera nomina mensual de una empresa pequena con asistencia, roles y archivo bancario.',
+    descripcion: 'Opera nómina mensual de una empresa pequeña con asistencia, roles y archivo bancario.',
     precioMensualCentavos: 1900,
     empleadosMax: 25,
     empresasMax: 1,
@@ -41,7 +41,7 @@ export const FALLBACK_PUBLIC_PLANS = [
   {
     id: 'EMPRESA',
     nombre: 'Empresa',
-    descripcion: 'Operacion multiempresa con auditoria visible, soporte ampliado y reportes avanzados.',
+    descripcion: 'Operación multiempresa con auditoría visible, soporte ampliado y reportes avanzados.',
     precioMensualCentavos: 9900,
     empleadosMax: 500,
     empresasMax: 10,
@@ -56,17 +56,17 @@ export const FALLBACK_PUBLIC_PLANS = [
 
 const PLAN_COMMERCIAL_PROMISE = {
   TRIAL: 'Prueba controlada para validar el cierre mensual completo sin compromiso.',
-  MICRO: 'Para negocios pequenos que necesitan pagar nomina sin improvisar archivos ni reportes.',
-  PYME: 'Para equipos de RRHH que requieren asistencia, bancos, reportes y auditoria en cada periodo.',
-  EMPRESA: 'Para grupos con varias empresas, mayor volumen operativo y supervision comercial.',
-  CORPORATIVO: 'Para operacion a medida con acompanamiento y capacidad pactada.',
+  MICRO: 'Para negocios pequeños que necesitan pagar nómina sin improvisar archivos ni reportes.',
+  PYME: 'Para equipos de RRHH que requieren asistencia, bancos, reportes y auditoría en cada periodo.',
+  EMPRESA: 'Para grupos con varias empresas, mayor volumen operativo y supervisión comercial.',
+  CORPORATIVO: 'Para operación a medida con acompañamiento y capacidad pactada.',
 };
 
 const PLAN_HIGHLIGHTS = {
-  TRIAL: ['Flujo completo de prueba', 'App movil de asistencia', 'Reportes de validacion'],
-  MICRO: ['Una empresa activa', 'App movil de asistencia', 'Archivo bancario incluido'],
-  PYME: ['Hasta 3 empresas', 'App movil de asistencia', 'Rutas de campo'],
-  EMPRESA: ['Operacion multiempresa', 'Rutas de campo', 'Reportes avanzados'],
+  TRIAL: ['Flujo completo de prueba', 'App móvil de asistencia', 'Reportes de validación'],
+  MICRO: ['Una empresa activa', 'App móvil de asistencia', 'Archivo bancario incluido'],
+  PYME: ['Hasta 3 empresas', 'App móvil de asistencia', 'Rutas de campo'],
+  EMPRESA: ['Operación multiempresa', 'Rutas de campo', 'Reportes avanzados'],
   CORPORATIVO: ['Capacidad pactada', 'App y rutas por contrato', 'Integraciones a medida'],
 };
 
@@ -117,7 +117,7 @@ export function getPlanCommercialPromise(plan = {}) {
   return plan.metadata?.commercialPromise
     || normalizeBrandText(plan.descripcion)
     || PLAN_COMMERCIAL_PROMISE[planId]
-    || 'Plan comercial SKNOMINA para operar nomina con trazabilidad.';
+    || 'Plan comercial SKNOMINA para operar nómina con trazabilidad.';
 }
 
 export function getPlanHighlights(plan = {}) {
@@ -127,7 +127,7 @@ export function getPlanHighlights(plan = {}) {
   }
   if (PLAN_HIGHLIGHTS[planId]) return PLAN_HIGHLIGHTS[planId];
   const commercialCapabilities = [
-    plan.appMovil ? 'App movil de empleados' : '',
+    plan.appMovil ? 'App móvil de empleados' : '',
     plan.rutasCampo ? 'Rutas de campo' : '',
     plan.archivosBancarios ? 'Archivo bancario incluido' : '',
     plan.reportesAvanzados ? 'Reportes avanzados' : '',
@@ -140,11 +140,11 @@ export function getPlanHighlights(plan = {}) {
 }
 
 export function getPlanFunctionality(plan = {}) {
-  const support = plan.soporte ? `Soporte ${String(plan.soporte).toLowerCase()}` : 'Soporte segun plan';
+  const support = plan.soporte ? `Soporte ${String(plan.soporte).toLowerCase()}` : 'Soporte según plan';
   return [
     {
       key: 'payroll',
-      label: 'Nomina mensual, roles y novedades',
+      label: 'Nómina mensual, roles y novedades',
       enabled: true,
       group: 'base',
     },
@@ -156,7 +156,7 @@ export function getPlanFunctionality(plan = {}) {
     },
     {
       key: 'mobileApp',
-      label: 'App movil para empleados',
+      label: 'App móvil para empleados',
       enabled: Boolean(plan.appMovil),
       group: 'operacion',
     },

@@ -99,7 +99,7 @@ function ImportPanel({ onImported }) {
             <h2 className="text-lg font-semibold text-slate-950">Carga masiva de empleados</h2>
           </div>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Importa empleados con prevalidacion, errores por fila y lote auditable. No se aplican filas si existe algun error.
+            Importa empleados con prevalidación, errores por fila y lote auditable. No se aplican filas si existe algún error.
           </p>
         </div>
         <button
@@ -393,7 +393,7 @@ function ListaEmpleados() {
               <h2 className="text-lg font-semibold text-slate-950">Activacion app de asistencia</h2>
             </div>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Invita empleados activos para que activen la app movil y registren asistencia. La invitacion se bloquea si falta email, unidad organizativa, zona de marcacion o jornada.
+              Invita empleados activos para que activen la app móvil y registren asistencia. La invitación se bloquea si falta email, unidad organizativa, zona de marcación o jornada.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-5">
@@ -416,7 +416,7 @@ function ListaEmpleados() {
           <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p className="text-sm font-semibold text-emerald-950">Codigo de activacion generado</p>
+                <p className="text-sm font-semibold text-emerald-950">Código de activación generado</p>
                 <p className="mt-1 font-mono text-lg font-bold text-emerald-900">{lastInvite.code}</p>
                 <p className="mt-1 break-all text-xs text-emerald-800">{lastInvite.activationUrl}</p>
                 {Array.isArray(lastInvite.delivery) && lastInvite.delivery.length > 0 && (
@@ -481,7 +481,7 @@ function ListaEmpleados() {
           <table className="w-full min-w-[1060px]">
             <thead className="bg-slate-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">Cedula</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">Cédula</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">Nombre</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">Cargo</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-slate-500">Sueldo</th>

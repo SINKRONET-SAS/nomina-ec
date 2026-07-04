@@ -186,7 +186,7 @@ function buildPayrollRoleDocDefinition(row) {
             stack: [
               { text: 'Empleado', style: 'boxTitle' },
               employeeName(row),
-              `Cedula: ${row.cedula || 'no registrada'}`,
+              `Cédula: ${row.cedula || 'no registrada'}`,
               `Cargo: ${row.cargo || 'no registrado'}`,
               `Departamento: ${row.departamento || 'no registrado'}`,
             ],
@@ -196,8 +196,8 @@ function buildPayrollRoleDocDefinition(row) {
             stack: [
               { text: 'Resumen', style: 'boxTitle' },
               `Estado: ${row.estado || 'borrador'}`,
-              `Dias trabajados: ${row.dias_trabajados || 0}`,
-              `Lote de calculo: ${row.calculation_batch_id || 'sin lote'}`,
+              `Días trabajados: ${row.dias_trabajados || 0}`,
+              `Lote de cálculo: ${row.calculation_batch_id || 'sin lote'}`,
               `Fuente legal: ${detail.fuenteLegal || 'no registrada'}`,
             ],
           },
@@ -223,7 +223,7 @@ function buildPayrollRoleDocDefinition(row) {
       },
       { text: 'Recepcion y conformidad', style: 'section' },
       {
-        text: 'El trabajador declara haber recibido el detalle de ingresos, deducciones, provisiones y neto del periodo indicado. La firma deja constancia de recepcion del rol de pago y no reemplaza obligaciones de pago, registro o conservacion de evidencias que correspondan al empleador.',
+        text: 'El trabajador declara haber recibido el detalle de ingresos, deducciones, provisiones y neto del periodo indicado. La firma deja constancia de recepción del rol de pago y no reemplaza obligaciones de pago, registro o conservación de evidencias que correspondan al empleador.',
         style: 'notice',
         margin: [0, 0, 0, 18],
       },
@@ -384,7 +384,7 @@ function buildPayrollRoleTransposedDocDefinition({ rows, anio, mes } = {}) {
   content.push(
     { text: 'Recepcion y conformidad consolidada', style: 'section' },
     {
-      text: 'El empleador conserva este consolidado como evidencia interna de calculo del periodo. La entrega y recepcion legal frente a cada trabajador debe respaldarse con el rol individual correspondiente.',
+      text: 'El empleador conserva este consolidado como evidencia interna de cálculo del periodo. La entrega y recepción legal frente a cada trabajador debe respaldarse con el rol individual correspondiente.',
       style: 'notice',
       margin: [0, 0, 0, 14],
     },
@@ -403,8 +403,8 @@ function buildPayrollRoleTransposedDocDefinition({ rows, anio, mes } = {}) {
           width: '*',
           stack: [
             { text: '\n\n____________________________', alignment: 'center' },
-            { text: 'Responsable de RRHH / Nomina', alignment: 'center', bold: true },
-            { text: 'Revision del consolidado del periodo', alignment: 'center' },
+            { text: 'Responsable de RRHH / Nómina', alignment: 'center', bold: true },
+            { text: 'Revisión del consolidado del periodo', alignment: 'center' },
           ],
         },
       ],
@@ -463,7 +463,7 @@ async function generatePayrollRolePdf({ tenantId, payrollId, userId = null } = {
 
   const row = result.rows[0];
   if (!row) {
-    throw new AppError('Nomina no encontrada.', {
+    throw new AppError('Nómina no encontrada.', {
       code: 'NOMINA_NO_ENCONTRADA',
       statusCode: 404,
     });
@@ -498,7 +498,7 @@ async function generatePayrollRolePeriodTransposedPdf({ tenantId, anio, mes, use
   const anioNumber = Number(anio);
   const mesNumber = Number(mes);
   if (!Number.isInteger(anioNumber) || !Number.isInteger(mesNumber) || mesNumber < 1 || mesNumber > 12) {
-    throw new AppError('Periodo de nomina invalido.', {
+    throw new AppError('Periodo de nómina inválido.', {
       code: 'NOMINA_PERIODO_INVALIDO',
       statusCode: 400,
     });
@@ -528,7 +528,7 @@ async function generatePayrollRolePeriodTransposedPdf({ tenantId, anio, mes, use
   `, [tenantId, anioNumber, mesNumber]);
 
   if (result.rows.length === 0) {
-    throw new AppError('No hay nominas para generar el rol transpuesto del periodo.', {
+    throw new AppError('No hay nóminas para generar el rol transpuesto del periodo.', {
       code: 'NOMINA_PERIODO_SIN_ROLES',
       statusCode: 404,
     });

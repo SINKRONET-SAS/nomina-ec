@@ -9,7 +9,7 @@
       "technical": "RDEP XSD source requires reconciliation",
       "userMessage": "Antes de generar el RDEP productivo necesitamos confirmar la ficha tecnica vigente del SRI para este ejercicio fiscal.",
       "friendly": "Antes de generar el RDEP productivo necesitamos confirmar la ficha tecnica vigente del SRI para este ejercicio fiscal.",
-      "nextAction": "Ejecuta la validacion RDEP y verifica que el esquema XSD coincida con la fuente oficial del SRI.",
+      "nextAction": "Ejecuta la validación RDEP y verifica que el esquema XSD coincida con la fuente oficial del SRI.",
       "severity": "warning"
     },
     {
@@ -17,15 +17,15 @@
       "technical": "Bank profile not configured",
       "userMessage": "Configura la ficha tecnica del banco antes de generar el archivo de pagos.",
       "friendly": "Configura la ficha tecnica del banco antes de generar el archivo de pagos.",
-      "nextAction": "Ve a Nomina > Pagos bancarios y selecciona un banco con homologacion guardada.",
+      "nextAction": "Ve a Nómina > Pagos bancarios y selecciona un banco con homologación guardada.",
       "severity": "error"
     },
     {
       "code": "ATTENDANCE_GPS_PERMISSION_DENIED",
       "technical": "GPS permission denied",
-      "userMessage": "No pudimos registrar la ubicacion. Revisa el permiso de ubicacion o registra una novedad manual para aprobacion.",
-      "friendly": "No pudimos registrar la ubicacion. Revisa el permiso de ubicacion o registra una novedad manual para aprobacion.",
-      "nextAction": "Activa el permiso de ubicacion del dispositivo y vuelve a intentar la marcacion.",
+      "userMessage": "No pudimos registrar la ubicación. Revisa el permiso de ubicación o registra una novedad manual para aprobación.",
+      "friendly": "No pudimos registrar la ubicación. Revisa el permiso de ubicación o registra una novedad manual para aprobación.",
+      "nextAction": "Activa el permiso de ubicación del dispositivo y vuelve a intentar la marcación.",
       "severity": "warning"
     },
     {

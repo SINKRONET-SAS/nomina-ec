@@ -40,7 +40,7 @@ function safeJson(value) {
   try {
     return JSON.parse(value);
   } catch (err) {
-    console.error('[CONTRATO] Configuracion JSON invalida', {
+    console.error('[CONTRATO] Configuración JSON inválida', {
       code: 'CONTRATO_CONFIG_JSON_INVALIDO',
       statusCode: 400,
       correlationId: null,
@@ -299,7 +299,7 @@ function buildContractContext({ employee, tenant, template, legalParameters, yea
       startDateIso: isoDate(startDate),
       salaryAmount: toMoney(salary),
       salaryWords: `${numeroALetras(Math.floor(salary))} con ${cents}/100 dolares de los Estados Unidos de America`,
-      paymentMethod: cleanText(employee.forma_pago, 'segun politica interna de pago'),
+      paymentMethod: cleanText(employee.forma_pago, 'según política interna de pago'),
     },
     contract: {
       generatedDate: formatDateEC(generatedAt),
@@ -312,7 +312,7 @@ function buildContractContext({ employee, tenant, template, legalParameters, yea
       probationDays: probationDays ? String(probationDays) : 'no aplica',
       probationEndDate: probationEndDate ? formatDateEC(probationEndDate) : 'no aplica',
       sutRegistrationStatus: 'pendiente de gestion externa',
-      legalReviewStatus: 'requiere revision laboral previa a produccion',
+      legalReviewStatus: 'requiere revisión laboral previa a producción',
     },
     legal: {
       year: String(year),
@@ -353,7 +353,7 @@ function buildContractDocDefinition({ template, context }) {
             { text: 'Empleador', style: 'boxTitle' },
             { text: context.company.legalName },
             { text: `RUC: ${context.company.ruc}` },
-            { text: `Direccion: ${context.company.address}` },
+            { text: `Dirección: ${context.company.address}` },
             { text: `Representante: ${context.company.legalRepresentative}` },
             { text: `ID representante: ${context.company.legalRepresentativeId}` },
           ],
@@ -363,7 +363,7 @@ function buildContractDocDefinition({ template, context }) {
           stack: [
             { text: 'Trabajador', style: 'boxTitle' },
             { text: context.employee.fullName },
-            { text: `Cedula: ${context.employee.idNumber}` },
+            { text: `Cédula: ${context.employee.idNumber}` },
             { text: `Cargo: ${context.employee.position}` },
             { text: `Inicio: ${context.employee.startDate}` },
           ],
@@ -434,7 +434,7 @@ function buildContractDocDefinition({ template, context }) {
   });
 
   content.push({
-    text: `Estado SUT/MDT: ${context.contract.sutRegistrationStatus}. Revision legal: ${context.contract.legalReviewStatus}. Fecha de generacion: ${context.contract.generatedAtIso}.`,
+    text: `Estado SUT/MDT: ${context.contract.sutRegistrationStatus}. Revisión legal: ${context.contract.legalReviewStatus}. Fecha de generación: ${context.contract.generatedAtIso}.`,
     style: 'audit',
     margin: [0, 22, 0, 0],
   });

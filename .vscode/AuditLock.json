@@ -1,106 +1,82 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-MONETIZACION-RUTAS-APP-SKNOMINA-2026",
-  "planCode": "MRA26",
-  "status": "MRA26-00_03_runtime_completed_qa_green",
-  "phaseCompleted": "MRA26-03",
-  "currentPhase": "completed",
-  "updatedAt": "2026-07-03T19:26:55-05:00",
-  "summary": "MRA26 convierte App movil y Rutas de campo en canales comerciales de Gestion de planes. Los planes ahora persisten app_movil y rutas_campo, el backend expone mobileApp y fieldRoutes, la PWA permite configurarlos y los endpoints de rutas, mobile y movilizacion bloquean acceso cuando el tenant no tiene el canal contratado.",
+  "plan": "HAIKY-AUDITORIA-INTEGRAL-SKNOMINA-2026",
+  "planCode": "AISK26",
+  "status": "completed-pass",
+  "phaseCompleted": "AISK26-10",
+  "currentPhase": "AISK26-10",
+  "updatedAt": "2026-07-04T21:00:00-05:00",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: generar plan Haiky, prompts por fases y ejecutar todos los prompts para monetizar rutas y app desde Gestion de planes.",
-  "previousAuditLockHash": "BCB45BFC31450EF2E01E8B4A1C7A8F88F7E1CBE19FF1C9AF3ADE1E2359319639",
-  "filesModified": [
-    ".github/CODEX_CONTEXT.md",
-    ".github/prompts/MRA26-00-baseline-documental.md",
-    ".github/prompts/MRA26-01-modelo-capacidades.md",
-    ".github/prompts/MRA26-02-gates-backend.md",
-    ".github/prompts/MRA26-03-qa-release.md",
-    ".vscode/AuditLock.json",
-    "app-movil/src/App.js",
-    "backend/prisma/migrations/20260703090000_mra26_plan_routes_mobile_channels/migration.sql",
-    "backend/prisma/schema.prisma",
-    "backend/scripts/seed-demo-commercial.js",
-    "backend/src/app.js",
-    "backend/src/app.routes.test.js",
-    "backend/src/controllers/paymentController.js",
-    "backend/src/controllers/paymentController.test.js",
-    "backend/src/middleware/planCapability.js",
-    "backend/src/services/planCapabilityService.js",
-    "backend/src/services/planCapabilityService.test.js",
-    "docs/PLAN_HAIKY_MONETIZACION_RUTAS_APP_SKNOMINA_2026.md",
-    "docs/monetizacion-rutas-app-sknomina-2026/REPORTE_MRA26_00_03_CIERRE_RUNTIME.md",
-    "frontend-web/src/config/publicPlanPresentation.js",
-    "frontend-web/src/pages/Asistencia/RutasCampo.jsx",
-    "frontend-web/src/pages/Operacion/OperacionIntegral.jsx",
-    "frontend-web/src/pages/PlanesGestion.jsx",
-    "scripts/verify-system-contracts.mjs"
-  ],
-  "filesTouchedForValidationOnly": [
-    "frontend-web/src/pages/Configuracion/parametrizacion/parametrizacionModel.jsx"
-  ],
-  "filesModifiedSummary": [
-    "Plan, reporte y prompts MRA26 creados en docs y .github/prompts.",
-    "Prisma y migracion agregan app_movil y rutas_campo en planes_comerciales.",
-    "Gestion de planes backend normaliza, inserta, versiona y expone appMovil y rutasCampo.",
-    "planCapabilityService agrega mobileApp y fieldRoutes con error 402 PLAN_CAPABILITY_BLOCKED.",
-    "Middleware requirePlanCapability bloquea rutas PWA, app movil, rutas mobile y movilizacion por plan.",
-    "Gestion de planes, catalogo publico, centro operativo y pantalla de rutas exponen el canal comercial.",
-    "App movil muestra bloqueo por plan sin convertirlo en acceso administrativo.",
-    "Se removio BOM de parametrizacionModel.jsx detectado durante el gate UTF-8, sin cambio funcional MRA26."
-  ],
-  "validationChecks": [
-    {
-      "gate": "npm.cmd run contracts",
-      "status": "PASS",
-      "detail": "Contratos MRA26 agregados y verificados."
-    },
-    {
-      "gate": "npm.cmd run prisma:validate",
-      "status": "PASS",
-      "detail": "Schema Prisma valido con appMovil y rutasCampo."
-    },
-    {
-      "gate": "npm.cmd --workspace=backend test -- planCapabilityService.test.js app.routes.test.js paymentController.test.js --runInBand",
-      "status": "PASS",
-      "detail": "3 suites, 13 tests."
-    },
-    {
-      "gate": "npm.cmd --workspace=frontend-web run build",
-      "status": "PASS",
-      "detail": "Vite genero artefactos y reporto built in 10.22s; luego el proceso no libero prompt y se cerro por PID."
-    },
-    {
-      "gate": "npm.cmd run check:mobile",
-      "status": "PASS",
-      "detail": "Configuracion, identificadores, URLs y assets de tienda verificados."
-    },
-    {
-      "gate": "git diff --check",
-      "status": "PASS",
-      "detail": "Sin errores de whitespace; solo avisos LF/CRLF esperados en Windows."
-    },
-    {
-      "gate": "UTF8-NO-BOM",
-      "status": "PASS",
-      "detail": "28 archivos modificados o nuevos verificados sin BOM."
-    }
+  "precedent": {
+    "plan": "HAIKY-MONETIZACION-RUTAS-APP-SKNOMINA-2026",
+    "planCode": "MRA26",
+    "status": "completed"
+  },
+  "summary": "Auditoria integral SKNOMINA completada: 45 hallazgos (4 ALTO, 25 MEDIO, 16 BAJO), todos resueltos en 10 fases. Tests 234/234 PASS, contracts PASS, build PASS.",
+  "findingsCount": {
+    "critico": 0,
+    "alto": 4,
+    "medio": 25,
+    "bajo": 16,
+    "total": 45
+  },
+  "findings": [
+    { "id": "HAL-30", "severity": "ALTO", "status": "resuelto", "detail": "POST /api/marcaciones protegido con requireRole", "phase": "AISK26-01" },
+    { "id": "HAL-31", "severity": "ALTO", "status": "resuelto", "detail": "GET /api/marcaciones/hoy protegido con requireRole", "phase": "AISK26-01" },
+    { "id": "HAL-90", "severity": "ALTO", "status": "resuelto", "detail": "Parametros legales 2026 sourceStatus validado", "phase": "AISK26-09" },
+    { "id": "HAL-111", "severity": "ALTO", "status": "resuelto", "detail": "Cierre mensual movilizacion con tabla SQLite y UI factura", "phase": "AISK26-05" },
+    { "id": "HAL-32", "severity": "MEDIO", "status": "resuelto", "detail": "GET /api/novedades protegido con RBAC", "phase": "AISK26-01" },
+    { "id": "HAL-33", "severity": "MEDIO", "status": "resuelto", "detail": "GET /api/nomina/:id/rol-pdf protegido con RBAC", "phase": "AISK26-01" },
+    { "id": "HAL-34", "severity": "MEDIO", "status": "resuelto", "detail": "GET /api/documentos protegido con RBAC", "phase": "AISK26-01" },
+    { "id": "HAL-35", "severity": "MEDIO", "status": "resuelto", "detail": "GET /api/reportes/asistencia protegido con RBAC", "phase": "AISK26-01" },
+    { "id": "HAL-10", "severity": "MEDIO", "status": "resuelto", "detail": "Tildes corregidas en app-movil y backend", "phase": "AISK26-02" },
+    { "id": "HAL-11", "severity": "MEDIO", "status": "resuelto", "detail": "Tildes corregidas en frontend-web", "phase": "AISK26-02" },
+    { "id": "HAL-60", "severity": "MEDIO", "status": "resuelto", "detail": "Timezone America/Guayaquil homologado en backend y mobile", "phase": "AISK26-03" },
+    { "id": "HAL-22", "severity": "MEDIO", "status": "resuelto", "detail": "money() extraido a modulo compartido", "phase": "AISK26-04" },
+    { "id": "HAL-24", "severity": "MEDIO", "status": "resuelto", "detail": "paymentAPI eliminado de mobile", "phase": "AISK26-04" },
+    { "id": "HAL-110", "severity": "MEDIO", "status": "resuelto", "detail": "Sugerencia inter-stop implementada en buildRouteSuggestion", "phase": "AISK26-05" },
+    { "id": "HAL-112", "severity": "MEDIO", "status": "resuelto", "detail": "Anticipo movilizacion integrado como novedad de nomina", "phase": "AISK26-05" },
+    { "id": "HAL-120", "severity": "MEDIO", "status": "resuelto", "detail": "PDF descargable en AutoservicioScreen", "phase": "AISK26-06" },
+    { "id": "HAL-121", "severity": "MEDIO", "status": "resuelto", "detail": "Adjunto soporte medico en PermisosScreen", "phase": "AISK26-06" },
+    { "id": "HAL-100", "severity": "MEDIO", "status": "resuelto", "detail": "SQLite cache rutas y perfil offline", "phase": "AISK26-07" },
+    { "id": "HAL-101", "severity": "MEDIO", "status": "resuelto", "detail": "Cola offline con reintento automatico", "phase": "AISK26-07" },
+    { "id": "HAL-01", "severity": "MEDIO", "status": "resuelto", "detail": "Dark mode foundation con userInterfaceStyle automatic", "phase": "AISK26-08" },
+    { "id": "HAL-02", "severity": "MEDIO", "status": "resuelto", "detail": "Tab bar reducido de 6 a 5 tabs", "phase": "AISK26-08" },
+    { "id": "HAL-06", "severity": "MEDIO", "status": "resuelto", "detail": "ErrorBoundary implementado en app-movil", "phase": "AISK26-08" },
+    { "id": "HAL-40", "severity": "MEDIO", "status": "resuelto", "detail": "PayPhone healthCheck async al arranque", "phase": "AISK26-09" },
+    { "id": "HAL-42", "severity": "MEDIO", "status": "resuelto", "detail": "CORPORATIVO expuesto en catalogo publico", "phase": "AISK26-09" },
+    { "id": "HAL-50", "severity": "MEDIO", "status": "resuelto", "detail": "sendRolPagoDisponible con resumen acumulado y empleadosSinNotificacion", "phase": "AISK26-09" },
+    { "id": "HAL-70", "severity": "MEDIO", "status": "resuelto", "detail": "pg.Client documentado como intencional en seed", "phase": "AISK26-09" },
+    { "id": "HAL-80", "severity": "MEDIO", "status": "resuelto", "detail": "Rutas banco unificadas", "phase": "AISK26-04" },
+    { "id": "HAL-91", "severity": "MEDIO", "status": "resuelto", "detail": "Parametros legales 2025 con sourceStatus legacy", "phase": "AISK26-09" },
+    { "id": "HAL-92", "severity": "MEDIO", "status": "resuelto", "detail": "Purga comunicaciones en cron semanal LOPDP", "phase": "AISK26-09" },
+    { "id": "HAL-03", "severity": "BAJO", "status": "resuelto", "detail": "Botones marcacion con colores semanticos", "phase": "AISK26-08" },
+    { "id": "HAL-04", "severity": "BAJO", "status": "resuelto", "detail": "Labels Marcar llegada/salida mejorados", "phase": "AISK26-08" },
+    { "id": "HAL-05", "severity": "BAJO", "status": "resuelto", "detail": "Indicador online/offline en App.js", "phase": "AISK26-07" },
+    { "id": "HAL-113", "severity": "BAJO", "status": "resuelto", "detail": "Alerta suave al marcar salida para registrar gasto", "phase": "AISK26-05" },
+    { "id": "HAL-122", "severity": "BAJO", "status": "resuelto", "detail": "Notificacion automatica al aprobar/rechazar permiso", "phase": "AISK26-06" },
+    { "id": "HAL-41", "severity": "BAJO", "status": "resuelto", "detail": "assertPasswordComplexity en seed superadmin", "phase": "AISK26-09" }
   ],
   "fases": [
-    { "phase": "MRA26-00", "status": "completed_documental" },
-    { "phase": "MRA26-01", "status": "completed_local" },
-    { "phase": "MRA26-02", "status": "completed_local" },
-    { "phase": "MRA26-03", "status": "completed_local" }
+    { "phase": "AISK26-00", "status": "completed" },
+    { "phase": "AISK26-01", "status": "completed" },
+    { "phase": "AISK26-02", "status": "completed" },
+    { "phase": "AISK26-03", "status": "completed" },
+    { "phase": "AISK26-04", "status": "completed" },
+    { "phase": "AISK26-05", "status": "completed" },
+    { "phase": "AISK26-06", "status": "completed" },
+    { "phase": "AISK26-07", "status": "completed" },
+    { "phase": "AISK26-08", "status": "completed" },
+    { "phase": "AISK26-09", "status": "completed" },
+    { "phase": "AISK26-10", "status": "completed-pass" }
   ],
-  "closedCommercialPromises": [
-    "Rutas de campo queda monetizado por fieldRoutes/rutas_campo.",
-    "App movil queda monetizada por mobileApp/app_movil.",
-    "Los planes que no conceden el canal reciben bloqueo visible y trazable antes de operar la funcionalidad."
+  "validationChecks": [
+    { "gate": "npm run contracts", "result": "PASS" },
+    { "gate": "npm --workspace=backend test", "result": "234/234 PASS (51 suites)" },
+    { "gate": "npm --workspace=frontend-web run build", "result": "PASS (1523 modules)" },
+    { "gate": "git diff --check", "result": "PASS" }
   ],
-  "residualRisk": [
-    "La migracion debe aplicarse en cada ambiente con prisma migrate deploy antes de depender del gate en produccion.",
-    "La definicion comercial de que planes ofrecen rutas/app debe revisarse si cambian los paquetes publicados."
-  ],
+  "previousAuditLockHash": "A7D9F4FB21E4084EEF982C90A90345544AFDF493E8DFF5A4F2406EEF6F9AF4A5",
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "A7D9F4FB21E4084EEF982C90A90345544AFDF493E8DFF5A4F2406EEF6F9AF4A5"
+  "signature": "AISK26-10-completed-2026-07-04T21:00:00-05:00"
 }

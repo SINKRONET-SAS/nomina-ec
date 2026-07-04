@@ -120,7 +120,7 @@ describe('templateGenerator', () => {
     expect(metadata).toMatchObject({
       documentKind: 'contrato',
       templateKey: 'contrato_indefinido_mercaderista_prueba',
-      legalReviewStatus: 'requiere revision laboral previa a produccion',
+      legalReviewStatus: 'requiere revisión laboral previa a producción',
       sutRegistrationStatus: 'pendiente de gestion externa',
       probation: expect.objectContaining({ enabled: true, days: 90 }),
     });

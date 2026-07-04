@@ -75,7 +75,7 @@ async function createAttendanceMark(req, res) {
 
     return sendApiResponse(req, res, 201, { success: true, data: marcacion });
   } catch (err) {
-    console.error('[API_V1] Error registrando marcacion', {
+    console.error('[API_V1] Error registrando marcación', {
       code: err.code || 'API_ATTENDANCE_ERROR',
       statusCode: err.statusCode || 500,
       correlationId: req.correlationId,
@@ -110,7 +110,7 @@ async function createNovelty(req, res) {
     if (noveltyConfig.calculationMode === 'amount' && amount <= 0 && noveltyConfig.payrollImpact !== 'informativo') {
       return res.status(422).json({
         error: 'API_NOVELTY_AMOUNT_REQUIRED',
-        message: 'La novedad requiere un monto mayor a cero segun su forma de calculo.',
+        message: 'La novedad requiere un monto mayor a cero según su forma de cálculo.',
         correlationId: req.correlationId,
       });
     }
@@ -176,14 +176,14 @@ async function listPayroll(req, res) {
 
     return res.json({ success: true, data: result.rows, correlationId: req.correlationId });
   } catch (err) {
-    console.error('[API_V1] Error listando nomina', {
+    console.error('[API_V1] Error listando nómina', {
       code: err.code || 'API_PAYROLL_ERROR',
       statusCode: 500,
       correlationId: req.correlationId,
       userId: null,
       message: err.message,
     });
-    return res.status(500).json({ error: 'API_PAYROLL_ERROR', message: 'No pudimos listar la nomina.', correlationId: req.correlationId });
+    return res.status(500).json({ error: 'API_PAYROLL_ERROR', message: 'No pudimos listar la nómina.', correlationId: req.correlationId });
   }
 }
 

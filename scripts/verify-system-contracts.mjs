@@ -236,7 +236,7 @@ assert(app.includes("'/api/rutas/sitios', requireRole('owner', 'admin_rrhh', 'su
 assert(app.includes("'/api/mobile/me', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan"), 'App movil debe bloquear perfil por plan.');
 assert(app.includes("'/api/mobile/ruta/hoy', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan"), 'Rutas dentro de app movil deben exigir app y rutas.');
 assert(planesGestion.includes('appMovil') && planesGestion.includes('rutasCampo'), 'Gestion de planes debe mostrar canales app movil y rutas de campo.');
-assert(publicPlanPresentation.includes('App movil de asistencia') && publicPlanPresentation.includes('Rutas de campo'), 'Catalogo publico debe comunicar app movil y rutas cuando el plan las ofrece.');
+assert(publicPlanPresentation.includes('App móvil de asistencia') && publicPlanPresentation.includes('Rutas de campo'), 'Catálogo público debe comunicar app móvil y rutas cuando el plan las ofrece.');
 assert(publicPlanPresentation.includes('getPlanFunctionality'), 'Catalogo publico debe exponer matriz de funcionalidades por plan.');
 assert(publicPlansCatalog.includes('PlanFunctionalityList'), 'Sitio publico debe mostrar funcionalidades ofrecidas por cada plan.');
 assert(publicPlansCatalog.includes('Resumen de checkout') && publicPlansCatalog.includes('Continuar a PayPhone'), 'Checkout publico debe mostrar resumen antes de redirigir a PayPhone.');

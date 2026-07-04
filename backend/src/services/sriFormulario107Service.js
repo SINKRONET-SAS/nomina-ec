@@ -15,7 +15,7 @@ const TEMPLATE_VERSION = 'FORM107-SRI-2026-CDAN26';
 function normalizeYear(value) {
   const year = Number(value);
   if (!Number.isInteger(year) || year < 2000 || year > 2100) {
-    throw new AppError('El anio fiscal del Formulario 107 no es valido.', {
+    throw new AppError('El año fiscal del Formulario 107 no es válido.', {
       code: 'FORM107_ANIO_INVALIDO',
       statusCode: 400,
     });
@@ -117,11 +117,11 @@ function precheckFormulario107Data(data, anio) {
     },
     {
       code: 'roles_anuales',
-      label: 'Roles cerrados del anio fiscal',
+      label: 'Roles cerrados del año fiscal',
       passed: data.rows.length > 0,
       detail: data.rows.length > 0
         ? `${data.rows.length} roles cerrados encontrados para ${anio}.`
-        : 'No existen roles cerrados para el anio fiscal solicitado.',
+        : 'No existen roles cerrados para el año fiscal solicitado.',
     },
     {
       code: 'base_rdep_consistente',
@@ -186,7 +186,7 @@ async function buildFormulario107Pdf({ data, anio, context = {} }) {
     content: [
       { text: 'Formulario 107 individual', style: 'title' },
       { text: 'Comprobante de retenciones en la fuente del impuesto a la renta por ingresos del trabajo en relacion de dependencia', style: 'subtitle' },
-      { text: `Anio fiscal ${anio}`, style: 'period' },
+      { text: `Año fiscal ${anio}`, style: 'period' },
       {
         columns: [
           {

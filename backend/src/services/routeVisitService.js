@@ -212,7 +212,7 @@ function normalizeSitePayload(payload = {}, previous = {}) {
   };
 
   if (!values.code || !values.name) {
-    throw new AppError('Codigo y nombre del sitio son obligatorios.', {
+    throw new AppError('Código y nombre del sitio son obligatorios.', {
       code: 'ROUTE_SITE_REQUIRED_FIELDS',
       statusCode: 400,
     });
@@ -577,7 +577,7 @@ async function createRouteDay({ tenantId, payload, user, context = {} }) {
     await ensureEmployee(tenantId, empleadoId, client);
     const period = await ensurePayrollPeriodForDate({ tenantId, userId: user?.id, fecha: operationalDate, queryable: client });
     if (period.status === 'closed') {
-      throw new AppError('No se puede asignar ruta en un periodo de nomina cerrado.', { code: 'ROUTE_DAY_PERIOD_CLOSED', statusCode: 422, userId: user?.id });
+      throw new AppError('No se puede asignar ruta en un periodo de nómina cerrado.', { code: 'ROUTE_DAY_PERIOD_CLOSED', statusCode: 422, userId: user?.id });
     }
 
     const existing = await client.query(`
@@ -815,7 +815,7 @@ async function registerRouteVisit({ tenantId, empleadoId, stopId, markType, payl
     await ensureJourneyStarted({ tenantId, empleadoId, operationalDate, queryable: client, userId: user?.id, correlationId: context.correlationId });
     const period = await ensurePayrollPeriodForDate({ tenantId, userId: user?.id, fecha: operationalDate, queryable: client });
     if (period.status === 'closed') {
-      throw new AppError('No se puede registrar visita en un periodo de nomina cerrado.', { code: 'ROUTE_VISIT_PERIOD_CLOSED', statusCode: 422, userId: user?.id });
+      throw new AppError('No se puede registrar visita en un periodo de nómina cerrado.', { code: 'ROUTE_VISIT_PERIOD_CLOSED', statusCode: 422, userId: user?.id });
     }
 
     if (markType === 'arrival') {
@@ -961,7 +961,7 @@ async function registerUnplannedVisit({ tenantId, empleadoId, payload = {}, user
     await assertNoOpenRouteVisit({ tenantId, empleadoId, operationalDate, queryable: client, userId: user?.id, correlationId: context.correlationId });
     const period = await ensurePayrollPeriodForDate({ tenantId, userId: user?.id, fecha: operationalDate, queryable: client });
     if (period.status === 'closed') {
-      throw new AppError('No se puede registrar visita en un periodo de nomina cerrado.', { code: 'ROUTE_VISIT_PERIOD_CLOSED', statusCode: 422, userId: user?.id });
+      throw new AppError('No se puede registrar visita en un periodo de nómina cerrado.', { code: 'ROUTE_VISIT_PERIOD_CLOSED', statusCode: 422, userId: user?.id });
     }
     const reason = normalizeText(payload.reason || payload.motivo, 500);
     if (!reason) {
@@ -1207,7 +1207,7 @@ async function getRouteReportRows({ tenantId, fechaInicio, fechaFin }) {
 function routeReportHeaders() {
   return [
     ['fecha', 'Fecha'],
-    ['cedula', 'Cedula'],
+    ['cedula', 'Cédula'],
     ['empleado', 'Empleado'],
     ['cargo', 'Cargo'],
     ['sitio', 'Sitio'],

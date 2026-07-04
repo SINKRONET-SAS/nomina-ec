@@ -62,7 +62,7 @@ describe('employeeImportService', () => {
     const preview = buildPreviewRows(rows);
 
     expect(preview[0].status).toBe('error');
-    expect(preview[0].errors).toContain('Cedula duplicada en el archivo');
+    expect(preview[0].errors).toContain('Cédula duplicada en el archivo');
     expect(preview[0].errors).toContain('Sueldo debe ser un numero positivo');
   });
 
@@ -72,7 +72,7 @@ describe('employeeImportService', () => {
     const preview = await previewEmployeeImport({ rawText: RAW_IMPORT });
 
     expect(preview.errorRows).toBe(1);
-    expect(preview.rows[0].errors).toContain('Cedula ya registrada en el sistema');
+    expect(preview.rows[0].errors).toContain('Cédula ya registrada en el sistema');
   });
 
   test('previewEmployeeImport filtra cedulas existentes por tenant cuando recibe tenantId', async () => {

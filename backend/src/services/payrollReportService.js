@@ -47,7 +47,7 @@ async function generarReporteNomina({
   const normalizedFormat = String(format || '').trim().toLowerCase();
 
   if (!REPORT_TYPES[normalizedReportCode]) {
-    throw new Error(`Reporte de nomina no soportado: ${reportCode}`);
+    throw new Error(`Reporte de nómina no soportado: ${reportCode}`);
   }
 
   if (!FORMAT_MIME[normalizedFormat]) {
@@ -61,7 +61,7 @@ async function generarReporteNomina({
   const rows = await getPayrollRows(tenantId, Number(anio), Number(mes), filters);
 
   if (rows.length === 0) {
-    throw new Error('No hay nominas para el periodo y filtros solicitados');
+    throw new Error('No hay nóminas para el periodo y filtros solicitados');
   }
 
   const tenant = await getTenant(tenantId);
@@ -126,7 +126,7 @@ async function generarConsolidadoAnualNomina({
 }) {
   const normalizedReportCode = String(reportCode || '').trim().toUpperCase();
   if (!REPORT_TYPES[normalizedReportCode] || normalizedReportCode === 'PAYROLL_SUMMARY') {
-    throw new Error(`Reporte anual de nomina no soportado: ${reportCode}`);
+    throw new Error(`Reporte anual de nómina no soportado: ${reportCode}`);
   }
 
   const tenant = await getTenant(tenantId);
@@ -175,7 +175,7 @@ async function generarConsolidadoAnualNomina({
   }
 
   if (annualSummary.totalFilas === 0) {
-    throw new Error(`No hay nominas para el anio ${anio} y filtros solicitados.`);
+    throw new Error(`No hay nóminas para el año ${anio} y filtros solicitados.`);
   }
 
   const auditSheet = workbook.addWorksheet('Auditoria');
@@ -186,7 +186,7 @@ async function generarConsolidadoAnualNomina({
   [
     ['Empresa', tenant.razon_social],
     ['RUC', tenant.ruc || ''],
-    ['Anio', String(anio)],
+    ['Año', String(anio)],
     ['Reporte', normalizedReportCode],
     ['Formato', 'xlsx'],
     ['Filtros', JSON.stringify(sanitizeFilters(filters))],
@@ -469,12 +469,12 @@ function mapAccountingEntries(row, anio, mes) {
   return [
     accountingRow(periodo, 'DEVENGAMIENTO', '510101', 'Sueldos y salarios', totalIngresos, 0, empleado, row.cedula),
     accountingRow(periodo, 'DEVENGAMIENTO', '510201', 'Costo patronal y provisiones', costoPatronal, 0, empleado, row.cedula),
-    accountingRow(periodo, 'DEVENGAMIENTO', '210101', 'Nomina por pagar', 0, neto, empleado, row.cedula),
+    accountingRow(periodo, 'DEVENGAMIENTO', '210101', 'Nómina por pagar', 0, neto, empleado, row.cedula),
     accountingRow(periodo, 'DEVENGAMIENTO', '210201', 'IESS personal por pagar', 0, aporteIess, empleado, row.cedula),
     accountingRow(periodo, 'DEVENGAMIENTO', '210202', 'Impuesto a la renta por pagar', 0, impuestoRenta, empleado, row.cedula),
     accountingRow(periodo, 'DEVENGAMIENTO', '210203', 'Descuentos y beneficios por cobrar', 0, otrosDescuentos, empleado, row.cedula),
     accountingRow(periodo, 'DEVENGAMIENTO', '210301', 'IESS patronal y provisiones por pagar', 0, costoPatronal, empleado, row.cedula),
-    accountingRow(periodo, 'PAGO', '210101', 'Nomina por pagar', neto, 0, empleado, row.cedula),
+    accountingRow(periodo, 'PAGO', '210101', 'Nómina por pagar', neto, 0, empleado, row.cedula),
     accountingRow(periodo, 'PAGO', '110201', 'Bancos', 0, neto, empleado, row.cedula),
   ].filter((entry) => entry.debe > 0 || entry.haber > 0);
 }
@@ -507,7 +507,7 @@ function getWorkbookColumns(reportCode, exportRows = []) {
       { header: 'Debe', key: 'debe', width: 14, style: { numFmt: '$#,##0.00' } },
       { header: 'Haber', key: 'haber', width: 14, style: { numFmt: '$#,##0.00' } },
       { header: 'Empleado', key: 'empleado', width: 36 },
-      { header: 'Cedula', key: 'cedula', width: 14 },
+      { header: 'Cédula', key: 'cedula', width: 14 },
       { header: 'Referencia', key: 'referencia', width: 28 },
     ];
   }
@@ -524,9 +524,9 @@ function getWorkbookColumns(reportCode, exportRows = []) {
       { header: 'Debe', key: 'debe', width: 14, style: { numFmt: '$#,##0.00' } },
       { header: 'Haber', key: 'haber', width: 14, style: { numFmt: '$#,##0.00' } },
       { header: 'Empleado', key: 'empleado', width: 36 },
-      { header: 'Cedula', key: 'cedula', width: 14 },
+      { header: 'Cédula', key: 'cedula', width: 14 },
       { header: 'Centro costo', key: 'centroCosto', width: 16 },
-      { header: 'Lote calculo', key: 'loteCalculo', width: 38 },
+      { header: 'Lote cálculo', key: 'loteCalculo', width: 38 },
       { header: 'Referencia', key: 'referencia', width: 34 },
     ];
   }
@@ -534,22 +534,22 @@ function getWorkbookColumns(reportCode, exportRows = []) {
   if (reportCode === 'PAYROLL_EMPLOYEE_DETAIL') {
     return [
       { header: 'Periodo', key: 'periodo', width: 12 },
-      { header: 'Cedula', key: 'cedula', width: 14 },
+      { header: 'Cédula', key: 'cedula', width: 14 },
       { header: 'Empleado', key: 'empleado', width: 36 },
       { header: 'Departamento', key: 'departamento', width: 20 },
       { header: 'Codigo cargo', key: 'cargoCodigo', width: 16 },
       { header: 'Cargo', key: 'cargo', width: 24 },
       { header: 'Unidad organizativa', key: 'unidad', width: 26 },
       { header: 'Centro costo', key: 'centroCosto', width: 16 },
-      { header: 'Lote calculo', key: 'loteCalculo', width: 38 },
+      { header: 'Lote cálculo', key: 'loteCalculo', width: 38 },
       { header: 'Concepto codigo', key: 'conceptoCodigo', width: 18 },
       { header: 'Concepto', key: 'concepto', width: 28 },
       { header: 'Categoria', key: 'categoria', width: 16 },
       { header: 'Origen', key: 'origen', width: 16 },
       { header: 'Referencia origen', key: 'referenciaOrigen', width: 22 },
       { header: 'Valor', key: 'valor', width: 14, style: { numFmt: '$#,##0.00' } },
-      { header: 'Total ingresos nomina', key: 'totalIngresos', width: 20, style: { numFmt: '$#,##0.00' } },
-      { header: 'Total deducciones nomina', key: 'totalDeducciones', width: 24, style: { numFmt: '$#,##0.00' } },
+      { header: 'Total ingresos nómina', key: 'totalIngresos', width: 20, style: { numFmt: '$#,##0.00' } },
+      { header: 'Total deducciones nómina', key: 'totalDeducciones', width: 24, style: { numFmt: '$#,##0.00' } },
       { header: 'Neto recibir', key: 'netoRecibir', width: 16, style: { numFmt: '$#,##0.00' } },
     ];
   }
@@ -557,15 +557,15 @@ function getWorkbookColumns(reportCode, exportRows = []) {
   if (reportCode === 'PAYROLL_BENEFITS_MATRIX') {
     return [
       { header: 'Periodo', key: 'periodo', width: 12 },
-      { header: 'Cedula', key: 'cedula', width: 14 },
+      { header: 'Cédula', key: 'cedula', width: 14 },
       { header: 'Empleado', key: 'empleado', width: 36 },
       { header: 'Departamento', key: 'departamento', width: 20 },
       { header: 'Cargo', key: 'cargo', width: 24 },
       { header: 'Centro costo', key: 'centroCosto', width: 16 },
-      { header: 'Lote calculo', key: 'loteCalculo', width: 38 },
+      { header: 'Lote cálculo', key: 'loteCalculo', width: 38 },
       ...getMatrixConceptColumns(exportRows),
-      { header: 'Total ingresos nomina', key: 'totalIngresosNomina', width: 20, style: { numFmt: '$#,##0.00' } },
-      { header: 'Total deducciones nomina', key: 'totalDeduccionesNomina', width: 24, style: { numFmt: '$#,##0.00' } },
+      { header: 'Total ingresos nómina', key: 'totalIngresosNomina', width: 20, style: { numFmt: '$#,##0.00' } },
+      { header: 'Total deducciones nómina', key: 'totalDeduccionesNomina', width: 24, style: { numFmt: '$#,##0.00' } },
       { header: 'Total provisiones', key: 'totalProvisiones', width: 18, style: { numFmt: '$#,##0.00' } },
       { header: 'Costo empleador', key: 'costoEmpleador', width: 18, style: { numFmt: '$#,##0.00' } },
       { header: 'Neto recibir', key: 'netoRecibir', width: 16, style: { numFmt: '$#,##0.00' } },
@@ -575,14 +575,14 @@ function getWorkbookColumns(reportCode, exportRows = []) {
 
   const base = [
     { header: 'Periodo', key: 'periodo', width: 12 },
-    { header: 'Cedula', key: 'cedula', width: 14 },
+    { header: 'Cédula', key: 'cedula', width: 14 },
     { header: 'Empleado', key: 'empleado', width: 36 },
     { header: 'Departamento', key: 'departamento', width: 20 },
     { header: 'Codigo cargo', key: 'cargoCodigo', width: 16 },
     { header: 'Cargo', key: 'cargo', width: 24 },
     { header: 'Unidad organizativa', key: 'unidad', width: 26 },
     { header: 'Centro costo', key: 'centroCosto', width: 16 },
-    { header: 'Lote calculo', key: 'loteCalculo', width: 38 },
+    { header: 'Lote cálculo', key: 'loteCalculo', width: 38 },
     { header: 'Estado', key: 'estado', width: 12 },
     { header: 'Dias trabajados', key: 'diasTrabajados', width: 16 },
     { header: 'Total ingresos', key: 'totalIngresos', width: 16, style: { numFmt: '$#,##0.00' } },
@@ -657,7 +657,7 @@ async function buildSummaryPdf({ tenant, anio, mes, rows, filters, context }) {
     pageSize: 'A4',
     pageMargins: [32, 36, 32, 36],
     content: [
-      { text: 'Resumen de nomina', style: 'title' },
+      { text: 'Resumen de nómina', style: 'title' },
       { text: `${tenant.razon_social}${tenant.ruc ? ` - RUC ${tenant.ruc}` : ''}`, style: 'subtitle' },
       { text: `Periodo ${String(mes).padStart(2, '0')}/${anio}`, margin: [0, 0, 0, 10] },
       {

@@ -14,57 +14,57 @@ import {
 const workDayOptions = [
   { value: 'monday', label: 'Lunes' },
   { value: 'tuesday', label: 'Martes' },
-  { value: 'wednesday', label: 'Miercoles' },
+  { value: 'wednesday', label: 'Miércoles' },
   { value: 'thursday', label: 'Jueves' },
   { value: 'friday', label: 'Viernes' },
-  { value: 'saturday', label: 'Sabado' },
+  { value: 'saturday', label: 'Sábado' },
   { value: 'sunday', label: 'Domingo' },
 ];
 
 const BANK_TEMPLATE_PREVIEWS = {
   pacifico_interbank_immediate: {
-    title: 'Banco Pacifico - transferencias interbancarias inmediatas',
+    title: 'Banco Pacífico - transferencias interbancarias inmediatas',
     source: 'docs2/Formato_para_transferencias_interbancarias_inmediatas.pdf',
     fileName: 'PACIFICO_NOMINA_AAAAMM.txt',
     lineEnding: 'CRLF',
     encoding: 'latin1',
     delimiter: ';',
     sections: [
-      { label: 'Detalle', value: 'Una linea por trabajador con pago aprobado.' },
-      { label: 'Totalizador', value: 'Ultima linea con total pagado y numero de registros.' },
-      { label: 'Validacion', value: 'Tipo de cuenta AH/CC, identificacion C/R/P, banco destino y cuenta obligatorios.' },
+      { label: 'Detalle', value: 'Una línea por trabajador con pago aprobado.' },
+      { label: 'Totalizador', value: 'Última línea con total pagado y número de registros.' },
+      { label: 'Validación', value: 'Tipo de cuenta AH/CC, identificación C/R/P, banco destino y cuenta obligatorios.' },
     ],
     columns: [
       ['1', 'TIPO_REGISTRO', 'Valor fijo D', 'D'],
-      ['2', 'TIPO_IDENTIFICACION', 'Cedula/RUC/pasaporte del trabajador', 'C, R o P'],
+      ['2', 'TIPO_IDENTIFICACION', 'Cédula/RUC/pasaporte del trabajador', 'C, R o P'],
       ['3', 'IDENTIFICACION', 'empleados.cedula', '10 o 13 digitos'],
       ['4', 'BENEFICIARIO', 'apellidos + nombres', 'Mayusculas, max 60'],
-      ['5', 'BANCO_DESTINO', 'perfil bancario del trabajador', 'Codigo numerico'],
+      ['5', 'BANCO_DESTINO', 'perfil bancario del trabajador', 'Código numérico'],
       ['6', 'TIPO_CUENTA', 'empleados.tipo_cuenta', 'AH o CC'],
       ['7', 'CUENTA_BENEFICIARIO', 'cuenta cifrada del trabajador', '10 digitos'],
       ['8', 'VALOR', 'nominas.neto_recibir', 'Decimal 2'],
-      ['9', 'CONCEPTO', 'Periodo de nomina', 'Texto max 30'],
-      ['10', 'REFERENCIA', 'Referencia unica SKNOMINA', 'Texto max 20'],
+      ['9', 'CONCEPTO', 'Periodo de nómina', 'Texto max 30'],
+      ['10', 'REFERENCIA', 'Referencia única SKNOMINA', 'Texto max 20'],
     ],
     example: 'D;C;1710034065;MARIA DEMO RUIZ;2013;AH;0012345678;850.00;NOMINA 06/2026;NOM9B230E040001',
   },
   generico: {
-    title: 'Generica delimitada',
-    source: 'Configuracion manual',
+    title: 'Genérica delimitada',
+    source: 'Configuración manual',
     fileName: 'PAGO_NOMINA_AAAAMM.csv',
     lineEnding: 'LF',
     encoding: 'utf8',
     delimiter: ';',
     sections: [
       { label: 'Cabecera', value: 'Opcional, usa nombres de columnas.' },
-      { label: 'Detalle', value: 'Una linea por trabajador.' },
-      { label: 'Totalizador', value: 'Opcional, total y numero de pagos.' },
+      { label: 'Detalle', value: 'Una línea por trabajador.' },
+      { label: 'Totalizador', value: 'Opcional, total y número de pagos.' },
     ],
     columns: [
       ['1', 'TIPO_REGISTRO', 'Valor fijo', '1'],
-      ['2', 'CODIGO_BANCO', 'Perfil bancario', '4 digitos'],
-      ['3', 'CUENTA', 'Cuenta trabajador', 'Segun banco'],
-      ['4', 'IDENTIFICACION', 'Cedula/RUC', 'Digitos'],
+      ['2', 'CODIGO_BANCO', 'Perfil bancario', '4 dígitos'],
+      ['3', 'CUENTA', 'Cuenta trabajador', 'Según banco'],
+      ['4', 'IDENTIFICACION', 'Cédula/RUC', 'Dígitos'],
       ['5', 'BENEFICIARIO', 'Nombre trabajador', 'Texto'],
       ['6', 'CONCEPTO', 'Periodo', 'Texto'],
       ['7', 'FECHA_OPERACION', 'Fecha de pago', 'YYYYMMDD'],
@@ -78,7 +78,7 @@ const BANK_TEMPLATE_PREVIEWS = {
 const BANK_TEMPLATE_DEFAULTS = {
   pacifico_interbank_immediate: {
     banco_codigo: 'PACIFICO',
-    banco_nombre: 'Banco Pacifico',
+    banco_nombre: 'Banco Pacífico',
     delimiter: ';',
     encoding: 'latin1',
     date_format: 'YYYYMMDD',
@@ -164,9 +164,9 @@ const formDefinitions = [
       { name: 'nombre_comercial', label: 'Nombre comercial' },
       { name: 'representante_legal', label: 'Representante legal' },
       { name: 'email', label: 'Correo administrativo', type: 'email' },
-      { name: 'telefono', label: 'Telefono' },
+      { name: 'telefono', label: 'Teléfono' },
       { name: 'ciudad', label: 'Ciudad' },
-      { name: 'direccion', label: 'Direccion matriz', type: 'textarea', wide: true },
+      { name: 'direccion', label: 'Dirección matriz', type: 'textarea', wide: true },
     ],
     initial: {
       ruc: '',
@@ -206,8 +206,8 @@ const formDefinitions = [
     resource: 'legalParameters',
     stepCode: 'legal',
     fields: [
-      { name: 'parameter_key', label: 'Codigo', placeholder: 'sbu_2026', required: true },
-      { name: 'period_year', label: 'Anio', type: 'number', required: true },
+      { name: 'parameter_key', label: 'Código', placeholder: 'sbu_2026', required: true },
+      { name: 'period_year', label: 'Año', type: 'number', required: true },
       { name: 'amount', label: 'Valor', type: 'number', step: '0.01', required: true },
       { name: 'unit', label: 'Unidad', placeholder: 'USD, porcentaje, tabla', required: true },
       { name: 'source_name', label: 'Fuente oficial', placeholder: 'SRI, IESS, MDT...' },
@@ -289,16 +289,16 @@ const formDefinitions = [
     resource: 'noveltyTypes',
     stepCode: 'novedades',
     fields: [
-      { name: 'code', label: 'Codigo', placeholder: 'HORA_EXTRA_50', required: true },
+      { name: 'code', label: 'Código', placeholder: 'HORA_EXTRA_50', required: true },
       { name: 'name', label: 'Nombre', placeholder: 'Hora extra 50%', required: true },
-      { name: 'category', label: 'Categoria', type: 'select', options: ['ingreso', 'descuento', 'permiso', 'ausencia', 'ajuste'] },
+      { name: 'category', label: 'Categoría', type: 'select', options: ['ingreso', 'descuento', 'permiso', 'ausencia', 'ajuste'] },
       { name: 'payroll_impact', label: 'Impacto', type: 'select', options: ['ingreso', 'descuento', 'informativo'] },
       { name: 'calculation_mode', label: 'Forma de cálculo', type: 'select', options: [
         { value: 'amount', label: 'Monto directo' },
         { value: 'minutes_hourly', label: 'Minutos x valor hora' },
         { value: 'minutes_hourly_1_5', label: 'Minutos x hora 50%' },
         { value: 'minutes_hourly_2', label: 'Minutos x hora 100%' },
-        { value: 'absence_day', label: 'Dia de falta' },
+        { value: 'absence_day', label: 'Día de falta' },
         { value: 'informational', label: 'Solo informativo' },
       ] },
       { name: 'affects_iess', label: 'Afecta IESS', type: 'checkbox' },
@@ -310,7 +310,7 @@ const formDefinitions = [
       { name: 'status', label: 'Estado', type: 'select', options: ['activo', 'inactivo', 'borrador'] },
       { name: 'valid_from', label: 'Vigente desde', type: 'date', required: true },
       { name: 'valid_to', label: 'Vigente hasta', type: 'date' },
-      { name: 'description', label: 'Descripcion', type: 'textarea', wide: true },
+      { name: 'description', label: 'Descripción', type: 'textarea', wide: true },
     ],
     initial: {
       code: '',
@@ -353,18 +353,18 @@ const formDefinitions = [
   {
     key: 'organizacion',
     title: 'Unidad organizativa',
-    description: 'Crea departamentos, areas, sucursales o centros de costo vinculados a zona de marcacion y jornada base.',
+    description: 'Crea departamentos, áreas, sucursales o centros de costo vinculados a zona de marcación y jornada base.',
     icon: Network,
     resource: 'organizationUnits',
     stepCode: 'organizacion',
     fields: [
-      { name: 'code', label: 'Codigo', placeholder: 'VENTAS', required: true },
+      { name: 'code', label: 'Código', placeholder: 'VENTAS', required: true },
       { name: 'name', label: 'Nombre', placeholder: 'Ventas', required: true },
       { name: 'unit_type', label: 'Tipo', type: 'select', options: ['departamento', 'area', 'sucursal', 'centro_costo'] },
-      { name: 'work_zone_id', label: 'Zona de marcacion', type: 'resourceSelect', resource: 'workZones', required: true, emptyLabel: 'Primero crea una zona de marcacion', selectLabel: 'Selecciona una zona' },
+      { name: 'work_zone_id', label: 'Zona de marcación', type: 'resourceSelect', resource: 'workZones', required: true, emptyLabel: 'Primero crea una zona de marcación', selectLabel: 'Selecciona una zona' },
       { name: 'work_shift_id', label: 'Jornada base', type: 'resourceSelect', resource: 'workShifts', required: true, emptyLabel: 'Primero crea una jornada base', selectLabel: 'Selecciona una jornada' },
       { name: 'cost_center_code', label: 'Centro de costo' },
-      { name: 'description', label: 'Descripcion', type: 'textarea', wide: true },
+      { name: 'description', label: 'Descripción', type: 'textarea', wide: true },
     ],
     initial: {
       code: '',
@@ -397,7 +397,7 @@ const formDefinitions = [
     stepCode: 'cargos',
     fields: [
       { name: 'organization_unit_id', label: 'Unidad organizativa', type: 'resourceSelect', resource: 'organizationUnits', required: true, emptyLabel: 'Primero crea una unidad organizativa', selectLabel: 'Selecciona una unidad' },
-      { name: 'code', label: 'Codigo', placeholder: 'ANALISTA_RRHH', required: true },
+      { name: 'code', label: 'Código', placeholder: 'ANALISTA_RRHH', required: true },
       { name: 'name', label: 'Nombre', placeholder: 'Analista RRHH', required: true },
       { name: 'salary_min', label: 'Sueldo minimo', type: 'number', step: '0.01', required: true },
       { name: 'salary_max', label: 'Sueldo maximo', type: 'number', step: '0.01', required: true },
@@ -405,7 +405,7 @@ const formDefinitions = [
       { name: 'effective_from', label: 'Vigente desde', type: 'date', required: true },
       { name: 'effective_to', label: 'Vigente hasta', type: 'date' },
       { name: 'status', label: 'Estado', type: 'select', options: ['activo', 'inactivo', 'archivado'] },
-      { name: 'description', label: 'Descripcion', type: 'textarea', wide: true },
+      { name: 'description', label: 'Descripción', type: 'textarea', wide: true },
     ],
     initial: {
       organization_unit_id: '',
@@ -439,17 +439,17 @@ const formDefinitions = [
     saveLabel: 'Guardar cargo',
     updateLabel: 'Actualizar cargo',
     recordsTitle: 'Cargos registrados',
-    emptyText: 'Aun no hay cargos registrados. Guarda un cargo para habilitar editar o eliminar.',
+    emptyText: 'Aún no hay cargos registrados. Guarda un cargo para habilitar editar o eliminar.',
   },
   {
     key: 'zona',
-    title: 'Zona de marcacion',
+    title: 'Zona de marcación',
     description: 'Parametriza ubicaciones permitidas para asistencia y control de marcaciones.',
     icon: MapPin,
     resource: 'workZones',
     stepCode: 'zonas',
     fields: [
-      { name: 'code', label: 'Codigo', placeholder: 'MATRIZ', required: true },
+      { name: 'code', label: 'Código', placeholder: 'MATRIZ', required: true },
       { name: 'name', label: 'Nombre', placeholder: 'Oficina matriz', required: true },
       { name: 'latitude', label: 'Latitud', type: 'number', step: '0.0000001', required: true },
       { name: 'longitude', label: 'Longitud', type: 'number', step: '0.0000001', required: true },
@@ -480,16 +480,16 @@ const formDefinitions = [
   {
     key: 'jornada',
     title: 'Jornada base',
-    description: 'Configura varias jornadas por empresa: lunes a viernes, martes a sabado u otra distribucion operativa autorizada.',
+    description: 'Configura varias jornadas por empresa: lunes a viernes, martes a sábado u otra distribución operativa autorizada.',
     icon: TimerReset,
     resource: 'workShifts',
     stepCode: 'jornadas',
     fields: [
-      { name: 'code', label: 'Codigo', placeholder: 'ORDINARIA_8H', required: true },
+      { name: 'code', label: 'Código', placeholder: 'ORDINARIA_8H', required: true },
       { name: 'name', label: 'Nombre', placeholder: 'Ordinaria 8 horas', required: true },
       { name: 'shift_type', label: 'Tipo', type: 'select', options: ['ordinaria', 'rotativa', 'nocturna', 'parcial'] },
       { name: 'weekly_hours', label: 'Horas semanales', type: 'number', step: '0.5', required: true },
-      { name: 'work_days', label: 'Dias laborables', type: 'multiCheckbox', options: workDayOptions, wide: true },
+      { name: 'work_days', label: 'Días laborables', type: 'multiCheckbox', options: workDayOptions, wide: true },
       { name: 'start_time', label: 'Inicio', type: 'time', required: true },
       { name: 'end_time', label: 'Fin', type: 'time', required: true },
       { name: 'break_minutes', label: 'Descanso min.', type: 'number', required: true },
@@ -518,7 +518,7 @@ const formDefinitions = [
       calendar_rules: {
         workDays: values.work_days || [],
         requiresMdtAuthorizationReview: true,
-        legalNotice: 'La distribucion de jornada debe revisarse frente a la normativa laboral ecuatoriana y, cuando aplique, contar con autorizacion del Ministerio del Trabajo antes de operar.',
+        legalNotice: 'La distribución de jornada debe revisarse frente a la normativa laboral ecuatoriana y, cuando aplique, contar con autorización del Ministerio del Trabajo antes de operar.',
       },
       status: 'activo',
     }),
@@ -533,12 +533,12 @@ const formDefinitions = [
     resource: 'payrollAccountingMappings',
     stepCode: 'contabilidad',
     fields: [
-      { name: 'concept_code', label: 'Concepto de nomina', type: 'payrollConceptSelect', required: true },
+      { name: 'concept_code', label: 'Concepto de nómina', type: 'payrollConceptSelect', required: true },
       { name: 'entry_type', label: 'Asiento', type: 'select', options: ['DEVENGAMIENTO', 'PROVISION', 'PAGO', 'AJUSTE'] },
       { name: 'debit_account_code', label: 'Cuenta debe', placeholder: '510101', required: true },
       { name: 'debit_account_name', label: 'Nombre cuenta debe', placeholder: 'Sueldos y salarios', required: true },
       { name: 'credit_account_code', label: 'Cuenta haber', placeholder: '210101', required: true },
-      { name: 'credit_account_name', label: 'Nombre cuenta haber', placeholder: 'Nomina por pagar', required: true },
+      { name: 'credit_account_name', label: 'Nombre cuenta haber', placeholder: 'Nómina por pagar', required: true },
       { name: 'cost_center_mode', label: 'Centro de costo', type: 'select', options: ['employee', 'fixed', 'none'] },
       { name: 'fixed_cost_center_code', label: 'Centro fijo' },
       { name: 'requires_employee_breakdown', label: 'Desglosar por empleado', type: 'checkbox' },
@@ -593,13 +593,13 @@ const formDefinitions = [
     stepCode: 'bancos',
     fields: [
       { name: 'template', label: 'Plantilla bancaria', type: 'select', options: [
-        { value: 'generico', label: 'Generica delimitada' },
-        { value: 'pacifico_interbank_immediate', label: 'Banco Pacifico - transferencias interbancarias inmediatas' },
+        { value: 'generico', label: 'Genérica delimitada' },
+        { value: 'pacifico_interbank_immediate', label: 'Banco Pacífico - transferencias interbancarias inmediatas' },
       ], wide: true },
-      { name: 'banco_codigo', label: 'Codigo banco', placeholder: 'PICHINCHA', required: true },
+      { name: 'banco_codigo', label: 'Código banco', placeholder: 'PICHINCHA', required: true },
       { name: 'banco_nombre', label: 'Nombre banco', placeholder: 'Banco Pichincha', required: true },
       { name: 'delimiter', label: 'Separador', placeholder: ';', required: true },
-      { name: 'encoding', label: 'Codificacion', type: 'select', options: ['utf8', 'latin1'] },
+      { name: 'encoding', label: 'Codificación', type: 'select', options: ['utf8', 'latin1'] },
       { name: 'date_format', label: 'Formato fecha', type: 'select', options: ['YYYYMMDD', 'DD/MM/YYYY', 'YYYY-MM-DD'] },
       { name: 'include_header', label: 'Incluye cabecera', type: 'checkbox' },
       { name: 'include_trailer', label: 'Incluye totalizador', type: 'checkbox' },
@@ -622,15 +622,15 @@ const formDefinitions = [
     recordLabel: (record) => record.banco_nombre,
     recordMeta: (record) => {
       const layout = record.field_map?.layout === 'pacifico_interbank_immediate'
-        ? 'Banco Pacifico interbancarias'
-        : 'Generico delimitado';
+        ? 'Banco Pacífico interbancarias'
+        : 'Genérico delimitado';
       return `${record.banco_codigo} - ${layout} - ${record.encoding || 'utf8'}`;
     },
   },
   {
     key: 'homologacion_banco',
-    title: 'Homologacion bancaria',
-    description: 'Genera la estructura completa de campos que consumira el archivo plano del banco.',
+    title: 'Homologación bancaria',
+    description: 'Genera la estructura completa de campos que consumirá el archivo plano del banco.',
     icon: Network,
     resource: 'bankFieldMappings',
     stepCode: 'bancos',
@@ -654,7 +654,7 @@ const formDefinitions = [
     stepCode: 'usuarios',
     catalogType: 'usuarios_roles',
     fields: [
-      { name: 'code', label: 'Codigo matriz', placeholder: 'MATRIZ_RRHH', required: true },
+      { name: 'code', label: 'Código matriz', placeholder: 'MATRIZ_RRHH', required: true },
       { name: 'name', label: 'Nombre', placeholder: 'Matriz de roles RRHH', required: true },
       { name: 'owner_email', label: 'Owner / representante', type: 'email' },
       { name: 'admin_email', label: 'Administrador RRHH', type: 'email' },
@@ -704,7 +704,7 @@ function buildBankProfilePayload(values) {
   if (template === 'pacifico_interbank_immediate') {
     return {
       banco_codigo: values.banco_codigo.trim().toUpperCase() || 'PACIFICO',
-      banco_nombre: values.banco_nombre.trim() || 'Banco Pacifico',
+      banco_nombre: values.banco_nombre.trim() || 'Banco Pacífico',
       delimiter: ';',
       encoding: 'latin1',
       date_format: 'YYYYMMDD',
@@ -974,7 +974,7 @@ const stepFormMap = {
 };
 
 function configurationLoadMessage(err) {
-  return extractApiError(err, 'No pudimos cargar tu configuracion. Actualiza la pagina en unos segundos.');
+  return extractApiError(err, 'No pudimos cargar tu configuración. Actualiza la página en unos segundos.');
 }
 
 function buildInitialState() {

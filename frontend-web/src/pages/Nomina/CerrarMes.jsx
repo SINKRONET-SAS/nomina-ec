@@ -100,7 +100,7 @@ function CerrarMes() {
   const openMutation = useMutation({
     mutationFn: async () => authenticatedApi.post('/nomina/periodo/abrir', { anio, mes }),
     onSuccess: () => {
-      setMessage({ type: 'success', text: 'Periodo abierto para cargar novedades y calcular nomina.' });
+      setMessage({ type: 'success', text: 'Periodo abierto para cargar novedades y calcular nómina.' });
       refreshPeriod();
     },
   });
@@ -134,7 +134,7 @@ function CerrarMes() {
     mutationFn: async () => authenticatedApi.post('/nomina/calcular', { anio, mes }),
     onSuccess: (response) => {
       setResultado(response.data.resultado);
-      setMessage({ type: 'success', text: 'Nomina calculada. Revisa el detalle antes de cerrar el periodo.' });
+      setMessage({ type: 'success', text: 'Nómina calculada. Revisa el detalle antes de cerrar el periodo.' });
       refreshPeriod();
     },
   });
@@ -142,7 +142,7 @@ function CerrarMes() {
   const closeMutation = useMutation({
     mutationFn: async () => authenticatedApi.post('/nomina/cerrar', { anio, mes }),
     onSuccess: () => {
-      setMessage({ type: 'success', text: 'Nomina cerrada correctamente.' });
+      setMessage({ type: 'success', text: 'Nómina cerrada correctamente.' });
       setCloseConfirmation(false);
       refreshPeriod();
     },
@@ -181,8 +181,8 @@ function CerrarMes() {
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Operacion mensual</p>
-            <h1 className="mt-1 text-2xl font-bold text-slate-950">Apertura, novedades, calculo y cierre</h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Operación mensual</p>
+            <h1 className="mt-1 text-2xl font-bold text-slate-950">Apertura, novedades, cálculo y cierre</h1>
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
               Abre el periodo antes de cargar novedades. Los lotes crean registros reales por alcance y quedan auditados.
             </p>
@@ -198,7 +198,7 @@ function CerrarMes() {
               </select>
             </label>
             <label className="text-sm font-semibold text-slate-700">
-              Anio
+              Año
               <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" onChange={(event) => setAnio(Number(event.target.value))} type="number" value={anio} />
             </label>
           </div>
@@ -245,11 +245,11 @@ function CerrarMes() {
 
           <div className="mt-5 grid gap-3 md:grid-cols-3">
             <div className="rounded-md bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase text-slate-500">Nominas borrador</p>
+              <p className="text-xs font-semibold uppercase text-slate-500">Nóminas borrador</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{payrollStatus.borrador || 0}</p>
             </div>
             <div className="rounded-md bg-emerald-50 p-4">
-              <p className="text-xs font-semibold uppercase text-emerald-700">Nominas cerradas</p>
+              <p className="text-xs font-semibold uppercase text-emerald-700">Nóminas cerradas</p>
               <p className="mt-1 text-2xl font-semibold text-emerald-900">{payrollStatus.cerrada || 0}</p>
             </div>
             <div className="rounded-md bg-amber-50 p-4">
@@ -284,7 +284,7 @@ function CerrarMes() {
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-950">Cierre</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Cierra solo despues de revisar el calculo. Esta accion marca roles como cerrados.
+            Cierra solo después de revisar el cálculo. Esta acción marca roles como cerrados.
           </p>
           <label className="mt-4 flex items-start gap-2 text-sm text-slate-700">
             <input className="mt-1 h-4 w-4 accent-teal-700" checked={closeConfirmation} onChange={(event) => setCloseConfirmation(event.target.checked)} type="checkbox" />
@@ -292,7 +292,7 @@ function CerrarMes() {
           </label>
           <button className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={!closeConfirmation || closeMutation.isPending} onClick={() => closeMutation.mutate()} type="button">
             <Lock className="h-4 w-4" />
-            {closeMutation.isPending ? 'Cerrando' : 'Cerrar nomina'}
+            {closeMutation.isPending ? 'Cerrando' : 'Cerrar nómina'}
           </button>
         </div>
       </section>
@@ -327,7 +327,7 @@ function CerrarMes() {
                 disabled={!scopeNeedsValue}
                 list={batchForm.scopeType === 'department' ? 'departments-list' : 'positions-list'}
                 onChange={(event) => updateBatch('scopeValue', event.target.value)}
-                placeholder={scopeNeedsValue ? 'Codigo o nombre' : 'No aplica'}
+                placeholder={scopeNeedsValue ? 'Código o nombre' : 'No aplica'}
                 value={batchForm.scopeValue}
               />
             )}
@@ -382,10 +382,10 @@ function CerrarMes() {
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-slate-950">Calculo de nomina</h2>
+          <h2 className="text-lg font-semibold text-slate-950">Cálculo de nómina</h2>
           <button className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={!period || calculateMutation.isPending} onClick={() => calculateMutation.mutate()} type="button">
             <Calculator className="h-4 w-4" />
-            {calculateMutation.isPending ? 'Calculando' : 'Calcular nomina'}
+            {calculateMutation.isPending ? 'Calculando' : 'Calcular nómina'}
           </button>
         </div>
 

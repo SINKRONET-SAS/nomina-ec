@@ -1,4 +1,5 @@
 const configurationService = require('../services/configurationService');
+const { yearInEcuador } = require('../utils/dateEcuador');
 
 function requestContext(req) {
   return {
@@ -94,7 +95,7 @@ async function completeOnboardingStep(req, res, next) {
 async function loadMandatoryLegalParameters(req, res, next) {
   try {
     const data = await configurationService.loadMandatoryLegalParameters(
-      req.body?.year || new Date().getFullYear(),
+      req.body?.year || yearInEcuador(),
       req.usuario,
       requestContext(req)
     );
@@ -107,7 +108,7 @@ async function loadMandatoryLegalParameters(req, res, next) {
 async function syncLegalParametersFromGlobal(req, res, next) {
   try {
     const data = await configurationService.syncLegalParametersFromGlobal(
-      req.body?.year || new Date().getFullYear(),
+      req.body?.year || yearInEcuador(),
       req.usuario,
       requestContext(req),
       {

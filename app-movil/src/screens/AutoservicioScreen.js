@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { mobileAPI } from '../services/api';
+import { currentPeriodEC } from '../utils/dateEC';
 
 const MONTH_LABELS = [
   '',
@@ -28,19 +29,6 @@ const moneyFormatter = new Intl.NumberFormat('es-EC', {
 function formatMoney(value) {
   const amount = Number(value || 0);
   return moneyFormatter.format(Number.isFinite(amount) ? amount : 0);
-}
-
-function currentPeriodEC() {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Guayaquil',
-    year: 'numeric',
-    month: '2-digit',
-  }).formatToParts(new Date());
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return {
-    year: Number(values.year),
-    month: Number(values.month),
-  };
 }
 
 export default function AutoservicioScreen() {
@@ -143,9 +131,29 @@ export default function AutoservicioScreen() {
               <Text style={styles.detail}>Ingresos {formatMoney(nomina.total_ingresos)}</Text>
               <Text style={styles.detail}>Deducciones {formatMoney(nomina.total_deducciones)}</Text>
               <Text style={styles.detail}>Estado {nomina.estado}</Text>
+              {nomina.id && (
+                <TouchableOpacity
+                  style={styles.pdfButton}
+                  onPress={async () => {
+                    try {
+                      const response = await mobileAPI.payrollPdf(nomina.id);
+                      const url = response.data?.url;
+                      if (url) {
+                        await Linking.openURL(url);
+                      } else {
+                        Alert.alert('PDF no disponible', 'El rol de pago aún no tiene PDF generado.');
+                      }
+                    } catch (err) {
+                      Alert.alert('Error', err.response?.data?.message || 'No se pudo obtener el PDF.');
+                    }
+                  }}
+                >
+                  <Text style={styles.pdfButtonText}>Descargar PDF</Text>
+                </TouchableOpacity>
+              )}
             </>
           ) : (
-            <Text style={styles.detail}>El rol del periodo aun no esta disponible.</Text>
+            <Text style={styles.detail}>El rol del período aún no está disponible.</Text>
           )}
         </View>
       )}
@@ -160,7 +168,7 @@ export default function AutoservicioScreen() {
               <View key={item.id} style={styles.historyItem}>
                 <Text style={styles.historyTitle}>{String(item.tipo_novedad || '').replace(/_/g, ' ')}</Text>
                 <Text style={styles.detail}>{String(item.fecha || '').slice(0, 10)} - {item.estado}</Text>
-                <Text style={styles.detail}>{item.justificacion || 'Sin justificacion'}</Text>
+                <Text style={styles.detail}>{item.justificacion || 'Sin justificación'}</Text>
               </View>
             ))
           )}
@@ -174,7 +182,7 @@ export default function AutoservicioScreen() {
           <Text style={styles.detail}>{employee?.cedula || ''}</Text>
           <Text style={styles.detail}>{employee?.cargo || 'Cargo no registrado'} | {employee?.departamento || 'Departamento no registrado'}</Text>
           <Text style={styles.detail}>
-            Zona de marcacion: {employee?.zona_marcacion ? `${employee.zona_marcacion.nombre} (${employee.zona_marcacion.codigo})` : 'No asignada'}
+            Zona de marcación: {employee?.zona_marcacion ? `${employee.zona_marcacion.nombre} (${employee.zona_marcacion.codigo})` : 'No asignada'}
           </Text>
           <Text style={styles.detail}>
             Jornada: {employee?.jornada ? `${employee.jornada.nombre} ${employee.jornada.inicio}-${employee.jornada.fin}` : 'No asignada'}
@@ -253,6 +261,19 @@ const styles = StyleSheet.create({
   name: {
     color: '#0f172a',
     fontSize: 20,
+    fontWeight: '800',
+  },
+  pdfButton: {
+    alignItems: 'center',
+    backgroundColor: '#0369a1',
+    borderRadius: 8,
+    marginTop: 12,
+    minHeight: 40,
+    justifyContent: 'center',
+  },
+  pdfButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
     fontWeight: '800',
   },
   periodButton: {

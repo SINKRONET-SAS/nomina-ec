@@ -5,6 +5,7 @@ import { authenticatedApi } from '../../services/authenticatedApi';
 import { createBeneficio, fetchBeneficios, updateBeneficio } from '../../services/beneficiosApi';
 import { extractApiError } from '../../services/publicApi';
 import { ECUADOR_TIME_ZONE, currentPeriodEC } from '../../utils/dateFormat';
+import { money } from '../../utils/money';
 
 function emptyForm() {
   const period = currentPeriodEC();
@@ -18,10 +19,6 @@ function emptyForm() {
     mesInicio: period.mes,
     estado: 'pendiente',
   };
-}
-
-function money(value) {
-  return `$${Number(value || 0).toFixed(2)}`;
 }
 
 function Beneficios() {
@@ -112,7 +109,7 @@ function Beneficios() {
             <h1 className="text-2xl font-semibold text-slate-950">Beneficios, anticipos y prestamos</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
               Registra valores aprobables por empleado. Solo los beneficios en estado aprobado entran como deduccion
-              al calcular y cerrar la nomina del periodo.
+              al calcular y cerrar la nómina del periodo.
             </p>
             <p className="mt-1 text-xs font-semibold text-slate-500">Periodo inicial calculado en {ECUADOR_TIME_ZONE}.</p>
           </div>
@@ -163,7 +160,7 @@ function Beneficios() {
               </label>
             </div>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">Descripcion</span>
+              <span className="text-sm font-medium text-slate-700">Descripción</span>
               <textarea className="mt-1 min-h-20 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.descripcion} onChange={(event) => updateField('descripcion', event.target.value)} />
             </label>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -176,7 +173,7 @@ function Beneficios() {
                 <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="0.01" step="0.01" value={form.cuotaMensual} onChange={(event) => updateField('cuotaMensual', event.target.value)} required />
               </label>
               <label>
-                <span className="text-sm font-medium text-slate-700">Anio inicio</span>
+                <span className="text-sm font-medium text-slate-700">Año inicio</span>
                 <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" value={form.anioInicio} onChange={(event) => updateField('anioInicio', event.target.value)} required />
               </label>
               <label>

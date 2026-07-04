@@ -27,7 +27,7 @@ async function registrar(req, res) {
 
     if (!['inicio_jornada', 'fin_jornada', 'inicio_almuerzo', 'fin_almuerzo'].includes(tipo)) {
       return res.status(400).json({
-        error: 'Tipo de marcacion invalido',
+        error: 'Tipo de marcación inválido',
         correlationId: req.correlationId,
       });
     }
@@ -48,7 +48,7 @@ async function registrar(req, res) {
 
     res.status(201).json({ success: true, marcacion: resultado, correlationId: req.correlationId });
   } catch (err) {
-    console.error('[MARCACIONES] Error registrando marcacion', {
+    console.error('[MARCACIONES] Error registrando marcación', {
       code: err.code || 'MARCACION_ERROR',
       statusCode: err.statusCode || 500,
       correlationId: req.correlationId,

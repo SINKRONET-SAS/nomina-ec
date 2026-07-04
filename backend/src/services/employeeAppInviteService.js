@@ -715,7 +715,7 @@ async function resolveLinkedEmployee({ tenantId, userId, email, role, requireExp
   `, [tenantId, email]);
 
   if (!fallback.rows[0]) {
-    throw new AppError('No encontramos un empleado activo vinculado a este usuario movil.', {
+    throw new AppError('No encontramos un empleado activo vinculado a este usuario móvil.', {
       code: 'MOBILE_EMPLOYEE_NOT_FOUND',
       statusCode: 404,
     });
@@ -733,7 +733,7 @@ async function acceptEmployeeInvitation(payload = {}, requestMeta = {}) {
   const geolocationConsent = Boolean(payload.geolocationConsent || payload.acceptedGeolocation);
 
   if (!normalizedCode || !normalizedEmail || !password) {
-    throw new AppError('Codigo, email y contrasena son requeridos.', {
+    throw new AppError('Código, email y contraseña son requeridos.', {
       code: 'EMPLOYEE_APP_ACCEPT_REQUIRED_FIELDS',
       statusCode: 400,
     });

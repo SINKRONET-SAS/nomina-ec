@@ -55,7 +55,7 @@ function ActasFiniquito() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Empleado</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Cedula</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Cédula</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Fecha</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Acciones</th>
               </tr>

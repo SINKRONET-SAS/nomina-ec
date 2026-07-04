@@ -13,8 +13,12 @@ import AutoservicioScreen from './screens/AutoservicioScreen';
 import PermisosScreen from './screens/PermisosScreen';
 import RutaHoyScreen from './screens/RutaHoyScreen';
 import GastosMovilizacionScreen from './screens/GastosMovilizacionScreen';
+import ErrorBoundary from './components/ErrorBoundary';
 import { initMovilizacionDB } from './db/movilizacion';
+import { initOfflineQueue, processQueue } from './db/offline-queue';
+import { initRouteCache } from './db/route-cache';
 import { mobileAPI } from './services/api';
+import NetInfo from '@react-native-community/netinfo';
 
 const storedUserKey = 'mobileUser';
 
@@ -23,7 +27,6 @@ const tabs = [
   { id: 'ruta', label: 'Ruta' },
   { id: 'movilizacion', label: 'Moviliz.' },
   { id: 'permisos', label: 'Permisos' },
-  { id: 'historial', label: 'Historial' },
   { id: 'autoservicio', label: 'Mi Nómina' },
 ];
 
@@ -34,7 +37,6 @@ function EmployeeAppShell({ onLogout }) {
     if (activeTab === 'ruta') return <RutaHoyScreen />;
     if (activeTab === 'movilizacion') return <GastosMovilizacionScreen />;
     if (activeTab === 'permisos') return <PermisosScreen />;
-    if (activeTab === 'historial') return <MisMarcacionesScreen />;
     if (activeTab === 'autoservicio') return <AutoservicioScreen />;
     return <MarcacionScreen onLogout={onLogout} />;
   };
@@ -126,18 +128,32 @@ export default function App() {
   const [profileError, setProfileError] = useState('');
   const [cargandoPerfil, setCargandoPerfil] = useState(false);
   const [cargando, setCargando] = useState(true);
+  const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
     cargarToken();
-    initMovilizacionDB().catch((err) => {
-      console.error('Error inicializando movilizacion local:', {
-        code: err.code || 'MOVILIZACION_SQLITE_INIT_ERROR',
+    Promise.all([
+      initMovilizacionDB(),
+      initOfflineQueue(),
+      initRouteCache(),
+    ]).catch((err) => {
+      console.error('Error inicializando SQLite local:', {
+        code: err.code || 'SQLITE_INIT_ERROR',
         statusCode: 500,
         correlationId: 'mobile-local',
         userId: null,
         message: err.message,
       });
     });
+
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      const online = Boolean(state.isConnected && state.isInternetReachable !== false);
+      setIsOnline(online);
+      if (online) {
+        processQueue(mobileAPI).catch(() => {});
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   const cargarToken = async () => {
@@ -179,7 +195,7 @@ export default function App() {
       const errorCode = err?.response?.data?.error;
       if (errorCode === 'PLAN_CAPABILITY_BLOCKED') {
         setMobileProfile(null);
-        setProfileError(err?.response?.data?.message || 'El plan actual no incluye app movil. Activa un plan que ofrezca esta funcionalidad.');
+        setProfileError(err?.response?.data?.message || 'El plan actual no incluye app móvil. Activa un plan que ofrezca esta funcionalidad.');
       } else if (['owner', 'admin_rrhh', 'superadmin'].includes(role)) {
         setMobileProfile({ employee: null, user: fallbackUser, administrativeOnly: true });
         setProfileError('');
@@ -235,8 +251,14 @@ export default function App() {
   }
 
   return (
+    <ErrorBoundary>
     <SafeAreaProvider>
       <StatusBar style="auto" />
+      {token && !cargando && (
+        <View style={[styles.connectivityBar, isOnline ? styles.onlineBar : styles.offlineBar]}>
+          <Text style={styles.connectivityText}>{isOnline ? 'En línea' : 'Sin conexión — datos locales'}</Text>
+        </View>
+      )}
       {token && cargandoPerfil && (
         <View style={styles.loading}>
           <ActivityIndicator color="#0f766e" size="large" />
@@ -260,10 +282,26 @@ export default function App() {
       )}
       {!token && <LoginScreen onLogin={handleLogin} />}
     </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
 
 const styles = StyleSheet.create({
+  connectivityBar: {
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  connectivityText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  onlineBar: {
+    backgroundColor: '#16a34a',
+  },
+  offlineBar: {
+    backgroundColor: '#d97706',
+  },
   loading: {
     alignItems: 'center',
     backgroundColor: '#f8fafc',

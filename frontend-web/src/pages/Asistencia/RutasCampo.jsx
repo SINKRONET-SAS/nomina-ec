@@ -234,7 +234,7 @@ function RutasCampo() {
             <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">Rutas de campo</p>
             <h1 className="mt-2 text-2xl font-semibold text-slate-950">Mercaderistas y visitas por tienda</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Gestiona sitios, rutas diarias, visitas no programadas y excepciones GPS. La jornada sigue alimentando nomina; las visitas alimentan operacion.
+              Gestiona sitios, rutas diarias, visitas no programadas y excepciones GPS. La jornada sigue alimentando nómina; las visitas alimentan operación.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -324,7 +324,7 @@ function RutasCampo() {
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <label className="grid gap-1 text-sm font-semibold text-slate-700">
-              Codigo
+              Código
               <input className={CONTROL} value={siteForm.code} onChange={(event) => updateSiteForm('code', event.target.value)} placeholder="TIA_CEIBOS" />
             </label>
             <label className="grid gap-1 text-sm font-semibold text-slate-700">
@@ -344,8 +344,8 @@ function RutasCampo() {
               </select>
             </label>
             <label className="grid gap-1 text-sm font-semibold text-slate-700 md:col-span-2">
-              Direccion
-              <input className={CONTROL} value={siteForm.address} onChange={(event) => updateSiteForm('address', event.target.value)} placeholder="Direccion referencial" />
+              Dirección
+              <input className={CONTROL} value={siteForm.address} onChange={(event) => updateSiteForm('address', event.target.value)} placeholder="Dirección referencial" />
             </label>
             <label className="grid gap-1 text-sm font-semibold text-slate-700">
               Latitud

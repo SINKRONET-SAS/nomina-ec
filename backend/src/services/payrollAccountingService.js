@@ -1,5 +1,5 @@
 // ============================================================
-// CRN26 - Esquema contable y lineas normalizadas de nomina
+// CRN26 - Esquema contable y líneas normalizadas de nómina
 // ============================================================
 const db = require('../config/database');
 const AppError = require('../utils/AppError');
@@ -21,7 +21,7 @@ const PAYROLL_CONCEPTS = [
     debitAccountCode: '510101',
     debitAccountName: 'Sueldos y salarios',
     creditAccountCode: '210101',
-    creditAccountName: 'Nomina por pagar',
+    creditAccountName: 'Nómina por pagar',
   },
   {
     code: 'horas_extra_50',
@@ -31,7 +31,7 @@ const PAYROLL_CONCEPTS = [
     debitAccountCode: '510102',
     debitAccountName: 'Horas suplementarias',
     creditAccountCode: '210101',
-    creditAccountName: 'Nomina por pagar',
+    creditAccountName: 'Nómina por pagar',
   },
   {
     code: 'horas_extra_100',
@@ -41,17 +41,17 @@ const PAYROLL_CONCEPTS = [
     debitAccountCode: '510103',
     debitAccountName: 'Horas extraordinarias',
     creditAccountCode: '210101',
-    creditAccountName: 'Nomina por pagar',
+    creditAccountName: 'Nómina por pagar',
   },
   {
     code: 'bono_desempeno',
-    label: 'Bono de desempeno',
+    label: 'Bono de desempeño',
     category: 'ingreso',
     entryType: 'DEVENGAMIENTO',
     debitAccountCode: '510104',
-    debitAccountName: 'Bonos de nomina',
+    debitAccountName: 'Bonos de nómina',
     creditAccountCode: '210101',
-    creditAccountName: 'Nomina por pagar',
+    creditAccountName: 'Nómina por pagar',
   },
   {
     code: 'comision',
@@ -59,9 +59,9 @@ const PAYROLL_CONCEPTS = [
     category: 'ingreso',
     entryType: 'DEVENGAMIENTO',
     debitAccountCode: '510105',
-    debitAccountName: 'Comisiones de nomina',
+    debitAccountName: 'Comisiones de nómina',
     creditAccountCode: '210101',
-    creditAccountName: 'Nomina por pagar',
+    creditAccountName: 'Nómina por pagar',
   },
   {
     code: 'fondo_reserva_pagado',
@@ -71,7 +71,7 @@ const PAYROLL_CONCEPTS = [
     debitAccountCode: '510106',
     debitAccountName: 'Fondos de reserva pagados',
     creditAccountCode: '210101',
-    creditAccountName: 'Nomina por pagar',
+    creditAccountName: 'Nómina por pagar',
   },
   {
     code: 'aporte_iess_personal',
@@ -79,7 +79,7 @@ const PAYROLL_CONCEPTS = [
     category: 'deduccion',
     entryType: 'DEVENGAMIENTO',
     debitAccountCode: '210101',
-    debitAccountName: 'Nomina por pagar',
+    debitAccountName: 'Nómina por pagar',
     creditAccountCode: '210201',
     creditAccountName: 'IESS personal por pagar',
   },
@@ -89,7 +89,7 @@ const PAYROLL_CONCEPTS = [
     category: 'deduccion',
     entryType: 'DEVENGAMIENTO',
     debitAccountCode: '210101',
-    debitAccountName: 'Nomina por pagar',
+    debitAccountName: 'Nómina por pagar',
     creditAccountCode: '210202',
     creditAccountName: 'Impuesto a la renta por pagar',
   },
@@ -99,7 +99,7 @@ const PAYROLL_CONCEPTS = [
     category: 'deduccion',
     entryType: 'DEVENGAMIENTO',
     debitAccountCode: '210101',
-    debitAccountName: 'Nomina por pagar',
+    debitAccountName: 'Nómina por pagar',
     creditAccountCode: '510107',
     creditAccountName: 'Recupero por faltas',
   },
@@ -109,19 +109,19 @@ const PAYROLL_CONCEPTS = [
     category: 'deduccion',
     entryType: 'DEVENGAMIENTO',
     debitAccountCode: '210101',
-    debitAccountName: 'Nomina por pagar',
+    debitAccountName: 'Nómina por pagar',
     creditAccountCode: '112101',
     creditAccountName: 'Anticipos a empleados por cobrar',
   },
   {
     code: 'prestamo',
-    label: 'Prestamo descontado',
+    label: 'Préstamo descontado',
     category: 'deduccion',
     entryType: 'DEVENGAMIENTO',
     debitAccountCode: '210101',
-    debitAccountName: 'Nomina por pagar',
+    debitAccountName: 'Nómina por pagar',
     creditAccountCode: '112102',
-    creditAccountName: 'Prestamos a empleados por cobrar',
+    creditAccountName: 'Préstamos a empleados por cobrar',
   },
   {
     code: 'aporte_iess_patronal',
@@ -179,7 +179,7 @@ const PAYROLL_CONCEPTS = [
     category: 'pago',
     entryType: 'PAGO',
     debitAccountCode: '210101',
-    debitAccountName: 'Nomina por pagar',
+    debitAccountName: 'Nómina por pagar',
     creditAccountCode: '110201',
     creditAccountName: 'Bancos',
   },
@@ -338,7 +338,7 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
     });
     addLine(lines, {
       code: 'bono_desempeno',
-      label: 'Bono de desempeno',
+      label: 'Bono de desempeño',
       category: 'ingreso',
       amount: detail.bonosDesempeno,
       source: 'novedad',
@@ -393,7 +393,7 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
       const tipo = String(item.tipo || '').trim().toLowerCase() === 'prestamo' ? 'prestamo' : 'anticipo';
       addLine(lines, {
         code: tipo,
-        label: tipo === 'prestamo' ? 'Prestamo descontado' : 'Anticipo descontado',
+        label: tipo === 'prestamo' ? 'Préstamo descontado' : 'Anticipo descontado',
         category: 'deduccion',
         amount: item.amount,
         source: 'beneficio',
@@ -415,7 +415,7 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
     });
     addLine(lines, {
       code: 'prestamo',
-      label: 'Prestamo descontado',
+      label: 'Préstamo descontado',
       category: 'deduccion',
       amount: detail.prestamos ?? payrollRow.prestamos,
       source: 'beneficio',
@@ -711,9 +711,9 @@ function buildDefaultNoveltyMapping(config = {}, currentYear = new Date().getFul
     category: isIncome ? 'ingreso' : 'deduccion',
     entry_type: 'DEVENGAMIENTO',
     debit_account_code: isIncome ? '510190' : '210101',
-    debit_account_name: isIncome ? 'Novedades de ingreso de nomina' : 'Nomina por pagar',
+    debit_account_name: isIncome ? 'Novedades de ingreso de nómina' : 'Nómina por pagar',
     credit_account_code: isIncome ? '210101' : '510191',
-    credit_account_name: isIncome ? 'Nomina por pagar' : 'Recupero por novedades de nomina',
+    credit_account_name: isIncome ? 'Nómina por pagar' : 'Recupero por novedades de nómina',
     cost_center_mode: 'employee',
     fixed_cost_center_code: '',
     requires_employee_breakdown: true,
@@ -835,7 +835,7 @@ function validateAccountingBalance(entries) {
   }, { debe: 0, haber: 0 });
 
   if (Math.round(totals.debe * 100) !== Math.round(totals.haber * 100)) {
-    throw new AppError('El reporte contable de nomina no balancea debe/haber.', {
+    throw new AppError('El reporte contable de nómina no balancea debe/haber.', {
       code: 'PAYROLL_ACCOUNTING_NOT_BALANCED',
       statusCode: 422,
       details: totals,

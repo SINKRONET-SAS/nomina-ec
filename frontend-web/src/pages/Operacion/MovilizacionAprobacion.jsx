@@ -2,10 +2,7 @@ import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, RefreshCcw, XCircle } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
-
-function money(value) {
-  return new Intl.NumberFormat('es-EC', { currency: 'USD', style: 'currency' }).format(Number(value || 0));
-}
+import { money } from '../../utils/money';
 
 export default function MovilizacionAprobacion() {
   const queryClient = useQueryClient();

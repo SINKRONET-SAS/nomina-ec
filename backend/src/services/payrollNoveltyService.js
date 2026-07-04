@@ -83,6 +83,17 @@ const DEFAULT_NOVELTY_RULES = {
     conceptCode: 'descuento_permiso_sin_sueldo',
     affectsBankFile: true,
   },
+  anticipo_movilizacion: {
+    name: 'Anticipo movilización',
+    payrollImpact: 'ingreso',
+    calculationMode: 'amount',
+    conceptCode: 'anticipo_movilizacion',
+    affectsIess: false,
+    affectsIncomeTax: false,
+    affectsDecimos: false,
+    affectsVacation: false,
+    affectsBankFile: true,
+  },
 };
 
 const VALID_PAYROLL_IMPACTS = new Set(['ingreso', 'descuento', 'informativo']);

@@ -256,7 +256,7 @@ function ActasEntregaDotacion() {
                     </select>
                   </label>
                   <label className="block">
-                    <span className="text-xs font-semibold text-slate-600">Descripcion</span>
+                    <span className="text-xs font-semibold text-slate-600">Descripción</span>
                     <input
                       className="mt-1 min-h-10 w-full rounded-md border border-slate-300 px-3 text-sm"
                       onChange={(event) => updateItem(index, 'descripcion', event.target.value)}
@@ -277,7 +277,7 @@ function ActasEntregaDotacion() {
                     />
                   </label>
                   <label className="block">
-                    <span className="text-xs font-semibold text-slate-600">Codigo</span>
+                    <span className="text-xs font-semibold text-slate-600">Código</span>
                     <input
                       className="mt-1 min-h-10 w-full rounded-md border border-slate-300 px-3 text-sm"
                       onChange={(event) => updateItem(index, 'codigo', event.target.value)}
@@ -359,7 +359,7 @@ function ActasEntregaDotacion() {
             <thead className="bg-slate-50">
               <tr>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase text-slate-500">Empleado</th>
-                <th className="px-5 py-3 text-left text-xs font-medium uppercase text-slate-500">Cedula</th>
+                <th className="px-5 py-3 text-left text-xs font-medium uppercase text-slate-500">Cédula</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase text-slate-500">Fecha</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase text-slate-500">Items</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase text-slate-500">Firmas</th>

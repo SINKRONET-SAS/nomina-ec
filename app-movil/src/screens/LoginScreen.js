@@ -110,11 +110,11 @@ export default function LoginScreen({ onLogin }) {
       });
       const token = getAuthToken(response);
       if (!token) {
-        throw new Error('La activacion fue aceptada, pero el backend no devolvio token.');
+        throw new Error('La activación fue aceptada, pero el backend no devolvió token.');
       }
       await onLogin(token, response.data);
     } catch (err) {
-      Alert.alert('No se pudo activar', getErrorMessage(err, 'Solicita a RRHH un codigo nuevo.'));
+      Alert.alert('No se pudo activar', getErrorMessage(err, 'Solicita a RRHH un código nuevo.'));
     } finally {
       setLoading(false);
     }
@@ -132,7 +132,7 @@ export default function LoginScreen({ onLogin }) {
       const response = await authAPI.login(normalizedEmail, password, tenantRuc);
       const token = getAuthToken(response);
       if (!token) {
-        throw new Error('El backend autentico la solicitud pero no devolvio token.');
+        throw new Error('El backend autenticó la solicitud pero no devolvió token.');
       }
       await onLogin(token, response.data);
     } catch (err) {
@@ -145,7 +145,7 @@ export default function LoginScreen({ onLogin }) {
   const handleForgot = async () => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
-      Alert.alert('Email requerido', 'Ingrese su correo para solicitar recuperacion.');
+      Alert.alert('Email requerido', 'Ingrese su correo para solicitar recuperación.');
       return;
     }
 
@@ -155,7 +155,7 @@ export default function LoginScreen({ onLogin }) {
       Alert.alert('Solicitud registrada', response.data?.message || 'Revise su correo para continuar.');
       setMode('reset');
     } catch (err) {
-      Alert.alert('No se pudo solicitar recuperacion', getErrorMessage(err, 'Intente nuevamente.'));
+      Alert.alert('No se pudo solicitar recuperación', getErrorMessage(err, 'Intente nuevamente.'));
     } finally {
       setLoading(false);
     }
@@ -164,7 +164,7 @@ export default function LoginScreen({ onLogin }) {
   const handleReset = async () => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || !resetCode || !password) {
-      Alert.alert('Datos requeridos', 'Ingrese email, codigo y nueva clave.');
+      Alert.alert('Datos requeridos', 'Ingrese email, código y nueva clave.');
       return;
     }
 
@@ -214,14 +214,14 @@ export default function LoginScreen({ onLogin }) {
             <TextInput
               keyboardType="number-pad"
               onChangeText={(value) => updateActivation('cedula', value)}
-              placeholder="Cedula opcional"
+              placeholder="Cédula opcional"
               style={styles.input}
               value={activation.cedula}
             />
             <TextInput
               autoCapitalize="characters"
               onChangeText={(value) => updateActivation('inviteCode', String(value || '').replace(/[^a-zA-Z0-9-]/g, '').toUpperCase())}
-              placeholder="Codigo de activacion"
+              placeholder="Código de activación"
               style={styles.input}
               value={activation.inviteCode}
             />
@@ -240,7 +240,7 @@ export default function LoginScreen({ onLogin }) {
             />
             <ConsentRow
               checked={activation.acceptedPrivacy}
-              label="Acepto la politica de privacidad aplicable a la app de asistencia."
+              label="Acepto la política de privacidad aplicable a la app de asistencia."
               onPress={() => updateActivation('acceptedPrivacy', !activation.acceptedPrivacy)}
             />
             <ConsentRow
@@ -250,7 +250,7 @@ export default function LoginScreen({ onLogin }) {
             />
             <ConsentRow
               checked={activation.geolocationConsent}
-              label="Acepto el uso de geolocalizacion durante cada marcacion."
+              label="Acepto el uso de geolocalización durante cada marcación."
               onPress={() => updateActivation('geolocationConsent', !activation.geolocationConsent)}
             />
             <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleActivate} disabled={loading}>
@@ -286,10 +286,10 @@ export default function LoginScreen({ onLogin }) {
           <>
             <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
             <TouchableOpacity style={styles.secondaryButton} onPress={handleForgot} disabled={loading}>
-              <Text style={styles.secondaryButtonText}>Solicitar codigo</Text>
+              <Text style={styles.secondaryButtonText}>Solicitar código</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.linkButton} onPress={() => setMode('reset')}>
-              <Text style={styles.linkText}>Ya tengo un codigo</Text>
+              <Text style={styles.linkText}>Ya tengo un código</Text>
             </TouchableOpacity>
           </>
         )}
@@ -297,7 +297,7 @@ export default function LoginScreen({ onLogin }) {
         {mode === 'reset' && (
           <>
             <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
-            <TextInput style={styles.input} placeholder="Codigo" value={resetCode} onChangeText={setResetCode} keyboardType="number-pad" />
+            <TextInput style={styles.input} placeholder="Código" value={resetCode} onChangeText={setResetCode} keyboardType="number-pad" />
             <PasswordInput
               onChangeText={setPassword}
               placeholder="Nueva clave"

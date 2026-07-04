@@ -44,7 +44,7 @@ function redact(value) {
 function normalizeEmail(value) {
   const email = String(value || '').trim().toLowerCase();
   if (!email || /[\r\n]/.test(email) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw new AppError('Correo electronico invalido para envio transaccional.', {
+    throw new AppError('Correo electrónico inválido para envío transaccional.', {
       code: 'COMM_EMAIL_INVALID',
       statusCode: 422,
     });
@@ -332,7 +332,7 @@ async function sendEmail({
     await auditDelivery(result, { tenantId, userId, correlationId, recipient, purpose, flow, required });
 
     if (required) {
-      throw new AppError('SMTP real no esta configurado para enviar correos transaccionales.', {
+      throw new AppError('SMTP real no está configurado para enviar correos transaccionales.', {
         code: 'COMM_SMTP_NOT_CONFIGURED',
         statusCode: 503,
         details: { missing: config.missing, provider: config.provider, deliveryMode: config.deliveryMode },
@@ -350,7 +350,7 @@ async function sendEmail({
         address: normalizeEmail(config.fromEmail),
       },
       to: recipient,
-      subject: sanitizeHeader(subject, 'Notificacion SKNOMINA'),
+      subject: sanitizeHeader(subject, 'Notificación SKNOMINA'),
       text,
       html,
       disableFileAccess: true,
@@ -471,7 +471,7 @@ async function sendWhatsAppTemplate({
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      throw new AppError('WhatsApp rechazo la solicitud de envio.', {
+      throw new AppError('WhatsApp rechazó la solicitud de envío.', {
         code: 'COMM_WHATSAPP_SEND_ERROR',
         statusCode: 502,
         details: {
@@ -514,18 +514,18 @@ async function sendWhatsAppTemplate({
 function verificationEmailTemplate({ code, name }) {
   const safeName = sanitizeHeader(name, 'usuario');
   return {
-    subject: 'Codigo de verificacion SKNOMINA',
-    text: `Hola ${safeName}.\n\nTu codigo de verificacion de SKNOMINA es: ${code}\nVence en 24 horas.\n\nSi no solicitaste este acceso, ignora este mensaje.`,
-    html: `<p>Hola ${safeName}.</p><p>Tu codigo de verificacion de SKNOMINA es:</p><p style="font-size:22px;font-weight:700;letter-spacing:3px">${code}</p><p>Vence en 24 horas.</p><p>Si no solicitaste este acceso, ignora este mensaje.</p>`,
+    subject: 'Código de verificación SKNOMINA',
+    text: `Hola ${safeName}.\n\nTu código de verificación de SKNOMINA es: ${code}\nVence en 24 horas.\n\nSi no solicitaste este acceso, ignora este mensaje.`,
+    html: `<p>Hola ${safeName}.</p><p>Tu código de verificación de SKNOMINA es:</p><p style="font-size:22px;font-weight:700;letter-spacing:3px">${code}</p><p>Vence en 24 horas.</p><p>Si no solicitaste este acceso, ignora este mensaje.</p>`,
   };
 }
 
 function resetEmailTemplate({ code, name }) {
   const safeName = sanitizeHeader(name, 'usuario');
   return {
-    subject: 'Recuperacion de clave SKNOMINA',
-    text: `Hola ${safeName}.\n\nTu codigo para restablecer la clave es: ${code}\nVence en 30 minutos.\n\nSi no solicitaste este cambio, contacta al administrador de tu empresa.`,
-    html: `<p>Hola ${safeName}.</p><p>Tu codigo para restablecer la clave es:</p><p style="font-size:22px;font-weight:700;letter-spacing:3px">${code}</p><p>Vence en 30 minutos.</p><p>Si no solicitaste este cambio, contacta al administrador de tu empresa.</p>`,
+    subject: 'Recuperación de clave SKNOMINA',
+    text: `Hola ${safeName}.\n\nTu código para restablecer la clave es: ${code}\nVence en 30 minutos.\n\nSi no solicitaste este cambio, contacta al administrador de tu empresa.`,
+    html: `<p>Hola ${safeName}.</p><p>Tu código para restablecer la clave es:</p><p style="font-size:22px;font-weight:700;letter-spacing:3px">${code}</p><p>Vence en 30 minutos.</p><p>Si no solicitaste este cambio, contacta al administrador de tu empresa.</p>`,
   };
 }
 
@@ -533,8 +533,8 @@ function employeeInviteEmailTemplate({ employeeName, code, activationUrl, expire
   const safeName = sanitizeHeader(employeeName, 'empleado');
   return {
     subject: 'Activa tu app de asistencia SKNOMINA',
-    text: `Hola ${safeName}.\n\nRRHH habilito tu acceso a la app de asistencia SKNOMINA.\nCodigo: ${code}\nLink: ${activationUrl}\nVigente hasta: ${expiresAt || 'fecha registrada por RRHH'}.\n\nNo compartas este codigo.`,
-    html: `<p>Hola ${safeName}.</p><p>RRHH habilito tu acceso a la app de asistencia SKNOMINA.</p><p><strong>Codigo:</strong> ${code}</p><p><a href="${activationUrl}">Abrir activacion</a></p><p>Vigente hasta: ${expiresAt || 'fecha registrada por RRHH'}.</p><p>No compartas este codigo.</p>`,
+    text: `Hola ${safeName}.\n\nRRHH habilitó tu acceso a la app de asistencia SKNOMINA.\nCódigo: ${code}\nLink: ${activationUrl}\nVigente hasta: ${expiresAt || 'fecha registrada por RRHH'}.\n\nNo compartas este código.`,
+    html: `<p>Hola ${safeName}.</p><p>RRHH habilitó tu acceso a la app de asistencia SKNOMINA.</p><p><strong>Código:</strong> ${code}</p><p><a href="${activationUrl}">Abrir activación</a></p><p>Vigente hasta: ${expiresAt || 'fecha registrada por RRHH'}.</p><p>No compartas este código.</p>`,
   };
 }
 
@@ -543,8 +543,8 @@ function payrollRoleAvailableEmailTemplate({ employeeName, anio, mes, roleUrl })
   const period = `${String(mes).padStart(2, '0')}/${anio}`;
   return {
     subject: `Rol de pago disponible ${period}`,
-    text: `Hola ${safeName}.\n\nTu rol de pago del periodo ${period} esta disponible en SKNOMINA.\n${roleUrl ? `Puedes revisarlo aqui: ${roleUrl}\n` : ''}\nSi tienes dudas, contacta a RRHH.`,
-    html: `<p>Hola ${safeName}.</p><p>Tu rol de pago del periodo <strong>${period}</strong> esta disponible en SKNOMINA.</p>${roleUrl ? `<p><a href="${roleUrl}">Revisar rol de pago</a></p>` : ''}<p>Si tienes dudas, contacta a RRHH.</p>`,
+    text: `Hola ${safeName}.\n\nTu rol de pago del período ${period} está disponible en SKNOMINA.\n${roleUrl ? `Puedes revisarlo aquí: ${roleUrl}\n` : ''}\nSi tienes dudas, contacta a RRHH.`,
+    html: `<p>Hola ${safeName}.</p><p>Tu rol de pago del período <strong>${period}</strong> está disponible en SKNOMINA.</p>${roleUrl ? `<p><a href="${roleUrl}">Revisar rol de pago</a></p>` : ''}<p>Si tienes dudas, contacta a RRHH.</p>`,
   };
 }
 
@@ -656,12 +656,45 @@ async function sendRolPagoDisponible({ employee, payroll, correlationId, userId,
   });
 }
 
+function permisoResueltoEmailTemplate({ employeeName, fechaInicio, fechaFin, decision }) {
+  const safeName = sanitizeHeader(employeeName, 'empleado');
+  const estado = decision === 'aprobado' ? 'aprobado' : 'rechazado';
+  return {
+    subject: `Tu permiso fue ${estado}`,
+    text: `Hola ${safeName}.\n\nTu permiso del ${fechaInicio} al ${fechaFin} fue ${estado}.\n\nConsulta el detalle en SKNOMINA.`,
+    html: `<p>Hola ${safeName}.</p><p>Tu permiso del <strong>${fechaInicio}</strong> al <strong>${fechaFin}</strong> fue <strong>${estado}</strong>.</p><p>Consulta el detalle en SKNOMINA.</p>`,
+  };
+}
+
+async function sendNotificacionPermisoResuelto({ employee, permiso, decision, correlationId, userId }) {
+  const name = [employee?.nombres, employee?.apellidos].filter(Boolean).join(' ') || 'empleado';
+  const tenantId = employee?.tenant_id || employee?.tenantId || null;
+  const content = permisoResueltoEmailTemplate({
+    employeeName: name,
+    fechaInicio: String(permiso?.fecha_inicio || permiso?.fechaInicio || '').slice(0, 10),
+    fechaFin: String(permiso?.fecha_fin || permiso?.fechaFin || '').slice(0, 10),
+    decision,
+  });
+
+  return sendEmail({
+    to: employee?.email_personal || employee?.email,
+    ...content,
+    template: 'permiso_resuelto',
+    correlationId,
+    userId,
+    tenantId,
+    purpose: 'notificacion_permiso_resuelto',
+    flow: 'permisos_resolucion',
+    required: false,
+  });
+}
+
 async function sendTestEmail({ to, correlationId, userId, tenantId }) {
   return sendEmail({
     to,
     subject: 'Prueba SMTP SKNOMINA',
-    text: 'El canal SMTP de SKNOMINA esta operativo para correos transaccionales.',
-    html: '<p>El canal SMTP de SKNOMINA esta operativo para correos transaccionales.</p>',
+    text: 'El canal SMTP de SKNOMINA está operativo para correos transaccionales.',
+    html: '<p>El canal SMTP de SKNOMINA está operativo para correos transaccionales.</p>',
     template: 'smtp_test',
     correlationId,
     userId,
@@ -679,6 +712,7 @@ module.exports = {
   sendEmailVerification,
   sendEmployeeInvite,
   sendPasswordReset,
+  sendNotificacionPermisoResuelto,
   sendRolPagoDisponible,
   sendTestEmail,
   sendWhatsAppTemplate,

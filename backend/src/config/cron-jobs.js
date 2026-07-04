@@ -6,6 +6,7 @@ const { calcularNominaMensual } = require('../services/calculoNominaService');
 const { ensurePayrollPeriodForDate, todayInEcuador } = require('../services/monthlyPeriodService');
 const db = require('../config/database');
 const logger = require('../utils/logger');
+const { monthInEcuador, yearInEcuador } = require('../utils/dateEcuador');
 
 function iniciarCronJobs() {
   logger.info({ code: 'CRON_JOBS_STARTING', correlationId: 'cron-startup' }, 'Iniciando trabajos programados');
@@ -15,15 +16,17 @@ function iniciarCronJobs() {
   });
 
   cron.schedule('0 23 28-31 * *', runCron('cron-nomina-mensual', async () => {
-    const hoy = new Date();
-    const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
+    const anio = yearInEcuador();
+    const mes = monthInEcuador();
+    const ultimoDia = new Date(anio, mes, 0).getDate();
+    const diaHoy = Number(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', day: 'numeric' }).format(new Date()));
 
-    if (hoy.getDate() !== ultimoDia) {
+    if (diaHoy !== ultimoDia) {
       logger.info({ code: 'CRON_MONTHLY_PAYROLL_SKIPPED', correlationId: 'cron-nomina-mensual' }, 'Calculo mensual omitido porque no es ultimo dia del mes');
       return;
     }
 
-    await calcularNominaTodosTenants(hoy.getFullYear(), hoy.getMonth() + 1);
+    await calcularNominaTodosTenants(anio, mes);
   }), {
     timezone: 'America/Guayaquil',
   });
@@ -33,6 +36,11 @@ function iniciarCronJobs() {
   }));
 
   cron.schedule('0 8 1 * *', runCron('cron-alerta-decimos', alertaDecimos), {
+    timezone: 'America/Guayaquil',
+  });
+
+  // HAL-92: Purga de comunicaciones LOPDP - semanal, domingos 3am
+  cron.schedule('0 3 * * 0', runCron('cron-purga-comunicaciones', purgaComunicaciones), {
     timezone: 'America/Guayaquil',
   });
 
@@ -134,7 +142,7 @@ async function calcularNominaTodosTenants(anio, mes) {
 }
 
 async function alertaDecimos() {
-  const mes = new Date().getMonth() + 1;
+  const mes = monthInEcuador();
   const tenants = await db.query('SELECT id FROM tenants WHERE activo = true');
   const tipo = mes === 12 ? 'decimo_tercero' : (mes === 3 || mes === 8 ? 'decimo_cuarto' : null);
 
@@ -153,6 +161,20 @@ async function alertaDecimos() {
   }
 }
 
+async function purgaComunicaciones() {
+  const retentionDays = Number.parseInt(process.env.COMMUNICATION_RETENTION_DAYS || '365', 10);
+  const result = await db.query(
+    "DELETE FROM communication_events WHERE created_at < NOW() - MAKE_INTERVAL(days => $1) RETURNING id",
+    [retentionDays]
+  );
+  logger.info({
+    code: 'CRON_COMMUNICATION_PURGE_COMPLETED',
+    correlationId: 'cron-purga-comunicaciones',
+    purged: result.rows.length,
+    retentionDays,
+  }, 'Purga de eventos de comunicación completada (LOPDP)');
+}
+
 if (require.main === module) {
   iniciarCronJobs();
   setInterval(() => {
@@ -165,4 +187,5 @@ module.exports = {
   verificarMarcacionesFaltantes,
   calcularNominaTodosTenants,
   alertaDecimos,
+  purgaComunicaciones,
 };

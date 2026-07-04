@@ -16,18 +16,18 @@ function groupByOwner(items) {
 function LineaBaseOperativa() {
   const grouped = groupByOwner(operationalBaseline);
   const visibleCount = operationalBaseline.filter((item) => item.status === 'visible').length;
-  const configurationCount = operationalBaseline.filter((item) => item.owner === 'Configuracion').length;
-  const monthlyCount = operationalBaseline.filter((item) => item.owner === 'Operacion mensual').length;
+  const configurationCount = operationalBaseline.filter((item) => item.owner === 'Configuración').length;
+  const monthlyCount = operationalBaseline.filter((item) => item.owner === 'Operación mensual').length;
 
   return (
     <div className="space-y-6">
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Configuracion operativa</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Configuración operativa</p>
             <h1 className="mt-2 text-2xl font-semibold text-slate-950">Checklist para operar SKNOMINA</h1>
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
-              Revisa que la empresa, los empleados, la asistencia, la nomina y los reportes tengan la informacion
+              Revisa que la empresa, los empleados, la asistencia, la nómina y los reportes tengan la información
               necesaria antes de cerrar el periodo.
             </p>
           </div>
@@ -52,7 +52,7 @@ function LineaBaseOperativa() {
         <Link className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-300" to="/dashboard/configuracion/parametrizacion">
           <Settings2 className="h-6 w-6 text-teal-700" />
           <h2 className="mt-3 font-semibold text-slate-950">Revisar configuracion</h2>
-          <p className="mt-1 text-sm text-slate-600">Empresa, parametros, bancos, usuarios, roles, jornadas y zonas.</p>
+          <p className="mt-1 text-sm text-slate-600">Empresa, parámetros, bancos, usuarios, roles, jornadas y zonas.</p>
         </Link>
         <Link className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-300" to="/dashboard/operacion/integral">
           <CheckCircle2 className="h-6 w-6 text-teal-700" />
@@ -68,7 +68,7 @@ function LineaBaseOperativa() {
           <AlertCircle className="h-6 w-6 text-amber-700" />
           <h2 className="mt-3 font-semibold text-amber-950">Revisa antes de cerrar</h2>
           <p className="mt-1 text-sm leading-6 text-amber-900">
-            Los parametros laborales, las novedades pendientes y los datos bancarios deben estar completos.
+            Los parámetros laborales, las novedades pendientes y los datos bancarios deben estar completos.
           </p>
         </div>
       </section>

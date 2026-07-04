@@ -9,10 +9,10 @@ function validatePeriod(anio, mes) {
   const year = Number(anio);
   const month = Number(mes);
   if (!Number.isInteger(year) || year < 2020 || year > 2100) {
-    throw new Error('Anio de periodo invalido.');
+    throw new Error('Año de período inválido.');
   }
   if (!Number.isInteger(month) || month < 1 || month > 12) {
-    throw new Error('Mes de periodo invalido.');
+    throw new Error('Mes de período inválido.');
   }
   return { anio: year, mes: month };
 }
@@ -21,7 +21,7 @@ function normalizeDate(anio, mes, value) {
   const fallback = `${anio}-${String(mes).padStart(2, '0')}-01`;
   const date = String(value || fallback).trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    throw new Error('Fecha de novedad invalida. Usa YYYY-MM-DD.');
+    throw new Error('Fecha de novedad inválida. Usa YYYY-MM-DD.');
   }
   if (Number(date.slice(0, 4)) !== anio || Number(date.slice(5, 7)) !== mes) {
     throw new Error('La fecha de novedad debe pertenecer al periodo abierto.');
@@ -36,7 +36,7 @@ function formatPeriodMarker(anio, mes) {
 function extractPeriodFromDate(value) {
   const date = String(value || '').slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    throw new Error('Fecha de novedad invalida. Usa YYYY-MM-DD.');
+    throw new Error('Fecha de novedad inválida. Usa YYYY-MM-DD.');
   }
   const anio = Number(date.slice(0, 4));
   const mes = Number(date.slice(5, 7));
@@ -196,7 +196,7 @@ function buildEmployeeQuery(scopeType, scopeValue) {
   if (scopeType === 'employee') {
     return { where: 'AND id = $2', params: [scopeValue] };
   }
-  throw new Error('Alcance de lote invalido.');
+  throw new Error('Alcance de lote inválido.');
 }
 
 async function findEmployeesForScope(client, tenantId, scopeType, scopeValue) {
@@ -230,14 +230,14 @@ async function createNoveltyBatch({
   const idempotencyKey = payload.idempotencyKey || makeIdempotencyKey({ tenantId, anio, mes, scopeType, scopeValue, tipoNovedad, minutos, monto, fecha, justificacion });
 
   if (!VALID_SCOPE_TYPES.has(scopeType)) {
-    throw new Error('Alcance de lote invalido.');
+    throw new Error('Alcance de lote inválido.');
   }
   if (scopeType !== 'company' && !scopeValue) {
     throw new Error('El alcance seleccionado requiere un valor.');
   }
   const noveltyConfig = await ensureNoveltyTypeAllowed({ tenantId, tipoNovedad, anio, mes, userId });
   if (noveltyConfig.calculationMode === 'amount' && monto <= 0 && noveltyConfig.payrollImpact !== 'informativo') {
-    throw new Error('La novedad requiere un monto mayor a cero segun su forma de calculo.');
+    throw new Error('La novedad requiere un monto mayor a cero según su forma de cálculo.');
   }
 
   const existing = await db.query(`
@@ -340,7 +340,7 @@ async function createNoveltyBatch({
 function roundAmount(value) {
   const amount = Number(value || 0);
   if (!Number.isFinite(amount) || amount < 0) {
-    throw new Error('El monto de la novedad debe ser un numero positivo.');
+    throw new Error('El monto de la novedad debe ser un número positivo.');
   }
   return Math.round(amount * 100) / 100;
 }
