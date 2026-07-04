@@ -63,6 +63,7 @@ const templateGenerator = read('backend/src/services/templateGenerator.js');
 const payrollRolePdfService = read('backend/src/services/payrollRolePdfService.js');
 const equipmentDeliveryActService = read('backend/src/services/equipmentDeliveryActService.js');
 const paymentController = read('backend/src/controllers/paymentController.js');
+const planCapabilityService = read('backend/src/services/planCapabilityService.js');
 const payphoneGatewayService = read('backend/src/services/payphoneGatewayService.js');
 const paymentReferenceService = read('backend/src/services/paymentReferenceService.js');
 const auditService = read('backend/src/services/auditService.js');
@@ -72,7 +73,9 @@ const userDataExportService = read('backend/src/services/userDataExportService.j
 const userDataPurgeService = read('backend/src/services/userDataPurgeService.js');
 const planesPublicos = read('frontend-web/src/pages/Planes.jsx');
 const publicPlansCatalog = read('frontend-web/src/components/PublicPlansCatalog.jsx');
+const publicPlanPresentation = read('frontend-web/src/config/publicPlanPresentation.js');
 const planesGestion = read('frontend-web/src/pages/PlanesGestion.jsx');
+const rutasCampo = read('frontend-web/src/pages/Asistencia/RutasCampo.jsx');
 const privacidadCuenta = read('frontend-web/src/pages/PrivacidadCuenta.jsx');
 const privacyApi = read('frontend-web/src/services/privacyApi.js');
 const beneficiosApi = read('frontend-web/src/services/beneficiosApi.js');
@@ -217,6 +220,23 @@ assert(paymentController.includes('createPayPhonePayment'), 'Checkout debe llama
 assert(paymentController.includes('confirmPayPhonePayment'), 'Confirmacion debe consultar PayPhone antes de activar plan.');
 assert(paymentController.includes('PAYMENT_AMOUNT_MISMATCH'), 'Confirmacion debe bloquear monto PayPhone distinto al checkout.');
 assert(paymentController.includes('versionedFromActiveSubscriptions'), 'Gestion de planes debe versionar cuando existen suscripciones activas.');
+assert(schema.includes('appMovil') && schema.includes('@map("app_movil")'), 'Prisma debe declarar app movil como canal monetizable de plan.');
+assert(schema.includes('rutasCampo') && schema.includes('@map("rutas_campo")'), 'Prisma debe declarar rutas de campo como canal monetizable de plan.');
+assert(
+  exists('backend/prisma/migrations/20260703090000_mra26_plan_routes_mobile_channels/migration.sql'),
+  'Debe existir migracion MRA26 para monetizar app movil y rutas de campo.'
+);
+assert(planCapabilityService.includes("mobileApp: 'app_movil'"), 'PlanCapabilityService debe exponer mobileApp.');
+assert(planCapabilityService.includes("fieldRoutes: 'rutas_campo'"), 'PlanCapabilityService debe exponer fieldRoutes.');
+assert(paymentController.includes('app_movil') && paymentController.includes('rutas_campo'), 'Gestion de planes backend debe persistir app movil y rutas de campo.');
+assert(app.includes("const requireMobileAppPlan = requirePlanCapability('mobileApp')"), 'Backend debe definir gate de plan para app movil.');
+assert(app.includes("const requireFieldRoutesPlan = requirePlanCapability('fieldRoutes')"), 'Backend debe definir gate de plan para rutas de campo.');
+assert(app.includes("'/api/rutas/sitios', requireRole('owner', 'admin_rrhh', 'supervisor'), requireFieldRoutesPlan"), 'Rutas PWA deben bloquearse por plan.');
+assert(app.includes("'/api/mobile/me', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan"), 'App movil debe bloquear perfil por plan.');
+assert(app.includes("'/api/mobile/ruta/hoy', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan"), 'Rutas dentro de app movil deben exigir app y rutas.');
+assert(planesGestion.includes('appMovil') && planesGestion.includes('rutasCampo'), 'Gestion de planes debe mostrar canales app movil y rutas de campo.');
+assert(publicPlanPresentation.includes('App movil de asistencia') && publicPlanPresentation.includes('Rutas de campo'), 'Catalogo publico debe comunicar app movil y rutas cuando el plan las ofrece.');
+assert(rutasCampo.includes('fetchPlanCapabilities') && rutasCampo.includes('Canal bloqueado por plan'), 'Pantalla de rutas debe mostrar bloqueo comercial del plan.');
 assert(app.includes("'/api/pagos/cancelado'"), 'Backend debe exponer cancelacion PayPhone.');
 assert(
   `${planesPublicos}\n${publicPlansCatalog}`.includes('checkoutAvailable === false'),

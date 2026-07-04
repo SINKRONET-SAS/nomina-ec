@@ -1,137 +1,106 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-CIERRE-DEFINITIVO-DIAGNOSTICO-PRELIMINAR-SKNOMINA-2026",
-  "planCode": "DPS26",
-  "status": "DPS26-10_runtime_completed_commit_pending",
-  "phaseCompleted": "DPS26-10",
+  "plan": "HAIKY-MONETIZACION-RUTAS-APP-SKNOMINA-2026",
+  "planCode": "MRA26",
+  "status": "MRA26-00_03_runtime_completed_qa_green",
+  "phaseCompleted": "MRA26-03",
   "currentPhase": "completed",
-  "updatedAt": "2026-07-02T21:44:10-05:00",
-  "summary": "DPS26-01 a DPS26-10 ejecutadas localmente. Se reforzo la promesa P0 de reportes oficiales 2026, se cerro SAE IESS con precheck fail-closed, se alineo Formulario 107 PDF con roles cerrados y base RDEP, se consolido el catalogo publico de planes como fuente unica de verdad y se preservo la separacion fundador/owner con tenant operativo.",
+  "updatedAt": "2026-07-03T19:26:55-05:00",
+  "summary": "MRA26 convierte App movil y Rutas de campo en canales comerciales de Gestion de planes. Los planes ahora persisten app_movil y rutas_campo, el backend expone mobileApp y fieldRoutes, la PWA permite configurarlos y los endpoints de rutas, mobile y movilizacion bloquean acceso cuando el tenant no tiene el canal contratado.",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: Ejecutar todos los prompts de PLAN_HAIKY_CIERRE_DEFINITIVO_DIAGNOSTICO_PRELIMINAR_SKNOMINA_2026.md, de acuerdo a CODEX_CONTEXT.md, al final commit.",
-  "previousAuditLockHash": "4DAA4D5CE660846B756FE89030E02EC73E291D052CA65168AE5F7E1C7E327376",
+  "approvalSource": "Solicitud del usuario: generar plan Haiky, prompts por fases y ejecutar todos los prompts para monetizar rutas y app desde Gestion de planes.",
+  "previousAuditLockHash": "BCB45BFC31450EF2E01E8B4A1C7A8F88F7E1CBE19FF1C9AF3ADE1E2359319639",
   "filesModified": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/DPS26-00-baseline-documental.md",
-    ".github/prompts/DPS26-01-contraste-runtime.md",
-    ".github/prompts/DPS26-02-legal-laboral-ecuador.md",
-    ".github/prompts/DPS26-03-motor-nomina.md",
-    ".github/prompts/DPS26-04-tributario-sri.md",
-    ".github/prompts/DPS26-05-inmutabilidad-seguridad.md",
-    ".github/prompts/DPS26-06-paridad-comercial.md",
-    ".github/prompts/DPS26-07-pwa-procesos-criticos.md",
-    ".github/prompts/DPS26-08-mobile-gps-foto-stores.md",
-    ".github/prompts/DPS26-09-reportes-oficiales.md",
-    ".github/prompts/DPS26-10-qa-release.md",
+    ".github/prompts/MRA26-00-baseline-documental.md",
+    ".github/prompts/MRA26-01-modelo-capacidades.md",
+    ".github/prompts/MRA26-02-gates-backend.md",
+    ".github/prompts/MRA26-03-qa-release.md",
     ".vscode/AuditLock.json",
-    "app-movil/app.json",
-    "app-movil/scripts/check-store-readiness.mjs",
-    "backend/.env.example",
-    "backend/scripts/seed-superadmin-owner.js",
+    "app-movil/src/App.js",
+    "backend/prisma/migrations/20260703090000_mra26_plan_routes_mobile_channels/migration.sql",
+    "backend/prisma/schema.prisma",
+    "backend/scripts/seed-demo-commercial.js",
     "backend/src/app.js",
     "backend/src/app.routes.test.js",
-    "backend/src/config/iess/sae-source-manifest.json",
-    "backend/src/controllers/authController.js",
-    "backend/src/controllers/authController.test.js",
-    "backend/src/controllers/reporteController.js",
-    "backend/src/controllers/reporteController.test.js",
-    "backend/src/middleware/auth.js",
-    "backend/src/services/iessSaeGenerator.js",
-    "backend/src/services/iessSaeGenerator.test.js",
-    "backend/src/services/legalParameterService.test.js",
-    "backend/src/services/operationalReadinessService.js",
-    "backend/src/services/sriFormulario107Service.js",
-    "frontend-web/src/App.jsx",
-    "frontend-web/src/components/Layout/Layout.jsx",
-    "frontend-web/src/components/PublicPlansCatalog.jsx",
+    "backend/src/controllers/paymentController.js",
+    "backend/src/controllers/paymentController.test.js",
+    "backend/src/middleware/planCapability.js",
+    "backend/src/services/planCapabilityService.js",
+    "backend/src/services/planCapabilityService.test.js",
+    "docs/PLAN_HAIKY_MONETIZACION_RUTAS_APP_SKNOMINA_2026.md",
+    "docs/monetizacion-rutas-app-sknomina-2026/REPORTE_MRA26_00_03_CIERRE_RUNTIME.md",
     "frontend-web/src/config/publicPlanPresentation.js",
-    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-    "frontend-web/src/pages/Dashboard.jsx",
-    "frontend-web/src/pages/Landing.jsx",
-    "frontend-web/src/pages/Login.jsx",
-    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
-    "frontend-web/src/pages/PaymentResult.jsx",
-    "frontend-web/src/pages/Planes.jsx",
+    "frontend-web/src/pages/Asistencia/RutasCampo.jsx",
+    "frontend-web/src/pages/Operacion/OperacionIntegral.jsx",
     "frontend-web/src/pages/PlanesGestion.jsx",
-    "frontend-web/src/utils/access.js",
-    "scripts/verify-system-contracts.mjs",
-    "docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/REPORTE_DPS26_01_10_CIERRE_RUNTIME.md"
+    "scripts/verify-system-contracts.mjs"
+  ],
+  "filesTouchedForValidationOnly": [
+    "frontend-web/src/pages/Configuracion/parametrizacion/parametrizacionModel.jsx"
   ],
   "filesModifiedSummary": [
-    "Prompts DPS26-00 a DPS26-10 creados en .github/prompts y contexto actualizado en .github/CODEX_CONTEXT.md.",
-    "SAE IESS queda con manifiesto versionado, precheck mensual, bloqueo fail-closed, hash SHA-256 y endpoint de validacion.",
-    "Formulario 107 PDF queda anclado a roles cerrados del ejercicio fiscal y base consistente con RDEP.",
-    "La PWA muestra validaciones RDEP/Formulario 107/SAE antes de generar archivos oficiales.",
-    "Landing, planes, login y resultado de pago usan el catalogo publico compartido sin duplicar flujo ni checkout.",
-    "Superadmin/fundador mantiene tenant operativo y capacidades de gestion separadas de owners.",
-    "Parametrizacion deduplica tipos de novedad y corrige copy de cuentas contables de nomina.",
-    "App movil queda alineada con Expo managed y check:mobile valida readiness sin targetSdkVersion invalido en app.json."
+    "Plan, reporte y prompts MRA26 creados en docs y .github/prompts.",
+    "Prisma y migracion agregan app_movil y rutas_campo en planes_comerciales.",
+    "Gestion de planes backend normaliza, inserta, versiona y expone appMovil y rutasCampo.",
+    "planCapabilityService agrega mobileApp y fieldRoutes con error 402 PLAN_CAPABILITY_BLOCKED.",
+    "Middleware requirePlanCapability bloquea rutas PWA, app movil, rutas mobile y movilizacion por plan.",
+    "Gestion de planes, catalogo publico, centro operativo y pantalla de rutas exponen el canal comercial.",
+    "App movil muestra bloqueo por plan sin convertirlo en acceso administrativo.",
+    "Se removio BOM de parametrizacionModel.jsx detectado durante el gate UTF-8, sin cambio funcional MRA26."
   ],
   "validationChecks": [
     {
       "gate": "npm.cmd run contracts",
       "status": "PASS",
-      "detail": "Contratos del sistema verificados, incluyendo catalogo publico de planes y checkout bloqueado cuando no esta configurado."
+      "detail": "Contratos MRA26 agregados y verificados."
     },
     {
       "gate": "npm.cmd run prisma:validate",
       "status": "PASS",
-      "detail": "Schema Prisma valido."
+      "detail": "Schema Prisma valido con appMovil y rutasCampo."
     },
     {
-      "gate": "npm.cmd --workspace=backend test -- --runInBand",
+      "gate": "npm.cmd --workspace=backend test -- planCapabilityService.test.js app.routes.test.js paymentController.test.js --runInBand",
       "status": "PASS",
-      "detail": "51 suites, 222 tests."
+      "detail": "3 suites, 13 tests."
     },
     {
       "gate": "npm.cmd --workspace=frontend-web run build",
       "status": "PASS",
-      "detail": "Build Vite/PWA completado."
+      "detail": "Vite genero artefactos y reporto built in 10.22s; luego el proceso no libero prompt y se cerro por PID."
     },
     {
       "gate": "npm.cmd run check:mobile",
       "status": "PASS",
-      "detail": "Readiness mobile completado sin declarar targetSdkVersion invalido en Expo managed."
-    },
-    {
-      "gate": "npx.cmd expo-doctor",
-      "status": "PASS",
-      "detail": "18/18 checks."
+      "detail": "Configuracion, identificadores, URLs y assets de tienda verificados."
     },
     {
       "gate": "git diff --check",
       "status": "PASS",
-      "detail": "Sin errores de whitespace; solo avisos CRLF esperados en Windows."
+      "detail": "Sin errores de whitespace; solo avisos LF/CRLF esperados en Windows."
     },
     {
       "gate": "UTF8-NO-BOM",
       "status": "PASS",
-      "detail": "29 archivos JS/MD/JSON/MJS modificados verificados sin BOM."
+      "detail": "28 archivos modificados o nuevos verificados sin BOM."
     }
   ],
   "fases": [
-    { "phase": "DPS26-00", "status": "completed_documental" },
-    { "phase": "DPS26-01", "status": "completed_local" },
-    { "phase": "DPS26-02", "status": "completed_local" },
-    { "phase": "DPS26-03", "status": "completed_local" },
-    { "phase": "DPS26-04", "status": "completed_local" },
-    { "phase": "DPS26-05", "status": "completed_local" },
-    { "phase": "DPS26-06", "status": "completed_local" },
-    { "phase": "DPS26-07", "status": "completed_local" },
-    { "phase": "DPS26-08", "status": "completed_local" },
-    { "phase": "DPS26-09", "status": "completed_local" },
-    { "phase": "DPS26-10", "status": "completed_local" }
+    { "phase": "MRA26-00", "status": "completed_documental" },
+    { "phase": "MRA26-01", "status": "completed_local" },
+    { "phase": "MRA26-02", "status": "completed_local" },
+    { "phase": "MRA26-03", "status": "completed_local" }
   ],
   "closedCommercialPromises": [
-    "Entrega reportes oficiales: RDEP, Formulario 107, SAE IESS y reportes internos con datos trazables queda tratada como promesa P0.",
-    "Los reportes oficiales bloquean generacion productiva cuando faltan fuente tecnica, periodo cerrado, datos de empleador, catalogo o reconciliacion.",
-    "Los planes visibles en landing y gestion superadmin comparten fuente de presentacion y evitan duplicidad de codigo de catalogo publico."
+    "Rutas de campo queda monetizado por fieldRoutes/rutas_campo.",
+    "App movil queda monetizada por mobileApp/app_movil.",
+    "Los planes que no conceden el canal reciben bloqueo visible y trazable antes de operar la funcionalidad."
   ],
   "residualRisk": [
-    "RDEP, Formulario 107 y SAE IESS requieren validacion tributaria/laboral profesional antes de presentacion oficial real.",
-    "SAE IESS queda protegido por contrato versionado y precheck, pero no sustituye validacion en portal o proceso IESS aplicable.",
-    "docs2 permanece como evidencia local ignorada por git; si se requiere publicarlo, debe hacerse con aprobacion explicita."
+    "La migracion debe aplicarse en cada ambiente con prisma migrate deploy antes de depender del gate en produccion.",
+    "La definicion comercial de que planes ofrecen rutas/app debe revisarse si cambian los paquetes publicados."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "C41B2903A8CF9092C9495DA3C258A96411951A140B589D154C3FE9E385C70A7E"
+  "signature": "A7D9F4FB21E4084EEF982C90A90345544AFDF493E8DFF5A4F2406EEF6F9AF4A5"
 }

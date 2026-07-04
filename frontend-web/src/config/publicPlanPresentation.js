@@ -8,6 +8,8 @@ export const FALLBACK_PUBLIC_PLANS = [
     empresasMax: 1,
     usuariosMax: 2,
     archivosBancarios: false,
+    appMovil: true,
+    rutasCampo: false,
     orden: 10,
   },
   {
@@ -19,6 +21,8 @@ export const FALLBACK_PUBLIC_PLANS = [
     empresasMax: 1,
     usuariosMax: 3,
     archivosBancarios: true,
+    appMovil: true,
+    rutasCampo: false,
     orden: 20,
   },
   {
@@ -30,6 +34,8 @@ export const FALLBACK_PUBLIC_PLANS = [
     empresasMax: 3,
     usuariosMax: 8,
     archivosBancarios: true,
+    appMovil: true,
+    rutasCampo: true,
     orden: 30,
   },
   {
@@ -42,6 +48,8 @@ export const FALLBACK_PUBLIC_PLANS = [
     usuariosMax: 20,
     archivosBancarios: true,
     reportesAvanzados: true,
+    appMovil: true,
+    rutasCampo: true,
     orden: 40,
   },
 ];
@@ -55,11 +63,11 @@ const PLAN_COMMERCIAL_PROMISE = {
 };
 
 const PLAN_HIGHLIGHTS = {
-  TRIAL: ['Flujo completo de prueba', 'Roles y asistencia', 'Reportes de validacion'],
-  MICRO: ['Una empresa activa', 'Archivo bancario incluido', 'Roles y novedades mensuales'],
-  PYME: ['Hasta 3 empresas', 'Reportes avanzados', 'Trazabilidad para RRHH'],
-  EMPRESA: ['Operacion multiempresa', 'Auditoria visible', 'Soporte ampliado'],
-  CORPORATIVO: ['Capacidad pactada', 'Acompanamiento dedicado', 'Integraciones a medida'],
+  TRIAL: ['Flujo completo de prueba', 'App movil de asistencia', 'Reportes de validacion'],
+  MICRO: ['Una empresa activa', 'App movil de asistencia', 'Archivo bancario incluido'],
+  PYME: ['Hasta 3 empresas', 'App movil de asistencia', 'Rutas de campo'],
+  EMPRESA: ['Operacion multiempresa', 'Rutas de campo', 'Reportes avanzados'],
+  CORPORATIVO: ['Capacidad pactada', 'App y rutas por contrato', 'Integraciones a medida'],
 };
 
 export function normalizeBrandText(value) {
@@ -76,6 +84,8 @@ export function normalizePublicPlan(plan = {}) {
     id: String(plan.id || '').trim().toUpperCase(),
     nombre: normalizeBrandText(plan.nombre),
     descripcion: normalizeBrandText(plan.descripcion),
+    appMovil: Boolean(plan.appMovil),
+    rutasCampo: Boolean(plan.rutasCampo),
   };
 }
 
@@ -112,9 +122,16 @@ export function getPlanHighlights(plan = {}) {
   if (Array.isArray(plan.metadata?.highlights) && plan.metadata.highlights.length > 0) {
     return plan.metadata.highlights.slice(0, 4).map(normalizeBrandText);
   }
-  return PLAN_HIGHLIGHTS[planId] || [
+  if (PLAN_HIGHLIGHTS[planId]) return PLAN_HIGHLIGHTS[planId];
+  const commercialCapabilities = [
+    plan.appMovil ? 'App movil de empleados' : '',
+    plan.rutasCampo ? 'Rutas de campo' : '',
+    plan.archivosBancarios ? 'Archivo bancario incluido' : '',
+    plan.reportesAvanzados ? 'Reportes avanzados' : '',
+  ].filter(Boolean);
+  return [
+    ...commercialCapabilities,
     `Empleados: ${plan.empleadosMax || 'pactado'}`,
     `Empresas: ${plan.empresasMax || 1}`,
-    plan.archivosBancarios ? 'Archivo bancario incluido' : 'Reportes base',
-  ];
+  ].slice(0, 4);
 }

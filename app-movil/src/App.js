@@ -176,7 +176,11 @@ export default function App() {
       }
     } catch (err) {
       const role = fallbackUser?.rol;
-      if (['owner', 'admin_rrhh', 'superadmin'].includes(role)) {
+      const errorCode = err?.response?.data?.error;
+      if (errorCode === 'PLAN_CAPABILITY_BLOCKED') {
+        setMobileProfile(null);
+        setProfileError(err?.response?.data?.message || 'El plan actual no incluye app movil. Activa un plan que ofrezca esta funcionalidad.');
+      } else if (['owner', 'admin_rrhh', 'superadmin'].includes(role)) {
         setMobileProfile({ employee: null, user: fallbackUser, administrativeOnly: true });
         setProfileError('');
       } else {

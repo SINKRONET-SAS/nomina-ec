@@ -17,6 +17,8 @@ const EMPTY_PLAN = {
   archivosBancarios: false,
   reportesAvanzados: false,
   apiAccess: false,
+  appMovil: false,
+  rutasCampo: false,
   soporte: 'comunidad',
   publico: true,
   activo: true,
@@ -36,6 +38,8 @@ function normalizeDraft(plan = {}) {
     archivosBancarios: Boolean(plan.archivosBancarios),
     reportesAvanzados: Boolean(plan.reportesAvanzados),
     apiAccess: Boolean(plan.apiAccess),
+    appMovil: Boolean(plan.appMovil),
+    rutasCampo: Boolean(plan.rutasCampo),
     soporte: plan.soporte || 'comunidad',
     publico: plan.publico !== false,
     activo: plan.activo !== false,
@@ -59,6 +63,16 @@ function validateDraft(draft) {
 
 function price(cents) {
   return `$${(Number(cents || 0) / 100).toFixed(2)}`;
+}
+
+function planCapabilitiesText(plan) {
+  return [
+    plan.archivosBancarios ? 'Bancos' : '',
+    plan.reportesAvanzados ? 'Reportes avanzados' : '',
+    plan.apiAccess ? 'API externa' : '',
+    plan.appMovil ? 'App movil' : '',
+    plan.rutasCampo ? 'Rutas de campo' : '',
+  ].filter(Boolean).join(' | ') || 'Capacidades base';
 }
 
 function PlanesGestion({ showSuperadminConsole = true }) {
@@ -176,7 +190,8 @@ function PlanesGestion({ showSuperadminConsole = true }) {
         <h1 className="text-2xl font-semibold text-slate-950">Gestión de planes</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
           Administra el catálogo comercial con validación previa. Las capacidades guardadas aquí alimentan el
-          control backend de SKNOMINA: archivos bancarios, reportes avanzados y límites operativos.
+          control backend de SKNOMINA: archivos bancarios, reportes avanzados, API externa, app movil,
+          rutas de campo y límites operativos.
         </p>
       </section>
 
@@ -228,6 +243,8 @@ function PlanesGestion({ showSuperadminConsole = true }) {
               ['archivosBancarios', 'Archivos bancarios'],
               ['reportesAvanzados', 'Reportes avanzados'],
               ['apiAccess', 'Acceso API externa'],
+              ['appMovil', 'App movil empleados'],
+              ['rutasCampo', 'Rutas de campo'],
               ['publico', 'Visible publico'],
               ['activo', 'Activo'],
             ].map(([name, label]) => (
@@ -275,11 +292,7 @@ function PlanesGestion({ showSuperadminConsole = true }) {
                     </td>
                     <td className="px-4 py-3 text-right">{price(plan.precioMensualCentavos)}</td>
                     <td className="px-4 py-3">Emp. {plan.empleadosMax || 'sin límite'} | Empresas {plan.empresasMax} | Usuarios {plan.usuariosMax}</td>
-                    <td className="px-4 py-3">
-                      {(plan.archivosBancarios ? 'Bancos' : 'Sin bancos')} | {(plan.reportesAvanzados ? 'Reportes avanzados' : 'Reportes base')}
-                      {' | '}
-                      {plan.apiAccess ? 'API externa' : 'Sin API'}
-                    </td>
+                    <td className="px-4 py-3">{planCapabilitiesText(plan)}</td>
                     <td className="px-4 py-3">{plan.activo ? 'Activo' : 'Inactivo'} | {plan.publico ? 'Público' : 'Interno'}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">

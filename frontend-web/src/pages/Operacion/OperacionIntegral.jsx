@@ -15,9 +15,11 @@ import {
   KeyRound,
   Landmark,
   LockKeyhole,
+  MapPinned,
   MessageSquare,
   Plus,
   ShieldCheck,
+  Smartphone,
   Upload,
   UserCog,
   Workflow,
@@ -132,6 +134,32 @@ const MODULES = [
     pendingDescription: 'Configura zonas de marcación y jornadas antes de usar asistencia productiva.',
   },
   {
+    key: 'app_movil',
+    title: 'App empleados',
+    icon: Smartphone,
+    owner: 'Empresa',
+    href: '/dashboard/empleados',
+    action: 'Gestionar invitaciones',
+    ready: ({ counts }) => counts.usuarios > 0,
+    capability: 'mobileApp',
+    capabilityLabel: 'app movil',
+    activeDescription: 'La empresa tiene habilitado el canal de app movil para empleados, permisos, marcaciones y autoservicio.',
+    pendingDescription: 'Habilita usuarios y enlaces de app antes de activar al equipo operativo.',
+  },
+  {
+    key: 'rutas_campo',
+    title: 'Rutas de campo',
+    icon: MapPinned,
+    owner: 'Empresa',
+    href: '/dashboard/asistencia/rutas',
+    action: 'Abrir rutas',
+    ready: ({ counts }) => counts.workZones > 0,
+    capability: 'fieldRoutes',
+    capabilityLabel: 'rutas de campo',
+    activeDescription: 'El plan permite gestionar sitios, rutas diarias, visitas y excepciones GPS.',
+    pendingDescription: 'Configura zonas de marcacion y sitios para operar rutas de campo.',
+  },
+  {
     key: 'apertura',
     title: 'Periodo y novedades',
     icon: Workflow,
@@ -207,6 +235,15 @@ function buildCounts(summary) {
 }
 
 function moduleState(module, context, role) {
+  if (module.capability && role !== 'superadmin' && !context.capabilities?.allowed?.[module.capability]) {
+    return {
+      label: 'Bloqueado por plan',
+      tone: 'border-amber-200 bg-amber-50 text-amber-900',
+      icon: LockKeyhole,
+      description: `El plan actual no incluye ${module.capabilityLabel || 'esta funcionalidad'}. Activalo desde Gestion de planes.`,
+    };
+  }
+
   if (module.key === 'api' && role === 'owner' && !context.capabilities?.allowed?.apiAccess) {
     return {
       label: 'Bloqueado por plan',
@@ -444,7 +481,7 @@ function OperacionIntegral() {
   } = useQuery({
     queryKey: ['plan-capabilities'],
     queryFn: fetchPlanCapabilities,
-    enabled: Boolean(token) && usuario?.rol === 'owner',
+    enabled: Boolean(token) && usuario?.rol !== 'superadmin',
     retry: false,
   });
   const apiAccessAllowed = usuario?.rol === 'superadmin' || Boolean(planCapabilities?.allowed?.apiAccess);
@@ -481,7 +518,7 @@ function OperacionIntegral() {
     state: moduleState(module, context, usuario?.rol),
   }));
   const operativeCount = enrichedModules.filter((module) => module.state.label === 'Operativo visible').length;
-  const blockedCount = enrichedModules.filter((module) => module.state.label.startsWith('Pendiente')).length;
+  const blockedCount = enrichedModules.filter((module) => ['Bloqueado por plan', 'Requiere revision'].includes(module.state.label)).length;
 
   return (
     <div className="space-y-6">
@@ -540,7 +577,8 @@ function OperacionIntegral() {
             const StateIcon = module.state.icon;
             const actionDisabled = !module.href
               || (module.gatedByRole && module.gatedByRole !== usuario?.rol)
-              || (module.gatedByRoles && !module.gatedByRoles.includes(usuario?.rol));
+              || (module.gatedByRoles && !module.gatedByRoles.includes(usuario?.rol))
+              || module.state.label === 'Bloqueado por plan';
 
             return (
               <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" key={module.key}>

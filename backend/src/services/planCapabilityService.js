@@ -5,6 +5,16 @@ const CAPABILITY_FIELDS = {
   bankFiles: 'archivos_bancarios',
   advancedReports: 'reportes_avanzados',
   apiAccess: 'api_access',
+  mobileApp: 'app_movil',
+  fieldRoutes: 'rutas_campo',
+};
+
+const CAPABILITY_LABELS = {
+  bankFiles: 'archivos bancarios',
+  advancedReports: 'reportes avanzados',
+  apiAccess: 'API externa',
+  mobileApp: 'app movil',
+  fieldRoutes: 'rutas de campo',
 };
 
 async function getTenantPlanCapabilities(tenantId) {
@@ -27,6 +37,8 @@ async function getTenantPlanCapabilities(tenantId) {
         bankFiles: false,
         advancedReports: false,
         apiAccess: false,
+        mobileApp: false,
+        fieldRoutes: false,
       },
       limits: {
         employeesMax: 0,
@@ -44,6 +56,8 @@ async function getTenantPlanCapabilities(tenantId) {
       bankFiles: Boolean(plan.archivos_bancarios),
       advancedReports: Boolean(plan.reportes_avanzados),
       apiAccess: Boolean(plan.api_access),
+      mobileApp: Boolean(plan.app_movil),
+      fieldRoutes: Boolean(plan.rutas_campo),
     },
     limits: {
       employeesMax: plan.empleados_max,
@@ -65,12 +79,15 @@ async function assertCapability(tenantId, capability, context = {}) {
 
   const capabilities = await getTenantPlanCapabilities(tenantId);
   if (!capabilities.allowed[capability]) {
-    throw new AppError('El plan actual no incluye esta funcionalidad.', {
+    const label = CAPABILITY_LABELS[capability] || 'esta funcionalidad';
+    throw new AppError(`El plan actual no incluye ${label}. Activa un plan que ofrezca esta funcionalidad.`, {
       code: 'PLAN_CAPABILITY_BLOCKED',
       statusCode: 402,
       userId: context.userId,
+      correlationId: context.correlationId,
       details: {
         capability,
+        label,
         planId: capabilities.planId,
       },
     });

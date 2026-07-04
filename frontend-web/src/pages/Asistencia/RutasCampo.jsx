@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, Edit3, FileSpreadsheet, FileText, MapPin, Plus, Route, Save, Trash2 } from 'lucide-react';
+import { Download, Edit3, FileSpreadsheet, FileText, LockKeyhole, MapPin, Plus, Route, Save, Trash2 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
+import { fetchPlanCapabilities } from '../../services/beneficiosApi';
 import { extractApiError } from '../../services/publicApi';
 import {
   createRouteDay,
@@ -83,12 +84,20 @@ function RutasCampo() {
   const [selectedSiteId, setSelectedSiteId] = useState('');
   const [error, setError] = useState('');
 
-  const sitesQuery = useQuery({ queryKey: ['route-sites'], queryFn: fetchRouteSites });
-  const daysQuery = useQuery({ queryKey: ['route-days', fecha], queryFn: () => fetchRouteDays({ fecha }) });
-  const exceptionsQuery = useQuery({ queryKey: ['route-exceptions', fecha], queryFn: () => fetchRouteExceptions({ fecha }) });
+  const capabilitiesQuery = useQuery({
+    queryKey: ['plan-capabilities'],
+    queryFn: fetchPlanCapabilities,
+    retry: false,
+  });
+  const routesEnabled = Boolean(capabilitiesQuery.data?.allowed?.fieldRoutes);
+
+  const sitesQuery = useQuery({ queryKey: ['route-sites'], queryFn: fetchRouteSites, enabled: routesEnabled });
+  const daysQuery = useQuery({ queryKey: ['route-days', fecha], queryFn: () => fetchRouteDays({ fecha }), enabled: routesEnabled });
+  const exceptionsQuery = useQuery({ queryKey: ['route-exceptions', fecha], queryFn: () => fetchRouteExceptions({ fecha }), enabled: routesEnabled });
   const routeReportQuery = useQuery({
     queryKey: ['route-report', fechaInicioReporte, fechaFinReporte],
     queryFn: () => fetchRouteReport({ fechaInicio: fechaInicioReporte, fechaFin: fechaFinReporte }),
+    enabled: routesEnabled,
   });
   const employeesQuery = useQuery({
     queryKey: ['empleados-activos-rutas'],
@@ -96,6 +105,7 @@ function RutasCampo() {
       const response = await authenticatedApi.get('/empleados');
       return response.data.empleados || [];
     },
+    enabled: routesEnabled,
   });
 
   const sites = sitesQuery.data || [];
@@ -181,6 +191,40 @@ function RutasCampo() {
       setError(extractApiError(err, 'No pudimos exportar rutas.'));
     }
   };
+
+  if (capabilitiesQuery.isLoading) {
+    return (
+      <div className="space-y-6">
+        <section className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">Rutas de campo</p>
+          <h1 className="mt-2 text-2xl font-semibold text-slate-950">Mercaderistas y visitas por tienda</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Validando el plan comercial antes de abrir la operacion de rutas.</p>
+        </section>
+      </div>
+    );
+  }
+
+  if (capabilitiesQuery.isError || !routesEnabled) {
+    const message = capabilitiesQuery.isError
+      ? extractApiError(capabilitiesQuery.error, 'No pudimos validar el plan comercial para rutas.')
+      : 'El plan actual no incluye rutas de campo. Activa un plan que ofrezca esta funcionalidad desde Gestion de planes.';
+    return (
+      <div className="space-y-6">
+        <section className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-start gap-3">
+            <span className="rounded-md bg-amber-50 p-2 text-amber-700">
+              <LockKeyhole className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">Rutas de campo</p>
+              <h1 className="mt-2 text-2xl font-semibold text-slate-950">Canal bloqueado por plan</h1>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{message}</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

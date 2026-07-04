@@ -217,6 +217,8 @@ model CommercialPlan {
   archivosBancarios     Boolean              @default(false) @map("archivos_bancarios")
   reportesAvanzados     Boolean              @default(false) @map("reportes_avanzados")
   apiAccess             Boolean              @default(false) @map("api_access")
+  appMovil              Boolean              @default(false) @map("app_movil")
+  rutasCampo            Boolean              @default(false) @map("rutas_campo")
   soporte               String               @default("comunidad") @db.VarChar(80)
   publico               Boolean              @default(true)
   activo                Boolean              @default(true)

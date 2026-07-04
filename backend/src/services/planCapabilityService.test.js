@@ -18,6 +18,8 @@ describe('planCapabilityService', () => {
         archivos_bancarios: true,
         reportes_avanzados: false,
         api_access: true,
+        app_movil: true,
+        rutas_campo: true,
         empleados_max: 50,
         empresas_max: 1,
         usuarios_max: 5,
@@ -29,6 +31,8 @@ describe('planCapabilityService', () => {
     expect(result.allowed.bankFiles).toBe(true);
     expect(result.allowed.advancedReports).toBe(false);
     expect(result.allowed.apiAccess).toBe(true);
+    expect(result.allowed.mobileApp).toBe(true);
+    expect(result.allowed.fieldRoutes).toBe(true);
     expect(result.limits.employeesMax).toBe(50);
   });
 
@@ -40,6 +44,8 @@ describe('planCapabilityService', () => {
         archivos_bancarios: false,
         reportes_avanzados: false,
         api_access: false,
+        app_movil: false,
+        rutas_campo: false,
         empleados_max: 5,
         empresas_max: 1,
         usuarios_max: 2,

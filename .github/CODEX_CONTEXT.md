@@ -1,6 +1,44 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-MONETIZACION-RUTAS-APP-SKNOMINA-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-MONETIZACION-RUTAS-APP-SKNOMINA-2026 |
+| Codigo | MRA26 |
+| Estado | MRA26-00 a MRA26-03 ejecutadas localmente; QA verde con salvedad de cierre manual de Vite |
+| Fase actual | completed |
+| Requerimiento fuente | Rutas y app deben tener canal de monetizacion en Gestion de planes para que solo los planes que los ofrecen concedan acceso. |
+| Plan doc | `docs/PLAN_HAIKY_MONETIZACION_RUTAS_APP_SKNOMINA_2026.md` |
+| Reporte | `docs/monetizacion-rutas-app-sknomina-2026/REPORTE_MRA26_00_03_CIERRE_RUNTIME.md` |
+| Prompts | `.github/prompts/MRA26-00-baseline-documental.md` a `.github/prompts/MRA26-03-qa-release.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Alcance MRA26
+
+MRA26 convierte App movil y Rutas de campo en capacidades comerciales explicitas. `planes_comerciales` agrega `app_movil` y `rutas_campo`; el backend las expone como `mobileApp` y `fieldRoutes`; Gestion de planes permite activarlas; el catalogo publico las comunica; y los endpoints de app/rutas/movilizacion quedan bloqueados por plan cuando el tenant no tiene el canal contratado.
+
+### Decisiones MRA26
+
+- `TRIAL` y `MICRO` habilitan app movil, pero no rutas de campo.
+- `PYME`, `EMPRESA` y `CORPORATIVO` habilitan app movil y rutas de campo.
+- Las rutas dentro de la app movil exigen ambos canales: `mobileApp` y `fieldRoutes`.
+- El plan demo comercial queda con ambos canales habilitados.
+- Los planes editados con suscripciones activas conservan versionado comercial para no mutar contratos previos.
+
+### Gates MRA26
+
+- `npm.cmd run contracts`: PASS.
+- `npm.cmd run prisma:validate`: PASS.
+- `npm.cmd --workspace=backend test -- planCapabilityService.test.js app.routes.test.js paymentController.test.js --runInBand`: PASS, 3 suites y 13 tests.
+- `npm.cmd --workspace=frontend-web run build`: PASS funcional; Vite genero artefactos y reporto `built in 10.22s`, luego el proceso no libero prompt y se cerro por PID.
+- `npm.cmd run check:mobile`: PASS.
+- `git diff --check`: PASS con avisos LF/CRLF esperados en Windows.
+- UTF-8 sin BOM: PASS, 28 archivos modificados o nuevos verificados.
+
+---
+
 ## Open Haiky Plan - HAIKY-CIERRE-DEFINITIVO-DIAGNOSTICO-PRELIMINAR-SKNOMINA-2026
 
 | Campo | Valor |

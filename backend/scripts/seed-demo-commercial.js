@@ -209,9 +209,9 @@ async function insertCommercialPlan(client) {
     INSERT INTO planes_comerciales (
       id, nombre, descripcion, precio_mensual_centavos, moneda,
       empleados_max, empresas_max, usuarios_max, archivos_bancarios,
-      reportes_avanzados, api_access, soporte, publico, activo, orden, metadata
+      reportes_avanzados, api_access, app_movil, rutas_campo, soporte, publico, activo, orden, metadata
     )
-    VALUES ($1,$2,$3,$4,'USD',100,1,8,true,true,true,'prioritario',false,true,90,$5)
+    VALUES ($1,$2,$3,$4,'USD',100,1,8,true,true,true,true,true,'prioritario',false,true,90,$5)
     ON CONFLICT (id) DO UPDATE SET
       nombre = EXCLUDED.nombre,
       descripcion = EXCLUDED.descripcion,
@@ -220,6 +220,8 @@ async function insertCommercialPlan(client) {
       archivos_bancarios = true,
       reportes_avanzados = true,
       api_access = true,
+      app_movil = true,
+      rutas_campo = true,
       soporte = EXCLUDED.soporte,
       activo = true,
       metadata = EXCLUDED.metadata,
