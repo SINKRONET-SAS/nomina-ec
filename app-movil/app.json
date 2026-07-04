@@ -32,7 +32,9 @@
       ]
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-sqlite",
+      "expo-status-bar"
     ],
     "extra": {
       "apiBaseUrl": "https://api.sknomina.com/api",
