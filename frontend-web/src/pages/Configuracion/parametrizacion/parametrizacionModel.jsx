@@ -1,4 +1,4 @@
-﻿import {
+import {
   Briefcase,
   Building2,
   CreditCard,
@@ -201,7 +201,7 @@ const formDefinitions = [
   {
     key: 'legal',
     title: 'Valores legales',
-    description: 'Registra SBU, tasas IESS, tabla IR u otro valor legal aplicable para cÃ¡lculos. No contiene cuentas contables.',
+    description: 'Registra SBU, tasas IESS, tabla IR u otro valor legal aplicable para cálculos. No contiene cuentas contables.',
     icon: Scale,
     resource: 'legalParameters',
     stepCode: 'legal',
@@ -284,7 +284,7 @@ const formDefinitions = [
   {
     key: 'novedad',
     title: 'Tipo de novedad',
-    description: 'Define permisos, descuentos, horas extras, faltas u otros eventos de nÃ³mina.',
+    description: 'Define permisos, descuentos, horas extras, faltas u otros eventos de nómina.',
     icon: ShieldCheck,
     resource: 'noveltyTypes',
     stepCode: 'novedades',
@@ -293,7 +293,7 @@ const formDefinitions = [
       { name: 'name', label: 'Nombre', placeholder: 'Hora extra 50%', required: true },
       { name: 'category', label: 'Categoria', type: 'select', options: ['ingreso', 'descuento', 'permiso', 'ausencia', 'ajuste'] },
       { name: 'payroll_impact', label: 'Impacto', type: 'select', options: ['ingreso', 'descuento', 'informativo'] },
-      { name: 'calculation_mode', label: 'Forma de cÃ¡lculo', type: 'select', options: [
+      { name: 'calculation_mode', label: 'Forma de cálculo', type: 'select', options: [
         { value: 'amount', label: 'Monto directo' },
         { value: 'minutes_hourly', label: 'Minutos x valor hora' },
         { value: 'minutes_hourly_1_5', label: 'Minutos x hora 50%' },
@@ -303,7 +303,7 @@ const formDefinitions = [
       ] },
       { name: 'affects_iess', label: 'Afecta IESS', type: 'checkbox' },
       { name: 'affects_income_tax', label: 'Afecta IR', type: 'checkbox' },
-      { name: 'affects_decimos', label: 'Afecta dÃ©cimos', type: 'checkbox' },
+      { name: 'affects_decimos', label: 'Afecta décimos', type: 'checkbox' },
       { name: 'affects_vacation', label: 'Afecta vacaciones', type: 'checkbox' },
       { name: 'affects_bank_file', label: 'Afecta pago bancario', type: 'checkbox' },
       { name: 'requires_evidence', label: 'Requiere respaldo', type: 'checkbox' },
@@ -348,7 +348,7 @@ const formDefinitions = [
       valid_to: values.valid_to || null,
     }),
     recordLabel: (record) => record.name,
-    recordMeta: (record) => `${record.code} Â· ${record.payroll_impact}`,
+    recordMeta: (record) => `${record.code} - ${record.payroll_impact}`,
   },
   {
     key: 'organizacion',
@@ -386,7 +386,7 @@ const formDefinitions = [
       status: 'activo',
     }),
     recordLabel: (record) => record.name,
-    recordMeta: (record) => `${record.code} Â· ${record.unit_type}`,
+    recordMeta: (record) => `${record.code} - ${record.unit_type}`,
   },
   {
     key: 'cargo',
@@ -475,7 +475,7 @@ const formDefinitions = [
       status: 'activo',
     }),
     recordLabel: (record) => record.name,
-    recordMeta: (record) => `${record.code} Â· ${record.radius_meters} m`,
+    recordMeta: (record) => `${record.code} - ${record.radius_meters} m`,
   },
   {
     key: 'jornada',
@@ -523,12 +523,12 @@ const formDefinitions = [
       status: 'activo',
     }),
     recordLabel: (record) => record.name,
-    recordMeta: (record) => `${record.start_time}-${record.end_time} Â· ${record.weekly_hours} h/sem`,
+    recordMeta: (record) => `${record.start_time}-${record.end_time} - ${record.weekly_hours} h/sem`,
   },
   {
     key: 'contabilidad',
-    title: 'Cuentas contables de nÃ³mina',
-    description: 'Define debe/haber por concepto calculado de nÃ³mina. Consume los conceptos operativos y no duplica los valores legales.',
+    title: 'Cuentas contables de nómina',
+    description: 'Define debe/haber por concepto calculado de nómina. Consume los conceptos operativos y no duplica los valores legales.',
     icon: Landmark,
     resource: 'payrollAccountingMappings',
     stepCode: 'contabilidad',
@@ -582,12 +582,12 @@ const formDefinitions = [
     saveLabel: 'Guardar cuenta contable',
     updateLabel: 'Actualizar cuenta contable',
     recordsTitle: 'Cuentas contables vigentes',
-    emptyText: 'Aun no hay cuentas contables de nÃ³mina. Carga defaults editables para todos los conceptos calculados.',
+    emptyText: 'Aún no hay cuentas contables de nómina. Carga defaults editables para todos los conceptos calculados.',
   },
   {
     key: 'banco',
     title: 'Banco y archivo plano',
-    description: 'Selecciona una plantilla bancaria real para generar archivos de pago de nÃ³mina.',
+    description: 'Selecciona una plantilla bancaria real para generar archivos de pago de nómina.',
     icon: CreditCard,
     resource: 'bankProfiles',
     stepCode: 'bancos',
@@ -648,7 +648,7 @@ const formDefinitions = [
   {
     key: 'usuarios',
     title: 'Usuarios y roles',
-    description: 'Define la matriz mÃ­nima de usuarios y permisos para operar nÃ³mina con trazabilidad.',
+    description: 'Define la matriz mínima de usuarios y permisos para operar nómina con trazabilidad.',
     icon: UserCog,
     resource: 'catalogs',
     stepCode: 'usuarios',

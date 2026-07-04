@@ -1990,3 +1990,41 @@ Riesgo residual DPS26:
 
 - RDEP, Formulario 107 y SAE IESS deben validarse por profesional tributario/laboral antes de presentacion oficial real.
 - SAE IESS queda protegido por contrato versionado y precheck, pero no sustituye validacion en portal/proceso IESS aplicable.
+
+---
+
+## HSH26 - Higiene, sanitizacion y humanizacion 2026
+
+Plan: `HAIKY-HIGIENE-SANITIZACION-HUMANIZACION-2026`.
+
+Estado: HSH26-00 a HSH26-05 ejecutadas localmente; QA verde.
+
+Fuente:
+
+- Solicitud del usuario: "la necesidad de higiene y sanitizacion, revision ortografica, UTF-8, depuracion de mojibake, UI/UX, humanizacion".
+
+Artefactos:
+
+- `docs/higiene-sanitizacion-humanizacion-2026/PLAN_HAIKY_HIGIENE_SANITIZACION_HUMANIZACION_2026.md`
+- `docs/higiene-sanitizacion-humanizacion-2026/REPORTE_HSH26_00_05_EJECUCION.md`
+- `.github/prompts/HSH26-00-baseline.md` a `.github/prompts/HSH26-05-qa-release.md`
+- `.vscode/AuditLock.json`
+
+Runtime cerrado:
+
+- Parametrizacion web queda sin mojibake visible en textos de nomina, parametros, decimos, validacion, calculo y matriz minima.
+- Los separadores corruptos `Â·` en metadatos de registros se reemplazan por guiones simples.
+- El escaneo repo-wide de archivos `.js`, `.jsx`, `.json`, `.md`, `.mjs`, `.ts` y `.tsx` queda sin coincidencias de mojibake ni caracteres de reemplazo.
+
+Gates HSH26 ejecutados:
+
+- Escaneo de mojibake en archivos gobernados: PASS.
+- `npm.cmd --workspace=frontend-web run build`: PASS.
+- `git diff --check`: PASS.
+- UTF-8 sin BOM de archivos modificados `.js`, `.jsx`, `.json`, `.md` y `.mjs`: PASS.
+
+Reglas operativas HSH26:
+
+- No mezclar con cambios locales previos en backend, Prisma, pagos o capacidades de plan.
+- No cambiar contratos publicos de API por correcciones editoriales.
+- La revision ortografica historica completa queda fuera del alcance si exige reescritura editorial masiva de textos ASCII existentes.

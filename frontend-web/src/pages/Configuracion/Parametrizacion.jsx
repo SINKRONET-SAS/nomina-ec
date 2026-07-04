@@ -70,7 +70,7 @@ function BankFlatFileGuide({ values, mappings = [] }) {
           <p className="text-sm font-semibold text-teal-950">Archivo plano que se generara</p>
           <h4 className="mt-1 text-base font-semibold text-slate-950">{template.title}</h4>
           <p className="mt-1 text-sm leading-6 text-slate-700">
-            Fuente: {template.source}. El sistema toma nÃ³minas cerradas/pagadas, descifra la cuenta solo en memoria y arma estas columnas.
+            Fuente: {template.source}. El sistema toma nóminas cerradas/pagadas, descifra la cuenta solo en memoria y arma estas columnas.
           </p>
         </div>
         <div className="rounded-md bg-white px-3 py-2 text-xs text-slate-600">
@@ -645,7 +645,7 @@ function Parametrizacion() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Configuracion de la empresa</p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Parametriza la nÃ³mina con datos visibles</h1>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Parametriza la nómina con datos visibles</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
               Ingresa parametros laborales, novedades, estructura, zonas y jornadas. Cada unidad organizativa debe
               quedar vinculada a una zona de marcacion antes de usarse en asistencia productiva.
@@ -675,7 +675,7 @@ function Parametrizacion() {
             <h2 className="text-lg font-semibold text-teal-950">Carga de valores legales obligatorios</h2>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-teal-900">
               Carga SBU, aportes IESS, jornada, vacaciones y tabla de impuesto a la renta del anio seleccionado
-              como parÃ¡metros revisables. Incluye dÃ©cimos tercero/cuarto y fondo de reserva. No reemplaza la validaciÃ³n
+              como parámetros revisables. Incluye décimos tercero/cuarto y fondo de reserva. No reemplaza la validación
               contra fuente oficial vigente.
             </p>
           </div>
@@ -714,7 +714,7 @@ function Parametrizacion() {
         <div className="mt-4 grid gap-3 lg:grid-cols-2">
           <div className="rounded-md border border-teal-100 bg-teal-50 px-4 py-3 text-sm leading-6 text-teal-950">
             <p className="font-semibold">Valores legales</p>
-            <p>SBU, IESS, impuesto a la renta, dÃ©cimos, jornada y reglas que alimentan el cÃ¡lculo.</p>
+            <p>SBU, IESS, impuesto a la renta, décimos, jornada y reglas que alimentan el cálculo.</p>
           </div>
           <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
             <p className="font-semibold text-slate-950">Cuentas contables de nómina</p>
