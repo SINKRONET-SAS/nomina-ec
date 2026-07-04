@@ -67,7 +67,7 @@ function BankFlatFileGuide({ values, mappings = [] }) {
     <div className="mt-5 space-y-4 rounded-md border border-teal-100 bg-teal-50/70 p-4">
       <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
         <div>
-          <p className="text-sm font-semibold text-teal-950">Archivo plano que se generara</p>
+          <p className="text-sm font-semibold text-teal-950">Archivo plano que se generará</p>
           <h4 className="mt-1 text-base font-semibold text-slate-950">{template.title}</h4>
           <p className="mt-1 text-sm leading-6 text-slate-700">
             Fuente: {template.source}. El sistema toma nóminas cerradas/pagadas, descifra la cuenta solo en memoria y arma estas columnas.
@@ -77,7 +77,7 @@ function BankFlatFileGuide({ values, mappings = [] }) {
           <p><strong>Archivo:</strong> {template.fileName}</p>
           <p><strong>Encoding:</strong> {template.encoding}</p>
           <p><strong>Separador:</strong> {template.delimiter === ';' ? 'punto y coma (;)' : template.delimiter}</p>
-          <p><strong>Lineas:</strong> {template.lineEnding}</p>
+          <p><strong>Líneas:</strong> {template.lineEnding}</p>
         </div>
       </div>
 
@@ -114,14 +114,14 @@ function BankFlatFileGuide({ values, mappings = [] }) {
       </div>
 
       <div className="rounded-md bg-slate-950 px-3 py-2 text-xs text-slate-100">
-        <p className="font-semibold text-teal-200">Ejemplo de linea de detalle</p>
+        <p className="font-semibold text-teal-200">Ejemplo de línea de detalle</p>
         <code className="mt-1 block overflow-x-auto whitespace-nowrap">{template.example}</code>
       </div>
 
       <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-950">
         {mappings.length > 0
-          ? 'Esta vista esta usando la homologacion guardada para el banco. Si cambias la estructura, actualiza la homologacion antes de generar el archivo.'
-          : 'Aun no hay homologacion guardada para este banco; se muestra la plantilla base. Genera la estructura completa en Homologacion bancaria.'}
+          ? 'Esta vista está usando la homologación guardada para el banco. Si cambias la estructura, actualiza la homologación antes de generar el archivo.'
+          : 'Aún no hay homologación guardada para este banco; se muestra la plantilla base. Genera la estructura completa en Homologación bancaria.'}
       </div>
     </div>
   );
@@ -185,8 +185,8 @@ function BankMappingStructureBuilder({
             value={template}
             onChange={(event) => onFieldChange('template', event.target.value)}
           >
-            <option value="generico">Generica delimitada</option>
-            <option value="pacifico_interbank_immediate">Banco Pacifico - transferencias interbancarias inmediatas</option>
+            <option value="generico">Genérica delimitada</option>
+            <option value="pacifico_interbank_immediate">Banco Pacífico - transferencias interbancarias inmediatas</option>
           </select>
         </label>
       </div>
@@ -194,9 +194,9 @@ function BankMappingStructureBuilder({
       <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-semibold text-slate-950">Homologacion rapida desde archivo plano</p>
+            <p className="text-sm font-semibold text-slate-950">Homologación rápida desde archivo plano</p>
             <p className="mt-1 text-xs leading-5 text-slate-600">
-              Sube un TXT/CSV modelo. Se lee la primera linea como cabecera o estructura, y puedes ajustar los campos antes de guardar.
+              Sube un TXT/CSV modelo. Se lee la primera línea como cabecera o estructura, y puedes ajustar los campos antes de guardar.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -221,7 +221,7 @@ function BankMappingStructureBuilder({
       <div className="overflow-hidden rounded-md border border-slate-200">
         <div className="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-semibold text-slate-950">Estructura que se guardara para {values.banco_codigo || 'el banco'}</p>
+            <p className="text-sm font-semibold text-slate-950">Estructura que se guardará para {values.banco_codigo || 'el banco'}</p>
             <p className="mt-1 text-xs text-slate-500">
               Se generan {structure.length} campos ordenados. Existentes para este banco: {savedMappings.length}.
             </p>
@@ -296,7 +296,7 @@ function BankMappingStructureBuilder({
       </div>
 
       <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-950">
-        Banco y archivo plano consume esta homologacion guardada. Si no existe, usa la plantilla base; si existe, el generador ordena el archivo por estas posiciones.
+        Banco y archivo plano consume esta homologación guardada. Si no existe, usa la plantilla base; si existe, el generador ordena el archivo por estas posiciones.
       </div>
     </div>
   );
@@ -313,7 +313,7 @@ function BankMappingGroups({ records }) {
   if (groups.size === 0) {
     return (
       <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
-        Aun no hay estructuras bancarias homologadas.
+        Aún no hay estructuras bancarias homologadas.
       </p>
     );
   }
@@ -428,13 +428,13 @@ function Parametrizacion() {
     mutationFn: () => loadMandatoryLegalParameters(token, mandatoryYear),
     onSuccess: (data) => {
       setError('');
-      setMessage(`Parametros legales vigentes para ${data.periodYear} actualizados: ${data.count}.`);
+      setMessage(`Parámetros legales vigentes para ${data.periodYear} actualizados: ${data.count}.`);
       selectForm('ir');
       queryClient.invalidateQueries({ queryKey: ['configuration-summary'] });
     },
     onError: (err) => {
       setMessage('');
-      setError(extractApiError(err, 'No pudimos cargar los parametros legales obligatorios.'));
+      setError(extractApiError(err, 'No pudimos cargar los parámetros legales obligatorios.'));
     },
   });
 
@@ -444,10 +444,10 @@ function Parametrizacion() {
       const existingMappings = mappingsForBank(summary, bancoCodigo);
       const validStructure = structure.filter((field) => CANONICAL_BANK_FIELDS.includes(field.canonical_field));
       if (!bancoCodigo) {
-        throw new Error('Selecciona un banco antes de generar la homologacion.');
+        throw new Error('Selecciona un banco antes de generar la homologación.');
       }
       if (validStructure.length === 0) {
-        throw new Error('La estructura no tiene campos canonicos validos para guardar.');
+        throw new Error('La estructura no tiene campos canónicos válidos para guardar.');
       }
 
       const savedRows = [];
@@ -474,7 +474,7 @@ function Parametrizacion() {
       }
 
       await completeOnboardingStep(token, 'bancos', {
-        notes: `Homologacion bancaria ${bancoCodigo} generada como estructura completa.`,
+        notes: `Homologación bancaria ${bancoCodigo} generada como estructura completa.`,
         evidence: { bancoCodigo, totalCampos: savedRows.length },
       });
 
@@ -482,7 +482,7 @@ function Parametrizacion() {
     },
     onSuccess: ({ bancoCodigo, savedRows }) => {
       setError('');
-      setMessage(`Homologacion ${bancoCodigo} actualizada: ${savedRows.length} campos guardados.`);
+      setMessage(`Homologación ${bancoCodigo} actualizada: ${savedRows.length} campos guardados.`);
       queryClient.invalidateQueries({ queryKey: ['configuration-summary'] });
     },
     onError: (err) => {
@@ -644,11 +644,11 @@ function Parametrizacion() {
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Configuracion de la empresa</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Configuración de la empresa</p>
             <h1 className="mt-2 text-2xl font-semibold text-slate-950">Parametriza la nómina con datos visibles</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Ingresa parametros laborales, novedades, estructura, zonas y jornadas. Cada unidad organizativa debe
-              quedar vinculada a una zona de marcacion antes de usarse en asistencia productiva.
+              Ingresa parámetros laborales, novedades, estructura, zonas y jornadas. Cada unidad organizativa debe
+              quedar vinculada a una zona de marcación antes de usarse en asistencia productiva.
             </p>
           </div>
           <div className="rounded-md bg-teal-50 px-5 py-4 text-center">
@@ -674,14 +674,14 @@ function Parametrizacion() {
           <div>
             <h2 className="text-lg font-semibold text-teal-950">Carga de valores legales obligatorios</h2>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-teal-900">
-              Carga SBU, aportes IESS, jornada, vacaciones y tabla de impuesto a la renta del anio seleccionado
+              Carga SBU, aportes IESS, jornada, vacaciones y tabla de impuesto a la renta del año seleccionado
               como parámetros revisables. Incluye décimos tercero/cuarto y fondo de reserva. No reemplaza la validación
               contra fuente oficial vigente.
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
             <label>
-              <span className="text-sm font-medium text-teal-950">Anio fiscal</span>
+              <span className="text-sm font-medium text-teal-950">Año fiscal</span>
               <input
                 className="mt-1 w-32 rounded-md border border-teal-300 bg-white px-3 py-2 text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
                 type="number"
@@ -768,9 +768,9 @@ function Parametrizacion() {
 
             {activeDefinition.key === 'jornada' && (
               <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
-                <p className="font-semibold">Revision legal de jornada requerida</p>
+                <p className="font-semibold">Revisión legal de jornada requerida</p>
                 <p className="mt-1">
-                  Puedes configurar varias jornadas en la misma empresa y asignarlas luego a cada unidad organizativa: lunes a viernes, martes a sabado u otra distribucion operativa. Antes de aplicarlas, valida que la jornada cumpla limites laborales ecuatorianos y, cuando corresponda por jornada especial, nocturna, rotativa, suplementaria, extraordinaria o distribucion excepcional, obten la autorizacion o registro aplicable ante el Ministerio del Trabajo.
+                  Puedes configurar varias jornadas en la misma empresa y asignarlas luego a cada unidad organizativa: lunes a viernes, martes a sábado u otra distribución operativa. Antes de aplicarlas, valida que la jornada cumpla límites laborales ecuatorianos y, cuando corresponda por jornada especial, nocturna, rotativa, suplementaria, extraordinaria o distribución excepcional, obtén la autorización o registro aplicable ante el Ministerio del Trabajo.
                 </p>
               </div>
             )}
@@ -826,8 +826,8 @@ function Parametrizacion() {
                 {saveMutation.isPending
                   ? 'Guardando...'
                   : (isEditingActiveRecord
-                    ? activeDefinition.updateLabel || (activeDefinition.key === 'banco' ? 'Actualizar estructura bancaria' : 'Actualizar parametro')
-                    : activeDefinition.saveLabel || (activeDefinition.key === 'banco' ? 'Guardar estructura bancaria' : 'Guardar parametro'))}
+                    ? activeDefinition.updateLabel || (activeDefinition.key === 'banco' ? 'Actualizar estructura bancaria' : 'Actualizar parámetro')
+                    : activeDefinition.saveLabel || (activeDefinition.key === 'banco' ? 'Guardar estructura bancaria' : 'Guardar parámetro'))}
               </button>
             )}
           </form>
@@ -839,7 +839,7 @@ function Parametrizacion() {
                 <BankMappingGroups records={records} />
               ) : records.length === 0 && (
                 <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                  {activeDefinition.emptyText || 'Aun no hay registros en esta categoria.'}
+                  {activeDefinition.emptyText || 'Aún no hay registros en esta categoría.'}
                 </p>
               )}
               {activeDefinition.customType !== 'bankMappingStructure' && records.slice(0, 12).map((record) => (

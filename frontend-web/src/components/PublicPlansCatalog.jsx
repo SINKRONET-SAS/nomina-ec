@@ -96,7 +96,7 @@ function PublicPlansCatalog() {
               </div>
               <p className="mt-6 text-3xl font-semibold text-slate-950">{formatPublicPlanPrice(plan)}</p>
               <div className="mt-5">
-                <PlanFunctionalityList compact plan={plan} />
+                <PlanFunctionalityList compact showExcluded={false} plan={plan} />
               </div>
               {checkoutSelected && (
                 <div className="mt-5 rounded-md border border-teal-200 bg-white p-4 text-sm text-slate-700">
