@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SKNOMINA",
-    "slug": "sknomina",
+    "slug": "nomina-ec",
     "description": "SKNOMINA permite registrar asistencia, rutas de campo, permisos y autoservicio laboral para empresas en Ecuador.",
     "scheme": "sknomina",
     "version": "1.0.0",
