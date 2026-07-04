@@ -19,6 +19,13 @@
       "filters": ["periodId", "employeeId", "departmentId"]
     },
     {
+      "code": "PAYROLL_BENEFIT_MOVEMENT_BALANCE",
+      "name": "Ledger individual de beneficios y saldos",
+      "exports": ["xlsx", "csv"],
+      "permissions": ["reports.export"],
+      "filters": ["fiscalYear", "employeeId", "departmentId", "costCenterId"]
+    },
+    {
       "code": "BANK_PAYMENT_RECONCILIATION",
       "name": "Conciliacion de pagos bancarios",
       "exports": ["pdf", "xlsx"],

@@ -25,7 +25,29 @@ const REPORT_TYPES = {
   PAYROLL_ACCOUNTING_ENTRIES: 'accounting',
   PAYROLL_EMPLOYEE_DETAIL: 'employee_detail',
   PAYROLL_BENEFITS_MATRIX: 'benefits_matrix',
+  PAYROLL_BENEFIT_MOVEMENT_BALANCE: 'benefit_movement_balance',
   PAYROLL_ACCOUNTING_REPORT: 'accounting_report',
+};
+
+const BENEFIT_MOVEMENT_TYPES = new Set([
+  'anticipo',
+  'prestamo',
+  'beneficio_recurrente',
+  'descuento_recurrente',
+]);
+
+const BENEFIT_MOVEMENT_LABELS = {
+  anticipo: 'Anticipo',
+  prestamo: 'Prestamo',
+  beneficio_recurrente: 'Beneficio recurrente',
+  descuento_recurrente: 'Descuento recurrente',
+};
+
+const BENEFIT_MOVEMENT_NATURE = {
+  anticipo: 'deduccion',
+  prestamo: 'deduccion',
+  beneficio_recurrente: 'ingreso',
+  descuento_recurrente: 'deduccion',
 };
 
 const FORMAT_MIME = {
@@ -58,10 +80,14 @@ async function generarReporteNomina({
     throw new Error(`${normalizedReportCode} se exporta como XLSX o CSV para mantener formato tabular auditable`);
   }
 
-  const rows = await getPayrollRows(tenantId, Number(anio), Number(mes), filters);
+  const isBenefitMovementBalanceReport = normalizedReportCode === 'PAYROLL_BENEFIT_MOVEMENT_BALANCE';
+  const rows = isBenefitMovementBalanceReport
+    ? await getBenefitLedgerRows(tenantId, Number(anio), Number(mes), filters)
+    : await getPayrollRows(tenantId, Number(anio), Number(mes), filters);
 
   if (rows.length === 0) {
-    throw new Error('No hay nóminas para el periodo y filtros solicitados');
+    const emptySubject = isBenefitMovementBalanceReport ? 'beneficios' : 'nóminas';
+    throw new Error(`No hay ${emptySubject} para el periodo y filtros solicitados`);
   }
 
   const tenant = await getTenant(tenantId);
@@ -75,7 +101,9 @@ async function generarReporteNomina({
   }
   const exportRows = normalizedFormat === 'pdf'
     ? []
-    : rowsForReport(rows, normalizedReportCode, Number(anio), Number(mes), reportOptions);
+    : isBenefitMovementBalanceReport
+      ? rows
+      : rowsForReport(rows, normalizedReportCode, Number(anio), Number(mes), reportOptions);
   const buffer = normalizedFormat === 'pdf'
     ? await buildSummaryPdf({ tenant, anio, mes, rows, filters, context })
     : normalizedFormat === 'csv'
@@ -113,7 +141,7 @@ async function generarReporteNomina({
     reportCode: normalizedReportCode,
     format: normalizedFormat,
     totalFilas: normalizedFormat === 'pdf' ? rows.length : exportRows.length,
-    resumen: summarizeRows(rows),
+    resumen: isBenefitMovementBalanceReport ? summarizeBenefitLedgerRows(exportRows) : summarizeRows(rows),
   };
 }
 
@@ -149,14 +177,15 @@ async function generarConsolidadoAnualNomina({
     totalDeducciones: 0,
     netoRecibir: 0,
     costoEmpleador: 0,
+    saldoInicial: 0,
+    movimientoAnual: 0,
+    saldoFinal: 0,
   };
+  const isBenefitMovementBalanceReport = normalizedReportCode === 'PAYROLL_BENEFIT_MOVEMENT_BALANCE';
 
-  for (let mes = 1; mes <= 12; mes += 1) {
-    const rows = await getPayrollRows(tenantId, Number(anio), mes, filters);
-    if (rows.length === 0) continue;
-
-    const exportRows = rowsForReport(rows, normalizedReportCode, Number(anio), mes, reportOptions);
-    const sheet = workbook.addWorksheet(`${String(mes).padStart(2, '0')}-${anio}`);
+  if (isBenefitMovementBalanceReport) {
+    const exportRows = await getBenefitLedgerRows(tenantId, Number(anio), null, filters);
+    const sheet = workbook.addWorksheet('Ledger beneficios');
     sheet.columns = getWorkbookColumns(normalizedReportCode, exportRows);
     sheet.views = [{ state: 'frozen', ySplit: 1 }];
     exportRows.forEach((row) => sheet.addRow(row));
@@ -166,16 +195,35 @@ async function generarConsolidadoAnualNomina({
       to: { row: 1, column: sheet.columns.length },
     };
 
-    const monthSummary = summarizeRows(rows);
-    annualSummary.totalFilas += exportRows.length;
-    annualSummary.totalIngresos += monthSummary.totalIngresos;
-    annualSummary.totalDeducciones += monthSummary.totalDeducciones;
-    annualSummary.netoRecibir += monthSummary.netoRecibir;
-    annualSummary.costoEmpleador += monthSummary.costoEmpleador;
+    Object.assign(annualSummary, summarizeBenefitLedgerRows(exportRows));
+  } else {
+    for (let mes = 1; mes <= 12; mes += 1) {
+      const rows = await getPayrollRows(tenantId, Number(anio), mes, filters);
+      if (rows.length === 0) continue;
+
+      const exportRows = rowsForReport(rows, normalizedReportCode, Number(anio), mes, reportOptions);
+      const sheet = workbook.addWorksheet(`${String(mes).padStart(2, '0')}-${anio}`);
+      sheet.columns = getWorkbookColumns(normalizedReportCode, exportRows);
+      sheet.views = [{ state: 'frozen', ySplit: 1 }];
+      exportRows.forEach((row) => sheet.addRow(row));
+      sheet.getRow(1).font = { bold: true };
+      sheet.autoFilter = {
+        from: { row: 1, column: 1 },
+        to: { row: 1, column: sheet.columns.length },
+      };
+
+      const monthSummary = summarizeRows(rows);
+      annualSummary.totalFilas += exportRows.length;
+      annualSummary.totalIngresos += monthSummary.totalIngresos;
+      annualSummary.totalDeducciones += monthSummary.totalDeducciones;
+      annualSummary.netoRecibir += monthSummary.netoRecibir;
+      annualSummary.costoEmpleador += monthSummary.costoEmpleador;
+    }
   }
 
   if (annualSummary.totalFilas === 0) {
-    throw new Error(`No hay nóminas para el año ${anio} y filtros solicitados.`);
+    const emptySubject = isBenefitMovementBalanceReport ? 'beneficios' : 'nóminas';
+    throw new Error(`No hay ${emptySubject} para el año ${anio} y filtros solicitados.`);
   }
 
   const auditSheet = workbook.addWorksheet('Auditoria');
@@ -195,6 +243,9 @@ async function generarConsolidadoAnualNomina({
     ['Total deducciones', toMoneyString(annualSummary.totalDeducciones)],
     ['Neto recibir', toMoneyString(annualSummary.netoRecibir)],
     ['Costo empleador', toMoneyString(annualSummary.costoEmpleador)],
+    ['Saldo inicial beneficios', toMoneyString(annualSummary.saldoInicial)],
+    ['Movimiento anual beneficios', toMoneyString(annualSummary.movimientoAnual)],
+    ['Saldo final beneficios', toMoneyString(annualSummary.saldoFinal)],
     ['Generado en', new Date().toISOString()],
     ['Correlation ID', context.correlationId || ''],
   ].forEach(([campo, valor]) => auditSheet.addRow({ campo, valor }));
@@ -325,6 +376,160 @@ async function getPayrollRows(tenantId, anio, mes, filters = {}) {
   return result.rows;
 }
 
+async function getBenefitLedgerRows(tenantId, anio, mes = null, filters = {}) {
+  const periodEnd = periodNumber(anio, mes || 12);
+  const where = [
+    'b.tenant_id = $1',
+    "b.estado IN ('aprobado', 'descontado', 'anulado')",
+    '(b.anio_inicio * 100 + b.mes_inicio) <= $2',
+  ];
+  const params = [tenantId, periodEnd];
+
+  addFilter(where, params, 'b.empleado_id', filters.employeeId);
+  addFilter(where, params, 'e.departamento', filters.department);
+  addPositionFilter(where, params, filters.position);
+  addFilter(where, params, "COALESCE(ou.cost_center_code, e.departamento, '')", filters.costCenter);
+
+  const result = await db.query(`
+    SELECT
+      b.id,
+      b.empleado_id,
+      b.tipo,
+      b.descripcion,
+      b.monto_total,
+      b.saldo_pendiente,
+      b.cuota_mensual,
+      b.anio_inicio,
+      b.mes_inicio,
+      b.estado,
+      b.metadata,
+      e.cedula,
+      e.nombres,
+      e.apellidos,
+      e.departamento,
+      COALESCE(jp.name, e.cargo) AS cargo,
+      jp.code AS cargo_codigo,
+      COALESCE(ou.name, e.departamento, '') AS unidad_nombre,
+      COALESCE(ou.cost_center_code, '') AS centro_costo
+    FROM beneficios_empleados b
+    JOIN empleados e ON e.id = b.empleado_id
+    LEFT JOIN job_positions jp
+      ON jp.id = e.position_id
+     AND jp.tenant_id = e.tenant_id
+    LEFT JOIN organization_units ou
+      ON ou.tenant_id = e.tenant_id
+      AND ou.status = 'activo'
+      AND (
+        ou.id = jp.organization_unit_id
+        OR ou.code = e.unidad_organizativa_codigo
+        OR ou.code = e.departamento
+        OR ou.name = e.departamento
+        OR ou.cost_center_code = e.departamento
+      )
+    WHERE ${where.join(' AND ')}
+    ORDER BY e.departamento, e.apellidos, e.nombres, b.anio_inicio, b.mes_inicio, b.created_at
+  `, params);
+
+  return buildBenefitLedgerRows(result.rows, anio, mes);
+}
+
+function buildBenefitLedgerRows(rows, anio, mes = null) {
+  const periodStart = periodNumber(anio, mes || 1);
+  const periodEnd = periodNumber(anio, mes || 12);
+
+  return rows
+    .map((row) => mapBenefitLedgerRow(row, anio, mes, periodStart, periodEnd))
+    .filter((row) => row.saldoInicial > 0 || row.movimientoAnual > 0 || row.saldoFinal > 0)
+    .sort((left, right) => String(left.empleado).localeCompare(String(right.empleado))
+      || String(left.tipoBeneficio).localeCompare(String(right.tipoBeneficio))
+      || String(left.inicioBeneficio).localeCompare(String(right.inicioBeneficio))
+      || String(left.beneficioId).localeCompare(String(right.beneficioId)));
+}
+
+function mapBenefitLedgerRow(row, anio, mes, periodStart, periodEnd) {
+  const metadata = normalizeDetail(row.metadata);
+  const discounts = Array.isArray(metadata.descuentosNomina) ? metadata.descuentosNomina : [];
+  const movements = discounts.map(normalizeBenefitDiscount).filter(Boolean);
+  const movementInPeriod = movements.filter((movement) => movement.period >= periodStart && movement.period <= periodEnd);
+  const movementAfterPeriod = movements.filter((movement) => movement.period > periodEnd);
+  const missingPeriodCount = discounts.length - movements.length;
+  const movimientoAnual = roundCurrency(movementInPeriod.reduce((sum, movement) => sum + movement.amount, 0));
+  const movimientoPosterior = roundCurrency(movementAfterPeriod.reduce((sum, movement) => sum + movement.amount, 0));
+  const saldoFinal = roundCurrency(numberValue(row.saldo_pendiente) + movimientoPosterior);
+  const saldoInicial = roundCurrency(saldoFinal + movimientoAnual);
+  const tipo = normalizeBenefitType(row.tipo);
+  const periodos = [...new Set(movementInPeriod.map((movement) => movement.label))].sort();
+  const beneficio = String(row.descripcion || '').trim() || BENEFIT_MOVEMENT_LABELS[tipo] || tipo;
+
+  return {
+    periodo: mes ? `${String(mes).padStart(2, '0')}/${anio}` : String(anio),
+    cedula: row.cedula,
+    empleado: `${row.apellidos} ${row.nombres}`.trim(),
+    departamento: row.departamento,
+    cargo: row.cargo,
+    cargoCodigo: row.cargo_codigo || '',
+    unidad: row.unidad_nombre,
+    centroCosto: row.centro_costo,
+    beneficioId: row.id,
+    tipoBeneficio: BENEFIT_MOVEMENT_LABELS[tipo] || tipo,
+    beneficio,
+    estadoBeneficio: row.estado,
+    naturaleza: BENEFIT_MOVEMENT_NATURE[tipo] || 'beneficio',
+    inicioBeneficio: `${Number(row.anio_inicio)}-${String(Number(row.mes_inicio)).padStart(2, '0')}`,
+    montoOriginal: numberValue(row.monto_total),
+    cuotaMensual: numberValue(row.cuota_mensual),
+    saldoInicial,
+    movimientoAnual,
+    saldoFinal,
+    periodosConMovimiento: periodos.length,
+    primerMovimiento: periodos[0] || '',
+    ultimoMovimiento: periodos[periodos.length - 1] || '',
+    observacion: missingPeriodCount > 0 ? 'Revisar descuentos sin periodo en metadata' : 'OK',
+  };
+}
+
+function normalizeBenefitDiscount(discount = {}) {
+  const period = benefitDiscountPeriod(discount);
+  const amount = numberValue(discount.monto ?? discount.amount ?? discount.valor);
+  if (!period || amount <= 0) return null;
+  return {
+    period,
+    amount,
+    label: formatPeriodNumber(period),
+  };
+}
+
+function benefitDiscountPeriod(discount = {}) {
+  const year = Number(discount.anio);
+  const month = Number(discount.mes);
+  if (Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12) {
+    return periodNumber(year, month);
+  }
+
+  const match = String(discount.periodo || '').match(/^(\d{4})-(\d{1,2})$/);
+  if (!match) return null;
+  return periodNumber(Number(match[1]), Number(match[2]));
+}
+
+function normalizeBenefitType(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  return BENEFIT_MOVEMENT_TYPES.has(normalized) ? normalized : (normalized || 'beneficio');
+}
+
+function periodNumber(anio, mes) {
+  return Number(anio) * 100 + Number(mes);
+}
+
+function formatPeriodNumber(value) {
+  const year = Math.floor(Number(value) / 100);
+  const month = Number(value) % 100;
+  return `${year}-${String(month).padStart(2, '0')}`;
+}
+
+function roundCurrency(value) {
+  return Math.round(numberValue(value) * 100) / 100;
+}
+
 function addFilter(where, params, column, value) {
   const normalized = String(value || '').trim();
   if (!normalized) return;
@@ -350,7 +555,12 @@ async function buildWorkbook({ tenant, anio, mes, exportRows, reportCode, filter
   workbook.created = new Date();
   workbook.modified = new Date();
 
-  const sheet = workbook.addWorksheet(reportCode === 'PAYROLL_SUMMARY' ? 'Resumen' : 'Detalle');
+  const sheetName = reportCode === 'PAYROLL_SUMMARY'
+    ? 'Resumen'
+    : reportCode === 'PAYROLL_BENEFIT_MOVEMENT_BALANCE'
+      ? 'Ledger beneficios'
+      : 'Detalle';
+  const sheet = workbook.addWorksheet(sheetName);
   sheet.columns = getWorkbookColumns(reportCode, exportRows);
   sheet.views = [{ state: 'frozen', ySplit: 1 }];
 
@@ -554,6 +764,34 @@ function getWorkbookColumns(reportCode, exportRows = []) {
     ];
   }
 
+  if (reportCode === 'PAYROLL_BENEFIT_MOVEMENT_BALANCE') {
+    return [
+      { header: 'Periodo', key: 'periodo', width: 12 },
+      { header: 'Cedula', key: 'cedula', width: 14 },
+      { header: 'Empleado', key: 'empleado', width: 36 },
+      { header: 'Departamento', key: 'departamento', width: 20 },
+      { header: 'Codigo cargo', key: 'cargoCodigo', width: 16 },
+      { header: 'Cargo', key: 'cargo', width: 24 },
+      { header: 'Unidad organizativa', key: 'unidad', width: 26 },
+      { header: 'Centro costo', key: 'centroCosto', width: 16 },
+      { header: 'Beneficio ID', key: 'beneficioId', width: 38 },
+      { header: 'Tipo beneficio', key: 'tipoBeneficio', width: 18 },
+      { header: 'Beneficio', key: 'beneficio', width: 32 },
+      { header: 'Estado beneficio', key: 'estadoBeneficio', width: 18 },
+      { header: 'Naturaleza', key: 'naturaleza', width: 14 },
+      { header: 'Inicio beneficio', key: 'inicioBeneficio', width: 16 },
+      { header: 'Monto original', key: 'montoOriginal', width: 16, style: { numFmt: '$#,##0.00' } },
+      { header: 'Cuota mensual', key: 'cuotaMensual', width: 16, style: { numFmt: '$#,##0.00' } },
+      { header: 'Saldo inicial', key: 'saldoInicial', width: 16, style: { numFmt: '$#,##0.00' } },
+      { header: 'Movimiento anual', key: 'movimientoAnual', width: 18, style: { numFmt: '$#,##0.00' } },
+      { header: 'Saldo', key: 'saldoFinal', width: 16, style: { numFmt: '$#,##0.00' } },
+      { header: 'Periodos movimiento', key: 'periodosConMovimiento', width: 20 },
+      { header: 'Primer movimiento', key: 'primerMovimiento', width: 18 },
+      { header: 'Ultimo movimiento', key: 'ultimoMovimiento', width: 18 },
+      { header: 'Observacion', key: 'observacion', width: 36 },
+    ];
+  }
+
   if (reportCode === 'PAYROLL_BENEFITS_MATRIX') {
     return [
       { header: 'Periodo', key: 'periodo', width: 12 },
@@ -745,6 +983,37 @@ function summarizeRows(rows) {
   });
 }
 
+function summarizeBenefitLedgerRows(rows) {
+  const employeeKeys = new Set();
+  const summary = rows.reduce((acc, row) => {
+    acc.totalFilas += 1;
+    acc.totalBeneficios += 1;
+    acc.saldoInicial += numberValue(row.saldoInicial);
+    acc.movimientoAnual += numberValue(row.movimientoAnual);
+    acc.saldoFinal += numberValue(row.saldoFinal);
+    acc.totalDeducciones += numberValue(row.movimientoAnual);
+    employeeKeys.add(row.cedula || row.empleado);
+    return acc;
+  }, {
+    totalFilas: 0,
+    totalBeneficios: 0,
+    totalEmpleados: 0,
+    totalIngresos: 0,
+    totalDeducciones: 0,
+    netoRecibir: 0,
+    costoEmpleador: 0,
+    saldoInicial: 0,
+    movimientoAnual: 0,
+    saldoFinal: 0,
+  });
+  summary.totalEmpleados = employeeKeys.size;
+  summary.saldoInicial = roundCurrency(summary.saldoInicial);
+  summary.movimientoAnual = roundCurrency(summary.movimientoAnual);
+  summary.saldoFinal = roundCurrency(summary.saldoFinal);
+  summary.totalDeducciones = roundCurrency(summary.totalDeducciones);
+  return summary;
+}
+
 function normalizeDetail(value) {
   if (!value) return {};
   if (typeof value === 'object') return value;
@@ -789,4 +1058,5 @@ module.exports = {
   summarizeRows,
   REPORT_TYPES,
   rowsForReport,
+  buildBenefitLedgerRows,
 };

@@ -433,6 +433,7 @@ function DescargarReportes() {
               <option value="PAYROLL_DETAIL_TABULAR">Detalle tabular</option>
               <option value="PAYROLL_EMPLOYEE_DETAIL">Detalle por empleado</option>
               <option value="PAYROLL_BENEFITS_MATRIX">Matriz empleados x beneficios</option>
+              <option value="PAYROLL_BENEFIT_MOVEMENT_BALANCE">Ledger beneficios y saldos</option>
               <option value="PAYROLL_SUMMARY">Resumen de nómina</option>
               <option value="PAYROLL_ACCOUNTING_REPORT">Reporte contable</option>
             </select>
