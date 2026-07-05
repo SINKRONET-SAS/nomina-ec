@@ -59,7 +59,14 @@ const path = require('path');
 describe('configuracion S3 AWS SDK v3', () => {
   beforeEach(() => {
     process.env.STORAGE_DRIVER = 's3';
+    process.env.AWS_ACCESS_KEY_ID = 'real-access-key';
+    process.env.AWS_SECRET_ACCESS_KEY = 'real-secret-key';
     S3Client.calls.length = 0;
+  });
+
+  afterEach(() => {
+    delete process.env.AWS_ACCESS_KEY_ID;
+    delete process.env.AWS_SECRET_ACCESS_KEY;
   });
 
   test('sube archivos con PutObjectCommand y conserva URL compatible', async () => {
@@ -85,6 +92,20 @@ describe('configuracion S3 AWS SDK v3', () => {
 
     await expect(s3Delete('roles/demo.pdf')).resolves.toBeUndefined();
     expect(S3Client.calls[0].commandName).toBe('DeleteObjectCommand');
+  });
+
+  test('falla cerrado con mensaje operativo cuando S3 no tiene credenciales', async () => {
+    delete process.env.AWS_ACCESS_KEY_ID;
+    delete process.env.AWS_SECRET_ACCESS_KEY;
+    const { s3Upload } = require('./s3');
+
+    await expect(s3Upload(Buffer.from('demo'), 'roles/sin-credenciales.pdf', 'application/pdf'))
+      .rejects.toMatchObject({
+        code: 'STORAGE_S3_CREDENTIALS_MISSING',
+        statusCode: 503,
+        message: 'El almacenamiento documental no esta configurado. Configura credenciales S3 reales en Render antes de generar o descargar documentos.',
+      });
+    expect(S3Client.calls).toHaveLength(0);
   });
 });
 

@@ -260,4 +260,31 @@ describe('nominaController descargarRolesTranspuestosPDF', () => {
     expect(res.body.url).toContain('/api/storage/local/');
     expect(res.body.url).toContain('token=');
   });
+
+  test('devuelve mensaje seguro cuando el almacenamiento documental no esta configurado', async () => {
+    generatePayrollRolePeriodTransposedPdf.mockRejectedValueOnce(Object.assign(
+      new Error('El almacenamiento documental no esta configurado. Configura credenciales S3 reales en Render antes de generar o descargar documentos.'),
+      {
+        code: 'STORAGE_S3_CREDENTIALS_MISSING',
+        statusCode: 503,
+      }
+    ));
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-storage',
+      params: { anio: '2026', mes: '6' },
+    };
+    const res = createResponse();
+
+    await descargarRolesTranspuestosPDF(req, res);
+
+    expect(res.statusCode).toBe(503);
+    expect(res.body).toMatchObject({
+      error: 'STORAGE_S3_CREDENTIALS_MISSING',
+      message: 'El almacenamiento documental no esta configurado. Configura credenciales S3 reales en Render antes de generar o descargar documentos.',
+      correlationId: 'corr-storage',
+    });
+    expect(res.body.message).not.toMatch(/Could not load credentials|Error al subir archivo a S3/i);
+  });
 });

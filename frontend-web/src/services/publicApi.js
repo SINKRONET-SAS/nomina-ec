@@ -6,15 +6,23 @@ export const publicApi = axios.create({
   timeout: 15000,
 });
 
-export function extractApiError(err, fallback = 'No se pudo completar la operación.') {
-  const message = err?.response?.data?.message || err?.response?.data?.error || err?.message || fallback;
+export function sanitizeApiErrorMessage(message, fallback = 'No se pudo completar la operación.') {
   const normalized = String(message || '').trim().toLowerCase();
+
+  if (normalized.includes('could not load credentials') || normalized.includes('error al subir archivo a s3')) {
+    return 'El almacenamiento documental no está configurado. Solicita revisar las credenciales S3 antes de generar documentos.';
+  }
 
   if (normalized === 'ruta no encontrada' || normalized === 'not_found') {
     return 'No pudimos cargar esta sección. Actualiza la página y verifica que el servicio esté activo.';
   }
 
-  return message;
+  return message || fallback;
+}
+
+export function extractApiError(err, fallback = 'No se pudo completar la operación.') {
+  const message = err?.response?.data?.message || err?.response?.data?.error || err?.message || fallback;
+  return sanitizeApiErrorMessage(message, fallback);
 }
 
 export async function fetchPlans() {

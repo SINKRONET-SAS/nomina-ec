@@ -66,6 +66,9 @@ const pwaConfig = read('frontend-web/pwa.config.js');
 const viteConfig = read('frontend-web/vite.config.js');
 const brandLogoComponent = read('frontend-web/src/components/Brand/BrandLogo.jsx');
 const mobileLoginScreen = read('app-movil/src/screens/LoginScreen.js');
+const storageConfig = read('backend/src/config/s3.js');
+const publicApiService = read('frontend-web/src/services/publicApi.js');
+const authenticatedApiService = read('frontend-web/src/services/authenticatedApi.js');
 
 for (const [label, text] of Object.entries({
   'frontend-web/index.html': webIndexHtml,
@@ -92,6 +95,12 @@ assertPngDimensions('frontend-web/public/icon-512.png', 512, 512);
 assertPngDimensions('frontend-web/public/apple-touch-icon.png', 180, 180);
 assertPngDimensions('app-movil/assets/icon.png', 1024, 1024);
 assertPngDimensions('app-movil/assets/notification-icon.png', 512, 512);
+assert(storageConfig.includes('STORAGE_S3_CREDENTIALS_MISSING'), 'Storage S3 debe fallar cerrado cuando faltan credenciales.');
+assert(storageConfig.includes('storageOperationError'), 'Storage S3 debe envolver errores del proveedor sin exponer mensajes crudos.');
+assert(!storageConfig.includes('Error al subir archivo a S3: ${err.message}'), 'Storage no debe exponer errores crudos de AWS al usuario.');
+assert(publicApiService.includes('sanitizeApiErrorMessage'), 'Frontend debe centralizar sanitizacion de errores API.');
+assert(publicApiService.includes('could not load credentials'), 'Frontend debe traducir errores heredados de credenciales S3.');
+assert(authenticatedApiService.includes('sanitizeApiErrorMessage'), 'Cliente autenticado debe sanitizar mensajes crudos antes de que lleguen a pantallas.');
 
 const app = read('backend/src/app.js');
 const configurationService = read('backend/src/services/configurationService.js');

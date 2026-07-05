@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
+import { extractApiError } from '../../services/publicApi';
 import { downloadUrl } from '../../utils/downloadUrl';
 import { currentPeriodEC } from '../../utils/dateFormat';
 
@@ -35,8 +36,7 @@ function RolesPagos() {
       downloadUrl(url, response.data.fileName || `rol-pago-${id}.pdf`);
       setMessage(`Rol listo: ${response.data.fileName || 'PDF generado'}`);
     } catch (err) {
-      const apiMessage = err.response?.data?.message || err.response?.data?.error || err.message;
-      setError(apiMessage || 'No pudimos descargar el rol de pago.');
+      setError(extractApiError(err, 'No pudimos descargar el rol de pago.'));
     } finally {
       setDownloadingId('');
     }
@@ -57,8 +57,7 @@ function RolesPagos() {
       const total = response.data.totalEmpleados || nominas?.length || 0;
       setMessage(`PDF general listo: ${fileName} (${total} empleados).`);
     } catch (err) {
-      const apiMessage = err.response?.data?.message || err.response?.data?.error || err.message;
-      setError(apiMessage || 'No pudimos descargar el PDF general del periodo.');
+      setError(extractApiError(err, 'No pudimos descargar el PDF general del periodo.'));
     } finally {
       setDownloadingTransposed(false);
     }

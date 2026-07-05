@@ -11,6 +11,7 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const crypto = require('crypto');
 const fs = require('fs/promises');
 const path = require('path');
+const AppError = require('../utils/AppError');
 const logger = require('../utils/logger');
 require('dotenv').config();
 
@@ -54,6 +55,42 @@ function isPlaceholder(value) {
 function hasRealS3Credentials() {
   return !isPlaceholder(process.env.AWS_ACCESS_KEY_ID)
     && !isPlaceholder(process.env.AWS_SECRET_ACCESS_KEY);
+}
+
+function missingS3CredentialKeys() {
+  const missing = [];
+  if (isPlaceholder(process.env.AWS_ACCESS_KEY_ID)) missing.push('AWS_ACCESS_KEY_ID');
+  if (isPlaceholder(process.env.AWS_SECRET_ACCESS_KEY)) missing.push('AWS_SECRET_ACCESS_KEY');
+  return missing;
+}
+
+function storageUnavailableMessage() {
+  return 'El almacenamiento documental no esta configurado. Configura credenciales S3 reales en Render antes de generar o descargar documentos.';
+}
+
+function assertS3Ready(action, key) {
+  if (hasRealS3Credentials()) return;
+
+  const missing = missingS3CredentialKeys();
+  console.error('[S3] Almacenamiento documental sin credenciales reales', {
+    code: 'STORAGE_S3_CREDENTIALS_MISSING',
+    statusCode: 503,
+    correlationId: process.env.CORRELATION_ID || 's3-storage',
+    userId: null,
+    action,
+    key,
+    missing,
+    storageDriver: cleanEnv(process.env.STORAGE_DRIVER) || 'auto',
+  });
+
+  throw new AppError(storageUnavailableMessage(), {
+    code: 'STORAGE_S3_CREDENTIALS_MISSING',
+    statusCode: 503,
+    details: {
+      missing,
+      storageDriver: cleanEnv(process.env.STORAGE_DRIVER) || 'auto',
+    },
+  });
 }
 
 function isLocalStorageEnabled() {
@@ -239,6 +276,21 @@ function logS3Error(action, key, err) {
   });
 }
 
+function storageOperationError(action, key, err) {
+  if (err instanceof AppError) return err;
+
+  logS3Error(action, key, err);
+  return new AppError('No pudimos completar la operacion de almacenamiento documental. Revisa credenciales, bucket y permisos S3.', {
+    code: 'STORAGE_S3_OPERATION_FAILED',
+    statusCode: 502,
+    details: {
+      action,
+      key,
+      provider: ENDPOINT ? 's3_compatible' : 'aws_s3',
+    },
+  });
+}
+
 /**
  * Sube un archivo a S3.
  * @param {Buffer} buffer Contenido del archivo.
@@ -252,6 +304,7 @@ const s3Upload = async (buffer, key, contentType = 'application/octet-stream') =
   }
 
   try {
+    assertS3Ready('subir archivo', key);
     await s3.send(new PutObjectCommand({
       Bucket: BUCKET,
       Key: key,
@@ -270,8 +323,7 @@ const s3Upload = async (buffer, key, contentType = 'application/octet-stream') =
       return localUpload(buffer, key, contentType);
     }
 
-    logS3Error('subir archivo', key, err);
-    throw new Error(`Error al subir archivo a S3: ${err.message}`);
+    throw storageOperationError('subir archivo', key, err);
   }
 };
 
@@ -286,6 +338,7 @@ const s3Get = async (key) => {
   }
 
   try {
+    assertS3Ready('obtener archivo', key);
     const result = await s3.send(new GetObjectCommand({
       Bucket: BUCKET,
       Key: key,
@@ -298,8 +351,7 @@ const s3Get = async (key) => {
 
     return Buffer.concat(chunks);
   } catch (err) {
-    logS3Error('obtener archivo', key, err);
-    throw new Error(`Error al obtener archivo de S3: ${err.message}`);
+    throw storageOperationError('obtener archivo', key, err);
   }
 };
 
@@ -315,6 +367,7 @@ const s3SignedUrl = async (key, expiresIn = 3600) => {
   }
 
   try {
+    assertS3Ready('generar URL firmada', key);
     return await getSignedUrl(
       s3,
       new GetObjectCommand({
@@ -324,8 +377,7 @@ const s3SignedUrl = async (key, expiresIn = 3600) => {
       { expiresIn },
     );
   } catch (err) {
-    logS3Error('generar URL firmada', key, err);
-    throw new Error(`Error al generar URL firmada de S3: ${err.message}`);
+    throw storageOperationError('generar URL firmada', key, err);
   }
 };
 
@@ -345,14 +397,14 @@ const s3Delete = async (key) => {
   }
 
   try {
+    assertS3Ready('eliminar archivo', key);
     await s3.send(new DeleteObjectCommand({
       Bucket: BUCKET,
       Key: key,
     }));
     logger.info({ code: 'S3_FILE_DELETED', key }, 'Archivo eliminado de almacenamiento S3');
   } catch (err) {
-    logS3Error('eliminar archivo', key, err);
-    throw new Error(`Error al eliminar archivo de S3: ${err.message}`);
+    throw storageOperationError('eliminar archivo', key, err);
   }
 };
 
