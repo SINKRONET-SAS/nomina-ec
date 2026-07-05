@@ -1,80 +1,56 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-GESTION-PERIODOS-ANUALES-NOMINA-2026",
-  "planCode": "GPA26",
+  "plan": "HAIKY-COSTOS-PRODUCCION-DOCUMENTOS-SKNOMINA-2026",
+  "planCode": "CPD26",
   "status": "completed-pass",
-  "phaseCompleted": "GPA26-04",
-  "currentPhase": "GPA26-04",
-  "updatedAt": "2026-07-05T15:10:00-05:00",
+  "phaseCompleted": "CPD26-03",
+  "currentPhase": "CPD26-03",
+  "updatedAt": "2026-07-05T15:14:53-05:00",
   "rulesSource": "RULES.md",
   "precedent": {
-    "plan": "HAIKY-MENSUALIZACION-DECIMOS-SKNOMINA-2026",
-    "planCode": "MDS26",
+    "plan": "HAIKY-GESTION-PERIODOS-ANUALES-NOMINA-2026",
+    "planCode": "GPA26",
     "status": "completed-pass"
   },
-  "summary": "GPA26 cerrado: gobierno anual de periodos de nomina con fechas desde/hasta, generacion anual de doce meses, endpoints de listado/apertura/cierre operativo, pantalla PWA Nomina > Periodos, tests focalizados, Prisma validate, contratos y build web en PASS.",
+  "summary": "CPD26 cerrado: produccion inicial queda con sknomina-api como unico generador/descargador documental, Render Persistent Disk en /var/data, STORAGE_DRIVER=local, worker cron fuera del blueprint inicial y contratos anti-regresion activos.",
   "filesModified": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/GPA26-00-baseline-gobierno.md",
-    ".github/prompts/GPA26-01-modelo-periodos.md",
-    ".github/prompts/GPA26-02-backend-periodos.md",
-    ".github/prompts/GPA26-03-frontend-periodos.md",
-    ".github/prompts/GPA26-04-qa-release.md",
+    ".github/prompts/CPD26-00-baseline-gobierno.md",
+    ".github/prompts/CPD26-01-render-storage-local.md",
+    ".github/prompts/CPD26-02-cron-operacion-manual.md",
+    ".github/prompts/CPD26-03-qa-release.md",
     ".vscode/AuditLock.json",
-    "backend/prisma/migrations/20260705143000_gpa26_payroll_period_dates/migration.sql",
-    "backend/prisma/schema.prisma",
-    "backend/src/app.js",
-    "backend/src/app.routes.test.js",
-    "backend/src/controllers/nominaController.js",
-    "backend/src/services/calculoNominaService.js",
-    "backend/src/services/monthlyPeriodService.js",
-    "backend/src/services/monthlyPeriodService.test.js",
-    "docs2/PLAN_HAIKY_GESTION_PERIODOS_ANUALES_NOMINA_2026.md",
-    "docs2/gestion-periodos-anuales-nomina-2026/REPORTE_GPA26_00_04_EJECUCION.md",
-    "frontend-web/src/App.jsx",
-    "frontend-web/src/components/Layout/Layout.jsx",
-    "frontend-web/src/pages/Nomina/CerrarMes.jsx",
-    "frontend-web/src/pages/Nomina/PeriodosNomina.jsx",
+    "backend/.env.example",
+    "docs2/PLAN_HAIKY_COSTOS_PRODUCCION_DOCUMENTOS_SKNOMINA_2026.md",
+    "docs2/costos-produccion-documentos-sknomina-2026/REPORTE_CPD26_00_03_EJECUCION.md",
+    "render.yaml",
     "scripts/verify-system-contracts.mjs"
   ],
   "fases": [
     {
-      "phase": "GPA26-00",
+      "phase": "CPD26-00",
       "status": "completed",
       "detail": "Plan, prompts, contexto y AuditLock registrados."
     },
     {
-      "phase": "GPA26-01",
+      "phase": "CPD26-01",
       "status": "completed",
-      "detail": "Migracion y schema Prisma agregan fecha_desde y fecha_hasta a payroll_periods."
+      "detail": "Render usa STORAGE_DRIVER=local, disco persistente en /var/data y ruta documental /var/data/sknomina-documents."
     },
     {
-      "phase": "GPA26-02",
+      "phase": "CPD26-02",
       "status": "completed",
-      "detail": "Backend genera/lista periodos anuales, abre periodos y cierra operativamente con bloqueos de integridad."
+      "detail": "Worker cron retirado del blueprint inicial; documentos quedan bajo endpoints del backend API."
     },
     {
-      "phase": "GPA26-03",
-      "status": "completed",
-      "detail": "PWA expone Nomina > Periodos con acciones y estados."
-    },
-    {
-      "phase": "GPA26-04",
+      "phase": "CPD26-03",
       "status": "completed-pass",
-      "detail": "Contratos, tests focalizados, Prisma validate, build web, UTF-8 sin BOM y git diff check en PASS."
+      "detail": "Contratos, UTF-8, git diff check y cierre documental en PASS."
     }
   ],
   "validationChecks": [
     {
-      "gate": "node --check backend/src/services/monthlyPeriodService.js backend/src/controllers/nominaController.js backend/src/services/calculoNominaService.js",
-      "result": "PASS"
-    },
-    {
-      "gate": "npm.cmd --workspace=backend test -- monthlyPeriodService.test.js app.routes.test.js --runInBand",
-      "result": "PASS (2 suites, 36 tests)"
-    },
-    {
-      "gate": "npm.cmd run prisma:validate",
+      "gate": "node --check scripts/verify-system-contracts.mjs",
       "result": "PASS"
     },
     {
@@ -82,22 +58,22 @@
       "result": "PASS"
     },
     {
-      "gate": "npm.cmd --workspace=frontend-web run build",
+      "gate": "git diff --check",
       "result": "PASS"
     },
     {
-      "gate": "git diff --check",
+      "gate": "UTF-8 sin BOM en archivos modificados .js/.md/.json/.yaml",
       "result": "PASS"
     }
   ],
   "riskControls": [
-    "No se crea estado paralelo fuera de payroll_periods.status.",
-    "La generacion anual es idempotente por tenant, anio y mes.",
-    "El cierre operativo bloquea roles borrador y novedades pendientes.",
-    "Los periodos calculados deben cerrarse desde el flujo de cierre de nomina.",
-    "La funcionalidad queda visible en PWA mediante Nomina > Periodos."
+    "No se declara AWS/S3 obligatorio en render.yaml para produccion inicial.",
+    "El worker cron no queda en el blueprint inicial para evitar costo extra y calculo automatico no revisado.",
+    "Los documentos se escriben bajo /var/data, ruta cubierta por disco persistente Render.",
+    "Los roles PDF y archivos bancarios se generan por endpoints del backend API.",
+    "La reintroduccion de worker requiere storage compartido S3/R2 o alcance sin documentos."
   ],
-  "previousAuditLockHash": "07FFF8C75D0D1AA9F292B3611C9672DB52DE1374A72153B7BC23C9AC33D286D6",
+  "previousAuditLockHash": "B12808404A0F77D123AFC0CF023F60964A0B360841D25D0A48F5722C0B47DEAA",
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "023C2745E274DA323586FCEFC981DE08FFB9E2C7A2D0F6A585C1683819E6B97F"
+  "signature": "952DA54F2B63DE41F259EACFD31BFECD8549DEEC2D992DF44C9BA3CEB86EE9C1"
 }

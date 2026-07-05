@@ -149,6 +149,7 @@ const privacidadCuenta = read('frontend-web/src/pages/PrivacidadCuenta.jsx');
 const privacyApi = read('frontend-web/src/services/privacyApi.js');
 const beneficiosApi = read('frontend-web/src/services/beneficiosApi.js');
 const renderYaml = read('render.yaml');
+const backendEnvExample = read('backend/.env.example');
 const merchandiserTrialTemplate = JSON.parse(read('backend/src/templates/legal/contracts/contrato_indefinido_mercaderista_prueba.json'));
 const forbiddenLegacyDbName = ['plan', 'haiky'].join('_');
 const forbiddenLegacyDbUser = ['haiky', 'migration'].join('_');
@@ -158,6 +159,15 @@ assert(exists('.github/CODEX_CONTEXT.md'), 'CODEX_CONTEXT.md debe estar ubicado 
 assert(!renderYaml.includes(forbiddenLegacyDbName), 'render.yaml no debe exponer nombre interno legacy de base de datos.');
 assert(!renderYaml.includes(forbiddenLegacyDbUser), 'render.yaml no debe exponer usuario interno legacy de base de datos.');
 assert(renderYaml.includes('sknomina-api'), 'render.yaml debe nombrar el servicio API como SKNOMINA.');
+assert(renderYaml.includes('disk:') && renderYaml.includes('mountPath: /var/data') && renderYaml.includes('sizeGB: 5'), 'render.yaml debe montar disco persistente controlado en sknomina-api.');
+assert(renderYaml.includes('value: local'), 'render.yaml debe usar STORAGE_DRIVER=local para produccion inicial con costos controlados.');
+assert(renderYaml.includes('LOCAL_STORAGE_DIR') && renderYaml.includes('/var/data/sknomina-documents'), 'render.yaml debe escribir documentos bajo el disco persistente /var/data.');
+assert(renderYaml.includes('LOCAL_STORAGE_PUBLIC_BASE_URL') && renderYaml.includes('https://api.sknomina.com'), 'render.yaml debe publicar URLs locales via API publica.');
+assert(!renderYaml.includes('sknomina-worker-cron'), 'El worker cron no debe estar en el blueprint productivo inicial CPD26.');
+assert(!renderYaml.includes('AWS_ACCESS_KEY_ID') && !renderYaml.includes('AWS_SECRET_ACCESS_KEY'), 'render.yaml no debe pedir credenciales AWS si STORAGE_DRIVER=local.');
+assert(backendEnvExample.includes('STORAGE_DRIVER=local'), 'backend/.env.example debe documentar storage local por defecto.');
+assert(backendEnvExample.includes('LOCAL_STORAGE_DIR=./storage/local-files'), 'backend/.env.example debe documentar ruta local de documentos.');
+assert(backendEnvExample.includes('LOCAL_STORAGE_PUBLIC_BASE_URL=http://localhost:3000'), 'backend/.env.example debe documentar base publica local.');
 
 const frontendResources = unique(regexValues(parametrizacion, /resource:\s*'([^']+)'/g));
 for (const resource of frontendResources) {

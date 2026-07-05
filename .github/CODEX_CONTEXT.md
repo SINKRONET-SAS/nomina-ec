@@ -1,6 +1,39 @@
 
 ---
 
+## Closed Haiky Plan - HAIKY-COSTOS-PRODUCCION-DOCUMENTOS-SKNOMINA-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-COSTOS-PRODUCCION-DOCUMENTOS-SKNOMINA-2026 |
+| Codigo | CPD26 |
+| Estado | completed-pass |
+| Fase cerrada | CPD26-03 QA release |
+| Requerimiento fuente | Llegar a produccion con costos controlados, sin AWS obligatorio y con documentos generados/descargados solo por backend API. |
+| Plan doc | `docs2/PLAN_HAIKY_COSTOS_PRODUCCION_DOCUMENTOS_SKNOMINA_2026.md` |
+| Reporte | `docs2/costos-produccion-documentos-sknomina-2026/REPORTE_CPD26_00_03_EJECUCION.md` |
+| Prompts | `.github/prompts/CPD26-{00..03}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Alcance CPD26
+
+CPD26 cierra la decision de infraestructura documental de produccion inicial. `sknomina-api` queda como unico servicio que genera y descarga documentos; `render.yaml` monta disco persistente en `/var/data`, usa `STORAGE_DRIVER=local`, escribe en `/var/data/sknomina-documents` y publica descargas con `https://api.sknomina.com`. El worker `sknomina-worker-cron` queda fuera del blueprint inicial para reducir costo y evitar calculos automaticos no revisados.
+
+### Decisiones CPD26
+
+- Roles PDF y archivos bancarios se generan bajo demanda por endpoints del backend API.
+- El cron actual no genera documentos descargables; opera novedades por faltas, calculo mensual automatico, limpieza de sesiones, alerta de decimos y purga LOPDP.
+- Produccion inicial prioriza operacion manual y auditable desde PWA.
+- S3/R2 queda como opcion futura cuando exista storage compartido o multiples servicios/instancias.
+- Render Persistent Disk tiene alcance de un servicio/instancia; no se debe reintroducir worker documental con storage local.
+
+### Gates CPD26
+
+- `node --check scripts/verify-system-contracts.mjs`
+- `npm.cmd run contracts`
+- `git diff --check`
+- UTF-8 sin BOM en archivos `.js`, `.md`, `.json` y `.yaml` modificados.
+
 ## Open Haiky Plan - HAIKY-GESTION-PERIODOS-ANUALES-NOMINA-2026
 
 | Campo | Valor |
