@@ -1,106 +1,91 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-MOBILE-GESTION-RUTAS-ZONAS-2026",
-  "planCode": "MGR26",
+  "plan": "HAIKY-ASSETS-ICONOGRAFIA-SISTEMA-SKNOMINA-2026",
+  "planCode": "AIS26",
   "status": "completed-pass",
-  "phaseCompleted": "MGR26-03",
-  "currentPhase": "MGR26-03",
-  "updatedAt": "2026-07-04T23:55:00-05:00",
+  "phaseCompleted": "AIS26-04",
+  "currentPhase": "AIS26-04",
+  "updatedAt": "2026-07-05T10:45:00-05:00",
   "rulesSource": "RULES.md",
   "precedent": {
-    "plan": "HAIKY-AUDITORIA-INTEGRAL-SKNOMINA-2026",
-    "planCode": "AISK26",
-    "status": "completed-pass",
+    "plan": "HAIKY-MENSUALIZACION-DECIMOS-SKNOMINA-2026",
+    "planCode": "MDS26",
+    "status": "in-progress",
+    "phaseCompleted": "MDS26-00",
+    "note": "Preservado como precedente; AIS26 no ejecuta ni cancela MDS26.",
     "previousPrecedent": {
-      "plan": "HAIKY-MONETIZACION-RUTAS-APP-SKNOMINA-2026",
-      "planCode": "MRA26",
-      "status": "completed"
+      "plan": "HAIKY-MOBILE-GESTION-RUTAS-ZONAS-2026",
+      "planCode": "MGR26",
+      "status": "completed-pass"
     }
   },
-  "summary": "MGR26 cerrado: app movil expone gestion de zonas de marcacion, sitios y rutas de campo por perfil; owner/admin_rrhh crean zonas y sitios, supervisor solo ve asignacion/seguimiento; endpoints protegidos por mobileApp y fieldRoutes.",
+  "summary": "AIS26 cerrado: PWA, web y app movil usan iconografia de sistema SKNOMINA, Expo declara splash/notificacion y los smokes validan dimensiones/rutas de assets.",
   "filesModified": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/MGR26-00-baseline-gobierno.md",
-    ".github/prompts/MGR26-01-backend-mobile-admin.md",
-    ".github/prompts/MGR26-02-app-movil-perfiles.md",
-    ".github/prompts/MGR26-03-qa-cierre.md",
+    ".github/prompts/AIS26-00-baseline-gobierno.md",
+    ".github/prompts/AIS26-01-inventario-assets.md",
+    ".github/prompts/AIS26-02-pwa-web-runtime.md",
+    ".github/prompts/AIS26-03-mobile-expo-runtime.md",
+    ".github/prompts/AIS26-04-qa-cierre.md",
     ".vscode/AuditLock.json",
-    "app-movil/src/App.js",
-    "app-movil/src/screens/OperacionMovilScreen.js",
-    "app-movil/src/services/api.js",
-    "backend/.env.example",
-    "backend/src/app.js",
-    "backend/src/app.routes.test.js",
-    "backend/src/controllers/mobileController.js",
-    "backend/src/controllers/mobileController.test.js",
-    "backend/src/services/routeVisitService.js",
-    "docs2/PLAN_HAIKY_MOBILE_GESTION_RUTAS_ZONAS_2026.md",
-    "docs2/mobile-gestion-rutas-zonas-2026/REPORTE_MGR26_00_03_EJECUCION.md",
+    "app-movil/app.json",
+    "app-movil/scripts/check-store-readiness.mjs",
+    "app-movil/src/screens/LoginScreen.js",
+    "docs2/PLAN_HAIKY_ASSETS_ICONOGRAFIA_SISTEMA_SKNOMINA_2026.md",
+    "docs2/assets-iconografia-sistema-sknomina-2026/REPORTE_AIS26_00_04_EJECUCION.md",
+    "frontend-web/index.html",
+    "frontend-web/pwa.config.js",
+    "frontend-web/public/apple-touch-icon.png",
+    "frontend-web/public/icon-192.png",
+    "frontend-web/public/icon-512.png",
+    "frontend-web/scripts/smoke-pwa-lpa26.mjs",
+    "frontend-web/src/components/Brand/BrandLogo.jsx",
+    "frontend-web/vite.config.js",
     "scripts/verify-system-contracts.mjs"
   ],
   "fases": [
     {
-      "phase": "MGR26-00",
+      "phase": "AIS26-00",
       "status": "completed",
-      "detail": "Plan, prompts, reporte y contexto registrados en docs2/.github."
+      "detail": "Plan, prompts, contexto y reporte creados."
     },
     {
-      "phase": "MGR26-01",
+      "phase": "AIS26-01",
       "status": "completed",
-      "detail": "Backend movil administrativo agregado con RBAC y gates de plan."
+      "detail": "Assets inventariados y PNG de 192/512/180 normalizados."
     },
     {
-      "phase": "MGR26-02",
+      "phase": "AIS26-02",
       "status": "completed",
-      "detail": "App movil agrega consola de operacion con secciones ocultas por allowedActions."
+      "detail": "PWA, HTML, Vite y BrandLogo usan iconografia de sistema."
     },
     {
-      "phase": "MGR26-03",
-      "status": "completed-pass",
-      "detail": "QA, contratos, reporte y AuditLock cerrados."
+      "phase": "AIS26-03",
+      "status": "completed",
+      "detail": "Expo declara splash/notificacion y login movil renderiza icono real."
+    },
+    {
+      "phase": "AIS26-04",
+      "status": "completed",
+      "detail": "Contratos, smokes, reporte y firma de gobierno cerrados."
     }
   ],
   "validationChecks": [
-    {
-      "gate": "node --check backend/src/controllers/mobileController.js",
-      "result": "PASS"
-    },
-    {
-      "gate": "node --check backend/src/services/routeVisitService.js",
-      "result": "PASS"
-    },
-    {
-      "gate": "npm.cmd --workspace=backend test -- --runTestsByPath src/controllers/mobileController.test.js src/app.routes.test.js --runInBand",
-      "result": "PASS (2 suites, 24 tests)"
-    },
-    {
-      "gate": "npm.cmd run contracts",
-      "result": "PASS"
-    },
-    {
-      "gate": "npm.cmd run check:mobile",
-      "result": "PASS"
-    },
-    {
-      "gate": "JSX parser App.js OperacionMovilScreen.js",
-      "result": "PASS"
-    },
-    {
-      "gate": "git diff --check",
-      "result": "PASS"
-    },
-    {
-      "gate": "UTF-8 sin BOM archivos modificados",
-      "result": "PASS"
-    }
+    "npm.cmd run contracts",
+    "npm.cmd run build:web",
+    "npm.cmd --workspace=frontend-web run smoke:pwa",
+    "npm.cmd run check:mobile",
+    "git diff --check",
+    "UTF-8 sin BOM de archivos modificados .js, .mjs, .json y .md"
   ],
   "riskControls": [
-    "No se creo modelo paralelo de zonas o rutas.",
-    "La visibilidad UI no reemplaza RBAC ni gates de plan.",
-    "Las secciones no permitidas por perfil no se renderizan.",
-    "backend/.env.example queda incluido por instruccion explicita con placeholders SINKRONET_FACTURADOR_* y sin secretos reales."
+    "No se cambia API publica ni autenticacion.",
+    "No se crea marca paralela.",
+    "MDS26 queda preservado como precedente y sus prompts no relacionados no se arrastran.",
+    "BrandLogo usa fallback SVG si el PNG de sistema no carga.",
+    "Los smokes validan dimensiones y referencias de iconos, no solo existencia de archivos."
   ],
-  "previousAuditLockHash": "D96149F96FDAB8ADEA4B4647841E5F50019A64727090F1B584F3AEE7FFAD08F7",
+  "previousAuditLockHash": "8C862A018E696928FDFB225E80064F3715D517BBAD22F497A1C793B9CFEFC216",
   "signatureAlgorithm": "SHA256(previousAuditLockContent + updatedAt)",
-  "signature": "1659D247EC4B0DCA425F6D1546BE6B1D9D510DF5D1DCEB95F707F1C1C7CFFF5C"
+  "signature": "AE3F65CED6EBB30DF7F605C829B874FAEE2ABD61B696E837688DFA35E6A61EE2"
 }

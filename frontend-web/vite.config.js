@@ -27,6 +27,7 @@ export default defineConfig(({ mode }) => {
           'icon-512.png',
           'maskable-icon.svg',
           'apple-touch-icon.svg',
+          'apple-touch-icon.png',
           'pwa-screenshot-wide.svg',
           'pwa-screenshot-mobile.svg',
         ],

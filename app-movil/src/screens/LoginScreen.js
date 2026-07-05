@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { API_URL, authAPI } from '../services/api';
+
+const APP_ICON = require('../../assets/icon.png');
 
 const initialActivation = {
   email: '',
@@ -208,8 +210,17 @@ export default function LoginScreen({ onLogin }) {
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.card}>
-        <Text style={styles.title}>SKNOMINA</Text>
-        <Text style={styles.subtitle}>Asistencia móvil para empleados</Text>
+        <View style={styles.brandHeader}>
+          <Image
+            accessibilityLabel="Icono de SKNOMINA"
+            accessible
+            resizeMode="contain"
+            source={APP_ICON}
+            style={styles.appIcon}
+          />
+          <Text style={styles.title}>SKNOMINA</Text>
+          <Text style={styles.subtitle}>Asistencia móvil para empleados</Text>
+        </View>
 
         <View style={styles.tabs}>
           {['activar', 'login', 'recuperar'].map((item) => (
@@ -398,6 +409,16 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     width: '100%',
   },
+  brandHeader: {
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  appIcon: {
+    borderRadius: 14,
+    height: 58,
+    marginBottom: 10,
+    width: 58,
+  },
   title: {
     color: '#0f766e',
     fontSize: 28,
@@ -408,7 +429,6 @@ const styles = StyleSheet.create({
   subtitle: {
     color: '#6b7280',
     fontSize: 14,
-    marginBottom: 22,
     textAlign: 'center',
   },
   tabs: {

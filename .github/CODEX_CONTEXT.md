@@ -1,6 +1,50 @@
 
 ---
 
+## Closed Haiky Plan - HAIKY-ASSETS-ICONOGRAFIA-SISTEMA-SKNOMINA-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-ASSETS-ICONOGRAFIA-SISTEMA-SKNOMINA-2026 |
+| Codigo | AIS26 |
+| Estado | completed-pass |
+| Fase cerrada | AIS26-04 QA y cierre |
+| Requerimiento fuente | "El uso de assets es bajo, el icono de la app no despliega la imagen del sistema, se expone crudo" |
+| Plan doc | `docs2/PLAN_HAIKY_ASSETS_ICONOGRAFIA_SISTEMA_SKNOMINA_2026.md` |
+| Reporte | `docs2/assets-iconografia-sistema-sknomina-2026/REPORTE_AIS26_00_04_EJECUCION.md` |
+| Prompts | `.github/prompts/AIS26-{00..04}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Alcance AIS26
+
+AIS26 cierra la brecha de iconografia de sistema sin crear marca paralela. La PWA usa el icono SKNOMINA en HTML, manifest, shortcuts, apple touch y metadatos sociales; `BrandLogo` renderiza `/icon-512.png` con fallback `/icon.svg`; Expo declara icono, adaptive icon, splash y notification; y el login movil muestra el icono real dentro de la experiencia.
+
+### Hallazgos AIS26
+
+| ID | Severidad | Hallazgo | Resolucion |
+|----|-----------|----------|------------|
+| AIS26-F01 | ALTO | `icon-192.png` no media 192x192 | Regenerado a 192x192 desde fuente de sistema |
+| AIS26-F02 | MEDIO | `icon-512.png` no media 512x512 | Regenerado a 512x512 |
+| AIS26-F03 | ALTO | HTML no exponia PNG fallback ni apple touch | `index.html` enlaza `icon.svg`, `icon-192.png`, `apple-touch-icon.png` y manifest |
+| AIS26-F04 | MEDIO | Metadatos sociales usaban screenshot SVG | OG/Twitter usan `icon-512.png` |
+| AIS26-F05 | ALTO | Expo no declaraba splash/notification aunque existian assets | `app.json` declara `splash` y `notification` |
+| AIS26-F06 | MEDIO | Login movil mostraba solo texto de marca | `LoginScreen` renderiza `assets/icon.png` con `Image` |
+| AIS26-F07 | ALTO | No habia contrato anti-regresion de iconografia | `contracts`, `smoke:pwa` y `check:mobile` validan rutas y dimensiones |
+
+### Gates AIS26
+
+- `npm.cmd run contracts`
+- `npm.cmd run build:web`
+- `npm.cmd --workspace=frontend-web run smoke:pwa`
+- `npm.cmd run check:mobile`
+- `git diff --check`
+- UTF-8 sin BOM para archivos `.js`, `.mjs`, `.json` y `.md` modificados.
+
+### Controles AIS26
+
+- No se tocan prompts `MDS26-*` no relacionados que existen sin seguimiento.
+- `MDS26` queda preservado como precedente en `AuditLock.json`; AIS26 no ejecuta ni cancela ese plan.
+- No se cambia API publica, rutas de autenticacion ni contratos backend.
 ## Closed Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-SKNOMINA-2026
 
 | Campo | Valor |

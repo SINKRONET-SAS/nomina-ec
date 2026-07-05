@@ -8,6 +8,10 @@ function read(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
 }
 
+function readBinary(relativePath) {
+  return fs.readFileSync(path.join(root, relativePath));
+}
+
 function exists(relativePath) {
   return fs.existsSync(path.join(root, relativePath));
 }
@@ -24,10 +28,29 @@ function regexValues(text, regex, group = 1) {
   return [...text.matchAll(regex)].map((match) => match[group]);
 }
 
+function pngDimensions(relativePath) {
+  const buffer = readBinary(relativePath);
+  const signature = buffer.subarray(0, 8).toString('hex');
+  assert(signature === '89504e470d0a1a0a', `${relativePath} debe ser PNG valido.`);
+  return {
+    width: buffer.readUInt32BE(16),
+    height: buffer.readUInt32BE(20),
+  };
+}
+
+function assertPngDimensions(relativePath, width, height) {
+  const dimensions = pngDimensions(relativePath);
+  assert(
+    dimensions.width === width && dimensions.height === height,
+    `${relativePath} debe medir ${width}x${height}; mide ${dimensions.width}x${dimensions.height}.`,
+  );
+}
+
 const rootPackage = JSON.parse(read('package.json'));
 const backendPackage = JSON.parse(read('backend/package.json'));
 const webPackage = JSON.parse(read('frontend-web/package.json'));
 const mobilePackage = JSON.parse(read('app-movil/package.json'));
+const mobileAppConfig = JSON.parse(read('app-movil/app.json')).expo;
 
 assert(rootPackage.private === true, 'La raiz debe ser privada para operar como monorepo de producto.');
 for (const workspace of ['backend', 'frontend-web', 'app-movil']) {
@@ -37,6 +60,38 @@ assert(Boolean(backendPackage.scripts?.test), 'Backend debe exponer script test.
 assert(Boolean(backendPackage.scripts?.['prisma:validate']), 'Backend debe exponer script prisma:validate.');
 assert(Boolean(webPackage.scripts?.build), 'Frontend web debe exponer script build.');
 assert(Boolean(mobilePackage.scripts?.check?.stores || mobilePackage.scripts?.['check:stores']), 'App movil debe exponer script check:stores.');
+
+const webIndexHtml = read('frontend-web/index.html');
+const pwaConfig = read('frontend-web/pwa.config.js');
+const viteConfig = read('frontend-web/vite.config.js');
+const brandLogoComponent = read('frontend-web/src/components/Brand/BrandLogo.jsx');
+const mobileLoginScreen = read('app-movil/src/screens/LoginScreen.js');
+
+for (const [label, text] of Object.entries({
+  'frontend-web/index.html': webIndexHtml,
+  'frontend-web/pwa.config.js': pwaConfig,
+  'app-movil/src/screens/LoginScreen.js': mobileLoginScreen,
+})) {
+  assert(!/[ÃÂ]/.test(text), `${label} no debe contener mojibake visible.`);
+}
+
+assert(webIndexHtml.includes('href="/icon.svg"'), 'HTML publico debe enlazar icon.svg como favicon principal.');
+assert(webIndexHtml.includes('href="/icon-192.png"'), 'HTML publico debe enlazar icon-192.png como fallback PNG.');
+assert(webIndexHtml.includes('href="/apple-touch-icon.png"'), 'HTML publico debe enlazar apple-touch-icon.png.');
+assert(webIndexHtml.includes('content="/icon-512.png"'), 'Metadatos sociales deben usar el icono de sistema PNG.');
+assert(pwaConfig.includes("src: '/apple-touch-icon.png'"), 'Manifest PWA debe declarar apple-touch-icon.png.');
+assert(pwaConfig.includes("src: '/icon-192.png'"), 'Shortcuts PWA deben usar icono PNG de sistema.');
+assert(viteConfig.includes("'apple-touch-icon.png'"), 'Vite PWA debe copiar apple-touch-icon.png.');
+assert(brandLogoComponent.includes("const BRAND_LOGO_SRC = '/icon-512.png'"), 'BrandLogo debe usar icono de sistema PNG.');
+assert(brandLogoComponent.includes("const BRAND_LOGO_FALLBACK_SRC = '/icon.svg'"), 'BrandLogo debe tener fallback SVG.');
+assert(mobileLoginScreen.includes("require('../../assets/icon.png')") && mobileLoginScreen.includes('<Image'), 'Login movil debe renderizar el icono real de la app.');
+assert(mobileAppConfig.splash?.image === './assets/splash.png', 'Expo debe declarar splash.png.');
+assert(mobileAppConfig.notification?.icon === './assets/notification-icon.png', 'Expo debe declarar notification-icon.png.');
+assertPngDimensions('frontend-web/public/icon-192.png', 192, 192);
+assertPngDimensions('frontend-web/public/icon-512.png', 512, 512);
+assertPngDimensions('frontend-web/public/apple-touch-icon.png', 180, 180);
+assertPngDimensions('app-movil/assets/icon.png', 1024, 1024);
+assertPngDimensions('app-movil/assets/notification-icon.png', 512, 512);
 
 const app = read('backend/src/app.js');
 const configurationService = read('backend/src/services/configurationService.js');
