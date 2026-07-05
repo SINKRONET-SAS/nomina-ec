@@ -12,6 +12,7 @@ const {
 } = require('../services/payrollRolePdfService');
 const {
   createNoveltyBatch,
+  deleteNoveltyBatch,
   getPayrollPeriodState,
   openPayrollPeriod,
 } = require('../services/monthlyPeriodService');
@@ -674,11 +675,33 @@ async function reabrirMes(req, res) {
   }
 }
 
+async function eliminarLoteNovedades(req, res) {
+  try {
+    const result = await deleteNoveltyBatch({
+      tenantId: req.tenantId,
+      userId: req.usuarioId,
+      batchId: req.params.batchId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+    });
+    return res.json({ success: true, deleted: result.deleted, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[NOMINA] Error eliminando lote', {
+      code: err.code || 'NOMINA_BATCH_DELETE_ERROR',
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(400).json({ error: err.message, correlationId: req.correlationId });
+  }
+}
+
 module.exports = {
   calcularMes,
   obtenerEstadoPeriodo,
   abrirPeriodo,
   crearLoteNovedades,
+  eliminarLoteNovedades,
   listarPorPeriodo,
   obtenerPorEmpleado,
   descargarRolPDF,

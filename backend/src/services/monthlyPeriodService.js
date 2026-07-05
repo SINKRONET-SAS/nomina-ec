@@ -1,9 +1,11 @@
 const crypto = require('crypto');
 const db = require('../config/database');
+const AppError = require('../utils/AppError');
 const { recordAudit } = require('./auditService');
 const { ensureNoveltyTypeAllowed, normalizeNoveltyCode } = require('./payrollNoveltyService');
 
 const VALID_SCOPE_TYPES = new Set(['company', 'department', 'position', 'employee']);
+const NOVELTY_WRITABLE_PERIOD_STATUSES = new Set(['open', 'novelties_loaded', 'reopened', 'calculation_failed']);
 
 function validatePeriod(anio, mes) {
   const year = Number(anio);
@@ -86,6 +88,47 @@ async function ensurePayrollPeriodForDate({ tenantId, userId, fecha }) {
   return {
     id: result.rows[0].id,
     status: result.rows[0].status,
+    ...period,
+  };
+}
+
+async function ensureWritablePayrollPeriodForDate({ tenantId, fecha }) {
+  const period = extractPeriodFromDate(fecha);
+  const result = await db.query(`
+    SELECT id, status
+    FROM payroll_periods
+    WHERE tenant_id = $1 AND anio = $2 AND mes = $3
+    LIMIT 1
+  `, [tenantId, period.anio, period.mes]);
+
+  if (result.rows.length === 0) {
+    throw new AppError('Abre el mes de nomina antes de registrar novedades manuales.', {
+      code: 'PAYROLL_PERIOD_NOT_OPEN_FOR_NOVELTY',
+      statusCode: 409,
+      details: {
+        periodoNomina: period.periodoNomina,
+        fecha: period.fecha,
+      },
+    });
+  }
+
+  const status = result.rows[0].status;
+  if (!NOVELTY_WRITABLE_PERIOD_STATUSES.has(status)) {
+    throw new AppError('El mes de nomina no esta abierto para editar novedades manuales.', {
+      code: 'PAYROLL_PERIOD_NOT_WRITABLE_FOR_NOVELTY',
+      statusCode: 409,
+      details: {
+        periodoNomina: period.periodoNomina,
+        fecha: period.fecha,
+        status,
+        allowedStatuses: Array.from(NOVELTY_WRITABLE_PERIOD_STATUSES),
+      },
+    });
+  }
+
+  return {
+    id: result.rows[0].id,
+    status,
     ...period,
   };
 }
@@ -337,6 +380,63 @@ async function createNoveltyBatch({
   }
 }
 
+async function deleteNoveltyBatch({ tenantId, userId, batchId, correlationId, ipAddress }) {
+  const batch = await db.query(
+    `SELECT nb.id, nb.period_id, nb.status, nb.total_creadas, pp.status AS period_status
+     FROM novelty_batches nb
+     JOIN payroll_periods pp ON pp.id = nb.period_id
+     WHERE nb.id = $1 AND nb.tenant_id = $2`,
+    [batchId, tenantId],
+  );
+  if (batch.rows.length === 0) {
+    throw new Error('Lote no encontrado.');
+  }
+  if (batch.rows[0].period_status === 'closed') {
+    throw new Error('No se puede eliminar un lote de un periodo cerrado.');
+  }
+
+  const hasClosedPayroll = await db.query(
+    `SELECT 1 FROM nominas
+     WHERE tenant_id = $1 AND anio = (SELECT EXTRACT(YEAR FROM fecha) FROM novelty_batches WHERE id = $2)
+       AND mes = (SELECT EXTRACT(MONTH FROM fecha) FROM novelty_batches WHERE id = $2)
+       AND estado = 'cerrada'
+     LIMIT 1`,
+    [tenantId, batchId],
+  );
+  if (hasClosedPayroll.rows.length > 0) {
+    throw new Error('No se puede eliminar un lote cuando ya existen roles cerrados.');
+  }
+
+  const client = await db.getClient(tenantId, userId);
+  try {
+    const deleted = await client.query(
+      `DELETE FROM novedades_asistencia WHERE novelty_batch_id = $1 AND tenant_id = $2`,
+      [batchId, tenantId],
+    );
+    await client.query(
+      `DELETE FROM novelty_batches WHERE id = $1 AND tenant_id = $2`,
+      [batchId, tenantId],
+    );
+    await db.commit(client);
+
+    await recordAudit({
+      tenantId,
+      userId,
+      correlationId,
+      action: 'nomina.novedades.batch.delete',
+      entity: 'novelty_batches',
+      entityId: batchId,
+      newData: { deletedNovelties: deleted.rowCount },
+      ipAddress,
+    });
+
+    return { deleted: deleted.rowCount };
+  } catch (err) {
+    await db.rollback(client);
+    throw err;
+  }
+}
+
 function roundAmount(value) {
   const amount = Number(value || 0);
   if (!Number.isFinite(amount) || amount < 0) {
@@ -358,9 +458,11 @@ function normalizeNoveltyMinutes(payload = {}) {
 module.exports = {
   buildEmployeeQuery,
   createNoveltyBatch,
+  deleteNoveltyBatch,
   currentPeriodInEcuador,
   dateInEcuador,
   ensurePayrollPeriodForDate,
+  ensureWritablePayrollPeriodForDate,
   extractPeriodFromDate,
   formatPeriodMarker,
   getPayrollPeriodState,

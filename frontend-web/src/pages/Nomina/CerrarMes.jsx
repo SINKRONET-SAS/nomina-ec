@@ -9,6 +9,7 @@ import {
   Layers,
   Lock,
   RefreshCw,
+  Trash2,
   XCircle,
 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
@@ -155,6 +156,18 @@ function CerrarMes() {
     },
   });
 
+  const [pendingDeleteBatch, setPendingDeleteBatch] = useState(null);
+
+  const deleteBatchMutation = useMutation({
+    mutationFn: async (batchId) => authenticatedApi.delete(`/nomina/novedades/lote/${batchId}`),
+    onSuccess: (response) => {
+      const deleted = response.data?.deleted || 0;
+      setMessage({ type: 'success', text: `Lote eliminado: ${deleted} novedades borradas.` });
+      setPendingDeleteBatch(null);
+      refreshPeriod();
+    },
+  });
+
   const updateBatch = (field, value) => {
     setBatchForm((current) => ({ ...current, [field]: value }));
   };
@@ -162,7 +175,7 @@ function CerrarMes() {
   const scopeNeedsValue = batchForm.scopeType !== 'company';
   const requiresAmount = isAmountNoveltyType(batchForm.tipoNovedad);
   const canCreateBatch = (!scopeNeedsValue || batchForm.scopeValue) && (!requiresAmount || Number(batchForm.monto) > 0);
-  const currentError = openMutation.error || batchMutation.error || resolveNoveltiesMutation.error || calculateMutation.error || closeMutation.error || periodQuery.error;
+  const currentError = openMutation.error || batchMutation.error || deleteBatchMutation.error || resolveNoveltiesMutation.error || calculateMutation.error || closeMutation.error || periodQuery.error;
   const currentPrecheck = precheckDetails(currentError);
   const alertIsError = Boolean(currentError || message?.type === 'error');
   const hasLegalParameterBlocker = hasBlocker(currentPrecheck, [
@@ -473,6 +486,7 @@ function CerrarMes() {
                   <th className="px-4 py-3 text-right">Monto</th>
                   <th className="px-4 py-3 text-right">Empleados</th>
                   <th className="px-4 py-3 text-right">Creadas</th>
+                  <th className="w-20 px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -484,6 +498,36 @@ function CerrarMes() {
                     <td className="px-4 py-3 text-right">${Number(batch.monto || 0).toFixed(2)}</td>
                     <td className="px-4 py-3 text-right">{batch.total_empleados}</td>
                     <td className="px-4 py-3 text-right">{batch.total_creadas}</td>
+                    <td className="px-4 py-3 text-right">
+                      {pendingDeleteBatch === batch.id ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            className="inline-flex min-h-8 items-center rounded-md border border-red-200 bg-white px-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                            disabled={deleteBatchMutation.isPending}
+                            onClick={() => deleteBatchMutation.mutate(batch.id)}
+                            type="button"
+                          >
+                            Confirmar
+                          </button>
+                          <button
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500"
+                            onClick={() => setPendingDeleteBatch(null)}
+                            type="button"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-700"
+                          onClick={() => { setPendingDeleteBatch(batch.id); setMessage(null); }}
+                          title="Eliminar lote y sus novedades"
+                          type="button"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
