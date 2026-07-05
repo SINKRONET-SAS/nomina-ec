@@ -538,7 +538,7 @@ function NuevoEmpleado() {
       <div>
         <h1 className="text-2xl font-bold text-slate-950">{isEdit ? 'Editar ficha del trabajador' : 'Nuevo trabajador'}</h1>
         <p className="mt-2 text-sm text-slate-600">
-          La cuenta bancaria registrada aquí pertenece al trabajador y se cifra como dato personal. La cuenta bancaria del cliente se configura por separado en Parametrización. Banco y parámetros legales se guardan como códigos controlados.
+          La cuenta bancaria del trabajador se cifra como dato personal. La cuenta pagadora de la empresa se configura en Parametrización.
         </p>
       </div>
 
@@ -569,12 +569,12 @@ function NuevoEmpleado() {
           <Field className={FIELD_THIRD} label="Cargas familiares" min="0" name="cargas_familiares" onChange={handleChange} type="number" value={formData.cargas_familiares} />
           {isMinor && (
             <div className={`${FIELD_FULL} rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800`}>
-              Este flujo bloquea contratacion de menores de edad. Requiere modulo especial de autorizaciones antes de registrar una ficha laboral.
+              No se permite registrar menores de edad sin autorización especial.
             </div>
           )}
           {isOlderAdult && (
             <div className={`${FIELD_FULL} rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950`}>
-              Trabajador adulto mayor: revisar beneficios, retenciones e implicaciones de impuesto a la renta aplicables.
+              Adulto mayor — verificar beneficios y retenciones aplicables.
             </div>
           )}
         </Section>
@@ -702,7 +702,7 @@ function NuevoEmpleado() {
           )}
           {activeJobPositions.length === 0 && (
             <div className={`${FIELD_FULL} rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800`}>
-              Configura cargos y rangos salariales en Parametrizacion antes de crear trabajadores.
+              Configura cargos y rangos salariales en Parametrización antes de continuar.
             </div>
           )}
           <Field label="Gastos personales anuales SRI" min="0" name="gastos_personales_anuales" onChange={handleChange} placeholder="0.00" step="0.01" type="number" value={formData.gastos_personales_anuales} />
@@ -735,7 +735,7 @@ function NuevoEmpleado() {
             Afiliado IESS para nómina
           </label>
           <div className={`${FIELD_FULL} rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700`}>
-            El cálculo de aportes IESS usa esta clasificación y deja la decisión visible en el detalle de nómina.
+            Los aportes IESS se calculan según esta clasificación.
           </div>
           <Field label="Region para decimo cuarto" name="region_decimo_cuarto" onChange={handleChange} required value={formData.region_decimo_cuarto}>
             <select className={CONTROL_CLASS} name="region_decimo_cuarto" onChange={handleChange} required value={formData.region_decimo_cuarto}>
@@ -744,7 +744,7 @@ function NuevoEmpleado() {
             </select>
           </Field>
           <div className={`${FIELD_FULL} rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950`}>
-            Este codigo enlaza la ficha con el parametro legal de decimo cuarto correspondiente. No se calcula por texto libre.
+            La región determina el período de pago del décimo cuarto.
           </div>
           <Field label="Fondo de reserva" name="modalidad_fondo_reserva" onChange={handleChange} required value={formData.modalidad_fondo_reserva}>
             <select className={CONTROL_CLASS} name="modalidad_fondo_reserva" onChange={handleChange} required value={formData.modalidad_fondo_reserva}>
@@ -754,7 +754,7 @@ function NuevoEmpleado() {
           </Field>
         </Section>
 
-        <Section title="Datos de pago del trabajador" description="Entidad y cuenta del trabajador. La entidad debe estar autorizada por la autoridad de control financiero aplicable.">
+        <Section title="Datos de pago del trabajador" description="Cuenta bancaria y forma de pago del trabajador.">
           <Field label="Forma de pago" name="forma_pago" onChange={handleChange} value={formData.forma_pago}>
             <select className={CONTROL_CLASS} name="forma_pago" onChange={handleChange} value={formData.forma_pago}>
               <option value="transferencia">Transferencia bancaria</option>
@@ -790,7 +790,7 @@ function NuevoEmpleado() {
           />
           {isEdit && formData.cuenta_bancaria_registrada && !formData.cuenta_bancaria && (
             <div className={`${FIELD_FULL} rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900`}>
-              Cuenta bancaria registrada para pagos. Por seguridad no se muestra completa; escribe una nueva solo si necesitas reemplazarla.
+              Cuenta registrada. Escribe una nueva solo si necesitas reemplazarla.
             </div>
           )}
           <label className={`${FIELD_FULL} flex items-start gap-3 rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700`}>
@@ -804,17 +804,17 @@ function NuevoEmpleado() {
             <span>
               <span className="block font-semibold text-slate-900">Autoriza comunicaciones laborales por WhatsApp</span>
               <span className="mt-1 block text-xs leading-5 text-slate-500">
-                Usar solo si el trabajador acepto este canal para invitaciones y avisos laborales.
+                Solo si el trabajador autorizó este canal.
               </span>
             </span>
           </label>
           <div className={`${FIELD_FULL} flex gap-3 rounded-md border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-950`}>
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>Esta cuenta pertenece al trabajador y se guarda cifrada. El banco sale de perfiles bancarios y su homologacion de campos. No corresponde a la cuenta pagadora del cliente/empresa.</p>
+            <p>Cuenta del trabajador, almacenada cifrada. No es la cuenta pagadora de la empresa.</p>
           </div>
           {activeBankProfiles.length === 0 && (
             <div className={`${FIELD_FULL} rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800`}>
-              Configura al menos un perfil bancario en Parametrizacion antes de registrar cuentas por transferencia.
+              Configura al menos un perfil bancario en Parametrización antes de continuar.
             </div>
           )}
         </Section>
