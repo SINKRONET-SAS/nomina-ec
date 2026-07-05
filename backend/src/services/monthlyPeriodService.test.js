@@ -15,6 +15,7 @@ const {
   buildEmployeeQuery,
   createNoveltyBatch,
   ensurePayrollPeriodForDate,
+  ensureWritablePayrollPeriodForDate,
   extractPeriodFromDate,
   formatPeriodMarker,
   openPayrollPeriod,
@@ -72,6 +73,45 @@ describe('monthlyPeriodService', () => {
     expect(period).toEqual(expect.objectContaining({
       id: 'period-1',
       status: 'open',
+      periodoNomina: '2026-06',
+    }));
+  });
+
+  test('ensureWritablePayrollPeriodForDate rechaza si el mes no fue abierto', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    await expect(ensureWritablePayrollPeriodForDate({
+      tenantId: 'tenant-1',
+      fecha: '2026-07-05',
+    })).rejects.toMatchObject({
+      code: 'PAYROLL_PERIOD_NOT_OPEN_FOR_NOVELTY',
+      statusCode: 409,
+    });
+  });
+
+  test('ensureWritablePayrollPeriodForDate rechaza meses ya calculados o cerrados', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'calculated' }] });
+
+    await expect(ensureWritablePayrollPeriodForDate({
+      tenantId: 'tenant-1',
+      fecha: '2026-06-15',
+    })).rejects.toMatchObject({
+      code: 'PAYROLL_PERIOD_NOT_WRITABLE_FOR_NOVELTY',
+      statusCode: 409,
+    });
+  });
+
+  test('ensureWritablePayrollPeriodForDate retorna periodo abierto existente', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'novelties_loaded' }] });
+
+    const period = await ensureWritablePayrollPeriodForDate({
+      tenantId: 'tenant-1',
+      fecha: '2026-06-15',
+    });
+
+    expect(period).toEqual(expect.objectContaining({
+      id: 'period-1',
+      status: 'novelties_loaded',
       periodoNomina: '2026-06',
     }));
   });

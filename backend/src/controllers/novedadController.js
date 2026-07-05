@@ -2,8 +2,9 @@
 // SKNOMINA - Controlador de Novedades
 // ============================================================
 const db = require('../config/database');
+const AppError = require('../utils/AppError');
 const { recordAudit } = require('../services/auditService');
-const { ensurePayrollPeriodForDate, formatPeriodMarker, validatePeriod } = require('../services/monthlyPeriodService');
+const { ensureWritablePayrollPeriodForDate, formatPeriodMarker, validatePeriod } = require('../services/monthlyPeriodService');
 const { ensureNoveltyTypeAllowed, normalizeNoveltyCode } = require('../services/payrollNoveltyService');
 const { sendNotificacionPermisoResuelto } = require('../services/communicationService');
 
@@ -17,6 +18,7 @@ const NOVELTY_BULK_TEMPLATE_COLUMNS = [
   'justificacion',
   'idempotencyKey',
 ];
+const NOVELTY_WRITABLE_PERIOD_STATUSES = new Set(['open', 'novelties_loaded', 'reopened', 'calculation_failed']);
 
 async function listar(req, res) {
   try {
@@ -57,16 +59,56 @@ async function listar(req, res) {
 async function listarPendientes(req, res) {
   try {
     const { tenantId } = req;
-    
+    const scope = String(req.query?.scope || 'pendientes').trim().toLowerCase();
+    const params = [tenantId];
+    let filter = "na.estado = 'pendiente'";
+
+    if (scope === 'operativas') {
+      params.push(Array.from(NOVELTY_WRITABLE_PERIOD_STATUSES));
+      filter = `
+        na.estado IN ('pendiente', 'aprobado', 'rechazado')
+        AND pp.status = ANY($2::text[])
+        AND NOT EXISTS (
+          SELECT 1
+          FROM payroll_calculation_lines pcl
+          WHERE pcl.tenant_id = na.tenant_id
+            AND pcl.source = 'novedad'
+            AND pcl.source_id = na.id::text
+        )
+      `;
+    }
+
     const result = await db.query(`
-      SELECT na.*, e.nombres, e.apellidos, e.cedula
+      SELECT
+        na.*,
+        na.fecha::text AS fecha,
+        e.nombres,
+        e.apellidos,
+        e.cedula,
+        pp.status AS period_status,
+        EXISTS (
+          SELECT 1
+          FROM payroll_calculation_lines pcl
+          WHERE pcl.tenant_id = na.tenant_id
+            AND pcl.source = 'novedad'
+            AND pcl.source_id = na.id::text
+        ) AS consumida_por_rol
       FROM novedades_asistencia na
       JOIN empleados e ON na.empleado_id = e.id
-      WHERE na.tenant_id = $1 AND na.estado = 'pendiente'
-      ORDER BY na.fecha DESC
-    `, [tenantId]);
-    
-    res.json({ success: true, novedades: result.rows });
+      LEFT JOIN payroll_periods pp
+        ON pp.tenant_id = na.tenant_id
+       AND pp.anio = EXTRACT(YEAR FROM na.fecha)::int
+       AND pp.mes = EXTRACT(MONTH FROM na.fecha)::int
+      WHERE na.tenant_id = $1 AND ${filter}
+      ORDER BY na.fecha DESC, e.apellidos, e.nombres
+    `, params);
+
+    const novedades = result.rows.map((row) => ({
+      ...row,
+      editable: NOVELTY_WRITABLE_PERIOD_STATUSES.has(row.period_status) && !row.consumida_por_rol,
+    }));
+
+    res.json({ success: true, novedades });
   } catch (err) {
     console.error('[NOVEDADES] Error:', err);
     res.status(500).json({ error: 'Error interno' });
@@ -96,7 +138,7 @@ async function crear(req, res) {
     
     const normalizedTipo = normalizeNoveltyCode(tipoNovedad);
     const minutosNovedad = normalizePayloadMinutes({ minutos, horas, hours: req.body?.hours });
-    const period = await ensurePayrollPeriodForDate({ tenantId, userId: usuarioId, fecha });
+    const period = await ensureWritablePayrollPeriodForDate({ tenantId, fecha });
     const noveltyConfig = await ensureNoveltyTypeAllowed({
       tenantId,
       tipoNovedad: normalizedTipo,
@@ -155,6 +197,163 @@ async function crear(req, res) {
   }
 }
 
+async function actualizar(req, res) {
+  try {
+    const { tenantId, usuarioId } = req;
+    const { id } = req.params;
+    const { novelty: previous } = await ensureNoveltyEditable({ tenantId, noveltyId: id });
+    const empleadoId = String(req.body?.empleadoId || previous.empleado_id || '').trim();
+    const fecha = String(req.body?.fecha || previous.fecha || '').slice(0, 10);
+    const normalizedTipo = normalizeNoveltyCode(req.body?.tipoNovedad || req.body?.tipo_novedad || previous.tipo_novedad);
+    const hasHoursPayload = req.body?.horas !== undefined || req.body?.hours !== undefined;
+    const minutosNovedad = normalizePayloadMinutes({
+      minutos: req.body?.minutos ?? (hasHoursPayload ? undefined : previous.minutos),
+      horas: req.body?.horas,
+      hours: req.body?.hours,
+    });
+    const montoNovedad = normalizeAmount(req.body?.monto ?? previous.monto);
+    const justificacion = String(req.body?.justificacion ?? previous.justificacion ?? '').trim();
+
+    if (!empleadoId || !fecha || !normalizedTipo) {
+      throw new AppError('Empleado, fecha y tipo de novedad son requeridos.', {
+        code: 'NOVEDAD_MANUAL_UPDATE_INVALID',
+        statusCode: 400,
+      });
+    }
+
+    const empleado = await db.query(
+      'SELECT id FROM empleados WHERE id = $1 AND tenant_id = $2 AND activo = true',
+      [empleadoId, tenantId]
+    );
+    if (empleado.rows.length === 0) {
+      throw new AppError('Empleado no encontrado para el tenant actual.', {
+        code: 'EMPLEADO_NO_ENCONTRADO',
+        statusCode: 404,
+      });
+    }
+
+    const period = await ensureWritablePayrollPeriodForDate({ tenantId, fecha });
+    const noveltyConfig = await ensureNoveltyTypeAllowed({
+      tenantId,
+      tipoNovedad: normalizedTipo,
+      anio: Number(period.periodoNomina.slice(0, 4)),
+      mes: Number(period.periodoNomina.slice(5, 7)),
+      userId: usuarioId,
+    });
+    if (noveltyConfig.calculationMode === 'amount' && montoNovedad <= 0 && noveltyConfig.payrollImpact !== 'informativo') {
+      throw new AppError('La novedad requiere un monto mayor a cero segun su forma de calculo.', {
+        code: 'NOVEDAD_REQUIERE_MONTO',
+        statusCode: 422,
+      });
+    }
+
+    const result = await db.query(`
+      UPDATE novedades_asistencia
+      SET empleado_id = $3,
+          period_id = $4,
+          periodo_nomina = $5,
+          fecha = $6,
+          tipo_novedad = $7,
+          minutos = $8,
+          monto = $9,
+          justificacion = $10,
+          estado = 'pendiente',
+          aprobado_por = NULL,
+          aprobado_en = NULL,
+          updated_at = NOW()
+      WHERE id = $1 AND tenant_id = $2
+      RETURNING id, empleado_id, fecha, tipo_novedad, minutos, monto, justificacion, estado
+    `, [
+      id,
+      tenantId,
+      empleadoId,
+      period.id,
+      period.periodoNomina,
+      fecha,
+      normalizedTipo,
+      minutosNovedad,
+      montoNovedad,
+      justificacion,
+    ]);
+
+    await recordAudit({
+      tenantId,
+      userId: usuarioId,
+      correlationId: req.correlationId,
+      action: 'novedades.manual.actualizar',
+      entity: 'novedades_asistencia',
+      entityId: id,
+      previousData: previous,
+      newData: result.rows[0],
+      ipAddress: req.ip,
+    });
+
+    return res.json({ success: true, novedad: result.rows[0], correlationId: req.correlationId });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({
+        error: 'NOVEDAD_DUPLICADA',
+        message: 'Ya existe una novedad del mismo tipo para ese empleado y fecha.',
+        correlationId: req.correlationId,
+      });
+    }
+    console.error('[NOVEDADES] Error actualizando novedad manual', {
+      code: err.code || 'NOVEDAD_MANUAL_UPDATE_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'NOVEDAD_MANUAL_UPDATE_ERROR',
+      message: err.message || 'Error interno',
+      details: err.details,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function eliminar(req, res) {
+  try {
+    const { tenantId, usuarioId } = req;
+    const { id } = req.params;
+    const { novelty } = await ensureNoveltyEditable({ tenantId, noveltyId: id });
+    const result = await db.query(`
+      DELETE FROM novedades_asistencia
+      WHERE id = $1 AND tenant_id = $2
+      RETURNING id
+    `, [id, tenantId]);
+
+    await recordAudit({
+      tenantId,
+      userId: usuarioId,
+      correlationId: req.correlationId,
+      action: 'novedades.manual.eliminar',
+      entity: 'novedades_asistencia',
+      entityId: id,
+      previousData: novelty,
+      newData: { deleted: result.rows.length > 0 },
+      ipAddress: req.ip,
+    });
+
+    return res.json({ success: true, deleted: result.rows.length > 0, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[NOVEDADES] Error eliminando novedad manual', {
+      code: err.code || 'NOVEDAD_MANUAL_DELETE_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'NOVEDAD_MANUAL_DELETE_ERROR',
+      message: err.message || 'Error interno',
+      details: err.details,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
 async function descargarPlantillaCargaMasiva(_req, res) {
   const example = [
     '',
@@ -193,7 +392,7 @@ async function cargaMasiva(req, res) {
       const normalized = normalizeBulkRow(row);
       try {
         const employee = await resolveEmployeeForBulkRow(tenantId, normalized);
-        const period = await ensurePayrollPeriodForDate({ tenantId, userId: usuarioId, fecha: normalized.fecha });
+        const period = await ensureWritablePayrollPeriodForDate({ tenantId, fecha: normalized.fecha });
         if (period.status === 'closed') {
           throw new Error('No se puede registrar novedades en un periodo cerrado.');
         }
@@ -297,6 +496,58 @@ function normalizeBulkRow(row = {}) {
     justificacion: String(row.justificacion || '').trim(),
     idempotencyKey: String(row.idempotencyKey || row.idempotency_key || '').trim(),
   };
+}
+
+async function ensureNoveltyEditable({ tenantId, noveltyId }) {
+  const result = await db.query(`
+    SELECT
+      id,
+      empleado_id,
+      tenant_id,
+      period_id,
+      periodo_nomina,
+      fecha::text AS fecha,
+      tipo_novedad,
+      minutos,
+      monto,
+      justificacion,
+      estado,
+      novelty_batch_id
+    FROM novedades_asistencia
+    WHERE id = $1 AND tenant_id = $2
+    LIMIT 1
+  `, [noveltyId, tenantId]);
+
+  if (result.rows.length === 0) {
+    throw new AppError('Novedad no encontrada.', {
+      code: 'NOVEDAD_NO_ENCONTRADA',
+      statusCode: 404,
+    });
+  }
+
+  const novelty = result.rows[0];
+  const period = await ensureWritablePayrollPeriodForDate({ tenantId, fecha: novelty.fecha });
+  const consumed = await db.query(`
+    SELECT 1
+    FROM payroll_calculation_lines
+    WHERE tenant_id = $1
+      AND source = 'novedad'
+      AND source_id = $2
+    LIMIT 1
+  `, [tenantId, String(novelty.id)]);
+
+  if (consumed.rows.length > 0) {
+    throw new AppError('La novedad ya fue consumida por un rol de pago. Reabre/recalcula el periodo con control antes de modificarla.', {
+      code: 'NOVEDAD_CONSUMIDA_POR_ROL',
+      statusCode: 409,
+      details: {
+        noveltyId,
+        periodoNomina: period.periodoNomina,
+      },
+    });
+  }
+
+  return { novelty, period };
 }
 
 async function resolveEmployeeForBulkRow(tenantId, row) {
@@ -524,6 +775,8 @@ module.exports = {
   listar,
   listarPendientes,
   crear,
+  actualizar,
+  eliminar,
   cargaMasiva,
   descargarPlantillaCargaMasiva,
   aprobar,

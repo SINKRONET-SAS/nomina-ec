@@ -395,6 +395,25 @@ async function deleteNoveltyBatch({ tenantId, userId, batchId, correlationId, ip
     throw new Error('No se puede eliminar un lote de un periodo cerrado.');
   }
 
+  const consumed = await db.query(
+    `SELECT 1
+     FROM payroll_calculation_lines pcl
+     JOIN novedades_asistencia na
+       ON na.tenant_id = pcl.tenant_id
+      AND na.id::text = pcl.source_id
+     WHERE na.tenant_id = $1
+       AND na.novelty_batch_id = $2
+       AND pcl.source = 'novedad'
+     LIMIT 1`,
+    [tenantId, batchId],
+  );
+  if (consumed.rows.length > 0) {
+    throw new AppError('No se puede eliminar un lote con novedades ya consumidas por un rol.', {
+      code: 'NOVEDAD_BATCH_CONSUMIDO_POR_ROL',
+      statusCode: 409,
+    });
+  }
+
   const hasClosedPayroll = await db.query(
     `SELECT 1 FROM nominas
      WHERE tenant_id = $1 AND anio = (SELECT EXTRACT(YEAR FROM fecha) FROM novelty_batches WHERE id = $2)

@@ -107,6 +107,15 @@ describe('AISK26-01: cierre brechas RBAC', () => {
     );
   });
 
+  test('PUT/DELETE /api/novedades/:id requiere rol owner/admin_rrhh', () => {
+    expect(source).toContain(
+      "app.put('/api/novedades/:id', requireRole('owner', 'admin_rrhh'), novedadController.actualizar)"
+    );
+    expect(source).toContain(
+      "app.delete('/api/novedades/:id', requireRole('owner', 'admin_rrhh'), novedadController.eliminar)"
+    );
+  });
+
   test('GET /api/nomina/:id/rol-pdf requiere rol owner/admin_rrhh', () => {
     expect(source).toContain(
       "app.get('/api/nomina/:id/rol-pdf', requireRole('owner', 'admin_rrhh'), nominaController.descargarRolPDF)"

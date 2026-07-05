@@ -692,7 +692,12 @@ async function eliminarLoteNovedades(req, res) {
       userId: req.usuarioId || null,
       message: err.message,
     });
-    return res.status(400).json({ error: err.message, correlationId: req.correlationId });
+    return res.status(err.statusCode || 400).json({
+      error: err.code || err.message,
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
   }
 }
 

@@ -201,6 +201,8 @@ app.get('/api/novedades/plantilla-carga-masiva', requireRole('owner', 'admin_rrh
 app.post('/api/novedades', requireRole('owner', 'admin_rrhh', 'supervisor'), novedadController.crear);
 app.post('/api/novedades/carga-masiva', requireRole('owner', 'admin_rrhh'), novedadController.cargaMasiva);
 app.put('/api/novedades/periodo/resolver', requireRole('owner', 'admin_rrhh'), novedadController.resolverPeriodo);
+app.put('/api/novedades/:id', requireRole('owner', 'admin_rrhh'), novedadController.actualizar);
+app.delete('/api/novedades/:id', requireRole('owner', 'admin_rrhh'), novedadController.eliminar);
 app.put('/api/novedades/:id/aprobar', requireRole('owner', 'admin_rrhh'), novedadController.aprobar);
 app.put('/api/novedades/:id/rechazar', requireRole('owner', 'admin_rrhh'), novedadController.rechazar);
 

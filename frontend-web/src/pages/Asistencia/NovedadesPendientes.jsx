@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authenticatedApi } from '../../services/authenticatedApi';
-import { Check, Plus, X } from 'lucide-react';
+import { Check, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { formatDateEC } from '../../utils/dateFormat';
 import {
   getNoveltyTypeLabel,
@@ -27,11 +27,12 @@ function NovedadesPendientes() {
   const [bulkResult, setBulkResult] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [editingNovelty, setEditingNovelty] = useState(null);
   
   const { data: novedades, isLoading } = useQuery({
     queryKey: ['novedades-pendientes'],
     queryFn: async () => {
-      const response = await authenticatedApi.get('/novedades/pendientes');
+      const response = await authenticatedApi.get('/novedades/pendientes?scope=operativas');
       return response.data.novedades;
     }
   });
@@ -50,11 +51,42 @@ function NovedadesPendientes() {
       setMessage('Novedad manual registrada para revisión.');
       setError('');
       setForm(initialForm);
+      setEditingNovelty(null);
       queryClient.invalidateQueries({ queryKey: ['novedades-pendientes'] });
     },
     onError: (err) => {
       setMessage('');
       setError(err.response?.data?.message || err.response?.data?.error || 'No pudimos registrar la novedad manual.');
+    },
+  });
+
+  const actualizarMutation = useMutation({
+    mutationFn: ({ id, payload }) => authenticatedApi.put(`/novedades/${id}`, payload),
+    onSuccess: () => {
+      setMessage('Novedad actualizada y devuelta a revision.');
+      setError('');
+      setEditingNovelty(null);
+      setForm(initialForm);
+      queryClient.invalidateQueries({ queryKey: ['novedades-pendientes'] });
+    },
+    onError: (err) => {
+      setMessage('');
+      setError(err.response?.data?.message || err.response?.data?.error || 'No pudimos actualizar la novedad.');
+    },
+  });
+
+  const eliminarMutation = useMutation({
+    mutationFn: (id) => authenticatedApi.delete(`/novedades/${id}`),
+    onSuccess: () => {
+      setMessage('Novedad eliminada antes de ser consumida por rol.');
+      setError('');
+      setEditingNovelty(null);
+      setForm(initialForm);
+      queryClient.invalidateQueries({ queryKey: ['novedades-pendientes'] });
+    },
+    onError: (err) => {
+      setMessage('');
+      setError(err.response?.data?.message || err.response?.data?.error || 'No pudimos eliminar la novedad.');
     },
   });
 
@@ -101,14 +133,49 @@ function NovedadesPendientes() {
 
   function submitManualNovelty(event) {
     event.preventDefault();
-    crearMutation.mutate({
+    const payload = {
       empleadoId: form.empleadoId,
       fecha: form.fecha,
       tipoNovedad: form.tipoNovedad,
       horas: Number(minutesToHours(form.minutos) || 0),
       monto: Number(form.monto || 0),
       justificacion: form.justificacion,
+    };
+    if (editingNovelty?.id) {
+      actualizarMutation.mutate({ id: editingNovelty.id, payload });
+      return;
+    }
+    crearMutation.mutate(payload);
+  }
+
+  function startEditNovelty(nov) {
+    setMessage('');
+    setError('');
+    setEditingNovelty(nov);
+    setForm({
+      empleadoId: nov.empleado_id || '',
+      fecha: String(nov.fecha || '').slice(0, 10),
+      tipoNovedad: nov.tipo_novedad || 'hora_extra_50',
+      minutos: String(nov.minutos || 0),
+      monto: String(nov.monto || ''),
+      justificacion: nov.justificacion || '',
     });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function cancelEditNovelty() {
+    setEditingNovelty(null);
+    setForm(initialForm);
+    setMessage('');
+    setError('');
+  }
+
+  function deleteNovelty(nov) {
+    const employeeName = `${nov.nombres || ''} ${nov.apellidos || ''}`.trim();
+    const accepted = window.confirm(`Eliminar novedad de ${employeeName || 'empleado'} del ${String(nov.fecha || '').slice(0, 10)} antes de que sea consumida por rol.`);
+    if (accepted) {
+      eliminarMutation.mutate(nov.id);
+    }
   }
 
   async function descargarPlantilla() {
@@ -157,8 +224,8 @@ function NovedadesPendientes() {
         <div className="flex items-start gap-3">
           <Plus className="mt-1 h-5 w-5 text-teal-700" />
           <div>
-            <h2 className="text-lg font-semibold text-slate-950">Ingreso manual de novedad</h2>
-            <p className="mt-1 text-sm text-slate-600">La novedad queda pendiente hasta que RRHH la apruebe o rechace.</p>
+            <h2 className="text-lg font-semibold text-slate-950">{editingNovelty ? 'Editar novedad manual' : 'Ingreso manual de novedad'}</h2>
+            <p className="mt-1 text-sm text-slate-600">La novedad debe pertenecer a un mes abierto y vuelve a revisión cuando se modifica.</p>
           </div>
         </div>
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -187,6 +254,7 @@ function NovedadesPendientes() {
               value={form.fecha}
               onChange={(event) => updateField('fecha', event.target.value)}
             />
+            <span className="mt-1 block text-xs font-normal text-slate-500">Debe corresponder a un mes de nómina abierto.</span>
           </label>
           <label className="block text-sm font-medium text-slate-700">
             Tipo
@@ -235,12 +303,24 @@ function NovedadesPendientes() {
         </div>
         <button
           className="mt-5 inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-60"
-          disabled={crearMutation.isPending}
+          disabled={crearMutation.isPending || actualizarMutation.isPending}
           type="submit"
         >
           <Plus className="h-4 w-4" />
-          {crearMutation.isPending ? 'Registrando...' : 'Registrar novedad'}
+          {editingNovelty
+            ? (actualizarMutation.isPending ? 'Actualizando...' : 'Actualizar novedad')
+            : (crearMutation.isPending ? 'Registrando...' : 'Registrar novedad')}
         </button>
+        {editingNovelty && (
+          <button
+            className="ml-3 mt-5 inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:border-slate-300"
+            onClick={cancelEditNovelty}
+            type="button"
+          >
+            <X className="h-4 w-4" />
+            Cancelar
+          </button>
+        )}
       </form>
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -308,14 +388,15 @@ function NovedadesPendientes() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Horas</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {isLoading ? (
-                <tr><td colSpan="5" className="px-6 py-4 text-center">Cargando...</td></tr>
+                <tr><td colSpan="6" className="px-6 py-4 text-center">Cargando...</td></tr>
               ) : !novedades || novedades.length === 0 ? (
-                <tr><td colSpan="5" className="px-6 py-4 text-center">No hay novedades pendientes</td></tr>
+                <tr><td colSpan="6" className="px-6 py-4 text-center">No hay novedades editables antes de rol</td></tr>
               ) : (
                 novedades.map(nov => (
                   <tr key={nov.id} className="hover:bg-gray-50">
@@ -332,16 +413,54 @@ function NovedadesPendientes() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">{minutesToHours(nov.minutos)} h</td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                        {nov.estado || 'pendiente'}
+                      </span>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex space-x-2">
-                        <button onClick={() => aprobarMutation.mutate(nov.id)}
-                          className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200">
-                          <Check size={16} />
-                        </button>
-                        <button onClick={() => rechazarMutation.mutate(nov.id)}
-                          className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200">
-                          <X size={16} />
-                        </button>
+                        {nov.estado === 'pendiente' && (
+                          <>
+                            <button
+                              onClick={() => aprobarMutation.mutate(nov.id)}
+                              className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200"
+                              title="Aprobar"
+                              type="button"
+                            >
+                              <Check size={16} />
+                            </button>
+                            <button
+                              onClick={() => rechazarMutation.mutate(nov.id)}
+                              className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                              title="Rechazar"
+                              type="button"
+                            >
+                              <X size={16} />
+                            </button>
+                          </>
+                        )}
+                        {nov.editable && (
+                          <>
+                            <button
+                              onClick={() => startEditNovelty(nov)}
+                              className="p-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                              title="Editar antes de rol"
+                              type="button"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                            <button
+                              disabled={eliminarMutation.isPending}
+                              onClick={() => deleteNovelty(nov)}
+                              className="p-1 bg-slate-100 text-slate-700 rounded hover:bg-red-100 hover:text-red-700 disabled:opacity-60"
+                              title="Eliminar antes de rol"
+                              type="button"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
