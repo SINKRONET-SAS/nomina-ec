@@ -13,6 +13,8 @@ const initialActivation = {
   geolocationConsent: false,
 };
 
+const PLACEHOLDER_COLOR = '#64748b';
+
 function getErrorMessage(err, fallback) {
   if (!err?.response && err?.message === 'Network Error') {
     return `No se pudo conectar con ${API_URL}. En Expo Go usa la IP local de tu PC en EXPO_PUBLIC_API_URL.`;
@@ -24,31 +26,54 @@ function getAuthToken(response) {
   return response?.data?.token || response?.data?.data?.token || response?.data?.accessToken || '';
 }
 
-function PasswordInput({ value, onChangeText, placeholder, returnKeyType, onSubmitEditing }) {
+function FieldLabel({ label }) {
+  return <Text style={styles.fieldLabel}>{label}</Text>;
+}
+
+function FormInput({ label, style, ...props }) {
+  return (
+    <>
+      <FieldLabel label={label} />
+      <TextInput
+        placeholderTextColor={PLACEHOLDER_COLOR}
+        selectionColor="#0f766e"
+        style={[styles.input, style]}
+        {...props}
+      />
+    </>
+  );
+}
+
+function PasswordInput({ label, value, onChangeText, placeholder, returnKeyType, onSubmitEditing }) {
   const [visible, setVisible] = useState(false);
 
   return (
-    <View style={styles.passwordRow}>
-      <TextInput
-        autoCapitalize="none"
-        autoCorrect={false}
-        onChangeText={onChangeText}
-        onSubmitEditing={onSubmitEditing}
-        placeholder={placeholder}
-        returnKeyType={returnKeyType}
-        secureTextEntry={!visible}
-        style={styles.passwordInput}
-        textContentType="password"
-        value={value}
-      />
-      <TouchableOpacity
-        accessibilityLabel={visible ? 'Ocultar clave' : 'Mostrar clave'}
-        onPress={() => setVisible((current) => !current)}
-        style={styles.eyeButton}
-      >
-        <Text style={styles.eyeText}>{visible ? 'Ocultar' : 'Ver'}</Text>
-      </TouchableOpacity>
-    </View>
+    <>
+      <FieldLabel label={label} />
+      <View style={styles.passwordRow}>
+        <TextInput
+          autoCapitalize="none"
+          autoCorrect={false}
+          onChangeText={onChangeText}
+          onSubmitEditing={onSubmitEditing}
+          placeholder={placeholder}
+          placeholderTextColor={PLACEHOLDER_COLOR}
+          returnKeyType={returnKeyType}
+          secureTextEntry={!visible}
+          selectionColor="#0f766e"
+          style={styles.passwordInput}
+          textContentType="password"
+          value={value}
+        />
+        <TouchableOpacity
+          accessibilityLabel={visible ? 'Ocultar clave' : 'Mostrar clave'}
+          onPress={() => setVisible((current) => !current)}
+          style={styles.eyeButton}
+        >
+          <Text style={styles.eyeText}>{visible ? 'Ocultar' : 'Ver'}</Text>
+        </TouchableOpacity>
+      </View>
+    </>
   );
 }
 
@@ -203,35 +228,39 @@ export default function LoginScreen({ onLogin }) {
         {mode === 'activar' && (
           <>
             <Text style={styles.sectionTitle}>Activa tu acceso de empleado</Text>
-            <TextInput
+            <FormInput
               autoCapitalize="none"
+              autoComplete="email"
               keyboardType="email-address"
+              label="Correo registrado por RRHH"
               onChangeText={(value) => updateActivation('email', value)}
               placeholder="Email registrado por RRHH"
-              style={styles.input}
+              textContentType="emailAddress"
               value={activation.email}
             />
-            <TextInput
+            <FormInput
               keyboardType="number-pad"
+              label="Cédula"
               onChangeText={(value) => updateActivation('cedula', value)}
               placeholder="Cédula opcional"
-              style={styles.input}
               value={activation.cedula}
             />
-            <TextInput
+            <FormInput
               autoCapitalize="characters"
+              label="Código de activación"
               onChangeText={(value) => updateActivation('inviteCode', String(value || '').replace(/[^a-zA-Z0-9-]/g, '').toUpperCase())}
               placeholder="Código de activación"
-              style={styles.input}
               value={activation.inviteCode}
             />
             <PasswordInput
+              label="Crear clave"
               onChangeText={(value) => updateActivation('password', value)}
               placeholder="Crear clave"
               returnKeyType="next"
               value={activation.password}
             />
             <PasswordInput
+              label="Confirmar clave"
               onChangeText={(value) => updateActivation('confirmPassword', value)}
               onSubmitEditing={handleActivate}
               placeholder="Confirmar clave"
@@ -261,15 +290,25 @@ export default function LoginScreen({ onLogin }) {
 
         {mode === 'login' && (
           <>
-            <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
-            <TextInput
+            <FormInput
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              label="Correo"
+              onChangeText={setEmail}
+              placeholder="Email"
+              textContentType="emailAddress"
+              value={email}
+            />
+            <FormInput
               keyboardType="number-pad"
+              label="RUC de empresa"
               onChangeText={(value) => setTenantRuc(String(value || '').replace(/\D/g, '').slice(0, 13))}
               placeholder="RUC de empresa (opcional)"
-              style={styles.input}
               value={tenantRuc}
             />
             <PasswordInput
+              label="Clave"
               onChangeText={setPassword}
               onSubmitEditing={handleLogin}
               placeholder="Clave"
@@ -284,7 +323,16 @@ export default function LoginScreen({ onLogin }) {
 
         {mode === 'recuperar' && (
           <>
-            <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+            <FormInput
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              label="Correo"
+              onChangeText={setEmail}
+              placeholder="Email"
+              textContentType="emailAddress"
+              value={email}
+            />
             <TouchableOpacity style={styles.secondaryButton} onPress={handleForgot} disabled={loading}>
               <Text style={styles.secondaryButtonText}>Solicitar código</Text>
             </TouchableOpacity>
@@ -296,9 +344,25 @@ export default function LoginScreen({ onLogin }) {
 
         {mode === 'reset' && (
           <>
-            <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
-            <TextInput style={styles.input} placeholder="Código" value={resetCode} onChangeText={setResetCode} keyboardType="number-pad" />
+            <FormInput
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              label="Correo"
+              onChangeText={setEmail}
+              placeholder="Email"
+              textContentType="emailAddress"
+              value={email}
+            />
+            <FormInput
+              keyboardType="number-pad"
+              label="Código de recuperación"
+              onChangeText={setResetCode}
+              placeholder="Código"
+              value={resetCode}
+            />
             <PasswordInput
+              label="Nueva clave"
               onChangeText={setPassword}
               placeholder="Nueva clave"
               returnKeyType="done"
@@ -375,12 +439,21 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 12,
   },
+  fieldLabel: {
+    color: '#334155',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
   input: {
+    backgroundColor: '#ffffff',
     borderColor: '#d1d5db',
     borderRadius: 8,
     borderWidth: 1,
+    color: '#0f172a',
     fontSize: 16,
     marginBottom: 12,
+    minHeight: 48,
     padding: 12,
   },
   passwordRow: {
@@ -392,6 +465,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   passwordInput: {
+    color: '#0f172a',
     flex: 1,
     fontSize: 16,
     minHeight: 48,
