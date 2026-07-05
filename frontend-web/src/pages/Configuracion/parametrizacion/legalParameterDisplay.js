@@ -15,11 +15,18 @@ export function formatRate(value) {
 }
 
 export function normalizeIncomeTaxBrackets(record) {
-  return Array.isArray(record?.value?.brackets) ? record.value.brackets : [];
+  let value = record?.value;
+  if (typeof value === 'string') {
+    try { value = JSON.parse(value); } catch { return []; }
+  }
+  return Array.isArray(value?.brackets) ? value.brackets : [];
 }
 
 export function legalParameterValue(record) {
-  const value = record?.value || {};
+  let value = record?.value || {};
+  if (typeof value === 'string') {
+    try { value = JSON.parse(value); } catch { return value; }
+  }
 
   if (record?.parameter_key === 'income_tax_table') {
     return `${normalizeIncomeTaxBrackets(record).length} tramos`;

@@ -604,15 +604,17 @@ function Parametrizacion() {
   }
 
   function startEdit(definition, record) {
-    setActiveForm(definition.key);
-    setEditingRecord({ ...record, definitionKey: definition.key });
-    setPendingDeleteId('');
-    setError('');
-    setMessage('');
-    setForms((current) => ({
-      ...current,
-      [definition.key]: formValuesFromRecord(definition, record),
-    }));
+    try {
+      const values = formValuesFromRecord(definition, record);
+      setActiveForm(definition.key);
+      setEditingRecord({ ...record, definitionKey: definition.key });
+      setPendingDeleteId('');
+      setError('');
+      setMessage('');
+      setForms((current) => ({ ...current, [definition.key]: values }));
+    } catch (err) {
+      setError(`No se pudo cargar el registro para editar: ${err.message}`);
+    }
   }
 
   function cancelEdit() {

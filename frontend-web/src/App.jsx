@@ -20,6 +20,7 @@ import PaymentResult from './pages/PaymentResult';
 import LegalText from './pages/LegalText';
 import NotFound from './pages/NotFound';
 import CookieConsent from './components/Privacy/CookieConsent';
+import ErrorBoundary from './components/ErrorBoundary';
 import { hasRoleAccess } from './utils/access';
 import Parametrizacion from './pages/Configuracion/Parametrizacion';
 import Comunicaciones from './pages/Configuracion/Comunicaciones';
@@ -94,6 +95,7 @@ function ScrollToHash() {
 
 function App() {
   return (
+    <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
@@ -275,6 +277,7 @@ function App() {
         </Router>
       </AuthProvider>
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
