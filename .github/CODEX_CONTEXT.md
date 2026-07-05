@@ -1,7 +1,26 @@
 
 ---
 
-## Open Haiky Plan - HAIKY-MONETIZACION-RUTAS-APP-SKNOMINA-2026
+## Closed Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-SKNOMINA-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-AUDITORIA-INTEGRAL-SKNOMINA-2026 |
+| Codigo | AISK26 |
+| Estado | completed-pass |
+| Fase actual | AISK26-10 (cerrada) |
+| Fecha cierre | 2026-07-04 |
+| Plan doc | `docs2/auditoria-integral-sknomina-2026/PLAN_HAIKY_AUDITORIA_INTEGRAL_SKNOMINA_2026.md` |
+| Reporte | `docs2/auditoria-integral-sknomina-2026/REPORTE_AISK26_EJECUCION.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Resultado AISK26
+
+Auditoria integral completada. 45 hallazgos (4 ALTO, 25 MEDIO, 16 BAJO) — todos resueltos en 10 fases. Tests 234/234 PASS, contracts PASS, build PASS. Cambios en RBAC, ortografia UTF-8, timezone Ecuador, DRY, movilizacion mejorada con anticipo, autoservicio PDF y permisos, SQLite offline (cola+cache+perfil), UI/UX humanizacion (dark mode, ErrorBoundary, tabs), legal Ecuador 2025/2026, PayPhone healthCheck, purga LOPDP y seed password hardening.
+
+---
+
+## Closed Haiky Plan - HAIKY-MONETIZACION-RUTAS-APP-SKNOMINA-2026
 
 | Campo | Valor |
 |-------|-------|
@@ -2028,3 +2047,42 @@ Reglas operativas HSH26:
 - No mezclar con cambios locales previos en backend, Prisma, pagos o capacidades de plan.
 - No cambiar contratos publicos de API por correcciones editoriales.
 - La revision ortografica historica completa queda fuera del alcance si exige reescritura editorial masiva de textos ASCII existentes.
+
+---
+
+## MGR26 - Mobile gestion de rutas y zonas 2026
+
+Plan: `HAIKY-MOBILE-GESTION-RUTAS-ZONAS-2026`.
+
+Estado: MGR26-00 a MGR26-03 ejecutadas localmente; gates MGR26 verdes.
+
+Fuente:
+
+- Solicitud del usuario: la app movil debe crear zonas de marcacion y rutas de campo, asignar funcionalidad a usuarios con perfil apropiado y no mostrar acciones que el perfil no debe ejecutar.
+
+Artefactos:
+
+- `docs2/PLAN_HAIKY_MOBILE_GESTION_RUTAS_ZONAS_2026.md`
+- `docs2/mobile-gestion-rutas-zonas-2026/REPORTE_MGR26_00_03_EJECUCION.md`
+- `.github/prompts/MGR26-00-baseline-gobierno.md`
+- `.github/prompts/MGR26-01-backend-mobile-admin.md`
+- `.github/prompts/MGR26-02-app-movil-perfiles.md`
+- `.github/prompts/MGR26-03-qa-cierre.md`
+- `.vscode/AuditLock.json`
+
+Runtime MGR26:
+
+- Backend agrega `/api/mobile/admin/rutas/resumen`, `/api/mobile/admin/zonas`, `/api/mobile/admin/rutas/sitios` y `/api/mobile/admin/rutas/dias`.
+- Los endpoints moviles administrativos exigen `requireMobileAppPlan` y `requireFieldRoutesPlan`.
+- `owner/admin_rrhh` pueden crear zonas y sitios; `owner/admin_rrhh/supervisor` pueden consultar y asignar rutas.
+- `routeVisitService.createRouteDay` acepta `source = mobile` preservando default `pwa`.
+- App movil agrega `OperacionMovilScreen` y cliente API para `/mobile/admin/...`.
+- La UI movil usa `allowedActions` para ocultar secciones no autorizadas; no deja controles visibles deshabilitados por perfil.
+- `superadmin` no opera tenant desde app movil; se guia a PWA.
+
+Reglas operativas MGR26:
+
+- No duplicar modelos de zonas/rutas.
+- No crear migraciones mientras `work_zones`, `route_sites`, `route_days` y `route_stops` cubran el flujo.
+- No sustituir RBAC backend por ocultamiento UI.
+- Si se cambia visibilidad por perfil, actualizar contratos en `scripts/verify-system-contracts.mjs`.

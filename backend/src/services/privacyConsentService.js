@@ -15,7 +15,7 @@ const CONSENT_SCOPES = Object.freeze([
   },
   {
     scope: 'payroll_labor_processing',
-    label: 'Tratamiento laboral y nomina',
+    label: 'Tratamiento laboral y nómina',
     legalBasis: 'obligacion_legal_y_ejecucion_contractual',
     required: true,
     withdrawable: false,

@@ -70,7 +70,7 @@ function planCapabilitiesText(plan) {
     plan.archivosBancarios ? 'Bancos' : '',
     plan.reportesAvanzados ? 'Reportes avanzados' : '',
     plan.apiAccess ? 'API externa' : '',
-    plan.appMovil ? 'App movil' : '',
+    plan.appMovil ? 'App móvil' : '',
     plan.rutasCampo ? 'Rutas de campo' : '',
   ].filter(Boolean).join(' | ') || 'Capacidades base';
 }
@@ -190,7 +190,7 @@ function PlanesGestion({ showSuperadminConsole = true }) {
         <h1 className="text-2xl font-semibold text-slate-950">Gestión de planes</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
           Administra el catálogo comercial con validación previa. Las capacidades guardadas aquí alimentan el
-          control backend de SKNOMINA: archivos bancarios, reportes avanzados, API externa, app movil,
+          control backend de SKNOMINA: archivos bancarios, reportes avanzados, API externa, app móvil,
           rutas de campo y límites operativos.
         </p>
       </section>
@@ -243,7 +243,7 @@ function PlanesGestion({ showSuperadminConsole = true }) {
               ['archivosBancarios', 'Archivos bancarios'],
               ['reportesAvanzados', 'Reportes avanzados'],
               ['apiAccess', 'Acceso API externa'],
-              ['appMovil', 'App movil empleados'],
+              ['appMovil', 'App móvil empleados'],
               ['rutasCampo', 'Rutas de campo'],
               ['publico', 'Visible publico'],
               ['activo', 'Activo'],
@@ -339,7 +339,7 @@ function PlanesGestion({ showSuperadminConsole = true }) {
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-sm font-semibold uppercase text-slate-500">Empresas</p>
               <p className="mt-2 text-3xl font-semibold text-slate-950">{overviewQuery.data?.owners?.length || 0}</p>
-              <p className="mt-1 text-sm text-slate-600">Empresas visibles para supervision contractual.</p>
+              <p className="mt-1 text-sm text-slate-600">Empresas visibles para supervisión contractual.</p>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-sm font-semibold uppercase text-slate-500">Incidencias abiertas</p>

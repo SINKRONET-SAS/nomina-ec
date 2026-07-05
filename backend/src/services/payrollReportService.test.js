@@ -1,4 +1,17 @@
-const { rowsForReport } = require('./payrollReportService');
+jest.mock('../config/database', () => ({
+  pool: { end: jest.fn() },
+  query: jest.fn(),
+}));
+
+jest.mock('../config/s3', () => ({
+  s3Upload: jest.fn(),
+}));
+
+jest.mock('./auditService', () => ({
+  recordAudit: jest.fn(),
+}));
+
+const { buildBenefitLedgerRows, rowsForReport } = require('./payrollReportService');
 
 function payrollRow(overrides = {}) {
   return {
@@ -97,6 +110,54 @@ describe('payrollReportService accounting entries', () => {
     });
     expect(rows[0].concept_sueldo_base).toBe(1000);
     expect(rows[0].concept_aporte_iess_personal).toBe(94.5);
+  });
+
+  test('reconstruye ledger individual de beneficios por periodo anual', () => {
+    const rows = buildBenefitLedgerRows([
+      {
+        id: 'ben-1',
+        empleado_id: 'emp-1',
+        tipo: 'prestamo',
+        descripcion: 'Prestamo laptop',
+        monto_total: 600,
+        saldo_pendiente: 250,
+        cuota_mensual: 100,
+        anio_inicio: 2025,
+        mes_inicio: 12,
+        estado: 'aprobado',
+        metadata: {
+          descuentosNomina: [
+            { periodo: '2025-12', anio: 2025, mes: 12, monto: 100 },
+            { periodo: '2026-01', anio: 2026, mes: 1, monto: 100 },
+            { periodo: '2026-02', anio: 2026, mes: 2, monto: 100 },
+            { periodo: '2027-01', anio: 2027, mes: 1, monto: 50 },
+          ],
+        },
+        cedula: '0102030405',
+        nombres: 'Ana',
+        apellidos: 'Demo',
+        departamento: 'RRHH',
+        cargo: 'Analista RRHH',
+        cargo_codigo: 'ANALISTA_RRHH',
+        unidad_nombre: 'Talento Humano',
+        centro_costo: 'CC-RRHH',
+      },
+    ], 2026, null);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      beneficioId: 'ben-1',
+      empleado: 'Demo Ana',
+      tipoBeneficio: 'Prestamo',
+      beneficio: 'Prestamo laptop',
+      saldoInicial: 500,
+      movimientoAnual: 200,
+      saldoFinal: 300,
+      periodosConMovimiento: 2,
+      primerMovimiento: '2026-01',
+      ultimoMovimiento: '2026-02',
+      observacion: 'OK',
+    });
   });
 
   test('genera reporte contable CRN26 balanceado con mappings por concepto', () => {

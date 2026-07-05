@@ -261,13 +261,13 @@ function buildPreviewRows(rows, existingCedulas = new Set(), positionIndex = new
     });
 
     if (row.identification && !validarCedula(row.identification)) {
-      errors.push('Cedula ecuatoriana invalida');
+      errors.push('Cédula ecuatoriana inválida');
     }
     if (row.identification && seen.get(row.identification) > 1) {
-      errors.push('Cedula duplicada en el archivo');
+      errors.push('Cédula duplicada en el archivo');
     }
     if (row.identification && existingCedulas.has(row.identification)) {
-      errors.push('Cedula ya registrada en el sistema');
+      errors.push('Cédula ya registrada en el sistema');
     }
 
     const salary = Number(row.salary);

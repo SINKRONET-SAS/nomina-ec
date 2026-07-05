@@ -26,6 +26,7 @@ import { authenticatedApi } from '../services/authenticatedApi';
 import { confirmEmailVerification, extractApiError, requestEmailVerification } from '../services/publicApi';
 import { currentPeriodEC, formatDateEC, formatDateTimeEC, todayISOEC } from '../utils/dateFormat';
 import { hasRoleAccess } from '../utils/access';
+import { money } from '../utils/money';
 
 const monthNames = [
   'Enero',
@@ -53,10 +54,6 @@ function pickArray(payload, keys) {
 
 function safeCount(value) {
   return Array.isArray(value) ? value.length : 0;
-}
-
-function money(value) {
-  return `$${Number(value || 0).toFixed(2)}`;
 }
 
 async function optionalGet(url) {

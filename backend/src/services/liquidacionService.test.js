@@ -15,7 +15,7 @@ describe('liquidacionService formulas', () => {
     expect(calcularDiasDecimoTercero(ingreso, salida)).toBe(105);
   });
 
-  test('aplica minimo de tres meses por despido intempestivo hasta tres anios', () => {
+  test('aplica mínimo de tres meses por despido intempestivo hasta tres años', () => {
     expect(calcularIndemnizacionDespidoIntempestivo(1000, 1.2, 'despido_intempestivo')).toBe(3000);
   });
 
@@ -28,7 +28,7 @@ describe('liquidacionService formulas', () => {
     expect(calcularDesahucio(1000, 4.8, 'mutuo_acuerdo')).toBe(0);
   });
 
-  test('calcula vacaciones base sin adicional hasta cinco anios completos', () => {
+  test('calcula vacaciones base sin adicional hasta cinco años completos', () => {
     const result = calcularDiasVacacionesPendientes(
       new Date('2021-01-01T00:00:00'),
       new Date('2025-12-31T00:00:00'),

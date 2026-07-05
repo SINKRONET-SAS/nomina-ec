@@ -35,14 +35,8 @@ export const authAPI = {
     return api.post('/auth/login', payload);
   },
   activateEmployee: (payload) => api.post('/mobile/empleado/activar', payload),
-  publicRegister: (payload) => api.post('/auth/public-register', payload),
   forgotPassword: (email) => api.post('/auth/password/forgot', { email }),
   resetPassword: (payload) => api.post('/auth/password/reset', payload),
-};
-
-export const paymentAPI = {
-  plans: () => api.get('/pagos/planes'),
-  startCheckout: (planId) => api.post('/pagos/payment-methods/checkout-intent', { planId }),
 };
 
 export const mobileAPI = {
@@ -54,7 +48,12 @@ export const mobileAPI = {
   routeDeparture: (stopId, payload) => api.post(`/mobile/ruta/paradas/${stopId}/salida`, payload),
   routeOmit: (stopId, payload) => api.post(`/mobile/ruta/paradas/${stopId}/omitir`, payload),
   routeUnplanned: (payload) => api.post('/mobile/ruta/visitas/no-programada', payload),
+  adminRoutesSummary: (fecha) => api.get('/mobile/admin/rutas/resumen', { params: fecha ? { fecha } : {} }),
+  adminCreateWorkZone: (payload) => api.post('/mobile/admin/zonas', payload),
+  adminCreateRouteSite: (payload) => api.post('/mobile/admin/rutas/sitios', payload),
+  adminAssignRoute: (payload) => api.post('/mobile/admin/rutas/dias', payload),
   payroll: (anio, mes) => api.get(`/mobile/nomina/${anio}/${mes}`),
+  payrollPdf: (nominaId) => api.get(`/nomina/${nominaId}/rol-pdf`),
   history: () => api.get('/mobile/historial'),
   requestPermission: (payload) => api.post('/mobile/permisos', payload),
   sendMobilizationReport: (payload) => api.post('/movilizacion/informe', payload),

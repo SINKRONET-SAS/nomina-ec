@@ -165,7 +165,7 @@ describe('communicationService', () => {
     }));
     expect(sendMailMock).toHaveBeenCalledWith(expect.objectContaining({
       to: 'usuario@example.com',
-      subject: 'Recuperacion de clave SKNOMINA',
+      subject: 'Recuperación de clave SKNOMINA',
       disableFileAccess: true,
       disableUrlAccess: true,
     }));

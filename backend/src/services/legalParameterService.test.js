@@ -6,16 +6,15 @@ describe('parametros legales Ecuador AIV50', () => {
     const legal = getLegalParameters(2026);
     expect(legal.payroll.personalIessRate).toBeCloseTo(0.0945, 4);
     expect(legal.payroll.employerIessRate).toBeCloseTo(0.1115, 4);
-    expect(legal.sourceStatus).toBe('validado_parcial');
+    expect(legal.sourceStatus).toBe('validado');
     expect(legal.validatedFields).toEqual(expect.arrayContaining([
       'incomeTax',
       'payroll.unifiedBaseSalary',
       'payroll.personalIessRate',
       'payroll.employerIessRate',
-    ]));
-    expect(legal.pendingValidation).toEqual(expect.arrayContaining([
       'payroll.reserveFundStartsAfterMonths',
     ]));
+    expect(legal.pendingValidation).toEqual([]);
   });
 
   test('detecta divergencia entre tabla legado y parametros versionados', () => {

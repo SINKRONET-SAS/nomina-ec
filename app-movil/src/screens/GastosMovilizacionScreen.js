@@ -12,30 +12,21 @@ import {
   View,
 } from 'react-native';
 import {
+  cerrarPeriodo,
   deleteGasto,
   getGastosByPeriodo,
+  getResumenPorDia,
   getTotalesByPeriodo,
+  initPeriodoCierreTable,
   insertGasto,
+  isPeriodoBloqueado,
   marcarGastosEnviados,
 } from '../db/movilizacion';
 import { mobileAPI } from '../services/api';
-
-function datePart(type) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Guayaquil',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(new Date());
-  return Object.fromEntries(parts.map((part) => [part.type, part.value]))[type];
-}
+import { datePart, todayEC } from '../utils/dateEC';
 
 function currentPeriodEC() {
   return `${datePart('year')}-${datePart('month')}`;
-}
-
-function todayEC() {
-  return `${datePart('year')}-${datePart('month')}-${datePart('day')}`;
 }
 
 const emptyForm = () => ({
@@ -74,8 +65,21 @@ function stopLabel(stop) {
 }
 
 function buildRouteSuggestion(profile, route) {
-  const firstPendingStop = (route?.stops || []).find((stop) => !['completed', 'cancelled', 'omitted'].includes(stop.status));
-  const firstStop = firstPendingStop || (route?.stops || [])[0];
+  const stops = route?.stops || [];
+  const completedStops = stops.filter((stop) => stop.status === 'completed');
+  const firstPendingStop = stops.find((stop) => !['completed', 'cancelled', 'omitted'].includes(stop.status));
+
+  // Si hay paradas completadas, sugerir de la última completada a la siguiente pendiente
+  if (completedStops.length > 0 && firstPendingStop) {
+    const lastCompleted = completedStops[completedStops.length - 1];
+    return {
+      origen: stopLabel(lastCompleted) || 'Última parada visitada',
+      destino: stopLabel(firstPendingStop) || 'Siguiente parada',
+    };
+  }
+
+  // Sin paradas completadas: domicilio -> primera parada
+  const firstStop = firstPendingStop || stops[0];
   return {
     origen: employeeHomeLabel(profile),
     destino: stopLabel(firstStop) || 'Primer punto de la ruta',
@@ -89,16 +93,22 @@ export default function GastosMovilizacionScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [cierreVisible, setCierreVisible] = useState(false);
+  const [periodoBloqueado, setPeriodoBloqueado] = useState(false);
+  const [resumenDiario, setResumenDiario] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [routeSuggestion, setRouteSuggestion] = useState({ origen: '', destino: '' });
 
   const recargar = useCallback(async () => {
-    const [rows, summary] = await Promise.all([
+    await initPeriodoCierreTable().catch(() => {});
+    const [rows, summary, bloqueado] = await Promise.all([
       getGastosByPeriodo(periodo),
       getTotalesByPeriodo(periodo),
+      isPeriodoBloqueado(periodo),
     ]);
     setGastos(rows);
     setTotales(summary || { registros: 0, dias: 0, total: 0 });
+    setPeriodoBloqueado(bloqueado);
   }, [periodo]);
 
   useEffect(() => {
@@ -113,7 +123,7 @@ export default function GastosMovilizacionScreen() {
       ]);
       setRouteSuggestion(buildRouteSuggestion(profileResponse.data || {}, routeResponse.data?.route || null));
     } catch (err) {
-      console.error('No se pudo cargar sugerencia de movilizacion:', {
+      console.error('No se pudo cargar sugerencia de movilización:', {
         code: err.response?.data?.error || 'MOVILIZACION_RUTA_SUGERIDA_ERROR',
         statusCode: err.response?.status || 500,
         correlationId: err.response?.data?.correlationId || 'mobile-local',
@@ -126,6 +136,26 @@ export default function GastosMovilizacionScreen() {
   useEffect(() => {
     cargarSugerenciaRuta();
   }, [cargarSugerenciaRuta]);
+
+  const abrirCierreMes = async () => {
+    const resumen = await getResumenPorDia(periodo);
+    setResumenDiario(resumen);
+    setCierreVisible(true);
+  };
+
+  const confirmarCierre = async () => {
+    setSaving(true);
+    try {
+      await cerrarPeriodo(periodo);
+      setCierreVisible(false);
+      await recargar();
+      Alert.alert('Período cerrado', 'El informe fue enviado. Ya no podrás agregar gastos a este período.');
+    } catch (err) {
+      Alert.alert('Error', 'No se pudo cerrar el período.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const abrirModalGasto = () => {
     const base = emptyForm();
@@ -158,7 +188,7 @@ export default function GastosMovilizacionScreen() {
   };
 
   const eliminar = (id) => {
-    Alert.alert('Eliminar gasto', 'Este gasto pendiente se eliminara del informe.', [
+    Alert.alert('Eliminar gasto', 'Este gasto pendiente se eliminará del informe.', [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Eliminar',
@@ -177,7 +207,7 @@ export default function GastosMovilizacionScreen() {
       Alert.alert('Sin gastos pendientes', 'No hay gastos pendientes para enviar.');
       return;
     }
-    Alert.alert('Enviar informe', `Se enviaran ${pendientes.length} gastos por $${Number(totales.total || 0).toFixed(2)}.`, [
+    Alert.alert('Enviar informe', `Se enviarán ${pendientes.length} gastos por $${Number(totales.total || 0).toFixed(2)}.`, [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Enviar',
@@ -199,9 +229,9 @@ export default function GastosMovilizacionScreen() {
             });
             await marcarGastosEnviados(periodo, response.data?.informeId || 'enviado');
             await recargar();
-            Alert.alert('Informe enviado', 'Tu informe de movilizacion quedo pendiente de revision.');
+            Alert.alert('Informe enviado', 'Tu informe de movilización quedó pendiente de revisión.');
           } catch (err) {
-            Alert.alert('No se pudo enviar', err.response?.data?.message || 'Revisa tu conexion e intenta nuevamente.');
+            Alert.alert('No se pudo enviar', err.response?.data?.message || 'Revisa tu conexión e intenta nuevamente.');
           } finally {
             setSaving(false);
           }
@@ -223,8 +253,10 @@ export default function GastosMovilizacionScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Movilizacion</Text>
-      <Text style={styles.subtitle}>Periodo {periodo}</Text>
+      <Text style={styles.title}>Movilización</Text>
+      <Text style={styles.subtitle}>
+        Período {periodo}{periodoBloqueado ? '  •  Enviado' : ''}
+      </Text>
 
       <View style={styles.summary}>
         <View>
@@ -258,15 +290,57 @@ export default function GastosMovilizacionScreen() {
       />
 
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.secondaryButton} onPress={abrirModalGasto}>
-          <Text style={styles.secondaryText}>Agregar gasto</Text>
-        </TouchableOpacity>
-        {pendientes && (
+        {!periodoBloqueado && (
+          <TouchableOpacity style={styles.secondaryButton} onPress={abrirModalGasto}>
+            <Text style={styles.secondaryText}>Agregar gasto</Text>
+          </TouchableOpacity>
+        )}
+        {pendientes && !periodoBloqueado && (
           <TouchableOpacity disabled={saving} style={styles.primaryButton} onPress={enviar}>
             <Text style={styles.primaryText}>{saving ? 'Enviando...' : 'Enviar informe'}</Text>
           </TouchableOpacity>
         )}
+        {!periodoBloqueado && gastos.length > 0 && (
+          <TouchableOpacity style={[styles.primaryButton, { backgroundColor: '#0369a1' }]} onPress={abrirCierreMes}>
+            <Text style={styles.primaryText}>Cerrar mes</Text>
+          </TouchableOpacity>
+        )}
+        {periodoBloqueado && (
+          <View style={styles.closedBadge}>
+            <Text style={styles.closedBadgeText}>Período cerrado — solo lectura</Text>
+          </View>
+        )}
       </View>
+
+      <Modal animationType="slide" transparent visible={cierreVisible}>
+        <View style={styles.overlay}>
+          <ScrollView style={styles.modal}>
+            <Text style={styles.modalTitle}>Cerrar período {periodo}</Text>
+            <Text style={styles.detail}>Resumen tipo factura por día:</Text>
+            {resumenDiario.map((dia) => (
+              <View key={dia.fecha} style={styles.row}>
+                <View style={styles.rowBody}>
+                  <Text style={styles.route}>{dia.fecha}</Text>
+                  <Text style={styles.detail}>{dia.registros} registro(s)</Text>
+                </View>
+                <Text style={styles.amount}>${Number(dia.total || 0).toFixed(2)}</Text>
+              </View>
+            ))}
+            <View style={[styles.summary, { marginTop: 8 }]}>
+              <Text style={styles.summaryValue}>${Number(totales.total || 0).toFixed(2)}</Text>
+              <Text style={styles.summaryLabel}>Total período</Text>
+            </View>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setCierreVisible(false)}>
+                <Text style={styles.cancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity disabled={saving} style={styles.saveButton} onPress={confirmarCierre}>
+                <Text style={styles.saveText}>{saving ? 'Cerrando...' : 'Confirmar cierre'}</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
 
       <Modal animationType="slide" transparent visible={modalVisible}>
         <View style={styles.overlay}>
@@ -342,6 +416,8 @@ const styles = StyleSheet.create({
   saveText: { color: '#fff', fontWeight: '900' },
   secondaryButton: { alignItems: 'center', backgroundColor: '#fff', borderColor: '#0f766e', borderRadius: 8, borderWidth: 1, minHeight: 46, justifyContent: 'center' },
   secondaryText: { color: '#0f766e', fontWeight: '900' },
+  closedBadge: { alignItems: 'center', backgroundColor: '#dbeafe', borderRadius: 8, padding: 14 },
+  closedBadgeText: { color: '#1e40af', fontSize: 13, fontWeight: '800' },
   sentRow: { opacity: 0.62 },
   subtitle: { color: '#64748b', fontSize: 12, marginBottom: 12 },
   suggestionBox: { backgroundColor: '#ecfdf5', borderColor: '#99f6e4', borderRadius: 8, borderWidth: 1, marginBottom: 12, padding: 12 },

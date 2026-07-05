@@ -9,16 +9,17 @@ const {
   ensurePayrollAccountingMappingForNoveltyConfig,
 } = require('./payrollAccountingService');
 const { VALID_CALCULATION_MODES, normalizeNoveltyCode } = require('./payrollNoveltyService');
+const { yearInEcuador } = require('../utils/dateEcuador');
 
 const ONBOARDING_STEPS = [
   { code: 'empresa', label: 'Datos de empresa' },
-  { code: 'legal', label: 'Parametros legales' },
+  { code: 'legal', label: 'Parámetros legales' },
   { code: 'organizacion', label: 'Estructura organizativa' },
   { code: 'cargos', label: 'Cargos y rangos salariales' },
   { code: 'jornadas', label: 'Jornadas y calendarios' },
-  { code: 'zonas', label: 'Zonas de marcacion' },
+  { code: 'zonas', label: 'Zonas de marcación' },
   { code: 'novedades', label: 'Tipos de novedades' },
-  { code: 'contabilidad', label: 'Esquema contable de nomina' },
+  { code: 'contabilidad', label: 'Esquema contable de nómina' },
   { code: 'bancos', label: 'Banco y archivo plano' },
   { code: 'usuarios', label: 'Usuarios y roles' },
 ];
@@ -164,7 +165,7 @@ function normalizeNoveltyTypePayload(payload = {}, user) {
   const code = normalizeNoveltyCode(payload.code);
   const name = normalizeOptionalText(payload.name);
   if (!code || !name) {
-    throw new AppError('El tipo de novedad requiere codigo y nombre.', {
+    throw new AppError('El tipo de novedad requiere código y nombre.', {
       code: 'NOVELTY_TYPE_INVALID',
       statusCode: 400,
       userId: user?.id,
@@ -173,7 +174,7 @@ function normalizeNoveltyTypePayload(payload = {}, user) {
 
   const payrollImpact = normalizeOptionalText(payload.payroll_impact, { lowercase: true }) || 'informativo';
   if (!['ingreso', 'descuento', 'informativo'].includes(payrollImpact)) {
-    throw new AppError('El impacto de nomina de la novedad no es valido.', {
+    throw new AppError('El impacto de nómina de la novedad no es válido.', {
       code: 'NOVELTY_PAYROLL_IMPACT_INVALID',
       statusCode: 400,
       userId: user?.id,
@@ -184,7 +185,7 @@ function normalizeNoveltyTypePayload(payload = {}, user) {
   const calculationMode = String(payload.calculation_mode || applicability.calculationMode || '').trim()
     || (payrollImpact === 'informativo' ? 'informational' : 'amount');
   if (!VALID_CALCULATION_MODES.has(calculationMode)) {
-    throw new AppError('La forma de calculo de la novedad no es valida.', {
+    throw new AppError('La forma de cálculo de la novedad no es válida.', {
       code: 'NOVELTY_CALCULATION_MODE_INVALID',
       statusCode: 400,
       userId: user?.id,
@@ -209,7 +210,7 @@ function normalizeNoveltyTypePayload(payload = {}, user) {
       calculationMode,
     },
     status: normalizeOptionalText(payload.status, { lowercase: true }) || 'activo',
-    valid_from: normalizeOptionalDate(payload.valid_from) || `${new Date().getFullYear()}-01-01`,
+    valid_from: normalizeOptionalDate(payload.valid_from) || `${yearInEcuador()}-01-01`,
     valid_to: normalizeOptionalDate(payload.valid_to),
   };
 }
@@ -232,7 +233,7 @@ function normalizePayrollAccountingMappingPayload(payload = {}, user) {
   const creditAccountName = normalizeOptionalText(payload.credit_account_name);
 
   if (!resolvedConcept) {
-    throw new AppError('Seleccione un concepto de nomina valido para configurar su esquema contable.', {
+    throw new AppError('Seleccione un concepto de nómina válido para configurar su esquema contable.', {
       code: 'PAYROLL_ACCOUNTING_CONCEPT_INVALID',
       statusCode: 400,
       userId: user?.id,
@@ -275,7 +276,7 @@ function normalizePayrollAccountingMappingPayload(payload = {}, user) {
     fixed_cost_center_code: normalizeOptionalText(payload.fixed_cost_center_code) || '',
     requires_employee_breakdown: Boolean(payload.requires_employee_breakdown ?? true),
     status,
-    valid_from: normalizeOptionalDate(payload.valid_from) || `${new Date().getFullYear()}-01-01`,
+    valid_from: normalizeOptionalDate(payload.valid_from) || `${yearInEcuador()}-01-01`,
     valid_to: normalizeOptionalDate(payload.valid_to),
     metadata: payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : {},
   };
@@ -568,7 +569,7 @@ function ensureWriteAllowed(user) {
 
 async function ensureOrganizationUnitWorkZone(values, tenantId, user) {
   if (!values.work_zone_id) {
-    throw new AppError('Cada unidad organizativa debe tener una zona de marcacion asociada.', {
+    throw new AppError('Cada unidad organizativa debe tener una zona de marcación asociada.', {
       code: 'ORGANIZATION_UNIT_WORK_ZONE_REQUIRED',
       statusCode: 400,
       userId: user.id,
@@ -585,7 +586,7 @@ async function ensureOrganizationUnitWorkZone(values, tenantId, user) {
   `, [values.work_zone_id, tenantId]);
 
   if (result.rows.length === 0) {
-    throw new AppError('La zona de marcacion seleccionada no existe o no pertenece a esta empresa.', {
+    throw new AppError('La zona de marcación seleccionada no existe o no pertenece a esta empresa.', {
       code: 'ORGANIZATION_UNIT_WORK_ZONE_INVALID',
       statusCode: 400,
       userId: user.id,
@@ -602,7 +603,7 @@ function legalParameterPayloadsFromBase(year) {
       parameter_key: 'sbu',
       value: { amount: Number(payroll.unifiedBaseSalary) },
       unit: 'USD',
-      notes: 'Salario basico unificado cargado como parametro obligatorio revisable.',
+      notes: 'Salario básico unificado cargado como parámetro obligatorio revisable.',
     },
     {
       parameter_key: 'iess_aporte_personal',
@@ -626,19 +627,19 @@ function legalParameterPayloadsFromBase(year) {
       parameter_key: 'jornada_horas_mensuales',
       value: { amount: Number(payroll.monthlyWorkHours) },
       unit: 'horas',
-      notes: 'Horas mensuales de referencia para calculo de valor hora.',
+      notes: 'Horas mensuales de referencia para cálculo de valor hora.',
     },
     {
       parameter_key: 'jornada_maxima_semanal',
       value: { amount: Number(payroll.weeklyMaxHours) },
       unit: 'horas',
-      notes: 'Jornada maxima semanal cargada como parametro obligatorio revisable.',
+      notes: 'Jornada máxima semanal cargada como parámetro obligatorio revisable.',
     },
     {
       parameter_key: 'provision_vacaciones',
       value: { amount: Number(payroll.vacationProvisionRate) },
       unit: 'porcentaje_decimal',
-      notes: 'Provision de vacaciones cargada como parametro obligatorio revisable.',
+      notes: 'Provisión de vacaciones cargada como parámetro obligatorio revisable.',
     },
     {
       parameter_key: 'decimo_tercero',
@@ -648,7 +649,7 @@ function legalParameterPayloadsFromBase(year) {
         calculationBase: 'remuneracion_anual',
       },
       unit: 'regla',
-      notes: 'Decimo tercer sueldo: doceava parte de remuneraciones del periodo anual; pago hasta diciembre segun Codigo del Trabajo.',
+      notes: 'Décimo tercer sueldo: doceava parte de remuneraciones del periodo anual; pago hasta diciembre según Código del Trabajo.',
     },
     {
       parameter_key: 'decimo_cuarto_costa_galapagos',
@@ -660,7 +661,7 @@ function legalParameterPayloadsFromBase(year) {
         calculationBase: 'sbu_vigente',
       },
       unit: 'regla',
-      notes: 'Decimo cuarto sueldo Costa/Galapagos: equivalente a un SBU anual, pago regional en marzo; validar calendario vigente.',
+      notes: 'Décimo cuarto sueldo Costa/Galápagos: equivalente a un SBU anual, pago regional en marzo; validar calendario vigente.',
     },
     {
       parameter_key: 'decimo_cuarto_sierra_amazonia',
@@ -672,7 +673,7 @@ function legalParameterPayloadsFromBase(year) {
         calculationBase: 'sbu_vigente',
       },
       unit: 'regla',
-      notes: 'Decimo cuarto sueldo Sierra/Amazonia: equivalente a un SBU anual, pago regional en agosto; validar calendario vigente.',
+      notes: 'Décimo cuarto sueldo Sierra/Amazonía: equivalente a un SBU anual, pago regional en agosto; validar calendario vigente.',
     },
     {
       parameter_key: 'fondo_reserva',
@@ -683,13 +684,13 @@ function legalParameterPayloadsFromBase(year) {
         calculationBase: 'remuneracion_aportada',
       },
       unit: 'regla',
-      notes: 'Fondo de reserva: provision desde el primer anio cumplido; puede pagarse al trabajador o depositarse en IESS segun eleccion.',
+      notes: 'Fondo de reserva: provisión desde el primer año cumplido; puede pagarse al trabajador o depositarse en IESS según elección.',
     },
     {
       parameter_key: 'vacaciones_dias_anuales',
       value: { amount: Number(payroll.vacationDaysAfterFirstYear) },
-      unit: 'dias',
-      notes: 'Dias de vacaciones anuales desde el primer anio completo.',
+      unit: 'días',
+      notes: 'Días de vacaciones anuales desde el primer año completo.',
     },
     {
       parameter_key: 'income_tax_table',
@@ -706,7 +707,7 @@ function legalParameterPayloadsFromBase(year) {
         })),
       },
       unit: 'tabla_anual',
-      notes: 'Tabla anual de impuesto a la renta cargada como parametro obligatorio revisable.',
+      notes: 'Tabla anual de impuesto a la renta cargada como parámetro obligatorio revisable.',
     },
   ];
 }
@@ -716,7 +717,7 @@ async function loadMandatoryLegalParameters(year, user, context = {}) {
   const periodYear = Number(year);
 
   if (!Number.isInteger(periodYear) || periodYear < 2000 || periodYear > 2100) {
-    throw new AppError('El anio fiscal para cargar parametros legales no es valido.', {
+    throw new AppError('El año fiscal para cargar parámetros legales no es válido.', {
       code: 'LEGAL_PARAMETERS_YEAR_INVALID',
       statusCode: 400,
       userId: user.id,
@@ -734,12 +735,12 @@ async function loadMandatoryLegalParameters(year, user, context = {}) {
       payload.parameter_key,
       JSON.stringify(payload.value),
       payload.unit,
-      payload.sourceName || `Parametros base SKNOMINA ${periodYear}`,
+      payload.sourceName || `Parámetros base SKNOMINA ${periodYear}`,
       payload.sourceUrl || 'https://www.sri.gob.ec/formularios-e-instructivos1',
       payload.validationStatus || 'pendiente_validacion_oficial',
       payload.validationStatus === 'validado_oficial'
         ? payload.notes
-        : `${payload.notes} Validar contra fuente oficial vigente antes de produccion.`,
+        : `${payload.notes} Validar contra fuente oficial vigente antes de producción.`,
       user.id,
     ];
     const existing = await db.query(`
@@ -794,7 +795,7 @@ async function loadMandatoryLegalParameters(year, user, context = {}) {
 
   if (tenantId) {
     await completeOnboardingStep('legal', {
-      notes: `Parametros legales obligatorios ${periodYear} cargados para revision.`,
+      notes: `Parámetros legales obligatorios ${periodYear} cargados para revisión.`,
       evidence: { periodYear, count: rows.length },
     }, user, context);
   }
@@ -808,7 +809,7 @@ async function syncLegalParametersFromGlobal(year, user, context = {}, options =
   const periodYear = Number(year);
 
   if (!Number.isInteger(periodYear) || periodYear < 2000 || periodYear > 2100) {
-    throw new AppError('El anio fiscal para sincronizar parametros legales no es valido.', {
+    throw new AppError('El año fiscal para sincronizar parámetros legales no es válido.', {
       code: 'LEGAL_PARAMETERS_YEAR_INVALID',
       statusCode: 400,
       userId: user.id,
@@ -833,7 +834,7 @@ async function syncLegalParametersFromGlobal(year, user, context = {}, options =
   }
 
   if (targetTenantIds.length === 0) {
-    throw new AppError('No existen empresas activas para sincronizar parametros legales.', {
+    throw new AppError('No existen empresas activas para sincronizar parámetros legales.', {
       code: 'LEGAL_PARAMETERS_SYNC_NO_TENANTS',
       statusCode: 404,
       userId: user.id,
@@ -852,7 +853,7 @@ async function syncLegalParametersFromGlobal(year, user, context = {}, options =
   `, [periodYear]);
 
   if (globalResult.rows.length === 0) {
-    throw new AppError('No hay parametros legales globales publicados para el anio indicado.', {
+    throw new AppError('No hay parámetros legales globales publicados para el año indicado.', {
       code: 'LEGAL_PARAMETERS_GLOBAL_SOURCE_EMPTY',
       statusCode: 404,
       userId: user.id,
@@ -902,7 +903,7 @@ async function syncLegalParametersFromGlobal(year, user, context = {}, options =
           source_url = EXCLUDED.source_url,
           source_date = EXCLUDED.source_date,
           valid_from = EXCLUDED.valid_from,
-          notes = CONCAT(EXCLUDED.notes, ' Sincronizado desde parametros globales por SUPERADMIN.'),
+          notes = CONCAT(EXCLUDED.notes, ' Sincronizado desde parámetros globales por SUPERADMIN.'),
           approved_by = EXCLUDED.approved_by,
           approved_at = EXCLUDED.approved_at,
           updated_at = now()
@@ -1633,9 +1634,9 @@ async function getConfigurationSummary(user) {
       { code: 'cargos', label: 'Cargos y rangos salariales configurados', passed: resources.jobPositions.length > 0 },
       { code: 'jornada_zona', label: 'Jornada y zona configuradas', passed: resources.workShifts.length > 0 && resources.workZones.length > 0 },
       { code: 'novedades', label: 'Tipos de novedades configurados', passed: resources.noveltyTypes.length > 0 },
-      { code: 'contabilidad_nomina', label: 'Esquema contable de nomina configurado', passed: resources.payrollAccountingMappings.length > 0 },
+      { code: 'contabilidad_nomina', label: 'Esquema contable de nómina configurado', passed: resources.payrollAccountingMappings.length > 0 },
       { code: 'bancos', label: 'Perfil bancario disponible', passed: resources.bankProfiles.length > 0 },
-      { code: 'homologacion_bancaria', label: 'Homologacion bancaria configurada', passed: resources.bankFieldMappings.length > 0 },
+      { code: 'homologacion_bancaria', label: 'Homologación bancaria configurada', passed: resources.bankFieldMappings.length > 0 },
     ],
   };
 }

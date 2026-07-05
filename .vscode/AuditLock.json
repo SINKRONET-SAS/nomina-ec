@@ -1,106 +1,105 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-MONETIZACION-RUTAS-APP-SKNOMINA-2026",
-  "planCode": "MRA26",
-  "status": "MRA26-00_03_runtime_completed_qa_green",
-  "phaseCompleted": "MRA26-03",
-  "currentPhase": "completed",
-  "updatedAt": "2026-07-03T19:26:55-05:00",
-  "summary": "MRA26 convierte App movil y Rutas de campo en canales comerciales de Gestion de planes. Los planes ahora persisten app_movil y rutas_campo, el backend expone mobileApp y fieldRoutes, la PWA permite configurarlos y los endpoints de rutas, mobile y movilizacion bloquean acceso cuando el tenant no tiene el canal contratado.",
+  "plan": "HAIKY-MOBILE-GESTION-RUTAS-ZONAS-2026",
+  "planCode": "MGR26",
+  "status": "completed-pass",
+  "phaseCompleted": "MGR26-03",
+  "currentPhase": "MGR26-03",
+  "updatedAt": "2026-07-04T23:40:00-05:00",
   "rulesSource": "RULES.md",
-  "approvalSource": "Solicitud del usuario: generar plan Haiky, prompts por fases y ejecutar todos los prompts para monetizar rutas y app desde Gestion de planes.",
-  "previousAuditLockHash": "BCB45BFC31450EF2E01E8B4A1C7A8F88F7E1CBE19FF1C9AF3ADE1E2359319639",
+  "precedent": {
+    "plan": "HAIKY-AUDITORIA-INTEGRAL-SKNOMINA-2026",
+    "planCode": "AISK26",
+    "status": "completed-pass",
+    "previousPrecedent": {
+      "plan": "HAIKY-MONETIZACION-RUTAS-APP-SKNOMINA-2026",
+      "planCode": "MRA26",
+      "status": "completed"
+    }
+  },
+  "summary": "MGR26 cerrado: app movil expone gestion de zonas de marcacion, sitios y rutas de campo por perfil; owner/admin_rrhh crean zonas y sitios, supervisor solo ve asignacion/seguimiento; endpoints protegidos por mobileApp y fieldRoutes.",
   "filesModified": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/MRA26-00-baseline-documental.md",
-    ".github/prompts/MRA26-01-modelo-capacidades.md",
-    ".github/prompts/MRA26-02-gates-backend.md",
-    ".github/prompts/MRA26-03-qa-release.md",
+    ".github/prompts/MGR26-00-baseline-gobierno.md",
+    ".github/prompts/MGR26-01-backend-mobile-admin.md",
+    ".github/prompts/MGR26-02-app-movil-perfiles.md",
+    ".github/prompts/MGR26-03-qa-cierre.md",
     ".vscode/AuditLock.json",
     "app-movil/src/App.js",
-    "backend/prisma/migrations/20260703090000_mra26_plan_routes_mobile_channels/migration.sql",
-    "backend/prisma/schema.prisma",
-    "backend/scripts/seed-demo-commercial.js",
+    "app-movil/src/screens/OperacionMovilScreen.js",
+    "app-movil/src/services/api.js",
     "backend/src/app.js",
     "backend/src/app.routes.test.js",
-    "backend/src/controllers/paymentController.js",
-    "backend/src/controllers/paymentController.test.js",
-    "backend/src/middleware/planCapability.js",
-    "backend/src/services/planCapabilityService.js",
-    "backend/src/services/planCapabilityService.test.js",
-    "docs/PLAN_HAIKY_MONETIZACION_RUTAS_APP_SKNOMINA_2026.md",
-    "docs/monetizacion-rutas-app-sknomina-2026/REPORTE_MRA26_00_03_CIERRE_RUNTIME.md",
-    "frontend-web/src/config/publicPlanPresentation.js",
-    "frontend-web/src/pages/Asistencia/RutasCampo.jsx",
-    "frontend-web/src/pages/Operacion/OperacionIntegral.jsx",
-    "frontend-web/src/pages/PlanesGestion.jsx",
+    "backend/src/controllers/mobileController.js",
+    "backend/src/controllers/mobileController.test.js",
+    "backend/src/services/routeVisitService.js",
+    "docs2/PLAN_HAIKY_MOBILE_GESTION_RUTAS_ZONAS_2026.md",
+    "docs2/mobile-gestion-rutas-zonas-2026/REPORTE_MGR26_00_03_EJECUCION.md",
     "scripts/verify-system-contracts.mjs"
   ],
-  "filesTouchedForValidationOnly": [
-    "frontend-web/src/pages/Configuracion/parametrizacion/parametrizacionModel.jsx"
-  ],
-  "filesModifiedSummary": [
-    "Plan, reporte y prompts MRA26 creados en docs y .github/prompts.",
-    "Prisma y migracion agregan app_movil y rutas_campo en planes_comerciales.",
-    "Gestion de planes backend normaliza, inserta, versiona y expone appMovil y rutasCampo.",
-    "planCapabilityService agrega mobileApp y fieldRoutes con error 402 PLAN_CAPABILITY_BLOCKED.",
-    "Middleware requirePlanCapability bloquea rutas PWA, app movil, rutas mobile y movilizacion por plan.",
-    "Gestion de planes, catalogo publico, centro operativo y pantalla de rutas exponen el canal comercial.",
-    "App movil muestra bloqueo por plan sin convertirlo en acceso administrativo.",
-    "Se removio BOM de parametrizacionModel.jsx detectado durante el gate UTF-8, sin cambio funcional MRA26."
+  "fases": [
+    {
+      "phase": "MGR26-00",
+      "status": "completed",
+      "detail": "Plan, prompts, reporte y contexto registrados en docs2/.github."
+    },
+    {
+      "phase": "MGR26-01",
+      "status": "completed",
+      "detail": "Backend movil administrativo agregado con RBAC y gates de plan."
+    },
+    {
+      "phase": "MGR26-02",
+      "status": "completed",
+      "detail": "App movil agrega consola de operacion con secciones ocultas por allowedActions."
+    },
+    {
+      "phase": "MGR26-03",
+      "status": "completed-pass",
+      "detail": "QA, contratos, reporte y AuditLock cerrados."
+    }
   ],
   "validationChecks": [
     {
+      "gate": "node --check backend/src/controllers/mobileController.js",
+      "result": "PASS"
+    },
+    {
+      "gate": "node --check backend/src/services/routeVisitService.js",
+      "result": "PASS"
+    },
+    {
+      "gate": "npm.cmd --workspace=backend test -- --runTestsByPath src/controllers/mobileController.test.js src/app.routes.test.js --runInBand",
+      "result": "PASS (2 suites, 24 tests)"
+    },
+    {
       "gate": "npm.cmd run contracts",
-      "status": "PASS",
-      "detail": "Contratos MRA26 agregados y verificados."
-    },
-    {
-      "gate": "npm.cmd run prisma:validate",
-      "status": "PASS",
-      "detail": "Schema Prisma valido con appMovil y rutasCampo."
-    },
-    {
-      "gate": "npm.cmd --workspace=backend test -- planCapabilityService.test.js app.routes.test.js paymentController.test.js --runInBand",
-      "status": "PASS",
-      "detail": "3 suites, 13 tests."
-    },
-    {
-      "gate": "npm.cmd --workspace=frontend-web run build",
-      "status": "PASS",
-      "detail": "Vite genero artefactos y reporto built in 10.22s; luego el proceso no libero prompt y se cerro por PID."
+      "result": "PASS"
     },
     {
       "gate": "npm.cmd run check:mobile",
-      "status": "PASS",
-      "detail": "Configuracion, identificadores, URLs y assets de tienda verificados."
+      "result": "PASS"
+    },
+    {
+      "gate": "JSX parser App.js OperacionMovilScreen.js",
+      "result": "PASS"
     },
     {
       "gate": "git diff --check",
-      "status": "PASS",
-      "detail": "Sin errores de whitespace; solo avisos LF/CRLF esperados en Windows."
+      "result": "PASS"
     },
     {
-      "gate": "UTF8-NO-BOM",
-      "status": "PASS",
-      "detail": "28 archivos modificados o nuevos verificados sin BOM."
+      "gate": "UTF-8 sin BOM archivos modificados",
+      "result": "PASS"
     }
   ],
-  "fases": [
-    { "phase": "MRA26-00", "status": "completed_documental" },
-    { "phase": "MRA26-01", "status": "completed_local" },
-    { "phase": "MRA26-02", "status": "completed_local" },
-    { "phase": "MRA26-03", "status": "completed_local" }
+  "riskControls": [
+    "No se creo modelo paralelo de zonas o rutas.",
+    "La visibilidad UI no reemplaza RBAC ni gates de plan.",
+    "Las secciones no permitidas por perfil no se renderizan.",
+    "backend/.env.example se detecta como cambio ajeno y no pertenece al cierre MGR26."
   ],
-  "closedCommercialPromises": [
-    "Rutas de campo queda monetizado por fieldRoutes/rutas_campo.",
-    "App movil queda monetizada por mobileApp/app_movil.",
-    "Los planes que no conceden el canal reciben bloqueo visible y trazable antes de operar la funcionalidad."
-  ],
-  "residualRisk": [
-    "La migracion debe aplicarse en cada ambiente con prisma migrate deploy antes de depender del gate en produccion.",
-    "La definicion comercial de que planes ofrecen rutas/app debe revisarse si cambian los paquetes publicados."
-  ],
-  "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "A7D9F4FB21E4084EEF982C90A90345544AFDF493E8DFF5A4F2406EEF6F9AF4A5"
+  "previousAuditLockHash": "ADEBDDC963BF26C1D97DF1B3C60CB8098E9986602561DBFDDB3F2F9C06889C92",
+  "signatureAlgorithm": "SHA256(previousAuditLockContent + updatedAt)",
+  "signature": "115309F039C06A674B395C4E00589AF0948B6376C007160FCFE9E0ABA481D887"
 }

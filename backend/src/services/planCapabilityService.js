@@ -13,7 +13,7 @@ const CAPABILITY_LABELS = {
   bankFiles: 'archivos bancarios',
   advancedReports: 'reportes avanzados',
   apiAccess: 'API externa',
-  mobileApp: 'app movil',
+  mobileApp: 'app móvil',
   fieldRoutes: 'rutas de campo',
 };
 

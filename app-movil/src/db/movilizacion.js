@@ -79,3 +79,48 @@ export async function marcarGastosEnviados(periodo, informeId) {
     [informeId, periodo]
   );
 }
+
+// --- Cierre mensual movilización ---
+
+export async function initPeriodoCierreTable() {
+  await database().execAsync(`
+    CREATE TABLE IF NOT EXISTS movilizacion_periodo_cierre (
+      periodo TEXT PRIMARY KEY,
+      estado TEXT NOT NULL DEFAULT 'abierto',
+      fecha_envio TEXT
+    );
+  `);
+}
+
+export async function getPeriodoCierre(periodo) {
+  return database().getFirstAsync(
+    'SELECT * FROM movilizacion_periodo_cierre WHERE periodo = ?',
+    [periodo]
+  );
+}
+
+export async function cerrarPeriodo(periodo) {
+  const now = new Date().toISOString();
+  await database().runAsync(
+    `INSERT INTO movilizacion_periodo_cierre (periodo, estado, fecha_envio)
+     VALUES (?, 'enviado', ?)
+     ON CONFLICT(periodo) DO UPDATE SET estado = 'enviado', fecha_envio = ?`,
+    [periodo, now, now]
+  );
+}
+
+export async function isPeriodoBloqueado(periodo) {
+  const row = await getPeriodoCierre(periodo);
+  return row?.estado === 'enviado' || row?.estado === 'bloqueado';
+}
+
+export async function getResumenPorDia(periodo) {
+  return database().getAllAsync(
+    `SELECT fecha, COUNT(*) AS registros, SUM(valor_usd) AS total
+     FROM gasto_movilizacion
+     WHERE periodo = ? AND estado != 'rechazado'
+     GROUP BY fecha
+     ORDER BY fecha ASC`,
+    [periodo]
+  );
+}

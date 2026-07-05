@@ -184,7 +184,7 @@ async function precheckRDEP(tenantId, anio) {
     },
     {
       code: 'closed_payroll_year',
-      label: 'Nomina cerrada del ejercicio fiscal',
+      label: 'Nómina cerrada del ejercicio fiscal',
       passed: nominas.length > 0,
       detail: `${nominas.length} roles cerrados de ${employeeIds.size} trabajadores en ${periods.size} meses`,
     },
@@ -237,7 +237,7 @@ function validateRdepXmlAgainstXsdContract(xmlString) {
   try {
     xmlDoc = libxml.parseXml(xmlString);
   } catch (error) {
-    throw new AppError('El XML RDEP no pudo parsearse para validacion XSD oficial del SRI.', {
+    throw new AppError('El XML RDEP no pudo parsearse para validación XSD oficial del SRI.', {
       code: 'RDEP_XSD_VALIDATION_FAILED',
       statusCode: 422,
       details: { failures: [error.message], xsdSha256: xsd.sha256, validationMode: XSD_VALIDATION_MODE },
@@ -248,7 +248,7 @@ function validateRdepXmlAgainstXsdContract(xmlString) {
 
   if (!valid) {
     const failures = xmlDoc.validationErrors.map((err) => err.message.trim());
-    throw new AppError('El XML RDEP no supera la validacion contra el esquema XSD oficial del SRI.', {
+    throw new AppError('El XML RDEP no supera la validación contra el esquema XSD oficial del SRI.', {
       code: 'RDEP_XSD_VALIDATION_FAILED',
       statusCode: 422,
       details: { failures, xsdSha256: xsd.sha256, validationMode: XSD_VALIDATION_MODE },

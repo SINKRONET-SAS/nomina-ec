@@ -1,5 +1,5 @@
 // ============================================================
-// SKNOMINA - Controlador de Nomina
+// SKNOMINA - Controlador de Nómina
 // ============================================================
 const db = require('../config/database');
 const { calcularNominaMensual } = require('../services/calculoNominaService');
@@ -24,7 +24,7 @@ async function calcularMes(req, res) {
     const { anio, mes } = req.body;
 
     if (!anio || !mes) {
-      return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
+      return res.status(400).json({ error: 'Año y mes requeridos', correlationId: req.correlationId });
     }
 
     const anioNumber = Number(anio);
@@ -71,7 +71,7 @@ async function calcularMes(req, res) {
       return res.status(422).json({
         success: false,
         error: 'NOMINA_CALCULATION_FAILED',
-        message: 'La nomina tiene errores por empleado. Corrige los bloqueos y recalcula antes de cerrar.',
+        message: 'La nómina tiene errores por empleado. Corrige los bloqueos y recalcula antes de cerrar.',
         resultado: {
           ...resultado,
           exitosos: resultado.resultados.length - erroresDetalle.length,
@@ -105,7 +105,7 @@ async function calcularMes(req, res) {
   } catch (err) {
     if (tx) {
       await db.rollback(tx).catch((rollbackErr) => {
-        console.error('[NOMINA] Error revirtiendo transaccion de calculo', {
+        console.error('[NOMINA] Error revirtiendo transacción de cálculo', {
           code: rollbackErr.code || 'NOMINA_CALCULO_ROLLBACK_ERROR',
           statusCode: 500,
           correlationId: req.correlationId,
@@ -207,7 +207,7 @@ async function listarPorPeriodo(req, res) {
     if (!Number.isInteger(anioNumber) || !Number.isInteger(mesNumber) || mesNumber < 1 || mesNumber > 12) {
       return res.status(400).json({
         error: 'NOMINA_PERIODO_INVALIDO',
-        message: 'El periodo de nomina debe incluir anio numerico y mes entre 1 y 12.',
+        message: 'El periodo de nómina debe incluir año numérico y mes entre 1 y 12.',
         correlationId: req.correlationId,
       });
     }
@@ -248,7 +248,7 @@ async function obtenerPorEmpleado(req, res) {
     `, [tenantId, empleadoId, anio, mes]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Nomina no encontrada', correlationId: req.correlationId });
+      return res.status(404).json({ error: 'Nómina no encontrada', correlationId: req.correlationId });
     }
 
     res.json({ success: true, nomina: result.rows[0], correlationId: req.correlationId });
@@ -278,7 +278,7 @@ async function descargarRolPDF(req, res) {
     if (result.rows.length === 0) {
       return res.status(404).json({
         error: 'NOMINA_NO_ENCONTRADA',
-        message: 'Nomina no encontrada.',
+        message: 'Nómina no encontrada.',
         correlationId: req.correlationId,
       });
     }
@@ -366,7 +366,7 @@ async function cerrarMes(req, res) {
     const { anio, mes } = req.body;
 
     if (!anio || !mes) {
-      return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
+      return res.status(400).json({ error: 'Año y mes requeridos', correlationId: req.correlationId });
     }
 
     const anioNumber = Number(anio);
@@ -391,7 +391,7 @@ async function cerrarMes(req, res) {
       tx = null;
       return res.status(409).json({
         error: 'NOMINA_PERIODO_NO_CALCULADO',
-        message: 'Calcula la nomina antes de cerrar el periodo.',
+        message: 'Calcula la nómina antes de cerrar el periodo.',
         correlationId: req.correlationId,
       });
     }
@@ -536,13 +536,26 @@ async function cerrarMes(req, res) {
       }
     }
 
+    const enviados = communicationResults.filter((r) => r.status === 'sent').length;
+    const omitidos = communicationResults.filter((r) => r.status === 'skipped').length;
+    const errores = communicationResults.filter((r) => r.status === 'failed').length;
+    const skippedEmails = communicationResults
+      .filter((r) => r.status === 'skipped')
+      .map((r) => r.employeeId);
+
     res.json({
       success: true,
-      mensaje: `${result.rows.length} nominas cerradas`,
+      mensaje: `${result.rows.length} nóminas cerradas`,
       total: result.rows.length,
       beneficiosAplicados,
       beneficiosOmitidos,
-      notificacionesRolPago: communicationResults,
+      notificacionesRolPago: {
+        enviados,
+        omitidos,
+        errores,
+        detalle: communicationResults,
+        empleadosSinNotificacion: skippedEmails,
+      },
       readiness,
       correlationId: req.correlationId,
     });
@@ -580,7 +593,7 @@ async function reabrirMes(req, res) {
     const { anio, mes, motivo } = req.body;
 
     if (!anio || !mes) {
-      return res.status(400).json({ error: 'Anio y mes requeridos', correlationId: req.correlationId });
+      return res.status(400).json({ error: 'Año y mes requeridos', correlationId: req.correlationId });
     }
 
     if (!motivo || String(motivo).trim().length < 10) {
@@ -600,7 +613,7 @@ async function reabrirMes(req, res) {
     if (period.rows[0]?.status !== 'closed') {
       return res.status(409).json({
         error: 'NOMINA_REAPERTURA_ESTADO_INVALIDO',
-        message: 'Solo una nomina cerrada puede entrar a reapertura controlada.',
+        message: 'Solo una nómina cerrada puede entrar a reapertura controlada.',
         correlationId: req.correlationId,
       });
     }
@@ -640,7 +653,7 @@ async function reabrirMes(req, res) {
 
     res.json({
       success: true,
-      mensaje: `${result.rows.length} nominas en reapertura controlada`,
+      mensaje: `${result.rows.length} nóminas en reapertura controlada`,
       total: result.rows.length,
       correlationId: req.correlationId,
     });

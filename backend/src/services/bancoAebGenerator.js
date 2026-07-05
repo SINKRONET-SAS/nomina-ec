@@ -51,7 +51,7 @@ async function generarArchivoBanco(tenantId, anio, mes, banco, context = {}) {
   `, [tenantId, anio, mes]);
 
   if (nominasResult.rows.length === 0) {
-    throw new AppError('No hay nominas cerradas o pagadas con cuenta bancaria para el periodo', {
+    throw new AppError('No hay nóminas cerradas o pagadas con cuenta bancaria para el periodo', {
       code: 'BANCO_SIN_NOMINAS_CERRADAS_CON_CUENTA',
       statusCode: 422,
       userId: context.userId || null,
@@ -205,7 +205,7 @@ async function precheckArchivoBanco(tenantId, anio, mes, banco) {
 
   checks.push({
     code: 'nominas_cerradas',
-    label: 'Nominas cerradas o pagadas',
+    label: 'Nóminas cerradas o pagadas',
     passed: totalCerradas > 0,
     detail: `${totalCerradas} roles cerrados o pagados`,
   });
@@ -246,12 +246,12 @@ async function generateReviewWorkbook(rows, tenantId, anio, mes) {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Pagos');
   sheet.columns = [
-    { header: 'Cedula', key: 'cedula', width: 15 },
+    { header: 'Cédula', key: 'cedula', width: 15 },
     { header: 'Nombre', key: 'nombre', width: 40 },
     { header: 'Banco', key: 'banco', width: 15 },
     { header: 'Cuenta', key: 'cuenta', width: 15 },
     { header: 'Monto', key: 'monto', width: 12 },
-    { header: 'Estado nomina', key: 'estado', width: 16 },
+    { header: 'Estado nómina', key: 'estado', width: 16 },
   ];
 
   rows.forEach((row) => {

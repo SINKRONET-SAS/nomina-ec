@@ -625,7 +625,7 @@ async function crear(req, res) {
     
     // Validaciones
     if (!validarCedula(cedula)) {
-      return res.status(400).json({ error: 'Cedula invalida' });
+      return res.status(400).json({ error: 'Cédula inválida' });
     }
     
     if (!nombres || !apellidos || !fecha_nacimiento || !sueldo_bruto_mensual || !fecha_ingreso) {
@@ -664,7 +664,7 @@ async function crear(req, res) {
     const normalizedBankCode = await resolveEmployeeBankCode(tenantId, forma_pago, banco);
     const normalizedWorkShiftCode = await resolveConfiguredCode(tenantId, 'work_shifts', jornada_codigo, 'La jornada', 'EMPLEADO_JORNADA_INVALIDA');
     const normalizedOrgUnitCode = await resolveConfiguredCode(tenantId, 'organization_units', unidad_organizativa_codigo, 'La unidad organizativa', 'EMPLEADO_UNIDAD_INVALIDA');
-    const normalizedWorkZoneCode = await resolveConfiguredCode(tenantId, 'work_zones', zona_marcacion_codigo, 'La zona de marcacion', 'EMPLEADO_ZONA_INVALIDA');
+    const normalizedWorkZoneCode = await resolveConfiguredCode(tenantId, 'work_zones', zona_marcacion_codigo, 'La zona de marcación', 'EMPLEADO_ZONA_INVALIDA');
     const positionAssignment = await resolveJobPositionAssignment(tenantId, {
       positionId: position_id || cargo_codigo,
       cargo,
@@ -1010,7 +1010,7 @@ async function actualizar(req, res) {
       body.unidad_organizativa_codigo = await resolveConfiguredCode(tenantId, 'organization_units', body.unidad_organizativa_codigo, 'La unidad organizativa', 'EMPLEADO_UNIDAD_INVALIDA');
     }
     if (Object.prototype.hasOwnProperty.call(body, 'zona_marcacion_codigo')) {
-      body.zona_marcacion_codigo = await resolveConfiguredCode(tenantId, 'work_zones', body.zona_marcacion_codigo, 'La zona de marcacion', 'EMPLEADO_ZONA_INVALIDA');
+      body.zona_marcacion_codigo = await resolveConfiguredCode(tenantId, 'work_zones', body.zona_marcacion_codigo, 'La zona de marcación', 'EMPLEADO_ZONA_INVALIDA');
     }
     const needsPositionValidation = [
       'position_id',

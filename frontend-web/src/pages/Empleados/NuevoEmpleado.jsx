@@ -538,7 +538,7 @@ function NuevoEmpleado() {
       <div>
         <h1 className="text-2xl font-bold text-slate-950">{isEdit ? 'Editar ficha del trabajador' : 'Nuevo trabajador'}</h1>
         <p className="mt-2 text-sm text-slate-600">
-          La cuenta bancaria registrada aqui pertenece al trabajador y se cifra como dato personal. La cuenta bancaria del cliente se configura por separado en Parametrizacion. Banco y parametros legales se guardan como codigos controlados.
+          La cuenta bancaria registrada aquí pertenece al trabajador y se cifra como dato personal. La cuenta bancaria del cliente se configura por separado en Parametrización. Banco y parámetros legales se guardan como códigos controlados.
         </p>
       </div>
 
@@ -547,14 +547,14 @@ function NuevoEmpleado() {
 
       <form onSubmit={handleSubmit} className="max-w-7xl space-y-5 rounded-lg bg-white p-5 shadow sm:p-6">
         <Section title="Identificación y contacto" description="Datos personales relevantes para la relación laboral y comunicaciones.">
-          <Field className={FIELD_THIRD} disabled={isEdit} label="Cedula" maxLength="10" name="cedula" onChange={handleChange} required value={formData.cedula} />
+          <Field className={FIELD_THIRD} disabled={isEdit} label="Cédula" maxLength="10" name="cedula" onChange={handleChange} required value={formData.cedula} />
           <Field className={FIELD_THIRD} label="Nombres" name="nombres" onChange={handleChange} required value={formData.nombres} />
           <Field className={FIELD_THIRD} label="Apellidos" name="apellidos" onChange={handleChange} required value={formData.apellidos} />
           <Field className={FIELD_THIRD} label="Fecha de nacimiento" name="fecha_nacimiento" onChange={handleChange} required type="date" value={formData.fecha_nacimiento} />
           <div className="md:col-span-1 lg:col-span-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-            Edad calculada: <strong>{employeeAge === null ? 'pendiente' : `${employeeAge} anios`}</strong>
+            Edad calculada: <strong>{employeeAge === null ? 'pendiente' : `${employeeAge} años`}</strong>
           </div>
-          <Field className={FIELD_THIRD} label="Telefono" name="telefono" onChange={handleChange} value={formData.telefono} />
+          <Field className={FIELD_THIRD} label="Teléfono" name="telefono" onChange={handleChange} value={formData.telefono} />
           <Field className={FIELD_HALF} label="Correo personal" name="email_personal" onChange={handleChange} type="email" value={formData.email_personal} />
           <Field className={FIELD_THIRD} label="Estado civil" name="estado_civil" onChange={handleChange} value={formData.estado_civil}>
             <select className={CONTROL_CLASS} name="estado_civil" onChange={handleChange} value={formData.estado_civil}>
@@ -634,7 +634,7 @@ function NuevoEmpleado() {
             </select>
           </Field>
           <label className={`block ${FIELD_FULL}`}>
-            <span className="text-sm font-medium text-slate-700">Direccion del domicilio *</span>
+            <span className="text-sm font-medium text-slate-700">Dirección del domicilio *</span>
             <textarea className={TEXTAREA_CLASS} name="direccion_domicilio" onChange={handleChange} required value={formData.direccion_domicilio} />
           </label>
           <Field label="Latitud del domicilio" name="domicilio_lat" onChange={handleChange} placeholder="-0.180653" required step="0.0000001" type="number" value={formData.domicilio_lat} />
@@ -654,7 +654,7 @@ function NuevoEmpleado() {
         <Section title="Referencia de alguien que no viva con usted" description="Contacto personal externo al domicilio del trabajador.">
           <Field label="Nombres completos" name="referencia_no_convive_nombres" onChange={handleChange} required value={formData.referencia_no_convive_nombres} />
           <Field label="Email" name="referencia_no_convive_email" onChange={handleChange} required type="email" value={formData.referencia_no_convive_email} />
-          <Field label="Telefono" name="referencia_no_convive_telefono" onChange={handleChange} required value={formData.referencia_no_convive_telefono} />
+          <Field label="Teléfono" name="referencia_no_convive_telefono" onChange={handleChange} required value={formData.referencia_no_convive_telefono} />
         </Section>
 
         <Section title="Relación laboral" description="Datos base para nómina, beneficios, contratos y reportes.">
@@ -677,7 +677,7 @@ function NuevoEmpleado() {
               ))}
             </select>
           </Field>
-          <Field label="Codigo de jornada" name="jornada_codigo" onChange={handleChange} required value={formData.jornada_codigo}>
+          <Field label="Código de jornada" name="jornada_codigo" onChange={handleChange} required value={formData.jornada_codigo}>
             <select className={CONTROL_CLASS} name="jornada_codigo" onChange={handleChange} required value={formData.jornada_codigo}>
               <option value="">{workShiftsQuery.isLoading ? 'Cargando jornadas...' : 'Seleccionar jornada parametrizada...'}</option>
               {activeWorkShifts.map((shift) => (
@@ -732,10 +732,10 @@ function NuevoEmpleado() {
               onChange={(event) => setFormData((current) => ({ ...current, iess_afiliado: event.target.checked }))}
               type="checkbox"
             />
-            Afiliado IESS para nomina
+            Afiliado IESS para nómina
           </label>
           <div className={`${FIELD_FULL} rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700`}>
-            El calculo de aportes IESS usa esta clasificacion y deja la decision visible en el detalle de nomina.
+            El cálculo de aportes IESS usa esta clasificación y deja la decisión visible en el detalle de nómina.
           </div>
           <Field label="Region para decimo cuarto" name="region_decimo_cuarto" onChange={handleChange} required value={formData.region_decimo_cuarto}>
             <select className={CONTROL_CLASS} name="region_decimo_cuarto" onChange={handleChange} required value={formData.region_decimo_cuarto}>
@@ -820,7 +820,7 @@ function NuevoEmpleado() {
         </Section>
 
         {isEdit && (
-          <Section title="Gestion posterior" description="Despues de crear la ficha puedes adjuntar contrato firmado y registrar novedades de nomina.">
+          <Section title="Gestión posterior" description="Después de crear la ficha puedes adjuntar contrato firmado y registrar novedades de nómina.">
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Contrato firmado en PDF</span>
               <input accept="application/pdf" className={FILE_CONTROL_CLASS} disabled={uploading} onChange={handleSignedContract} type="file" />

@@ -1,15 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { mobileAPI } from '../services/api';
-
-function todayEC() {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Guayaquil',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date());
-}
+import { todayEC } from '../utils/dateEC';
 
 export default function PermisosScreen() {
   const today = useMemo(() => todayEC(), []);
@@ -23,6 +16,7 @@ export default function PermisosScreen() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [adjunto, setAdjunto] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -55,15 +49,21 @@ export default function PermisosScreen() {
     setError('');
     try {
       const horas = Math.max(0, Number(form.horasDia || 0));
-      const response = await mobileAPI.requestPermission({
+      const payload = {
         fechaInicio: form.fechaInicio,
         fechaFin: form.fechaFin,
         remunerado: form.remunerado,
         minutos: Math.round(horas * 60),
         motivo: form.motivo,
-      });
-      setMessage(`Solicitud registrada: ${response.data?.permiso?.totalDias || 1} dia(s) pendiente(s).`);
+      };
+      if (adjunto?.base64) {
+        payload.adjunto_base64 = adjunto.base64;
+        payload.adjunto_tipo = adjunto.type || 'image/jpeg';
+      }
+      const response = await mobileAPI.requestPermission(payload);
+      setMessage(`Solicitud registrada: ${response.data?.permiso?.totalDias || 1} día(s) pendiente(s).`);
       setForm((current) => ({ ...current, motivo: '' }));
+      setAdjunto(null);
       await loadHistory();
     } catch (err) {
       setError(err.response?.data?.message || 'No pudimos registrar la solicitud de permiso.');
@@ -114,7 +114,7 @@ export default function PermisosScreen() {
           />
         </View>
 
-        <Text style={styles.label}>Horas por dia</Text>
+        <Text style={styles.label}>Horas por día</Text>
         <TextInput
           keyboardType="decimal-pad"
           onChangeText={(value) => updateField('horasDia', value)}
@@ -131,6 +131,30 @@ export default function PermisosScreen() {
           value={form.motivo}
         />
 
+        <Text style={styles.label}>Soporte médico (opcional)</Text>
+        <TouchableOpacity
+          style={styles.adjuntoButton}
+          onPress={async () => {
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              base64: true,
+              quality: 0.7,
+            });
+            if (!result.canceled && result.assets?.[0]) {
+              setAdjunto({
+                uri: result.assets[0].uri,
+                base64: result.assets[0].base64,
+                type: result.assets[0].mimeType || 'image/jpeg',
+              });
+            }
+          }}
+        >
+          <Text style={styles.adjuntoButtonText}>{adjunto ? 'Cambiar adjunto' : 'Adjuntar soporte'}</Text>
+        </TouchableOpacity>
+        {adjunto?.uri && (
+          <Image source={{ uri: adjunto.uri }} style={styles.adjuntoPreview} resizeMode="contain" />
+        )}
+
         <TouchableOpacity disabled={disabled} onPress={submit} style={[styles.button, disabled && styles.buttonDisabled]}>
           <Text style={styles.buttonText}>{submitting ? 'Enviando...' : 'Enviar solicitud'}</Text>
         </TouchableOpacity>
@@ -144,13 +168,13 @@ export default function PermisosScreen() {
             <Text style={styles.detail}>Cargando permisos...</Text>
           </View>
         ) : history.length === 0 ? (
-          <Text style={styles.detail}>Aun no tienes permisos registrados.</Text>
+          <Text style={styles.detail}>Aún no tienes permisos registrados.</Text>
         ) : (
           history.slice(0, 8).map((item) => (
             <View key={item.id} style={styles.historyItem}>
               <Text style={styles.historyTitle}>{String(item.tipo_novedad || '').replace(/_/g, ' ')}</Text>
               <Text style={styles.detail}>{String(item.fecha || '').slice(0, 10)} - {item.estado}</Text>
-              <Text style={styles.detail}>{item.justificacion || 'Sin justificacion'}</Text>
+              <Text style={styles.detail}>{item.justificacion || 'Sin justificación'}</Text>
             </View>
           ))
         )}
@@ -160,6 +184,26 @@ export default function PermisosScreen() {
 }
 
 const styles = StyleSheet.create({
+  adjuntoButton: {
+    alignItems: 'center',
+    borderColor: '#0369a1',
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 8,
+    minHeight: 40,
+    justifyContent: 'center',
+  },
+  adjuntoButtonText: {
+    color: '#0369a1',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  adjuntoPreview: {
+    borderRadius: 8,
+    height: 120,
+    marginBottom: 8,
+    width: '100%',
+  },
   button: {
     alignItems: 'center',
     backgroundColor: '#0f766e',

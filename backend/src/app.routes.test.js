@@ -65,8 +65,88 @@ describe('app route order', () => {
     expect(source).toContain("const requireMobileAppPlan = requirePlanCapability('mobileApp')");
     expect(source).toContain("const requireFieldRoutesPlan = requirePlanCapability('fieldRoutes')");
     expect(source).toContain("app.get('/api/rutas/sitios', requireRole('owner', 'admin_rrhh', 'supervisor'), requireFieldRoutesPlan");
-    expect(source).toContain("app.get('/api/mobile/me', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan");
-    expect(source).toContain("app.get('/api/mobile/ruta/hoy', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan");
+    expect(source).toContain("app.get('/api/mobile/me', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan");
+    expect(source).toContain("app.get('/api/mobile/ruta/hoy', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan");
     expect(source).toContain("app.post('/api/movilizacion/informe', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan");
+  });
+
+  test('expone gestion movil de zonas y rutas por perfil sin saltar gates de plan', () => {
+    const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
+
+    expect(source).toContain("app.get('/api/mobile/admin/rutas/resumen', requireRole('owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan");
+    expect(source).toContain("app.post('/api/mobile/admin/zonas', requireRole('owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan");
+    expect(source).toContain("app.post('/api/mobile/admin/rutas/sitios', requireRole('owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan");
+    expect(source).toContain("app.post('/api/mobile/admin/rutas/dias', requireRole('owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan");
+  });
+});
+
+describe('AISK26-01: cierre brechas RBAC', () => {
+  const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
+
+  test('POST /api/marcaciones requiere rol empleado/owner/admin_rrhh/supervisor', () => {
+    expect(source).toContain(
+      "app.post('/api/marcaciones', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), marcacionController.registrar)"
+    );
+  });
+
+  test('GET /api/marcaciones/hoy requiere rol empleado/owner/admin_rrhh/supervisor', () => {
+    expect(source).toContain(
+      "app.get('/api/marcaciones/hoy', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), marcacionController.listarHoy)"
+    );
+  });
+
+  test('GET /api/novedades requiere rol owner/admin_rrhh/supervisor', () => {
+    expect(source).toContain(
+      "app.get('/api/novedades', requireRole('owner', 'admin_rrhh', 'supervisor'), novedadController.listar)"
+    );
+  });
+
+  test('GET /api/novedades/pendientes requiere rol owner/admin_rrhh/supervisor', () => {
+    expect(source).toContain(
+      "app.get('/api/novedades/pendientes', requireRole('owner', 'admin_rrhh', 'supervisor'), novedadController.listarPendientes)"
+    );
+  });
+
+  test('GET /api/nomina/:id/rol-pdf requiere rol owner/admin_rrhh', () => {
+    expect(source).toContain(
+      "app.get('/api/nomina/:id/rol-pdf', requireRole('owner', 'admin_rrhh'), nominaController.descargarRolPDF)"
+    );
+  });
+
+  test('GET /api/nomina/:anio/:mes requiere rol owner/admin_rrhh', () => {
+    expect(source).toContain(
+      "app.get('/api/nomina/:anio/:mes', requireRole('owner', 'admin_rrhh'), nominaController.listarPorPeriodo)"
+    );
+  });
+
+  test('GET /api/documentos requiere rol owner/admin_rrhh', () => {
+    expect(source).toContain(
+      "app.get('/api/documentos', requireRole('owner', 'admin_rrhh'), documentoLegalController.listar)"
+    );
+  });
+
+  test('GET /api/documentos/:id/download requiere rol owner/admin_rrhh', () => {
+    expect(source).toContain(
+      "app.get('/api/documentos/:id/download', requireRole('owner', 'admin_rrhh'), documentoLegalController.descargar)"
+    );
+  });
+
+  test('GET /api/reportes/asistencia/:anio/:mes requiere rol owner/admin_rrhh/supervisor', () => {
+    expect(source).toContain(
+      "app.get('/api/reportes/asistencia/:anio/:mes', requireRole('owner', 'admin_rrhh', 'supervisor'), reporteController.reporteAsistencia)"
+    );
+  });
+
+  test('ninguno de los endpoints RBAC queda sin requireRole', () => {
+    // Verify that the previously unprotected endpoints no longer appear without requireRole
+    expect(source).not.toContain("app.post('/api/marcaciones', marcacionController.registrar)");
+    expect(source).not.toContain("app.get('/api/marcaciones/hoy', marcacionController.listarHoy)");
+    expect(source).not.toContain("app.get('/api/novedades', novedadController.listar)");
+    expect(source).not.toContain("app.get('/api/novedades/pendientes', novedadController.listarPendientes)");
+    expect(source).not.toContain("app.get('/api/nomina/:id/rol-pdf', nominaController.descargarRolPDF)");
+    expect(source).not.toContain("app.get('/api/nomina/:anio/:mes', nominaController.listarPorPeriodo)");
+    expect(source).not.toContain("app.get('/api/documentos', documentoLegalController.listar)");
+    expect(source).not.toContain("app.get('/api/documentos/:id/download', documentoLegalController.descargar)");
+    expect(source).not.toContain("app.get('/api/reportes/asistencia/:anio/:mes', reporteController.reporteAsistencia)");
   });
 });

@@ -208,6 +208,34 @@ async function resolverInforme(req, res, next) {
       });
     }
 
+    // HAL-112: Si aprobado con anticipo, crear novedad anticipo_movilizacion
+    if (action === 'aprobado' && anticipo > 0) {
+      const informe = result.rows[0];
+      const [anio, mes] = String(informe.periodo).split('-').map(Number);
+      try {
+        await db.query(
+          `INSERT INTO novedades_asistencia (
+            empleado_id, tenant_id, fecha, tipo_novedad, monto, justificacion, estado, metadata
+          ) VALUES ($1,$2,$3,'anticipo_movilizacion',$4,$5,'aprobado',$6)`,
+          [
+            informe.empleado_id,
+            req.tenantId,
+            `${anio}-${String(mes).padStart(2, '0')}-01`,
+            anticipo,
+            `Anticipo movilización período ${informe.periodo}`,
+            JSON.stringify({ source: 'movilizacion_aprobacion', informeId: informe.id }),
+          ]
+        );
+      } catch (novedadErr) {
+        console.error('[MOVILIZACION] No se pudo crear novedad anticipo_movilizacion', {
+          code: novedadErr.code || 'ANTICIPO_MOVILIZACION_NOVEDAD_ERROR',
+          statusCode: 500,
+          correlationId: req.correlationId,
+          message: novedadErr.message,
+        });
+      }
+    }
+
     await auditMovilizacion(req, `movilizacion.informe.${action}`, result.rows[0].id, {
       estado: action,
       anticipoUsd: anticipo,

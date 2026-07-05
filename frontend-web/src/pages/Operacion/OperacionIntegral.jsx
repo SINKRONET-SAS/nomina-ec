@@ -142,8 +142,8 @@ const MODULES = [
     action: 'Gestionar invitaciones',
     ready: ({ counts }) => counts.usuarios > 0,
     capability: 'mobileApp',
-    capabilityLabel: 'app movil',
-    activeDescription: 'La empresa tiene habilitado el canal de app movil para empleados, permisos, marcaciones y autoservicio.',
+    capabilityLabel: 'app móvil',
+    activeDescription: 'La empresa tiene habilitado el canal de app móvil para empleados, permisos, marcaciones y autoservicio.',
     pendingDescription: 'Habilita usuarios y enlaces de app antes de activar al equipo operativo.',
   },
   {
@@ -157,7 +157,7 @@ const MODULES = [
     capability: 'fieldRoutes',
     capabilityLabel: 'rutas de campo',
     activeDescription: 'El plan permite gestionar sitios, rutas diarias, visitas y excepciones GPS.',
-    pendingDescription: 'Configura zonas de marcacion y sitios para operar rutas de campo.',
+    pendingDescription: 'Configura zonas de marcación y sitios para operar rutas de campo.',
   },
   {
     key: 'apertura',

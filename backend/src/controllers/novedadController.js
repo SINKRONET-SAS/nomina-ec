@@ -5,6 +5,7 @@ const db = require('../config/database');
 const { recordAudit } = require('../services/auditService');
 const { ensurePayrollPeriodForDate, formatPeriodMarker, validatePeriod } = require('../services/monthlyPeriodService');
 const { ensureNoveltyTypeAllowed, normalizeNoveltyCode } = require('../services/payrollNoveltyService');
+const { sendNotificacionPermisoResuelto } = require('../services/communicationService');
 
 const NOVELTY_BULK_TEMPLATE_COLUMNS = [
   'empleadoId',
@@ -104,7 +105,7 @@ async function crear(req, res) {
     });
     const montoNovedad = normalizeAmount(monto);
     if (noveltyConfig.calculationMode === 'amount' && montoNovedad <= 0 && noveltyConfig.payrollImpact !== 'informativo') {
-      return res.status(422).json({ error: 'La novedad requiere un monto mayor a cero segun su forma de calculo.' });
+      return res.status(422).json({ error: 'La novedad requiere un monto mayor a cero según su forma de cálculo.' });
     }
     if (period.status === 'closed') {
       return res.status(422).json({ error: 'No se puede registrar novedades en un periodo cerrado' });
@@ -341,19 +342,25 @@ async function aprobar(req, res) {
   try {
     const { id } = req.params;
     const { tenantId, usuarioId } = req;
-    
+
     const result = await db.query(`
       UPDATE novedades_asistencia
       SET estado = 'aprobado', aprobado_por = $1, updated_at = NOW()
       WHERE id = $2 AND tenant_id = $3
-      RETURNING id, estado, aprobado_por
+      RETURNING id, estado, aprobado_por, empleado_id, tipo_novedad, fecha
     `, [usuarioId, id, tenantId]);
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Novedad no encontrada' });
     }
-    
-    res.json({ success: true, novedad: result.rows[0] });
+
+    // HAL-122: Notificar al empleado si es un permiso
+    const novedad = result.rows[0];
+    if (String(novedad.tipo_novedad || '').startsWith('permiso')) {
+      notifyPermissionResolution(tenantId, novedad, 'aprobado', req.correlationId, usuarioId);
+    }
+
+    res.json({ success: true, novedad });
   } catch (err) {
     console.error('[NOVEDADES] Error:', err);
     res.status(500).json({ error: 'Error interno' });
@@ -365,22 +372,51 @@ async function rechazar(req, res) {
     const { id } = req.params;
     const { tenantId, usuarioId } = req;
     const { motivo } = req.body;
-    
+
     const result = await db.query(`
       UPDATE novedades_asistencia
       SET estado = 'rechazado', aprobado_por = $1, justificacion = $2, updated_at = NOW()
       WHERE id = $3 AND tenant_id = $4
-      RETURNING id, estado
+      RETURNING id, estado, empleado_id, tipo_novedad, fecha
     `, [usuarioId, motivo || '', id, tenantId]);
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Novedad no encontrada' });
     }
-    
-    res.json({ success: true, novedad: result.rows[0] });
+
+    const novedad = result.rows[0];
+    if (String(novedad.tipo_novedad || '').startsWith('permiso')) {
+      notifyPermissionResolution(tenantId, novedad, 'rechazado', req.correlationId, usuarioId);
+    }
+
+    res.json({ success: true, novedad });
   } catch (err) {
     console.error('[NOVEDADES] Error:', err);
     res.status(500).json({ error: 'Error interno' });
+  }
+}
+
+async function notifyPermissionResolution(tenantId, novedad, decision, correlationId, userId) {
+  try {
+    const empResult = await db.query(
+      'SELECT id, tenant_id, nombres, apellidos, email_personal FROM empleados WHERE id = $1 AND tenant_id = $2',
+      [novedad.empleado_id, tenantId]
+    );
+    if (empResult.rows.length > 0) {
+      await sendNotificacionPermisoResuelto({
+        employee: empResult.rows[0],
+        permiso: { fecha_inicio: novedad.fecha, fecha_fin: novedad.fecha },
+        decision,
+        correlationId,
+        userId,
+      });
+    }
+  } catch (err) {
+    console.error('[NOVEDADES] No se pudo notificar resolución de permiso', {
+      code: err.code || 'PERMISO_NOTIFICACION_ERROR',
+      statusCode: 500,
+      message: err.message,
+    });
   }
 }
 

@@ -6,6 +6,18 @@ jest.mock('../services/marcacionValidator', () => ({
   validarMarcacion: jest.fn(),
 }));
 
+jest.mock('../services/routeVisitService', () => ({
+  listRouteSites: jest.fn(),
+  listRouteDays: jest.fn(),
+  createRouteSite: jest.fn(),
+  createRouteDay: jest.fn(),
+}));
+
+jest.mock('../services/configurationService', () => ({
+  listResource: jest.fn(),
+  createResource: jest.fn(),
+}));
+
 jest.mock('../services/employeeAppInviteService', () => ({
   resolveAttendanceReadiness: jest.fn(),
   resolveLinkedEmployee: jest.fn(),
@@ -29,6 +41,8 @@ jest.mock('../services/payrollNoveltyService', () => ({
 
 const db = require('../config/database');
 const { validarMarcacion } = require('../services/marcacionValidator');
+const routeVisitService = require('../services/routeVisitService');
+const configurationService = require('../services/configurationService');
 const { recordAudit } = require('../services/auditService');
 const {
   resolveAttendanceReadiness,
@@ -36,7 +50,14 @@ const {
 } = require('../services/employeeAppInviteService');
 const { ensurePayrollPeriodForDate } = require('../services/monthlyPeriodService');
 const { ensureNoveltyTypeAllowed } = require('../services/payrollNoveltyService');
-const { registrarMarcacionMovil, resolveEmployee, solicitarPermiso } = require('./mobileController');
+const {
+  adminRutasResumen,
+  asignarRutaMovil,
+  crearZonaMarcacionMovil,
+  registrarMarcacionMovil,
+  resolveEmployee,
+  solicitarPermiso,
+} = require('./mobileController');
 
 function mockResponse() {
   const res = {};
@@ -57,6 +78,12 @@ describe('mobileController', () => {
   beforeEach(() => {
     db.query.mockReset();
     validarMarcacion.mockReset();
+    routeVisitService.listRouteSites.mockReset();
+    routeVisitService.listRouteDays.mockReset();
+    routeVisitService.createRouteSite.mockReset();
+    routeVisitService.createRouteDay.mockReset();
+    configurationService.listResource.mockReset();
+    configurationService.createResource.mockReset();
     resolveAttendanceReadiness.mockReset();
     resolveLinkedEmployee.mockReset();
     recordAudit.mockReset();
@@ -143,6 +170,134 @@ describe('mobileController', () => {
       userId: 'user-1',
       accuracy: 15,
       source: 'mobile',
+    }));
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  test('adminRutasResumen devuelve acciones permitidas para ocultar secciones por perfil', async () => {
+    configurationService.listResource.mockResolvedValueOnce([{
+      id: 'zone-1',
+      code: 'MATRIZ',
+      name: 'Oficina matriz',
+      latitude: -0.18,
+      longitude: -78.48,
+      radius_meters: 100,
+      min_accuracy_meters: 50,
+      requires_photo: true,
+      allows_offline: false,
+      status: 'activo',
+    }]);
+    routeVisitService.listRouteSites.mockResolvedValueOnce([{ id: 'site-1', code: 'TIA', name: 'Tienda' }]);
+    routeVisitService.listRouteDays.mockResolvedValueOnce([{ id: 'route-1', empleadoId: 'emp-1', status: 'planned' }]);
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'emp-1',
+        cedula: '0102030405',
+        nombres: 'Ana',
+        apellidos: 'Vera',
+        cargo: 'Supervisor',
+        unidad_organizativa_codigo: 'OPS',
+        zona_marcacion_codigo: 'MATRIZ',
+      }],
+    });
+    const req = {
+      ...reqBase,
+      usuario: { id: 'user-2', email: 'supervisor@sknomina.local', rol: 'supervisor', tenantId: 'tenant-1' },
+      query: { fecha: '2026-07-04' },
+    };
+    const res = mockResponse();
+
+    await adminRutasResumen(req, res);
+
+    expect(configurationService.listResource).toHaveBeenCalledWith('workZones', req.usuario);
+    expect(routeVisitService.listRouteSites).toHaveBeenCalledWith({ tenantId: 'tenant-1', status: 'activo' });
+    expect(routeVisitService.listRouteDays).toHaveBeenCalledWith({ tenantId: 'tenant-1', fecha: '2026-07-04' });
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      allowedActions: {
+        createWorkZones: false,
+        createRouteSites: false,
+        assignRoutes: true,
+      },
+      employees: [expect.objectContaining({ id: 'emp-1', workZoneCode: 'MATRIZ' })],
+      routeSites: [expect.objectContaining({ id: 'site-1' })],
+    }));
+  });
+
+  test('crearZonaMarcacionMovil reutiliza configuracion workZones y normaliza codigo', async () => {
+    configurationService.createResource.mockResolvedValueOnce({
+      id: 'zone-1',
+      code: 'ZONA_NORTE',
+      name: 'Zona norte',
+      latitude: -0.18,
+      longitude: -78.48,
+      radius_meters: 150,
+      min_accuracy_meters: 50,
+      requires_photo: true,
+      allows_offline: false,
+      status: 'activo',
+    });
+    const req = {
+      ...reqBase,
+      usuario: { id: 'owner-1', email: 'owner@sknomina.local', rol: 'owner', tenantId: 'tenant-1' },
+      body: {
+        code: 'zona norte',
+        name: 'Zona norte',
+        latitude: -0.18,
+        longitude: -78.48,
+        radiusMeters: 150,
+      },
+    };
+    const res = mockResponse();
+
+    await crearZonaMarcacionMovil(req, res);
+
+    expect(configurationService.createResource).toHaveBeenCalledWith(
+      'workZones',
+      expect.objectContaining({
+        code: 'ZONA_NORTE',
+        radius_meters: 150,
+        rules: expect.objectContaining({ source: 'mobile_admin', createdByRole: 'owner' }),
+      }),
+      req.usuario,
+      expect.objectContaining({ correlationId: 'corr-1' })
+    );
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      workZone: expect.objectContaining({ id: 'zone-1', radiusMeters: 150 }),
+    }));
+  });
+
+  test('asignarRutaMovil crea ruta diaria con source mobile y una parada', async () => {
+    routeVisitService.createRouteDay.mockResolvedValueOnce({
+      id: 'route-1',
+      empleadoId: 'emp-1',
+      source: 'mobile',
+      stops: [{ id: 'stop-1', siteId: 'site-1' }],
+    });
+    const req = {
+      ...reqBase,
+      usuario: { id: 'supervisor-1', email: 'supervisor@sknomina.local', rol: 'supervisor', tenantId: 'tenant-1' },
+      body: {
+        employeeId: 'emp-1',
+        siteId: 'site-1',
+        fecha: '2026-07-04',
+        plannedStartTime: '09:00',
+      },
+    };
+    const res = mockResponse();
+
+    await asignarRutaMovil(req, res);
+
+    expect(routeVisitService.createRouteDay).toHaveBeenCalledWith(expect.objectContaining({
+      tenantId: 'tenant-1',
+      payload: expect.objectContaining({
+        empleadoId: 'emp-1',
+        fecha: '2026-07-04',
+        source: 'mobile',
+        stops: [expect.objectContaining({ siteId: 'site-1', plannedStartTime: '09:00' })],
+      }),
+      context: expect.objectContaining({ source: 'mobile', correlationId: 'corr-1' }),
     }));
     expect(res.status).toHaveBeenCalledWith(201);
   });

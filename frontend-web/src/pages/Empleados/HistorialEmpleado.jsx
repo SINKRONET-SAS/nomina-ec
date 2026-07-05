@@ -4,16 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { formatDateEC } from '../../utils/dateFormat';
-
-const moneyFormatter = new Intl.NumberFormat('es-EC', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 2,
-});
-
-function money(value) {
-  return moneyFormatter.format(Number(value || 0));
-}
+import { money } from '../../utils/money';
 
 function HistorialEmpleado() {
   const { id } = useParams();

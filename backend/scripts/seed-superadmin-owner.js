@@ -56,7 +56,17 @@ async function upsertTenant(client, tenant) {
   return result.rows[0];
 }
 
+function assertPasswordComplexity(password, label = 'usuario') {
+  if (!password || String(password).length < 10) {
+    throw new Error(`La contraseña de ${label} debe tener al menos 10 caracteres.`);
+  }
+  if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+    throw new Error(`La contraseña de ${label} debe ser alfanumérica (letras y números).`);
+  }
+}
+
 async function upsertUser(client, user) {
+  assertPasswordComplexity(user.password, user.role || 'usuario');
   const passwordHash = await bcrypt.hash(user.password, 10);
   const email = String(user.email || '').trim().toLowerCase();
   const existing = user.tenantId

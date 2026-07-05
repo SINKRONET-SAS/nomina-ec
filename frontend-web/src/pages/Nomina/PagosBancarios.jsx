@@ -61,7 +61,7 @@ function PagosBancarios() {
     setError('');
     setGeneratedFile(null);
     try {
-      const response = await authenticatedApi.post('/pagos/banco/precheck', {
+      const response = await authenticatedApi.post('/reportes/banco/precheck', {
         anio: Number(anio),
         mes: Number(mes),
         banco,
@@ -96,7 +96,7 @@ function PagosBancarios() {
         ? precheck
         : null;
       if (!currentPrecheck) {
-        const precheckResponse = await authenticatedApi.post('/pagos/banco/precheck', {
+        const precheckResponse = await authenticatedApi.post('/reportes/banco/precheck', {
           anio: Number(anio),
           mes: Number(mes),
           banco,
@@ -110,7 +110,7 @@ function PagosBancarios() {
         return;
       }
 
-      const response = await authenticatedApi.post('/pagos/banco', {
+      const response = await authenticatedApi.post('/reportes/banco', {
         anio: Number(anio),
         mes: Number(mes),
         banco,
@@ -130,7 +130,7 @@ function PagosBancarios() {
       <div>
         <h1 className="text-2xl font-bold text-slate-950">Pagos bancarios</h1>
         <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
-          Genera el archivo bancario de pago de nomina desde roles cerrados o pagados, usando el banco y la homologacion configurada.
+          Genera el archivo bancario de pago de nómina desde roles cerrados o pagados, usando el banco y la homologación configurada.
         </p>
       </div>
 
@@ -178,7 +178,7 @@ function PagosBancarios() {
             </select>
           </label>
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">Anio</span>
+            <span className="text-sm font-medium text-slate-700">Año</span>
             <input
               className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
               type="number"

@@ -153,9 +153,9 @@ app.post('/api/onboarding/saldos-iniciales/lotes/:batchId/commit', requireRole('
 app.post('/api/onboarding/saldos-iniciales/lotes/:batchId/revertir', requireRole('owner', 'admin_rrhh'), requireFreshUser, initialBalanceController.revert);
 
 const marcacionController = require('./controllers/marcacionController');
-app.post('/api/marcaciones', marcacionController.registrar);
+app.post('/api/marcaciones', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), marcacionController.registrar);
 app.get('/api/marcaciones/empleado/:empleadoId', marcacionController.listarPorEmpleado);
-app.get('/api/marcaciones/hoy', marcacionController.listarHoy);
+app.get('/api/marcaciones/hoy', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), marcacionController.listarHoy);
 
 const routeController = require('./controllers/routeController');
 app.get('/api/rutas/sitios', requireRole('owner', 'admin_rrhh', 'supervisor'), requireFieldRoutesPlan, routeController.listSites);
@@ -178,21 +178,25 @@ app.get('/api/movilizacion/informes', requireRole('owner', 'admin_rrhh'), requir
 app.patch('/api/movilizacion/informes/:id', requireRole('owner', 'admin_rrhh'), requireMobileAppPlan, requireFreshUser, movilizacionController.resolverInforme);
 
 const mobileController = require('./controllers/mobileController');
-app.get('/api/mobile/me', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, mobileController.perfil);
-app.get('/api/mobile/asistencia/resumen', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, mobileController.resumenAsistencia);
-app.post('/api/mobile/marcaciones', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, mobileController.registrarMarcacionMovil);
-app.get('/api/mobile/ruta/hoy', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.rutaHoy);
-app.get('/api/mobile/historial', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, mobileController.historial);
-app.post('/api/mobile/permisos', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, mobileController.solicitarPermiso);
-app.post('/api/mobile/ruta/paradas/:stopId/llegada', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.registrarLlegadaRuta);
-app.post('/api/mobile/ruta/paradas/:stopId/salida', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.registrarSalidaRuta);
-app.post('/api/mobile/ruta/paradas/:stopId/omitir', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.omitirParadaRuta);
-app.post('/api/mobile/ruta/visitas/no-programada', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.registrarVisitaNoProgramada);
-app.get('/api/mobile/nomina/:anio/:mes', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, mobileController.rolPago);
+app.get('/api/mobile/me', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, mobileController.perfil);
+app.get('/api/mobile/admin/rutas/resumen', requireRole('owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.adminRutasResumen);
+app.post('/api/mobile/admin/zonas', requireRole('owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.crearZonaMarcacionMovil);
+app.post('/api/mobile/admin/rutas/sitios', requireRole('owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.crearSitioRutaMovil);
+app.post('/api/mobile/admin/rutas/dias', requireRole('owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.asignarRutaMovil);
+app.get('/api/mobile/asistencia/resumen', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, mobileController.resumenAsistencia);
+app.post('/api/mobile/marcaciones', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, mobileController.registrarMarcacionMovil);
+app.get('/api/mobile/ruta/hoy', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.rutaHoy);
+app.get('/api/mobile/historial', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, mobileController.historial);
+app.post('/api/mobile/permisos', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, mobileController.solicitarPermiso);
+app.post('/api/mobile/ruta/paradas/:stopId/llegada', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.registrarLlegadaRuta);
+app.post('/api/mobile/ruta/paradas/:stopId/salida', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.registrarSalidaRuta);
+app.post('/api/mobile/ruta/paradas/:stopId/omitir', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.omitirParadaRuta);
+app.post('/api/mobile/ruta/visitas/no-programada', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.registrarVisitaNoProgramada);
+app.get('/api/mobile/nomina/:anio/:mes', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, mobileController.rolPago);
 
 const novedadController = require('./controllers/novedadController');
-app.get('/api/novedades', novedadController.listar);
-app.get('/api/novedades/pendientes', novedadController.listarPendientes);
+app.get('/api/novedades', requireRole('owner', 'admin_rrhh', 'supervisor'), novedadController.listar);
+app.get('/api/novedades/pendientes', requireRole('owner', 'admin_rrhh', 'supervisor'), novedadController.listarPendientes);
 app.get('/api/novedades/plantilla-carga-masiva', requireRole('owner', 'admin_rrhh', 'supervisor'), novedadController.descargarPlantillaCargaMasiva);
 app.post('/api/novedades', requireRole('owner', 'admin_rrhh', 'supervisor'), novedadController.crear);
 app.post('/api/novedades/carga-masiva', requireRole('owner', 'admin_rrhh'), novedadController.cargaMasiva);
@@ -216,9 +220,9 @@ app.post('/api/nomina/calcular', requireRole('owner', 'admin_rrhh'), requireFres
 app.get('/api/nomina/periodo/:anio/:mes', requireRole('owner', 'admin_rrhh'), nominaController.obtenerEstadoPeriodo);
 app.post('/api/nomina/periodo/abrir', requireRole('owner', 'admin_rrhh'), nominaController.abrirPeriodo);
 app.post('/api/nomina/novedades/lote', requireRole('owner', 'admin_rrhh'), nominaController.crearLoteNovedades);
-app.get('/api/nomina/:id/rol-pdf', nominaController.descargarRolPDF);
+app.get('/api/nomina/:id/rol-pdf', requireRole('owner', 'admin_rrhh'), nominaController.descargarRolPDF);
 app.get('/api/nomina/:anio/:mes/roles-pdf-transpuesto', requireRole('owner', 'admin_rrhh'), nominaController.descargarRolesTranspuestosPDF);
-app.get('/api/nomina/:anio/:mes', nominaController.listarPorPeriodo);
+app.get('/api/nomina/:anio/:mes', requireRole('owner', 'admin_rrhh'), nominaController.listarPorPeriodo);
 app.get('/api/nomina/empleado/:empleadoId/:anio/:mes', nominaController.obtenerPorEmpleado);
 app.post('/api/nomina/cerrar', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.cerrarMes);
 app.post('/api/nomina/reabrir', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.reabrirMes);
@@ -229,8 +233,8 @@ app.post('/api/documentos/contrato', requireRole('owner', 'admin_rrhh'), documen
 app.post('/api/documentos/finiquito', requireRole('owner', 'admin_rrhh'), documentoLegalController.generarFiniquito);
 app.post('/api/documentos/acta-entrega-dotacion', requireRole('owner', 'admin_rrhh'), documentoLegalController.generarActaEntregaDotacion);
 app.post('/api/documentos/adjuntar', requireRole('owner', 'admin_rrhh'), documentoLegalController.adjuntarDocumento);
-app.get('/api/documentos', documentoLegalController.listar);
-app.get('/api/documentos/:id/download', documentoLegalController.descargar);
+app.get('/api/documentos', requireRole('owner', 'admin_rrhh'), documentoLegalController.listar);
+app.get('/api/documentos/:id/download', requireRole('owner', 'admin_rrhh'), documentoLegalController.descargar);
 
 const reporteController = require('./controllers/reporteController');
 app.post('/api/reportes/rdep/precheck', requireRole('owner', 'admin_rrhh'), reporteController.validarRDEP);
@@ -239,13 +243,13 @@ app.post('/api/reportes/formulario-107/precheck', requireRole('owner', 'admin_rr
 app.post('/api/reportes/formulario-107', requireRole('owner', 'admin_rrhh'), reporteController.generarFormulario107);
 app.post('/api/reportes/sae/precheck', requireRole('owner', 'admin_rrhh'), reporteController.validarSAE);
 app.post('/api/reportes/sae', requireRole('owner', 'admin_rrhh'), reporteController.generarSAE);
-app.post('/api/pagos/banco/precheck', requireRole('owner', 'admin_rrhh'), reporteController.validarArchivoBanco);
-app.post('/api/pagos/banco', requireRole('owner', 'admin_rrhh'), reporteController.generarArchivoBanco);
+// Ruta canonica para archivos bancarios: /api/reportes/banco/*
+// Las rutas legacy /api/pagos/banco/* fueron eliminadas en AISK26-04
 app.post('/api/reportes/banco/precheck', requireRole('owner', 'admin_rrhh'), reporteController.validarArchivoBanco);
 app.post('/api/reportes/banco', requireRole('owner', 'admin_rrhh'), reporteController.generarArchivoBanco);
 app.post('/api/reportes/nomina/exportar', requireRole('owner', 'admin_rrhh'), reporteController.exportarNomina);
 app.get('/api/reportes/nomina/:anio/consolidado', requireRole('owner', 'admin_rrhh'), reporteController.exportarConsolidadoAnual);
-app.get('/api/reportes/asistencia/:anio/:mes', reporteController.reporteAsistencia);
+app.get('/api/reportes/asistencia/:anio/:mes', requireRole('owner', 'admin_rrhh', 'supervisor'), reporteController.reporteAsistencia);
 
 const auditController = require('./controllers/auditController');
 app.get('/api/auditoria', requireRole('superadmin', 'owner'), auditController.listar);
@@ -332,6 +336,9 @@ app.listen(PORT, () => {
     environment: process.env.NODE_ENV || 'development',
     url: `http://localhost:${PORT}`,
   }, 'SKNOMINA backend iniciado');
+
+  // HAL-40: PayPhone health check async al arranque
+  require('./services/payphoneGatewayService').healthCheck().catch(() => {});
 });
 
 module.exports = app;

@@ -238,6 +238,31 @@ async function confirmPayPhonePayment({ id, clientTxId, post = postJson } = {}) 
   }, Number(process.env.PAYPHONE_TIMEOUT_MS || 12000));
 }
 
+// HAL-40: Health check async al arranque (no bloquea, solo logger.warn si falla)
+async function healthCheck() {
+  const apiBase = resolvePayPhoneApiBase();
+  const token = process.env.PAYPHONE_TOKEN || '';
+  if (!token || hasPlaceholder(token)) {
+    console.warn('[PAYPHONE] Health check omitido: token no configurado');
+    return { status: 'not_configured' };
+  }
+  try {
+    const response = await fetch(`${apiBase}/api/Sale`, {
+      method: 'OPTIONS',
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(5000),
+    });
+    const status = response.ok ? 'healthy' : 'degraded';
+    if (!response.ok) {
+      console.warn('[PAYPHONE] Health check degradado:', response.status);
+    }
+    return { status, httpStatus: response.status };
+  } catch (err) {
+    console.warn('[PAYPHONE] Health check fallido:', err.message);
+    return { status: 'unreachable', error: err.message };
+  }
+}
+
 module.exports = {
   assertPayPhoneConfig,
   buildCancellationUrl,
@@ -245,6 +270,7 @@ module.exports = {
   createPayPhonePayment,
   confirmPayPhonePayment,
   decoratePayPhoneCheckoutUrls,
+  healthCheck,
   isPayPhoneMockMode,
   normalizeCheckoutUrl,
   resolveBackendPublicUrl,

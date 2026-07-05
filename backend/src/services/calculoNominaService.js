@@ -1,5 +1,5 @@
 // ============================================================
-// SKNOMINA - Motor de Calculo de Nomina Mensual
+// SKNOMINA - Motor de Cálculo de Nómina Mensual
 // Ecuador
 // ============================================================
 const db = require('../config/database');
@@ -122,7 +122,7 @@ async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
     tenantId,
     anio,
     mes,
-  }, 'Calculo de nomina iniciado');
+  }, 'Cálculo de nómina iniciado');
   const executor = context.dbClient || db;
 
   const batch = await createPayrollCalculationBatch({
@@ -134,7 +134,7 @@ async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
     dbClient: executor,
   });
   if (!batch?.id) {
-    throw new AppError('No se pudo crear el lote de calculo de nomina.', {
+    throw new AppError('No se pudo crear el lote de cálculo de nómina.', {
       code: 'NOMINA_CALCULATION_BATCH_CREATE_FAILED',
       statusCode: 500,
     });
@@ -219,7 +219,7 @@ async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
 
 async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParameters = null, options = {}) {
   if (!options.calculationBatchId) {
-    throw new AppError('Cada calculo de nomina debe estar asociado a un lote.', {
+    throw new AppError('Cada cálculo de nómina debe estar asociado a un lote.', {
       code: 'NOMINA_CALCULATION_BATCH_REQUIRED',
       statusCode: 422,
     });
@@ -427,7 +427,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   ]);
 
   if (!payrollResult.rows[0]?.id) {
-    throw new AppError('La nomina del empleado no esta editable para recalculo.', {
+    throw new AppError('La nómina del empleado no está editable para recálculo.', {
       code: 'NOMINA_EMPLEADO_NO_EDITABLE',
       statusCode: 409,
     });
@@ -472,7 +472,7 @@ async function createPayrollCalculationBatch({ tenantId, anio, mes, userId = nul
   `, [tenantId, Number(anio), Number(mes), userId]);
 
   if (period.rows[0]?.status === 'closed') {
-    throw new AppError('No se puede calcular nomina en un periodo cerrado.', {
+    throw new AppError('No se puede calcular nómina en un periodo cerrado.', {
       code: 'NOMINA_PERIODO_CERRADO',
       statusCode: 422,
     });
@@ -495,7 +495,7 @@ async function createPayrollCalculationBatch({ tenantId, anio, mes, userId = nul
   ]);
 
   if (!result.rows[0]?.id) {
-    throw new AppError('No se pudo crear el lote de calculo de nomina.', {
+    throw new AppError('No se pudo crear el lote de cálculo de nómina.', {
       code: 'NOMINA_CALCULATION_BATCH_CREATE_FAILED',
       statusCode: 500,
     });
@@ -589,7 +589,7 @@ function assertEmployeeMeetsUnifiedBaseSalary(emp = {}, payrollParameters = {}, 
   const metadata = typeof emp.metadata === 'string' ? safeJson(emp.metadata) : (emp.metadata || {});
 
   if (!Number.isFinite(unifiedBaseSalary) || unifiedBaseSalary <= 0) {
-    throw new AppError('El SBU vigente no esta configurado para calcular nomina.', {
+    throw new AppError('El SBU vigente no está configurado para calcular nómina.', {
       code: 'NOMINA_SBU_NO_CONFIGURADO',
       statusCode: 422,
       details: { anio: context.anio, mes: context.mes },

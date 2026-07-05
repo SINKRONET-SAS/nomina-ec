@@ -127,9 +127,9 @@ function buildItemsTable(items) {
   return [
     [
       { text: 'Tipo', bold: true },
-      { text: 'Descripcion', bold: true },
+      { text: 'Descripción', bold: true },
       { text: 'Cant.', bold: true },
-      { text: 'Codigo/serial', bold: true },
+      { text: 'Código/serial', bold: true },
       { text: 'Talla', bold: true },
       { text: 'Estado', bold: true },
     ],
@@ -162,7 +162,7 @@ async function buildActPdf({ employee, tenant, items, fechaEntrega, observacione
               { text: 'Empleador', style: 'section' },
               { text: tenant.razon_social || tenant.razonSocial || 'Empleador' },
               { text: `RUC: ${tenant.ruc || 'no registrado'}` },
-              { text: `Direccion: ${tenant.direccion || 'no registrada'}` },
+              { text: `Dirección: ${tenant.direccion || 'no registrada'}` },
               { text: `Representante legal: ${tenant.representante_legal || 'no registrado'}` },
               { text: `ID representante: ${tenant.representante_legal_identificacion || 'no registrada'}` },
             ],
@@ -172,7 +172,7 @@ async function buildActPdf({ employee, tenant, items, fechaEntrega, observacione
             stack: [
               { text: 'Trabajador', style: 'section' },
               { text: employeeName },
-              { text: `Cedula: ${employee.cedula || 'no registrada'}` },
+              { text: `Cédula: ${employee.cedula || 'no registrada'}` },
               { text: `Cargo: ${employee.cargo || 'no registrado'}` },
             ],
           },

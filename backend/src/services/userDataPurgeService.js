@@ -103,13 +103,13 @@ async function anonymizeUserData({
     metadata: {
       reason,
       targetUserRole: user.rol,
-      retainedDataNotice: 'Se conservan documentos laborales, nomina, facturacion y auditoria cuando exista obligacion legal o contractual.',
+      retainedDataNotice: 'Se conservan documentos laborales, nómina, facturación y auditoría cuando exista obligación legal o contractual.',
     },
   });
 
   return {
     user: result.rows[0],
-    retainedDataNotice: 'Se conservan documentos laborales, nomina, facturacion y auditoria cuando exista obligacion legal o contractual.',
+    retainedDataNotice: 'Se conservan documentos laborales, nómina, facturación y auditoría cuando exista obligación legal o contractual.',
   };
 }
 
