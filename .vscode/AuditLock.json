@@ -1,82 +1,105 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-AUDITORIA-INTEGRAL-SKNOMINA-2026",
-  "planCode": "AISK26",
+  "plan": "HAIKY-MOBILE-GESTION-RUTAS-ZONAS-2026",
+  "planCode": "MGR26",
   "status": "completed-pass",
-  "phaseCompleted": "AISK26-10",
-  "currentPhase": "AISK26-10",
-  "updatedAt": "2026-07-04T21:00:00-05:00",
+  "phaseCompleted": "MGR26-03",
+  "currentPhase": "MGR26-03",
+  "updatedAt": "2026-07-04T23:40:00-05:00",
   "rulesSource": "RULES.md",
   "precedent": {
-    "plan": "HAIKY-MONETIZACION-RUTAS-APP-SKNOMINA-2026",
-    "planCode": "MRA26",
-    "status": "completed"
+    "plan": "HAIKY-AUDITORIA-INTEGRAL-SKNOMINA-2026",
+    "planCode": "AISK26",
+    "status": "completed-pass",
+    "previousPrecedent": {
+      "plan": "HAIKY-MONETIZACION-RUTAS-APP-SKNOMINA-2026",
+      "planCode": "MRA26",
+      "status": "completed"
+    }
   },
-  "summary": "Auditoria integral SKNOMINA completada: 45 hallazgos (4 ALTO, 25 MEDIO, 16 BAJO), todos resueltos en 10 fases. Tests 234/234 PASS, contracts PASS, build PASS.",
-  "findingsCount": {
-    "critico": 0,
-    "alto": 4,
-    "medio": 25,
-    "bajo": 16,
-    "total": 45
-  },
-  "findings": [
-    { "id": "HAL-30", "severity": "ALTO", "status": "resuelto", "detail": "POST /api/marcaciones protegido con requireRole", "phase": "AISK26-01" },
-    { "id": "HAL-31", "severity": "ALTO", "status": "resuelto", "detail": "GET /api/marcaciones/hoy protegido con requireRole", "phase": "AISK26-01" },
-    { "id": "HAL-90", "severity": "ALTO", "status": "resuelto", "detail": "Parametros legales 2026 sourceStatus validado", "phase": "AISK26-09" },
-    { "id": "HAL-111", "severity": "ALTO", "status": "resuelto", "detail": "Cierre mensual movilizacion con tabla SQLite y UI factura", "phase": "AISK26-05" },
-    { "id": "HAL-32", "severity": "MEDIO", "status": "resuelto", "detail": "GET /api/novedades protegido con RBAC", "phase": "AISK26-01" },
-    { "id": "HAL-33", "severity": "MEDIO", "status": "resuelto", "detail": "GET /api/nomina/:id/rol-pdf protegido con RBAC", "phase": "AISK26-01" },
-    { "id": "HAL-34", "severity": "MEDIO", "status": "resuelto", "detail": "GET /api/documentos protegido con RBAC", "phase": "AISK26-01" },
-    { "id": "HAL-35", "severity": "MEDIO", "status": "resuelto", "detail": "GET /api/reportes/asistencia protegido con RBAC", "phase": "AISK26-01" },
-    { "id": "HAL-10", "severity": "MEDIO", "status": "resuelto", "detail": "Tildes corregidas en app-movil y backend", "phase": "AISK26-02" },
-    { "id": "HAL-11", "severity": "MEDIO", "status": "resuelto", "detail": "Tildes corregidas en frontend-web", "phase": "AISK26-02" },
-    { "id": "HAL-60", "severity": "MEDIO", "status": "resuelto", "detail": "Timezone America/Guayaquil homologado en backend y mobile", "phase": "AISK26-03" },
-    { "id": "HAL-22", "severity": "MEDIO", "status": "resuelto", "detail": "money() extraido a modulo compartido", "phase": "AISK26-04" },
-    { "id": "HAL-24", "severity": "MEDIO", "status": "resuelto", "detail": "paymentAPI eliminado de mobile", "phase": "AISK26-04" },
-    { "id": "HAL-110", "severity": "MEDIO", "status": "resuelto", "detail": "Sugerencia inter-stop implementada en buildRouteSuggestion", "phase": "AISK26-05" },
-    { "id": "HAL-112", "severity": "MEDIO", "status": "resuelto", "detail": "Anticipo movilizacion integrado como novedad de nomina", "phase": "AISK26-05" },
-    { "id": "HAL-120", "severity": "MEDIO", "status": "resuelto", "detail": "PDF descargable en AutoservicioScreen", "phase": "AISK26-06" },
-    { "id": "HAL-121", "severity": "MEDIO", "status": "resuelto", "detail": "Adjunto soporte medico en PermisosScreen", "phase": "AISK26-06" },
-    { "id": "HAL-100", "severity": "MEDIO", "status": "resuelto", "detail": "SQLite cache rutas y perfil offline", "phase": "AISK26-07" },
-    { "id": "HAL-101", "severity": "MEDIO", "status": "resuelto", "detail": "Cola offline con reintento automatico", "phase": "AISK26-07" },
-    { "id": "HAL-01", "severity": "MEDIO", "status": "resuelto", "detail": "Dark mode foundation con userInterfaceStyle automatic", "phase": "AISK26-08" },
-    { "id": "HAL-02", "severity": "MEDIO", "status": "resuelto", "detail": "Tab bar reducido de 6 a 5 tabs", "phase": "AISK26-08" },
-    { "id": "HAL-06", "severity": "MEDIO", "status": "resuelto", "detail": "ErrorBoundary implementado en app-movil", "phase": "AISK26-08" },
-    { "id": "HAL-40", "severity": "MEDIO", "status": "resuelto", "detail": "PayPhone healthCheck async al arranque", "phase": "AISK26-09" },
-    { "id": "HAL-42", "severity": "MEDIO", "status": "resuelto", "detail": "CORPORATIVO expuesto en catalogo publico", "phase": "AISK26-09" },
-    { "id": "HAL-50", "severity": "MEDIO", "status": "resuelto", "detail": "sendRolPagoDisponible con resumen acumulado y empleadosSinNotificacion", "phase": "AISK26-09" },
-    { "id": "HAL-70", "severity": "MEDIO", "status": "resuelto", "detail": "pg.Client documentado como intencional en seed", "phase": "AISK26-09" },
-    { "id": "HAL-80", "severity": "MEDIO", "status": "resuelto", "detail": "Rutas banco unificadas", "phase": "AISK26-04" },
-    { "id": "HAL-91", "severity": "MEDIO", "status": "resuelto", "detail": "Parametros legales 2025 con sourceStatus legacy", "phase": "AISK26-09" },
-    { "id": "HAL-92", "severity": "MEDIO", "status": "resuelto", "detail": "Purga comunicaciones en cron semanal LOPDP", "phase": "AISK26-09" },
-    { "id": "HAL-03", "severity": "BAJO", "status": "resuelto", "detail": "Botones marcacion con colores semanticos", "phase": "AISK26-08" },
-    { "id": "HAL-04", "severity": "BAJO", "status": "resuelto", "detail": "Labels Marcar llegada/salida mejorados", "phase": "AISK26-08" },
-    { "id": "HAL-05", "severity": "BAJO", "status": "resuelto", "detail": "Indicador online/offline en App.js", "phase": "AISK26-07" },
-    { "id": "HAL-113", "severity": "BAJO", "status": "resuelto", "detail": "Alerta suave al marcar salida para registrar gasto", "phase": "AISK26-05" },
-    { "id": "HAL-122", "severity": "BAJO", "status": "resuelto", "detail": "Notificacion automatica al aprobar/rechazar permiso", "phase": "AISK26-06" },
-    { "id": "HAL-41", "severity": "BAJO", "status": "resuelto", "detail": "assertPasswordComplexity en seed superadmin", "phase": "AISK26-09" }
+  "summary": "MGR26 cerrado: app movil expone gestion de zonas de marcacion, sitios y rutas de campo por perfil; owner/admin_rrhh crean zonas y sitios, supervisor solo ve asignacion/seguimiento; endpoints protegidos por mobileApp y fieldRoutes.",
+  "filesModified": [
+    ".github/CODEX_CONTEXT.md",
+    ".github/prompts/MGR26-00-baseline-gobierno.md",
+    ".github/prompts/MGR26-01-backend-mobile-admin.md",
+    ".github/prompts/MGR26-02-app-movil-perfiles.md",
+    ".github/prompts/MGR26-03-qa-cierre.md",
+    ".vscode/AuditLock.json",
+    "app-movil/src/App.js",
+    "app-movil/src/screens/OperacionMovilScreen.js",
+    "app-movil/src/services/api.js",
+    "backend/src/app.js",
+    "backend/src/app.routes.test.js",
+    "backend/src/controllers/mobileController.js",
+    "backend/src/controllers/mobileController.test.js",
+    "backend/src/services/routeVisitService.js",
+    "docs2/PLAN_HAIKY_MOBILE_GESTION_RUTAS_ZONAS_2026.md",
+    "docs2/mobile-gestion-rutas-zonas-2026/REPORTE_MGR26_00_03_EJECUCION.md",
+    "scripts/verify-system-contracts.mjs"
   ],
   "fases": [
-    { "phase": "AISK26-00", "status": "completed" },
-    { "phase": "AISK26-01", "status": "completed" },
-    { "phase": "AISK26-02", "status": "completed" },
-    { "phase": "AISK26-03", "status": "completed" },
-    { "phase": "AISK26-04", "status": "completed" },
-    { "phase": "AISK26-05", "status": "completed" },
-    { "phase": "AISK26-06", "status": "completed" },
-    { "phase": "AISK26-07", "status": "completed" },
-    { "phase": "AISK26-08", "status": "completed" },
-    { "phase": "AISK26-09", "status": "completed" },
-    { "phase": "AISK26-10", "status": "completed-pass" }
+    {
+      "phase": "MGR26-00",
+      "status": "completed",
+      "detail": "Plan, prompts, reporte y contexto registrados en docs2/.github."
+    },
+    {
+      "phase": "MGR26-01",
+      "status": "completed",
+      "detail": "Backend movil administrativo agregado con RBAC y gates de plan."
+    },
+    {
+      "phase": "MGR26-02",
+      "status": "completed",
+      "detail": "App movil agrega consola de operacion con secciones ocultas por allowedActions."
+    },
+    {
+      "phase": "MGR26-03",
+      "status": "completed-pass",
+      "detail": "QA, contratos, reporte y AuditLock cerrados."
+    }
   ],
   "validationChecks": [
-    { "gate": "npm run contracts", "result": "PASS" },
-    { "gate": "npm --workspace=backend test", "result": "234/234 PASS (51 suites)" },
-    { "gate": "npm --workspace=frontend-web run build", "result": "PASS (1523 modules)" },
-    { "gate": "git diff --check", "result": "PASS" }
+    {
+      "gate": "node --check backend/src/controllers/mobileController.js",
+      "result": "PASS"
+    },
+    {
+      "gate": "node --check backend/src/services/routeVisitService.js",
+      "result": "PASS"
+    },
+    {
+      "gate": "npm.cmd --workspace=backend test -- --runTestsByPath src/controllers/mobileController.test.js src/app.routes.test.js --runInBand",
+      "result": "PASS (2 suites, 24 tests)"
+    },
+    {
+      "gate": "npm.cmd run contracts",
+      "result": "PASS"
+    },
+    {
+      "gate": "npm.cmd run check:mobile",
+      "result": "PASS"
+    },
+    {
+      "gate": "JSX parser App.js OperacionMovilScreen.js",
+      "result": "PASS"
+    },
+    {
+      "gate": "git diff --check",
+      "result": "PASS"
+    },
+    {
+      "gate": "UTF-8 sin BOM archivos modificados",
+      "result": "PASS"
+    }
   ],
-  "previousAuditLockHash": "A7D9F4FB21E4084EEF982C90A90345544AFDF493E8DFF5A4F2406EEF6F9AF4A5",
-  "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "AISK26-10-completed-2026-07-04T21:00:00-05:00"
+  "riskControls": [
+    "No se creo modelo paralelo de zonas o rutas.",
+    "La visibilidad UI no reemplaza RBAC ni gates de plan.",
+    "Las secciones no permitidas por perfil no se renderizan.",
+    "backend/.env.example se detecta como cambio ajeno y no pertenece al cierre MGR26."
+  ],
+  "previousAuditLockHash": "ADEBDDC963BF26C1D97DF1B3C60CB8098E9986602561DBFDDB3F2F9C06889C92",
+  "signatureAlgorithm": "SHA256(previousAuditLockContent + updatedAt)",
+  "signature": "115309F039C06A674B395C4E00589AF0948B6376C007160FCFE9E0ABA481D887"
 }

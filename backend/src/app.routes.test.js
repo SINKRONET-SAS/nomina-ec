@@ -65,9 +65,18 @@ describe('app route order', () => {
     expect(source).toContain("const requireMobileAppPlan = requirePlanCapability('mobileApp')");
     expect(source).toContain("const requireFieldRoutesPlan = requirePlanCapability('fieldRoutes')");
     expect(source).toContain("app.get('/api/rutas/sitios', requireRole('owner', 'admin_rrhh', 'supervisor'), requireFieldRoutesPlan");
-    expect(source).toContain("app.get('/api/mobile/me', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan");
-    expect(source).toContain("app.get('/api/mobile/ruta/hoy', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan");
+    expect(source).toContain("app.get('/api/mobile/me', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan");
+    expect(source).toContain("app.get('/api/mobile/ruta/hoy', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan");
     expect(source).toContain("app.post('/api/movilizacion/informe', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan");
+  });
+
+  test('expone gestion movil de zonas y rutas por perfil sin saltar gates de plan', () => {
+    const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
+
+    expect(source).toContain("app.get('/api/mobile/admin/rutas/resumen', requireRole('owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan");
+    expect(source).toContain("app.post('/api/mobile/admin/zonas', requireRole('owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan");
+    expect(source).toContain("app.post('/api/mobile/admin/rutas/sitios', requireRole('owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan");
+    expect(source).toContain("app.post('/api/mobile/admin/rutas/dias', requireRole('owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan");
   });
 });
 

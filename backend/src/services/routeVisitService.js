@@ -12,6 +12,7 @@ const { assertNoOpenRouteVisit } = require('./routeRulesService');
 const SITE_STATUSES = new Set(['activo', 'inactivo', 'archivado']);
 const DAY_STATUSES = new Set(['planned', 'in_progress', 'completed', 'exception_pending', 'cancelled']);
 const EXCEPTION_STATUSES = new Set(['pending_review', 'approved', 'rejected', 'resolved']);
+const ROUTE_DAY_SOURCES = new Set(['pwa', 'mobile', 'api']);
 
 function todayInEcuador() {
   return dateInEcuador(new Date());
@@ -27,6 +28,11 @@ function normalizeCode(value) {
 
 function normalizeText(value, max = 1000) {
   return String(value || '').trim().slice(0, max);
+}
+
+function normalizeRouteDaySource(value) {
+  const source = normalizeText(value || 'pwa', 30).toLowerCase();
+  return ROUTE_DAY_SOURCES.has(source) ? source : 'pwa';
 }
 
 function parseNumber(value, fallback = null) {
@@ -571,6 +577,7 @@ async function createRouteDay({ tenantId, payload, user, context = {} }) {
   if (stops.length === 0) {
     throw new AppError('La ruta debe incluir al menos una tienda o parada.', { code: 'ROUTE_DAY_STOPS_REQUIRED', statusCode: 400, userId: user?.id });
   }
+  const source = normalizeRouteDaySource(payload.source || context.source);
 
   const client = await db.getClient(tenantId, user?.id);
   try {
@@ -623,7 +630,7 @@ async function createRouteDay({ tenantId, payload, user, context = {} }) {
           tenant_id, empleado_id, period_id, operational_date, status,
           allow_reorder, allow_unplanned, source, metadata, created_by
         )
-        VALUES ($1,$2,$3,$4,'planned',$5,$6,'pwa',$7,$8)
+        VALUES ($1,$2,$3,$4,'planned',$5,$6,$7,$8,$9)
         RETURNING *
       `, [
         tenantId,
@@ -632,6 +639,7 @@ async function createRouteDay({ tenantId, payload, user, context = {} }) {
         operationalDate,
         payload.allowReorder !== false,
         payload.allowUnplanned !== false,
+        source,
         jsonParam(payload.metadata || {}),
         user?.id || null,
       ]);
@@ -665,7 +673,7 @@ async function createRouteDay({ tenantId, payload, user, context = {} }) {
         datos_anteriores, datos_nuevos, ip_address, metadata
       )
       VALUES ($1,$2,$3,'route_day.upsert','route_days',$4,'{}'::jsonb,$5,$6,'{}'::jsonb)
-    `, [tenantId, user?.id || null, context.correlationId, routeDay.id, jsonParam({ empleadoId, operationalDate, stops: stops.length }), context.ipAddress || null]);
+    `, [tenantId, user?.id || null, context.correlationId, routeDay.id, jsonParam({ empleadoId, operationalDate, stops: stops.length, source }), context.ipAddress || null]);
 
     await db.commit(client);
     return getRouteDay({ tenantId, empleadoId, fecha: operationalDate });

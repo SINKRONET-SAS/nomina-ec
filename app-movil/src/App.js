@@ -13,6 +13,7 @@ import AutoservicioScreen from './screens/AutoservicioScreen';
 import PermisosScreen from './screens/PermisosScreen';
 import RutaHoyScreen from './screens/RutaHoyScreen';
 import GastosMovilizacionScreen from './screens/GastosMovilizacionScreen';
+import OperacionMovilScreen from './screens/OperacionMovilScreen';
 import ErrorBoundary from './components/ErrorBoundary';
 import { initMovilizacionDB } from './db/movilizacion';
 import { initOfflineQueue, processQueue } from './db/offline-queue';
@@ -21,6 +22,8 @@ import { mobileAPI } from './services/api';
 import NetInfo from '@react-native-community/netinfo';
 
 const storedUserKey = 'mobileUser';
+const operationalAdminRoles = ['owner', 'admin_rrhh', 'supervisor'];
+const administrativeNoticeRoles = [...operationalAdminRoles, 'superadmin'];
 
 const tabs = [
   { id: 'marcar', label: 'Marcar' },
@@ -78,37 +81,23 @@ function roleLabel(role) {
 function AdminMobileShell({ user, onLogout }) {
   return (
     <View style={styles.adminShell}>
-      <View style={styles.adminCard}>
-        <Text style={styles.adminEyebrow}>Acceso administrativo</Text>
-        <Text style={styles.adminTitle}>SKNOMINA móvil</Text>
-        <Text style={styles.adminText}>
-          {roleLabel(user?.rol)}: tu acceso móvil queda reservado para revisar operación y confirmar que la app de empleados está disponible.
-        </Text>
-        <View style={styles.adminGrid}>
-          <View style={styles.adminTile}>
-            <Text style={styles.adminTileTitle}>Permisos</Text>
-            <Text style={styles.adminTileText}>Los empleados pueden solicitar permisos desde la app.</Text>
-          </View>
-          <View style={styles.adminTile}>
-            <Text style={styles.adminTileTitle}>Movilización</Text>
-            <Text style={styles.adminTileText}>Los informes se aprueban desde la PWA de operación.</Text>
-          </View>
-          <View style={styles.adminTile}>
-            <Text style={styles.adminTileTitle}>Rutas</Text>
-            <Text style={styles.adminTileText}>El equipo registra entradas y salidas de campo en tiempo real.</Text>
-          </View>
+      <View style={styles.adminTopBar}>
+        <View>
+          <Text style={styles.adminEyebrow}>Acceso administrativo</Text>
+          <Text style={styles.adminHeaderTitle}>{roleLabel(user?.rol)}</Text>
         </View>
-        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
+        <TouchableOpacity style={styles.adminLogoutButton} onPress={onLogout}>
+          <Text style={styles.adminLogoutButtonText}>Salir</Text>
         </TouchableOpacity>
       </View>
+      <OperacionMovilScreen user={user} />
     </View>
   );
 }
 
 function MobileAccessNotice({ message, onLogout }) {
   return (
-    <View style={styles.adminShell}>
+    <View style={styles.noticeShell}>
       <View style={styles.adminCard}>
         <Text style={styles.adminEyebrow}>Acceso móvil</Text>
         <Text style={styles.adminTitle}>No pudimos abrir tu perfil operativo</Text>
@@ -150,7 +139,15 @@ export default function App() {
       const online = Boolean(state.isConnected && state.isInternetReachable !== false);
       setIsOnline(online);
       if (online) {
-        processQueue(mobileAPI).catch(() => {});
+        processQueue(mobileAPI).catch((err) => {
+          console.error('[MOBILE] Error procesando cola offline', {
+            code: err.code || 'MOBILE_OFFLINE_QUEUE_PROCESS_ERROR',
+            statusCode: 500,
+            correlationId: 'mobile-local',
+            userId: authUser?.id || null,
+            message: err.message,
+          });
+        });
       }
     });
     return () => unsubscribe();
@@ -196,7 +193,7 @@ export default function App() {
       if (errorCode === 'PLAN_CAPABILITY_BLOCKED') {
         setMobileProfile(null);
         setProfileError(err?.response?.data?.message || 'El plan actual no incluye app móvil. Activa un plan que ofrezca esta funcionalidad.');
-      } else if (['owner', 'admin_rrhh', 'superadmin'].includes(role)) {
+      } else if (administrativeNoticeRoles.includes(role)) {
         setMobileProfile({ employee: null, user: fallbackUser, administrativeOnly: true });
         setProfileError('');
       } else {
@@ -274,10 +271,16 @@ export default function App() {
           <Text style={styles.loadingText}>Preparando tu acceso...</Text>
         </View>
       )}
-      {token && !cargandoPerfil && !profileError && mobileProfile && ['owner', 'admin_rrhh', 'superadmin'].includes(mobileProfile?.user?.rol) && (
+      {token && !cargandoPerfil && !profileError && mobileProfile && operationalAdminRoles.includes(mobileProfile?.user?.rol) && (
         <AdminMobileShell user={mobileProfile.user} onLogout={handleLogout} />
       )}
-      {token && !cargandoPerfil && !profileError && mobileProfile && !['owner', 'admin_rrhh', 'superadmin'].includes(mobileProfile?.user?.rol) && (
+      {token && !cargandoPerfil && !profileError && mobileProfile && mobileProfile?.user?.rol === 'superadmin' && (
+        <MobileAccessNotice
+          message="El superadmin gestiona planes y tenant desde la PWA. Usa un usuario owner, RRHH o supervisor para operar rutas desde la app."
+          onLogout={handleLogout}
+        />
+      )}
+      {token && !cargandoPerfil && !profileError && mobileProfile && !administrativeNoticeRoles.includes(mobileProfile?.user?.rol) && (
         <EmployeeAppShell onLogout={handleLogout} />
       )}
       {!token && <LoginScreen onLogin={handleLogin} />}
@@ -356,13 +359,27 @@ const styles = StyleSheet.create({
   adminShell: {
     backgroundColor: '#f8fafc',
     flex: 1,
+  },
+  noticeShell: {
+    backgroundColor: '#f8fafc',
+    flex: 1,
     justifyContent: 'center',
     padding: 20,
+  },
+  adminTopBar: {
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderBottomColor: '#e2e8f0',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 58,
+    paddingHorizontal: 16,
   },
   adminCard: {
     backgroundColor: '#ffffff',
     borderColor: '#dbeafe',
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     padding: 22,
   },
@@ -379,31 +396,31 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     marginTop: 8,
   },
+  adminHeaderTitle: {
+    color: '#0f172a',
+    fontSize: 16,
+    fontWeight: '900',
+    marginTop: 2,
+  },
   adminText: {
     color: '#334155',
     fontSize: 15,
     lineHeight: 22,
     marginTop: 10,
   },
-  adminGrid: {
-    gap: 10,
-    marginTop: 18,
-  },
-  adminTile: {
-    backgroundColor: '#f1f5f9',
+  adminLogoutButton: {
+    alignItems: 'center',
+    borderColor: '#cbd5e1',
     borderRadius: 8,
-    padding: 14,
+    borderWidth: 1,
+    minHeight: 38,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
   },
-  adminTileTitle: {
-    color: '#0f766e',
-    fontSize: 15,
+  adminLogoutButtonText: {
+    color: '#334155',
+    fontSize: 12,
     fontWeight: '900',
-  },
-  adminTileText: {
-    color: '#475569',
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 4,
   },
   logoutButton: {
     alignItems: 'center',

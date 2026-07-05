@@ -178,17 +178,21 @@ app.get('/api/movilizacion/informes', requireRole('owner', 'admin_rrhh'), requir
 app.patch('/api/movilizacion/informes/:id', requireRole('owner', 'admin_rrhh'), requireMobileAppPlan, requireFreshUser, movilizacionController.resolverInforme);
 
 const mobileController = require('./controllers/mobileController');
-app.get('/api/mobile/me', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, mobileController.perfil);
-app.get('/api/mobile/asistencia/resumen', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, mobileController.resumenAsistencia);
-app.post('/api/mobile/marcaciones', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, mobileController.registrarMarcacionMovil);
-app.get('/api/mobile/ruta/hoy', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.rutaHoy);
-app.get('/api/mobile/historial', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, mobileController.historial);
-app.post('/api/mobile/permisos', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, mobileController.solicitarPermiso);
-app.post('/api/mobile/ruta/paradas/:stopId/llegada', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.registrarLlegadaRuta);
-app.post('/api/mobile/ruta/paradas/:stopId/salida', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.registrarSalidaRuta);
-app.post('/api/mobile/ruta/paradas/:stopId/omitir', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.omitirParadaRuta);
-app.post('/api/mobile/ruta/visitas/no-programada', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.registrarVisitaNoProgramada);
-app.get('/api/mobile/nomina/:anio/:mes', requireRole('empleado', 'owner', 'admin_rrhh'), requireMobileAppPlan, mobileController.rolPago);
+app.get('/api/mobile/me', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, mobileController.perfil);
+app.get('/api/mobile/admin/rutas/resumen', requireRole('owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.adminRutasResumen);
+app.post('/api/mobile/admin/zonas', requireRole('owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.crearZonaMarcacionMovil);
+app.post('/api/mobile/admin/rutas/sitios', requireRole('owner', 'admin_rrhh'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.crearSitioRutaMovil);
+app.post('/api/mobile/admin/rutas/dias', requireRole('owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.asignarRutaMovil);
+app.get('/api/mobile/asistencia/resumen', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, mobileController.resumenAsistencia);
+app.post('/api/mobile/marcaciones', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, mobileController.registrarMarcacionMovil);
+app.get('/api/mobile/ruta/hoy', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.rutaHoy);
+app.get('/api/mobile/historial', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, mobileController.historial);
+app.post('/api/mobile/permisos', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, mobileController.solicitarPermiso);
+app.post('/api/mobile/ruta/paradas/:stopId/llegada', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.registrarLlegadaRuta);
+app.post('/api/mobile/ruta/paradas/:stopId/salida', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.registrarSalidaRuta);
+app.post('/api/mobile/ruta/paradas/:stopId/omitir', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.omitirParadaRuta);
+app.post('/api/mobile/ruta/visitas/no-programada', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, requireFieldRoutesPlan, mobileController.registrarVisitaNoProgramada);
+app.get('/api/mobile/nomina/:anio/:mes', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireMobileAppPlan, mobileController.rolPago);
 
 const novedadController = require('./controllers/novedadController');
 app.get('/api/novedades', requireRole('owner', 'admin_rrhh', 'supervisor'), novedadController.listar);
