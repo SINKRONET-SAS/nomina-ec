@@ -53,6 +53,11 @@ function normalizeReserveFundMode(value) {
   return ['mensual', 'iess_directo'].includes(normalized) ? normalized : null;
 }
 
+function normalizeBenefitModality(value) {
+  const normalized = String(value || 'acumulado').trim().toLowerCase();
+  return ['mensual', 'acumulado'].includes(normalized) ? normalized : null;
+}
+
 function normalizeIessAffiliated(value) {
   if (typeof value === 'undefined' || value === null || value === '') return true;
   if (typeof value === 'boolean') return value;
@@ -618,6 +623,7 @@ async function crear(req, res) {
       iess_afiliado, iess_tipo_relacion,
       jornada_horas_mensuales, gastos_personales_anuales,
       cuenta_bancaria, banco, tipo_cuenta, forma_pago, region_decimo_cuarto, modalidad_fondo_reserva,
+      modalidad_decimo_tercero, modalidad_decimo_cuarto,
       jornada_codigo, unidad_organizativa_codigo, zona_marcacion_codigo,
       direccion, ciudad_codigo, provincia_codigo, estado_civil, cargas_familiares, dependientes, telefono, email,
       whatsapp_consent
@@ -646,6 +652,22 @@ async function crear(req, res) {
       return res.status(400).json({
         error: 'MODALIDAD_FONDO_RESERVA_INVALIDA',
         message: 'Selecciona si el fondo de reserva se paga mensual o se deposita al IESS.',
+        correlationId: req.correlationId,
+      });
+    }
+    const normalizedThirteenthMode = normalizeBenefitModality(modalidad_decimo_tercero);
+    if (!normalizedThirteenthMode) {
+      return res.status(400).json({
+        error: 'MODALIDAD_DECIMO_TERCERO_INVALIDA',
+        message: 'Selecciona si el decimo tercero se paga mensual o se acumula.',
+        correlationId: req.correlationId,
+      });
+    }
+    const normalizedFourteenthMode = normalizeBenefitModality(modalidad_decimo_cuarto);
+    if (!normalizedFourteenthMode) {
+      return res.status(400).json({
+        error: 'MODALIDAD_DECIMO_CUARTO_INVALIDA',
+        message: 'Selecciona si el decimo cuarto se paga mensual o se acumula.',
         correlationId: req.correlationId,
       });
     }
@@ -697,14 +719,16 @@ async function crear(req, res) {
         sueldo_bruto_mensual, jornada_horas_mensuales, gastos_personales_anuales,
         fecha_ingreso, tipo_contrato, iess_afiliado, iess_tipo_relacion,
         cuenta_bancaria_cifrada, banco, tipo_cuenta, forma_pago,
-        region_decimo_cuarto, modalidad_fondo_reserva, whatsapp_consent_at,
+        region_decimo_cuarto, modalidad_fondo_reserva, modalidad_decimo_tercero, modalidad_decimo_cuarto,
+        whatsapp_consent_at,
         direccion_domicilio, provincia_codigo, ciudad_codigo, ciudad_domicilio, provincia_domicilio,
         referencia_no_convive_nombres, referencia_no_convive_email, referencia_no_convive_telefono,
         domicilio_lat, domicilio_lng, estado_civil, cargas_familiares, telefono, email_personal
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39)
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41)
       RETURNING id, cedula, nombres, apellidos, fecha_nacimiento, position_id, cargo, sueldo_bruto_mensual,
         jornada_horas_mensuales, gastos_personales_anuales, fecha_ingreso, tipo_contrato, iess_afiliado, iess_tipo_relacion,
-        banco, tipo_cuenta, forma_pago, region_decimo_cuarto, modalidad_fondo_reserva, whatsapp_consent_at,
+        banco, tipo_cuenta, forma_pago, region_decimo_cuarto, modalidad_fondo_reserva,
+        modalidad_decimo_tercero, modalidad_decimo_cuarto, whatsapp_consent_at,
         unidad_organizativa_codigo, jornada_codigo, zona_marcacion_codigo,
         direccion_domicilio, provincia_codigo, ciudad_codigo, ciudad_domicilio, provincia_domicilio,
         referencia_no_convive_nombres, referencia_no_convive_email, referencia_no_convive_telefono,
@@ -718,7 +742,8 @@ async function crear(req, res) {
       fecha_ingreso, tipo_contrato || 'indefinido',
       normalizedIessAffiliated, normalizedIessRelationType,
       cuentaCifrada, normalizedBankCode, tipo_cuenta || '', forma_pago || 'transferencia', normalizedRegion,
-      normalizedReserveFundMode, whatsapp_consent ? new Date() : null,
+      normalizedReserveFundMode, normalizedThirteenthMode, normalizedFourteenthMode,
+      whatsapp_consent ? new Date() : null,
       direccion || '', location.provincia_codigo, location.ciudad_codigo, location.ciudad_nombre, location.provincia_nombre,
       profileData.referencia_no_convive_nombres || '',
       profileData.referencia_no_convive_email || '',
@@ -932,6 +957,8 @@ async function actualizar(req, res) {
       forma_pago: 'forma_pago',
       region_decimo_cuarto: 'region_decimo_cuarto',
       modalidad_fondo_reserva: 'modalidad_fondo_reserva',
+      modalidad_decimo_tercero: 'modalidad_decimo_tercero',
+      modalidad_decimo_cuarto: 'modalidad_decimo_cuarto',
       whatsapp_consent_at: 'whatsapp_consent_at',
       direccion_domicilio: 'direccion_domicilio',
       provincia_codigo: 'provincia_codigo',
@@ -973,6 +1000,26 @@ async function actualizar(req, res) {
         return res.status(400).json({
           error: 'MODALIDAD_FONDO_RESERVA_INVALIDA',
           message: 'Selecciona si el fondo de reserva se paga mensual o se deposita al IESS.',
+          correlationId: req.correlationId,
+        });
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'modalidad_decimo_tercero')) {
+      body.modalidad_decimo_tercero = normalizeBenefitModality(body.modalidad_decimo_tercero);
+      if (!body.modalidad_decimo_tercero) {
+        return res.status(400).json({
+          error: 'MODALIDAD_DECIMO_TERCERO_INVALIDA',
+          message: 'Selecciona si el decimo tercero se paga mensual o se acumula.',
+          correlationId: req.correlationId,
+        });
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'modalidad_decimo_cuarto')) {
+      body.modalidad_decimo_cuarto = normalizeBenefitModality(body.modalidad_decimo_cuarto);
+      if (!body.modalidad_decimo_cuarto) {
+        return res.status(400).json({
+          error: 'MODALIDAD_DECIMO_CUARTO_INVALIDA',
+          message: 'Selecciona si el decimo cuarto se paga mensual o se acumula.',
           correlationId: req.correlationId,
         });
       }

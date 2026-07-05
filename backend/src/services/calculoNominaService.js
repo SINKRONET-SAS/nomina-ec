@@ -268,7 +268,8 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   const ingresosBase = roundMoney(sueldoProporcional + noveltyImpact.totals.incomeAffectsIess);
   const ingresosRenta = roundMoney(sueldoProporcional + noveltyImpact.totals.incomeAffectsIncomeTax);
   const fondoReserva = calcularFondoReserva(emp, ingresosBase, anio, mes, payrollParameters);
-  const totalIngresos = roundMoney(
+  // totalIngresos base sin decimos mensualizados (se recalcula despues de resolver modalidad)
+  const totalIngresosBase = roundMoney(
     ingresosBase
     + noveltyImpact.totals.incomeNotAffectsIess
     + fondoReserva.montoPagadoEmpleado
@@ -290,6 +291,13 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   const fourteenthSalaryRegion = resolveFourteenthSalaryRegion(emp.region_decimo_cuarto);
   const fourteenthSalaryPeriod = resolveFourteenthSalaryPeriod(anio, mes, fourteenthSalaryRegion.regionCode, payrollParameters);
   const provisionDecimoCuarto = roundMoney(payrollParameters.unifiedBaseSalary * (payrollParameters.fourteenthSalaryProvisionRate ?? (1 / 12)));
+  const decimoTerceroMensual = calcularDecimoTerceroMensual(emp, provisionDecimoTercero);
+  const decimoCuartoMensual = calcularDecimoCuartoMensual(emp, provisionDecimoCuarto);
+  const totalIngresos = roundMoney(
+    totalIngresosBase
+    + decimoTerceroMensual.montoPagadoEmpleado
+    + decimoCuartoMensual.montoPagadoEmpleado
+  );
   const provisionVacaciones = roundMoney(baseVacaciones * payrollParameters.vacationProvisionRate);
   const provisionFondosReserva = fondoReserva.provision;
   const costoEmpleador = roundMoney(
@@ -360,10 +368,14 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     impuestoRenta,
     provisionDecimoTercero,
     decimoTerceroPeriodo: thirteenthSalaryPeriod,
+    decimoTerceroModalidad: decimoTerceroMensual.modalidad,
+    decimoTerceroMensualizado: decimoTerceroMensual.montoPagadoEmpleado,
     provisionDecimoCuarto,
     decimoCuartoRegion: fourteenthSalaryRegion.regionCode,
     decimoCuartoParameterKey: fourteenthSalaryRegion.parameterKey,
     decimoCuartoPeriodo: fourteenthSalaryPeriod,
+    decimoCuartoModalidad: decimoCuartoMensual.modalidad,
+    decimoCuartoMensualizado: decimoCuartoMensual.montoPagadoEmpleado,
     provisionVacaciones,
     provisionFondosReserva,
     fondoReservaModalidad: fondoReserva.modalidad,
@@ -620,6 +632,27 @@ function safeJson(value) {
   }
 }
 
+function normalizeBenefitModality(value) {
+  const mode = String(value || 'acumulado').trim().toLowerCase();
+  return mode === 'mensual' ? 'mensual' : 'acumulado';
+}
+
+function calcularDecimoTerceroMensual(emp = {}, provisionDecimoTercero) {
+  const modalidad = normalizeBenefitModality(emp.modalidad_decimo_tercero);
+  if (modalidad === 'mensual' && provisionDecimoTercero > 0) {
+    return { modalidad, montoPagadoEmpleado: provisionDecimoTercero };
+  }
+  return { modalidad, montoPagadoEmpleado: 0 };
+}
+
+function calcularDecimoCuartoMensual(emp = {}, provisionDecimoCuarto) {
+  const modalidad = normalizeBenefitModality(emp.modalidad_decimo_cuarto);
+  if (modalidad === 'mensual' && provisionDecimoCuarto > 0) {
+    return { modalidad, montoPagadoEmpleado: provisionDecimoCuarto };
+  }
+  return { modalidad, montoPagadoEmpleado: 0 };
+}
+
 function calcularFondoReserva(emp = {}, ingresosBase, anio, mes, payrollParameters = {}) {
   const provision = calcularProvisionFondosReserva(emp.fecha_ingreso, ingresosBase, anio, mes, payrollParameters);
   const modalidad = normalizeReserveFundMode(emp.modalidad_fondo_reserva);
@@ -728,6 +761,9 @@ module.exports = {
   calcularDiasTrabajados,
   calcularProvisionFondosReserva,
   calcularFondoReserva,
+  calcularDecimoTerceroMensual,
+  calcularDecimoCuartoMensual,
+  normalizeBenefitModality,
   normalizeReserveFundMode,
   calcularValorHora,
   getEmployeeMonthlyHours,

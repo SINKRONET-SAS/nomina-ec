@@ -144,6 +144,16 @@ const PAYROLL_CONCEPTS = [
     creditAccountName: 'Provision decimo tercero por pagar',
   },
   {
+    code: 'decimo_tercero_mensual',
+    label: 'Decimo tercero mensualizado',
+    category: 'ingreso',
+    entryType: 'DEVENGAMIENTO',
+    debitAccountCode: '510202',
+    debitAccountName: 'Gasto decimo tercero',
+    creditAccountCode: '210101',
+    creditAccountName: 'Nomina por pagar',
+  },
+  {
     code: 'decimo_cuarto',
     label: 'Provision decimo cuarto',
     category: 'provision',
@@ -152,6 +162,16 @@ const PAYROLL_CONCEPTS = [
     debitAccountName: 'Gasto decimo cuarto',
     creditAccountCode: '210303',
     creditAccountName: 'Provision decimo cuarto por pagar',
+  },
+  {
+    code: 'decimo_cuarto_mensual',
+    label: 'Decimo cuarto mensualizado',
+    category: 'ingreso',
+    entryType: 'DEVENGAMIENTO',
+    debitAccountCode: '510203',
+    debitAccountName: 'Gasto decimo cuarto',
+    creditAccountCode: '210101',
+    creditAccountName: 'Nomina por pagar',
   },
   {
     code: 'vacaciones',
@@ -432,25 +452,51 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
     sourceId: 'aporte_iess_patronal',
     legalParameterKey: 'aporte_patronal_iess',
   });
-  addLine(lines, {
-    code: 'decimo_tercero',
-    label: 'Provision decimo tercero',
-    category: 'provision',
-    amount: detail.provisionDecimoTercero,
-    source: 'legal',
-    sourceId: 'decimo_tercero',
-    legalParameterKey: 'decimo_tercero',
-  });
-  addLine(lines, {
-    code: 'decimo_cuarto',
-    label: 'Provision decimo cuarto',
-    category: 'provision',
-    amount: detail.provisionDecimoCuarto,
-    source: 'legal',
-    sourceId: 'decimo_cuarto',
-    legalParameterKey: detail.decimoCuartoParameterKey || 'decimo_cuarto',
-    metadata: { region: detail.decimoCuartoRegion || '' },
-  });
+  if (detail.decimoTerceroModalidad === 'mensual' && detail.decimoTerceroMensualizado > 0) {
+    addLine(lines, {
+      code: 'decimo_tercero_mensual',
+      label: 'Decimo tercero mensualizado',
+      category: 'ingreso',
+      amount: detail.decimoTerceroMensualizado,
+      source: 'legal',
+      sourceId: 'decimo_tercero_mensual',
+      legalParameterKey: 'decimo_tercero',
+      metadata: { modalidad: 'mensual' },
+    });
+  } else {
+    addLine(lines, {
+      code: 'decimo_tercero',
+      label: 'Provision decimo tercero',
+      category: 'provision',
+      amount: detail.provisionDecimoTercero,
+      source: 'legal',
+      sourceId: 'decimo_tercero',
+      legalParameterKey: 'decimo_tercero',
+    });
+  }
+  if (detail.decimoCuartoModalidad === 'mensual' && detail.decimoCuartoMensualizado > 0) {
+    addLine(lines, {
+      code: 'decimo_cuarto_mensual',
+      label: 'Decimo cuarto mensualizado',
+      category: 'ingreso',
+      amount: detail.decimoCuartoMensualizado,
+      source: 'legal',
+      sourceId: 'decimo_cuarto_mensual',
+      legalParameterKey: detail.decimoCuartoParameterKey || 'decimo_cuarto',
+      metadata: { region: detail.decimoCuartoRegion || '', modalidad: 'mensual' },
+    });
+  } else {
+    addLine(lines, {
+      code: 'decimo_cuarto',
+      label: 'Provision decimo cuarto',
+      category: 'provision',
+      amount: detail.provisionDecimoCuarto,
+      source: 'legal',
+      sourceId: 'decimo_cuarto',
+      legalParameterKey: detail.decimoCuartoParameterKey || 'decimo_cuarto',
+      metadata: { region: detail.decimoCuartoRegion || '' },
+    });
+  }
   addLine(lines, {
     code: 'vacaciones',
     label: 'Provision vacaciones',

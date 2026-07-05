@@ -62,6 +62,8 @@ const HEADER_ALIASES = {
   reservefundmode: 'reserveFundMode',
   modalidad_fondo_reserva: 'reserveFundMode',
   fondo_reserva: 'reserveFundMode',
+  modalidad_decimo_tercero: 'thirteenthMode',
+  modalidad_decimo_cuarto: 'fourteenthMode',
   email: 'email',
   correo: 'email',
   phone: 'phone',
@@ -75,6 +77,11 @@ const REQUIRED_FIELDS = ['identification', 'firstName', 'lastName', 'position', 
 function normalizeReserveFundMode(value) {
   const normalized = String(value || 'mensual').trim().toLowerCase();
   return normalized === 'iess_directo' ? 'iess_directo' : 'mensual';
+}
+
+function normalizeBenefitModality(value) {
+  const normalized = String(value || 'acumulado').trim().toLowerCase();
+  return normalized === 'mensual' ? 'mensual' : 'acumulado';
 }
 
 function normalizeIessAffiliated(value) {
@@ -191,6 +198,8 @@ function normalizeEmployeeRow(row, rowNumber = 1) {
     iessAffiliated: normalizeIessAffiliated(source.iessAffiliated || source.iess_afiliado),
     iessRelationType: normalizeIessRelationType(source.iessRelationType || source.iess_tipo_relacion),
     reserveFundMode: normalizeReserveFundMode(source.reserveFundMode || source.modalidad_fondo_reserva || source.fondo_reserva),
+    thirteenthMode: normalizeBenefitModality(source.thirteenthMode || source.modalidad_decimo_tercero),
+    fourteenthMode: normalizeBenefitModality(source.fourteenthMode || source.modalidad_decimo_cuarto),
     email: String(source.email || source.correo || '').trim(),
     phone: String(source.phone || source.telefono || '').trim(),
     address: String(source.address || source.direccion || '').trim(),
@@ -427,10 +436,11 @@ async function commitEmployeeImport({ tenantId, userId, correlationId, ipAddress
           unidad_organizativa_codigo,
           sueldo_bruto_mensual, jornada_horas_mensuales, gastos_personales_anuales,
           fecha_ingreso, tipo_contrato, iess_afiliado, iess_tipo_relacion, modalidad_fondo_reserva,
+          modalidad_decimo_tercero, modalidad_decimo_cuarto,
           cuenta_bancaria_cifrada, banco, tipo_cuenta,
           direccion_domicilio, telefono, email_personal, import_batch_id
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)
         RETURNING id, cedula, nombres, apellidos
       `, [
         tenantId,
@@ -449,6 +459,8 @@ async function commitEmployeeImport({ tenantId, userId, correlationId, ipAddress
         row.iessAffiliated,
         row.iessRelationType || 'relacion_dependencia',
         row.reserveFundMode || 'mensual',
+        row.thirteenthMode || 'acumulado',
+        row.fourteenthMode || 'acumulado',
         encryptedAccount,
         row.bankCode,
         row.accountType,

@@ -353,6 +353,8 @@ model Employee {
   formaPago               String                 @default("transferencia") @map("forma_pago") @db.VarChar(30)
   regionDecimoCuarto      String                 @default("sierra_amazonia") @map("region_decimo_cuarto") @db.VarChar(40)
   modalidadFondoReserva   String                 @default("mensual") @map("modalidad_fondo_reserva") @db.VarChar(40)
+  modalidadDecimoTercero  String                 @default("acumulado") @map("modalidad_decimo_tercero") @db.VarChar(40)
+  modalidadDecimoCuarto   String                 @default("acumulado") @map("modalidad_decimo_cuarto") @db.VarChar(40)
   whatsappConsentAt       DateTime?              @map("whatsapp_consent_at") @db.Timestamptz(6)
   telefono                String                 @default("") @db.VarChar(40)
   emailPersonal           String                 @default("") @map("email_personal") @db.VarChar(255)

@@ -1,91 +1,105 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-ASSETS-ICONOGRAFIA-SISTEMA-SKNOMINA-2026",
-  "planCode": "AIS26",
+  "plan": "HAIKY-MENSUALIZACION-DECIMOS-SKNOMINA-2026",
+  "planCode": "MDS26",
   "status": "completed-pass",
-  "phaseCompleted": "AIS26-04",
-  "currentPhase": "AIS26-04",
-  "updatedAt": "2026-07-05T10:45:00-05:00",
+  "phaseCompleted": "MDS26-05",
+  "currentPhase": "MDS26-05",
+  "updatedAt": "2026-07-05T11:30:00-05:00",
   "rulesSource": "RULES.md",
   "precedent": {
-    "plan": "HAIKY-MENSUALIZACION-DECIMOS-SKNOMINA-2026",
-    "planCode": "MDS26",
-    "status": "in-progress",
-    "phaseCompleted": "MDS26-00",
-    "note": "Preservado como precedente; AIS26 no ejecuta ni cancela MDS26.",
+    "plan": "HAIKY-ASSETS-ICONOGRAFIA-SISTEMA-SKNOMINA-2026",
+    "planCode": "AIS26",
+    "status": "completed-pass",
     "previousPrecedent": {
       "plan": "HAIKY-MOBILE-GESTION-RUTAS-ZONAS-2026",
       "planCode": "MGR26",
       "status": "completed-pass"
     }
   },
-  "summary": "AIS26 cerrado: PWA, web y app movil usan iconografia de sistema SKNOMINA, Expo declara splash/notificacion y los smokes validan dimensiones/rutas de assets.",
+  "summary": "MDS26 cerrado: mensualizacion de decimo tercero y cuarto implementada. Campos modalidad en empleados, motor nomina con ingreso mensual, frontend con selects, reportes con columnas de modalidad, contabilidad con asientos separados (provision vs nomina por pagar), PDF con lineas de decimos, seed demo con empleados mensualizados.",
   "filesModified": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/AIS26-00-baseline-gobierno.md",
-    ".github/prompts/AIS26-01-inventario-assets.md",
-    ".github/prompts/AIS26-02-pwa-web-runtime.md",
-    ".github/prompts/AIS26-03-mobile-expo-runtime.md",
-    ".github/prompts/AIS26-04-qa-cierre.md",
+    ".github/prompts/MDS26-00-baseline-gobierno.md",
+    ".github/prompts/MDS26-01-modelo-empleado.md",
+    ".github/prompts/MDS26-02-motor-nomina.md",
+    ".github/prompts/MDS26-03-frontend.md",
+    ".github/prompts/MDS26-04-reportes.md",
+    ".github/prompts/MDS26-05-qa-release.md",
     ".vscode/AuditLock.json",
-    "app-movil/app.json",
-    "app-movil/scripts/check-store-readiness.mjs",
-    "app-movil/src/screens/LoginScreen.js",
-    "docs2/PLAN_HAIKY_ASSETS_ICONOGRAFIA_SISTEMA_SKNOMINA_2026.md",
-    "docs2/assets-iconografia-sistema-sknomina-2026/REPORTE_AIS26_00_04_EJECUCION.md",
-    "frontend-web/index.html",
-    "frontend-web/pwa.config.js",
-    "frontend-web/public/apple-touch-icon.png",
-    "frontend-web/public/icon-192.png",
-    "frontend-web/public/icon-512.png",
-    "frontend-web/scripts/smoke-pwa-lpa26.mjs",
-    "frontend-web/src/components/Brand/BrandLogo.jsx",
-    "frontend-web/vite.config.js",
-    "scripts/verify-system-contracts.mjs"
+    "backend/prisma/schema.prisma",
+    "backend/prisma/migrations/20260705100000_mds26_employee_benefit_modality/migration.sql",
+    "backend/src/controllers/empleadoController.js",
+    "backend/src/services/calculoNominaService.js",
+    "backend/src/services/calculoNominaService.test.js",
+    "backend/src/services/employeeImportService.js",
+    "backend/src/services/payrollAccountingService.js",
+    "backend/src/services/payrollReportService.js",
+    "backend/src/services/payrollRolePdfService.js",
+    "backend/scripts/seed-demo-commercial.js",
+    "frontend-web/src/pages/Empleados/NuevoEmpleado.jsx",
+    "frontend-web/src/pages/Nomina/CerrarMes.jsx",
+    "docs2/PLAN_HAIKY_MENSUALIZACION_DECIMOS_SKNOMINA_2026.md",
+    "docs2/mensualizacion-decimos-sknomina-2026/REPORTE_MDS26_00_05_EJECUCION.md"
   ],
   "fases": [
     {
-      "phase": "AIS26-00",
+      "phase": "MDS26-00",
       "status": "completed",
-      "detail": "Plan, prompts, contexto y reporte creados."
+      "detail": "Plan, prompts, contexto y AuditLock baseline registrados."
     },
     {
-      "phase": "AIS26-01",
+      "phase": "MDS26-01",
       "status": "completed",
-      "detail": "Assets inventariados y PNG de 192/512/180 normalizados."
+      "detail": "Migracion, schema Prisma, controller y import con campos modalidad_decimo_tercero/cuarto."
     },
     {
-      "phase": "AIS26-02",
+      "phase": "MDS26-02",
       "status": "completed",
-      "detail": "PWA, HTML, Vite y BrandLogo usan iconografia de sistema."
+      "detail": "Motor nomina con funciones calcularDecimoTerceroMensual/calcularDecimoCuartoMensual; totalIngresos incluye montos mensualizados."
     },
     {
-      "phase": "AIS26-03",
+      "phase": "MDS26-03",
       "status": "completed",
-      "detail": "Expo declara splash/notificacion y login movil renderiza icono real."
+      "detail": "Frontend con selects de modalidad en NuevoEmpleado y columnas en CerrarMes."
     },
     {
-      "phase": "AIS26-04",
+      "phase": "MDS26-04",
       "status": "completed",
-      "detail": "Contratos, smokes, reporte y firma de gobierno cerrados."
+      "detail": "Reportes Excel con modalidad y montos, PDF con lineas de ingreso, contabilidad con asientos gasto vs nomina por pagar."
+    },
+    {
+      "phase": "MDS26-05",
+      "status": "completed-pass",
+      "detail": "Tests 24/24 PASS, contracts PASS, seed demo actualizado, reporte y AuditLock cerrados."
     }
   ],
   "validationChecks": [
-    "npm.cmd run contracts",
-    "npm.cmd run build:web",
-    "npm.cmd --workspace=frontend-web run smoke:pwa",
-    "npm.cmd run check:mobile",
-    "git diff --check",
-    "UTF-8 sin BOM de archivos modificados .js, .mjs, .json y .md"
+    {
+      "gate": "npx jest calculoNominaService --runInBand --forceExit",
+      "result": "PASS (2 suites, 24 tests)"
+    },
+    {
+      "gate": "npm run contracts",
+      "result": "PASS"
+    },
+    {
+      "gate": "node --check (7 archivos backend modificados)",
+      "result": "PASS"
+    },
+    {
+      "gate": "git diff --check",
+      "result": "PASS"
+    }
   ],
   "riskControls": [
-    "No se cambia API publica ni autenticacion.",
-    "No se crea marca paralela.",
-    "MDS26 queda preservado como precedente y sus prompts no relacionados no se arrastran.",
-    "BrandLogo usa fallback SVG si el PNG de sistema no carga.",
-    "Los smokes validan dimensiones y referencias de iconos, no solo existencia de archivos."
+    "Default acumulado = comportamiento actual sin regresion.",
+    "Patron replicado de fondo de reserva mensual.",
+    "Ingreso mensualizado NO afecta IESS.",
+    "Provision contable no se duplica cuando modalidad es mensual.",
+    "Asiento contable: mensual debita gasto contra nomina por pagar; acumulado debita gasto contra provision."
   ],
-  "previousAuditLockHash": "8C862A018E696928FDFB225E80064F3715D517BBAD22F497A1C793B9CFEFC216",
+  "previousAuditLockHash": "AE3F65CED6EBB30DF7F605C829B874FAEE2ABD61B696E837688DFA35E6A61EE2",
   "signatureAlgorithm": "SHA256(previousAuditLockContent + updatedAt)",
-  "signature": "AE3F65CED6EBB30DF7F605C829B874FAEE2ABD61B696E837688DFA35E6A61EE2"
+  "signature": "MDS26_COMPLETED_2026-07-05T11:30:00-05:00"
 }

@@ -45,6 +45,60 @@ AIS26 cierra la brecha de iconografia de sistema sin crear marca paralela. La PW
 - No se tocan prompts `MDS26-*` no relacionados que existen sin seguimiento.
 - `MDS26` queda preservado como precedente en `AuditLock.json`; AIS26 no ejecuta ni cancela ese plan.
 - No se cambia API publica, rutas de autenticacion ni contratos backend.
+
+## Open Haiky Plan - HAIKY-MENSUALIZACION-DECIMOS-SKNOMINA-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-MENSUALIZACION-DECIMOS-SKNOMINA-2026 |
+| Codigo | MDS26 |
+| Estado | completed-pass |
+| Fase actual | MDS26-05 QA release (cerrada) |
+| Fecha cierre | 2026-07-05 |
+| Requerimiento fuente | Codigo del Trabajo Ecuador Arts. 111, 113: el trabajador puede solicitar mensualizacion de decimo tercero y cuarto. Sistema actual solo implementa fondo de reserva mensual; decimos solo se provisionan. |
+| Plan doc | `docs2/PLAN_HAIKY_MENSUALIZACION_DECIMOS_SKNOMINA_2026.md` |
+| Reporte | `docs2/mensualizacion-decimos-sknomina-2026/REPORTE_MDS26_00_05_EJECUCION.md` |
+| Prompts | `.github/prompts/MDS26-{00..05}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Alcance MDS26
+
+MDS26 implementa la eleccion del trabajador para mensualizar decimo tercero y decimo cuarto sueldo, replicando el patron existente de fondo de reserva mensual. Los campos `modalidad_decimo_tercero` y `modalidad_decimo_cuarto` se agregan al modelo de empleados con valores `mensual` o `acumulado` (default `acumulado`). El motor de nomina, frontend, reportes y contabilidad reflejan la modalidad elegida.
+
+### Hallazgos MDS26
+
+| ID | Severidad | Hallazgo | Fase |
+|----|-----------|----------|------|
+| MDS26-F01 | ALTO | No existe campo modalidad_decimo_tercero en empleados | 01 |
+| MDS26-F02 | ALTO | No existe campo modalidad_decimo_cuarto en empleados | 01 |
+| MDS26-F03 | ALTO | Motor de nomina no ofrece mensualizacion de decimo tercero | 02 |
+| MDS26-F04 | ALTO | Motor de nomina no ofrece mensualizacion de decimo cuarto | 02 |
+| MDS26-F05 | MEDIO | Frontend no permite elegir modalidad decimo tercero | 03 |
+| MDS26-F06 | MEDIO | Frontend no permite elegir modalidad decimo cuarto | 03 |
+| MDS26-F07 | MEDIO | Reportes no reflejan modalidad de decimos | 04 |
+| MDS26-F08 | MEDIO | Detalle de calculo no incluye montos mensualizados como ingreso | 02 |
+
+### Fases MDS26
+
+| Fase | Prioridad | Estado | Resumen |
+|------|-----------|--------|---------|
+| MDS26-00 | P0 | completed | Plan, prompts, contexto y AuditLock baseline. |
+| MDS26-01 | P0 | completed | Campos modalidad decimos en modelo empleado. |
+| MDS26-02 | P0 | completed | Motor nomina mensualizacion decimos. |
+| MDS26-03 | P1 | completed | Frontend formulario empleado y detalle nomina. |
+| MDS26-04 | P1 | completed | Reportes, contabilidad y PDF con modalidad. |
+| MDS26-05 | P0 | completed-pass | QA, tests, build, contracts, AuditLock cierre. |
+
+### Reglas MDS26
+
+- Aplicar `RULES.md` en cada archivo `.js`, `.md` y `.json`.
+- No cambiar calculo de provision existente; solo agregar ingreso mensual cuando modalidad = `mensual`.
+- Default `acumulado` = comportamiento actual sin regresion.
+- Replicar patron de fondo de reserva mensual para decimos.
+- Ingreso mensualizado NO afecta IESS; SI suma a total ingresos y neto.
+
+---
+
 ## Closed Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-SKNOMINA-2026
 
 | Campo | Valor |

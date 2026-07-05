@@ -103,6 +103,8 @@ const TRANSPOSED_ROLE_CONCEPTS = [
   { group: 'Ingresos', key: 'bonosDesempeno', label: 'Bonos de desempeno' },
   { group: 'Ingresos', key: 'comisiones', label: 'Comisiones' },
   { group: 'Ingresos', key: 'fondoReservaPagadoEmpleado', label: 'Fondo de reserva pagado' },
+  { group: 'Ingresos', key: 'decimoTerceroMensualizado', label: 'Decimo tercero mensualizado' },
+  { group: 'Ingresos', key: 'decimoCuartoMensualizado', label: 'Decimo cuarto mensualizado' },
   { group: 'Deducciones', key: 'aporteIess', label: 'Aporte IESS personal' },
   { group: 'Deducciones', key: 'impuestoRenta', label: 'Impuesto a la renta' },
   { group: 'Deducciones', key: 'descuentoFaltas', label: 'Descuento por faltas' },
@@ -141,6 +143,12 @@ function buildPayrollRoleDocDefinition(row) {
   addAmountLine(ingresos, 'Bonos de desempeno', detail.bonosDesempeno);
   addAmountLine(ingresos, 'Comisiones', detail.comisiones);
   addAmountLine(ingresos, 'Fondo de reserva pagado', detail.fondoReservaPagadoEmpleado);
+  if (detail.decimoTerceroModalidad === 'mensual') {
+    addAmountLine(ingresos, 'Decimo tercero mensualizado', detail.decimoTerceroMensualizado);
+  }
+  if (detail.decimoCuartoModalidad === 'mensual') {
+    addAmountLine(ingresos, 'Decimo cuarto mensualizado', detail.decimoCuartoMensualizado);
+  }
 
   addAmountLine(deducciones, 'Aporte IESS personal', detail.aporteIess ?? row.aporte_iess_personal);
   addAmountLine(deducciones, 'Impuesto a la renta', detail.impuestoRenta ?? row.impuesto_renta);

@@ -1,6 +1,8 @@
 const {
   calcularDiasTrabajados,
   calcularFondoReserva,
+  calcularDecimoTerceroMensual,
+  calcularDecimoCuartoMensual,
   calcularIR,
   calcularProvisionFondosReserva,
   calcularValorHora,
@@ -98,6 +100,26 @@ describe('calculoNominaService', () => {
       montoPagadoEmpleado: 0,
       montoDepositadoIess: 50,
     });
+  });
+
+  test('paga decimo tercero mensualizado cuando modalidad es mensual', () => {
+    const result = calcularDecimoTerceroMensual({ modalidad_decimo_tercero: 'mensual' }, 50);
+    expect(result).toEqual({ modalidad: 'mensual', montoPagadoEmpleado: 50 });
+  });
+
+  test('no paga decimo tercero mensualizado cuando modalidad es acumulado', () => {
+    const result = calcularDecimoTerceroMensual({ modalidad_decimo_tercero: 'acumulado' }, 50);
+    expect(result).toEqual({ modalidad: 'acumulado', montoPagadoEmpleado: 0 });
+  });
+
+  test('paga decimo cuarto mensualizado cuando modalidad es mensual', () => {
+    const result = calcularDecimoCuartoMensual({ modalidad_decimo_cuarto: 'mensual' }, 40.17);
+    expect(result).toEqual({ modalidad: 'mensual', montoPagadoEmpleado: 40.17 });
+  });
+
+  test('no paga decimo cuarto mensualizado cuando modalidad es acumulado', () => {
+    const result = calcularDecimoCuartoMensual({}, 40.17);
+    expect(result).toEqual({ modalidad: 'acumulado', montoPagadoEmpleado: 0 });
   });
 
   test('resuelve parametro regional de decimo cuarto desde la ficha del empleado', () => {

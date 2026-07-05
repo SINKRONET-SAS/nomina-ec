@@ -615,6 +615,8 @@ function buildEmployees() {
       telefono: `099${String(7000000 + index).slice(-7)}`,
       email: index === 0 ? `empleado@${demoDomain}` : `empleado${String(index + 1).padStart(2, '0')}@${demoDomain}`,
       region: isQuito ? 'sierra_amazonia' : 'costa_galapagos',
+      modalidadDecimoTercero: index % 3 === 0 ? 'mensual' : 'acumulado',
+      modalidadDecimoCuarto: index % 4 === 0 ? 'mensual' : 'acumulado',
       cuenta: `2200${String(100000 + index).padStart(6, '0')}`,
       dependientes: Array.from({ length: cargas }, (_, dependentIndex) => ({
         nombres: dependentIndex === 0 ? 'Carga Familiar' : 'Soporte Familiar',
@@ -666,12 +668,14 @@ async function insertEmployees(client, tenantId, users, units, importBatchId) {
         fecha_ingreso, tipo_contrato, cuenta_bancaria_cifrada, banco, tipo_cuenta,
         direccion_domicilio, provincia_codigo, ciudad_codigo, ciudad_domicilio,
         provincia_domicilio, estado_civil, cargas_familiares, forma_pago,
-        region_decimo_cuarto, modalidad_fondo_reserva, whatsapp_consent_at, telefono, email_personal, import_batch_id
+        region_decimo_cuarto, modalidad_fondo_reserva,
+        modalidad_decimo_tercero, modalidad_decimo_cuarto,
+        whatsapp_consent_at, telefono, email_personal, import_batch_id
       )
       VALUES (
         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NULL,$12,$13,$14,$15,
         'DEMO','AHORROS',$16,$17,$18,$19,$20,$21,$22,'transferencia',
-        $23,'mensual',$24,$25,$26,$27
+        $23,'mensual',$24,$25,$26,$27,$28,$29
       )
       RETURNING *
     `, [
@@ -698,6 +702,8 @@ async function insertEmployees(client, tenantId, users, units, importBatchId) {
       employee.estadoCivil,
       employee.cargasFamiliares,
       employee.region,
+      employee.modalidadDecimoTercero || 'acumulado',
+      employee.modalidadDecimoCuarto || 'acumulado',
       employee.email === users.employee.email ? new Date() : null,
       employee.telefono,
       employee.email,

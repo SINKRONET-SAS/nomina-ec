@@ -47,6 +47,8 @@ const initialForm = {
   cuenta_bancaria_registrada: false,
   region_decimo_cuarto: 'sierra_amazonia',
   modalidad_fondo_reserva: 'mensual',
+  modalidad_decimo_tercero: 'acumulado',
+  modalidad_decimo_cuarto: 'acumulado',
   whatsapp_consent: false,
   dependientes: [],
 };
@@ -123,6 +125,8 @@ function normalizeEmpleado(empleado) {
     cuenta_bancaria_registrada: Boolean(empleado.cuenta_bancaria_registrada),
     region_decimo_cuarto: empleado.region_decimo_cuarto || 'sierra_amazonia',
     modalidad_fondo_reserva: empleado.modalidad_fondo_reserva || 'mensual',
+    modalidad_decimo_tercero: empleado.modalidad_decimo_tercero || 'acumulado',
+    modalidad_decimo_cuarto: empleado.modalidad_decimo_cuarto || 'acumulado',
     whatsapp_consent: Boolean(empleado.whatsapp_consent_at),
     dependientes: (empleado.dependientes || []).map((dependent) => ({
       nombres: dependent.nombres || '',
@@ -440,6 +444,8 @@ function NuevoEmpleado() {
     cuenta_bancaria: formData.cuenta_bancaria,
     region_decimo_cuarto: formData.region_decimo_cuarto,
     modalidad_fondo_reserva: formData.modalidad_fondo_reserva,
+    modalidad_decimo_tercero: formData.modalidad_decimo_tercero,
+    modalidad_decimo_cuarto: formData.modalidad_decimo_cuarto,
     whatsapp_consent: Boolean(formData.whatsapp_consent),
     dependientes: formData.dependientes,
   });
@@ -750,6 +756,18 @@ function NuevoEmpleado() {
             <select className={CONTROL_CLASS} name="modalidad_fondo_reserva" onChange={handleChange} required value={formData.modalidad_fondo_reserva}>
               <option value="mensual">Pagar mensual en rol</option>
               <option value="iess_directo">Depositar directamente al IESS</option>
+            </select>
+          </Field>
+          <Field label="Decimo tercer sueldo" name="modalidad_decimo_tercero" onChange={handleChange} required value={formData.modalidad_decimo_tercero}>
+            <select className={CONTROL_CLASS} name="modalidad_decimo_tercero" onChange={handleChange} required value={formData.modalidad_decimo_tercero}>
+              <option value="acumulado">Acumular y pagar en fecha legal</option>
+              <option value="mensual">Mensualizar en rol</option>
+            </select>
+          </Field>
+          <Field label="Decimo cuarto sueldo" name="modalidad_decimo_cuarto" onChange={handleChange} required value={formData.modalidad_decimo_cuarto}>
+            <select className={CONTROL_CLASS} name="modalidad_decimo_cuarto" onChange={handleChange} required value={formData.modalidad_decimo_cuarto}>
+              <option value="acumulado">Acumular y pagar en fecha legal</option>
+              <option value="mensual">Mensualizar en rol</option>
             </select>
           </Field>
         </Section>

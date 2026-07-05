@@ -450,6 +450,8 @@ function CerrarMes() {
                     <tr>
                       <th className="px-4 py-3 text-left">Empleado</th>
                       <th className="px-4 py-3 text-right">Ingresos</th>
+                      <th className="px-4 py-3 text-right">13ro mens.</th>
+                      <th className="px-4 py-3 text-right">14to mens.</th>
                       <th className="px-4 py-3 text-right">Anticipos</th>
                       <th className="px-4 py-3 text-right">Prestamos</th>
                       <th className="px-4 py-3 text-right">Neto</th>
@@ -460,6 +462,8 @@ function CerrarMes() {
                       <tr key={`${row.empleadoId || row.nombre}-${index}`}>
                         <td className="px-4 py-3">{row.nombre}</td>
                         <td className="px-4 py-3 text-right">${Number(row.totalIngresos || 0).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right">{row.detalleCalculo?.decimoTerceroModalidad === 'mensual' ? `$${Number(row.detalleCalculo?.decimoTerceroMensualizado || 0).toFixed(2)}` : '-'}</td>
+                        <td className="px-4 py-3 text-right">{row.detalleCalculo?.decimoCuartoModalidad === 'mensual' ? `$${Number(row.detalleCalculo?.decimoCuartoMensualizado || 0).toFixed(2)}` : '-'}</td>
                         <td className="px-4 py-3 text-right">${Number(row.detalleCalculo?.anticipos || 0).toFixed(2)}</td>
                         <td className="px-4 py-3 text-right">${Number(row.detalleCalculo?.prestamos || 0).toFixed(2)}</td>
                         <td className="px-4 py-3 text-right font-semibold">${Number(row.netoRecibir || 0).toFixed(2)}</td>
