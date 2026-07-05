@@ -134,6 +134,13 @@ describe('AISK26-01: cierre brechas RBAC', () => {
     );
   });
 
+  test('expone administracion anual de periodos antes de rutas genericas', () => {
+    expect(source).toContain("app.get('/api/nomina/periodos/:anio', requireRole('owner', 'admin_rrhh'), nominaController.listarPeriodosAnuales)");
+    expect(source).toContain("app.post('/api/nomina/periodos/generar-anual', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.generarPeriodosAnuales)");
+    expect(source).toContain("app.post('/api/nomina/periodo/cerrar-operativo', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.cerrarPeriodoOperativo)");
+    expect(source.indexOf("app.get('/api/nomina/periodos/:anio'")).toBeLessThan(source.indexOf("app.get('/api/nomina/:anio/:mes'"));
+  });
+
   test('GET /api/documentos requiere rol owner/admin_rrhh', () => {
     expect(source).toContain(
       "app.get('/api/documentos', requireRole('owner', 'admin_rrhh'), documentoLegalController.listar)"

@@ -116,6 +116,7 @@ const comunicacionesWeb = read('frontend-web/src/pages/Configuracion/Comunicacio
 const actasEntregaDotacion = read('frontend-web/src/pages/Documentos/ActasEntregaDotacion.jsx');
 const contratosGenerados = read('frontend-web/src/pages/Documentos/ContratosGenerados.jsx');
 const cerrarMes = read('frontend-web/src/pages/Nomina/CerrarMes.jsx');
+const periodosNomina = read('frontend-web/src/pages/Nomina/PeriodosNomina.jsx');
 const rolesPagos = read('frontend-web/src/pages/Nomina/RolesPagos.jsx');
 const beneficios = read('frontend-web/src/pages/Nomina/Beneficios.jsx');
 const descargarReportes = read('frontend-web/src/pages/Nomina/DescargarReportes.jsx');
@@ -195,6 +196,15 @@ assert(dateFormatWeb.includes('function datePartsEC'), 'Helper web debe centrali
 assert(dateFormatWeb.includes('export function currentPeriodEC'), 'Helper web debe exponer currentPeriodEC.');
 assert(monthlyPeriodService.includes('function currentPeriodInEcuador'), 'Backend debe exponer periodo actual en America/Guayaquil.');
 assert(payrollAccountingController.includes('currentPeriodInEcuador'), 'API contable no debe caer a new Date local para periodo default.');
+assert(app.includes("'/api/nomina/periodos/:anio'"), 'Backend debe exponer listado anual de periodos de nomina.');
+assert(app.includes("'/api/nomina/periodos/generar-anual'"), 'Backend debe exponer generacion anual de periodos de nomina.');
+assert(app.includes("'/api/nomina/periodo/cerrar-operativo'"), 'Backend debe exponer cierre operativo de periodo.');
+assert(schema.includes('fechaDesde') && schema.includes('@map("fecha_desde")'), 'Prisma debe declarar fecha desde del periodo.');
+assert(schema.includes('fechaHasta') && schema.includes('@map("fecha_hasta")'), 'Prisma debe declarar fecha hasta del periodo.');
+assert(appWeb.includes('PeriodosNomina'), 'La PWA debe registrar pantalla de periodos de nomina.');
+assert(layoutWeb.includes('/dashboard/nomina/periodos'), 'La navegacion debe exponer periodos de nomina.');
+assert(periodosNomina.includes('/nomina/periodos/generar-anual'), 'La pantalla debe generar periodos anuales contra backend real.');
+assert(periodosNomina.includes('/nomina/periodo/cerrar-operativo'), 'La pantalla debe cerrar periodos desde backend real.');
 
 for (const endpoint of unique(regexValues(descargarReportes, /['"]((?:\/reportes\/)[^'"]+)['"]/g))) {
   assert(app.includes(`'/api${endpoint}'`), `Frontend consume ${endpoint} pero backend no expone /api${endpoint}.`);

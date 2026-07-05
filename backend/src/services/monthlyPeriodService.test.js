@@ -13,12 +13,16 @@ const db = require('../config/database');
 const { recordAudit } = require('./auditService');
 const {
   buildEmployeeQuery,
+  closeOperationalPayrollPeriod,
   createNoveltyBatch,
   ensurePayrollPeriodForDate,
   ensureWritablePayrollPeriodForDate,
   extractPeriodFromDate,
   formatPeriodMarker,
+  generateAnnualPayrollPeriods,
   openPayrollPeriod,
+  periodEndDate,
+  periodStartDate,
   validatePeriod,
 } = require('./monthlyPeriodService');
 
@@ -59,6 +63,8 @@ describe('monthlyPeriodService', () => {
       fecha: '2026-06-15',
     });
     expect(formatPeriodMarker(2026, 6)).toBe('2026-06');
+    expect(periodStartDate(2026, 2)).toBe('2026-02-01');
+    expect(periodEndDate(2026, 2)).toBe('2026-02-28');
   });
 
   test('ensurePayrollPeriodForDate crea o reutiliza periodo de la novedad', async () => {
@@ -131,6 +137,79 @@ describe('monthlyPeriodService', () => {
     expect(result.id).toBe('period-1');
     expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
       action: 'nomina.periodo.open',
+      entityId: 'period-1',
+    }));
+  });
+
+  test('generateAnnualPayrollPeriods crea doce meses planificados con fechas', async () => {
+    db.query.mockImplementation((sql, params) => Promise.resolve({
+      rows: [{
+        id: `period-${params[2]}`,
+        anio: params[1],
+        mes: params[2],
+        fecha_desde: params[3],
+        fecha_hasta: params[4],
+        status: 'planned',
+      }],
+    }));
+
+    const result = await generateAnnualPayrollPeriods({
+      tenantId: 'tenant-1',
+      userId: 'user-1',
+      correlationId: 'corr-1',
+      ipAddress: '127.0.0.1',
+      anio: 2026,
+    });
+
+    expect(result.total).toBe(12);
+    expect(result.periods[0]).toEqual(expect.objectContaining({
+      mes: 1,
+      fecha_desde: '2026-01-01',
+      fecha_hasta: '2026-01-31',
+      status: 'planned',
+    }));
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'nomina.periodos.generate_year',
+      newData: expect.objectContaining({ anio: 2026, total: 12 }),
+    }));
+  });
+
+  test('closeOperationalPayrollPeriod bloquea periodos calculados', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'calculated' }] });
+
+    await expect(closeOperationalPayrollPeriod({
+      tenantId: 'tenant-1',
+      userId: 'user-1',
+      correlationId: 'corr-1',
+      ipAddress: '127.0.0.1',
+      anio: 2026,
+      mes: 6,
+      motivo: 'Cierre operativo solicitado por RRHH',
+    })).rejects.toMatchObject({
+      code: 'PAYROLL_PERIOD_CLOSE_REQUIRES_PAYROLL_CLOSE',
+      statusCode: 409,
+    });
+  });
+
+  test('closeOperationalPayrollPeriod cierra si no hay pendientes operativos', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'open' }] })
+      .mockResolvedValueOnce({ rows: [{ payroll_borrador: 0, novedades_pendientes: 0 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'closed' }] });
+
+    const result = await closeOperationalPayrollPeriod({
+      tenantId: 'tenant-1',
+      userId: 'user-1',
+      correlationId: 'corr-1',
+      ipAddress: '127.0.0.1',
+      anio: 2026,
+      mes: 6,
+      motivo: 'Cierre operativo solicitado por RRHH',
+    });
+
+    expect(result.status).toBe('closed');
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'nomina.periodo.close_operational',
       entityId: 'period-1',
     }));
   });

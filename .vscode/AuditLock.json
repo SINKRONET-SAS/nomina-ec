@@ -1,105 +1,103 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-MENSUALIZACION-DECIMOS-SKNOMINA-2026",
-  "planCode": "MDS26",
-  "status": "completed-pass",
-  "phaseCompleted": "MDS26-05",
-  "currentPhase": "MDS26-05",
-  "updatedAt": "2026-07-05T11:30:00-05:00",
+  "plan": "HAIKY-GESTION-PERIODOS-ANUALES-NOMINA-2026",
+  "planCode": "GPA26",
+  "status": "completed-local",
+  "phaseCompleted": "GPA26-04",
+  "currentPhase": "GPA26-04",
+  "updatedAt": "2026-07-05T14:30:00-05:00",
   "rulesSource": "RULES.md",
   "precedent": {
-    "plan": "HAIKY-ASSETS-ICONOGRAFIA-SISTEMA-SKNOMINA-2026",
-    "planCode": "AIS26",
-    "status": "completed-pass",
-    "previousPrecedent": {
-      "plan": "HAIKY-MOBILE-GESTION-RUTAS-ZONAS-2026",
-      "planCode": "MGR26",
-      "status": "completed-pass"
-    }
+    "plan": "HAIKY-MENSUALIZACION-DECIMOS-SKNOMINA-2026",
+    "planCode": "MDS26",
+    "status": "completed-pass"
   },
-  "summary": "MDS26 cerrado: mensualizacion de decimo tercero y cuarto implementada. Campos modalidad en empleados, motor nomina con ingreso mensual, frontend con selects, reportes con columnas de modalidad, contabilidad con asientos separados (provision vs nomina por pagar), PDF con lineas de decimos, seed demo con empleados mensualizados.",
+  "summary": "GPA26 implementa gobierno anual de periodos de nomina: fechas desde/hasta en payroll_periods, generacion anual de doce meses, endpoints de listado/apertura/cierre operativo, pantalla PWA Nomina > Periodos y contratos anti-regresion.",
   "filesModified": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/MDS26-00-baseline-gobierno.md",
-    ".github/prompts/MDS26-01-modelo-empleado.md",
-    ".github/prompts/MDS26-02-motor-nomina.md",
-    ".github/prompts/MDS26-03-frontend.md",
-    ".github/prompts/MDS26-04-reportes.md",
-    ".github/prompts/MDS26-05-qa-release.md",
+    ".github/prompts/GPA26-00-baseline-gobierno.md",
+    ".github/prompts/GPA26-01-modelo-periodos.md",
+    ".github/prompts/GPA26-02-backend-periodos.md",
+    ".github/prompts/GPA26-03-frontend-periodos.md",
+    ".github/prompts/GPA26-04-qa-release.md",
     ".vscode/AuditLock.json",
+    "backend/prisma/migrations/20260705143000_gpa26_payroll_period_dates/migration.sql",
     "backend/prisma/schema.prisma",
-    "backend/prisma/migrations/20260705100000_mds26_employee_benefit_modality/migration.sql",
-    "backend/src/controllers/empleadoController.js",
+    "backend/src/app.js",
+    "backend/src/app.routes.test.js",
+    "backend/src/controllers/nominaController.js",
     "backend/src/services/calculoNominaService.js",
-    "backend/src/services/calculoNominaService.test.js",
-    "backend/src/services/employeeImportService.js",
-    "backend/src/services/payrollAccountingService.js",
-    "backend/src/services/payrollReportService.js",
-    "backend/src/services/payrollRolePdfService.js",
-    "backend/scripts/seed-demo-commercial.js",
-    "frontend-web/src/pages/Empleados/NuevoEmpleado.jsx",
+    "backend/src/services/monthlyPeriodService.js",
+    "backend/src/services/monthlyPeriodService.test.js",
+    "docs2/PLAN_HAIKY_GESTION_PERIODOS_ANUALES_NOMINA_2026.md",
+    "docs2/gestion-periodos-anuales-nomina-2026/REPORTE_GPA26_00_04_EJECUCION.md",
+    "frontend-web/src/App.jsx",
+    "frontend-web/src/components/Layout/Layout.jsx",
     "frontend-web/src/pages/Nomina/CerrarMes.jsx",
-    "docs2/PLAN_HAIKY_MENSUALIZACION_DECIMOS_SKNOMINA_2026.md",
-    "docs2/mensualizacion-decimos-sknomina-2026/REPORTE_MDS26_00_05_EJECUCION.md"
+    "frontend-web/src/pages/Nomina/PeriodosNomina.jsx",
+    "scripts/verify-system-contracts.mjs"
   ],
   "fases": [
     {
-      "phase": "MDS26-00",
+      "phase": "GPA26-00",
       "status": "completed",
-      "detail": "Plan, prompts, contexto y AuditLock baseline registrados."
+      "detail": "Plan, prompts, contexto y AuditLock registrados."
     },
     {
-      "phase": "MDS26-01",
+      "phase": "GPA26-01",
       "status": "completed",
-      "detail": "Migracion, schema Prisma, controller y import con campos modalidad_decimo_tercero/cuarto."
+      "detail": "Migracion y schema Prisma agregan fecha_desde y fecha_hasta a payroll_periods."
     },
     {
-      "phase": "MDS26-02",
+      "phase": "GPA26-02",
       "status": "completed",
-      "detail": "Motor nomina con funciones calcularDecimoTerceroMensual/calcularDecimoCuartoMensual; totalIngresos incluye montos mensualizados."
+      "detail": "Backend genera/lista periodos anuales, abre periodos y cierra operativamente con bloqueos de integridad."
     },
     {
-      "phase": "MDS26-03",
+      "phase": "GPA26-03",
       "status": "completed",
-      "detail": "Frontend con selects de modalidad en NuevoEmpleado y columnas en CerrarMes."
+      "detail": "PWA expone Nomina > Periodos con acciones y estados."
     },
     {
-      "phase": "MDS26-04",
-      "status": "completed",
-      "detail": "Reportes Excel con modalidad y montos, PDF con lineas de ingreso, contabilidad con asientos gasto vs nomina por pagar."
-    },
-    {
-      "phase": "MDS26-05",
-      "status": "completed-pass",
-      "detail": "Tests 24/24 PASS, contracts PASS, seed demo actualizado, reporte y AuditLock cerrados."
+      "phase": "GPA26-04",
+      "status": "completed-local",
+      "detail": "Contratos, tests focalizados, reporte y cierre local."
     }
   ],
   "validationChecks": [
     {
-      "gate": "npx jest calculoNominaService --runInBand --forceExit",
-      "result": "PASS (2 suites, 24 tests)"
+      "gate": "node --check backend/src/services/monthlyPeriodService.js backend/src/controllers/nominaController.js backend/src/services/calculoNominaService.js",
+      "result": "pending"
     },
     {
-      "gate": "npm run contracts",
-      "result": "PASS"
+      "gate": "npm.cmd --workspace=backend test -- monthlyPeriodService.test.js app.routes.test.js --runInBand",
+      "result": "pending"
     },
     {
-      "gate": "node --check (7 archivos backend modificados)",
-      "result": "PASS"
+      "gate": "npm.cmd run prisma:validate",
+      "result": "pending"
+    },
+    {
+      "gate": "npm.cmd run contracts",
+      "result": "pending"
+    },
+    {
+      "gate": "npm.cmd --workspace=frontend-web run build",
+      "result": "pending"
     },
     {
       "gate": "git diff --check",
-      "result": "PASS"
+      "result": "pending"
     }
   ],
   "riskControls": [
-    "Default acumulado = comportamiento actual sin regresion.",
-    "Patron replicado de fondo de reserva mensual.",
-    "Ingreso mensualizado NO afecta IESS.",
-    "Provision contable no se duplica cuando modalidad es mensual.",
-    "Asiento contable: mensual debita gasto contra nomina por pagar; acumulado debita gasto contra provision."
+    "No se crea estado paralelo fuera de payroll_periods.status.",
+    "La generacion anual es idempotente por tenant, anio y mes.",
+    "El cierre operativo bloquea roles borrador y novedades pendientes.",
+    "Los periodos calculados deben cerrarse desde el flujo de cierre de nomina.",
+    "La funcionalidad queda visible en PWA mediante Nomina > Periodos."
   ],
-  "previousAuditLockHash": "AE3F65CED6EBB30DF7F605C829B874FAEE2ABD61B696E837688DFA35E6A61EE2",
-  "signatureAlgorithm": "SHA256(previousAuditLockContent + updatedAt)",
-  "signature": "MDS26_COMPLETED_2026-07-05T11:30:00-05:00"
+  "previousAuditLockHash": "C63CF5545CC514605138DF79967F51FA5E601C5DCDBD4D1506D022875DBCDC8A",
+  "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
+  "signature": "D076AE6682F789E7AA7EE23E2CD380E2BE4336BC5CE110D9607AC55A3CB54C58"
 }

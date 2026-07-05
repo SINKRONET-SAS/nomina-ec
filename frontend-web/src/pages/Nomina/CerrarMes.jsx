@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
   CalendarClock,
@@ -43,9 +43,12 @@ function hasBlocker(precheck, codes = []) {
 
 function CerrarMes() {
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const initialPeriod = useMemo(() => currentPeriodEC(), []);
-  const [anio, setAnio] = useState(initialPeriod.anio);
-  const [mes, setMes] = useState(initialPeriod.mes);
+  const initialAnio = Number(searchParams.get('anio')) || initialPeriod.anio;
+  const initialMes = Number(searchParams.get('mes')) || initialPeriod.mes;
+  const [anio, setAnio] = useState(initialAnio);
+  const [mes, setMes] = useState(initialMes);
   const [resultado, setResultado] = useState(null);
   const [message, setMessage] = useState(null);
   const [closeConfirmation, setCloseConfirmation] = useState(false);

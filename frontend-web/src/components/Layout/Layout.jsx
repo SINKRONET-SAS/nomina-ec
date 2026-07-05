@@ -76,6 +76,7 @@ function Layout() {
       icon: DollarSign,
       roles: ['owner', 'admin_rrhh'],
       submenu: [
+        { path: '/dashboard/nomina/periodos', label: 'Periodos' },
         { path: '/dashboard/nomina/cerrar', label: 'Cerrar Mes' },
         { path: '/dashboard/nomina/beneficios', label: 'Beneficios y descuentos' },
         { path: '/dashboard/nomina/roles', label: 'Roles de Pago' },

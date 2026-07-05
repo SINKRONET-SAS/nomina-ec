@@ -39,6 +39,7 @@ import TerminarEmpleado from './pages/Empleados/TerminarEmpleado';
 import NovedadesPendientes from './pages/Asistencia/NovedadesPendientes';
 import ReporteAsistencia from './pages/Asistencia/ReporteAsistencia';
 import RutasCampo from './pages/Asistencia/RutasCampo';
+import PeriodosNomina from './pages/Nomina/PeriodosNomina';
 import CerrarMes from './pages/Nomina/CerrarMes';
 import Beneficios from './pages/Nomina/Beneficios';
 import RolesPagos from './pages/Nomina/RolesPagos';
@@ -191,6 +192,11 @@ function App() {
               } />
               
               {/* Nómina */}
+              <Route path="nomina/periodos" element={
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
+                  <PeriodosNomina />
+                </ProtectedRoute>
+              } />
               <Route path="nomina/cerrar" element={
                 <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
                   <CerrarMes />
