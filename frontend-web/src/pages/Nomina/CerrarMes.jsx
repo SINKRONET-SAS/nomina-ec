@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
   CalendarClock,
@@ -33,6 +34,10 @@ function summarize(rows = []) {
 
 function precheckDetails(error) {
   return error?.response?.data?.details || null;
+}
+
+function hasBlocker(precheck, codes = []) {
+  return (precheck?.blockers || []).some((blocker) => codes.includes(blocker.code));
 }
 
 function CerrarMes() {
@@ -160,6 +165,10 @@ function CerrarMes() {
   const currentError = openMutation.error || batchMutation.error || resolveNoveltiesMutation.error || calculateMutation.error || closeMutation.error || periodQuery.error;
   const currentPrecheck = precheckDetails(currentError);
   const alertIsError = Boolean(currentError || message?.type === 'error');
+  const hasLegalParameterBlocker = hasBlocker(currentPrecheck, [
+    'LEGAL_PARAMETERS_NOT_VALIDATED',
+    'LEGAL_PARAMETERS_DIVERGENCE',
+  ]);
 
   const resolvePendingNovelties = (decision) => {
     if (decision === 'aprobar') {
@@ -223,6 +232,19 @@ function CerrarMes() {
                 <li key={warning.code}>{warning.message}</li>
               ))}
             </ul>
+          )}
+          {hasLegalParameterBlocker && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                className="inline-flex min-h-9 items-center rounded-md bg-red-700 px-3 text-xs font-semibold text-white hover:bg-red-800"
+                to="/dashboard/configuracion/parametrizacion?seccion=legal"
+              >
+                Cargar/validar valores legales
+              </Link>
+              <span className="self-center text-xs font-semibold text-red-700">
+                Luego aprueba o rechaza novedades pendientes y recalcula.
+              </span>
+            </div>
           )}
         </div>
       )}

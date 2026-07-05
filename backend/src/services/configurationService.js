@@ -597,6 +597,7 @@ async function ensureOrganizationUnitWorkZone(values, tenantId, user) {
 function legalParameterPayloadsFromBase(year) {
   const parameters = getLegalParameters(year);
   const payroll = parameters.payroll || {};
+  const defaultValidationStatus = legalValidationStatusFromBase(parameters);
 
   return [
     {
@@ -709,7 +710,20 @@ function legalParameterPayloadsFromBase(year) {
       unit: 'tabla_anual',
       notes: 'Tabla anual de impuesto a la renta cargada como parámetro obligatorio revisable.',
     },
-  ];
+  ].map((payload) => ({
+    ...payload,
+    validationStatus: payload.validationStatus || defaultValidationStatus,
+  }));
+}
+
+function legalValidationStatusFromBase(parameters = {}) {
+  const sourceStatus = String(parameters.sourceStatus || '').trim().toLowerCase();
+  const pendingValidation = Array.isArray(parameters.pendingValidation)
+    ? parameters.pendingValidation
+    : [];
+  return ['validado', 'validado_oficial'].includes(sourceStatus) && pendingValidation.length === 0
+    ? 'validado_oficial'
+    : 'pendiente_validacion_oficial';
 }
 
 async function loadMandatoryLegalParameters(year, user, context = {}) {

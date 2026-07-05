@@ -13,6 +13,7 @@ const {
   RESOURCE_CONFIG,
   createResource,
   deleteResource,
+  loadMandatoryLegalParameters,
   syncLegalParametersFromGlobal,
   listResource,
 } = require('./configurationService');
@@ -235,6 +236,45 @@ describe('configurationService metadata', () => {
 describe('configurationService legal parameter sync', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  test('carga parametros obligatorios 2026 con validacion oficial cuando la base esta validada', async () => {
+    db.query.mockImplementation((sql, params = []) => {
+      const text = String(sql);
+      if (text.includes('INSERT INTO legal_parameter_versions')) {
+        return Promise.resolve({
+          rows: [{
+            id: `legal-${params[2]}`,
+            tenant_id: params[0],
+            period_year: params[1],
+            parameter_key: params[2],
+            validation_status: params[7],
+          }],
+        });
+      }
+      if (text.includes('UPDATE tenant_onboarding_steps')) {
+        return Promise.resolve({
+          rows: [{
+            id: 'onboarding-legal',
+            tenant_id: ownerUser.tenantId,
+            step_code: 'legal',
+            status: 'completado',
+          }],
+        });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    recordAudit.mockResolvedValue();
+
+    const result = await loadMandatoryLegalParameters(2026, ownerUser, { correlationId: 'corr-legal' });
+
+    expect(result.count).toBeGreaterThan(0);
+    expect(result.rows.every((row) => row.validation_status === 'validado_oficial')).toBe(true);
+    const insertedStatuses = db.query.mock.calls
+      .filter(([sql]) => String(sql).includes('INSERT INTO legal_parameter_versions'))
+      .map(([, params]) => params[7]);
+    expect(insertedStatuses.length).toBe(result.count);
+    expect(insertedStatuses).toEqual(insertedStatuses.map(() => 'validado_oficial'));
   });
 
   test('owner sincroniza parametros globales hacia su tenant sin carga manual', async () => {
