@@ -7,7 +7,7 @@
 |-------|-------|
 | Plan | HAIKY-GESTION-PERIODOS-ANUALES-NOMINA-2026 |
 | Codigo | GPA26 |
-| Estado | completed-local |
+| Estado | completed-pass |
 | Fase actual | GPA26-04 QA release |
 | Requerimiento fuente | Mejorar manejo de periodos: pantalla para generar periodos anuales y mensuales con fecha desde/hasta, apertura/cierre e integridad de calculos. |
 | Plan doc | `docs2/PLAN_HAIKY_GESTION_PERIODOS_ANUALES_NOMINA_2026.md` |
@@ -19,14 +19,15 @@
 
 GPA26 agrega gobierno operativo de periodos de nomina. `payroll_periods` conserva la clave por tenant/anio/mes y agrega `fecha_desde` y `fecha_hasta`. La PWA expone `Nomina > Periodos` para generar los doce meses del anio, abrir meses y cerrar operativamente cuando no existan roles borrador ni novedades pendientes. Los periodos calculados no se cierran por esta via: deben cerrarse desde el flujo de cierre de nomina para preservar roles y beneficios.
 
-### Gates GPA26 esperados
+### Gates GPA26 ejecutados
 
-- `node --check` en servicios/controlador backend modificados.
-- `npm.cmd --workspace=backend test -- monthlyPeriodService.test.js app.routes.test.js --runInBand`.
-- `npm.cmd run prisma:validate`.
-- `npm.cmd run contracts`.
-- `npm.cmd --workspace=frontend-web run build`.
-- `git diff --check`.
+- `node --check` en servicios/controlador backend modificados: PASS.
+- `npm.cmd --workspace=backend test -- monthlyPeriodService.test.js app.routes.test.js --runInBand`: PASS, 2 suites y 36 tests.
+- `npm.cmd run prisma:validate`: PASS.
+- `npm.cmd run contracts`: PASS.
+- `npm.cmd --workspace=frontend-web run build`: PASS.
+- `git diff --check`: PASS.
+- UTF-8 sin BOM en archivos `.js`, `.md` y `.json` modificados: PASS.
 
 ## Closed Haiky Plan - HAIKY-ASSETS-ICONOGRAFIA-SISTEMA-SKNOMINA-2026
 

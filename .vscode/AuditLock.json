@@ -2,17 +2,17 @@
   "schemaVersion": 1,
   "plan": "HAIKY-GESTION-PERIODOS-ANUALES-NOMINA-2026",
   "planCode": "GPA26",
-  "status": "completed-local",
+  "status": "completed-pass",
   "phaseCompleted": "GPA26-04",
   "currentPhase": "GPA26-04",
-  "updatedAt": "2026-07-05T14:30:00-05:00",
+  "updatedAt": "2026-07-05T15:10:00-05:00",
   "rulesSource": "RULES.md",
   "precedent": {
     "plan": "HAIKY-MENSUALIZACION-DECIMOS-SKNOMINA-2026",
     "planCode": "MDS26",
     "status": "completed-pass"
   },
-  "summary": "GPA26 implementa gobierno anual de periodos de nomina: fechas desde/hasta en payroll_periods, generacion anual de doce meses, endpoints de listado/apertura/cierre operativo, pantalla PWA Nomina > Periodos y contratos anti-regresion.",
+  "summary": "GPA26 cerrado: gobierno anual de periodos de nomina con fechas desde/hasta, generacion anual de doce meses, endpoints de listado/apertura/cierre operativo, pantalla PWA Nomina > Periodos, tests focalizados, Prisma validate, contratos y build web en PASS.",
   "filesModified": [
     ".github/CODEX_CONTEXT.md",
     ".github/prompts/GPA26-00-baseline-gobierno.md",
@@ -60,34 +60,34 @@
     },
     {
       "phase": "GPA26-04",
-      "status": "completed-local",
-      "detail": "Contratos, tests focalizados, reporte y cierre local."
+      "status": "completed-pass",
+      "detail": "Contratos, tests focalizados, Prisma validate, build web, UTF-8 sin BOM y git diff check en PASS."
     }
   ],
   "validationChecks": [
     {
       "gate": "node --check backend/src/services/monthlyPeriodService.js backend/src/controllers/nominaController.js backend/src/services/calculoNominaService.js",
-      "result": "pending"
+      "result": "PASS"
     },
     {
       "gate": "npm.cmd --workspace=backend test -- monthlyPeriodService.test.js app.routes.test.js --runInBand",
-      "result": "pending"
+      "result": "PASS (2 suites, 36 tests)"
     },
     {
       "gate": "npm.cmd run prisma:validate",
-      "result": "pending"
+      "result": "PASS"
     },
     {
       "gate": "npm.cmd run contracts",
-      "result": "pending"
+      "result": "PASS"
     },
     {
       "gate": "npm.cmd --workspace=frontend-web run build",
-      "result": "pending"
+      "result": "PASS"
     },
     {
       "gate": "git diff --check",
-      "result": "pending"
+      "result": "PASS"
     }
   ],
   "riskControls": [
@@ -97,7 +97,7 @@
     "Los periodos calculados deben cerrarse desde el flujo de cierre de nomina.",
     "La funcionalidad queda visible en PWA mediante Nomina > Periodos."
   ],
-  "previousAuditLockHash": "C63CF5545CC514605138DF79967F51FA5E601C5DCDBD4D1506D022875DBCDC8A",
+  "previousAuditLockHash": "07FFF8C75D0D1AA9F292B3611C9672DB52DE1374A72153B7BC23C9AC33D286D6",
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "D076AE6682F789E7AA7EE23E2CD380E2BE4336BC5CE110D9607AC55A3CB54C58"
+  "signature": "023C2745E274DA323586FCEFC981DE08FFB9E2C7A2D0F6A585C1683819E6B97F"
 }
