@@ -5,7 +5,7 @@
   "status": "completed-pass",
   "phaseCompleted": "MGR26-03",
   "currentPhase": "MGR26-03",
-  "updatedAt": "2026-07-04T23:40:00-05:00",
+  "updatedAt": "2026-07-04T23:55:00-05:00",
   "rulesSource": "RULES.md",
   "precedent": {
     "plan": "HAIKY-AUDITORIA-INTEGRAL-SKNOMINA-2026",
@@ -28,6 +28,7 @@
     "app-movil/src/App.js",
     "app-movil/src/screens/OperacionMovilScreen.js",
     "app-movil/src/services/api.js",
+    "backend/.env.example",
     "backend/src/app.js",
     "backend/src/app.routes.test.js",
     "backend/src/controllers/mobileController.js",
@@ -97,9 +98,9 @@
     "No se creo modelo paralelo de zonas o rutas.",
     "La visibilidad UI no reemplaza RBAC ni gates de plan.",
     "Las secciones no permitidas por perfil no se renderizan.",
-    "backend/.env.example se detecta como cambio ajeno y no pertenece al cierre MGR26."
+    "backend/.env.example queda incluido por instruccion explicita con placeholders SINKRONET_FACTURADOR_* y sin secretos reales."
   ],
-  "previousAuditLockHash": "ADEBDDC963BF26C1D97DF1B3C60CB8098E9986602561DBFDDB3F2F9C06889C92",
+  "previousAuditLockHash": "D96149F96FDAB8ADEA4B4647841E5F50019A64727090F1B584F3AEE7FFAD08F7",
   "signatureAlgorithm": "SHA256(previousAuditLockContent + updatedAt)",
-  "signature": "115309F039C06A674B395C4E00589AF0948B6376C007160FCFE9E0ABA481D887"
+  "signature": "1659D247EC4B0DCA425F6D1546BE6B1D9D510DF5D1DCEB95F707F1C1C7CFFF5C"
 }

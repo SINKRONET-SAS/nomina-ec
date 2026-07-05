@@ -42,6 +42,7 @@ MGR26-02:
 MGR26-03:
 
 - Gates ejecutados y cierre de gobierno preparado.
+- Correccion posterior: `backend/.env.example` se incluye por instruccion explicita del usuario con placeholders `SINKRONET_FACTURADOR_*`, sin secretos reales.
 
 ## Riesgos controlados
 
@@ -63,5 +64,5 @@ MGR26-03:
 
 ## Cierre
 
-- `backend/.env.example` aparece modificado antes del cierre MGR26 y se considera cambio ajeno; no pertenece al stage de este plan.
+- `backend/.env.example` queda incluido en la rama default por instruccion del usuario; agrega placeholders seguros `SINKRONET_FACTURADOR_*`.
 - `docs2/` esta ignorado por `.gitignore`; los artefactos MGR26 se deben agregar con `git add -f`.

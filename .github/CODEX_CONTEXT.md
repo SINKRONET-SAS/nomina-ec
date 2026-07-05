@@ -2079,6 +2079,7 @@ Runtime MGR26:
 - App movil agrega `OperacionMovilScreen` y cliente API para `/mobile/admin/...`.
 - La UI movil usa `allowedActions` para ocultar secciones no autorizadas; no deja controles visibles deshabilitados por perfil.
 - `superadmin` no opera tenant desde app movil; se guia a PWA.
+- `backend/.env.example` incluye placeholders seguros `SINKRONET_FACTURADOR_*` por instruccion explicita del usuario.
 
 Reglas operativas MGR26:
 
