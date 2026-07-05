@@ -13,7 +13,10 @@ const {
 const {
   createNoveltyBatch,
   deleteNoveltyBatch,
+  closeOperationalPayrollPeriod,
+  generateAnnualPayrollPeriods,
   getPayrollPeriodState,
+  listAnnualPayrollPeriods,
   openPayrollPeriod,
 } = require('../services/monthlyPeriodService');
 const { sendRolPagoDisponible } = require('../services/communicationService');
@@ -169,6 +172,86 @@ async function abrirPeriodo(req, res) {
       message: err.message,
     });
     return res.status(400).json({ error: err.message, correlationId: req.correlationId });
+  }
+}
+
+async function listarPeriodosAnuales(req, res) {
+  try {
+    const result = await listAnnualPayrollPeriods({
+      tenantId: req.tenantId,
+      anio: req.params.anio,
+    });
+    return res.json({ success: true, ...result, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[NOMINA] Error listando periodos anuales', {
+      code: err.code || 'NOMINA_PERIODOS_ANUALES_LIST_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 400).json({
+      error: err.code || 'NOMINA_PERIODOS_ANUALES_LIST_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function generarPeriodosAnuales(req, res) {
+  try {
+    const result = await generateAnnualPayrollPeriods({
+      tenantId: req.tenantId,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+      anio: req.body?.anio,
+    });
+    return res.status(201).json({ success: true, ...result, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[NOMINA] Error generando periodos anuales', {
+      code: err.code || 'NOMINA_PERIODOS_ANUALES_GENERATE_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 400).json({
+      error: err.code || 'NOMINA_PERIODOS_ANUALES_GENERATE_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function cerrarPeriodoOperativo(req, res) {
+  try {
+    const period = await closeOperationalPayrollPeriod({
+      tenantId: req.tenantId,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+      anio: req.body?.anio,
+      mes: req.body?.mes,
+      motivo: req.body?.motivo,
+    });
+    return res.json({ success: true, period, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[NOMINA] Error cerrando periodo operativo', {
+      code: err.code || 'NOMINA_PERIODO_OPERATIVO_CLOSE_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 400).json({
+      error: err.code || 'NOMINA_PERIODO_OPERATIVO_CLOSE_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
   }
 }
 
@@ -705,6 +788,9 @@ module.exports = {
   calcularMes,
   obtenerEstadoPeriodo,
   abrirPeriodo,
+  listarPeriodosAnuales,
+  generarPeriodosAnuales,
+  cerrarPeriodoOperativo,
   crearLoteNovedades,
   eliminarLoteNovedades,
   listarPorPeriodo,

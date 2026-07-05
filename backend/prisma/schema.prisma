@@ -723,6 +723,8 @@ model PayrollPeriod {
   tenantId       String         @map("tenant_id") @db.Uuid
   anio           Int
   mes            Int
+  fechaDesde     DateTime       @map("fecha_desde") @db.Date
+  fechaHasta     DateTime       @map("fecha_hasta") @db.Date
   status         String         @default("open") @db.VarChar(30)
   openedBy       String?        @map("opened_by") @db.Uuid
   openedAt       DateTime       @default(now()) @map("opened_at") @db.Timestamptz(6)

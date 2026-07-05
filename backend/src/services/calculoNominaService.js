@@ -16,6 +16,7 @@ const {
   persistPayrollCalculationLines,
 } = require('./payrollAccountingService');
 const { getApprovedPayrollNoveltyImpacts } = require('./payrollNoveltyService');
+const { periodEndDate, periodStartDate } = require('./monthlyPeriodService');
 const logger = require('../utils/logger');
 
 const FOURTEENTH_REGION_PARAMETERS = {
@@ -470,8 +471,8 @@ async function createPayrollCalculationBatch({ tenantId, anio, mes, userId = nul
   const executor = dbClient || db;
   const period = await executor.query(`
     WITH inserted AS (
-      INSERT INTO payroll_periods (tenant_id, anio, mes, status, opened_by)
-      VALUES ($1,$2,$3,'open',$4)
+      INSERT INTO payroll_periods (tenant_id, anio, mes, fecha_desde, fecha_hasta, status, opened_by)
+      VALUES ($1,$2,$3,$4,$5,'open',$6)
       ON CONFLICT (tenant_id, anio, mes) DO UPDATE SET updated_at = NOW()
       RETURNING id, status
     )
@@ -481,7 +482,7 @@ async function createPayrollCalculationBatch({ tenantId, anio, mes, userId = nul
     FROM payroll_periods
     WHERE tenant_id = $1 AND anio = $2 AND mes = $3
     LIMIT 1
-  `, [tenantId, Number(anio), Number(mes), userId]);
+  `, [tenantId, Number(anio), Number(mes), periodStartDate(anio, mes), periodEndDate(anio, mes), userId]);
 
   if (period.rows[0]?.status === 'closed') {
     throw new AppError('No se puede calcular nómina en un periodo cerrado.', {

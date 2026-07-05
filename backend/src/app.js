@@ -219,8 +219,11 @@ app.put('/api/nomina/contabilidad/mapeos/:id', requireRole('owner', 'admin_rrhh'
 
 const nominaController = require('./controllers/nominaController');
 app.post('/api/nomina/calcular', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.calcularMes);
+app.get('/api/nomina/periodos/:anio', requireRole('owner', 'admin_rrhh'), nominaController.listarPeriodosAnuales);
+app.post('/api/nomina/periodos/generar-anual', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.generarPeriodosAnuales);
 app.get('/api/nomina/periodo/:anio/:mes', requireRole('owner', 'admin_rrhh'), nominaController.obtenerEstadoPeriodo);
 app.post('/api/nomina/periodo/abrir', requireRole('owner', 'admin_rrhh'), nominaController.abrirPeriodo);
+app.post('/api/nomina/periodo/cerrar-operativo', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.cerrarPeriodoOperativo);
 app.post('/api/nomina/novedades/lote', requireRole('owner', 'admin_rrhh'), nominaController.crearLoteNovedades);
 app.delete('/api/nomina/novedades/lote/:batchId', requireRole('owner', 'admin_rrhh'), nominaController.eliminarLoteNovedades);
 app.get('/api/nomina/:id/rol-pdf', requireRole('owner', 'admin_rrhh'), nominaController.descargarRolPDF);
