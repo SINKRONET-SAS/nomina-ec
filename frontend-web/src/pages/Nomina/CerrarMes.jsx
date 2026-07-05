@@ -13,20 +13,12 @@ import {
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 import { ECUADOR_TIME_ZONE, currentPeriodEC, firstDayOfPeriodEC } from '../../utils/dateFormat';
-
-const NOVELTY_TYPES = [
-  { value: 'hora_extra_50', label: 'Hora extra 50%' },
-  { value: 'hora_extra_100', label: 'Hora extra 100%' },
-  { value: 'atraso', label: 'Atraso' },
-  { value: 'salida_temprana', label: 'Salida temprana' },
-  { value: 'falta', label: 'Falta injustificada' },
-  { value: 'permiso_con_sueldo', label: 'Permiso con sueldo' },
-  { value: 'permiso_sin_sueldo', label: 'Permiso sin sueldo' },
-  { value: 'incapacidad_iess', label: 'Incapacidad IESS' },
-  { value: 'vacaciones', label: 'Vacaciones' },
-  { value: 'bono_desempeno', label: 'Bono de desempeño' },
-  { value: 'comision', label: 'Comisión' },
-];
+import {
+  hoursToMinutes,
+  isAmountNoveltyType,
+  minutesToHours,
+  NOVELTY_TYPES,
+} from '../../config/noveltyTypes';
 
 const SCOPE_TYPES = [
   { value: 'company', label: 'Toda la empresa' },
@@ -106,7 +98,17 @@ function CerrarMes() {
   });
 
   const batchMutation = useMutation({
-    mutationFn: async () => authenticatedApi.post('/nomina/novedades/lote', { anio, mes, ...batchForm }),
+    mutationFn: async () => authenticatedApi.post('/nomina/novedades/lote', {
+      anio,
+      mes,
+      scopeType: batchForm.scopeType,
+      scopeValue: batchForm.scopeValue,
+      tipoNovedad: batchForm.tipoNovedad,
+      fecha: batchForm.fecha,
+      horas: Number(minutesToHours(batchForm.minutos) || 0),
+      monto: batchForm.monto,
+      justificacion: batchForm.justificacion,
+    }),
     onSuccess: (response) => {
       const batch = response.data?.batch;
       setMessage({ type: 'success', text: `Lote ${batch?.id || ''}: ${batch?.total_creadas || 0} novedades creadas.` });
@@ -153,7 +155,7 @@ function CerrarMes() {
   };
 
   const scopeNeedsValue = batchForm.scopeType !== 'company';
-  const requiresAmount = ['bono_desempeno', 'comision'].includes(batchForm.tipoNovedad);
+  const requiresAmount = isAmountNoveltyType(batchForm.tipoNovedad);
   const canCreateBatch = (!scopeNeedsValue || batchForm.scopeValue) && (!requiresAmount || Number(batchForm.monto) > 0);
   const currentError = openMutation.error || batchMutation.error || resolveNoveltiesMutation.error || calculateMutation.error || closeMutation.error || periodQuery.error;
   const currentPrecheck = precheckDetails(currentError);
@@ -343,7 +345,7 @@ function CerrarMes() {
                 setBatchForm((current) => ({
                   ...current,
                   tipoNovedad: nextType,
-                  minutos: ['bono_desempeno', 'comision'].includes(nextType) ? 0 : current.minutos || 60,
+                  minutos: isAmountNoveltyType(nextType) ? 0 : current.minutos || 60,
                 }));
               }}
               value={batchForm.tipoNovedad}
@@ -356,8 +358,8 @@ function CerrarMes() {
             <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" onChange={(event) => updateBatch('fecha', event.target.value)} type="date" value={batchForm.fecha} />
           </label>
           <label className="text-sm font-semibold text-slate-700">
-            Minutos
-            <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" disabled={requiresAmount} min="0" onChange={(event) => updateBatch('minutos', Number(event.target.value))} type="number" value={batchForm.minutos} />
+            Horas
+            <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" disabled={requiresAmount} min="0" onChange={(event) => updateBatch('minutos', Number(hoursToMinutes(event.target.value) || 0))} step="0.01" type="number" value={minutesToHours(batchForm.minutos)} />
           </label>
           <label className="text-sm font-semibold text-slate-700">
             Monto USD

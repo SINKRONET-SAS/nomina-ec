@@ -76,7 +76,7 @@ async function listarPendientes(req, res) {
 async function crear(req, res) {
   try {
     const { tenantId, usuarioId } = req;
-    const { empleadoId, fecha, tipoNovedad, minutos, monto, justificacion } = req.body;
+    const { empleadoId, fecha, tipoNovedad, minutos, horas, monto, justificacion } = req.body;
     
     if (!empleadoId || !fecha || !tipoNovedad) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
@@ -95,6 +95,7 @@ async function crear(req, res) {
     }
     
     const normalizedTipo = normalizeNoveltyCode(tipoNovedad);
+    const minutosNovedad = normalizePayloadMinutes({ minutos, horas, hours: req.body?.hours });
     const period = await ensurePayrollPeriodForDate({ tenantId, userId: usuarioId, fecha });
     const noveltyConfig = await ensureNoveltyTypeAllowed({
       tenantId,
@@ -116,7 +117,7 @@ async function crear(req, res) {
         empleado_id, tenant_id, period_id, periodo_nomina, fecha, tipo_novedad, minutos, monto, justificacion
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id, empleado_id, fecha, tipo_novedad, minutos, monto, estado
-    `, [empleadoId, tenantId, period.id, period.periodoNomina, fecha, normalizedTipo, minutos || 0, montoNovedad, justificacion || '']);
+    `, [empleadoId, tenantId, period.id, period.periodoNomina, fecha, normalizedTipo, minutosNovedad, montoNovedad, justificacion || '']);
 
     await recordAudit({
       tenantId,
@@ -129,7 +130,7 @@ async function crear(req, res) {
         empleadoId,
         fecha,
         tipoNovedad: normalizedTipo,
-        minutos: Number(minutos || 0),
+        minutos: minutosNovedad,
         monto: montoNovedad,
         periodoNomina: period.periodoNomina,
       },
@@ -160,7 +161,7 @@ async function descargarPlantillaCargaMasiva(_req, res) {
     '0102030405',
     '2026-06-30',
     'hora_extra_50',
-    '120',
+    '2.00',
     '0',
     'Horas aprobadas por cierre mensual',
     'NOM-202606-0102030405-001',
@@ -336,6 +337,13 @@ function normalizeNonNegativeNumber(value) {
 function normalizeHoursToMinutes(value) {
   const hours = Number(value || 0);
   return Number.isFinite(hours) && hours >= 0 ? Math.round(hours * 60) : 0;
+}
+
+function normalizePayloadMinutes(payload = {}) {
+  const hasMinutes = payload.minutos !== undefined && payload.minutos !== null && payload.minutos !== '';
+  return hasMinutes
+    ? normalizeNonNegativeNumber(payload.minutos)
+    : normalizeHoursToMinutes(payload.horas ?? payload.hours);
 }
 
 async function aprobar(req, res) {

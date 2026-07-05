@@ -222,7 +222,7 @@ async function createNoveltyBatch({
   const scopeType = String(payload.scopeType || 'company');
   const scopeValue = String(payload.scopeValue || '').trim();
   const tipoNovedad = normalizeNoveltyCode(payload.tipoNovedad);
-  const minutos = Math.max(0, Math.round(Number(payload.minutos || 0)));
+  const minutos = normalizeNoveltyMinutes(payload);
   const monto = roundAmount(payload.monto);
   const justificacion = String(payload.justificacion || 'Lote mensual').trim();
   const fecha = normalizeDate(anio, mes, payload.fecha);
@@ -343,6 +343,16 @@ function roundAmount(value) {
     throw new Error('El monto de la novedad debe ser un número positivo.');
   }
   return Math.round(amount * 100) / 100;
+}
+
+function normalizeNoveltyMinutes(payload = {}) {
+  const hasMinutes = payload.minutos !== undefined && payload.minutos !== null && payload.minutos !== '';
+  const rawValue = hasMinutes ? payload.minutos : Number(payload.horas ?? payload.hours ?? 0) * 60;
+  const minutes = Number(rawValue || 0);
+  if (!Number.isFinite(minutes) || minutes < 0) {
+    throw new Error('Las horas de la novedad deben ser un número positivo.');
+  }
+  return Math.round(minutes);
 }
 
 module.exports = {

@@ -3,6 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { Check, Plus, X } from 'lucide-react';
 import { formatDateEC } from '../../utils/dateFormat';
+import {
+  getNoveltyTypeLabel,
+  hoursToMinutes,
+  isAmountNoveltyType,
+  minutesToHours,
+  NOVELTY_TYPES,
+} from '../../config/noveltyTypes';
 
 const initialForm = {
   empleadoId: '',
@@ -82,13 +89,23 @@ function NovedadesPendientes() {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
+  function updateNoveltyType(value) {
+    setMessage('');
+    setError('');
+    setForm((current) => ({
+      ...current,
+      tipoNovedad: value,
+      minutos: isAmountNoveltyType(value) ? '0' : current.minutos || '60',
+    }));
+  }
+
   function submitManualNovelty(event) {
     event.preventDefault();
     crearMutation.mutate({
       empleadoId: form.empleadoId,
       fecha: form.fecha,
       tipoNovedad: form.tipoNovedad,
-      minutos: Number(form.minutos || 0),
+      horas: Number(minutesToHours(form.minutos) || 0),
       monto: Number(form.monto || 0),
       justificacion: form.justificacion,
     });
@@ -122,6 +139,8 @@ function NovedadesPendientes() {
       setMessage('');
     }
   }
+
+  const requiresAmount = isAmountNoveltyType(form.tipoNovedad);
 
   return (
     <div className="space-y-6">
@@ -174,23 +193,16 @@ function NovedadesPendientes() {
             <select
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
               value={form.tipoNovedad}
-              onChange={(event) => updateField('tipoNovedad', event.target.value)}
+              onChange={(event) => updateNoveltyType(event.target.value)}
             >
-              <option value="hora_extra_50">Hora extra 50%</option>
-              <option value="hora_extra_100">Hora extra 100%</option>
-              <option value="bono_desempeno">Bono de desempeño</option>
-              <option value="comision">Comisión</option>
-              <option value="permiso_con_sueldo">Permiso con sueldo</option>
-              <option value="permiso_sin_sueldo">Permiso sin sueldo</option>
-              <option value="falta">Falta injustificada</option>
-              <option value="atraso">Atraso</option>
-              <option value="salida_temprana">Salida temprana</option>
+              {NOVELTY_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
             </select>
           </label>
           <label className="block text-sm font-medium text-slate-700">
             Horas
             <input
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+              disabled={requiresAmount}
               min="0"
               step="0.01"
               type="number"
@@ -203,6 +215,7 @@ function NovedadesPendientes() {
             <input
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
               min="0"
+              required={requiresAmount}
               step="0.01"
               type="number"
               value={form.monto}
@@ -315,7 +328,7 @@ function NovedadesPendientes() {
                         nov.tipo_novedad === 'hora_extra_100' ? 'bg-purple-100 text-purple-800' :
                         'bg-red-100 text-red-800'
                       }`}>
-                        {nov.tipo_novedad.replace('_', ' ')}
+                        {getNoveltyTypeLabel(nov.tipo_novedad)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">{minutesToHours(nov.minutos)} h</td>
@@ -355,16 +368,6 @@ function parseCsvRows(text) {
       [header]: cells[index] || '',
     }), {});
   });
-}
-
-function minutesToHours(value) {
-  const minutes = Number(value || 0);
-  return (Math.round((minutes / 60) * 100) / 100).toFixed(2);
-}
-
-function hoursToMinutes(value) {
-  const hours = Number(value || 0);
-  return String(Math.round(hours * 60));
 }
 
 function splitCsvLine(line) {

@@ -119,4 +119,48 @@ describe('novedadController crear', () => {
       ['emp-otro-tenant', 'tenant-1']
     );
   });
+
+  test('acepta horas y registra minutos normalizados', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'emp-1' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'open' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'nov-1',
+          empleado_id: 'emp-1',
+          fecha: '2026-06-01',
+          tipo_novedad: 'hora_extra_50',
+          minutos: 90,
+          monto: 0,
+          estado: 'pendiente',
+        }],
+      });
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-hours',
+      ip: '127.0.0.1',
+      body: {
+        empleadoId: 'emp-1',
+        fecha: '2026-06-01',
+        tipoNovedad: 'hora_extra_50',
+        horas: 1.5,
+      },
+    };
+    const res = createResponse();
+
+    await crear(req, res);
+
+    expect(res.statusCode).toBe(201);
+    expect(db.query).toHaveBeenNthCalledWith(
+      4,
+      expect.stringContaining('INSERT INTO novedades_asistencia'),
+      expect.arrayContaining([90])
+    );
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'novedades.manual.crear',
+      newData: expect.objectContaining({ minutos: 90 }),
+    }));
+  });
 });

@@ -131,6 +131,47 @@ describe('monthlyPeriodService', () => {
     }));
   });
 
+  test('createNoveltyBatch acepta horas y persiste minutos normalizados', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const client = {
+      query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'open' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'emp-1', cedula: '1710034065', nombres: 'Maria', apellidos: 'Demo' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'batch-1' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'nov-1' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'batch-1', status: 'completado', total_empleados: 1, total_creadas: 1 }] })
+        .mockResolvedValueOnce({ rows: [] }),
+    };
+    db.getClient.mockResolvedValueOnce(client);
+
+    const result = await createNoveltyBatch({
+      tenantId: 'tenant-1',
+      userId: 'user-1',
+      correlationId: 'corr-1',
+      ipAddress: '127.0.0.1',
+      payload: {
+        anio: 2026,
+        mes: 6,
+        scopeType: 'company',
+        tipoNovedad: 'hora_extra_50',
+        fecha: '2026-06-15',
+        horas: 1.5,
+      },
+    });
+
+    expect(result.batch.id).toBe('batch-1');
+    expect(client.query).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining('INSERT INTO novelty_batches'),
+      expect.arrayContaining([90])
+    );
+    expect(client.query).toHaveBeenNthCalledWith(
+      4,
+      expect.stringContaining('INSERT INTO novedades_asistencia'),
+      expect.arrayContaining([90])
+    );
+  });
+
   test('createNoveltyBatch registra bono de desempeno con monto y periodo', async () => {
     db.query.mockResolvedValueOnce({ rows: [] });
     const client = {
