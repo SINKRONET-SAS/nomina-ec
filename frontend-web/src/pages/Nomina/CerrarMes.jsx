@@ -29,6 +29,9 @@ const SCOPE_TYPES = [
   { value: 'employee', label: 'Empleado' },
 ];
 
+const WRITABLE_PERIOD_STATUSES = new Set(['open', 'novelties_loaded', 'reopened', 'calculation_failed']);
+const CALCULABLE_PERIOD_STATUSES = new Set(['open', 'novelties_loaded', 'reopened', 'calculation_failed']);
+
 function summarize(rows = []) {
   return rows.reduce((memo, row) => ({ ...memo, [row.estado || row.status]: row.total }), {});
 }
@@ -85,6 +88,13 @@ function CerrarMes() {
   const positions = useMemo(() => [...new Set(employees.map((item) => item.cargo).filter(Boolean))], [employees]);
   const state = periodQuery.data || {};
   const period = state.period;
+  const periodStatus = period?.status || null;
+  const isClosedPeriod = periodStatus === 'closed';
+  const isCalculatedPeriod = periodStatus === 'calculated';
+  const isWritablePeriod = WRITABLE_PERIOD_STATUSES.has(periodStatus);
+  const canOpenPeriod = !period || periodStatus === 'planned';
+  const canCalculatePeriod = CALCULABLE_PERIOD_STATUSES.has(periodStatus);
+  const canClosePayroll = isCalculatedPeriod;
   const payrollStatus = summarize(state.payrollByStatus);
   const noveltyStatus = summarize(state.noveltiesByStatus);
   const pendingNovelties = Number(noveltyStatus.pendiente || 0);
@@ -171,13 +181,26 @@ function CerrarMes() {
     },
   });
 
+  useEffect(() => {
+    setMessage(null);
+    setResultado(null);
+    setCloseConfirmation(false);
+    setPendingDeleteBatch(null);
+    openMutation.reset();
+    batchMutation.reset();
+    deleteBatchMutation.reset();
+    resolveNoveltiesMutation.reset();
+    calculateMutation.reset();
+    closeMutation.reset();
+  }, [anio, mes, periodStatus]);
+
   const updateBatch = (field, value) => {
     setBatchForm((current) => ({ ...current, [field]: value }));
   };
 
   const scopeNeedsValue = batchForm.scopeType !== 'company';
   const requiresAmount = isAmountNoveltyType(batchForm.tipoNovedad);
-  const canCreateBatch = (!scopeNeedsValue || batchForm.scopeValue) && (!requiresAmount || Number(batchForm.monto) > 0);
+  const canCreateBatch = isWritablePeriod && (!scopeNeedsValue || batchForm.scopeValue) && (!requiresAmount || Number(batchForm.monto) > 0);
   const currentError = openMutation.error || batchMutation.error || deleteBatchMutation.error || resolveNoveltiesMutation.error || calculateMutation.error || closeMutation.error || periodQuery.error;
   const currentPrecheck = precheckDetails(currentError);
   const alertIsError = Boolean(currentError || message?.type === 'error');
@@ -277,9 +300,9 @@ function CerrarMes() {
                 Estado: <strong>{period?.status || 'sin abrir'}</strong>
               </p>
             </div>
-            <button className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={openMutation.isPending} onClick={() => openMutation.mutate()} type="button">
+            <button className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={!canOpenPeriod || openMutation.isPending} onClick={() => openMutation.mutate()} type="button">
               <RefreshCw className="h-4 w-4" />
-              {period ? 'Reabrir operativo' : 'Abrir periodo'}
+              {isClosedPeriod ? 'Periodo cerrado' : isCalculatedPeriod ? 'Periodo calculado' : periodStatus === 'planned' || !period ? 'Abrir periodo' : 'Periodo abierto'}
             </button>
           </div>
 
@@ -299,7 +322,7 @@ function CerrarMes() {
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
                     className="inline-flex min-h-9 items-center gap-2 rounded-md bg-emerald-700 px-3 text-xs font-semibold text-white disabled:bg-slate-300"
-                    disabled={resolveNoveltiesMutation.isPending}
+                    disabled={!isWritablePeriod || resolveNoveltiesMutation.isPending}
                     onClick={() => resolvePendingNovelties('aprobar')}
                     type="button"
                   >
@@ -308,7 +331,7 @@ function CerrarMes() {
                   </button>
                   <button
                     className="inline-flex min-h-9 items-center gap-2 rounded-md border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 disabled:text-slate-400"
-                    disabled={resolveNoveltiesMutation.isPending}
+                    disabled={!isWritablePeriod || resolveNoveltiesMutation.isPending}
                     onClick={() => resolvePendingNovelties('rechazar')}
                     type="button"
                   >
@@ -323,14 +346,22 @@ function CerrarMes() {
 
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-950">Cierre</h2>
+          {isClosedPeriod && (
+            <p className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+              Este periodo ya esta cerrado. Los roles quedan preservados y no se admiten cambios operativos.
+            </p>
+          )}
           <p className="mt-2 text-sm leading-6 text-slate-600">
             Cierra solo después de revisar el cálculo. Esta acción marca roles como cerrados.
           </p>
           <label className="mt-4 flex items-start gap-2 text-sm text-slate-700">
-            <input className="mt-1 h-4 w-4 accent-teal-700" checked={closeConfirmation} onChange={(event) => setCloseConfirmation(event.target.checked)} type="checkbox" />
+            <input className="mt-1 h-4 w-4 accent-teal-700 disabled:opacity-50" checked={closeConfirmation} disabled={!canClosePayroll} onChange={(event) => setCloseConfirmation(event.target.checked)} type="checkbox" />
             Confirmo que revise el detalle del periodo.
           </label>
-          <button className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={!closeConfirmation || closeMutation.isPending} onClick={() => closeMutation.mutate()} type="button">
+          {!canClosePayroll && !isClosedPeriod && (
+            <p className="mt-3 text-xs font-semibold text-amber-700">Calcula la nomina antes de cerrar el periodo.</p>
+          )}
+          <button className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={!canClosePayroll || !closeConfirmation || closeMutation.isPending} onClick={() => closeMutation.mutate()} type="button">
             <Lock className="h-4 w-4" />
             {closeMutation.isPending ? 'Cerrando' : 'Cerrar nómina'}
           </button>
@@ -418,16 +449,28 @@ function CerrarMes() {
             Abre el periodo antes de crear lotes.
           </div>
         )}
+        {period && !isWritablePeriod && (
+          <div className="mt-4 flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            <Lock className="h-4 w-4" />
+            El periodo no admite novedades porque su estado es {periodStatus}.
+          </div>
+        )}
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-slate-950">Cálculo de nómina</h2>
-          <button className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={!period || calculateMutation.isPending} onClick={() => calculateMutation.mutate()} type="button">
+          <button className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={!canCalculatePeriod || calculateMutation.isPending} onClick={() => calculateMutation.mutate()} type="button">
             <Calculator className="h-4 w-4" />
             {calculateMutation.isPending ? 'Calculando' : 'Calcular nómina'}
           </button>
         </div>
+
+        {!canCalculatePeriod && (
+          <p className="mt-3 text-sm font-semibold text-slate-600">
+            {isClosedPeriod ? 'El calculo de este mes ya fue cerrado.' : isCalculatedPeriod ? 'El calculo ya esta listo para cierre.' : 'Abre el periodo antes de calcular.'}
+          </p>
+        )}
 
         {resultado && (
           <div className="mt-5">
