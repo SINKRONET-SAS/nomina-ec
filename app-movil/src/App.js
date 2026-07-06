@@ -19,7 +19,7 @@ import { initMovilizacionDB } from './db/movilizacion';
 import { initOfflineQueue, processQueue } from './db/offline-queue';
 import { initRouteCache } from './db/route-cache';
 import { mobileAPI } from './services/api';
-import NetInfo from '@react-native-community/netinfo';
+import { AppState } from 'react-native';
 
 const storedUserKey = 'mobileUser';
 const operationalAdminRoles = ['owner', 'admin_rrhh', 'supervisor'];
@@ -135,8 +135,17 @@ export default function App() {
       });
     });
 
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      const online = Boolean(state.isConnected && state.isInternetReachable !== false);
+    const checkConnectivity = async () => {
+      try {
+        const res = await fetch('https://clients3.google.com/generate_204', { method: 'HEAD' });
+        return res.status === 204;
+      } catch {
+        return false;
+      }
+    };
+
+    const syncConnectivity = async () => {
+      const online = await checkConnectivity();
       setIsOnline(online);
       if (online) {
         processQueue(mobileAPI).catch((err) => {
@@ -149,8 +158,12 @@ export default function App() {
           });
         });
       }
-    });
-    return () => unsubscribe();
+    };
+
+    syncConnectivity();
+    const onAppState = (nextState) => { if (nextState === 'active') syncConnectivity(); };
+    const sub = AppState.addEventListener('change', onAppState);
+    return () => sub.remove();
   }, []);
 
   const cargarToken = async () => {
