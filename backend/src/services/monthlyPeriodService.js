@@ -236,7 +236,7 @@ async function listAnnualPayrollPeriods({ tenantId, anio }) {
       COALESCE(payroll.borrador, 0)::int AS payroll_borrador,
       COALESCE(payroll.cerrada, 0)::int AS payroll_cerrada,
       COALESCE(novelties.pendiente, 0)::int AS novedades_pendientes,
-      COALESCE(novelties.aprobada, 0)::int AS novedades_aprobadas
+      COALESCE(novelties.aprobado, 0)::int AS novedades_aprobadas
     FROM payroll_periods pp
     LEFT JOIN LATERAL (
       SELECT COUNT(*) AS total,
@@ -247,7 +247,7 @@ async function listAnnualPayrollPeriods({ tenantId, anio }) {
     ) payroll ON true
     LEFT JOIN LATERAL (
       SELECT COUNT(*) FILTER (WHERE estado = 'pendiente') AS pendiente,
-        COUNT(*) FILTER (WHERE estado = 'aprobada') AS aprobada
+        COUNT(*) FILTER (WHERE estado = 'aprobado') AS aprobado
       FROM novedades_asistencia na
       WHERE na.tenant_id = pp.tenant_id
         AND na.fecha >= pp.fecha_desde
