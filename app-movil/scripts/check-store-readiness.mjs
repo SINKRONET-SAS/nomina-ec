@@ -61,10 +61,6 @@ if (appConfig.splash?.image !== './assets/splash.png' || appConfig.splash?.resiz
   fail('expo.splash debe declarar ./assets/splash.png con resizeMode contain.');
 }
 
-if (appConfig.notification?.icon !== './assets/notification-icon.png' || appConfig.notification?.color !== '#0f766e') {
-  fail('expo.notification debe declarar icono de notificacion y color de marca.');
-}
-
 const expoVersion = String(packageJson.dependencies?.expo || packageJson.devDependencies?.expo || '');
 const expoSdkMajor = Number.parseInt(expoVersion.match(/\d+/)?.[0] || '', 10);
 if (!Number.isInteger(expoSdkMajor) || expoSdkMajor < 54) {
@@ -79,7 +75,7 @@ const requiredAssets = [
   appConfig.icon,
   appConfig.splash?.image,
   appConfig.android?.adaptiveIcon?.foregroundImage,
-  appConfig.notification?.icon,
+  './assets/notification-icon.png',
   './assets/store/feature-graphic.png',
   './assets/store/screenshots/phone-01.png',
   './assets/store/screenshots/phone-02.png',
@@ -93,7 +89,7 @@ for (const asset of requiredAssets) {
 
 assertPngDimensions(appConfig.icon, 1024, 1024);
 assertPngDimensions(appConfig.android?.adaptiveIcon?.foregroundImage, 1024, 1024);
-assertPngDimensions(appConfig.notification?.icon, 512, 512);
+assertPngDimensions('./assets/notification-icon.png', 512, 512);
 
 for (const key of ['privacyUrl', 'termsUrl', 'supportUrl', 'accountDeletionUrl']) {
   if (!appConfig.extra?.[key]?.startsWith('https://')) {

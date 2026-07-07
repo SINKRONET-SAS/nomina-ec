@@ -1,0 +1,43 @@
+# Dependencies and generated output
+node_modules/
+**/node_modules/
+dist/
+build/
+.expo/
+**/.expo/
+app-movil/dist/
+app-movil/android/
+app-movil/ios/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+.demo-credentials*.json
+backend/.demo-credentials*.json
+
+# Repository governance, docs, and prompts are not part of the mobile build
+.github/
+.vscode/
+docs/
+docs2/
+scripts/
+README.md
+RULES.md
+
+# Logs and local caches
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.codex/
+.claude/
+.cache/
+coverage/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

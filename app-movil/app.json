@@ -36,10 +36,6 @@
         "ACCESS_COARSE_LOCATION"
       ]
     },
-    "notification": {
-      "icon": "./assets/notification-icon.png",
-      "color": "#0f766e"
-    },
     "plugins": [
       "expo-secure-store",
       "expo-sqlite",

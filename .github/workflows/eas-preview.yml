@@ -39,4 +39,4 @@ jobs:
 
       - name: Run EAS preview build
         working-directory: app-movil
-        run: EXPO_DEBUG=1 eas build --profile preview --platform ${{ inputs.platform }} --non-interactive
+        run: eas build --profile preview --platform ${{ inputs.platform }} --non-interactive --clear-cache
