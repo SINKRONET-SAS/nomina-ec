@@ -5,6 +5,18 @@ const root = process.cwd();
 const appConfig = JSON.parse(readFileSync(join(root, 'app.json'), 'utf8')).expo;
 const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 
+function getPluginConfig(pluginName) {
+  for (const plugin of appConfig.plugins || []) {
+    if (plugin === pluginName) {
+      return {};
+    }
+    if (Array.isArray(plugin) && plugin[0] === pluginName) {
+      return plugin[1] || {};
+    }
+  }
+  return null;
+}
+
 function fail(message) {
   console.error(`[LPA26-STORES] ${message}`);
   process.exit(1);
@@ -57,8 +69,22 @@ if (Object.prototype.hasOwnProperty.call(appConfig.android || {}, 'targetSdkVers
   fail('android.targetSdkVersion no debe declararse en app.json managed; Expo lo resuelve por SDK/build.');
 }
 
-if (appConfig.splash?.image !== './assets/splash.png' || appConfig.splash?.resizeMode !== 'contain') {
-  fail('expo.splash debe declarar ./assets/splash.png con resizeMode contain.');
+if (appConfig.splash) {
+  fail('expo.splash es legacy y no debe declararse en SDK 57; usa el plugin expo-splash-screen.');
+}
+
+const splashPlugin = getPluginConfig('expo-splash-screen');
+if (!splashPlugin) {
+  fail('expo-splash-screen debe configurar el splash screen de tienda.');
+}
+
+if (
+  splashPlugin.image !== './assets/splash.png'
+  || splashPlugin.resizeMode !== 'contain'
+  || splashPlugin.backgroundColor !== '#ecfdf5'
+  || splashPlugin.enableFullScreenImage_legacy !== true
+) {
+  fail('expo-splash-screen debe preservar splash.png, resizeMode contain, fondo de marca y full screen legacy.');
 }
 
 const expoVersion = String(packageJson.dependencies?.expo || packageJson.devDependencies?.expo || '');
@@ -71,9 +97,17 @@ if (!appConfig.ios?.buildNumber) {
   fail('ios.buildNumber no esta definido.');
 }
 
+if (!packageJson.dependencies?.['expo-splash-screen']) {
+  fail('expo-splash-screen debe estar declarado como dependencia.');
+}
+
+if (appConfig.userInterfaceStyle && !packageJson.dependencies?.['expo-system-ui']) {
+  fail('expo-system-ui debe estar declarado cuando userInterfaceStyle esta configurado.');
+}
+
 const requiredAssets = [
   appConfig.icon,
-  appConfig.splash?.image,
+  splashPlugin.image,
   appConfig.android?.adaptiveIcon?.foregroundImage,
   './assets/notification-icon.png',
   './assets/store/feature-graphic.png',

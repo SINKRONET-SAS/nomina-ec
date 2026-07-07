@@ -8,11 +8,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ecfdf5"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -37,6 +32,15 @@
       ]
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ecfdf5",
+          "enableFullScreenImage_legacy": true
+        }
+      ],
       "expo-secure-store",
       "expo-sqlite",
       "expo-status-bar"
