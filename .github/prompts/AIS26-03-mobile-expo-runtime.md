@@ -4,7 +4,7 @@ Objetivo: hacer visible el icono real de SKNOMINA dentro de la app movil y decla
 
 Tareas:
 
-- Actualizar `app-movil/app.json` con `splash` y `notification`.
+- Actualizar `app-movil/app.json` con plugin `expo-splash-screen`; no usar `expo.notification` en SDK 57.
 - Mostrar `app-movil/assets/icon.png` en `LoginScreen`.
 - Corregir mojibake visible en textos tocados del login movil.
 - Ampliar `app-movil/scripts/check-store-readiness.mjs` para validar referencias y dimensiones.

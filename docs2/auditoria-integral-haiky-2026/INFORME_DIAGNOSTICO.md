@@ -10,7 +10,7 @@ La revision local contra `origin/main` confirma que el sistema ya contiene buena
 - `app-movil/src/screens/GastosMovilizacionScreen.js`: errores locales/backend se registran con estructura.
 - `app-movil/src/screens/RutaHoyScreen.js`: cache local de rutas ya no falla en silencio.
 - `backend/src/app.js`: health check PayPhone de arranque ya no oculta fallos.
-- `app-movil/app.json` y `scripts/verify-system-contracts.mjs`: el contrato raiz ahora valida splash via plugin `expo-splash-screen`, compatible con SDK 57, y conserva `notification.icon`.
+- `app-movil/app.json` y `scripts/verify-system-contracts.mjs`: el contrato raiz valida splash via plugin `expo-splash-screen`, compatible con SDK 57, y prohibe `expo.notification` legacy.
 - `scripts/haiky-integral-diagnostic.mjs`: diagnostico integral reproducible.
 - `scripts/haiky-integral-solution.mjs`: solucion/gate con `AuditLock.json`.
 

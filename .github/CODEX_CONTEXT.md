@@ -78,7 +78,7 @@ GPA26 agrega gobierno operativo de periodos de nomina. `payroll_periods` conserv
 
 ### Alcance AIS26
 
-AIS26 cierra la brecha de iconografia de sistema sin crear marca paralela. La PWA usa el icono SKNOMINA en HTML, manifest, shortcuts, apple touch y metadatos sociales; `BrandLogo` renderiza `/icon-512.png` con fallback `/icon.svg`; Expo declara icono, adaptive icon, splash y notification; y el login movil muestra el icono real dentro de la experiencia.
+AIS26 cierra la brecha de iconografia de sistema sin crear marca paralela. La PWA usa el icono SKNOMINA en HTML, manifest, shortcuts, apple touch y metadatos sociales; `BrandLogo` renderiza `/icon-512.png` con fallback `/icon.svg`; Expo declara icono y adaptive icon, configura splash mediante `expo-splash-screen`, conserva el asset `notification-icon.png` sin usar `expo.notification`, y el login movil muestra el icono real dentro de la experiencia.
 
 ### Hallazgos AIS26
 
@@ -88,7 +88,7 @@ AIS26 cierra la brecha de iconografia de sistema sin crear marca paralela. La PW
 | AIS26-F02 | MEDIO | `icon-512.png` no media 512x512 | Regenerado a 512x512 |
 | AIS26-F03 | ALTO | HTML no exponia PNG fallback ni apple touch | `index.html` enlaza `icon.svg`, `icon-192.png`, `apple-touch-icon.png` y manifest |
 | AIS26-F04 | MEDIO | Metadatos sociales usaban screenshot SVG | OG/Twitter usan `icon-512.png` |
-| AIS26-F05 | ALTO | Expo no declaraba splash/notification aunque existian assets | `app.json` declara `splash` y `notification` |
+| AIS26-F05 | ALTO | Expo no configuraba splash moderno aunque existian assets | `app.json` usa plugin `expo-splash-screen` y mantiene `notification-icon.png` como asset |
 | AIS26-F06 | MEDIO | Login movil mostraba solo texto de marca | `LoginScreen` renderiza `assets/icon.png` con `Image` |
 | AIS26-F07 | ALTO | No habia contrato anti-regresion de iconografia | `contracts`, `smoke:pwa` y `check:mobile` validan rutas y dimensiones |
 
@@ -2279,7 +2279,7 @@ Runtime AISK26:
 
 - `GastosMovilizacionScreen` envia pendientes al backend antes de cerrar el periodo local de movilizacion.
 - `RutaHoyScreen`, `GastosMovilizacionScreen` y `backend/src/app.js` ya no usan `catch(() => {})` silencioso.
-- `scripts/verify-system-contracts.mjs` valida splash movil mediante plugin `expo-splash-screen`, compatible con Expo SDK 57, y `app-movil/app.json` conserva `notification.icon`.
+- `scripts/verify-system-contracts.mjs` valida splash movil mediante plugin `expo-splash-screen`, compatible con Expo SDK 57, y prohibe `expo.notification` legacy.
 - `npm.cmd run haiky:solution` ejecuta diagnostico, contratos, gate anti silent failures, gate UTF-8 y firma `AuditLock.json`.
 
 Reglas operativas AISK26:

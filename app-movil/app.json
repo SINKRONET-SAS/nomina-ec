@@ -8,10 +8,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "notification": {
-      "icon": "./assets/notification-icon.png",
-      "color": "#0f766e"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],

@@ -23,7 +23,7 @@ Hallazgos confirmados y tratados en esta ejecucion:
 |----|-----------|--------|----------|-----------|-------------------|
 | AISK26-ZSF-01 | Alta | Cerrado | `catch(() => {})` silencioso en app movil y backend. | `app-movil/src/screens/GastosMovilizacionScreen.js`, `app-movil/src/screens/RutaHoyScreen.js`, `backend/src/app.js`. | Logs estructurados con `code`, `statusCode`, `correlationId`, `userId` cuando aplica. |
 | AISK26-MOV-01 | Alta | Cerrado | Cierre mensual de movilizacion bloqueaba periodo local sin exigir envio backend exitoso. | `GastosMovilizacionScreen.confirmarCierre`. | `confirmarCierre` ahora llama `enviarPendientes()` antes de `cerrarPeriodo()`. |
-| AISK26-EXP-01 | Media | Cerrado | Contrato de Expo exigia `splash` legacy, pero el check movil SDK 57 lo prohibe. | `scripts/verify-system-contracts.mjs` y `app-movil/scripts/check-store-readiness.mjs`. | El contrato raiz ahora valida `expo-splash-screen`; `app-movil/app.json` mantiene `notification.icon`. |
+| AISK26-EXP-01 | Media | Cerrado | Contrato de Expo exigia `splash` y `notification` legacy, pero Expo SDK 57 los rechaza. | `scripts/verify-system-contracts.mjs`, `app-movil/scripts/check-store-readiness.mjs` y logs EAS Preview APK #15. | El contrato raiz valida `expo-splash-screen`, prohibe `expo.notification` y conserva el asset `notification-icon.png`. |
 | AISK26-GOV-01 | Media | Cerrado | No existia script unico de diagnostico integral reproducible. | Ausencia de script dedicado. | `scripts/haiky-integral-diagnostic.mjs` y `scripts/haiky-integral-solution.mjs`. |
 
 Hallazgos candidatos reconfirmados como no cerrables automaticamente:
