@@ -23,6 +23,16 @@ function statusLabel(status) {
   return labels[status] || status;
 }
 
+function logRouteCacheError(message, err, code) {
+  console.error(message, {
+    code: err.response?.data?.error || err.code || code,
+    statusCode: err.response?.status || 500,
+    correlationId: err.response?.data?.correlationId || 'mobile-local',
+    userId: null,
+    message: err.message,
+  });
+}
+
 export default function RutaHoyScreen() {
   const [route, setRoute] = useState(null);
   const [message, setMessage] = useState('');
@@ -39,7 +49,11 @@ export default function RutaHoyScreen() {
 
   const loadRoute = async () => {
     setLoading(true);
-    await initRouteCache().catch(() => {});
+    try {
+      await initRouteCache();
+    } catch (err) {
+      logRouteCacheError('[RUTAS] No se pudo inicializar cache local', err, 'RUTA_CACHE_INIT_ERROR');
+    }
     try {
       const response = await mobileAPI.routeToday();
       const routeData = response.data.route || null;
@@ -48,7 +62,9 @@ export default function RutaHoyScreen() {
       setIsOffline(false);
       setStatus({ type: 'success', text: routeData ? 'Ruta sincronizada.' : 'No hay ruta asignada para hoy.' });
       if (routeData) {
-        saveRouteToCache(todayEC(), routeData).catch(() => {});
+        saveRouteToCache(todayEC(), routeData).catch((err) => {
+          logRouteCacheError('[RUTAS] No se pudo guardar cache local', err, 'RUTA_CACHE_SAVE_ERROR');
+        });
       }
     } catch (err) {
       // Fallback a cache offline

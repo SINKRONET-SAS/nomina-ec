@@ -86,6 +86,16 @@ function buildRouteSuggestion(profile, route) {
   };
 }
 
+function logMobileError(message, err, code) {
+  console.error(message, {
+    code: err.response?.data?.error || err.code || code,
+    statusCode: err.response?.status || 500,
+    correlationId: err.response?.data?.correlationId || 'mobile-local',
+    userId: null,
+    message: err.message,
+  });
+}
+
 export default function GastosMovilizacionScreen() {
   const periodo = currentPeriodEC();
   const [gastos, setGastos] = useState([]);
@@ -100,7 +110,11 @@ export default function GastosMovilizacionScreen() {
   const [routeSuggestion, setRouteSuggestion] = useState({ origen: '', destino: '' });
 
   const recargar = useCallback(async () => {
-    await initPeriodoCierreTable().catch(() => {});
+    try {
+      await initPeriodoCierreTable();
+    } catch (err) {
+      logMobileError('[MOVILIZACION] No se pudo inicializar cierre local', err, 'MOVILIZACION_CIERRE_DB_INIT_ERROR');
+    }
     const [rows, summary, bloqueado] = await Promise.all([
       getGastosByPeriodo(periodo),
       getTotalesByPeriodo(periodo),
@@ -123,13 +137,7 @@ export default function GastosMovilizacionScreen() {
       ]);
       setRouteSuggestion(buildRouteSuggestion(profileResponse.data || {}, routeResponse.data?.route || null));
     } catch (err) {
-      console.error('No se pudo cargar sugerencia de movilización:', {
-        code: err.response?.data?.error || 'MOVILIZACION_RUTA_SUGERIDA_ERROR',
-        statusCode: err.response?.status || 500,
-        correlationId: err.response?.data?.correlationId || 'mobile-local',
-        userId: null,
-        message: err.message,
-      });
+      logMobileError('[MOVILIZACION] No se pudo cargar sugerencia de ruta', err, 'MOVILIZACION_RUTA_SUGERIDA_ERROR');
     }
   }, []);
 
@@ -143,15 +151,41 @@ export default function GastosMovilizacionScreen() {
     setCierreVisible(true);
   };
 
+  const enviarPendientes = async () => {
+    const pendientes = gastos.filter((gasto) => gasto.estado === 'pendiente');
+    if (pendientes.length === 0) {
+      return { enviados: 0, informeId: null };
+    }
+
+    const response = await mobileAPI.sendMobilizationReport({
+      periodo,
+      total_usd: Number(totales.total || 0),
+      dias: Number(totales.dias || pendientes.length),
+      detalle: pendientes.map((gasto) => ({
+        fecha: gasto.fecha,
+        origen: gasto.origen,
+        destino: gasto.destino,
+        km: gasto.km,
+        valor_usd: gasto.valor_usd,
+        concepto: gasto.concepto,
+      })),
+    });
+
+    await marcarGastosEnviados(periodo, response.data?.informeId || 'enviado');
+    return { enviados: pendientes.length, informeId: response.data?.informeId || null };
+  };
+
   const confirmarCierre = async () => {
     setSaving(true);
     try {
+      await enviarPendientes();
       await cerrarPeriodo(periodo);
       setCierreVisible(false);
       await recargar();
-      Alert.alert('Período cerrado', 'El informe fue enviado. Ya no podrás agregar gastos a este período.');
+      Alert.alert('Período cerrado', 'El informe fue enviado a revisión. Ya no podrás agregar gastos a este período.');
     } catch (err) {
-      Alert.alert('Error', 'No se pudo cerrar el período.');
+      logMobileError('[MOVILIZACION] No se pudo cerrar y enviar el periodo', err, 'MOVILIZACION_CIERRE_ENVIO_ERROR');
+      Alert.alert('No se pudo cerrar', err.response?.data?.message || 'Primero necesitamos enviar el informe al backend.');
     } finally {
       setSaving(false);
     }
@@ -214,23 +248,11 @@ export default function GastosMovilizacionScreen() {
         onPress: async () => {
           setSaving(true);
           try {
-            const response = await mobileAPI.sendMobilizationReport({
-              periodo,
-              total_usd: Number(totales.total || 0),
-              dias: Number(totales.dias || pendientes.length),
-              detalle: pendientes.map((gasto) => ({
-                fecha: gasto.fecha,
-                origen: gasto.origen,
-                destino: gasto.destino,
-                km: gasto.km,
-                valor_usd: gasto.valor_usd,
-                concepto: gasto.concepto,
-              })),
-            });
-            await marcarGastosEnviados(periodo, response.data?.informeId || 'enviado');
+            await enviarPendientes();
             await recargar();
             Alert.alert('Informe enviado', 'Tu informe de movilización quedó pendiente de revisión.');
           } catch (err) {
+            logMobileError('[MOVILIZACION] No se pudo enviar informe', err, 'MOVILIZACION_ENVIO_ERROR');
             Alert.alert('No se pudo enviar', err.response?.data?.message || 'Revisa tu conexión e intenta nuevamente.');
           } finally {
             setSaving(false);

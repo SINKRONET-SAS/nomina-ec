@@ -344,7 +344,14 @@ app.listen(PORT, () => {
   }, 'SKNOMINA backend iniciado');
 
   // HAL-40: PayPhone health check async al arranque
-  require('./services/payphoneGatewayService').healthCheck().catch(() => {});
+  require('./services/payphoneGatewayService').healthCheck().catch((err) => {
+    logger.error({
+      code: err.code || 'PAYPHONE_HEALTHCHECK_STARTUP_ERROR',
+      statusCode: err.statusCode || 503,
+      correlationId: 'app-startup',
+      userId: null,
+    }, err.message || 'No se pudo verificar PayPhone al iniciar');
+  });
 });
 
 module.exports = app;

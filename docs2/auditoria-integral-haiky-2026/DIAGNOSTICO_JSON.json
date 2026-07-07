@@ -1,0 +1,140 @@
+{
+  "generatedAt": "2026-07-07T13:38:27.485Z",
+  "repository": "SINKRONET-SAS/nomina-ec",
+  "rulesSource": "RULES.md",
+  "filesScanned": 813,
+  "runtimeFilesScanned": 246,
+  "confirmedCapabilities": [
+    {
+      "capability": "SQLite movilizacion local",
+      "status": "confirmado",
+      "evidence": [
+        "app-movil/package.json",
+        "app-movil/src/db/movilizacion.js"
+      ]
+    },
+    {
+      "capability": "Aprobacion backend/PWA de informes de movilizacion",
+      "status": "confirmado",
+      "evidence": [
+        "backend/src/controllers/movilizacionController.js",
+        "frontend-web/src/pages/Operacion/MovilizacionAprobacion.jsx"
+      ]
+    },
+    {
+      "capability": "Historial y autoservicio empleado",
+      "status": "confirmado",
+      "evidence": [
+        "frontend-web/src/pages/Empleados/HistorialEmpleado.jsx",
+        "app-movil/src/screens/AutoservicioScreen.js"
+      ]
+    },
+    {
+      "capability": "Permisos con aprobacion operativa",
+      "status": "confirmado",
+      "evidence": [
+        "app-movil/src/screens/PermisosScreen.js",
+        "frontend-web/src/pages/Operacion/PermisosOperacion.jsx"
+      ]
+    },
+    {
+      "capability": "Canal de pagos PayPhone",
+      "status": "confirmado_con_gate",
+      "evidence": [
+        "backend/src/services/payphoneGatewayService.js",
+        "frontend-web/src/pages/Planes.jsx"
+      ]
+    },
+    {
+      "capability": "Email y auditoria de comunicaciones",
+      "status": "confirmado",
+      "evidence": [
+        "backend/src/services/communicationService.js",
+        "frontend-web/src/pages/Configuracion/Comunicaciones.jsx"
+      ]
+    }
+  ],
+  "findingSummary": {
+    "funcionalidad_simulada_runtime": 11
+  },
+  "findings": [
+    {
+      "type": "funcionalidad_simulada_runtime",
+      "severity": "media",
+      "file": "backend/src/config/s3.js",
+      "line": 30,
+      "evidence": "mock"
+    },
+    {
+      "type": "funcionalidad_simulada_runtime",
+      "severity": "media",
+      "file": "backend/src/controllers/paymentController.js",
+      "line": 383,
+      "evidence": "mock"
+    },
+    {
+      "type": "funcionalidad_simulada_runtime",
+      "severity": "media",
+      "file": "backend/src/controllers/paymentController.js",
+      "line": 507,
+      "evidence": "mock"
+    },
+    {
+      "type": "funcionalidad_simulada_runtime",
+      "severity": "media",
+      "file": "backend/src/controllers/paymentController.js",
+      "line": 507,
+      "evidence": "mock"
+    },
+    {
+      "type": "funcionalidad_simulada_runtime",
+      "severity": "media",
+      "file": "backend/src/controllers/paymentController.js",
+      "line": 510,
+      "evidence": "mock"
+    },
+    {
+      "type": "funcionalidad_simulada_runtime",
+      "severity": "media",
+      "file": "backend/src/controllers/paymentController.js",
+      "line": 511,
+      "evidence": "mock"
+    },
+    {
+      "type": "funcionalidad_simulada_runtime",
+      "severity": "media",
+      "file": "frontend-web/src/pages/PaymentResult.jsx",
+      "line": 9,
+      "evidence": "mock"
+    },
+    {
+      "type": "funcionalidad_simulada_runtime",
+      "severity": "media",
+      "file": "frontend-web/src/pages/PaymentResult.jsx",
+      "line": 9,
+      "evidence": "mock"
+    },
+    {
+      "type": "funcionalidad_simulada_runtime",
+      "severity": "media",
+      "file": "frontend-web/src/pages/PaymentResult.jsx",
+      "line": 19,
+      "evidence": "mock"
+    },
+    {
+      "type": "funcionalidad_simulada_runtime",
+      "severity": "media",
+      "file": "frontend-web/src/pages/PaymentResult.jsx",
+      "line": 26,
+      "evidence": "mock"
+    },
+    {
+      "type": "funcionalidad_simulada_runtime",
+      "severity": "media",
+      "file": "frontend-web/src/pages/PaymentResult.jsx",
+      "line": 28,
+      "evidence": "mock"
+    }
+  ],
+  "evidenceHash": "5d0145b1e7d6bf66944a569a3811fd18c95251a10d9eefc91feb0d757f883a56"
+}

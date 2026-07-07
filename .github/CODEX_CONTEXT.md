@@ -2246,3 +2246,45 @@ Reglas operativas MGR26:
 - No crear migraciones mientras `work_zones`, `route_sites`, `route_days` y `route_stops` cubran el flujo.
 - No sustituir RBAC backend por ocultamiento UI.
 - Si se cambia visibilidad por perfil, actualizar contratos en `scripts/verify-system-contracts.mjs`.
+
+---
+
+## AISK26 - Auditoria integral Haiky Nomina EC 2026
+
+Plan: `PLAN_HAIKY_AUDITORIA_INTEGRAL_NOMINA_EC_2026`.
+
+Estado: diagnostico integral ejecutado localmente el 2026-07-07; gates Haiky verdes y `AuditLock.json` firmado.
+
+Fuente:
+
+- Solicitud del usuario: auditoria integral LANDING, PWA, BACKEND y APP-MOVIL, con proteccion de datos, legal Ecuador, UI/UX, UTF-8, pagos, email, superadmin, reportes, rutas, movilizacion SQLite, permisos, historial empleado y candidatos a eliminacion justificados.
+
+Artefactos:
+
+- `docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_NOMINA_EC_2026.md`
+- `docs2/auditoria-integral-haiky-2026/INFORME_DIAGNOSTICO.md`
+- `docs2/auditoria-integral-haiky-2026/DIAGNOSTICO_JSON.json`
+- `docs2/auditoria-integral-haiky-2026/DIAGNOSTICO_AUTOMATIZADO.md`
+- `.github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-00-baseline.md`
+- `.github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-01-zero-silent-failures.md`
+- `.github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-02-movilizacion-sqlite-cierre.md`
+- `.github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-03-lopdp-legal-pagos-email.md`
+- `.github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-04-reportes-uiux-humanizacion.md`
+- `.github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-05-qa-release.md`
+- `scripts/haiky-integral-diagnostic.mjs`
+- `scripts/haiky-integral-solution.mjs`
+- `AuditLock.json`
+
+Runtime AISK26:
+
+- `GastosMovilizacionScreen` envia pendientes al backend antes de cerrar el periodo local de movilizacion.
+- `RutaHoyScreen`, `GastosMovilizacionScreen` y `backend/src/app.js` ya no usan `catch(() => {})` silencioso.
+- `scripts/verify-system-contracts.mjs` valida splash movil mediante plugin `expo-splash-screen`, compatible con Expo SDK 57, y `app-movil/app.json` conserva `notification.icon`.
+- `npm.cmd run haiky:solution` ejecuta diagnostico, contratos, gate anti silent failures, gate UTF-8 y firma `AuditLock.json`.
+
+Reglas operativas AISK26:
+
+- No reportar falsos positivos: distinguir hallazgo confirmado, riesgo residual y modo controlado de desarrollo.
+- Mantener PayPhone mock solo si queda bloqueado/visible fuera de produccion real.
+- No cerrar movilizacion local si el informe mensual no fue aceptado por backend.
+- Todo cambio nuevo debe pasar `npm.cmd run haiky:solution`; usar `npm.cmd run validate` cuando el entorno de DB/Prisma este disponible.

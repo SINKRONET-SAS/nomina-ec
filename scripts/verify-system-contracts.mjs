@@ -88,7 +88,8 @@ assert(viteConfig.includes("'apple-touch-icon.png'"), 'Vite PWA debe copiar appl
 assert(brandLogoComponent.includes("const BRAND_LOGO_SRC = '/icon-512.png'"), 'BrandLogo debe usar icono de sistema PNG.');
 assert(brandLogoComponent.includes("const BRAND_LOGO_FALLBACK_SRC = '/icon.svg'"), 'BrandLogo debe tener fallback SVG.');
 assert(mobileLoginScreen.includes("require('../../assets/icon.png')") && mobileLoginScreen.includes('<Image'), 'Login movil debe renderizar el icono real de la app.');
-assert(mobileAppConfig.splash?.image === './assets/splash.png', 'Expo debe declarar splash.png.');
+const splashPlugin = (mobileAppConfig.plugins || []).find((plugin) => Array.isArray(plugin) && plugin[0] === 'expo-splash-screen');
+assert(splashPlugin?.[1]?.image === './assets/splash.png', 'Expo SDK 57 debe declarar splash.png mediante el plugin expo-splash-screen.');
 assert(mobileAppConfig.notification?.icon === './assets/notification-icon.png', 'Expo debe declarar notification-icon.png.');
 assertPngDimensions('frontend-web/public/icon-192.png', 192, 192);
 assertPngDimensions('frontend-web/public/icon-512.png', 512, 512);
