@@ -11,7 +11,8 @@
     "check:stores": "node scripts/check-store-readiness.mjs",
     "android": "expo start --android",
     "start": "expo start",
-    "start:lan": "node scripts/start-lan.mjs"
+    "start:lan": "node scripts/start-lan.mjs",
+    "bundle:preview": "expo export --clear"
   },
   "dependencies": {
     "axios": "^1.6.2",

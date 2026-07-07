@@ -28,11 +28,15 @@ jobs:
 
       - run: npm ci
 
+      - name: Verify JavaScript bundle locally
+        working-directory: app-movil
+        run: EXPO_DEBUG=1 npm run bundle:preview -- --platform ${{ inputs.platform }}
+
       - uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: EAS Build
+      - name: Run EAS preview build
         working-directory: app-movil
-        run: eas build --profile preview --platform ${{ inputs.platform }} --non-interactive
+        run: EXPO_DEBUG=1 eas build --profile preview --platform ${{ inputs.platform }} --non-interactive

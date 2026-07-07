@@ -1,7 +1,7 @@
 // SKNOMINA - App móvil (React Native + Expo)
 // App.js - Componente principal
 import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, AppState, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
@@ -18,8 +18,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { initMovilizacionDB } from './db/movilizacion';
 import { initOfflineQueue, processQueue } from './db/offline-queue';
 import { initRouteCache } from './db/route-cache';
-import { mobileAPI } from './services/api';
-import { AppState } from 'react-native';
+import { API_URL, mobileAPI } from './services/api';
 
 const storedUserKey = 'mobileUser';
 const operationalAdminRoles = ['owner', 'admin_rrhh', 'supervisor'];
@@ -135,35 +134,40 @@ export default function App() {
       });
     });
 
-    const checkConnectivity = async () => {
-      try {
-        const res = await fetch('https://clients3.google.com/generate_204', { method: 'HEAD' });
-        return res.status === 204;
-      } catch {
-        return false;
-      }
-    };
+    let mounted = true;
 
-    const syncConnectivity = async () => {
-      const online = await checkConnectivity();
-      setIsOnline(online);
-      if (online) {
-        processQueue(mobileAPI).catch((err) => {
-          console.error('[MOBILE] Error procesando cola offline', {
-            code: err.code || 'MOBILE_OFFLINE_QUEUE_PROCESS_ERROR',
-            statusCode: 500,
-            correlationId: 'mobile-local',
-            userId: authUser?.id || null,
-            message: err.message,
-          });
+    const syncOfflineQueue = async () => {
+      try {
+        await fetch(API_URL, { method: 'HEAD' });
+        if (!mounted) return;
+        setIsOnline(true);
+        await processQueue(mobileAPI);
+      } catch (err) {
+        if (!mounted) return;
+        setIsOnline(false);
+        console.error('[MOBILE] Error procesando cola offline', {
+          code: err.code || 'MOBILE_OFFLINE_QUEUE_PROCESS_ERROR',
+          statusCode: 500,
+          correlationId: 'mobile-local',
+          userId: null,
+          message: err.message,
         });
       }
     };
 
-    syncConnectivity();
-    const onAppState = (nextState) => { if (nextState === 'active') syncConnectivity(); };
-    const sub = AppState.addEventListener('change', onAppState);
-    return () => sub.remove();
+    syncOfflineQueue();
+    const interval = setInterval(syncOfflineQueue, 30000);
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        syncOfflineQueue();
+      }
+    });
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+      subscription.remove();
+    };
   }, []);
 
   const cargarToken = async () => {
