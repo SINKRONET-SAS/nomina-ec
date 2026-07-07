@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { API_URL, authAPI } from '../services/api';
+import { API_URL, IS_LOCAL_API_URL, authAPI } from '../services/api';
 
 const APP_ICON = require('../../assets/icon.png');
 
@@ -19,7 +19,10 @@ const PLACEHOLDER_COLOR = '#64748b';
 
 function getErrorMessage(err, fallback) {
   if (!err?.response && err?.message === 'Network Error') {
-    return `No se pudo conectar con ${API_URL}. En Expo Go usa la IP local de tu PC en EXPO_PUBLIC_API_URL.`;
+    if (IS_LOCAL_API_URL) {
+      return `No se pudo conectar con ${API_URL}. En Expo Go usa la IP local de tu PC en EXPO_PUBLIC_API_URL.`;
+    }
+    return `No se pudo conectar con ${API_URL}. Verifica conexion a internet o disponibilidad del servidor.`;
   }
   return err?.response?.data?.message || err?.response?.data?.error || err?.message || fallback;
 }
@@ -394,8 +397,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f0fdfa',
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
+    justifyContent: 'flex-start',
+    paddingBottom: 28,
+    paddingHorizontal: 18,
+    paddingTop: 42,
   },
   card: {
     backgroundColor: 'white',
@@ -414,10 +419,10 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   appIcon: {
-    borderRadius: 14,
-    height: 58,
+    borderRadius: 16,
+    height: 72,
     marginBottom: 10,
-    width: 58,
+    width: 72,
   },
   title: {
     color: '#0f766e',

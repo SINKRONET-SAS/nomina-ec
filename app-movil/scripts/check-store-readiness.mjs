@@ -4,6 +4,7 @@ import { join } from 'node:path';
 const root = process.cwd();
 const appConfig = JSON.parse(readFileSync(join(root, 'app.json'), 'utf8')).expo;
 const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const apiSource = readFileSync(join(root, 'src/services/api.js'), 'utf8');
 
 function getPluginConfig(pluginName) {
   for (const plugin of appConfig.plugins || []) {
@@ -55,6 +56,14 @@ if (!appConfig.description || appConfig.description.trim().length < 30) {
 
 if (!appConfig.extra?.androidPrivacyPolicyUrl?.startsWith('https://')) {
   fail('extra.androidPrivacyPolicyUrl debe apuntar a una politica publica HTTPS para Play Console.');
+}
+
+if (!appConfig.extra?.apiBaseUrl?.startsWith('https://')) {
+  fail('extra.apiBaseUrl debe apuntar a la API publica HTTPS para APK preview/produccion.');
+}
+
+if (!apiSource.includes(appConfig.extra.apiBaseUrl)) {
+  fail('src/services/api.js debe usar extra.apiBaseUrl como URL publica por defecto.');
 }
 
 if (!appConfig.ios?.bundleIdentifier) {

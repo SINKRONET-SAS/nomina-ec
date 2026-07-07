@@ -1,7 +1,14 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:3000/api';
+const DEFAULT_API_URL = 'https://api.sknomina.com/api';
+
+function normalizeApiUrl(url) {
+  return String(url || '').trim().replace(/\/+$/, '');
+}
+
+export const API_URL = normalizeApiUrl(process.env.EXPO_PUBLIC_API_URL || DEFAULT_API_URL);
+export const IS_LOCAL_API_URL = /^https?:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2|192\.168\.|10\.|172\.(1[6-9]|2\d|3[0-1])\.)/i.test(API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
