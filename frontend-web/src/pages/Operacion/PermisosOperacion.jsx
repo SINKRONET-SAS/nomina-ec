@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarCheck2, CheckCircle2, RefreshCcw, XCircle } from 'lucide-react';
+import { CalendarCheck2, CheckCircle2, Paperclip, RefreshCcw, XCircle } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { formatDateEC } from '../../utils/dateFormat';
 
@@ -19,6 +19,11 @@ function formatPermissionType(type) {
 
 function sortByDateDesc(items) {
   return [...items].sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')));
+}
+
+function soporteMedico(permiso) {
+  const soporte = permiso?.metadata?.soporteMedico;
+  return soporte && typeof soporte === 'object' ? soporte : null;
 }
 
 export default function PermisosOperacion() {
@@ -120,12 +125,15 @@ export default function PermisosOperacion() {
               <th className="px-4 py-3 text-left font-semibold text-slate-600">Tipo</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-600">Tiempo</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-600">Motivo</th>
+              <th className="px-4 py-3 text-left font-semibold text-slate-600">Soporte</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-600">Estado</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-600">Acción</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {permisos.map((permiso) => (
+            {permisos.map((permiso) => {
+              const soporte = soporteMedico(permiso);
+              return (
               <tr key={permiso.id} className="align-top">
                 <td className="px-4 py-3">
                   <div className="font-semibold text-slate-900">{permiso.apellidos} {permiso.nombres}</div>
@@ -139,6 +147,21 @@ export default function PermisosOperacion() {
                 </td>
                 <td className="px-4 py-3 font-medium text-slate-800">{formatHours(permiso.minutos)}</td>
                 <td className="max-w-xs px-4 py-3 text-slate-600">{permiso.justificacion || 'Sin detalle registrado.'}</td>
+                <td className="px-4 py-3">
+                  {soporte?.url ? (
+                    <a
+                      className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-teal-700 hover:bg-teal-50"
+                      href={soporte.url}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      <Paperclip className="h-3.5 w-3.5" />
+                      Revisar
+                    </a>
+                  ) : (
+                    <span className="text-xs text-slate-500">Sin soporte</span>
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{permiso.estado}</span>
                 </td>
@@ -175,15 +198,16 @@ export default function PermisosOperacion() {
                   )}
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {permisosQuery.isLoading && (
               <tr>
-                <td className="px-4 py-8 text-center text-slate-500" colSpan={7}>Cargando permisos...</td>
+                <td className="px-4 py-8 text-center text-slate-500" colSpan={8}>Cargando permisos...</td>
               </tr>
             )}
             {!permisosQuery.isLoading && permisos.length === 0 && (
               <tr>
-                <td className="px-4 py-8 text-center text-slate-500" colSpan={7}>
+                <td className="px-4 py-8 text-center text-slate-500" colSpan={8}>
                   No hay solicitudes de permisos para el filtro seleccionado.
                 </td>
               </tr>

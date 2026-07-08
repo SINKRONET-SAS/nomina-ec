@@ -2,10 +2,12 @@ const db = require('../config/database');
 const { validarMarcacion } = require('../services/marcacionValidator');
 const routeVisitService = require('../services/routeVisitService');
 const configurationService = require('../services/configurationService');
+const { s3Upload } = require('../config/s3');
 const { recordAudit } = require('../services/auditService');
 const { getEmployeeHistory } = require('../services/employeeHistoryService');
 const { ensurePayrollPeriodForDate } = require('../services/monthlyPeriodService');
 const { ensureNoveltyTypeAllowed } = require('../services/payrollNoveltyService');
+const AppError = require('../utils/AppError');
 const {
   resolveAttendanceReadiness,
   resolveLinkedEmployee,
@@ -13,6 +15,12 @@ const {
 
 const MOBILE_ROUTE_ADMIN_ROLES = new Set(['owner', 'admin_rrhh', 'supervisor']);
 const MOBILE_CONFIGURATION_ROLES = new Set(['owner', 'admin_rrhh']);
+const PERMISSION_SUPPORT_MAX_BYTES = 3 * 1024 * 1024;
+const PERMISSION_SUPPORT_TYPES = new Map([
+  ['image/jpeg', 'jpg'],
+  ['image/png', 'png'],
+  ['application/pdf', 'pdf'],
+]);
 
 function allowedMobileAdminActions(role) {
   return {
@@ -34,6 +42,73 @@ function parseAdminNumber(value, fallback = null) {
   if (value === null || typeof value === 'undefined' || value === '') return fallback;
   const next = Number(value);
   return Number.isFinite(next) ? next : fallback;
+}
+
+function safeFilePart(value) {
+  return String(value || 'soporte').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 90);
+}
+
+function normalizePermissionSupport(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  let contentType = String(raw.contentType || raw.mimeType || '').trim().toLowerCase();
+  let base64 = String(raw.base64 || raw.data || '').trim();
+  const dataUri = base64.match(/^data:([^;,]+);base64,(.+)$/i);
+
+  if (dataUri) {
+    contentType = String(dataUri[1] || '').trim().toLowerCase();
+    base64 = dataUri[2] || '';
+  }
+
+  if (!base64) return null;
+  if (!PERMISSION_SUPPORT_TYPES.has(contentType)) {
+    throw new AppError('El soporte debe ser JPG, PNG o PDF.', {
+      code: 'PERMISO_SOPORTE_TIPO_INVALIDO',
+      statusCode: 422,
+    });
+  }
+
+  const cleanBase64 = base64.replace(/\s+/g, '');
+  if (!/^[A-Za-z0-9+/=]+$/.test(cleanBase64)) {
+    throw new AppError('El soporte adjunto no tiene un formato base64 valido.', {
+      code: 'PERMISO_SOPORTE_BASE64_INVALIDO',
+      statusCode: 422,
+    });
+  }
+
+  const buffer = Buffer.from(cleanBase64, 'base64');
+  if (buffer.length === 0 || buffer.length > PERMISSION_SUPPORT_MAX_BYTES) {
+    throw new AppError('El soporte debe pesar hasta 3 MB.', {
+      code: 'PERMISO_SOPORTE_TAMANO_INVALIDO',
+      statusCode: 422,
+      details: { maxBytes: PERMISSION_SUPPORT_MAX_BYTES },
+    });
+  }
+
+  const extension = PERMISSION_SUPPORT_TYPES.get(contentType);
+  const fileName = safeFilePart(raw.fileName || raw.name || `soporte_permiso.${extension}`);
+  return {
+    buffer,
+    contentType,
+    fileName: fileName.includes('.') ? fileName : `${fileName}.${extension}`,
+    sizeBytes: buffer.length,
+  };
+}
+
+async function uploadPermissionSupport({ tenantId, employeeId, fechaInicio, support }) {
+  const normalized = normalizePermissionSupport(support);
+  if (!normalized) return null;
+
+  const key = `permisos/${tenantId}/${employeeId}/${safeFilePart(fechaInicio)}/${Date.now()}_${normalized.fileName}`;
+  const url = await s3Upload(normalized.buffer, key, normalized.contentType);
+  return {
+    fileName: normalized.fileName,
+    contentType: normalized.contentType,
+    sizeBytes: normalized.sizeBytes,
+    storageKey: key,
+    url,
+    uploadedAt: new Date().toISOString(),
+    source: 'mobile',
+  };
 }
 
 function mapMobileWorkZone(row = {}) {
@@ -508,7 +583,7 @@ async function solicitarPermiso(req, res) {
       });
     }
 
-    const created = [];
+    const permissionDays = [];
     for (const fecha of dates) {
       const period = await ensurePayrollPeriodForDate({
         tenantId: req.tenantId,
@@ -529,18 +604,33 @@ async function solicitarPermiso(req, res) {
         mes: Number(period.periodoNomina.slice(5, 7)),
         userId: req.usuarioId,
       });
+      permissionDays.push({ fecha, period });
+    }
 
+    const soporteMedico = await uploadPermissionSupport({
+      tenantId: req.tenantId,
+      employeeId: employee.id,
+      fechaInicio,
+      support: req.body?.soporteMedico || req.body?.soporte || req.body?.evidencia,
+    });
+    const metadata = {
+      source: 'mobile_permission_request',
+      ...(soporteMedico ? { soporteMedico } : {}),
+    };
+    const created = [];
+    for (const { fecha, period } of permissionDays) {
       const inserted = await db.query(`
         INSERT INTO novedades_asistencia (
-          empleado_id, tenant_id, period_id, periodo_nomina, fecha, tipo_novedad, minutos, monto, justificacion
+          empleado_id, tenant_id, period_id, periodo_nomina, fecha, tipo_novedad, minutos, monto, justificacion, metadata
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,0,$8)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,0,$8,$9::jsonb)
         ON CONFLICT (empleado_id, fecha, tipo_novedad) DO UPDATE SET
           minutos = EXCLUDED.minutos,
           justificacion = EXCLUDED.justificacion,
+          metadata = COALESCE(novedades_asistencia.metadata, '{}'::jsonb) || EXCLUDED.metadata,
           estado = 'pendiente',
           updated_at = NOW()
-        RETURNING id, empleado_id, fecha, tipo_novedad, minutos, monto, estado, justificacion
+        RETURNING id, empleado_id, fecha, tipo_novedad, minutos, monto, estado, justificacion, metadata
       `, [
         employee.id,
         req.tenantId,
@@ -550,6 +640,7 @@ async function solicitarPermiso(req, res) {
         tipoNovedad,
         minutos,
         `[Solicitud mobile] ${motivo}`,
+        JSON.stringify(metadata),
       ]);
       created.push(inserted.rows[0]);
     }
@@ -567,6 +658,7 @@ async function solicitarPermiso(req, res) {
         fechaFin,
         tipoNovedad,
         total: created.length,
+        soporteMedico: Boolean(soporteMedico),
       },
       ipAddress: req.ip,
     });
@@ -577,6 +669,7 @@ async function solicitarPermiso(req, res) {
         tipoNovedad,
         remunerado,
         totalDias: created.length,
+        soporteMedico: Boolean(soporteMedico),
         novedades: created,
       },
       correlationId: req.correlationId,

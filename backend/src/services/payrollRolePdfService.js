@@ -447,7 +447,7 @@ function pdfBufferFromDefinition(docDefinition) {
   });
 }
 
-async function generatePayrollRolePdf({ tenantId, payrollId, userId = null } = {}) {
+async function generatePayrollRolePdf({ tenantId, payrollId, userId = null, includeBuffer = false } = {}) {
   const result = await db.query(`
     SELECT
       n.*,
@@ -499,6 +499,7 @@ async function generatePayrollRolePdf({ tenantId, payrollId, userId = null } = {
     payrollId,
     tenantId,
     userId,
+    ...(includeBuffer ? { buffer } : {}),
   };
 }
 

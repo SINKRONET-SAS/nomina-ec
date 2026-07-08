@@ -18,6 +18,11 @@ jest.mock('../services/configurationService', () => ({
   createResource: jest.fn(),
 }));
 
+jest.mock('../config/s3', () => ({
+  s3Upload: jest.fn(),
+  resolveStorageUrl: jest.fn((url) => url),
+}));
+
 jest.mock('../services/employeeAppInviteService', () => ({
   resolveAttendanceReadiness: jest.fn(),
   resolveLinkedEmployee: jest.fn(),
@@ -43,6 +48,7 @@ const db = require('../config/database');
 const { validarMarcacion } = require('../services/marcacionValidator');
 const routeVisitService = require('../services/routeVisitService');
 const configurationService = require('../services/configurationService');
+const { s3Upload } = require('../config/s3');
 const { recordAudit } = require('../services/auditService');
 const {
   resolveAttendanceReadiness,
@@ -84,6 +90,7 @@ describe('mobileController', () => {
     routeVisitService.createRouteDay.mockReset();
     configurationService.listResource.mockReset();
     configurationService.createResource.mockReset();
+    s3Upload.mockReset();
     resolveAttendanceReadiness.mockReset();
     resolveLinkedEmployee.mockReset();
     recordAudit.mockReset();
@@ -365,6 +372,92 @@ describe('mobileController', () => {
       240,
       '[Solicitud mobile] Cita medica',
     ]));
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  test('solicitarPermiso sube soporte medico y guarda solo metadata documental', async () => {
+    resolveLinkedEmployee.mockResolvedValueOnce({
+      employee: { id: 'emp-1', email_personal: 'empleado.demo@sknomina.local' },
+      linkSource: 'employee_app_link',
+    });
+    resolveAttendanceReadiness.mockResolvedValueOnce({
+      readiness: {
+        ready: true,
+        blockers: [],
+        workZone: null,
+        organizationUnit: null,
+        workShift: null,
+      },
+    });
+    ensurePayrollPeriodForDate.mockResolvedValueOnce({
+      id: 'period-1',
+      periodoNomina: '2026-06',
+      status: 'open',
+    });
+    ensureNoveltyTypeAllowed.mockResolvedValueOnce({
+      code: 'permiso_con_sueldo',
+      payrollImpact: 'informativo',
+    });
+    s3Upload.mockResolvedValueOnce('https://storage.local/permisos/soporte.jpg');
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'nov-1',
+        empleado_id: 'emp-1',
+        fecha: '2026-06-20',
+        tipo_novedad: 'permiso_con_sueldo',
+        minutos: 480,
+        estado: 'pendiente',
+        metadata: {
+          source: 'mobile_permission_request',
+          soporteMedico: {
+            fileName: 'soporte.jpg',
+            contentType: 'image/jpeg',
+            sizeBytes: 7,
+            url: 'https://storage.local/permisos/soporte.jpg',
+          },
+        },
+      }],
+    });
+    recordAudit.mockResolvedValueOnce(undefined);
+    const req = {
+      ...reqBase,
+      body: {
+        fechaInicio: '2026-06-20',
+        fechaFin: '2026-06-20',
+        remunerado: true,
+        minutos: 480,
+        motivo: 'Cita medica con respaldo',
+        soporteMedico: {
+          fileName: 'soporte.jpg',
+          contentType: 'image/jpeg',
+          base64: Buffer.from('archivo').toString('base64'),
+        },
+      },
+    };
+    const res = mockResponse();
+
+    await solicitarPermiso(req, res);
+
+    expect(s3Upload).toHaveBeenCalledWith(
+      Buffer.from('archivo'),
+      expect.stringContaining('permisos/tenant-1/emp-1/2026-06-20/'),
+      'image/jpeg'
+    );
+    const metadata = JSON.parse(db.query.mock.calls[0][1][8]);
+    expect(metadata).toMatchObject({
+      source: 'mobile_permission_request',
+      soporteMedico: {
+        fileName: 'soporte.jpg',
+        contentType: 'image/jpeg',
+        sizeBytes: 7,
+        url: 'https://storage.local/permisos/soporte.jpg',
+        source: 'mobile',
+      },
+    });
+    expect(JSON.stringify(metadata)).not.toContain(Buffer.from('archivo').toString('base64'));
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      newData: expect.objectContaining({ soporteMedico: true }),
+    }));
     expect(res.status).toHaveBeenCalledWith(201);
   });
 });

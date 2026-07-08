@@ -181,6 +181,56 @@ describe('communicationService', () => {
     }));
   });
 
+  test('envia rol de pago por SMTP con PDF adjunto', async () => {
+    const service = loadService({
+      SMTP_HOST: 'smtp.example.com',
+      SMTP_PORT: '587',
+      SMTP_USER: 'mailer@example.com',
+      SMTP_PASSWORD: 'secret',
+      SMTP_FROM_EMAIL: 'notificaciones@example.com',
+    });
+    sendMailMock.mockResolvedValue({ messageId: 'smtp-role-1' });
+
+    const result = await service.sendRolPagoEmail({
+      employee: {
+        tenant_id: 'tenant-1',
+        nombres: 'Ana',
+        apellidos: 'Perez',
+        email_personal: 'ana@example.com',
+      },
+      payroll: { anio: 2026, mes: 6 },
+      pdf: {
+        fileName: 'rol_pago_ana_2026_06.pdf',
+        contentType: 'application/pdf',
+        buffer: Buffer.from('pdf-demo'),
+      },
+      correlationId: 'corr-role',
+      userId: 'user-role',
+    });
+
+    expect(result).toMatchObject({ status: 'sent', messageId: 'smtp-role-1' });
+    expect(sendMailMock).toHaveBeenCalledWith(expect.objectContaining({
+      to: 'ana@example.com',
+      subject: 'Rol de pago 06/2026',
+      attachments: [expect.objectContaining({
+        filename: 'rol_pago_ana_2026_06.pdf',
+        contentType: 'application/pdf',
+      })],
+      disableFileAccess: true,
+      disableUrlAccess: true,
+    }));
+    expect(recordCommunicationEventMock).toHaveBeenCalledWith(expect.objectContaining({
+      template: 'payroll_role_pdf',
+      status: 'sent',
+      metadata: expect.objectContaining({
+        purpose: 'envio_rol_pago_pdf',
+        flow: 'nomina_roles_email',
+        required: true,
+        attachmentCount: 1,
+      }),
+    }));
+  });
+
   test('envia plantilla WhatsApp con telefono ecuatoriano normalizado', async () => {
     const service = loadService({
       WHATSAPP_ENABLED: 'true',

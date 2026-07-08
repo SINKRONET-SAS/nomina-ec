@@ -1,52 +1,60 @@
 {
-  "phaseCompleted": "AISK26-integral-runtime-remediation",
+  "phaseCompleted": "V66-auditoria-integral-runtime-remediation",
   "filesModified": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-00-baseline.md",
-    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-01-zero-silent-failures.md",
-    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-02-movilizacion-sqlite-cierre.md",
-    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-03-lopdp-legal-pagos-email.md",
-    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-04-reportes-uiux-humanizacion.md",
-    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-05-qa-release.md",
-    "app-movil/app.json",
+    ".github/prompts/HAIKY-V66-NOMINA-EC-2026-00-baseline.md",
+    ".github/prompts/HAIKY-V66-NOMINA-EC-2026-01-rol-pago-email.md",
+    ".github/prompts/HAIKY-V66-NOMINA-EC-2026-02-permisos-soporte-medico.md",
+    ".github/prompts/HAIKY-V66-NOMINA-EC-2026-03-qa-release.md",
+    "app-movil/src/screens/PermisosScreen.js",
     "backend/src/app.js",
-    "app-movil/src/screens/GastosMovilizacionScreen.js",
-    "app-movil/src/screens/RutaHoyScreen.js",
-    "docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_NOMINA_EC_2026.md",
-    "docs2/auditoria-integral-haiky-2026/INFORME_DIAGNOSTICO.md",
-    "docs2/auditoria-integral-haiky-2026/DIAGNOSTICO_JSON.json",
-    "docs2/auditoria-integral-haiky-2026/DIAGNOSTICO_AUTOMATIZADO.md",
-    "scripts/haiky-integral-diagnostic.mjs",
-    "scripts/haiky-integral-solution.mjs",
-    "scripts/verify-system-contracts.mjs"
+    "backend/src/app.routes.test.js",
+    "backend/src/controllers/mobileController.js",
+    "backend/src/controllers/mobileController.test.js",
+    "backend/src/controllers/nominaController.js",
+    "backend/src/controllers/nominaController.test.js",
+    "backend/src/controllers/novedadController.js",
+    "backend/src/services/communicationService.js",
+    "backend/src/services/communicationService.test.js",
+    "backend/src/services/employeeHistoryService.js",
+    "backend/src/services/payrollRolePdfService.js",
+    "docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V66_NOMINA_EC_2026.md",
+    "docs2/auditoria-integral-v66-nomina-ec-2026/INFORME_DIAGNOSTICO_V66.md",
+    "frontend-web/src/pages/Nomina/RolesPagos.jsx",
+    "frontend-web/src/pages/Operacion/PermisosOperacion.jsx"
   ],
   "validationChecks": [
     {
-      "name": "diagnostico_integral_js",
+      "name": "backend_v66_tests",
       "ok": true,
-      "output": "{\n  \"ok\": true,\n  \"outDir\": \"docs2/auditoria-integral-haiky-2026\",\n  \"filesScanned\": 813,\n  \"findingSummary\": {\n    \"funcionalidad_simulada_runtime\": 11\n  }\n}"
+      "output": "4 suites, 45 tests PASS"
     },
     {
-      "name": "contratos_sistema",
+      "name": "validate_full",
       "ok": true,
-      "output": "[CONTRACTS] OK: frontend, backend, Prisma y reportes mantienen contrato de sistema unico."
+      "output": "contracts PASS; prisma validate PASS; backend 51 suites / 265 tests PASS; frontend build PASS"
     },
     {
       "name": "mobile_store_readiness",
       "ok": true,
-      "output": "> sknomina-system@1.0.0 check:mobile\n> npm --workspace=app-movil run check:stores\n\n\n> sknomina-app@1.0.0 check:stores\n> node scripts/check-store-readiness.mjs\n\n[LPA26-STORES] Configuracion, identificadores, URLs y assets de tienda verificados."
+      "output": "[LPA26-STORES] Configuracion, identificadores, URLs y assets de tienda verificados."
     },
     {
-      "name": "sin_catch_silencioso_runtime",
+      "name": "expo_doctor",
       "ok": true,
-      "output": ""
+      "output": "20/20 checks passed. No issues detected!"
     },
     {
-      "name": "utf8_runtime",
+      "name": "git_diff_check",
       "ok": true,
-      "output": ""
+      "output": "PASS con avisos LF/CRLF esperados en Windows"
+    },
+    {
+      "name": "utf8_no_bom",
+      "ok": true,
+      "output": "15 archivos modificados rastreados sin BOM; nuevos MD creados en UTF-8"
     }
   ],
-  "timestamp": "2026-07-07T18:49:44.250Z",
-  "signature": "75723e30ed0ce9132bc66edc8f6ea975424fcba13db244015bdf391820ff6283"
+  "timestamp": "2026-07-08T03:52:00.000Z",
+  "signature": "7adf529b329477023d0ba7d74c4e02d4aa70156b2d771fe519d09ecabe4e741f"
 }

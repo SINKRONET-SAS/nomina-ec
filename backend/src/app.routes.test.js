@@ -5,13 +5,16 @@ describe('app route order', () => {
   test('declara descarga de rol PDF antes de la ruta generica anio/mes de nomina', () => {
     const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
     const rolPdfIndex = source.indexOf("app.get('/api/nomina/:id/rol-pdf'");
+    const rolEmailIndex = source.indexOf("app.post('/api/nomina/:id/rol-email'");
     const rolTranspuestoPdfIndex = source.indexOf("app.get('/api/nomina/:anio/:mes/roles-pdf-transpuesto'");
     const periodIndex = source.indexOf("app.get('/api/nomina/:anio/:mes'");
 
     expect(rolPdfIndex).toBeGreaterThanOrEqual(0);
+    expect(rolEmailIndex).toBeGreaterThanOrEqual(0);
     expect(rolTranspuestoPdfIndex).toBeGreaterThanOrEqual(0);
     expect(periodIndex).toBeGreaterThanOrEqual(0);
     expect(rolPdfIndex).toBeLessThan(periodIndex);
+    expect(rolEmailIndex).toBeLessThan(periodIndex);
     expect(rolTranspuestoPdfIndex).toBeLessThan(periodIndex);
   });
 
@@ -134,6 +137,12 @@ describe('AISK26-01: cierre brechas RBAC', () => {
     );
   });
 
+  test('POST /api/nomina/:id/rol-email requiere rol owner/admin_rrhh y usuario fresco', () => {
+    expect(source).toContain(
+      "app.post('/api/nomina/:id/rol-email', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.enviarRolPagoEmail)"
+    );
+  });
+
   test('expone administracion anual de periodos antes de rutas genericas', () => {
     expect(source).toContain("app.get('/api/nomina/periodos/:anio', requireRole('owner', 'admin_rrhh'), nominaController.listarPeriodosAnuales)");
     expect(source).toContain("app.post('/api/nomina/periodos/generar-anual', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.generarPeriodosAnuales)");
@@ -166,6 +175,7 @@ describe('AISK26-01: cierre brechas RBAC', () => {
     expect(source).not.toContain("app.get('/api/novedades', novedadController.listar)");
     expect(source).not.toContain("app.get('/api/novedades/pendientes', novedadController.listarPendientes)");
     expect(source).not.toContain("app.get('/api/nomina/:id/rol-pdf', nominaController.descargarRolPDF)");
+    expect(source).not.toContain("app.post('/api/nomina/:id/rol-email', nominaController.enviarRolPagoEmail)");
     expect(source).not.toContain("app.get('/api/nomina/:anio/:mes', nominaController.listarPorPeriodo)");
     expect(source).not.toContain("app.get('/api/documentos', documentoLegalController.listar)");
     expect(source).not.toContain("app.get('/api/documentos/:id/download', documentoLegalController.descargar)");

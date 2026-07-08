@@ -276,6 +276,7 @@ async function auditDelivery(result, event = {}) {
       reason: result.reason,
       error: result.error,
       missing: result.missing,
+      attachmentCount: event.attachmentCount || 0,
     },
   });
   return result;
@@ -286,6 +287,7 @@ async function sendEmail({
   subject,
   text,
   html,
+  attachments = [],
   template,
   correlationId,
   userId,
@@ -353,6 +355,7 @@ async function sendEmail({
       subject: sanitizeHeader(subject, 'Notificación SKNOMINA'),
       text,
       html,
+      ...(attachments.length > 0 ? { attachments } : {}),
       disableFileAccess: true,
       disableUrlAccess: true,
     });
@@ -364,7 +367,7 @@ async function sendEmail({
       configured: true,
       template,
       messageId: info.messageId || null,
-    }, { tenantId, userId, correlationId, recipient, purpose, flow, required });
+    }, { tenantId, userId, correlationId, recipient, purpose, flow, required, attachmentCount: attachments.length });
   } catch (err) {
     console.error('[COMUNICACIONES] Error enviando email SMTP', {
       code: err.code || 'COMM_SMTP_SEND_ERROR',
@@ -384,7 +387,7 @@ async function sendEmail({
       template,
       error: err.code || 'COMM_SMTP_SEND_ERROR',
     };
-    await auditDelivery(result, { tenantId, userId, correlationId, recipient, purpose, flow, required });
+    await auditDelivery(result, { tenantId, userId, correlationId, recipient, purpose, flow, required, attachmentCount: attachments.length });
 
     if (required) {
       throw new AppError('No pudimos enviar el correo transaccional.', {
@@ -548,6 +551,16 @@ function payrollRoleAvailableEmailTemplate({ employeeName, anio, mes, roleUrl })
   };
 }
 
+function payrollRolePdfEmailTemplate({ employeeName, anio, mes }) {
+  const safeName = sanitizeHeader(employeeName, 'empleado');
+  const period = `${String(mes).padStart(2, '0')}/${anio}`;
+  return {
+    subject: `Rol de pago ${period}`,
+    text: `Hola ${safeName}.\n\nAdjuntamos tu rol de pago del periodo ${period} generado por SKNOMINA.\n\nSi tienes dudas sobre los valores, contacta a RRHH.`,
+    html: `<p>Hola ${safeName}.</p><p>Adjuntamos tu rol de pago del periodo <strong>${period}</strong> generado por SKNOMINA.</p><p>Si tienes dudas sobre los valores, contacta a RRHH.</p>`,
+  };
+}
+
 async function sendEmailVerification({ to, code, name, correlationId, userId, tenantId }) {
   const content = verificationEmailTemplate({ code, name });
   return sendEmail({
@@ -656,6 +669,41 @@ async function sendRolPagoDisponible({ employee, payroll, correlationId, userId,
   });
 }
 
+async function sendRolPagoEmail({ employee, payroll, pdf, correlationId, userId }) {
+  const name = [employee?.nombres, employee?.apellidos].filter(Boolean).join(' ') || 'empleado';
+  const tenantId = employee?.tenant_id || employee?.tenantId || payroll?.tenant_id || payroll?.tenantId || null;
+  const content = payrollRolePdfEmailTemplate({
+    employeeName: name,
+    anio: payroll?.anio,
+    mes: payroll?.mes,
+  });
+  const buffer = Buffer.isBuffer(pdf?.buffer) ? pdf.buffer : Buffer.from(pdf?.buffer || '');
+
+  if (buffer.length === 0) {
+    throw new AppError('El rol de pago no tiene contenido PDF adjuntable.', {
+      code: 'ROL_PAGO_PDF_VACIO',
+      statusCode: 422,
+    });
+  }
+
+  return sendEmail({
+    to: employee?.email_personal || employee?.email,
+    ...content,
+    attachments: [{
+      filename: sanitizeHeader(pdf?.fileName, 'rol_pago.pdf'),
+      content: buffer,
+      contentType: pdf?.contentType || 'application/pdf',
+    }],
+    template: 'payroll_role_pdf',
+    correlationId,
+    userId,
+    tenantId,
+    purpose: 'envio_rol_pago_pdf',
+    flow: 'nomina_roles_email',
+    required: true,
+  });
+}
+
 function permisoResueltoEmailTemplate({ employeeName, fechaInicio, fechaFin, decision }) {
   const safeName = sanitizeHeader(employeeName, 'empleado');
   const estado = decision === 'aprobado' ? 'aprobado' : 'rechazado';
@@ -713,6 +761,7 @@ module.exports = {
   sendEmployeeInvite,
   sendPasswordReset,
   sendNotificacionPermisoResuelto,
+  sendRolPagoEmail,
   sendRolPagoDisponible,
   sendTestEmail,
   sendWhatsAppTemplate,

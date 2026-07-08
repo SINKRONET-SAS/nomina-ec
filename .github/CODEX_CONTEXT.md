@@ -2288,3 +2288,37 @@ Reglas operativas AISK26:
 - Mantener PayPhone mock solo si queda bloqueado/visible fuera de produccion real.
 - No cerrar movilizacion local si el informe mensual no fue aceptado por backend.
 - Todo cambio nuevo debe pasar `npm.cmd run haiky:solution`; usar `npm.cmd run validate` cuando el entorno de DB/Prisma este disponible.
+
+---
+
+## V66 - AuditoriaIntegral2026V66 nomina-ec
+
+Plan: `HAIKY-AUDITORIA-INTEGRAL-V66-NOMINA-EC-2026`.
+
+Estado: V66-00 a V66-03 ejecutadas localmente; QA verde y `AuditLock.json` firmado.
+
+Fuentes:
+
+- `C:\proyectos web\sinkroniq-cloud-flow\src\pages\AuditoriaIntegral2026V66.jsx`
+- `C:\proyectos web\sinkroniq-cloud-flow\src\pages\v66\v66data.jsx`
+
+Artefactos:
+
+- `docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V66_NOMINA_EC_2026.md`
+- `docs2/auditoria-integral-v66-nomina-ec-2026/INFORME_DIAGNOSTICO_V66.md`
+- `.github/prompts/HAIKY-V66-NOMINA-EC-2026-00-baseline.md`
+- `.github/prompts/HAIKY-V66-NOMINA-EC-2026-01-rol-pago-email.md`
+- `.github/prompts/HAIKY-V66-NOMINA-EC-2026-02-permisos-soporte-medico.md`
+- `.github/prompts/HAIKY-V66-NOMINA-EC-2026-03-qa-release.md`
+
+Reconfirmacion V66:
+
+- V66-01 aplica con matiz: `sendRolPagoDisponible()` existia como aviso no bloqueante, pero no habia envio dedicado del rol PDF adjunto ni endpoint PWA. Se agrego `sendRolPagoEmail()`, `POST /api/nomina/:id/rol-email`, buffer opcional en `generatePayrollRolePdf()` y accion en `RolesPagos.jsx`.
+- V66-02 aplica: `PermisosScreen` tenia placeholder de soporte medico. Se agrego selector con `expo-image-picker`, validacion/subida backend a almacenamiento documental, metadata `soporteMedico` sin base64 y revision PWA en `PermisosOperacion.jsx`.
+
+Reglas V66:
+
+- No enviar roles por email si `nominas.estado` no es `cerrada`.
+- Mantener `sendRolPagoDisponible()` como notificacion no bloqueante del cierre mensual.
+- No almacenar base64 medico en novedades; solo metadata documental y URL resuelta.
+- El selector movil cubre JPG/PNG; backend acepta PDF para compatibilidad futura.

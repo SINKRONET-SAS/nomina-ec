@@ -1,4 +1,22 @@
 const db = require('../config/database');
+const { resolveStorageUrl } = require('../config/s3');
+
+function resolveNoveltyMetadata(row = {}) {
+  const metadata = row.metadata && typeof row.metadata === 'object' ? { ...row.metadata } : row.metadata;
+  if (!metadata || typeof metadata !== 'object') return row;
+  const support = metadata.soporteMedico;
+  if (!support || typeof support !== 'object') return row;
+  return {
+    ...row,
+    metadata: {
+      ...metadata,
+      soporteMedico: {
+        ...support,
+        url: resolveStorageUrl(support.url, support.storageKey),
+      },
+    },
+  };
+}
 
 async function getEmployeeHistory({ tenantId, empleadoId, limit = 24 }) {
   const safeLimit = Math.min(Math.max(Number(limit || 24), 1), 60);
@@ -13,7 +31,7 @@ async function getEmployeeHistory({ tenantId, empleadoId, limit = 24 }) {
       LIMIT $3
     `, [tenantId, empleadoId, safeLimit]),
     db.query(`
-      SELECT id, fecha, tipo_novedad, minutos, monto, justificacion, estado,
+      SELECT id, fecha, tipo_novedad, minutos, monto, justificacion, estado, metadata,
         aprobado_por, aprobado_en, created_at, updated_at
       FROM novedades_asistencia
       WHERE tenant_id = $1 AND empleado_id = $2
@@ -29,12 +47,13 @@ async function getEmployeeHistory({ tenantId, empleadoId, limit = 24 }) {
     `, [tenantId, empleadoId, safeLimit]),
   ]);
 
-  const permisos = novelties.rows.filter((row) => String(row.tipo_novedad || '').startsWith('permiso_'));
+  const novedades = novelties.rows.map(resolveNoveltyMetadata);
+  const permisos = novedades.filter((row) => String(row.tipo_novedad || '').startsWith('permiso_'));
 
   return {
     empleadoId,
     roles: payrolls.rows,
-    novedades: novelties.rows,
+    novedades,
     permisos,
     documentos: documents.rows,
     resumen: {

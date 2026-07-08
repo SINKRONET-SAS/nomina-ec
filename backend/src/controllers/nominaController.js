@@ -19,7 +19,10 @@ const {
   listAnnualPayrollPeriods,
   openPayrollPeriod,
 } = require('../services/monthlyPeriodService');
-const { sendRolPagoDisponible } = require('../services/communicationService');
+const {
+  sendRolPagoDisponible,
+  sendRolPagoEmail,
+} = require('../services/communicationService');
 
 async function calcularMes(req, res) {
   let tx = null;
@@ -400,6 +403,112 @@ async function descargarRolPDF(req, res) {
     res.status(err.statusCode || 500).json({
       error: err.code || 'NOMINA_PDF_ERROR',
       message: err.message || 'Error interno',
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function enviarRolPagoEmail(req, res) {
+  try {
+    const { id } = req.params;
+    const { tenantId } = req;
+    const result = await db.query(`
+      SELECT
+        n.id,
+        n.empleado_id,
+        n.tenant_id,
+        n.anio,
+        n.mes,
+        n.estado,
+        e.nombres,
+        e.apellidos,
+        e.cedula,
+        e.email_personal
+      FROM nominas n
+      JOIN empleados e ON e.id = n.empleado_id AND e.tenant_id = n.tenant_id
+      WHERE n.id = $1 AND n.tenant_id = $2
+      LIMIT 1
+    `, [id, tenantId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: 'NOMINA_NO_ENCONTRADA',
+        message: 'Nómina no encontrada.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const row = result.rows[0];
+    if (row.estado !== 'cerrada') {
+      return res.status(409).json({
+        error: 'NOMINA_ROL_NO_CERRADO',
+        message: 'Solo se puede enviar por email un rol de pago cerrado.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    if (!row.email_personal) {
+      return res.status(422).json({
+        error: 'EMPLEADO_EMAIL_REQUERIDO',
+        message: 'El empleado no tiene correo personal registrado para recibir el rol de pago.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const pdf = await generatePayrollRolePdf({
+      tenantId,
+      payrollId: id,
+      userId: req.usuarioId || null,
+      includeBuffer: true,
+    });
+    const delivery = await sendRolPagoEmail({
+      employee: row,
+      payroll: row,
+      pdf,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+    });
+
+    await recordAudit({
+      tenantId,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      action: 'nomina.rol_pago.email_enviar',
+      entity: 'nominas',
+      entityId: id,
+      newData: {
+        empleadoId: row.empleado_id,
+        anio: row.anio,
+        mes: row.mes,
+        deliveryStatus: delivery.status,
+        provider: delivery.provider,
+        fileName: pdf.fileName,
+      },
+      ipAddress: req.ip,
+    });
+
+    return res.json({
+      success: true,
+      delivery: {
+        status: delivery.status,
+        provider: delivery.provider,
+        messageId: delivery.messageId || null,
+      },
+      fileName: pdf.fileName,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[NOMINA] Error enviando rol de pago por email', {
+      code: err.code || 'NOMINA_ROL_EMAIL_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'NOMINA_ROL_EMAIL_ERROR',
+      message: err.message || 'No pudimos enviar el rol de pago por email.',
+      details: err.details,
       correlationId: req.correlationId,
     });
   }
@@ -796,6 +905,7 @@ module.exports = {
   listarPorPeriodo,
   obtenerPorEmpleado,
   descargarRolPDF,
+  enviarRolPagoEmail,
   descargarRolesTranspuestosPDF,
   cerrarMes,
   reabrirMes,

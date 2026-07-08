@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Download } from 'lucide-react';
+import { Download, Send } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 import { downloadUrl } from '../../utils/downloadUrl';
@@ -11,6 +11,7 @@ function RolesPagos() {
   const [anio, setAnio] = useState(initialPeriod.anio);
   const [mes, setMes] = useState(initialPeriod.mes);
   const [downloadingId, setDownloadingId] = useState('');
+  const [sendingId, setSendingId] = useState('');
   const [downloadingTransposed, setDownloadingTransposed] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -39,6 +40,21 @@ function RolesPagos() {
       setError(extractApiError(err, 'No pudimos descargar el rol de pago.'));
     } finally {
       setDownloadingId('');
+    }
+  };
+
+  const enviarRolEmail = async (id, employeeName) => {
+    setSendingId(id);
+    setMessage('');
+    setError('');
+    try {
+      const response = await authenticatedApi.post(`/nomina/${id}/rol-email`);
+      const status = response.data?.delivery?.status || 'sent';
+      setMessage(`Rol enviado por email a ${employeeName}. Estado: ${status}.`);
+    } catch (err) {
+      setError(extractApiError(err, 'No pudimos enviar el rol de pago por email.'));
+    } finally {
+      setSendingId('');
     }
   };
 
@@ -127,9 +143,12 @@ function RolesPagos() {
               ) : !nominas || nominas.length === 0 ? (
                 <tr><td colSpan="6" className="px-6 py-4 text-center">No hay nóminas para este período</td></tr>
               ) : (
-                nominas.map((nomina) => (
+                nominas.map((nomina) => {
+                  const employeeName = `${nomina.nombres || ''} ${nomina.apellidos || ''}`.trim() || 'empleado';
+                  const roleClosed = nomina.estado === 'cerrada' || Boolean(nomina.cerrada);
+                  return (
                   <tr key={nomina.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm">{nomina.nombres} {nomina.apellidos}</td>
+                    <td className="px-6 py-4 text-sm">{employeeName}</td>
                     <td className="px-6 py-4 text-sm">${parseFloat(nomina.total_ingresos).toFixed(2)}</td>
                     <td className="px-6 py-4 text-sm">${parseFloat(nomina.total_deducciones).toFixed(2)}</td>
                     <td className="px-6 py-4 text-sm font-semibold">${parseFloat(nomina.neto_recibir).toFixed(2)}</td>
@@ -139,6 +158,7 @@ function RolesPagos() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => descargarPDF(nomina.id)}
@@ -149,9 +169,21 @@ function RolesPagos() {
                       >
                         <Download size={16} />
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => enviarRolEmail(nomina.id, employeeName)}
+                        disabled={!roleClosed || sendingId === nomina.id}
+                        title={roleClosed ? 'Enviar rol individual por email' : 'Cierra la nómina antes de enviar el rol por email'}
+                        aria-label={`Enviar rol individual por email a ${employeeName}`}
+                        className="rounded bg-teal-100 p-1 text-teal-700 hover:bg-teal-200 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Send size={16} />
+                      </button>
+                      </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

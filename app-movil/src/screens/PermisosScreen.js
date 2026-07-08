@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { mobileAPI } from '../services/api';
 import { todayEC } from '../utils/dateEC';
+
+const SUPPORT_MAX_BYTES = 3 * 1024 * 1024;
 
 export default function PermisosScreen() {
   const today = useMemo(() => todayEC(), []);
@@ -11,6 +14,7 @@ export default function PermisosScreen() {
     remunerado: true,
     horasDia: '8',
     motivo: '',
+    soporteMedico: null,
   });
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +45,64 @@ export default function PermisosScreen() {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
+  function supportSizeLabel(sizeBytes) {
+    const size = Number(sizeBytes || 0);
+    if (!Number.isFinite(size) || size <= 0) return '';
+    return `${(size / 1024 / 1024).toFixed(2)} MB`;
+  }
+
+  function estimatedBase64Bytes(base64) {
+    const clean = String(base64 || '').replace(/=+$/, '');
+    return Math.floor((clean.length * 3) / 4);
+  }
+
+  async function pickSupport() {
+    setMessage('');
+    setError('');
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setError('Activa el permiso de galeria para adjuntar el soporte medico.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 0.6,
+        base64: true,
+      });
+
+      if (result.canceled) return;
+      const asset = result.assets?.[0];
+      if (!asset?.base64) {
+        setError('No pudimos leer el soporte seleccionado.');
+        return;
+      }
+
+      const contentType = asset.mimeType || (String(asset.fileName || '').toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+      const sizeBytes = asset.fileSize || estimatedBase64Bytes(asset.base64);
+      if (sizeBytes > SUPPORT_MAX_BYTES) {
+        setError('El soporte debe pesar hasta 3 MB.');
+        return;
+      }
+
+      updateField('soporteMedico', {
+        fileName: asset.fileName || `soporte_permiso_${today}.jpg`,
+        contentType,
+        base64: asset.base64,
+        sizeBytes,
+      });
+    } catch (err) {
+      console.error('[PERMISOS] Error seleccionando soporte medico', {
+        code: err.code || 'PERMISO_SOPORTE_PICKER_ERROR',
+        statusCode: err.statusCode || 500,
+        message: err.message,
+      });
+      setError('No pudimos adjuntar el soporte medico.');
+    }
+  }
+
   async function submit() {
     setSubmitting(true);
     setMessage('');
@@ -53,10 +115,11 @@ export default function PermisosScreen() {
         remunerado: form.remunerado,
         minutos: Math.round(horas * 60),
         motivo: form.motivo,
+        ...(form.soporteMedico ? { soporteMedico: form.soporteMedico } : {}),
       };
       const response = await mobileAPI.requestPermission(payload);
       setMessage(`Solicitud registrada: ${response.data?.permiso?.totalDias || 1} día(s) pendiente(s).`);
-      setForm((current) => ({ ...current, motivo: '' }));
+      setForm((current) => ({ ...current, motivo: '', soporteMedico: null }));
       await loadHistory();
     } catch (err) {
       setError(err.response?.data?.message || 'No pudimos registrar la solicitud de permiso.');
@@ -125,8 +188,25 @@ export default function PermisosScreen() {
         />
 
         <Text style={styles.label}>Soporte médico (opcional)</Text>
-        <View style={styles.adjuntoNotice}>
-          <Text style={styles.detail}>La carga de adjuntos se habilitará en una versión con selector nativo compatible.</Text>
+        <View style={styles.supportBox}>
+          {form.soporteMedico ? (
+            <View>
+              <Text style={styles.supportName}>{form.soporteMedico.fileName}</Text>
+              <Text style={styles.detail}>{supportSizeLabel(form.soporteMedico.sizeBytes)} - listo para enviar</Text>
+            </View>
+          ) : (
+            <Text style={styles.detail}>Adjunta una imagen JPG o PNG hasta 3 MB.</Text>
+          )}
+          <View style={styles.supportActions}>
+            <TouchableOpacity onPress={pickSupport} style={styles.secondaryButton}>
+              <Text style={styles.secondaryButtonText}>{form.soporteMedico ? 'Cambiar' : 'Adjuntar'}</Text>
+            </TouchableOpacity>
+            {form.soporteMedico ? (
+              <TouchableOpacity onPress={() => updateField('soporteMedico', null)} style={styles.ghostButton}>
+                <Text style={styles.ghostButtonText}>Quitar</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
         </View>
 
         <TouchableOpacity disabled={disabled} onPress={submit} style={[styles.button, disabled && styles.buttonDisabled]}>
@@ -149,6 +229,7 @@ export default function PermisosScreen() {
               <Text style={styles.historyTitle}>{String(item.tipo_novedad || '').replace(/_/g, ' ')}</Text>
               <Text style={styles.detail}>{String(item.fecha || '').slice(0, 10)} - {item.estado}</Text>
               <Text style={styles.detail}>{item.justificacion || 'Sin justificación'}</Text>
+              {item.metadata?.soporteMedico ? <Text style={styles.supportBadge}>Soporte adjunto</Text> : null}
             </View>
           ))
         )}
@@ -158,14 +239,6 @@ export default function PermisosScreen() {
 }
 
 const styles = StyleSheet.create({
-  adjuntoNotice: {
-    backgroundColor: '#f1f5f9',
-    borderColor: '#cbd5e1',
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 8,
-    padding: 10,
-  },
   button: {
     alignItems: 'center',
     backgroundColor: '#0f766e',
@@ -205,6 +278,20 @@ const styles = StyleSheet.create({
     color: '#991b1b',
     marginBottom: 12,
     padding: 12,
+  },
+  ghostButton: {
+    alignItems: 'center',
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    borderWidth: 1,
+    minHeight: 40,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+  },
+  ghostButtonText: {
+    color: '#475569',
+    fontSize: 14,
+    fontWeight: '800',
   },
   eyebrow: {
     color: '#0f766e',
@@ -246,6 +333,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  secondaryButton: {
+    alignItems: 'center',
+    backgroundColor: '#ccfbf1',
+    borderRadius: 8,
+    minHeight: 40,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+  },
+  secondaryButtonText: {
+    color: '#0f766e',
+    fontSize: 14,
+    fontWeight: '800',
+  },
   success: {
     backgroundColor: '#ecfdf5',
     borderRadius: 8,
@@ -258,6 +358,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 12,
+  },
+  supportActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  supportBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#ecfdf5',
+    borderRadius: 8,
+    color: '#0f766e',
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  supportBox: {
+    backgroundColor: '#f8fafc',
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 8,
+    padding: 10,
+  },
+  supportName: {
+    color: '#0f172a',
+    fontSize: 14,
+    fontWeight: '800',
   },
   textarea: {
     minHeight: 90,

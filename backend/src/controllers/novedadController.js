@@ -3,6 +3,7 @@
 // ============================================================
 const db = require('../config/database');
 const AppError = require('../utils/AppError');
+const { resolveStorageUrl } = require('../config/s3');
 const { recordAudit } = require('../services/auditService');
 const { ensureWritablePayrollPeriodForDate, formatPeriodMarker, validatePeriod } = require('../services/monthlyPeriodService');
 const { ensureNoveltyTypeAllowed, normalizeNoveltyCode } = require('../services/payrollNoveltyService');
@@ -19,6 +20,24 @@ const NOVELTY_BULK_TEMPLATE_COLUMNS = [
   'idempotencyKey',
 ];
 const NOVELTY_WRITABLE_PERIOD_STATUSES = new Set(['open', 'novelties_loaded', 'reopened', 'calculation_failed']);
+
+function resolveNoveltyMetadata(row = {}) {
+  const metadata = row.metadata && typeof row.metadata === 'object' ? { ...row.metadata } : row.metadata;
+  if (!metadata || typeof metadata !== 'object') return row;
+  const support = metadata.soporteMedico;
+  if (!support || typeof support !== 'object') return row;
+
+  return {
+    ...row,
+    metadata: {
+      ...metadata,
+      soporteMedico: {
+        ...support,
+        url: resolveStorageUrl(support.url, support.storageKey),
+      },
+    },
+  };
+}
 
 async function listar(req, res) {
   try {
@@ -49,7 +68,7 @@ async function listar(req, res) {
     query += ` ORDER BY na.fecha DESC, e.apellidos`;
     
     const result = await db.query(query, params);
-    res.json({ success: true, novedades: result.rows });
+    res.json({ success: true, novedades: result.rows.map(resolveNoveltyMetadata) });
   } catch (err) {
     console.error('[NOVEDADES] Error:', err);
     res.status(500).json({ error: 'Error interno' });
@@ -104,7 +123,7 @@ async function listarPendientes(req, res) {
     `, params);
 
     const novedades = result.rows.map((row) => ({
-      ...row,
+      ...resolveNoveltyMetadata(row),
       editable: NOVELTY_WRITABLE_PERIOD_STATUSES.has(row.period_status) && !row.consumida_por_rol,
     }));
 
