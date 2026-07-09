@@ -781,6 +781,22 @@ function Parametrizacion() {
               </CompactNotice>
             )}
 
+            {activeDefinition.key === 'legal' && (
+              <CompactNotice
+                className="mt-4"
+                tone="teal"
+                title="Fórmula de horas extra"
+                items={[
+                  'jornada_horas_mensuales: divide el sueldo para obtener el valor hora.',
+                  'horas_extra_recargo_suplementaria: multiplicador de horas suplementarias.',
+                  'horas_extra_recargo_extraordinaria: multiplicador de horas extraordinarias.',
+                  'horas_extra_limite_semanal: tope semanal antes de bloquear el cálculo.',
+                ]}
+              >
+                Se parametriza en Valores legales. Carga los valores obligatorios del año y edita estos códigos con perfil owner.
+              </CompactNotice>
+            )}
+
             {isLegalParameterForm && (
               <CompactNotice className="mt-4" tone="amber" title="Validación del owner">
                 El check habilita el parámetro para cálculo. Luego solo owner o superadmin puede cambiarlo.

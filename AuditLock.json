@@ -1,53 +1,23 @@
 {
-    "phaseCompleted":  "HU26-04-humanizacion-sintesis-pwa-qa-release",
+    "phaseCompleted":  "OAP26-followup-horas-extra-formula-visible",
     "filesModified":  [
-                          ".github/CODEX_CONTEXT.md",
-                          ".github/prompts/HU26-00-baseline.md",
-                          ".github/prompts/HU26-01-compact-notice.md",
-                          ".github/prompts/HU26-02-documentos-reportes-comunicaciones.md",
-                          ".github/prompts/HU26-03-parametrizacion-empleado-pagos.md",
-                          ".github/prompts/HU26-04-qa-release.md",
                           "AuditLock.json",
-                          "docs2/PLAN_HAIKY_HUMANIZACION_SINTESIS_PWA_2026.md",
-                          "docs2/humanizacion-sintesis-pwa-2026/INFORME_DIAGNOSTICO_HU26.md",
-                          "frontend-web/src/components/UI/CompactNotice.jsx",
-                          "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
-                          "frontend-web/src/pages/Documentos/ActasFiniquito.jsx",
-                          "frontend-web/src/pages/Documentos/ActasEntregaDotacion.jsx",
-                          "frontend-web/src/pages/Nomina/PagosBancarios.jsx",
-                          "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
-                          "frontend-web/src/pages/Configuracion/Comunicaciones.jsx",
                           "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-                          "frontend-web/src/pages/Empleados/NuevoEmpleado.jsx",
-                          "frontend-web/src/pages/PaymentResult.jsx"
+                          "frontend-web/src/pages/Configuracion/parametrizacion/LegalParametersPreview.jsx",
+                          "frontend-web/src/pages/Configuracion/parametrizacion/legalParameterDisplay.js"
                       ],
     "validationChecks":  [
                              {
-                                 "output":  "npm.cmd --workspace=frontend-web run build PASS; Vite built in 12.83s; PWA generated 33 precache entries",
+                                 "output":  "npm.cmd --workspace=frontend-web run build PASS; Vite built in 7.03s",
                                  "ok":  true,
                                  "name":  "frontend_web_build"
                              },
                              {
-                                 "output":  "npm.cmd run contracts PASS",
+                                 "output":  "Parametrizacion \u003e Valores legales muestra nota de formula y preview de jornada_horas_mensuales, horas_extra_limite_semanal, horas_extra_recargo_suplementaria y horas_extra_recargo_extraordinaria",
                                  "ok":  true,
-                                 "name":  "system_contracts"
-                             },
-                             {
-                                 "output":  "PASS con avisos LF/CRLF esperados en Windows",
-                                 "ok":  true,
-                                 "name":  "git_diff_check_hu26"
-                             },
-                             {
-                                 "output":  "UTF8_OK 18 archivos",
-                                 "ok":  true,
-                                 "name":  "utf8_no_bom_mojibake_hu26"
-                             },
-                             {
-                                 "output":  "rg sin coincidencias para modo dev, dev_logged, mock activo, Beneficios y descuentos y textos HU26 obsoletos",
-                                 "ok":  true,
-                                 "name":  "developer_terms_visible_scan"
+                                 "name":  "formula_overtime_visibility"
                              }
                          ],
-    "timestamp":  "2026-07-09T07:18:00.4413570Z",
-    "signature":  "6ecb180629378a51e4e0f907f9210dc5a91e7ce3abfb0c9b907f76f33e476ccf"
+    "timestamp":  "2026-07-09T12:25:41.6427657Z",
+    "signature":  "5e53c3764c1bebbaa0ab385f734ab5f3c2cfe19ba6ee79f0db971982f5c77200"
 }
