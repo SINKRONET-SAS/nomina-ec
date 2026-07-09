@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, FileText, Plus, Trash2 } from 'lucide-react';
+import CompactNotice from '../../components/UI/CompactNotice';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 import { downloadUrl } from '../../utils/downloadUrl';
@@ -157,7 +158,7 @@ function ActasEntregaDotacion() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-950">Entrega de dotacion y equipos</h1>
+        <h1 className="text-2xl font-bold text-slate-950">Entrega de dotación y equipos</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
           Genera el acta desde el sistema y deja el pendiente conectado con finiquitos hasta que los bienes retornables se marquen como devueltos.
         </p>
@@ -166,13 +167,9 @@ function ActasEntregaDotacion() {
       {message && <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}
       {error && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
 
-      <section className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-950">
-        <p className="font-semibold">Control de firmas del acta</p>
-        <p className="mt-1">
-          El PDF incluye firma del trabajador y del representante legal/delegado del empleador. Si falta la identificacion
-          del representante en Datos de empresa, el acta queda visible como incompleta para correccion.
-        </p>
-      </section>
+      <CompactNotice tone="emerald" title="Firmas">
+        El PDF incluye responsable y trabajador. Completa Datos de empresa si falta la identificación del representante.
+      </CompactNotice>
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center gap-3">

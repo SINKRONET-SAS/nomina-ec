@@ -7,8 +7,8 @@
 |-------|-------|
 | Plan | HAIKY-USUARIOS-ROLES-RBAC-MODULAR-SKNOMINA-2026 |
 | Codigo | URR26 |
-| Estado | in-progress |
-| Fase actual | URR26-00 Baseline |
+| Estado | completed-pass |
+| Fase cerrada | URR26-03 QA release |
 | Requerimiento fuente | El campo "Acceso empleado" solo ofrece 3 opciones genericas que no cubren los modulos reales del sistema; los permisos se guardan pero no se aplican. |
 | Plan doc | `docs2/PLAN_HAIKY_USUARIOS_ROLES_RBAC_MODULAR_SKNOMINA_2026.md` |
 | Prompts | `.github/prompts/URR26-{00..03}-*.md` |
@@ -2458,3 +2458,42 @@ Reglas OAP26:
 - No permitir edicion de fechas de periodos con roles/calculo/cierre.
 - No permitir que admin_rrhh modifique parametros legales ya validados por owner.
 - No presentar plantillas como documentos oficiales sin revision laboral y registro externo cuando corresponda.
+
+---
+
+## HU26 - Humanizacion y sintesis PWA 2026
+
+Plan: `HAIKY-HUMANIZACION-SINTESIS-PWA-2026`.
+
+Estado: HU26-00 a HU26-04 ejecutadas localmente; QA final en curso.
+
+Fuente:
+
+- Solicitud del usuario: "Humanizar, sintetizar la PWA para que deje de tener tanto texto que confunda, corregir texto del desarrollador y mejorar UI/UX".
+
+Artefactos:
+
+- `docs2/PLAN_HAIKY_HUMANIZACION_SINTESIS_PWA_2026.md`
+- `docs2/humanizacion-sintesis-pwa-2026/INFORME_DIAGNOSTICO_HU26.md`
+- `.github/prompts/HU26-00-baseline.md`
+- `.github/prompts/HU26-01-compact-notice.md`
+- `.github/prompts/HU26-02-documentos-reportes-comunicaciones.md`
+- `.github/prompts/HU26-03-parametrizacion-empleado-pagos.md`
+- `.github/prompts/HU26-04-qa-release.md`
+
+Runtime HU26:
+
+- Se agrega `frontend-web/src/components/UI/CompactNotice.jsx` para avisos compactos reutilizables.
+- Documentos legales reduce avisos SUT/MDT y firmas sin ocultar responsabilidad de registro externo.
+- Parametrizacion reduce textos de cabecera, valores legales, archivo bancario, homologacion y jornadas.
+- Pagos bancarios y reportes cambian explicaciones extensas por instrucciones accionables.
+- Comunicaciones deja de exponer "modo dev" y `dev_logged` como texto de usuario; se muestra "pruebas".
+- Resultado de pago deja de mostrar "mock" y usa "pendiente de confirmacion".
+- Ficha de trabajador corrige microcopy, acentos visibles y enlace a "Descuento Anticipos".
+
+Reglas HU26:
+
+- No cambiar contratos de API, payloads ni reglas legales por cambios editoriales.
+- No ocultar bloqueos; sintetizar con siguiente accion clara.
+- No duplicar bloques de aviso por pantalla; usar componente compartido.
+- No mezclar cambios URR26 abiertos en el arbol con el commit HU26.

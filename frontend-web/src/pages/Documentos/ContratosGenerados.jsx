@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, FileText } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
+import CompactNotice from '../../components/UI/CompactNotice';
 import { normalizeContractTemplateKey } from '../../utils/contractTemplates';
 import { downloadUrl } from '../../utils/downloadUrl';
 import { formatDateEC } from '../../utils/dateFormat';
@@ -112,22 +113,13 @@ function ContratosGenerados() {
     <div>
       <h1 className="mb-6 text-2xl font-bold">Contratos Generados</h1>
 
-      <section className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
-        <p className="font-semibold">Registro SUT/MDT pendiente de gestion externa</p>
-        <p className="mt-1">
-          Los contratos y actas de finiquito deben revisarse frente a la obligacion laboral aplicable y registrarse en el
-          Sistema Unico de Trabajo del Ministerio del Trabajo cuando corresponda. SKNOMINA deja la evidencia lista,
-          pero no marca el documento como registrado sin confirmacion externa o credenciales oficiales.
-        </p>
-      </section>
+      <CompactNotice className="mb-4" tone="amber" title="Antes de registrar">
+        Revisa el contrato y, si aplica, gestiona su registro en SUT/MDT. SKNOMINA conserva la evidencia, no confirma trámites externos.
+      </CompactNotice>
 
-      <section className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-950">
-        <p className="font-semibold">Control de firmas del documento</p>
-        <p className="mt-1">
-          Las plantillas generan firma del representante legal/delegado y del trabajador. Si los datos del representante
-          no estan completos en Datos de empresa, el documento queda marcado como no registrado para correccion previa.
-        </p>
-      </section>
+      <CompactNotice className="mb-4" tone="emerald" title="Firmas">
+        El PDF incluye representante y trabajador. Completa los datos de empresa si falta la firma del representante.
+      </CompactNotice>
 
       <section className="mb-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm">
         <div className="mb-4 flex items-center gap-2">
@@ -189,7 +181,7 @@ function ContratosGenerados() {
             <span className="font-semibold text-slate-800">{selectedTemplate.templateKey}</span>
             {' | '}
             {selectedTemplate.sourcePath}
-            {selectedTemplate.probation?.enabled ? ` | periodo de prueba ${selectedTemplate.probation.days} dias` : ''}
+            {selectedTemplate.probation?.enabled ? ` | período de prueba ${selectedTemplate.probation.days} días` : ''}
             {employeeTemplateKey && !form.templateKey ? ' | definida en ficha del empleado' : ''}
           </div>
         )}

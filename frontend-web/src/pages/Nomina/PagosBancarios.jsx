@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, CheckCircle2, Download, Landmark, Settings2, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import CompactNotice from '../../components/UI/CompactNotice';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 import { downloadUrl } from '../../utils/downloadUrl';
@@ -130,7 +131,7 @@ function PagosBancarios() {
       <div>
         <h1 className="text-2xl font-bold text-slate-950">Pagos bancarios</h1>
         <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
-          Genera el archivo bancario de pago de nómina desde roles cerrados o pagados, usando el banco y la homologación configurada.
+          Valida el período, genera el plano bancario y descarga el Excel de revisión.
         </p>
       </div>
 
@@ -143,9 +144,7 @@ function PagosBancarios() {
             <Landmark className="mt-1 h-5 w-5 text-teal-700" />
             <div>
               <h2 className="text-lg font-semibold text-slate-950">Archivo de pago del periodo</h2>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                Selecciona el banco pagador, valida el periodo y descarga el plano bancario junto con el Excel de revision.
-              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">Usa roles cerrados o pagados y la homologación bancaria activa.</p>
             </div>
           </div>
           <Link
@@ -212,9 +211,9 @@ function PagosBancarios() {
         </div>
 
         {activeProfiles.length === 0 && !bankProfilesQuery.isLoading && (
-          <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-            No hay bancos activos configurados. Registra al menos un perfil bancario y su estructura antes de generar pagos.
-          </div>
+          <CompactNotice className="mt-4" tone="amber">
+            Registra un banco activo y su estructura antes de generar pagos.
+          </CompactNotice>
         )}
 
         <div className="mt-5 flex flex-wrap gap-3">
@@ -241,7 +240,7 @@ function PagosBancarios() {
 
       {precheck && (
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-950">Validacion previa</h2>
+          <h2 className="text-lg font-semibold text-slate-950">Validación previa</h2>
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
             {precheck.checks.map((check) => (
               <div className={`flex items-start gap-3 rounded-md px-4 py-3 ${check.passed ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900'}`} key={check.code}>
@@ -281,7 +280,7 @@ function PagosBancarios() {
                 onClick={() => downloadUrl(generatedFile.excelUrl, `revision-banco-${anio}-${String(mes).padStart(2, '0')}.xlsx`)}
               >
                 <Download className="h-4 w-4" />
-                Descargar Excel revision
+                Descargar Excel de revisión
               </button>
             )}
           </div>

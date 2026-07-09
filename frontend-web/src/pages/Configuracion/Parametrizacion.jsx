@@ -11,6 +11,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
+import CompactNotice from '../../components/UI/CompactNotice';
 import { useAuth } from '../../context/AuthContext';
 import Field from './parametrizacion/Field';
 import IncomeTaxTableFields from './parametrizacion/IncomeTaxTableFields';
@@ -67,10 +68,10 @@ function BankFlatFileGuide({ values, mappings = [] }) {
     <div className="mt-5 space-y-4 rounded-md border border-teal-100 bg-teal-50/70 p-4">
       <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
         <div>
-          <p className="text-sm font-semibold text-teal-950">Archivo plano que se generará</p>
+          <p className="text-sm font-semibold text-teal-950">Archivo bancario</p>
           <h4 className="mt-1 text-base font-semibold text-slate-950">{template.title}</h4>
           <p className="mt-1 text-sm leading-6 text-slate-700">
-            Fuente: {template.source}. El sistema toma nóminas cerradas/pagadas, descifra la cuenta solo en memoria y arma estas columnas.
+            Usa roles cerrados o pagados y la homologación vigente. Fuente: {template.source}.
           </p>
         </div>
         <div className="rounded-md bg-white px-3 py-2 text-xs text-slate-600">
@@ -118,11 +119,11 @@ function BankFlatFileGuide({ values, mappings = [] }) {
         <code className="mt-1 block overflow-x-auto whitespace-nowrap">{template.example}</code>
       </div>
 
-      <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-950">
+      <CompactNotice tone="amber">
         {mappings.length > 0
-          ? 'Esta vista está usando la homologación guardada para el banco. Si cambias la estructura, actualiza la homologación antes de generar el archivo.'
-          : 'Aún no hay homologación guardada para este banco; se muestra la plantilla base. Genera la estructura completa en Homologación bancaria.'}
-      </div>
+          ? 'Usando la homologación guardada. Actualízala si cambia la estructura del banco.'
+          : 'Sin homologación guardada: se muestra la plantilla base.'}
+      </CompactNotice>
     </div>
   );
 }
@@ -194,9 +195,9 @@ function BankMappingStructureBuilder({
       <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-semibold text-slate-950">Homologación rápida desde archivo plano</p>
+            <p className="text-sm font-semibold text-slate-950">Homologación desde archivo plano</p>
             <p className="mt-1 text-xs leading-5 text-slate-600">
-              Sube un TXT/CSV modelo. Se lee la primera línea como cabecera o estructura, y puedes ajustar los campos antes de guardar.
+              Sube un TXT/CSV modelo y ajusta los campos antes de guardar.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -295,9 +296,9 @@ function BankMappingStructureBuilder({
         </div>
       </div>
 
-      <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-950">
-        Banco y archivo plano consume esta homologación guardada. Si no existe, usa la plantilla base; si existe, el generador ordena el archivo por estas posiciones.
-      </div>
+      <CompactNotice tone="amber">
+        El archivo bancario usa esta homologación para ordenar y validar sus campos.
+      </CompactNotice>
     </div>
   );
 }
@@ -655,11 +656,10 @@ function Parametrizacion() {
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Configuración de la empresa</p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Parametriza la nómina con datos visibles</h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Configuración de empresa</p>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Parámetros de nómina</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Ingresa parámetros laborales, novedades, estructura, zonas y jornadas. Cada unidad organizativa debe
-              quedar vinculada a una zona de marcación antes de usarse en asistencia productiva.
+              Mantén valores legales, estructura, zonas, jornadas y bancos listos para operar.
             </p>
           </div>
           <div className="rounded-md bg-teal-50 px-5 py-4 text-center">
@@ -685,9 +685,7 @@ function Parametrizacion() {
           <div>
             <h2 className="text-lg font-semibold text-teal-950">Carga de valores legales obligatorios</h2>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-teal-900">
-              Carga SBU, aportes IESS, jornada, vacaciones y tabla de impuesto a la renta del año seleccionado
-              como parámetros revisables. Incluye décimos tercero/cuarto y fondo de reserva. No reemplaza la validación
-              contra fuente oficial vigente.
+              Carga la base legal del año seleccionado. El owner debe revisarla antes de marcarla como validada.
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
@@ -717,7 +715,7 @@ function Parametrizacion() {
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <Settings2 className="h-6 w-6 text-teal-700" />
-            <h2 className="text-lg font-semibold text-slate-950">Centro de configuracion</h2>
+            <h2 className="text-lg font-semibold text-slate-950">Centro de configuración</h2>
           </div>
           <p className="text-sm text-slate-500">Selecciona un dominio operativo y completa los campos requeridos.</p>
         </div>
@@ -725,11 +723,11 @@ function Parametrizacion() {
         <div className="mt-4 grid gap-3 lg:grid-cols-2">
           <div className="rounded-md border border-teal-100 bg-teal-50 px-4 py-3 text-sm leading-6 text-teal-950">
             <p className="font-semibold">Valores legales</p>
-            <p>SBU, IESS, impuesto a la renta, décimos, jornada y reglas que alimentan el cálculo.</p>
+            <p>Valores que alimentan cálculos laborales y tributarios.</p>
           </div>
           <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
             <p className="font-semibold text-slate-950">Cuentas contables de nómina</p>
-            <p>Debe/haber por cada concepto calculado, con vigencia y centro de costo del tenant.</p>
+            <p>Debe/haber por concepto, vigencia y centro de costo.</p>
           </div>
         </div>
 
@@ -778,21 +776,15 @@ function Parametrizacion() {
 
 
             {activeDefinition.key === 'jornada' && (
-              <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
-                <p className="font-semibold">Revisión legal de jornada requerida</p>
-                <p className="mt-1">
-                  Puedes configurar varias jornadas en la misma empresa y asignarlas luego a cada unidad organizativa: lunes a viernes, martes a sábado u otra distribución operativa. Antes de aplicarlas, valida que la jornada cumpla límites laborales ecuatorianos y, cuando corresponda por jornada especial, nocturna, rotativa, suplementaria, extraordinaria o distribución excepcional, obtén la autorización o registro aplicable ante el Ministerio del Trabajo.
-                </p>
-              </div>
+              <CompactNotice className="mt-4" tone="amber" title="Revisa la jornada">
+                Valida límites, recargos y autorizaciones antes de operar jornadas especiales o excepcionales.
+              </CompactNotice>
             )}
 
             {isLegalParameterForm && (
-              <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
-                <p className="font-semibold">Validación bajo responsabilidad del owner</p>
-                <p className="mt-1">
-                  El check marca el parámetro como validado para cálculo. Una vez validado, solo el owner o superadmin puede modificarlo o eliminarlo.
-                </p>
-              </div>
+              <CompactNotice className="mt-4" tone="amber" title="Validación del owner">
+                El check habilita el parámetro para cálculo. Luego solo owner o superadmin puede cambiarlo.
+              </CompactNotice>
             )}
 
             {activeDefinition.customType === 'incomeTaxTable' ? (

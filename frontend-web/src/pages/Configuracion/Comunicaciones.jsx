@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { AlertTriangle, CheckCircle2, History, Mail, MessageCircle, Send, Settings2, ShieldCheck, XCircle } from 'lucide-react';
+import CompactNotice from '../../components/UI/CompactNotice';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 import { useAuth } from '../../context/AuthContext';
@@ -21,7 +22,7 @@ function StatusBadge({ configured, enabled = true, channel = null }) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">
         <AlertTriangle className="h-3.5 w-3.5" />
-        modo dev
+        pruebas
       </span>
     );
   }
@@ -142,9 +143,9 @@ function Comunicaciones() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Comunicaciones</p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-950">SMTP y WhatsApp transaccional</h1>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">Canales de comunicación</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Verifica los canales usados para registro, recuperacion de clave e invitaciones de app de asistencia.
+              Revisa correo y WhatsApp para accesos, recuperación de clave e invitaciones.
             </p>
           </div>
           <button
@@ -165,44 +166,44 @@ function Comunicaciones() {
       )}
 
       {email.deliveryMode === 'development_log' && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-          Modo desarrollo activo: las pruebas quedan auditadas como `dev_logged`, pero no salen por SMTP real.
-        </div>
+        <CompactNotice tone="amber">
+          Correo en pruebas: las acciones se registran, pero no salen por SMTP real.
+        </CompactNotice>
       )}
 
       {(email.productionBlocked || email.deliveryMode === 'blocked') && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
-          Correo bloqueado: configura SMTP real y remitente verificado antes de prometer envio de correos transaccionales.
-        </div>
+        <CompactNotice tone="red">
+          Correo bloqueado: configura SMTP real y remitente verificado antes de enviar notificaciones.
+        </CompactNotice>
       )}
 
       <section className="grid gap-4 xl:grid-cols-2">
         <ChannelCard
           icon={Mail}
           title="Correo SMTP"
-          description="Canal requerido para verificacion de correo, recuperacion de clave e invitaciones laborales."
+          description="Canal requerido para verificación, recuperación de clave e invitaciones."
           channel={email}
         >
           <Definition label="Servidor" value={email.host} />
           <Definition label="Puerto" value={email.port} />
           <Definition label="TLS directo" value={email.secure ? 'si' : 'no'} />
           <Definition label="Remitente" value={email.fromEmail} />
-          <Definition label="Modo entrega" value={email.deliveryMode} />
+          <Definition label="Estado de entrega" value={email.deliveryMode} />
           <Definition label="Proveedor real requerido" value={email.realProviderRequired ? 'si' : 'no'} />
         </ChannelCard>
 
         <ChannelCard
           icon={MessageCircle}
           title="WhatsApp Business"
-          description="Canal complementario para activar la app móvil de asistencia y futuras acciones operativas."
+          description="Canal complementario para activar la app móvil y avisos operativos."
           channel={whatsapp}
         >
           <Definition label="Graph API" value={whatsapp.graphApiVersion} />
           <Definition label="Phone number ID" value={whatsapp.phoneNumberId} />
           <Definition label="Proveedor" value={whatsapp.provider} />
           <Definition label="Estado" value={whatsapp.enabled ? 'habilitado' : 'deshabilitado'} />
-          <Definition label="Modo entrega" value={whatsapp.deliveryMode} />
-          <Definition label="Modo dev" value={whatsapp.devMode ? 'si' : 'no'} />
+          <Definition label="Estado de entrega" value={whatsapp.deliveryMode} />
+          <Definition label="Pruebas" value={whatsapp.devMode ? 'sí' : 'no'} />
         </ChannelCard>
       </section>
 
@@ -213,7 +214,7 @@ function Comunicaciones() {
             <h2 className="font-semibold text-slate-950">Prueba SMTP</h2>
           </div>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Envia un correo de prueba al usuario actual o a una direccion controlada por soporte.
+            Envía un correo de prueba al usuario actual o a una dirección de soporte.
           </p>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <input
@@ -247,12 +248,12 @@ function Comunicaciones() {
         <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="font-semibold text-slate-950">Plantillas operativas</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            WhatsApp requiere plantillas aprobadas. Si falta una plantilla, el flujo sigue por email y muestra el bloqueo del canal.
+            Si falta una plantilla aprobada, el sistema usa correo y marca WhatsApp como pendiente.
           </p>
           <div className="mt-4 grid gap-2">
-            <TemplateStatus label="Invitacion empleado app" enabled={whatsapp.templates?.employeeInvite} />
-            <TemplateStatus label="Recuperacion de clave" enabled={whatsapp.templates?.passwordReset} />
-            <TemplateStatus label="Verificacion de correo" enabled={whatsapp.templates?.emailVerification} />
+            <TemplateStatus label="Invitación empleado app" enabled={whatsapp.templates?.employeeInvite} />
+            <TemplateStatus label="Recuperación de clave" enabled={whatsapp.templates?.passwordReset} />
+            <TemplateStatus label="Verificación de correo" enabled={whatsapp.templates?.emailVerification} />
             <TemplateStatus label="Prueba de sistema" enabled={whatsapp.templates?.systemTest} />
           </div>
         </article>
@@ -262,15 +263,15 @@ function Comunicaciones() {
         <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-5 w-5 text-teal-700" />
-            <h2 className="font-semibold text-slate-950">Proteccion de datos</h2>
+            <h2 className="font-semibold text-slate-950">Protección de datos</h2>
           </div>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            El registro operativo conserva evidencia minima de envio sin guardar codigos, contenido ni destinatarios en claro.
+            Se guarda evidencia mínima de envío sin contenido ni destinatarios en claro.
           </p>
           <dl className="mt-4 grid gap-3 text-sm">
             <Definition label="Contenido de mensajes" value={compliance.storesMessageContent ? 'almacenado' : 'no almacenado'} />
             <Definition label="Códigos de verificación" value={compliance.storesVerificationCodes ? 'almacenados' : 'solo hash operativo'} />
-            <Definition label="Retencion eventos" value={`${compliance.eventRetentionDays || 365} dias`} />
+            <Definition label="Retención eventos" value={`${compliance.eventRetentionDays || 365} días`} />
             <Definition label="Base de control" value={compliance.legalBasis || 'LOPDP_EC'} />
           </dl>
         </article>
@@ -296,7 +297,7 @@ function Comunicaciones() {
           )}
           {!eventsQuery.isLoading && events.length === 0 && (
             <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
-              Aun no hay eventos registrados para este alcance.
+              Aún no hay eventos registrados para este alcance.
             </p>
           )}
           <div className="grid gap-2">

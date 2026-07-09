@@ -1,126 +1,53 @@
 {
-    "phaseCompleted":  "OAP26-qa-release-terminacion-form107-periodos-parametros-contratos",
+    "phaseCompleted":  "HU26-04-humanizacion-sintesis-pwa-qa-release",
     "filesModified":  [
                           ".github/CODEX_CONTEXT.md",
-                          ".github/prompts/OAP26-00-baseline.md",
-                          ".github/prompts/OAP26-01-periodos.md",
-                          ".github/prompts/OAP26-02-parametros-owner.md",
-                          ".github/prompts/OAP26-03-contratos-modelos-ficha.md",
-                          ".github/prompts/OAP26-04-ui-ayuda-ortografia.md",
-                          ".github/prompts/OAP26-05-qa-release.md",
-                          ".github/prompts/TFD26-00-baseline.md",
-                          ".github/prompts/TFD26-01-terminacion-finiquito.md",
-                          ".github/prompts/TFD26-02-horas-extra-form107.md",
-                          ".github/prompts/TFD26-03-documentos-descargas.md",
-                          ".github/prompts/TFD26-04-qa-release.md",
+                          ".github/prompts/HU26-00-baseline.md",
+                          ".github/prompts/HU26-01-compact-notice.md",
+                          ".github/prompts/HU26-02-documentos-reportes-comunicaciones.md",
+                          ".github/prompts/HU26-03-parametrizacion-empleado-pagos.md",
+                          ".github/prompts/HU26-04-qa-release.md",
                           "AuditLock.json",
-                          "backend/prisma/migrations/20260708193000_tfd26_employee_legal_document_types/migration.sql",
-                          "backend/prisma/schema.prisma",
-                          "backend/src/app.js",
-                          "backend/src/app.routes.test.js",
-                          "backend/src/config/ecuadorContractTypes.js",
-                          "backend/src/config/legal-ecuador.js",
-                          "backend/src/config/terminationCauses.js",
-                          "backend/src/controllers/documentoLegalController.js",
-                          "backend/src/controllers/empleadoController.js",
-                          "backend/src/controllers/nominaController.js",
-                          "backend/src/services/calculoNominaService.js",
-                          "backend/src/services/calculoNominaService.test.js",
-                          "backend/src/services/configurationService.js",
-                          "backend/src/services/configurationService.test.js",
-                          "backend/src/services/legalParameterService.js",
-                          "backend/src/services/liquidacionService.js",
-                          "backend/src/services/liquidacionService.test.js",
-                          "backend/src/services/liquidacionService.tfd26.test.js",
-                          "backend/src/services/monthlyPeriodService.js",
-                          "backend/src/services/monthlyPeriodService.test.js",
-                          "backend/src/services/payrollNoveltyService.cdan26.test.js",
-                          "backend/src/services/payrollNoveltyService.js",
-                          "backend/src/services/payrollRolePdfService.js",
-                          "backend/src/services/sriFormulario107Service.js",
-                          "backend/src/services/sriFormulario107Service.test.js",
-                          "backend/src/services/templateGenerator.js",
-                          "backend/src/services/templateGenerator.test.js",
-                          "backend/src/templates/legal/contracts/contrato_a_destajo.json",
-                          "backend/src/templates/legal/contracts/contrato_aprendizaje.json",
-                          "backend/src/templates/legal/contracts/contrato_emprendimiento.json",
-                          "backend/src/templates/legal/contracts/contrato_especial_emergente.json",
-                          "backend/src/templates/legal/contracts/contrato_eventual.json",
-                          "backend/src/templates/legal/contracts/contrato_jornada_parcial_permanente.json",
-                          "backend/src/templates/legal/contracts/contrato_obra_cierta.json",
-                          "backend/src/templates/legal/contracts/contrato_obra_servicio_giro_negocio.json",
-                          "backend/src/templates/legal/contracts/contrato_ocasional.json",
-                          "backend/src/templates/legal/contracts/contrato_por_tarea.json",
-                          "backend/src/templates/legal/contracts/contrato_productivo.json",
-                          "backend/src/templates/legal/contracts/contrato_teletrabajo.json",
-                          "backend/src/templates/legal/contracts/contrato_temporada.json",
-                          "backend/src/templates/legal/contracts/contrato_trabajo_juvenil.json",
-                          "backend/src/templates/legal/contracts/contrato_turistico_cultural_creativo.json",
-                          "docs2/ortografia-ayuda-parametros-periodos-contratos-2026/INFORME_DIAGNOSTICO_OAP26.md",
-                          "docs2/PLAN_HAIKY_ORTOGRAFIA_AYUDA_PARAMETROS_PERIODOS_CONTRATOS_2026.md",
-                          "docs2/PLAN_HAIKY_TERMINACION_FORM107_DOCUMENTOS_2026.md",
-                          "docs2/terminacion-form107-documentos-2026/INFORME_DIAGNOSTICO_TFD26.md",
-                          "frontend-web/src/App.jsx",
-                          "frontend-web/src/components/Layout/Layout.jsx",
-                          "frontend-web/src/pages/AyudaUsuario.jsx",
-                          "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-                          "frontend-web/src/pages/Configuracion/parametrizacion/Field.jsx",
-                          "frontend-web/src/pages/Configuracion/parametrizacion/IncomeTaxTableFields.jsx",
-                          "frontend-web/src/pages/Configuracion/parametrizacion/legalParameterDisplay.js",
-                          "frontend-web/src/pages/Configuracion/parametrizacion/parametrizacionModel.jsx",
+                          "docs2/PLAN_HAIKY_HUMANIZACION_SINTESIS_PWA_2026.md",
+                          "docs2/humanizacion-sintesis-pwa-2026/INFORME_DIAGNOSTICO_HU26.md",
+                          "frontend-web/src/components/UI/CompactNotice.jsx",
                           "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
-                          "frontend-web/src/pages/Empleados/HistorialEmpleado.jsx",
+                          "frontend-web/src/pages/Documentos/ActasFiniquito.jsx",
+                          "frontend-web/src/pages/Documentos/ActasEntregaDotacion.jsx",
+                          "frontend-web/src/pages/Nomina/PagosBancarios.jsx",
+                          "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
+                          "frontend-web/src/pages/Configuracion/Comunicaciones.jsx",
+                          "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
                           "frontend-web/src/pages/Empleados/NuevoEmpleado.jsx",
-                          "frontend-web/src/pages/Empleados/TerminarEmpleado.jsx",
-                          "frontend-web/src/pages/Nomina/Beneficios.jsx",
-                          "frontend-web/src/pages/Nomina/CerrarMes.jsx",
-                          "frontend-web/src/pages/Nomina/PeriodosNomina.jsx",
-                          "frontend-web/src/utils/contractTemplates.js",
-                          "frontend-web/src/utils/downloadUrl.js",
-                          "frontend-web/src/utils/fileToBase64.js"
+                          "frontend-web/src/pages/PaymentResult.jsx"
                       ],
     "validationChecks":  [
                              {
-                                 "name":  "backend_focused_jest",
+                                 "output":  "npm.cmd --workspace=frontend-web run build PASS; Vite built in 12.83s; PWA generated 33 precache entries",
                                  "ok":  true,
-                                 "output":  "monthlyPeriodService, configurationService, templateGenerator y app.routes PASS; 4 suites, 63 tests"
+                                 "name":  "frontend_web_build"
                              },
                              {
-                                 "name":  "backend_full_jest",
+                                 "output":  "npm.cmd run contracts PASS",
                                  "ok":  true,
-                                 "output":  "52 suites, 283 tests PASS"
+                                 "name":  "system_contracts"
                              },
                              {
-                                 "name":  "prisma_validate_local",
+                                 "output":  "PASS con avisos LF/CRLF esperados en Windows",
                                  "ok":  true,
-                                 "output":  "backend/.\\\\node_modules\\\\.bin\\\\prisma.cmd validate PASS"
+                                 "name":  "git_diff_check_hu26"
                              },
                              {
-                                 "name":  "frontend_web_build",
+                                 "output":  "UTF8_OK 18 archivos",
                                  "ok":  true,
-                                 "output":  "npm.cmd --workspace=frontend-web run build PASS; Vite built in 1m 23s; proceso cerrado por PID despues de salida verde"
+                                 "name":  "utf8_no_bom_mojibake_hu26"
                              },
                              {
-                                 "name":  "system_contracts",
+                                 "output":  "rg sin coincidencias para modo dev, dev_logged, mock activo, Beneficios y descuentos y textos HU26 obsoletos",
                                  "ok":  true,
-                                 "output":  "npm.cmd run contracts PASS"
-                             },
-                             {
-                                 "name":  "check_mobile",
-                                 "ok":  true,
-                                 "output":  "npm.cmd run check:mobile PASS"
-                             },
-                             {
-                                 "name":  "git_diff_check",
-                                 "ok":  true,
-                                 "output":  "PASS con avisos LF/CRLF esperados en Windows"
-                             },
-                             {
-                                 "name":  "utf8_no_bom_mojibake",
-                                 "ok":  true,
-                                 "output":  "UTF8_OK 76 archivos"
+                                 "name":  "developer_terms_visible_scan"
                              }
                          ],
-    "timestamp":  "2026-07-09T06:47:04.7941835Z",
-    "signature":  "52f210c60edfea460f4a76227cf997fa3c4ea49ec9d1d0e50e4cb9e935244e40"
+    "timestamp":  "2026-07-09T07:18:00.4413570Z",
+    "signature":  "6ecb180629378a51e4e0f907f9210dc5a91e7ce3abfb0c9b907f76f33e476ccf"
 }

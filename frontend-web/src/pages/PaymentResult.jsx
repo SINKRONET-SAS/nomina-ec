@@ -20,12 +20,12 @@ function PaymentResult() {
           </div>
           <h1 className="mt-6 text-2xl font-semibold text-slate-950">Resultado de pago</h1>
           <p className="mt-3 leading-7 text-slate-600">
-            La transacción PayPhone fue registrada para conciliación.
+            La transacción PayPhone quedó registrada para conciliación.
           </p>
           <p className="mt-5 rounded-md bg-slate-100 p-3 font-mono text-sm text-slate-800">{reference}</p>
           {mock && (
             <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
-              Modo mock activo. En producción esta URL debe ser reemplazada por confirmación sandbox/real de PayPhone.
+              Pago pendiente de confirmación. Revisa la conciliación antes de activar el plan.
             </p>
           )}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
+import CompactNotice from '../../components/UI/CompactNotice';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { downloadUrl } from '../../utils/downloadUrl';
 import { formatDateEC } from '../../utils/dateFormat';
@@ -37,14 +38,9 @@ function ActasFiniquito() {
     <div>
       <h1 className="mb-6 text-2xl font-bold">Actas de Finiquito</h1>
 
-      <section className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
-        <p className="font-semibold">Registro SUT/MDT pendiente de gestion externa</p>
-        <p className="mt-1">
-          Los contratos y actas de finiquito deben revisarse frente a la obligacion laboral aplicable y registrarse en el
-          Sistema Unico de Trabajo del Ministerio del Trabajo cuando corresponda. SKNOMINA deja la evidencia lista,
-          pero no marca el documento como registrado sin confirmacion externa o credenciales oficiales.
-        </p>
-      </section>
+      <CompactNotice className="mb-4" tone="amber" title="Antes de cerrar">
+        Revisa el acta y registra el trámite externo cuando aplique. SKNOMINA deja la evidencia lista para el expediente.
+      </CompactNotice>
 
       {message && <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}
       {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}

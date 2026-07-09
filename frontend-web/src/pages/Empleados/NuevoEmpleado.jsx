@@ -550,7 +550,7 @@ function NuevoEmpleado() {
       <div>
         <h1 className="text-2xl font-bold text-slate-950">{isEdit ? 'Editar ficha del trabajador' : 'Nuevo trabajador'}</h1>
         <p className="mt-2 text-sm text-slate-600">
-          La cuenta bancaria del trabajador se cifra como dato personal. La cuenta pagadora de la empresa se configura en Parametrización.
+          Completa la ficha laboral. La cuenta del trabajador se guarda cifrada.
         </p>
       </div>
 
@@ -558,7 +558,7 @@ function NuevoEmpleado() {
       {error && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
 
       <form onSubmit={handleSubmit} className="max-w-7xl space-y-5 rounded-lg bg-white p-5 shadow sm:p-6">
-        <Section title="Identificación y contacto" description="Datos personales relevantes para la relación laboral y comunicaciones.">
+        <Section title="Identificación y contacto" description="Datos personales para expediente y comunicaciones.">
           <Field className={FIELD_THIRD} disabled={isEdit} label="Cédula" maxLength="10" name="cedula" onChange={handleChange} required value={formData.cedula} />
           <Field className={FIELD_THIRD} label="Nombres" name="nombres" onChange={handleChange} required value={formData.nombres} />
           <Field className={FIELD_THIRD} label="Apellidos" name="apellidos" onChange={handleChange} required value={formData.apellidos} />
@@ -573,7 +573,7 @@ function NuevoEmpleado() {
               <option value="">Seleccionar...</option>
               <option value="soltero">Soltero/a</option>
               <option value="casado">Casado/a</option>
-              <option value="union_hecho">Union de hecho</option>
+              <option value="union_hecho">Unión de hecho</option>
               <option value="divorciado">Divorciado/a</option>
               <option value="viudo">Viudo/a</option>
             </select>
@@ -586,13 +586,13 @@ function NuevoEmpleado() {
           )}
           {isOlderAdult && (
             <div className={`${FIELD_FULL} rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950`}>
-              Adulto mayor — verificar beneficios y retenciones aplicables.
+              Adulto mayor: verifica beneficios y retenciones aplicables.
             </div>
           )}
         </Section>
 
         {Number(formData.cargas_familiares || 0) > 0 && (
-          <Section title="Cargas familiares" description="Registra los datos y documentos de soporte para efectos laborales y de impuesto a la renta.">
+          <Section title="Cargas familiares" description="Datos y soportes para efectos laborales y tributarios.">
             <div className={`${FIELD_FULL} space-y-4`}>
               {formData.dependientes.map((dependent, index) => (
                 <div className="grid grid-cols-1 gap-3 rounded-md border border-slate-200 p-4 md:grid-cols-2 lg:grid-cols-12" key={index}>
@@ -603,8 +603,8 @@ function NuevoEmpleado() {
                   <Field className="lg:col-span-4" label="Parentesco" name={`dependiente-${index}-parentesco`} onChange={(event) => handleDependentChange(index, 'parentesco', event.target.value)} value={dependent.parentesco}>
                     <select className={CONTROL_CLASS} onChange={(event) => handleDependentChange(index, 'parentesco', event.target.value)} value={dependent.parentesco}>
                       <option value="hijo">Hijo/a</option>
-                      <option value="conyuge">Conyuge</option>
-                      <option value="union_hecho">Pareja en union de hecho</option>
+                      <option value="conyuge">Cónyuge</option>
+                      <option value="union_hecho">Pareja en unión de hecho</option>
                       <option value="padre_madre">Padre/Madre</option>
                       <option value="otro">Otro permitido</option>
                     </select>
@@ -628,7 +628,7 @@ function NuevoEmpleado() {
           </Section>
         )}
 
-        <Section title="Domicilio" description="Ubicación declarada por el trabajador para documentos laborales y contacto.">
+        <Section title="Domicilio" description="Ubicación declarada para expediente y rutas.">
           <Field label="Provincia" name="provincia_codigo" onChange={(event) => setFormData((current) => ({ ...current, provincia_codigo: event.target.value, ciudad_codigo: '' }))} required value={formData.provincia_codigo}>
             <select className={CONTROL_CLASS} name="provincia_codigo" onChange={(event) => setFormData((current) => ({ ...current, provincia_codigo: event.target.value, ciudad_codigo: '' }))} required value={formData.provincia_codigo}>
               <option value="">{provincesQuery.isLoading ? 'Cargando provincias...' : 'Seleccionar provincia...'}</option>
@@ -637,7 +637,7 @@ function NuevoEmpleado() {
               ))}
             </select>
           </Field>
-          <Field label="Ciudad / canton" name="ciudad_codigo" onChange={handleChange} required value={formData.ciudad_codigo}>
+          <Field label="Ciudad / cantón" name="ciudad_codigo" onChange={handleChange} required value={formData.ciudad_codigo}>
             <select className={CONTROL_CLASS} disabled={!formData.provincia_codigo} name="ciudad_codigo" onChange={handleChange} required value={formData.ciudad_codigo}>
               <option value="">{citiesQuery.isLoading ? 'Cargando ciudades...' : 'Seleccionar ciudad...'}</option>
               {cities.map((city) => (
@@ -663,13 +663,13 @@ function NuevoEmpleado() {
           </label>
         </Section>
 
-        <Section title="Referencia de alguien que no viva con usted" description="Contacto personal externo al domicilio del trabajador.">
+        <Section title="Referencia externa" description="Contacto personal que no viva con el trabajador.">
           <Field label="Nombres completos" name="referencia_no_convive_nombres" onChange={handleChange} required value={formData.referencia_no_convive_nombres} />
           <Field label="Email" name="referencia_no_convive_email" onChange={handleChange} required type="email" value={formData.referencia_no_convive_email} />
           <Field label="Teléfono" name="referencia_no_convive_telefono" onChange={handleChange} required value={formData.referencia_no_convive_telefono} />
         </Section>
 
-        <Section title="Relación laboral" description="Datos base para nómina, beneficios, contratos y reportes.">
+        <Section title="Relación laboral" description="Datos base para nómina, contratos y reportes.">
           <Field label="Departamento o unidad" name="departamento" onChange={handleChange} value={formData.departamento} />
           <Field label="Unidad organizativa" name="unidad_organizativa_codigo" onChange={handleChange} value={formData.unidad_organizativa_codigo}>
             <select className={CONTROL_CLASS} name="unidad_organizativa_codigo" onChange={handleChange} value={formData.unidad_organizativa_codigo}>
@@ -736,13 +736,13 @@ function NuevoEmpleado() {
             </select>
           </Field>
           <div className={`${FIELD_FULL} rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700`}>
-            Este modelo se usa como plantilla sugerida al generar el contrato PDF del trabajador. Debe escogerse segun la modalidad laboral real y el soporte del expediente.
+            Este modelo se usará al generar el contrato PDF. Elige la modalidad real del expediente.
           </div>
           <Field label="Tipo relación IESS" name="iess_tipo_relacion" onChange={handleChange} value={formData.iess_tipo_relacion}>
             <select className={CONTROL_CLASS} name="iess_tipo_relacion" onChange={handleChange} value={formData.iess_tipo_relacion}>
-              <option value="relacion_dependencia">Relacion de dependencia</option>
+              <option value="relacion_dependencia">Relación de dependencia</option>
               <option value="jornada_parcial_permanente">Jornada parcial permanente</option>
-              <option value="sin_relacion_dependencia">Sin relacion de dependencia</option>
+              <option value="sin_relacion_dependencia">Sin relación de dependencia</option>
               <option value="servicios_profesionales">Servicios profesionales</option>
               <option value="pasante">Pasante</option>
             </select>
@@ -760,14 +760,14 @@ function NuevoEmpleado() {
           <div className={`${FIELD_FULL} rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700`}>
             Los aportes IESS se calculan según esta clasificación.
           </div>
-          <Field label="Region para decimo cuarto" name="region_decimo_cuarto" onChange={handleChange} required value={formData.region_decimo_cuarto}>
+          <Field label="Región para décimo cuarto" name="region_decimo_cuarto" onChange={handleChange} required value={formData.region_decimo_cuarto}>
             <select className={CONTROL_CLASS} name="region_decimo_cuarto" onChange={handleChange} required value={formData.region_decimo_cuarto}>
               <option value="sierra_amazonia">Sierra / Amazonia</option>
-              <option value="costa_galapagos">Costa / Galapagos</option>
+              <option value="costa_galapagos">Costa / Galápagos</option>
             </select>
           </Field>
           <div className={`${FIELD_FULL} rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950`}>
-            La región determina el período de pago del décimo cuarto.
+            Define el período legal del décimo cuarto.
           </div>
           <Field label="Fondo de reserva" name="modalidad_fondo_reserva" onChange={handleChange} required value={formData.modalidad_fondo_reserva}>
             <select className={CONTROL_CLASS} name="modalidad_fondo_reserva" onChange={handleChange} required value={formData.modalidad_fondo_reserva}>
@@ -775,13 +775,13 @@ function NuevoEmpleado() {
               <option value="iess_directo">Depositar directamente al IESS</option>
             </select>
           </Field>
-          <Field label="Decimo tercer sueldo" name="modalidad_decimo_tercero" onChange={handleChange} required value={formData.modalidad_decimo_tercero}>
+          <Field label="Décimo tercer sueldo" name="modalidad_decimo_tercero" onChange={handleChange} required value={formData.modalidad_decimo_tercero}>
             <select className={CONTROL_CLASS} name="modalidad_decimo_tercero" onChange={handleChange} required value={formData.modalidad_decimo_tercero}>
               <option value="acumulado">Acumular y pagar en fecha legal</option>
               <option value="mensual">Mensualizar en rol</option>
             </select>
           </Field>
-          <Field label="Decimo cuarto sueldo" name="modalidad_decimo_cuarto" onChange={handleChange} required value={formData.modalidad_decimo_cuarto}>
+          <Field label="Décimo cuarto sueldo" name="modalidad_decimo_cuarto" onChange={handleChange} required value={formData.modalidad_decimo_cuarto}>
             <select className={CONTROL_CLASS} name="modalidad_decimo_cuarto" onChange={handleChange} required value={formData.modalidad_decimo_cuarto}>
               <option value="acumulado">Acumular y pagar en fecha legal</option>
               <option value="mensual">Mensualizar en rol</option>
@@ -817,7 +817,7 @@ function NuevoEmpleado() {
             </select>
           </Field>
           <Field
-            label={isEdit ? 'Nueva cuenta del trabajador' : 'Numero de cuenta del trabajador'}
+            label={isEdit ? 'Nueva cuenta del trabajador' : 'Número de cuenta del trabajador'}
             name="cuenta_bancaria"
             onChange={handleChange}
             placeholder={isEdit && formData.cuenta_bancaria_registrada ? 'Cuenta registrada; escribir solo para reemplazarla' : ''}
@@ -845,7 +845,7 @@ function NuevoEmpleado() {
           </label>
           <div className={`${FIELD_FULL} flex gap-3 rounded-md border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-950`}>
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>Cuenta del trabajador, almacenada cifrada. No es la cuenta pagadora de la empresa.</p>
+            <p>Cuenta cifrada del trabajador. No es la cuenta pagadora de la empresa.</p>
           </div>
           {activeBankProfiles.length === 0 && (
             <div className={`${FIELD_FULL} rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800`}>
@@ -855,14 +855,14 @@ function NuevoEmpleado() {
         </Section>
 
         {isEdit && (
-          <Section title="Gestión posterior" description="Después de crear la ficha puedes adjuntar contrato firmado y registrar novedades de nómina.">
+          <Section title="Gestión posterior" description="Adjunta soportes y consulta movimientos del trabajador.">
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Contrato firmado en PDF</span>
               <input accept="application/pdf" className={FILE_CONTROL_CLASS} disabled={uploading} onChange={handleSignedContract} type="file" />
             </label>
             <div className="flex flex-wrap items-end gap-3">
               <Link className="inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" to="/dashboard/documentos/contratos"><FileUp className="h-4 w-4" />Ver contratos</Link>
-              <Link className="inline-flex min-h-10 items-center rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" to="/dashboard/nomina/beneficios">Beneficios y descuentos</Link>
+              <Link className="inline-flex min-h-10 items-center rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" to="/dashboard/nomina/beneficios">Descuento Anticipos</Link>
               <Link className="inline-flex min-h-10 items-center rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" to="/dashboard/asistencia/novedades">Novedades de asistencia</Link>
             </div>
           </Section>
