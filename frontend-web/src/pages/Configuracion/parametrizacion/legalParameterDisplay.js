@@ -19,6 +19,7 @@ export function normalizeIncomeTaxBrackets(record) {
   if (typeof value === 'string') {
     try { value = JSON.parse(value); } catch { return []; }
   }
+  if (Array.isArray(value)) return value;
   return Array.isArray(value?.brackets) ? value.brackets : [];
 }
 
@@ -28,7 +29,7 @@ export function legalParameterValue(record) {
     try { value = JSON.parse(value); } catch { return value; }
   }
 
-  if (record?.parameter_key === 'income_tax_table') {
+  if (['income_tax_table', 'tabla_impuesto_renta'].includes(record?.parameter_key)) {
     return `${normalizeIncomeTaxBrackets(record).length} tramos`;
   }
 

@@ -788,14 +788,15 @@ function dedupeNoveltyRecords(records = []) {
 
 function recordsForDefinition(summary, definition) {
   const records = summary?.resources?.[definition.resource] || [];
+  const incomeTaxKeys = ['income_tax_table', 'tabla_impuesto_renta'];
   if (definition.key === 'novedad') {
     return dedupeNoveltyRecords(records);
   }
   if (definition.key === 'legal') {
-    return records.filter((record) => record.parameter_key !== 'income_tax_table');
+    return records.filter((record) => !incomeTaxKeys.includes(record.parameter_key));
   }
   if (definition.key === 'ir') {
-    return records.filter((record) => record.parameter_key === 'income_tax_table');
+    return records.filter((record) => incomeTaxKeys.includes(record.parameter_key));
   }
   if (!definition.catalogType) return records;
   return records.filter((record) => record.catalog_type === definition.catalogType);
