@@ -10,6 +10,7 @@ import {
   TimerReset,
   UserCog,
 } from 'lucide-react';
+import { normalizeIncomeTaxBrackets } from './legalParameterDisplay';
 
 const workDayOptions = [
   { value: 'monday', label: 'Lunes' },
