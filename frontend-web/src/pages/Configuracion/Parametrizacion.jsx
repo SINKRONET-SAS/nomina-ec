@@ -354,7 +354,7 @@ function dedupeNoveltyRecords(records = []) {
 }
 
 function Parametrizacion() {
-  const { token } = useAuth();
+  const { token, usuario } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const requestedSection = searchParams.get('seccion');
@@ -383,6 +383,9 @@ function Parametrizacion() {
   const saveMutation = useMutation({
     mutationFn: async ({ definition, values, record }) => {
       const payload = definition.buildPayload(values);
+      if (definition.resource === 'legalParameters' && payload.validation_status === 'validado_oficial' && !canValidateLegalParameters) {
+        throw new Error('Solo el owner puede marcar parámetros legales como validados.');
+      }
       const savedRecord = record
         ? await updateConfigurationResource(token, definition.resource, record.id, payload)
         : await createConfigurationResource(token, definition.resource, payload);
@@ -494,6 +497,12 @@ function Parametrizacion() {
   const activeDefinition = formDefinitions.find((definition) => definition.key === activeForm) || formDefinitions[0];
   const activeValues = forms[activeDefinition.key];
   const isEditingActiveRecord = editingRecord?.definitionKey === activeDefinition.key;
+  const canValidateLegalParameters = ['superadmin', 'owner'].includes(usuario?.rol);
+  const isLegalParameterForm = activeDefinition.resource === 'legalParameters';
+  const isLockedValidatedLegalRecord = isLegalParameterForm
+    && isEditingActiveRecord
+    && editingRecord?.validation_status === 'validado_oficial'
+    && !canValidateLegalParameters;
   const completion = summary?.onboarding?.completionPercent || 0;
   const baseRecords = recordsForDefinition(summary, activeDefinition);
   const records = activeDefinition.resource === 'noveltyTypes'
@@ -693,7 +702,7 @@ function Parametrizacion() {
             </label>
             <button
               className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60"
-              disabled={loadMandatoryMutation.isPending}
+              disabled={loadMandatoryMutation.isPending || !canValidateLegalParameters}
               type="button"
               onClick={() => loadMandatoryMutation.mutate()}
             >
@@ -777,6 +786,15 @@ function Parametrizacion() {
               </div>
             )}
 
+            {isLegalParameterForm && (
+              <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
+                <p className="font-semibold">Validación bajo responsabilidad del owner</p>
+                <p className="mt-1">
+                  El check marca el parámetro como validado para cálculo. Una vez validado, solo el owner o superadmin puede modificarlo o eliminarlo.
+                </p>
+              </div>
+            )}
+
             {activeDefinition.customType === 'incomeTaxTable' ? (
               <div className="mt-5">
                 <IncomeTaxTableFields
@@ -785,6 +803,8 @@ function Parametrizacion() {
                   onBracketChange={updateBracket}
                   onAddBracket={addBracket}
                   onRemoveBracket={removeBracket}
+                  disabled={isLockedValidatedLegalRecord}
+                  canValidate={canValidateLegalParameters}
                 />
               </div>
             ) : activeDefinition.customType === 'bankMappingStructure' ? (
@@ -802,7 +822,11 @@ function Parametrizacion() {
                   {activeDefinition.fields.map((field) => (
                     <Field
                       key={field.name}
-                      field={field}
+                      field={{
+                        ...field,
+                        disabled: isLockedValidatedLegalRecord
+                          || (isLegalParameterForm && field.name === 'owner_validated' && !canValidateLegalParameters),
+                      }}
                       value={activeValues[field.name]}
                       onChange={updateField}
                       options={optionsForField(summary, field)}
@@ -821,7 +845,7 @@ function Parametrizacion() {
             {activeDefinition.customType !== 'bankMappingStructure' && (
               <button
                 className="mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60"
-                disabled={saveMutation.isPending}
+                disabled={saveMutation.isPending || isLockedValidatedLegalRecord}
                 type="submit"
               >
                 {isEditingActiveRecord ? <Edit3 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
@@ -844,7 +868,11 @@ function Parametrizacion() {
                   {activeDefinition.emptyText || 'Aún no hay registros en esta categoría.'}
                 </p>
               )}
-              {activeDefinition.customType !== 'bankMappingStructure' && records.slice(0, 12).map((record) => (
+              {activeDefinition.customType !== 'bankMappingStructure' && records.slice(0, 12).map((record) => {
+                const recordLocked = activeDefinition.resource === 'legalParameters'
+                  && record.validation_status === 'validado_oficial'
+                  && !canValidateLegalParameters;
+                return (
                 <div className="rounded-md bg-slate-50 px-3 py-2" key={record.id}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -855,8 +883,9 @@ function Parametrizacion() {
                       <button
                         className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-teal-700 hover:border-teal-300"
                         type="button"
+                        disabled={recordLocked}
                         onClick={() => startEdit(activeDefinition, record)}
-                        title="Editar registro"
+                        title={recordLocked ? 'Solo owner puede modificar parámetros validados' : 'Editar registro'}
                       >
                         <Edit3 className="h-4 w-4" />
                       </button>
@@ -865,7 +894,7 @@ function Parametrizacion() {
                           <button
                             className="inline-flex min-h-8 items-center rounded-md border border-red-200 bg-white px-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
                             type="button"
-                            disabled={deleteMutation.isPending}
+                            disabled={deleteMutation.isPending || recordLocked}
                             onClick={() => confirmDelete(activeDefinition, record)}
                           >
                             Eliminar
@@ -883,8 +912,9 @@ function Parametrizacion() {
                         <button
                           className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:text-red-700"
                           type="button"
+                          disabled={recordLocked}
                           onClick={() => requestDelete(record.id)}
-                          title="Eliminar si no tiene consumos"
+                          title={recordLocked ? 'Solo owner puede eliminar parámetros validados' : 'Eliminar si no tiene consumos'}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -892,7 +922,8 @@ function Parametrizacion() {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
             {activeDefinition.key === 'legal' && (
               <LegalParametersPreview records={legalRecords} />

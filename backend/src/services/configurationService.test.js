@@ -13,6 +13,7 @@ const {
   RESOURCE_CONFIG,
   createResource,
   deleteResource,
+  updateResource,
   loadMandatoryLegalParameters,
   syncLegalParametersFromGlobal,
   listResource,
@@ -22,6 +23,12 @@ const ownerUser = {
   id: 'user-1',
   tenantId: '11111111-1111-1111-1111-111111111111',
   rol: 'owner',
+};
+
+const adminUser = {
+  id: 'user-2',
+  tenantId: ownerUser.tenantId,
+  rol: 'admin_rrhh',
 };
 
 describe('configurationService metadata', () => {
@@ -126,6 +133,99 @@ describe('configurationService metadata', () => {
       action: 'configuracion.eliminar',
       entity: 'legal_parameter_versions',
     }));
+  });
+
+  test('admin_rrhh no puede marcar parametros legales como validados por owner', async () => {
+    await expect(
+      createResource('legalParameters', {
+        country_code: 'EC',
+        region_code: 'NACIONAL',
+        period_year: 2026,
+        parameter_key: 'sbu',
+        value: { amount: 482 },
+        unit: 'USD',
+        owner_validated: true,
+        notes: 'Validado en parametrizacion',
+      }, adminUser)
+    ).rejects.toMatchObject({
+      code: 'LEGAL_PARAMETER_OWNER_VALIDATION_REQUIRED',
+      statusCode: 403,
+    });
+    expect(db.query).not.toHaveBeenCalled();
+    expect(recordAudit).not.toHaveBeenCalled();
+  });
+
+  test('owner puede guardar parametro legal con check de validacion y trazabilidad', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'legal-sbu',
+          tenant_id: ownerUser.tenantId,
+          parameter_key: 'sbu',
+          validation_status: 'validado_oficial',
+          approved_by: ownerUser.id,
+        }],
+      });
+    recordAudit.mockResolvedValueOnce();
+
+    const result = await createResource('legalParameters', {
+      country_code: 'EC',
+      region_code: 'NACIONAL',
+      period_year: 2026,
+      parameter_key: 'sbu',
+      value: { amount: 482 },
+      unit: 'USD',
+      owner_validated: true,
+      notes: 'Validado por owner',
+    }, ownerUser);
+
+    expect(result).toEqual(expect.objectContaining({
+      id: 'legal-sbu',
+      validation_status: 'validado_oficial',
+      approved_by: ownerUser.id,
+    }));
+    expect(db.query.mock.calls[1][0]).toContain('INSERT INTO legal_parameter_versions');
+    expect(db.query.mock.calls[1][0]).toContain('approved_by');
+    expect(db.query.mock.calls[1][1]).toContain(ownerUser.id);
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'configuracion.crear',
+      entity: 'legal_parameter_versions',
+    }));
+  });
+
+  test('admin_rrhh no puede modificar ni eliminar parametro legal ya validado', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'legal-sbu',
+        tenant_id: adminUser.tenantId,
+        validation_status: 'validado_oficial',
+      }],
+    });
+
+    await expect(
+      updateResource('legalParameters', 'legal-sbu', { notes: 'cambio admin' }, adminUser)
+    ).rejects.toMatchObject({
+      code: 'LEGAL_PARAMETER_OWNER_VALIDATION_REQUIRED',
+      statusCode: 403,
+    });
+
+    db.query.mockReset();
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'legal-sbu',
+        tenant_id: adminUser.tenantId,
+        validation_status: 'validado_oficial',
+      }],
+    });
+
+    await expect(
+      deleteResource('legalParameters', 'legal-sbu', adminUser)
+    ).rejects.toMatchObject({
+      code: 'LEGAL_PARAMETER_OWNER_VALIDATION_REQUIRED',
+      statusCode: 403,
+    });
+    expect(recordAudit).not.toHaveBeenCalled();
   });
 
   test('createResource crea cargo con rango salarial y unidad activa', async () => {

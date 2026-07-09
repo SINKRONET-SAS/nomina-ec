@@ -1,0 +1,57 @@
+{
+  "templateKey": "contrato_productivo",
+  "version": "2026.07",
+  "sortOrder": 120,
+  "displayName": "Contrato productivo",
+  "description": "Modelo referencial para necesidades productivas justificadas.",
+  "documentTitle": "CONTRATO INDIVIDUAL DE TRABAJO PRODUCTIVO",
+  "contractType": "productivo",
+  "appliesTo": ["productivo", "produccion", "proyecto productivo"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": false,
+    "days": 0
+  },
+  "legalBasis": [
+    {
+      "label": "Modalidad contractual productiva vigente",
+      "note": "validar acuerdo ministerial aplicable, causa productiva, plazo, jornada y registro."
+    }
+  ],
+  "notices": [
+    "Usar solo con causa productiva real, soporte documental y registro correcto.",
+    "Validar vigencia normativa antes de firma."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, y {{employee.fullName}}, con identificacion {{employee.idNumber}}."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- CAUSA PRODUCTIVA",
+      "paragraphs": [
+        "EL EMPLEADOR contrata a EL TRABAJADOR como {{employee.position}} para atender una necesidad productiva documentada, con proyecto, area, metas y plazo referencial definidos en anexo."
+      ]
+    },
+    {
+      "title": "TERCERA.- JORNADA Y REMUNERACION",
+      "paragraphs": [
+        "La jornada aplicable es {{employee.workShift}} y la remuneracion pactada es USD {{employee.salaryAmount}} ({{employee.salaryWords}}), con beneficios, aportes y recargos aplicables."
+      ]
+    },
+    {
+      "title": "CUARTA.- EVIDENCIA Y CIERRE",
+      "paragraphs": [
+        "El cumplimiento de la causa productiva, avances, novedades y finalizacion se documentaran en el expediente laboral y operativo."
+      ]
+    },
+    {
+      "title": "QUINTA.- REGISTRO",
+      "paragraphs": [
+        "El contrato debe validarse frente a la normativa vigente y registrarse en SUT/IESS cuando corresponda."
+      ]
+    }
+  ]
+}

@@ -34,7 +34,7 @@ const RESOURCE_CONFIG = {
   legalParameters: {
     table: 'legal_parameter_versions',
     tenantScoped: false,
-    columns: ['country_code', 'region_code', 'period_year', 'parameter_key', 'value', 'unit', 'rounding_mode', 'validation_status', 'source_name', 'source_url', 'source_date', 'valid_from', 'valid_to', 'notes'],
+    columns: ['country_code', 'region_code', 'period_year', 'parameter_key', 'value', 'unit', 'rounding_mode', 'validation_status', 'source_name', 'source_url', 'source_date', 'valid_from', 'valid_to', 'notes', 'approved_by', 'approved_at'],
     orderBy: 'period_year DESC, parameter_key, updated_at DESC',
   },
   noveltyTypes: {
@@ -104,6 +104,8 @@ const RESOURCE_CONFIG = {
     orderBy: 'banco_codigo, position',
   },
 };
+
+const LEGAL_PARAMETER_VALIDATED_STATUS = 'validado_oficial';
 
 function getResourceConfig(resource) {
   const config = RESOURCE_CONFIG[resource];
@@ -543,16 +545,29 @@ function normalizeIncomeTaxTable(value) {
   };
 }
 
-function normalizeLegalParameterPayload(payload) {
-  if (!['income_tax_table', 'tabla_impuesto_renta'].includes(payload.parameter_key)) {
-    return payload;
+function normalizeLegalParameterPayload(payload = {}) {
+  const normalized = { ...payload };
+  if (Object.prototype.hasOwnProperty.call(normalized, 'owner_validated')) {
+    normalized.validation_status = normalized.owner_validated
+      ? LEGAL_PARAMETER_VALIDATED_STATUS
+      : 'pendiente_validacion_oficial';
+    if (normalized.owner_validated && !normalized.source_name) {
+      normalized.source_name = 'Validación del owner';
+    }
+    if (!normalized.source_url) {
+      normalized.source_url = '';
+    }
+  }
+
+  if (!['income_tax_table', 'tabla_impuesto_renta'].includes(normalized.parameter_key)) {
+    return normalized;
   }
 
   return {
-    ...payload,
+    ...normalized,
     parameter_key: 'income_tax_table',
-    value: normalizeIncomeTaxTable(payload.value),
-    unit: payload.unit || 'tabla_anual',
+    value: normalizeIncomeTaxTable(normalized.value),
+    unit: normalized.unit || 'tabla_anual',
   };
 }
 
@@ -565,6 +580,37 @@ function ensureWriteAllowed(user) {
       userId: user.id,
     });
   }
+}
+
+function canValidateLegalParameters(user) {
+  return ['superadmin', 'owner'].includes(user?.rol);
+}
+
+function assertLegalParameterOwnerValidationAllowed(user, values = {}, previous = {}) {
+  const previousValidated = previous.validation_status === LEGAL_PARAMETER_VALIDATED_STATUS;
+  const nextStatus = Object.prototype.hasOwnProperty.call(values, 'validation_status')
+    ? values.validation_status
+    : previous.validation_status;
+  const nextValidated = nextStatus === LEGAL_PARAMETER_VALIDATED_STATUS;
+
+  if ((previousValidated || nextValidated) && !canValidateLegalParameters(user)) {
+    throw new AppError('Solo el owner puede validar o modificar parámetros legales validados.', {
+      code: 'LEGAL_PARAMETER_OWNER_VALIDATION_REQUIRED',
+      statusCode: 403,
+      userId: user.id,
+      details: {
+        previousStatus: previous.validation_status || null,
+        nextStatus: nextStatus || null,
+      },
+    });
+  }
+}
+
+function applyLegalParameterApprovalMetadata(values, user, previous = {}) {
+  if (values.validation_status !== LEGAL_PARAMETER_VALIDATED_STATUS) return;
+  if (previous.validation_status === LEGAL_PARAMETER_VALIDATED_STATUS && values.approved_by && values.approved_at) return;
+  values.approved_by = user.id;
+  values.approved_at = new Date();
 }
 
 async function ensureOrganizationUnitWorkZone(values, tenantId, user) {
@@ -635,6 +681,32 @@ function legalParameterPayloadsFromBase(year) {
       value: { amount: Number(payroll.weeklyMaxHours) },
       unit: 'horas',
       notes: 'Jornada máxima semanal cargada como parámetro obligatorio revisable.',
+    },
+    {
+      parameter_key: 'horas_extra_limite_semanal',
+      value: { amount: Number(payroll.maxWeeklyOvertimeHours ?? 12) },
+      unit: 'horas',
+      notes: 'Limite semanal de horas suplementarias cargado como parametro obligatorio revisable.',
+    },
+    {
+      parameter_key: 'horas_extra_recargo_suplementaria',
+      value: {
+        multiplier: Number(payroll.overtimeSupplementMultiplier ?? 1.5),
+        rate: Number((payroll.overtimeSupplementMultiplier ?? 1.5) - 1),
+        calculationBase: 'valor_hora',
+      },
+      unit: 'regla',
+      notes: 'Horas suplementarias: multiplicador parametrizable sobre valor hora.',
+    },
+    {
+      parameter_key: 'horas_extra_recargo_extraordinaria',
+      value: {
+        multiplier: Number(payroll.overtimeExtraordinaryMultiplier ?? 2),
+        rate: Number((payroll.overtimeExtraordinaryMultiplier ?? 2) - 1),
+        calculationBase: 'valor_hora',
+      },
+      unit: 'regla',
+      notes: 'Horas extraordinarias: multiplicador parametrizable sobre valor hora.',
     },
     {
       parameter_key: 'provision_vacaciones',
@@ -728,6 +800,13 @@ function legalValidationStatusFromBase(parameters = {}) {
 
 async function loadMandatoryLegalParameters(year, user, context = {}) {
   ensureWriteAllowed(user);
+  if (!canValidateLegalParameters(user)) {
+    throw new AppError('Solo el owner puede cargar y validar parámetros legales obligatorios.', {
+      code: 'LEGAL_PARAMETER_OWNER_VALIDATION_REQUIRED',
+      statusCode: 403,
+      userId: user.id,
+    });
+  }
   const periodYear = Number(year);
 
   if (!Number.isInteger(periodYear) || periodYear < 2000 || periodYear > 2100) {
@@ -1090,6 +1169,10 @@ async function createResource(resource, payload, user, context = {}) {
   if (config.table === 'job_positions') {
     await validateJobPositionPayload(values, tenantId, user);
   }
+  if (config.table === 'legal_parameter_versions') {
+    assertLegalParameterOwnerValidationAllowed(user, values);
+    applyLegalParameterApprovalMetadata(values, user);
+  }
 
   const columns = Object.keys(values);
   if (columns.length === 0) {
@@ -1111,7 +1194,7 @@ async function createResource(resource, payload, user, context = {}) {
 
   if (config.table === 'legal_parameter_versions') {
     const existing = await db.query(`
-      SELECT id
+      SELECT id, validation_status, approved_by, approved_at
       FROM legal_parameter_versions
       WHERE COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid) = COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
         AND country_code = $2
@@ -1130,6 +1213,8 @@ async function createResource(resource, payload, user, context = {}) {
     ]);
 
     if (existing.rows.length > 0) {
+      assertLegalParameterOwnerValidationAllowed(user, values, existing.rows[0]);
+      applyLegalParameterApprovalMetadata(values, user, existing.rows[0]);
       const updateColumns = columns.filter((column) => column !== 'created_by');
       const updateParams = updateColumns.map((column) => {
         const value = values[column];
@@ -1233,6 +1318,10 @@ async function updateResource(resource, id, payload, user, context = {}) {
   }
   if (config.table === 'job_positions') {
     await validateJobPositionPayload(values, previous.rows[0].tenant_id || user.tenantId, user, previous.rows[0]);
+  }
+  if (config.table === 'legal_parameter_versions') {
+    assertLegalParameterOwnerValidationAllowed(user, values, previous.rows[0]);
+    applyLegalParameterApprovalMetadata(values, user, previous.rows[0]);
   }
 
   const columns = Object.keys(values);
@@ -1495,6 +1584,10 @@ async function deleteResource(resource, id, user, context = {}) {
       statusCode: 404,
       userId: user.id,
     });
+  }
+
+  if (config.table === 'legal_parameter_versions') {
+    assertLegalParameterOwnerValidationAllowed(user, {}, previous.rows[0]);
   }
 
   await ensureResourceCanBeDeleted(config, previous.rows[0], user);

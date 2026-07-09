@@ -1,0 +1,57 @@
+{
+  "templateKey": "contrato_trabajo_juvenil",
+  "version": "2026.07",
+  "sortOrder": 170,
+  "displayName": "Contrato de trabajo juvenil",
+  "description": "Modelo referencial para regimen de empleo juvenil sujeto a requisitos especiales.",
+  "documentTitle": "CONTRATO INDIVIDUAL DE TRABAJO JUVENIL",
+  "contractType": "trabajo_juvenil",
+  "appliesTo": ["juvenil", "primer empleo", "joven"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": false,
+    "days": 0
+  },
+  "legalBasis": [
+    {
+      "label": "Regimen especial de trabajo juvenil",
+      "note": "validar edad, requisitos, incentivos, registro y condiciones aplicables antes de firma."
+    }
+  ],
+  "notices": [
+    "Usar solo si el trabajador y empleador cumplen requisitos del regimen juvenil.",
+    "Anexar soporte de edad, modalidad, registro y condiciones de seguridad."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, y {{employee.fullName}}, con identificacion {{employee.idNumber}}."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- MODALIDAD JUVENIL",
+      "paragraphs": [
+        "EL EMPLEADOR contrata a EL TRABAJADOR bajo modalidad juvenil para el cargo {{employee.position}}, con requisitos y soporte documentados en el expediente."
+      ]
+    },
+    {
+      "title": "TERCERA.- JORNADA Y FUNCIONES",
+      "paragraphs": [
+        "EL TRABAJADOR cumplira funciones propias del cargo, con jornada {{employee.workShift}}, supervision y registros de asistencia o novedades en SKNOMINA."
+      ]
+    },
+    {
+      "title": "CUARTA.- REMUNERACION Y BENEFICIOS",
+      "paragraphs": [
+        "La remuneracion pactada es USD {{employee.salaryAmount}} ({{employee.salaryWords}}), sin perjuicio de minimos, beneficios, afiliacion y condiciones especiales aplicables."
+      ]
+    },
+    {
+      "title": "QUINTA.- REGISTRO",
+      "paragraphs": [
+        "La modalidad debe revisarse y registrarse cuando corresponda. SKNOMINA conserva evidencia y no reemplaza registros oficiales."
+      ]
+    }
+  ]
+}

@@ -67,14 +67,14 @@ function Beneficios() {
     },
     onSuccess: () => {
       setError('');
-      setMessage(editingId ? 'Beneficio actualizado.' : 'Beneficio registrado.');
+      setMessage(editingId ? 'Registro actualizado.' : 'Registro guardado.');
       setEditingId('');
       setForm(emptyForm());
       queryClient.invalidateQueries({ queryKey: ['beneficios-empleados'] });
     },
     onError: (err) => {
       setMessage('');
-      setError(extractApiError(err, 'No pudimos guardar el beneficio.'));
+      setError(extractApiError(err, 'No pudimos guardar el anticipo o préstamo.'));
     },
   });
 
@@ -106,12 +106,12 @@ function Beneficios() {
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-950">Beneficios, anticipos y prestamos</h1>
+            <h1 className="text-2xl font-semibold text-slate-950">Anticipos y préstamos</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Registra valores aprobables por empleado. Solo los beneficios en estado aprobado entran como deduccion
-              al calcular y cerrar la nómina del periodo.
+              Registra descuentos aprobables por empleado. Solo anticipos o préstamos aprobados entran como deducción
+              al calcular y cerrar la nómina del período.
             </p>
-            <p className="mt-1 text-xs font-semibold text-slate-500">Periodo inicial calculado en {ECUADOR_TIME_ZONE}.</p>
+            <p className="mt-1 text-xs font-semibold text-slate-500">Período inicial calculado en {ECUADOR_TIME_ZONE}.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-md bg-amber-50 px-4 py-3 text-amber-900">
@@ -131,7 +131,7 @@ function Beneficios() {
 
       <section className="grid gap-6 xl:grid-cols-[420px_1fr]">
         <form className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" onSubmit={submit}>
-          <h2 className="font-semibold text-slate-950">{editingId ? 'Editar beneficio' : 'Nuevo beneficio'}</h2>
+          <h2 className="font-semibold text-slate-950">{editingId ? 'Editar anticipo o préstamo' : 'Nuevo anticipo o préstamo'}</h2>
           <div className="mt-4 space-y-4">
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Empleado</span>
@@ -147,7 +147,7 @@ function Beneficios() {
                 <span className="text-sm font-medium text-slate-700">Tipo</span>
                 <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.tipo} onChange={(event) => updateField('tipo', event.target.value)}>
                   <option value="anticipo">Anticipo</option>
-                  <option value="prestamo">Prestamo</option>
+                  <option value="prestamo">Préstamo</option>
                 </select>
               </label>
               <label>
@@ -184,7 +184,7 @@ function Beneficios() {
           </div>
           <button className="mt-5 inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60" disabled={mutation.isPending} type="submit">
             <Plus className="h-4 w-4" />
-            {mutation.isPending ? 'Guardando...' : 'Guardar beneficio'}
+            {mutation.isPending ? 'Guardando...' : 'Guardar registro'}
           </button>
         </form>
 
@@ -199,14 +199,14 @@ function Beneficios() {
                   <th className="px-4 py-3 text-right">Cuota</th>
                   <th className="px-4 py-3">Inicio</th>
                   <th className="px-4 py-3">Estado</th>
-                  <th className="px-4 py-3">Accion</th>
+                  <th className="px-4 py-3">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {beneficiosQuery.isLoading ? (
                   <tr><td className="px-4 py-6 text-center" colSpan="7">Cargando...</td></tr>
                 ) : beneficios.length === 0 ? (
-                  <tr><td className="px-4 py-6 text-center" colSpan="7">No hay beneficios registrados.</td></tr>
+                  <tr><td className="px-4 py-6 text-center" colSpan="7">No hay anticipos o préstamos registrados.</td></tr>
                 ) : beneficios.map((item) => (
                   <tr key={item.id}>
                     <td className="px-4 py-3">
@@ -224,7 +224,7 @@ function Beneficios() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <button className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-teal-700" type="button" onClick={() => editBenefit(item)} title="Editar beneficio">
+                      <button className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-teal-700" type="button" onClick={() => editBenefit(item)} title="Editar anticipo o préstamo">
                         <Edit3 className="h-4 w-4" />
                       </button>
                     </td>

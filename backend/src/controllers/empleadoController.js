@@ -9,6 +9,7 @@ const { getBankProfileForTenant } = require('../services/bancoAebGenerator');
 const { s3Upload } = require('../config/s3');
 const { generarContrato } = require('../services/templateGenerator');
 const { getEmployeeHistory } = require('../services/employeeHistoryService');
+const { listTerminationCauses } = require('../config/terminationCauses');
 const logger = require('../utils/logger');
 const {
   commitEmployeeImport,
@@ -1177,17 +1178,59 @@ async function terminar(req, res) {
     const { causa, fecha_salida } = req.body;
     
     if (!causa) {
-      return res.status(400).json({ error: 'Causa de terminacion requerida' });
+      return res.status(400).json({
+        error: 'TERMINACION_CAUSAL_REQUERIDA',
+        message: 'Causa de terminacion requerida',
+        correlationId: req.correlationId,
+      });
     }
     
     // Calcular liquidacion
     const { calcularLiquidacion } = require('../services/liquidacionService');
-    const liquidacion = await calcularLiquidacion(id, tenantId, causa, { fechaSalida: fecha_salida });
+    const liquidacion = await calcularLiquidacion(id, tenantId, causa, {
+      fechaSalida: fecha_salida,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+    });
     
-    res.json({ success: true, liquidacion });
+    res.json({ success: true, liquidacion, correlationId: req.correlationId });
   } catch (err) {
-    console.error('[EMPLEADOS] Error:', err);
-    res.status(500).json({ error: err.message });
+    console.error('[EMPLEADOS] Error terminando relacion laboral', {
+      code: err.code || 'EMPLEADO_TERMINACION_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    res.status(err.statusCode || 500).json({
+      error: err.code || 'EMPLEADO_TERMINACION_ERROR',
+      message: err.message,
+      details: err.details || null,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function listarCausalesTerminacion(req, res) {
+  try {
+    res.json({
+      success: true,
+      causas: listTerminationCauses(),
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[EMPLEADOS] Error listando causales de terminacion', {
+      code: err.code || 'TERMINACION_CAUSALES_LIST_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    res.status(err.statusCode || 500).json({
+      error: err.code || 'TERMINACION_CAUSALES_LIST_ERROR',
+      message: err.message,
+      correlationId: req.correlationId,
+    });
   }
 }
 
@@ -1198,6 +1241,7 @@ module.exports = {
   crear,
   actualizar,
   terminar,
+  listarCausalesTerminacion,
   previewImportacion,
   confirmarImportacion,
   listarLotesImportacion,

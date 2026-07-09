@@ -44,6 +44,19 @@ function hasBlocker(precheck, codes = []) {
   return (precheck?.blockers || []).some((blocker) => codes.includes(blocker.code));
 }
 
+function firstOvertimeParameters(resultado) {
+  return (resultado?.resultados || [])
+    .map((row) => row.detalleCalculo?.horasExtraParametros)
+    .find(Boolean) || null;
+}
+
+function percentLabel(value) {
+  return `${(Number(value || 0) * 100).toLocaleString('es-EC', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}%`;
+}
+
 function CerrarMes() {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -208,6 +221,7 @@ function CerrarMes() {
     'LEGAL_PARAMETERS_NOT_VALIDATED',
     'LEGAL_PARAMETERS_DIVERGENCE',
   ]);
+  const overtimeParameters = firstOvertimeParameters(resultado);
 
   const resolvePendingNovelties = (decision) => {
     if (decision === 'aprobar') {
@@ -474,6 +488,17 @@ function CerrarMes() {
 
         {resultado && (
           <div className="mt-5">
+            {overtimeParameters && (
+              <div className="mb-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
+                <p className="font-semibold text-slate-950">Formula visible de horas extra</p>
+                <p>
+                  Valor hora = sueldo / {Number(overtimeParameters.jornadaHorasMensuales || overtimeParameters.monthlyWorkHours || 0).toLocaleString('es-EC')} horas.
+                  HE 50% usa multiplicador {Number(overtimeParameters.supplementaryMultiplier || 0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({percentLabel(overtimeParameters.supplementarySurchargeRate)} de recargo).
+                  HE 100% usa multiplicador {Number(overtimeParameters.extraordinaryMultiplier || 0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({percentLabel(overtimeParameters.extraordinarySurchargeRate)} de recargo).
+                  Limite semanal: {Number(overtimeParameters.maxWeeklyOvertimeHours || 0).toLocaleString('es-EC')} horas.
+                </p>
+              </div>
+            )}
             <div className="grid gap-3 md:grid-cols-3">
               <div className="rounded-md bg-slate-50 p-4">
                 <p className="text-sm text-slate-600">Total empleados</p>

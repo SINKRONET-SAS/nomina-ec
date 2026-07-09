@@ -25,6 +25,7 @@ import { hasRoleAccess } from './utils/access';
 import Parametrizacion from './pages/Configuracion/Parametrizacion';
 import Comunicaciones from './pages/Configuracion/Comunicaciones';
 import Auditoria from './pages/Auditoria';
+import AyudaUsuario from './pages/AyudaUsuario';
 import Dashboard from './pages/Dashboard';
 import LineaBaseOperativa from './pages/Operacion/LineaBaseOperativa';
 import OperacionIntegral from './pages/Operacion/OperacionIntegral';
@@ -257,6 +258,11 @@ function App() {
               <Route path="privacidad" element={
                 <ProtectedRoute requiredRole={['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado']}>
                   <PrivacidadCuenta />
+                </ProtectedRoute>
+              } />
+              <Route path="ayuda" element={
+                <ProtectedRoute requiredRole={['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado']}>
+                  <AyudaUsuario />
                 </ProtectedRoute>
               } />
               <Route path="planes" element={

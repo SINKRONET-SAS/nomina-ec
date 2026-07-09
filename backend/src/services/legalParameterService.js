@@ -52,6 +52,8 @@ async function getLegalParametersForTenant(tenantId, year) {
       vacationDaysAfterFirstYear: 15,
       weeklyMaxHours: Number(row.jornada_maxima_semanal),
       maxWeeklyOvertimeHours: 12,
+      overtimeSupplementMultiplier: 1.5,
+      overtimeExtraordinaryMultiplier: 2,
       dailyMaxHours: 8,
     },
     incomeTax: row.tabla_impuesto_renta,
@@ -96,6 +98,8 @@ async function getVersionedLegalParametersForTenant(tenantId, year) {
         'jornada_horas_mensuales',
         'jornada_maxima_semanal',
         'horas_extra_limite_semanal',
+        'horas_extra_recargo_suplementaria',
+        'horas_extra_recargo_extraordinaria',
         'provision_vacaciones',
         'vacaciones_dias_anuales',
         'decimo_tercero',
@@ -147,6 +151,8 @@ function mergeVersionedParameters(baseParameters, versionedParameters) {
   const monthlyHours = versionedParameters.jornada_horas_mensuales?.value;
   const weeklyHours = versionedParameters.jornada_maxima_semanal?.value;
   const overtimeLimit = versionedParameters.horas_extra_limite_semanal?.value;
+  const overtimeSupplement = versionedParameters.horas_extra_recargo_suplementaria?.value;
+  const overtimeExtraordinary = versionedParameters.horas_extra_recargo_extraordinaria?.value;
   const vacationProvision = versionedParameters.provision_vacaciones?.value;
   const vacationDays = versionedParameters.vacaciones_dias_anuales?.value;
 
@@ -156,6 +162,8 @@ function mergeVersionedParameters(baseParameters, versionedParameters) {
   if (monthlyHours) payroll.monthlyWorkHours = Number(monthlyHours.amount ?? payroll.monthlyWorkHours);
   if (weeklyHours) payroll.weeklyMaxHours = Number(weeklyHours.amount ?? payroll.weeklyMaxHours);
   if (overtimeLimit) payroll.maxWeeklyOvertimeHours = Number(overtimeLimit.amount ?? payroll.maxWeeklyOvertimeHours);
+  if (overtimeSupplement) payroll.overtimeSupplementMultiplier = overtimeMultiplier(overtimeSupplement, payroll.overtimeSupplementMultiplier);
+  if (overtimeExtraordinary) payroll.overtimeExtraordinaryMultiplier = overtimeMultiplier(overtimeExtraordinary, payroll.overtimeExtraordinaryMultiplier);
   if (vacationProvision) payroll.vacationProvisionRate = Number(vacationProvision.amount ?? payroll.vacationProvisionRate);
   if (vacationDays) payroll.vacationDaysAfterFirstYear = Number(vacationDays.amount ?? payroll.vacationDaysAfterFirstYear);
 
@@ -204,6 +212,16 @@ function mergeVersionedParameters(baseParameters, versionedParameters) {
     },
     incomeTax,
   };
+}
+
+function overtimeMultiplier(value = {}, fallback) {
+  const direct = Number(value.multiplier ?? value.amount);
+  if (Number.isFinite(direct) && direct > 0) return direct;
+
+  const rate = Number(value.rate ?? value.surchargeRate);
+  if (Number.isFinite(rate) && rate >= 0) return 1 + rate;
+
+  return fallback;
 }
 
 function withLegalSourceMetadata(parameters, versionedParameters, legacyRow, year, tenantId) {

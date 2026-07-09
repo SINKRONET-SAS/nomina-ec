@@ -114,6 +114,24 @@ function assertWeeklyOvertimeLimit(weeklyOvertimeMinutes = {}, payrollParameters
   }
 }
 
+function resolveOvertimeParameters(payrollParameters = {}) {
+  const monthlyWorkHours = Number(payrollParameters.monthlyWorkHours ?? 240);
+  const maxWeeklyOvertimeHours = Number(payrollParameters.maxWeeklyOvertimeHours ?? 12);
+  const supplementaryMultiplier = Number(payrollParameters.overtimeSupplementMultiplier ?? 1.5);
+  const extraordinaryMultiplier = Number(payrollParameters.overtimeExtraordinaryMultiplier ?? 2);
+
+  return {
+    monthlyWorkHours,
+    maxWeeklyOvertimeHours,
+    supplementaryMultiplier,
+    extraordinaryMultiplier,
+    supplementarySurchargeRate: roundMoney(supplementaryMultiplier - 1),
+    extraordinarySurchargeRate: roundMoney(extraordinaryMultiplier - 1),
+    legalBasis: 'Codigo del Trabajo Art. 55',
+    formula: 'valorHora = sueldo / jornadaHorasMensuales; HE50 = horas * valorHora * multiplicadorSuplementario; HE100 = horas * valorHora * multiplicadorExtraordinario',
+  };
+}
+
 async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
   validarPeriodoNomina(anio, mes);
   logger.info({
@@ -235,6 +253,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     });
   }
   const payrollParameters = legalParameters.payroll;
+  const overtimeParameters = resolveOvertimeParameters(payrollParameters);
   assertEmployeeMeetsUnifiedBaseSalary(emp, payrollParameters, { anio, mes });
 
   const diasTrabajados = calcularDiasTrabajados(emp.fecha_ingreso, anio, mes);
@@ -248,6 +267,8 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     mes,
     valorHora,
     dailyMaxHours: payrollParameters.dailyMaxHours,
+    overtimeSupplementMultiplier: overtimeParameters.supplementaryMultiplier,
+    overtimeExtraordinaryMultiplier: overtimeParameters.extraordinaryMultiplier,
     dbClient: options.dbClient || null,
   });
   assertWeeklyOvertimeLimit(noveltyImpact.weeklyOvertimeMinutes, payrollParameters);
@@ -353,6 +374,11 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
       roundMoney(Number(minutes || 0) / 60),
     ])),
     horasExtraLimiteSemanal: Number(payrollParameters.maxWeeklyOvertimeHours ?? 12),
+    horasExtraParametros: {
+      ...overtimeParameters,
+      valorHora: roundMoney(valorHora),
+      jornadaHorasMensuales: getEmployeeMonthlyHours(emp, payrollParameters),
+    },
     bonosDesempeno,
     comisiones,
     descuentoFaltas,
@@ -767,6 +793,7 @@ module.exports = {
   normalizeBenefitModality,
   normalizeReserveFundMode,
   calcularValorHora,
+  resolveOvertimeParameters,
   getEmployeeMonthlyHours,
   calcularIR,
   resolveFourteenthSalaryRegion,

@@ -1,0 +1,57 @@
+{
+  "templateKey": "contrato_teletrabajo",
+  "version": "2026.07",
+  "sortOrder": 110,
+  "displayName": "Contrato de teletrabajo",
+  "description": "Modelo referencial para prestacion subordinada fuera de instalaciones del empleador.",
+  "documentTitle": "CONTRATO INDIVIDUAL DE TELETRABAJO",
+  "contractType": "teletrabajo",
+  "appliesTo": ["teletrabajo", "remoto", "hibrido"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": false,
+    "days": 0
+  },
+  "legalBasis": [
+    {
+      "label": "Regimen ecuatoriano de teletrabajo",
+      "note": "validar normativa vigente sobre desconexion, herramientas, seguridad, control y registro."
+    }
+  ],
+  "notices": [
+    "Definir lugar de prestacion, herramientas, conectividad, confidencialidad, seguridad y desconexion.",
+    "No usar teletrabajo para evadir jornada, pago de horas o obligaciones de seguridad y salud."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, y {{employee.fullName}}, con identificacion {{employee.idNumber}}."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- MODALIDAD DE TELETRABAJO",
+      "paragraphs": [
+        "EL TRABAJADOR prestara servicios en modalidad de teletrabajo para el cargo {{employee.position}}, con funciones, objetivos, canales de supervision y lugar autorizado documentados en el expediente."
+      ]
+    },
+    {
+      "title": "TERCERA.- JORNADA, DESCONEXION Y CONTROL",
+      "paragraphs": [
+        "La jornada aplicable es {{employee.workShift}}. EL EMPLEADOR respetara descansos y desconexion, y EL TRABAJADOR registrara asistencia, novedades y entregables por los medios autorizados."
+      ]
+    },
+    {
+      "title": "CUARTA.- HERRAMIENTAS, DATOS Y SEGURIDAD",
+      "paragraphs": [
+        "Las herramientas, accesos, equipos, politicas de ciberseguridad, confidencialidad y proteccion de datos personales constaran en anexos o politicas internas entregadas al trabajador."
+      ]
+    },
+    {
+      "title": "QUINTA.- REMUNERACION Y REGISTRO",
+      "paragraphs": [
+        "La remuneracion pactada es USD {{employee.salaryAmount}} ({{employee.salaryWords}}), con beneficios y aportes aplicables. El contrato debe registrarse cuando corresponda."
+      ]
+    }
+  ]
+}

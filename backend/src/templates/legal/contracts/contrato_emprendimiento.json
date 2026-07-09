@@ -1,0 +1,57 @@
+{
+  "templateKey": "contrato_emprendimiento",
+  "version": "2026.07",
+  "sortOrder": 140,
+  "displayName": "Contrato de emprendimiento",
+  "description": "Modelo referencial para emprendimientos que cumplen requisitos de modalidad especial.",
+  "documentTitle": "CONTRATO INDIVIDUAL DE TRABAJO PARA EMPRENDIMIENTO",
+  "contractType": "emprendimiento",
+  "appliesTo": ["emprendimiento", "startup", "negocio nuevo"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": false,
+    "days": 0
+  },
+  "legalBasis": [
+    {
+      "label": "Modalidad especial para emprendimientos",
+      "note": "validar requisitos, vigencia, registro del emprendimiento, plazo y condiciones aplicables."
+    }
+  ],
+  "notices": [
+    "Usar solo si el empleador cumple requisitos de emprendimiento aplicables.",
+    "Anexar soporte de registro o habilitacion correspondiente."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, y {{employee.fullName}}, con identificacion {{employee.idNumber}}."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- MODALIDAD Y SOPORTE",
+      "paragraphs": [
+        "EL EMPLEADOR declara que la contratacion se vincula a un emprendimiento que cumple requisitos legales documentados en el expediente, para el cargo {{employee.position}}."
+      ]
+    },
+    {
+      "title": "TERCERA.- FUNCIONES Y JORNADA",
+      "paragraphs": [
+        "EL TRABAJADOR cumplira funciones propias del cargo, con jornada {{employee.workShift}} y controles de asistencia, novedades y entregables registrados en SKNOMINA."
+      ]
+    },
+    {
+      "title": "CUARTA.- REMUNERACION",
+      "paragraphs": [
+        "La remuneracion pactada es USD {{employee.salaryAmount}} ({{employee.salaryWords}}), con beneficios, aportes y obligaciones laborales aplicables."
+      ]
+    },
+    {
+      "title": "QUINTA.- REGISTRO Y VIGENCIA",
+      "paragraphs": [
+        "La modalidad, plazo y registro deben validarse antes de firma. SKNOMINA conserva evidencia y no reemplaza registro externo."
+      ]
+    }
+  ]
+}

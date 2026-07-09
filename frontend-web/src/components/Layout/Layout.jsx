@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Mail, Settings2, LogOut, Menu, ShieldCheck, X, Home, Route } from 'lucide-react';
+import { LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Mail, Settings2, LogOut, Menu, ShieldCheck, X, Home, Route, HelpCircle } from 'lucide-react';
 import BrandLogo from '../Brand/BrandLogo';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { hasRoleAccess, sessionRoleLabel } from '../../utils/access';
@@ -76,9 +76,9 @@ function Layout() {
       icon: DollarSign,
       roles: ['owner', 'admin_rrhh'],
       submenu: [
-        { path: '/dashboard/nomina/periodos', label: 'Periodos' },
+        { path: '/dashboard/nomina/periodos', label: 'Períodos' },
         { path: '/dashboard/nomina/cerrar', label: 'Cerrar Mes' },
-        { path: '/dashboard/nomina/beneficios', label: 'Beneficios y descuentos' },
+        { path: '/dashboard/nomina/beneficios', label: 'Descuento Anticipos' },
         { path: '/dashboard/nomina/roles', label: 'Roles de Pago' },
         { path: '/dashboard/nomina/pagos-bancarios', label: 'Pagos bancarios' },
         { path: '/dashboard/nomina/reportes', label: 'Reportes Entidades' },
@@ -96,6 +96,7 @@ function Layout() {
     },
     { path: '/dashboard/configuracion/parametrizacion', icon: Settings2, label: 'Parametrización', roles: ['superadmin', 'owner', 'admin_rrhh'] },
     { path: '/dashboard/configuracion/comunicaciones', icon: Mail, label: 'Comunicaciones', roles: ['superadmin', 'owner', 'admin_rrhh'] },
+    { path: '/dashboard/ayuda', icon: HelpCircle, label: 'Ayuda', roles: ['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado'] },
     { path: '/dashboard/facturacion', icon: CreditCard, label: 'Facturador interno', roles: ['superadmin'] },
     { path: '/dashboard/auditoria', icon: ShieldCheck, label: 'Auditoría', roles: ['superadmin', 'owner'] },
     { path: '/dashboard/privacidad', icon: ShieldCheck, label: 'Privacidad', roles: ['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado'] },

@@ -6,6 +6,7 @@ const { ensureNoveltyTypeAllowed, normalizeNoveltyCode } = require('./payrollNov
 
 const VALID_SCOPE_TYPES = new Set(['company', 'department', 'position', 'employee']);
 const NOVELTY_WRITABLE_PERIOD_STATUSES = new Set(['open', 'novelties_loaded', 'reopened', 'calculation_failed']);
+const PERIOD_DATE_EDIT_BLOCKED_STATUSES = new Set(['calculated', 'closed']);
 
 function validatePeriod(anio, mes) {
   const year = Number(anio);
@@ -26,6 +27,25 @@ function periodStartDate(anio, mes) {
 function periodEndDate(anio, mes) {
   const date = new Date(Date.UTC(Number(anio), Number(mes), 0));
   return date.toISOString().slice(0, 10);
+}
+
+function normalizePeriodBoundaryDate(value, expectedYear, label) {
+  const date = String(value || '').trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw new AppError(`${label} debe tener formato YYYY-MM-DD.`, {
+      code: 'PAYROLL_PERIOD_DATE_INVALID',
+      statusCode: 422,
+      details: { field: label },
+    });
+  }
+  if (Number(date.slice(0, 4)) !== Number(expectedYear)) {
+    throw new AppError('Las fechas del periodo deben pertenecer al año seleccionado.', {
+      code: 'PAYROLL_PERIOD_DATE_YEAR_MISMATCH',
+      statusCode: 422,
+      details: { expectedYear, value: date },
+    });
+  }
+  return date;
 }
 
 function normalizeDate(anio, mes, value) {
@@ -199,8 +219,8 @@ async function generateAnnualPayrollPeriods({ tenantId, userId, correlationId, i
       INSERT INTO payroll_periods (tenant_id, anio, mes, fecha_desde, fecha_hasta, status, opened_by)
       VALUES ($1,$2,$3,$4,$5,'planned',$6)
       ON CONFLICT (tenant_id, anio, mes) DO UPDATE SET
-        fecha_desde = EXCLUDED.fecha_desde,
-        fecha_hasta = EXCLUDED.fecha_hasta,
+        fecha_desde = CASE WHEN payroll_periods.status IN ('calculated', 'closed') THEN payroll_periods.fecha_desde ELSE EXCLUDED.fecha_desde END,
+        fecha_hasta = CASE WHEN payroll_periods.status IN ('calculated', 'closed') THEN payroll_periods.fecha_hasta ELSE EXCLUDED.fecha_hasta END,
         updated_at = NOW()
       RETURNING *
     `, [tenantId, year, month, periodStartDate(year, month), periodEndDate(year, month), userId || null]);
@@ -232,6 +252,8 @@ async function listAnnualPayrollPeriods({ tenantId, anio }) {
 
   const result = await db.query(`
     SELECT pp.*,
+      TO_CHAR(pp.fecha_desde, 'YYYY-MM-DD') AS fecha_desde,
+      TO_CHAR(pp.fecha_hasta, 'YYYY-MM-DD') AS fecha_hasta,
       COALESCE(payroll.total, 0)::int AS payroll_total,
       COALESCE(payroll.borrador, 0)::int AS payroll_borrador,
       COALESCE(payroll.cerrada, 0)::int AS payroll_cerrada,
@@ -258,6 +280,97 @@ async function listAnnualPayrollPeriods({ tenantId, anio }) {
   `, [tenantId, year]);
 
   return { anio: year, periods: result.rows };
+}
+
+async function updatePayrollPeriodDates({ tenantId, userId, correlationId, ipAddress, anio, mes, fechaDesde, fechaHasta }) {
+  const period = validatePeriod(anio, mes);
+  const from = normalizePeriodBoundaryDate(fechaDesde, period.anio, 'Fecha desde');
+  const to = normalizePeriodBoundaryDate(fechaHasta, period.anio, 'Fecha hasta');
+
+  if (from > to) {
+    throw new AppError('La fecha desde no puede ser posterior a la fecha hasta.', {
+      code: 'PAYROLL_PERIOD_DATE_RANGE_INVALID',
+      statusCode: 422,
+      details: { fechaDesde: from, fechaHasta: to },
+    });
+  }
+
+  const current = await db.query(`
+    SELECT pp.id, pp.status,
+      TO_CHAR(pp.fecha_desde, 'YYYY-MM-DD') AS fecha_desde,
+      TO_CHAR(pp.fecha_hasta, 'YYYY-MM-DD') AS fecha_hasta,
+      COALESCE(payroll.total, 0)::int AS payroll_total
+    FROM payroll_periods pp
+    LEFT JOIN LATERAL (
+      SELECT COUNT(*) AS total
+      FROM nominas n
+      WHERE n.tenant_id = pp.tenant_id AND n.anio = pp.anio AND n.mes = pp.mes
+    ) payroll ON true
+    WHERE pp.tenant_id = $1 AND pp.anio = $2 AND pp.mes = $3
+    LIMIT 1
+  `, [tenantId, period.anio, period.mes]);
+
+  if (current.rows.length === 0) {
+    throw new AppError('Genera el periodo antes de editar sus fechas.', {
+      code: 'PAYROLL_PERIOD_NOT_FOUND',
+      statusCode: 404,
+      details: { anio: period.anio, mes: period.mes },
+    });
+  }
+
+  const previous = current.rows[0];
+  if (PERIOD_DATE_EDIT_BLOCKED_STATUSES.has(previous.status) || Number(previous.payroll_total || 0) > 0) {
+    throw new AppError('No se pueden editar fechas de un periodo con nómina calculada, cerrada o roles existentes.', {
+      code: 'PAYROLL_PERIOD_DATE_EDIT_BLOCKED',
+      statusCode: 409,
+      details: {
+        status: previous.status,
+        payrollTotal: Number(previous.payroll_total || 0),
+      },
+    });
+  }
+
+  const result = await db.query(`
+    UPDATE payroll_periods
+    SET fecha_desde = $4::date,
+        fecha_hasta = $5::date,
+        summary = COALESCE(summary, '{}'::jsonb) || jsonb_build_object(
+          'dateEdit', jsonb_build_object(
+            'previousDesde', $6::text,
+            'previousHasta', $7::text,
+            'correlationId', $8::text,
+            'at', NOW()
+          )
+        ),
+        updated_at = NOW()
+    WHERE tenant_id = $1 AND anio = $2 AND mes = $3
+    RETURNING *,
+      TO_CHAR(fecha_desde, 'YYYY-MM-DD') AS fecha_desde,
+      TO_CHAR(fecha_hasta, 'YYYY-MM-DD') AS fecha_hasta
+  `, [
+    tenantId,
+    period.anio,
+    period.mes,
+    from,
+    to,
+    previous.fecha_desde,
+    previous.fecha_hasta,
+    correlationId || null,
+  ]);
+
+  await recordAudit({
+    tenantId,
+    userId,
+    correlationId,
+    action: 'nomina.periodo.update_dates',
+    entity: 'payroll_periods',
+    entityId: result.rows[0].id,
+    previousData: { fechaDesde: previous.fecha_desde, fechaHasta: previous.fecha_hasta },
+    newData: { anio: period.anio, mes: period.mes, fechaDesde: from, fechaHasta: to },
+    ipAddress,
+  });
+
+  return result.rows[0];
 }
 
 async function closeOperationalPayrollPeriod({ tenantId, userId, correlationId, ipAddress, anio, mes, motivo }) {
@@ -343,6 +456,113 @@ async function closeOperationalPayrollPeriod({ tenantId, userId, correlationId, 
   });
 
   return result.rows[0];
+}
+
+async function closeEmptyPastPayrollPeriods({ tenantId, userId, correlationId, ipAddress, anio, hastaMes, motivo }) {
+  const year = Number(anio);
+  const untilMonth = Number(hastaMes);
+  if (!Number.isInteger(year) || year < 2020 || year > 2100 || !Number.isInteger(untilMonth) || untilMonth < 1 || untilMonth > 12) {
+    throw new AppError('Indica año y mes límite válidos para cerrar períodos anteriores.', {
+      code: 'PAYROLL_EMPTY_PAST_PERIOD_RANGE_INVALID',
+      statusCode: 400,
+      details: { anio, hastaMes },
+    });
+  }
+
+  const reason = String(motivo || `Cierre de períodos anteriores vacíos ${year}`).trim();
+  if (reason.length < 10) {
+    throw new AppError('Indica un motivo claro para cerrar períodos anteriores vacíos.', {
+      code: 'PAYROLL_EMPTY_PAST_PERIOD_REASON_REQUIRED',
+      statusCode: 422,
+    });
+  }
+
+  const result = await db.query(`
+    SELECT pp.id, pp.anio, pp.mes, pp.status,
+      COALESCE(payroll.total, 0)::int AS payroll_total,
+      COALESCE(novelties.total, 0)::int AS novedades_total
+    FROM payroll_periods pp
+    LEFT JOIN LATERAL (
+      SELECT COUNT(*) AS total
+      FROM nominas n
+      WHERE n.tenant_id = pp.tenant_id AND n.anio = pp.anio AND n.mes = pp.mes
+    ) payroll ON true
+    LEFT JOIN LATERAL (
+      SELECT COUNT(*) AS total
+      FROM novedades_asistencia na
+      WHERE na.tenant_id = pp.tenant_id
+        AND na.fecha >= pp.fecha_desde
+        AND na.fecha <= pp.fecha_hasta
+    ) novelties ON true
+    WHERE pp.tenant_id = $1
+      AND pp.anio = $2
+      AND pp.mes BETWEEN 1 AND $3
+    ORDER BY pp.mes ASC
+  `, [tenantId, year, untilMonth]);
+
+  const eligible = [];
+  const skipped = [];
+  for (const period of result.rows) {
+    const payrollTotal = Number(period.payroll_total || 0);
+    const noveltiesTotal = Number(period.novedades_total || 0);
+    if (PERIOD_DATE_EDIT_BLOCKED_STATUSES.has(period.status) || payrollTotal > 0 || noveltiesTotal > 0) {
+      skipped.push({
+        id: period.id,
+        anio: Number(period.anio),
+        mes: Number(period.mes),
+        status: period.status,
+        payrollTotal,
+        noveltiesTotal,
+      });
+    } else {
+      eligible.push(period);
+    }
+  }
+
+  let closed = [];
+  if (eligible.length > 0) {
+    const updateResult = await db.query(`
+      UPDATE payroll_periods
+      SET status = 'closed',
+          closed_at = NOW(),
+          summary = COALESCE(summary, '{}'::jsonb) || jsonb_build_object(
+            'emptyPastClose', jsonb_build_object(
+              'motivo', $3::text,
+              'correlationId', $4::text,
+              'at', NOW()
+            )
+          ),
+          updated_at = NOW()
+      WHERE tenant_id = $1 AND id = ANY($2::uuid[])
+      RETURNING *
+    `, [tenantId, eligible.map((period) => period.id), reason, correlationId || null]);
+    closed = updateResult.rows;
+  }
+
+  await recordAudit({
+    tenantId,
+    userId,
+    correlationId,
+    action: 'nomina.periodos.close_empty_past',
+    entity: 'payroll_periods',
+    entityId: null,
+    newData: {
+      anio: year,
+      hastaMes: untilMonth,
+      totalClosed: closed.length,
+      skipped,
+      motivo: reason,
+    },
+    ipAddress,
+  });
+
+  return {
+    anio: year,
+    hastaMes: untilMonth,
+    totalClosed: closed.length,
+    closed,
+    skipped,
+  };
 }
 
 async function getPayrollPeriodState({ tenantId, anio, mes }) {
@@ -653,6 +873,7 @@ function normalizeNoveltyMinutes(payload = {}) {
 
 module.exports = {
   buildEmployeeQuery,
+  closeEmptyPastPayrollPeriods,
   closeOperationalPayrollPeriod,
   createNoveltyBatch,
   deleteNoveltyBatch,
@@ -669,5 +890,6 @@ module.exports = {
   periodEndDate,
   periodStartDate,
   todayInEcuador,
+  updatePayrollPeriodDates,
   validatePeriod,
 };

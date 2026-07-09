@@ -1,0 +1,57 @@
+{
+  "templateKey": "contrato_turistico_cultural_creativo",
+  "version": "2026.07",
+  "sortOrder": 150,
+  "displayName": "Contrato turístico, cultural o creativo",
+  "description": "Modelo referencial para modalidad especial sectorial.",
+  "documentTitle": "CONTRATO INDIVIDUAL DE TRABAJO TURISTICO, CULTURAL O CREATIVO",
+  "contractType": "turistico_cultural_creativo",
+  "appliesTo": ["turistico", "cultural", "creativo", "sectorial"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": false,
+    "days": 0
+  },
+  "legalBasis": [
+    {
+      "label": "Modalidad especial sectorial vigente",
+      "note": "validar actividad, sector, jornada, vigencia, registro y condiciones especiales aplicables."
+    }
+  ],
+  "notices": [
+    "Usar solo para actividades sectoriales reales y documentadas.",
+    "Validar normativa vigente y registro SUT/IESS antes de firma."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, y {{employee.fullName}}, con identificacion {{employee.idNumber}}."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- ACTIVIDAD SECTORIAL",
+      "paragraphs": [
+        "EL TRABAJADOR prestara servicios como {{employee.position}} en una actividad turistica, cultural o creativa documentada por EL EMPLEADOR y vinculada al giro autorizado."
+      ]
+    },
+    {
+      "title": "TERCERA.- JORNADA Y LUGAR",
+      "paragraphs": [
+        "La jornada aplicable es {{employee.workShift}}. La prestacion podra realizarse en {{company.city}} o sitios autorizados, con evidencias operativas cuando corresponda."
+      ]
+    },
+    {
+      "title": "CUARTA.- REMUNERACION Y BENEFICIOS",
+      "paragraphs": [
+        "La remuneracion pactada es USD {{employee.salaryAmount}} ({{employee.salaryWords}}), sin perjuicio de recargos, beneficios y aportes aplicables por jornada o sector."
+      ]
+    },
+    {
+      "title": "QUINTA.- REGISTRO",
+      "paragraphs": [
+        "La modalidad debe validarse y registrarse cuando corresponda. SKNOMINA conserva contrato, anexos y documentos laborales asociados."
+      ]
+    }
+  ]
+}

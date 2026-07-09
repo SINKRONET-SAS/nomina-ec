@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
@@ -12,6 +13,16 @@ function TerminarEmpleado() {
   const [cargando, setCargando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState('');
+
+  const { data: causas = [], isLoading: loadingCausas } = useQuery({
+    queryKey: ['terminacion-causas'],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/empleados/terminacion/causas');
+      return response.data.causas || [];
+    },
+  });
+
+  const selectedCause = causas.find((item) => item.code === causa);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -38,6 +49,8 @@ function TerminarEmpleado() {
             <p><strong>Empleado:</strong> {resultado.nombre}</p>
             <p><strong>Cédula:</strong> {resultado.cedula}</p>
             <p><strong>Años de servicio:</strong> {resultado.aniosServicio}</p>
+            <p><strong>Causa:</strong> {resultado.causaTerminacion?.label || resultado.liquidacion?.detalle?.causaTerminacionLabel}</p>
+            <p><strong>Base legal:</strong> {resultado.causaTerminacion?.legalBasis || resultado.liquidacion?.detalle?.baseLegalTerminacion}</p>
             <hr className="my-4" />
             <div className="grid grid-cols-2 gap-2">
               <p>Sueldo pendiente:</p><p className="text-right">${resultado.liquidacion.sueldoPendiente}</p>
@@ -98,11 +111,22 @@ function TerminarEmpleado() {
               required
             >
               <option value="">Seleccionar...</option>
-              <option value="renuncia_voluntaria">Renuncia voluntaria</option>
-              <option value="despido_intempestivo">Despido intempestivo</option>
-              <option value="desahucio">Desahucio (Art. 186)</option>
-              <option value="mutuo_acuerdo">Mutuo acuerdo</option>
+              {loadingCausas ? (
+                <option value="" disabled>Cargando causales...</option>
+              ) : causas.map((item) => (
+                <option key={item.code} value={item.code} disabled={!item.canGenerateSettlement}>
+                  {item.label}{item.canGenerateSettlement ? '' : ' - requiere revision previa'}
+                </option>
+              ))}
             </select>
+            {selectedCause && (
+              <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-700">
+                <p className="font-semibold text-slate-900">{selectedCause.legalBasis}</p>
+                {selectedCause.requiresProbationPeriod && (
+                  <p>Solo aplica dentro de los primeros {selectedCause.maxProbationDays || 90} dias de servicio.</p>
+                )}
+              </div>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Fecha de salida *</label>

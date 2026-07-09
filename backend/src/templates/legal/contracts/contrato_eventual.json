@@ -1,0 +1,59 @@
+{
+  "templateKey": "contrato_eventual",
+  "version": "2026.07",
+  "sortOrder": 40,
+  "displayName": "Contrato eventual",
+  "description": "Modelo referencial para exigencias circunstanciales, reemplazos o mayor demanda temporal.",
+  "documentTitle": "CONTRATO INDIVIDUAL DE TRABAJO EVENTUAL",
+  "contractType": "eventual",
+  "appliesTo": ["eventual", "reemplazo", "demanda temporal"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": false,
+    "days": 0
+  },
+  "legalBasis": [
+    {
+      "label": "Codigo del Trabajo de Ecuador, Art. 17",
+      "note": "los contratos eventuales atienden exigencias circunstanciales, reemplazos o mayor demanda, con limites y recargos cuando correspondan."
+    }
+  ],
+  "notices": [
+    "Usar solo con causa real, plazo, soporte documental y registro correcto.",
+    "Validar recargo, limites de duracion y prohibicion de uso recurrente como indefinido encubierto."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, y {{employee.fullName}}, con identificacion {{employee.idNumber}}."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- CAUSA EVENTUAL",
+      "paragraphs": [
+        "EL EMPLEADOR contrata a EL TRABAJADOR para atender una necesidad eventual debidamente justificada, asociada al cargo {{employee.position}} y a la unidad {{employee.organizationUnit}}.",
+        "La causa, periodo estimado, area afectada y soporte operativo deben constar en el expediente antes de firma y registro."
+      ]
+    },
+    {
+      "title": "TERCERA.- PLAZO Y TERMINACION",
+      "paragraphs": [
+        "La relacion tendra la duracion documentada en el expediente y terminara al cumplirse la causa eventual, sin perjuicio de los derechos adquiridos y de las obligaciones de liquidacion que correspondan.",
+        "Si la necesidad se vuelve permanente, EL EMPLEADOR debera evaluar una modalidad indefinida u otra legalmente aplicable."
+      ]
+    },
+    {
+      "title": "CUARTA.- JORNADA Y REMUNERACION",
+      "paragraphs": [
+        "La jornada aplicable es {{employee.workShift}}. La remuneracion mensual pactada es USD {{employee.salaryAmount}} ({{employee.salaryWords}}), con beneficios y recargos que correspondan segun normativa vigente."
+      ]
+    },
+    {
+      "title": "QUINTA.- REGISTRO Y EVIDENCIA",
+      "paragraphs": [
+        "El contrato debe revisarse, firmarse y registrarse cuando corresponda. SKNOMINA conserva la evidencia generada y marca el estado externo como {{contract.sutRegistrationStatus}} hasta confirmacion documental."
+      ]
+    }
+  ]
+}

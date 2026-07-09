@@ -179,6 +179,8 @@ function buildPayrollRoleDocDefinition(row) {
       margin: [0, 0, 0, 10],
     },
   ];
+  const overtimeParams = detail.horasExtraParametros || {};
+  const hasOvertimeFormula = Boolean(overtimeParams.supplementaryMultiplier || overtimeParams.extraordinaryMultiplier);
 
   return {
     pageSize: 'A4',
@@ -214,6 +216,14 @@ function buildPayrollRoleDocDefinition(row) {
         margin: [0, 0, 0, 14],
       },
       ...table('Ingresos', ingresos),
+      ...(hasOvertimeFormula ? [
+        { text: 'Formula horas extra', style: 'section' },
+        {
+          text: `Valor hora = sueldo / ${overtimeParams.jornadaHorasMensuales || overtimeParams.monthlyWorkHours || 'jornada mensual'} horas. HE50 = horas x valor hora x ${overtimeParams.supplementaryMultiplier || 1.5}. HE100 = horas x valor hora x ${overtimeParams.extraordinaryMultiplier || 2}. Limite semanal: ${overtimeParams.maxWeeklyOvertimeHours || detail.horasExtraLimiteSemanal || 12} horas. Base: ${overtimeParams.legalBasis || 'Codigo del Trabajo Art. 55'}.`,
+          style: 'notice',
+          margin: [0, 0, 0, 10],
+        },
+      ] : []),
       ...table('Deducciones', deducciones),
       ...table('Provisiones y costo empleador', provisiones),
       {

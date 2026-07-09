@@ -6,8 +6,10 @@ const AppError = require('../utils/AppError');
 const { roundMoney, toMoneyString } = require('../utils/money');
 const { generarActaFiniquito } = require('./templateGenerator');
 const { getLegalParametersForTenant } = require('./legalParameterService');
+const { assertTerminationCause } = require('../config/terminationCauses');
 
 async function calcularLiquidacion(empleadoId, tenantId, causaTerminacion, options = {}) {
+  const terminationCause = assertTerminationCause(causaTerminacion);
   const empResult = await db.query(`
     SELECT * FROM empleados WHERE id = $1 AND tenant_id = $2
   `, [empleadoId, tenantId]);
@@ -24,10 +26,23 @@ async function calcularLiquidacion(empleadoId, tenantId, causaTerminacion, optio
   const tenant = tenantResult.rows[0];
   const fechaIngreso = new Date(emp.fecha_ingreso);
   const fechaSalida = options.fechaSalida ? new Date(options.fechaSalida) : new Date();
+  if (Number.isNaN(fechaIngreso.getTime()) || Number.isNaN(fechaSalida.getTime())) {
+    throw new AppError('Las fechas de ingreso y salida son requeridas para calcular el finiquito.', {
+      code: 'FINIQUITO_FECHAS_INVALIDAS',
+      statusCode: 422,
+    });
+  }
+  if (fechaSalida < fechaIngreso) {
+    throw new AppError('La fecha de salida no puede ser anterior a la fecha de ingreso.', {
+      code: 'FINIQUITO_FECHA_SALIDA_INVALIDA',
+      statusCode: 422,
+    });
+  }
   const anio = fechaSalida.getFullYear();
   const legalParameters = await getLegalParametersForTenant(tenantId, anio);
   const sueldo = Number.parseFloat(emp.sueldo_bruto_mensual);
   const diasServicio = Math.max(0, Math.floor((fechaSalida - fechaIngreso) / 86400000) + 1);
+  validateTerminationCauseForEmployee(terminationCause, { diasServicio });
   const aniosServicio = diasServicio / 365.25;
   const sueldoDiario = sueldo / 30;
   const diasPendientesMes = calcularDiasPendientesMes(fechaSalida);
@@ -39,8 +54,8 @@ async function calcularLiquidacion(empleadoId, tenantId, causaTerminacion, optio
   const vacationDays = calcularDiasVacacionesPendientes(fechaIngreso, fechaSalida, legalParameters.payroll);
   const vacaciones = roundMoney(sueldoDiario * vacationDays.totalDays);
   const fondoReserva = calcularFondoReservaLiquidacion(fechaIngreso, fechaSalida, sueldo, legalParameters.payroll);
-  const indemnizacion = calcularIndemnizacionDespidoIntempestivo(sueldo, aniosServicio, causaTerminacion);
-  const desahucio = calcularDesahucio(sueldo, aniosServicio, causaTerminacion);
+  const indemnizacion = calcularIndemnizacionDespidoIntempestivo(sueldo, aniosServicio, terminationCause);
+  const desahucio = calcularDesahucio(sueldo, aniosServicio, terminationCause);
 
   const equiposPendientes = await verificarDevolucionEquipos(empleadoId, tenantId);
   if (equiposPendientes > 0) {
@@ -66,6 +81,9 @@ async function calcularLiquidacion(empleadoId, tenantId, causaTerminacion, optio
       diasDecimoTercero,
       diasDecimoCuarto,
       fechaSalida: fechaSalida.toISOString().slice(0, 10),
+      causaTerminacion: terminationCause.code,
+      causaTerminacionLabel: terminationCause.label,
+      baseLegalTerminacion: terminationCause.legalBasis,
       indemnizacionMaxMeses: 25,
       vacacionesDiasBase: vacationDays.baseDays,
       vacacionesDiasAdicionales: vacationDays.additionalDays,
@@ -79,7 +97,10 @@ async function calcularLiquidacion(empleadoId, tenantId, causaTerminacion, optio
     WHERE id = $1 AND tenant_id = $2
   `, [empleadoId, tenantId, fechaSalida.toISOString().slice(0, 10)]);
 
-  const actaUrl = await generarActaFiniquito(emp, tenant, causaTerminacion, liquidacion);
+  const acta = await generarActaFiniquito(emp, tenant, terminationCause, liquidacion, {
+    correlationId: options.correlationId || null,
+    userId: options.userId || null,
+  });
 
   return {
     empleadoId,
@@ -87,7 +108,9 @@ async function calcularLiquidacion(empleadoId, tenantId, causaTerminacion, optio
     cedula: emp.cedula,
     aniosServicio: aniosServicio.toFixed(2),
     liquidacion,
-    actaUrl,
+    causaTerminacion: terminationCause,
+    actaUrl: acta?.url || acta,
+    acta,
   };
 }
 
@@ -126,19 +149,42 @@ function calcularDiasDecimoTercero(fechaIngreso, fechaSalida) {
 }
 
 function calcularIndemnizacionDespidoIntempestivo(sueldo, aniosServicio, causaTerminacion) {
-  if (causaTerminacion !== 'despido_intempestivo') return 0;
+  const cause = typeof causaTerminacion === 'object'
+    ? causaTerminacion
+    : { code: causaTerminacion, paysIntempestiveDismissal: causaTerminacion === 'despido_intempestivo' };
+  if (!cause.paysIntempestiveDismissal) return 0;
 
-  const completedYears = Math.floor(Math.max(0, aniosServicio));
-  const months = completedYears <= 3
+  const legalYears = Math.max(1, Math.ceil(Math.max(0, aniosServicio)));
+  const months = legalYears <= 3
     ? 3
-    : Math.min(25, 3 + (completedYears - 3));
+    : Math.min(25, legalYears);
 
   return roundMoney(sueldo * months);
 }
 
 function calcularDesahucio(sueldo, aniosServicio, causaTerminacion) {
-  if (!['desahucio', 'renuncia_voluntaria'].includes(causaTerminacion)) return 0;
+  const cause = typeof causaTerminacion === 'object'
+    ? causaTerminacion
+    : { paysDesahucioBonus: ['desahucio', 'renuncia_voluntaria', 'mutuo_acuerdo', 'despido_intempestivo'].includes(causaTerminacion) };
+  if (!cause.paysDesahucioBonus) return 0;
   return roundMoney(sueldo * 0.25 * Math.floor(Math.max(0, aniosServicio)));
+}
+
+function validateTerminationCauseForEmployee(cause, { diasServicio }) {
+  if (!cause.requiresProbationPeriod) return;
+
+  const maxDays = Number(cause.maxProbationDays || 90);
+  if (diasServicio > maxDays) {
+    throw new AppError(`La causal de periodo de prueba solo aplica dentro de los primeros ${maxDays} dias de servicio.`, {
+      code: 'TERMINACION_PERIODO_PRUEBA_VENCIDO',
+      statusCode: 422,
+      details: {
+        diasServicio,
+        maxDays,
+        legalBasis: cause.legalBasis,
+      },
+    });
+  }
 }
 
 function calcularFondoReservaLiquidacion(fechaIngreso, fechaSalida, sueldo, payrollParameters = {}) {
@@ -178,5 +224,6 @@ module.exports = {
   calcularDiasVacacionesPendientes,
   calcularIndemnizacionDespidoIntempestivo,
   calcularDesahucio,
+  validateTerminationCauseForEmployee,
   calcularFondoReservaLiquidacion,
 };

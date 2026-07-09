@@ -146,8 +146,23 @@ describe('AISK26-01: cierre brechas RBAC', () => {
   test('expone administracion anual de periodos antes de rutas genericas', () => {
     expect(source).toContain("app.get('/api/nomina/periodos/:anio', requireRole('owner', 'admin_rrhh'), nominaController.listarPeriodosAnuales)");
     expect(source).toContain("app.post('/api/nomina/periodos/generar-anual', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.generarPeriodosAnuales)");
+    expect(source).toContain("app.post('/api/nomina/periodos/cerrar-anteriores-vacios', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.cerrarPeriodosAnterioresVacios)");
+    expect(source).toContain("app.put('/api/nomina/periodo/:anio/:mes/fechas', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.actualizarFechasPeriodo)");
     expect(source).toContain("app.post('/api/nomina/periodo/cerrar-operativo', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.cerrarPeriodoOperativo)");
-    expect(source.indexOf("app.get('/api/nomina/periodos/:anio'")).toBeLessThan(source.indexOf("app.get('/api/nomina/:anio/:mes'"));
+    expect(source.indexOf("app.get('/api/nomina/periodos/:anio'")).toBeLessThan(
+      source.indexOf("app.get('/api/nomina/:anio/:mes'"),
+    );
+  });
+
+  test('parametros legales obligatorios quedan restringidos a owner o superadmin', () => {
+    expect(source).toContain("app.post('/api/configuracion/parametros-legales/obligatorios', requireRole('superadmin', 'owner'), requireFreshUser, configurationController.loadMandatoryLegalParameters)");
+  });
+
+  test('expone catalogo de tipos de contrato Ecuador antes de generar contratos', () => {
+    expect(source).toContain("app.get('/api/documentos/contrato/tipos-ecuador', requireRole('owner', 'admin_rrhh'), documentoLegalController.listarTiposContratoEcuador)");
+    expect(source.indexOf("app.get('/api/documentos/contrato/tipos-ecuador'")).toBeLessThan(
+      source.indexOf("app.post('/api/documentos/contrato'"),
+    );
   });
 
   test('GET /api/documentos requiere rol owner/admin_rrhh', () => {
@@ -159,6 +174,12 @@ describe('AISK26-01: cierre brechas RBAC', () => {
   test('GET /api/documentos/:id/download requiere rol owner/admin_rrhh', () => {
     expect(source).toContain(
       "app.get('/api/documentos/:id/download', requireRole('owner', 'admin_rrhh'), documentoLegalController.descargar)"
+    );
+  });
+
+  test('GET /api/empleados/terminacion/causas requiere rol owner/admin_rrhh', () => {
+    expect(source).toContain(
+      "app.get('/api/empleados/terminacion/causas', requireRole('owner', 'admin_rrhh'), empleadoController.listarCausalesTerminacion)"
     );
   });
 
@@ -179,6 +200,7 @@ describe('AISK26-01: cierre brechas RBAC', () => {
     expect(source).not.toContain("app.get('/api/nomina/:anio/:mes', nominaController.listarPorPeriodo)");
     expect(source).not.toContain("app.get('/api/documentos', documentoLegalController.listar)");
     expect(source).not.toContain("app.get('/api/documentos/:id/download', documentoLegalController.descargar)");
+    expect(source).not.toContain("app.get('/api/empleados/terminacion/causas', empleadoController.listarCausalesTerminacion)");
     expect(source).not.toContain("app.get('/api/reportes/asistencia/:anio/:mes', reporteController.reporteAsistencia)");
   });
 });

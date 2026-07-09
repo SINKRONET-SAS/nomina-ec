@@ -9,6 +9,7 @@ const {
   assertWeeklyOvertimeLimit,
   assertEmployeeMeetsUnifiedBaseSalary,
   normalizeIessRelationType,
+  resolveOvertimeParameters,
   resolveFourteenthSalaryPeriod,
   resolveFourteenthSalaryRegion,
   resolveIessApplicability,
@@ -177,6 +178,23 @@ describe('calculoNominaService', () => {
     expect(() => assertWeeklyOvertimeLimit({
       '2026-06-22': 720,
     }, { maxWeeklyOvertimeHours: 12 })).not.toThrow();
+  });
+
+  test('resuelve parametros visibles de horas extra', () => {
+    expect(resolveOvertimeParameters({
+      monthlyWorkHours: 200,
+      maxWeeklyOvertimeHours: 10,
+      overtimeSupplementMultiplier: 1.75,
+      overtimeExtraordinaryMultiplier: 2.25,
+    })).toMatchObject({
+      monthlyWorkHours: 200,
+      maxWeeklyOvertimeHours: 10,
+      supplementaryMultiplier: 1.75,
+      extraordinaryMultiplier: 2.25,
+      supplementarySurchargeRate: 0.75,
+      extraordinarySurchargeRate: 1.25,
+      legalBasis: 'Codigo del Trabajo Art. 55',
+    });
   });
 
   test('expone periodos legales de decimos en el detalle', () => {

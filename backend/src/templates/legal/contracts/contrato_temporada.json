@@ -1,0 +1,58 @@
+{
+  "templateKey": "contrato_temporada",
+  "version": "2026.07",
+  "sortOrder": 60,
+  "displayName": "Contrato de temporada",
+  "description": "Modelo referencial para trabajos ciclicos o periodicos con derecho de llamado en cada temporada.",
+  "documentTitle": "CONTRATO INDIVIDUAL DE TRABAJO DE TEMPORADA",
+  "contractType": "temporada",
+  "appliesTo": ["temporada", "ciclico", "periodico"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": false,
+    "days": 0
+  },
+  "legalBasis": [
+    {
+      "label": "Codigo del Trabajo de Ecuador, Art. 17",
+      "note": "los contratos de temporada atienden trabajos ciclicos o periodicos por la naturaleza discontinua de las labores."
+    }
+  ],
+  "notices": [
+    "Definir temporada, actividad, fecha estimada de inicio y cierre, y derecho de llamado.",
+    "No usar para evitar estabilidad cuando la necesidad sea permanente y continua."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, y {{employee.fullName}}, con identificacion {{employee.idNumber}}."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- TEMPORADA Y ACTIVIDAD",
+      "paragraphs": [
+        "EL TRABAJADOR prestara servicios como {{employee.position}} durante la temporada documentada por EL EMPLEADOR, asociada a una actividad ciclica o periodica de la empresa.",
+        "La temporada, calendario operativo, area responsable y criterios de llamado deben quedar anexados al expediente."
+      ]
+    },
+    {
+      "title": "TERCERA.- LLAMADO Y CONTINUIDAD",
+      "paragraphs": [
+        "Concluida la temporada, la relacion queda sujeta a las reglas legales aplicables para llamados posteriores. La falta de llamado debera justificarse y documentarse conforme corresponda."
+      ]
+    },
+    {
+      "title": "CUARTA.- JORNADA Y REMUNERACION",
+      "paragraphs": [
+        "La jornada aplicable es {{employee.workShift}}. La remuneracion pactada es USD {{employee.salaryAmount}} ({{employee.salaryWords}}), sin perjuicio de beneficios, recargos y aportes aplicables."
+      ]
+    },
+    {
+      "title": "QUINTA.- REGISTRO Y SOPORTE",
+      "paragraphs": [
+        "El contrato debe ser firmado y registrado cuando corresponda. SKNOMINA conserva evidencias de temporada, roles, novedades y documentos laborales."
+      ]
+    }
+  ]
+}

@@ -40,6 +40,14 @@ export function legalParameterValue(record) {
     return `${formatCurrency(value.amount)} ${record.unit || ''}`.trim();
   }
 
+  if (typeof value.multiplier !== 'undefined') {
+    return [
+      `multiplicador ${Number(value.multiplier).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      typeof value.rate !== 'undefined' ? `recargo ${formatRate(value.rate)}` : '',
+      value.calculationBase || '',
+    ].filter(Boolean).join(' - ');
+  }
+
   if (typeof value.rate !== 'undefined' || typeof value.paymentMonth !== 'undefined' || typeof value.startsAfterMonths !== 'undefined') {
     return [
       typeof value.rate !== 'undefined' ? `tasa ${formatRate(value.rate)}` : '',
@@ -61,6 +69,9 @@ export function labelLegalParameter(key) {
     iess_aporte_patronal: 'IESS patronal',
     jornada_horas_mensuales: 'Horas mensuales valor hora',
     jornada_maxima_semanal: 'Jornada máxima semanal',
+    horas_extra_limite_semanal: 'Límite semanal horas extra',
+    horas_extra_recargo_suplementaria: 'Recargo horas suplementarias',
+    horas_extra_recargo_extraordinaria: 'Recargo horas extraordinarias',
     provision_vacaciones: 'Provisión vacaciones',
     vacaciones_dias_anuales: 'Vacaciones anuales',
     decimo_tercero: 'Décimo tercero',

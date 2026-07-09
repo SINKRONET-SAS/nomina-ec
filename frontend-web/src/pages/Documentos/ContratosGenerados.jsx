@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, FileText } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
+import { normalizeContractTemplateKey } from '../../utils/contractTemplates';
 import { downloadUrl } from '../../utils/downloadUrl';
 import { formatDateEC } from '../../utils/dateFormat';
 
@@ -48,29 +49,40 @@ function ContratosGenerados() {
     },
   });
 
-  const selectedTemplate = useMemo(
-    () => templates.find((template) => template.templateKey === form.templateKey),
-    [templates, form.templateKey],
-  );
+  const { data: contractTypes = [] } = useQuery({
+    queryKey: ['contrato-tipos-ecuador'],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/documentos/contrato/tipos-ecuador');
+      return response.data.contractTypes || [];
+    },
+  });
 
-  useEffect(() => {
-    if (!form.templateKey && templates.length > 0) {
-      setForm((current) => ({ ...current, templateKey: templates[0].templateKey }));
-    }
-  }, [form.templateKey, templates]);
+  const selectedEmployee = useMemo(
+    () => empleados.find((empleado) => empleado.id === form.empleadoId),
+    [empleados, form.empleadoId],
+  );
+  const employeeTemplateKey = useMemo(
+    () => normalizeContractTemplateKey(selectedEmployee?.tipo_contrato, templates, ''),
+    [selectedEmployee, templates],
+  );
+  const effectiveTemplateKey = form.templateKey || employeeTemplateKey || templates[0]?.templateKey || '';
+  const selectedTemplate = useMemo(
+    () => templates.find((template) => template.templateKey === effectiveTemplateKey),
+    [templates, effectiveTemplateKey],
+  );
 
   const generateMutation = useMutation({
     mutationFn: async () => {
       const response = await authenticatedApi.post('/documentos/contrato', {
         empleadoId: form.empleadoId,
-        templateKey: form.templateKey,
+        templateKey: selectedTemplate?.templateKey || effectiveTemplateKey,
         tipoContrato: selectedTemplate?.contractType || 'indefinido',
       });
       return response.data.documento;
     },
     onSuccess: (documento) => {
       queryClient.invalidateQueries({ queryKey: ['contratos'] });
-      setMessage(`Contrato generado con plantilla ${documento?.template?.displayName || form.templateKey}.`);
+      setMessage(`Contrato generado con plantilla ${documento?.template?.displayName || selectedTemplate?.displayName || effectiveTemplateKey}.`);
       setError('');
     },
     onError: (err) => {
@@ -94,7 +106,7 @@ function ContratosGenerados() {
     }
   };
 
-  const canGenerate = form.empleadoId && form.templateKey && !generateMutation.isPending;
+  const canGenerate = form.empleadoId && effectiveTemplateKey && !generateMutation.isPending;
 
   return (
     <div>
@@ -133,7 +145,7 @@ function ContratosGenerados() {
               className="mt-1 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
               disabled={loadingEmployees}
               value={form.empleadoId}
-              onChange={(event) => setForm((current) => ({ ...current, empleadoId: event.target.value }))}
+              onChange={(event) => setForm((current) => ({ ...current, empleadoId: event.target.value, templateKey: '' }))}
             >
               <option value="">{loadingEmployees ? 'Cargando empleados...' : 'Selecciona empleado'}</option>
               {empleados.map((empleado) => (
@@ -149,7 +161,7 @@ function ContratosGenerados() {
             <select
               className="mt-1 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
               disabled={loadingTemplates}
-              value={form.templateKey}
+              value={effectiveTemplateKey}
               onChange={(event) => setForm((current) => ({ ...current, templateKey: event.target.value }))}
             >
               <option value="">{loadingTemplates ? 'Cargando plantillas...' : 'Selecciona plantilla'}</option>
@@ -178,9 +190,25 @@ function ContratosGenerados() {
             {' | '}
             {selectedTemplate.sourcePath}
             {selectedTemplate.probation?.enabled ? ` | periodo de prueba ${selectedTemplate.probation.days} dias` : ''}
+            {employeeTemplateKey && !form.templateKey ? ' | definida en ficha del empleado' : ''}
           </div>
         )}
       </section>
+
+      {contractTypes.length > 0 && (
+        <section className="mb-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-900">Tipos de contrato aceptados para Ecuador</h2>
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            {contractTypes.map((type) => (
+              <div className="rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-700" key={type.code}>
+                <p className="font-semibold text-slate-950">{type.label}</p>
+                <p>{type.basis}</p>
+                <p className="mt-1">{type.operationalUse}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {message && <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}
       {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}

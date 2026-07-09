@@ -39,6 +39,8 @@ const LEGAL_PARAMETERS = {
       vacationDaysAfterFirstYear: 15,
       weeklyMaxHours: 40,
       maxWeeklyOvertimeHours: 12,
+      overtimeSupplementMultiplier: 1.5,
+      overtimeExtraordinaryMultiplier: 2,
       dailyMaxHours: 8,
     },
     incomeTax: [
@@ -65,6 +67,8 @@ const LEGAL_PARAMETERS = {
       'payroll.fourteenthSalarySierraAmazoniaPeriodStartMonth',
       'payroll.reserveFundStartsAfterMonths',
       'payroll.maxWeeklyOvertimeHours',
+      'payroll.overtimeSupplementMultiplier',
+      'payroll.overtimeExtraordinaryMultiplier',
       'payroll.personalExpenseDeductionLimit',
     ],
     pendingValidation: [],
@@ -110,6 +114,16 @@ const LEGAL_PARAMETERS = {
         status: 'confirmado',
       },
       {
+        field: 'payroll.overtimeSupplementMultiplier',
+        source: 'Código del Trabajo Art. 55 - recargo 50%',
+        status: 'confirmado',
+      },
+      {
+        field: 'payroll.overtimeExtraordinaryMultiplier',
+        source: 'Código del Trabajo Art. 55 - recargo 100%',
+        status: 'confirmado',
+      },
+      {
         field: 'payroll.personalExpenseDeductionLimit',
         source: 'SRI - Gastos personales 2026',
         status: 'confirmado',
@@ -146,6 +160,8 @@ const LEGAL_PARAMETERS = {
       vacationDaysAfterFirstYear: 15,
       weeklyMaxHours: 40,
       maxWeeklyOvertimeHours: 12,
+      overtimeSupplementMultiplier: 1.5,
+      overtimeExtraordinaryMultiplier: 2,
       dailyMaxHours: 8,
     },
     incomeTax: [

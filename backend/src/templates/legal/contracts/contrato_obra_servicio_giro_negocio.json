@@ -1,0 +1,58 @@
+{
+  "templateKey": "contrato_obra_servicio_giro_negocio",
+  "version": "2026.07",
+  "sortOrder": 80,
+  "displayName": "Contrato por obra o servicio dentro del giro del negocio",
+  "description": "Modelo referencial para obra o servicio determinado dentro del giro del negocio.",
+  "documentTitle": "CONTRATO INDIVIDUAL POR OBRA O SERVICIO DETERMINADO DENTRO DEL GIRO DEL NEGOCIO",
+  "contractType": "obra_servicio_giro_negocio",
+  "appliesTo": ["obra servicio", "giro del negocio", "proyecto operativo"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": false,
+    "days": 0
+  },
+  "legalBasis": [
+    {
+      "label": "Codigo del Trabajo de Ecuador, Art. 16.1",
+      "note": "la modalidad aplica para ejecucion de obra o servicio determinado dentro del giro del negocio, con reglas especiales de llamados."
+    }
+  ],
+  "notices": [
+    "Definir obra o servicio, plazo estimado, criterios de culminacion y soporte documental.",
+    "Validar reglas de llamado posterior, registro SUT/IESS y liquidacion al cierre."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, y {{employee.fullName}}, con identificacion {{employee.idNumber}}."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- OBRA O SERVICIO",
+      "paragraphs": [
+        "EL TRABAJADOR prestara servicios como {{employee.position}} para una obra o servicio determinado dentro del giro del negocio, descrito en el anexo operativo.",
+        "El anexo debe identificar cliente, proyecto, frente de trabajo, entregables, cronograma referencial y criterio de finalizacion."
+      ]
+    },
+    {
+      "title": "TERCERA.- DURACION Y NUEVO LLAMADO",
+      "paragraphs": [
+        "La relacion se mantiene por el tiempo necesario para ejecutar la obra o servicio determinado. EL EMPLEADOR debera observar las reglas legales aplicables para nuevos llamados o continuidad."
+      ]
+    },
+    {
+      "title": "CUARTA.- JORNADA Y PAGO",
+      "paragraphs": [
+        "La jornada aplicable es {{employee.workShift}}. La remuneracion pactada es USD {{employee.salaryAmount}} ({{employee.salaryWords}}), con beneficios, aportes y recargos aplicables."
+      ]
+    },
+    {
+      "title": "QUINTA.- REGISTRO Y EVIDENCIA",
+      "paragraphs": [
+        "El contrato, sus anexos y el cierre de obra o servicio deben conservarse en el expediente. SKNOMINA marca registro externo como {{contract.sutRegistrationStatus}} hasta confirmacion documental."
+      ]
+    }
+  ]
+}

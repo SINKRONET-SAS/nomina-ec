@@ -1,0 +1,64 @@
+{
+  "templateKey": "contrato_jornada_parcial_permanente",
+  "version": "2026.07",
+  "sortOrder": 30,
+  "displayName": "Contrato de jornada parcial permanente",
+  "description": "Modelo referencial para relacion laboral estable con jornada parcial permanente y remuneracion proporcional.",
+  "documentTitle": "CONTRATO INDIVIDUAL DE TRABAJO A JORNADA PARCIAL PERMANENTE",
+  "contractType": "jornada_parcial_permanente",
+  "appliesTo": ["parcial", "medio tiempo", "jornada reducida"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": false,
+    "days": 0
+  },
+  "legalBasis": [
+    {
+      "label": "Codigo del Trabajo de Ecuador",
+      "note": "la modalidad debe documentar jornada, remuneracion proporcional, beneficios y afiliacion cuando corresponda."
+    },
+    {
+      "label": "Parametros legales SKNOMINA {{legal.year}}",
+      "note": "SBU configurado USD {{legal.sbuAmount}}; validar proporcionalidad y tablas sectoriales antes de firma."
+    }
+  ],
+  "notices": [
+    "Plantilla referencial. Validar acuerdo ministerial, SUT/IESS, jornada y proporcionalidad vigente antes de firma.",
+    "No usar para encubrir jornada completa ni horas suplementarias recurrentes."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, y {{employee.fullName}}, con identificacion {{employee.idNumber}}, quienes celebran este contrato laboral."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- MODALIDAD Y CAUSA",
+      "paragraphs": [
+        "Las partes acuerdan una relacion laboral de jornada parcial permanente para el cargo de {{employee.position}}, por necesidades ordinarias de la operacion que requieren una dedicacion inferior a la jornada completa.",
+        "La jornada parcial no elimina derechos laborales ni autoriza trabajo adicional no remunerado. Cualquier ampliacion o cambio de jornada debe documentarse por escrito."
+      ]
+    },
+    {
+      "title": "TERCERA.- JORNADA Y LUGAR",
+      "paragraphs": [
+        "La jornada aplicable es {{employee.workShift}}. El trabajador prestara servicios en {{company.city}} o en los lugares autorizados por EL EMPLEADOR, con zona de marcacion {{employee.workZone}}."
+      ]
+    },
+    {
+      "title": "CUARTA.- REMUNERACION Y BENEFICIOS",
+      "paragraphs": [
+        "EL EMPLEADOR pagara la remuneracion mensual pactada de USD {{employee.salaryAmount}} ({{employee.salaryWords}}), sin perjuicio de la revision de proporcionalidad frente al SBU, tablas sectoriales, jornada y beneficios aplicables.",
+        "Los aportes, decimos, vacaciones, fondos de reserva y demas rubros se calcularan segun parametros legales vigentes y jornada registrada."
+      ]
+    },
+    {
+      "title": "QUINTA.- REGISTRO Y SOPORTE",
+      "paragraphs": [
+        "El contrato debe firmarse y registrarse cuando corresponda en los sistemas oficiales. SKNOMINA conserva la evidencia y mantiene el registro externo como {{contract.sutRegistrationStatus}} hasta confirmacion documental.",
+        "Forman parte del expediente la ficha del trabajador, horario, soporte de jornada parcial, roles de pago, novedades aprobadas y documentos laborales asociados."
+      ]
+    }
+  ]
+}

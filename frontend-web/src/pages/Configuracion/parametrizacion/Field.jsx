@@ -10,10 +10,11 @@ function Field({ field, value, onChange, options = [] }) {
         <span className="text-sm font-medium text-slate-700">{field.label}</span>
         <textarea
           className="form-textarea"
-          value={value}
-          onChange={(event) => onChange(field.name, event.target.value)}
-          placeholder={field.placeholder}
-        />
+        value={value}
+        onChange={(event) => onChange(field.name, event.target.value)}
+        placeholder={field.placeholder}
+        disabled={field.disabled}
+      />
       </label>
     );
   }
@@ -22,7 +23,7 @@ function Field({ field, value, onChange, options = [] }) {
     return (
       <label className={fieldClass}>
         <span className="text-sm font-medium text-slate-700">{field.label}</span>
-        <select className={baseClass} value={value} onChange={(event) => onChange(field.name, event.target.value)}>
+        <select className={baseClass} value={value} onChange={(event) => onChange(field.name, event.target.value)} disabled={field.disabled}>
           {field.options.map((option) => (
             <option key={option.value || option} value={option.value || option}>{option.label || option}</option>
           ))}
@@ -40,7 +41,7 @@ function Field({ field, value, onChange, options = [] }) {
           value={value}
           onChange={(event) => onChange(field.name, event.target.value)}
           required={field.required}
-          disabled={options.length === 0}
+          disabled={field.disabled || options.length === 0}
         >
           <option value="">{options.length === 0 ? 'Sin conceptos disponibles' : 'Selecciona un concepto'}</option>
           {options.map((option) => (
@@ -60,7 +61,7 @@ function Field({ field, value, onChange, options = [] }) {
           value={value}
           onChange={(event) => onChange(field.name, event.target.value)}
           required={field.required}
-          disabled={options.length === 0}
+          disabled={field.disabled || options.length === 0}
         >
           <option value="">{options.length === 0 ? field.emptyLabel || 'Primero crea un registro' : field.selectLabel || 'Selecciona una opcion'}</option>
           {options.map((option) => (
@@ -83,6 +84,7 @@ function Field({ field, value, onChange, options = [] }) {
                 className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-700"
                 type="checkbox"
                 checked={selected.includes(option.value)}
+                disabled={field.disabled}
                 onChange={(event) => {
                   const next = event.target.checked
                     ? [...selected, option.value]
@@ -106,6 +108,7 @@ function Field({ field, value, onChange, options = [] }) {
           type="checkbox"
           checked={Boolean(value)}
           onChange={(event) => onChange(field.name, event.target.checked)}
+          disabled={field.disabled}
         />
         <span className="text-sm font-medium text-slate-700">{field.label}</span>
       </label>
@@ -123,6 +126,7 @@ function Field({ field, value, onChange, options = [] }) {
         onChange={(event) => onChange(field.name, event.target.value)}
         placeholder={field.placeholder}
         required={field.required}
+        disabled={field.disabled}
       />
     </label>
   );

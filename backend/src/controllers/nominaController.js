@@ -11,6 +11,7 @@ const {
   generatePayrollRolePeriodTransposedPdf,
 } = require('../services/payrollRolePdfService');
 const {
+  closeEmptyPastPayrollPeriods,
   createNoveltyBatch,
   deleteNoveltyBatch,
   closeOperationalPayrollPeriod,
@@ -18,6 +19,7 @@ const {
   getPayrollPeriodState,
   listAnnualPayrollPeriods,
   openPayrollPeriod,
+  updatePayrollPeriodDates,
 } = require('../services/monthlyPeriodService');
 const {
   sendRolPagoDisponible,
@@ -222,6 +224,65 @@ async function generarPeriodosAnuales(req, res) {
     });
     return res.status(err.statusCode || 400).json({
       error: err.code || 'NOMINA_PERIODOS_ANUALES_GENERATE_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function actualizarFechasPeriodo(req, res) {
+  try {
+    const period = await updatePayrollPeriodDates({
+      tenantId: req.tenantId,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+      anio: req.params?.anio,
+      mes: req.params?.mes,
+      fechaDesde: req.body?.fechaDesde || req.body?.fecha_desde,
+      fechaHasta: req.body?.fechaHasta || req.body?.fecha_hasta,
+    });
+    return res.json({ success: true, period, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[NOMINA] Error actualizando fechas de periodo', {
+      code: err.code || 'NOMINA_PERIODO_FECHAS_UPDATE_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 400).json({
+      error: err.code || 'NOMINA_PERIODO_FECHAS_UPDATE_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function cerrarPeriodosAnterioresVacios(req, res) {
+  try {
+    const result = await closeEmptyPastPayrollPeriods({
+      tenantId: req.tenantId,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+      anio: req.body?.anio,
+      hastaMes: req.body?.hastaMes,
+      motivo: req.body?.motivo,
+    });
+    return res.json({ success: true, ...result, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[NOMINA] Error cerrando periodos anteriores vacios', {
+      code: err.code || 'NOMINA_PERIODOS_ANTERIORES_VACIOS_CLOSE_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 400).json({
+      error: err.code || 'NOMINA_PERIODOS_ANTERIORES_VACIOS_CLOSE_ERROR',
       message: err.message,
       details: err.details,
       correlationId: req.correlationId,
@@ -899,6 +960,8 @@ module.exports = {
   abrirPeriodo,
   listarPeriodosAnuales,
   generarPeriodosAnuales,
+  actualizarFechasPeriodo,
+  cerrarPeriodosAnterioresVacios,
   cerrarPeriodoOperativo,
   crearLoteNovedades,
   eliminarLoteNovedades,

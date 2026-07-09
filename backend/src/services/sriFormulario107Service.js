@@ -10,7 +10,12 @@ const { recordAudit } = require('./auditService');
 const { roundMoney } = require('../utils/money');
 
 const FORM_107_MIME = 'application/pdf';
-const TEMPLATE_VERSION = 'FORM107-SRI-2026-CDAN26';
+const TEMPLATE_VERSION = 'FORM107-SRI-RDEP-2026-20260317';
+const SRI_RDEP_REFERENCE = {
+  sourceName: 'Servicio de Rentas Internas - RDEP / Formulario 107',
+  sourceUrl: 'https://www.sri.gob.ec/formularios-e-instructivos1',
+  rdepProgram: 'Programa RDEP periodo fiscal 2026, actualizado 2026-03-17',
+};
 
 function normalizeYear(value) {
   const year = Number(value);
@@ -51,9 +56,13 @@ async function loadFormulario107Data({ tenantId, anio, empleadoId }) {
       e.activo,
       n.mes,
       n.estado,
+      n.sueldo_bruto,
+      n.horas_extras_50,
+      n.horas_extras_100,
       n.total_ingresos,
       n.aporte_iess_personal,
       n.impuesto_renta,
+      n.total_deducciones,
       n.neto_recibir,
       n.detalle_calculo
     FROM tenants t
@@ -129,6 +138,12 @@ function precheckFormulario107Data(data, anio) {
       passed: data.rows.length > 0,
       detail: 'Formulario 107 usa roles cerrados del mismo ejercicio fiscal que alimenta RDEP.',
     },
+    {
+      code: 'fuente_sri_rdep',
+      label: 'Fuente SRI RDEP/Formulario 107',
+      passed: true,
+      detail: `${SRI_RDEP_REFERENCE.rdepProgram} - ${SRI_RDEP_REFERENCE.sourceUrl}`,
+    },
   ];
 
   const ready = checks.every((check) => check.passed);
@@ -137,6 +152,7 @@ function precheckFormulario107Data(data, anio) {
     anio: Number(anio),
     empleadoId: data.employee.id,
     templateVersion: TEMPLATE_VERSION,
+    sriReference: SRI_RDEP_REFERENCE,
     checks,
   };
 }
@@ -151,17 +167,50 @@ function numberValue(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function normalizeDetail(value) {
+  if (!value) return {};
+  if (typeof value === 'object') return value;
+  try {
+    return JSON.parse(value);
+  } catch (err) {
+    console.error('[FORM107] detalle_calculo JSON invalido', {
+      code: 'FORM107_DETALLE_JSON_INVALIDO',
+      statusCode: 400,
+      correlationId: null,
+      userId: null,
+      message: err.message,
+    });
+    return {};
+  }
+}
+
 function buildSummary(rows = []) {
   return rows.reduce((summary, row) => {
-    summary.totalIngresos += numberValue(row.total_ingresos);
+    const detail = normalizeDetail(row.detalle_calculo);
+    const sueldo = numberValue(row.sueldo_bruto || detail.sueldoProporcional);
+    const extras50 = numberValue(detail.montoExtras50 ?? row.horas_extras_50);
+    const extras100 = numberValue(detail.montoExtras100 ?? row.horas_extras_100);
+    const totalIngresos = numberValue(row.total_ingresos);
+
+    summary.sueldosSalarios += sueldo;
+    summary.horasSuplementarias += extras50;
+    summary.horasExtraordinarias += extras100;
+    summary.otrosIngresosGravados += Math.max(0, totalIngresos - sueldo - extras50 - extras100);
+    summary.totalIngresos += totalIngresos;
     summary.aporteIessPersonal += numberValue(row.aporte_iess_personal);
     summary.impuestoRentaRetenido += numberValue(row.impuesto_renta);
+    summary.totalDeducciones += numberValue(row.total_deducciones);
     summary.netoRecibido += numberValue(row.neto_recibir);
     return summary;
   }, {
+    sueldosSalarios: 0,
+    horasSuplementarias: 0,
+    horasExtraordinarias: 0,
+    otrosIngresosGravados: 0,
     totalIngresos: 0,
     aporteIessPersonal: 0,
     impuestoRentaRetenido: 0,
+    totalDeducciones: 0,
     netoRecibido: 0,
   });
 }
@@ -184,25 +233,25 @@ async function buildFormulario107Pdf({ data, anio, context = {} }) {
     pageSize: 'A4',
     pageMargins: [36, 42, 36, 42],
     content: [
-      { text: 'Formulario 107 individual', style: 'title' },
+      { text: 'FORMULARIO 107', style: 'title' },
       { text: 'Comprobante de retenciones en la fuente del impuesto a la renta por ingresos del trabajo en relacion de dependencia', style: 'subtitle' },
-      { text: `Año fiscal ${anio}`, style: 'period' },
+      { text: `Ejercicio fiscal ${anio}`, style: 'period' },
       {
         columns: [
           {
             width: '*',
             stack: [
-              { text: 'Empleador', style: 'section' },
-              rowText('RUC', data.tenant.ruc),
-              rowText('Razon social', data.tenant.razonSocial),
+              { text: 'Agente de retencion / empleador', style: 'section' },
+              rowText('RUC empleador', data.tenant.ruc),
+              rowText('Razon social o apellidos y nombres', data.tenant.razonSocial),
             ],
           },
           {
             width: '*',
             stack: [
-              { text: 'Trabajador', style: 'section' },
-              rowText('Identificacion', data.employee.cedula),
-              rowText('Nombre', `${data.employee.apellidos} ${data.employee.nombres}`.trim()),
+              { text: 'Trabajador bajo relacion de dependencia', style: 'section' },
+              rowText('Cedula / identificacion', data.employee.cedula),
+              rowText('Apellidos y nombres', `${data.employee.apellidos} ${data.employee.nombres}`.trim()),
               rowText('Cargo', data.employee.cargo || 'No registrado'),
             ],
           },
@@ -210,14 +259,19 @@ async function buildFormulario107Pdf({ data, anio, context = {} }) {
         columnGap: 18,
         margin: [0, 8, 0, 14],
       },
-      { text: 'Resumen anual', style: 'section' },
+      { text: 'Resumen anual Formulario 107', style: 'section' },
       {
         table: {
           widths: ['*', 90],
           body: [
-            ['Total ingresos gravados/revisables', money(summary.totalIngresos)],
-            ['Aporte personal IESS', money(summary.aporteIessPersonal)],
-            ['Impuesto a la renta retenido', money(summary.impuestoRentaRetenido)],
+            ['Sueldos y salarios', money(summary.sueldosSalarios)],
+            ['Horas suplementarias', money(summary.horasSuplementarias)],
+            ['Horas extraordinarias', money(summary.horasExtraordinarias)],
+            ['Otros ingresos gravados / revisables', money(summary.otrosIngresosGravados)],
+            ['Total ingresos del ejercicio', money(summary.totalIngresos)],
+            ['Aporte personal IESS deducible', money(summary.aporteIessPersonal)],
+            ['Base imponible referencial', money(summary.totalIngresos - summary.aporteIessPersonal)],
+            ['Impuesto a la renta causado / retenido', money(summary.impuestoRentaRetenido)],
             ['Neto recibido', money(summary.netoRecibido)],
           ],
         },
@@ -234,12 +288,12 @@ async function buildFormulario107Pdf({ data, anio, context = {} }) {
         layout: 'lightHorizontalLines',
       },
       {
-        text: 'Documento generado desde SKNOMINA con base en roles cerrados del ejercicio fiscal y consistente con la base anual RDEP.',
+        text: 'Documento generado desde SKNOMINA con base en roles cerrados del ejercicio fiscal. Debe validarse contra el Formulario 107 y anexos RDEP vigentes publicados por el SRI antes de entrega oficial.',
         style: 'warning',
         margin: [0, 16, 0, 0],
       },
       {
-        text: `Plantilla: ${TEMPLATE_VERSION}\nGenerado: ${new Date().toISOString()}\nCorrelation ID: ${context.correlationId || ''}`,
+        text: `Plantilla: ${TEMPLATE_VERSION}\nFuente tecnica: ${SRI_RDEP_REFERENCE.sourceName} (${SRI_RDEP_REFERENCE.sourceUrl})\nReferencia RDEP: ${SRI_RDEP_REFERENCE.rdepProgram}\nGenerado: ${new Date().toISOString()}\nCorrelation ID: ${context.correlationId || ''}`,
         style: 'audit',
         margin: [0, 10, 0, 0],
       },
@@ -322,6 +376,7 @@ async function generarFormulario107({ tenantId, anio, empleadoId, context = {} }
     precheck,
     traceability: {
       basis: 'closed_payroll_same_fiscal_year_as_rdep',
+      sriReference: SRI_RDEP_REFERENCE,
       summary,
     },
   };
@@ -330,6 +385,8 @@ async function generarFormulario107({ tenantId, anio, empleadoId, context = {} }
 module.exports = {
   FORM_107_MIME,
   TEMPLATE_VERSION,
+  SRI_RDEP_REFERENCE,
+  buildSummary,
   generarFormulario107,
   precheckFormulario107,
 };

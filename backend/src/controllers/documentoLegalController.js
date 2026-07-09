@@ -3,9 +3,51 @@
 // ============================================================
 const db = require('../config/database');
 const { generarContrato, listContractTemplates } = require('../services/templateGenerator');
+const { listEcuadorContractTypes } = require('../config/ecuadorContractTypes');
 const { calcularLiquidacion } = require('../services/liquidacionService');
 const { generateEquipmentDeliveryAct } = require('../services/equipmentDeliveryActService');
-const { resolveStorageUrl, s3Upload } = require('../config/s3');
+const {
+  isLocalStorageEnabled,
+  resolveStorageUrl,
+  s3SignedUrl,
+  s3Upload,
+} = require('../config/s3');
+
+const LEGAL_DOCUMENT_TYPES = new Map([
+  ['contrato', 'Contrato generado'],
+  ['contrato_firmado', 'Contrato firmado'],
+  ['aviso_entrada_iess', 'Aviso de entrada IESS'],
+  ['acta_entrega_dotacion', 'Acta de entrega de dotacion'],
+  ['acta_entrega_dotacion_firmada', 'Acta de entrega de dotacion firmada'],
+  ['acta_finiquito', 'Acta de finiquito'],
+  ['rol_pago', 'Rol de pago'],
+  ['certificado', 'Certificado'],
+  ['otro_documento_laboral', 'Otro documento laboral'],
+]);
+
+function normalizeDocumentType(value) {
+  const type = String(value || 'contrato_firmado').trim();
+  if (LEGAL_DOCUMENT_TYPES.has(type)) return type;
+
+  const err = new Error('El tipo de documento laboral no esta homologado.');
+  err.code = 'DOCUMENTO_TIPO_INVALIDO';
+  err.statusCode = 422;
+  err.details = { allowedTypes: [...LEGAL_DOCUMENT_TYPES.keys()] };
+  throw err;
+}
+
+function isLocalStoredDocument(url) {
+  const text = String(url || '');
+  return text.startsWith('local://') || text.includes('/api/storage/local/');
+}
+
+async function resolveLegalDocumentDownloadUrl(row) {
+  const metadata = typeof row.metadata === 'object' && row.metadata ? row.metadata : {};
+  if (metadata.storageKey && !isLocalStorageEnabled() && !isLocalStoredDocument(row.documento_url)) {
+    return s3SignedUrl(metadata.storageKey);
+  }
+  return resolveStorageUrl(row.documento_url, metadata.storageKey);
+}
 
 async function generarContratoCtrl(req, res) {
   try {
@@ -76,8 +118,9 @@ async function generarFiniquito(req, res) {
 
 async function adjuntarDocumento(req, res) {
   try {
-    const { empleadoId, tipoDocumento = 'contrato', nombreArchivo = 'contrato-firmado.pdf', mimeType = 'application/pdf', contenidoBase64 } = req.body || {};
+    const { empleadoId, tipoDocumento = 'contrato_firmado', nombreArchivo = 'documento-laboral.pdf', mimeType = 'application/pdf', contenidoBase64 } = req.body || {};
     const { tenantId } = req;
+    const normalizedType = normalizeDocumentType(tipoDocumento);
 
     if (!empleadoId || !contenidoBase64) {
       return res.status(400).json({ error: 'empleadoId y contenidoBase64 son requeridos', correlationId: req.correlationId });
@@ -109,10 +152,12 @@ async function adjuntarDocumento(req, res) {
     `, [
       tenantId,
       empleadoId,
-      tipoDocumento,
+      normalizedType,
       url,
       JSON.stringify({
         source: 'adjunto_manual_rrhh',
+        documentKind: normalizedType,
+        displayName: LEGAL_DOCUMENT_TYPES.get(normalizedType),
         fileName: safeName,
         mimeType,
         storageKey: key,
@@ -147,6 +192,29 @@ async function listarPlantillasContrato(req, res) {
     });
     return res.status(err.statusCode || 500).json({
       error: err.code || 'DOCUMENTO_CONTRATO_TEMPLATES_ERROR',
+      message: err.message,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function listarTiposContratoEcuador(req, res) {
+  try {
+    return res.json({
+      success: true,
+      contractTypes: listEcuadorContractTypes(),
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[DOCUMENTOS] Error listando tipos de contrato Ecuador', {
+      code: err.code || 'DOCUMENTO_CONTRATO_TIPOS_ECUADOR_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'DOCUMENTO_CONTRATO_TIPOS_ECUADOR_ERROR',
       message: err.message,
       correlationId: req.correlationId,
     });
@@ -258,9 +326,14 @@ async function descargar(req, res) {
     }
     const row = result.rows[0];
     const metadata = typeof row.metadata === 'object' && row.metadata ? row.metadata : {};
-    const url = resolveStorageUrl(row.documento_url, metadata.storageKey);
+    const url = await resolveLegalDocumentDownloadUrl(row);
 
-    res.json({ success: true, url, correlationId: req.correlationId });
+    res.json({
+      success: true,
+      url,
+      fileName: metadata.fileName || `documento-${id}.pdf`,
+      correlationId: req.correlationId,
+    });
   } catch (err) {
     console.error('[DOCUMENTOS] Error descargando documento', {
       code: err.code || 'DOCUMENTO_DOWNLOAD_ERROR',
@@ -276,6 +349,7 @@ async function descargar(req, res) {
 module.exports = {
   generarContrato: generarContratoCtrl,
   listarPlantillasContrato,
+  listarTiposContratoEcuador,
   generarFiniquito,
   generarActaEntregaDotacion,
   listar,

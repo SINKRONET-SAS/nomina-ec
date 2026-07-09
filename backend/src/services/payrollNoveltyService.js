@@ -359,6 +359,8 @@ function calculateNoveltyAmount(row, config, context = {}) {
   const amount = Math.max(0, Number(row.monto || 0));
   const valorHora = Math.max(0, Number(context.valorHora || 0));
   const dailyMaxHours = Math.max(0, Number(context.dailyMaxHours || 8));
+  const overtimeSupplementMultiplier = Math.max(0, Number(context.overtimeSupplementMultiplier || 1.5));
+  const overtimeExtraordinaryMultiplier = Math.max(0, Number(context.overtimeExtraordinaryMultiplier || 2));
 
   switch (config.calculationMode) {
     case 'amount':
@@ -366,9 +368,9 @@ function calculateNoveltyAmount(row, config, context = {}) {
     case 'minutes_hourly':
       return roundMoney((minutes / 60) * valorHora);
     case 'minutes_hourly_1_5':
-      return roundMoney((minutes / 60) * valorHora * 1.5);
+      return roundMoney((minutes / 60) * valorHora * overtimeSupplementMultiplier);
     case 'minutes_hourly_2':
-      return roundMoney((minutes / 60) * valorHora * 2);
+      return roundMoney((minutes / 60) * valorHora * overtimeExtraordinaryMultiplier);
     case 'absence_day':
       if (amount > 0) return roundMoney(amount);
       if (minutes > 0) return roundMoney((minutes / 60) * valorHora);

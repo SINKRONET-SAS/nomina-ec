@@ -1,0 +1,58 @@
+{
+  "templateKey": "contrato_ocasional",
+  "version": "2026.07",
+  "sortOrder": 50,
+  "displayName": "Contrato ocasional",
+  "description": "Modelo referencial para necesidades emergentes o extraordinarias no vinculadas a la actividad habitual.",
+  "documentTitle": "CONTRATO INDIVIDUAL DE TRABAJO OCASIONAL",
+  "contractType": "ocasional",
+  "appliesTo": ["ocasional", "emergente", "extraordinario"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": false,
+    "days": 0
+  },
+  "legalBasis": [
+    {
+      "label": "Codigo del Trabajo de Ecuador, Art. 17",
+      "note": "los contratos ocasionales atienden necesidades emergentes o extraordinarias no vinculadas a la actividad habitual del empleador."
+    }
+  ],
+  "notices": [
+    "Usar solo para necesidades ocasionales reales, documentadas y no habituales.",
+    "Validar plazo, objeto, registro y obligaciones de seguridad social antes de firma."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, y {{employee.fullName}}, con identificacion {{employee.idNumber}}."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- NATURALEZA OCASIONAL",
+      "paragraphs": [
+        "La contratacion responde a una necesidad emergente o extraordinaria, no habitual, documentada por EL EMPLEADOR y relacionada con el cargo {{employee.position}}.",
+        "La modalidad no puede utilizarse para cubrir actividades permanentes del giro ordinario sin la modalidad laboral adecuada."
+      ]
+    },
+    {
+      "title": "TERCERA.- DURACION",
+      "paragraphs": [
+        "La duracion queda limitada a la atencion de la necesidad ocasional descrita en el expediente. Al concluir la causa, se emitiran los documentos y liquidaciones que correspondan."
+      ]
+    },
+    {
+      "title": "CUARTA.- JORNADA, PAGO Y CONTROL",
+      "paragraphs": [
+        "La jornada aplicable es {{employee.workShift}} y la zona de marcacion {{employee.workZone}}. La remuneracion pactada es USD {{employee.salaryAmount}} ({{employee.salaryWords}}), con beneficios y aportes aplicables."
+      ]
+    },
+    {
+      "title": "QUINTA.- REGISTRO",
+      "paragraphs": [
+        "El documento debe firmarse y registrarse cuando corresponda en SUT/IESS. SKNOMINA conserva evidencia y no marca registro oficial sin confirmacion externa."
+      ]
+    }
+  ]
+}

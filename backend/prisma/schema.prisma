@@ -36,10 +36,14 @@ enum PayrollStatus {
 
 enum LegalDocumentType {
   contrato
+  contrato_firmado
+  aviso_entrada_iess
   acta_finiquito
   rol_pago
   certificado
   acta_entrega_dotacion
+  acta_entrega_dotacion_firmada
+  otro_documento_laboral
 }
 
 model Tenant {

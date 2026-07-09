@@ -10,6 +10,7 @@ const { s3Upload } = require('../config/s3');
 const db = require('../config/database');
 const AppError = require('../utils/AppError');
 const { getLegalParameters } = require('../config/legal-ecuador');
+const { isAcceptedEcuadorContractType, listEcuadorContractTypes } = require('../config/ecuadorContractTypes');
 
 const BACKEND_ROOT = path.join(__dirname, '..', '..');
 const CONTRACT_TEMPLATE_DIR = path.join(__dirname, '..', 'templates', 'legal', 'contracts');
@@ -18,6 +19,22 @@ const CONTRACT_TYPE_ALIASES = new Map([
   ['indefinido', DEFAULT_TEMPLATE_KEY],
   ['contrato_indefinido', DEFAULT_TEMPLATE_KEY],
   ['general', DEFAULT_TEMPLATE_KEY],
+  ['jornada_parcial_permanente', 'contrato_jornada_parcial_permanente'],
+  ['eventual', 'contrato_eventual'],
+  ['ocasional', 'contrato_ocasional'],
+  ['temporada', 'contrato_temporada'],
+  ['obra', 'contrato_obra_cierta'],
+  ['obra_cierta', 'contrato_obra_cierta'],
+  ['obra_servicio_giro_negocio', 'contrato_obra_servicio_giro_negocio'],
+  ['tarea', 'contrato_por_tarea'],
+  ['destajo', 'contrato_a_destajo'],
+  ['teletrabajo', 'contrato_teletrabajo'],
+  ['trabajo_juvenil', 'contrato_trabajo_juvenil'],
+  ['productivo', 'contrato_productivo'],
+  ['especial_emergente', 'contrato_especial_emergente'],
+  ['emprendimiento', 'contrato_emprendimiento'],
+  ['turistico_cultural_creativo', 'contrato_turistico_cultural_creativo'],
+  ['aprendizaje', 'contrato_aprendizaje'],
   ['prueba', 'contrato_indefinido_mercaderista_prueba'],
   ['contrato_prueba', 'contrato_indefinido_mercaderista_prueba'],
   ['mercaderista_prueba', 'contrato_indefinido_mercaderista_prueba'],
@@ -132,6 +149,7 @@ function listContractTemplates() {
       description: template.description,
       version: template.version,
       contractType: template.contractType || 'indefinido',
+      contractTypeAcceptedEcuador: isAcceptedEcuadorContractType(template.contractType || 'indefinido'),
       appliesTo: template.appliesTo || [],
       probation: template.probation || { enabled: false },
       legalReviewRequired: template.legalReviewRequired !== false,
@@ -462,12 +480,27 @@ function pdfBufferFromDefinition(docDefinition) {
   });
 }
 
-async function generarContrato(empleado, tenant, tipoContrato = DEFAULT_TEMPLATE_KEY, options = {}) {
-  const template = loadContractTemplate({
-    templateKey: options.templateKey,
-    tipoContrato,
-  });
+async function generarContrato(empleado, tenant, tipoContrato = null, options = {}) {
   const employee = await enrichEmployee(empleado, tenant);
+  const resolvedTemplateKey = options.templateKey
+    || tipoContrato
+    || employee.tipo_contrato
+    || DEFAULT_TEMPLATE_KEY;
+  const template = loadContractTemplate({
+    templateKey: resolvedTemplateKey,
+    tipoContrato: resolvedTemplateKey,
+  });
+  if (!isAcceptedEcuadorContractType(template.contractType || 'indefinido')) {
+    throw new AppError(`El tipo de contrato '${template.contractType}' no esta homologado para Ecuador en SKNOMINA.`, {
+      code: 'CONTRATO_TIPO_NO_HOMOLOGADO_ECUADOR',
+      statusCode: 422,
+      details: {
+        templateKey: template.templateKey,
+        contractType: template.contractType,
+        acceptedTypes: listEcuadorContractTypes().map((type) => type.code),
+      },
+    });
+  }
   const year = Number(options.year || new Date().getFullYear());
   const legalParameters = getLegalParameters(year);
 
@@ -525,6 +558,164 @@ async function generarContrato(empleado, tenant, tipoContrato = DEFAULT_TEMPLATE
   };
 }
 
+function buildFiniquitoDocDefinition({ empleado, tenant, cause, liquidacion, generatedAt }) {
+  const detail = liquidacion.detalle || {};
+  const rows = [
+    ['Sueldo pendiente', `$${toMoney(liquidacion.sueldoPendiente)}`],
+    ['Decimo tercero proporcional', `$${toMoney(liquidacion.decimoTercero)}`],
+    ['Decimo cuarto proporcional', `$${toMoney(liquidacion.decimoCuarto)}`],
+    ['Vacaciones no gozadas', `$${toMoney(liquidacion.vacaciones)}`],
+    ['Fondo de reserva', `$${toMoney(liquidacion.fondoReserva)}`],
+    ['Indemnizacion', `$${toMoney(liquidacion.indemnizacion)}`],
+    ['Bonificacion por desahucio', `$${toMoney(liquidacion.desahucio)}`],
+    [{ text: 'Total liquidacion', bold: true }, { text: `$${toMoney(liquidacion.total)}`, bold: true, alignment: 'right' }],
+  ];
+
+  return {
+    pageSize: 'A4',
+    pageMargins: [38, 42, 38, 42],
+    content: [
+      { text: 'ACTA DE FINIQUITO LABORAL', style: 'title' },
+      { text: tenant.razon_social || tenant.nombre || 'Empleador', style: 'subtitle' },
+      { text: `RUC: ${tenant.ruc || 'no registrado'} | Generado: ${generatedAt.toISOString()}`, style: 'audit', alignment: 'center', margin: [0, 0, 0, 14] },
+      {
+        columns: [
+          {
+            width: '*',
+            stack: [
+              { text: 'Trabajador', style: 'sectionTitle' },
+              `Nombre: ${cleanText(`${empleado.nombres || ''} ${empleado.apellidos || ''}`, 'no registrado')}`,
+              `Identificacion: ${cleanText(empleado.cedula, 'no registrada')}`,
+              `Cargo: ${cleanText(empleado.cargo, 'no registrado')}`,
+              `Fecha ingreso: ${formatDateEC(empleado.fecha_ingreso)}`,
+              `Fecha salida: ${formatDateEC(detail.fechaSalida)}`,
+            ],
+          },
+          {
+            width: '*',
+            stack: [
+              { text: 'Causal', style: 'sectionTitle' },
+              cause.label || cause.code || 'Causal no registrada',
+              `Base legal: ${cause.legalBasis || detail.baseLegalTerminacion || 'revision legal requerida'}`,
+              `Dias de servicio: ${detail.diasServicio || 0}`,
+            ],
+          },
+        ],
+        columnGap: 20,
+        margin: [0, 0, 0, 12],
+      },
+      { text: 'Liquidacion pormenorizada', style: 'sectionTitle' },
+      {
+        table: {
+          widths: ['*', 95],
+          body: [
+            [{ text: 'Concepto', bold: true }, { text: 'Valor', bold: true, alignment: 'right' }],
+            ...rows.map(([label, value]) => [
+              label,
+              typeof value === 'string' ? { text: value, alignment: 'right' } : value,
+            ]),
+          ],
+        },
+        layout: 'lightHorizontalLines',
+        margin: [0, 0, 0, 12],
+      },
+      {
+        text: 'Este documento deja evidencia del calculo interno. Debe revisarse frente al expediente laboral y registrarse o validarse ante la autoridad competente cuando corresponda. El finiquito puede ser impugnado si la liquidacion no ha sido practicada ante inspector del trabajo.',
+        style: 'notice',
+        margin: [0, 0, 0, 18],
+      },
+      {
+        columns: [
+          {
+            width: '*',
+            stack: [
+              { text: '\n\n____________________________', alignment: 'center' },
+              { text: 'Representante legal / delegado', alignment: 'center', bold: true },
+              { text: tenant.razon_social || 'Empleador', alignment: 'center' },
+            ],
+          },
+          {
+            width: '*',
+            stack: [
+              { text: '\n\n____________________________', alignment: 'center' },
+              { text: cleanText(`${empleado.nombres || ''} ${empleado.apellidos || ''}`, 'Trabajador'), alignment: 'center', bold: true },
+              { text: `C.C.: ${cleanText(empleado.cedula, 'no registrada')}`, alignment: 'center' },
+            ],
+          },
+        ],
+        columnGap: 26,
+      },
+      {
+        text: 'Plantilla acta_finiquito_sknomina v2026.07. Documento generado por SKNOMINA.',
+        style: 'audit',
+        margin: [0, 18, 0, 0],
+      },
+    ],
+    defaultStyle: { fontSize: 9, lineHeight: 1.25 },
+    styles: {
+      title: { fontSize: 15, bold: true, alignment: 'center', margin: [0, 0, 0, 4] },
+      subtitle: { fontSize: 11, bold: true, alignment: 'center', color: '#0f766e', margin: [0, 0, 0, 4] },
+      sectionTitle: { fontSize: 10, bold: true, color: '#0f766e', margin: [0, 9, 0, 4] },
+      notice: { fontSize: 8, color: '#475569', italics: true },
+      audit: { fontSize: 7, color: '#64748b' },
+    },
+  };
+}
+
+async function generarActaFiniquito(empleado, tenant, causaTerminacion, liquidacion, options = {}) {
+  const cause = typeof causaTerminacion === 'object'
+    ? causaTerminacion
+    : { code: String(causaTerminacion || ''), label: String(causaTerminacion || '').replace(/_/g, ' ') };
+  const generatedAt = options.generatedAt || new Date();
+  const docDefinition = buildFiniquitoDocDefinition({
+    empleado,
+    tenant,
+    cause,
+    liquidacion,
+    generatedAt,
+  });
+  const pdfBuffer = await pdfBufferFromDefinition(docDefinition);
+  const key = `documentos/${tenant.id}/${empleado.id}/finiquitos/acta_finiquito_${Date.now()}.pdf`;
+  const url = await s3Upload(pdfBuffer, key, 'application/pdf');
+  const metadata = {
+    source: 'sistema_sknomina',
+    documentKind: 'acta_finiquito',
+    templateKey: 'acta_finiquito_sknomina',
+    templateVersion: '2026.07',
+    causaTerminacion: cause.code,
+    causaTerminacionLabel: cause.label,
+    legalBasis: cause.legalBasis || liquidacion?.detalle?.baseLegalTerminacion || '',
+    storageKey: key,
+    generatedAt: generatedAt.toISOString(),
+    correlationId: options.correlationId || null,
+    snapshot: {
+      liquidacion,
+      empleadoId: empleado.id,
+      tenantId: tenant.id,
+    },
+  };
+
+  const result = await db.query(`
+    INSERT INTO documentos_legales (tenant_id, empleado_id, tipo_documento, documento_url, metadata)
+    VALUES ($1, $2, 'acta_finiquito', $3, $4)
+    RETURNING *
+  `, [
+    tenant.id,
+    empleado.id,
+    url,
+    JSON.stringify(metadata),
+  ]);
+
+  return {
+    url,
+    documento: result.rows[0],
+    template: {
+      templateKey: 'acta_finiquito_sknomina',
+      version: '2026.07',
+    },
+  };
+}
+
 function numeroALetras(num) {
   const value = Math.floor(Number(num || 0));
   if (!Number.isFinite(value) || value === 0) return 'cero';
@@ -570,10 +761,12 @@ module.exports = {
   CONTRACT_TEMPLATE_DIR,
   DEFAULT_TEMPLATE_KEY,
   generarContrato,
+  generarActaFiniquito,
   listContractTemplates,
   loadContractTemplate,
   buildContractContext,
   buildContractDocDefinition,
+  buildFiniquitoDocDefinition,
   interpolate,
   numeroALetras,
 };

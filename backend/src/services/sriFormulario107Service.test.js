@@ -1,7 +1,7 @@
 const db = require('../config/database');
 const { s3Upload } = require('../config/s3');
 const { recordAudit } = require('./auditService');
-const { generarFormulario107 } = require('./sriFormulario107Service');
+const { buildSummary, generarFormulario107 } = require('./sriFormulario107Service');
 
 jest.mock('../config/database', () => ({
   query: jest.fn(),
@@ -37,9 +37,13 @@ describe('sriFormulario107Service', () => {
         activo: true,
         mes: 1,
         estado: 'cerrada',
+        sueldo_bruto: 900,
+        horas_extras_50: 75,
+        horas_extras_100: 25,
         total_ingresos: 1000,
         aporte_iess_personal: 94.5,
         impuesto_renta: 0,
+        total_deducciones: 94.5,
         neto_recibir: 905.5,
         detalle_calculo: {},
       }],
@@ -62,5 +66,27 @@ describe('sriFormulario107Service', () => {
       action: 'generar_formulario_107',
       correlationId: 'corr-1',
     }));
+  });
+
+  test('desglosa ingresos para Formulario 107', () => {
+    expect(buildSummary([{
+      sueldo_bruto: 900,
+      horas_extras_50: 75,
+      horas_extras_100: 25,
+      total_ingresos: 1100,
+      aporte_iess_personal: 94.5,
+      impuesto_renta: 10,
+      total_deducciones: 104.5,
+      neto_recibir: 995.5,
+      detalle_calculo: {},
+    }])).toMatchObject({
+      sueldosSalarios: 900,
+      horasSuplementarias: 75,
+      horasExtraordinarias: 25,
+      otrosIngresosGravados: 100,
+      totalIngresos: 1100,
+      aporteIessPersonal: 94.5,
+      impuestoRentaRetenido: 10,
+    });
   });
 });

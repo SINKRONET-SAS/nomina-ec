@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, FileUp, ShieldCheck } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
+import { contractTemplateOptionLabel, DEFAULT_CONTRACT_TEMPLATE_KEY, normalizeContractTemplateKey } from '../../utils/contractTemplates';
+import { fileToBase64 } from '../../utils/fileToBase64';
 
 const initialForm = {
   cedula: '',
@@ -19,7 +21,7 @@ const initialForm = {
   jornada_horas_mensuales: '',
   gastos_personales_anuales: '',
   fecha_ingreso: '',
-  tipo_contrato: 'indefinido',
+  tipo_contrato: DEFAULT_CONTRACT_TEMPLATE_KEY,
   iess_afiliado: true,
   iess_tipo_relacion: 'relacion_dependencia',
   estado_civil: '',
@@ -97,7 +99,7 @@ function normalizeEmpleado(empleado) {
     jornada_horas_mensuales: empleado.jornada_horas_mensuales || '',
     gastos_personales_anuales: empleado.gastos_personales_anuales || '',
     fecha_ingreso: empleado.fecha_ingreso ? String(empleado.fecha_ingreso).slice(0, 10) : '',
-    tipo_contrato: empleado.tipo_contrato || 'indefinido',
+    tipo_contrato: normalizeContractTemplateKey(empleado.tipo_contrato),
     iess_afiliado: empleado.iess_afiliado !== false,
     iess_tipo_relacion: empleado.iess_tipo_relacion || 'relacion_dependencia',
     estado_civil: empleado.estado_civil || '',
@@ -149,15 +151,6 @@ function bankProfileAliases(profile) {
     profile.banco_nombre,
     profile.field_map?.profile,
   ].filter(Boolean).map((value) => String(value).trim().toUpperCase());
-}
-
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || '').split(',')[1] || '');
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
 }
 
 const CROQUIS_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -276,10 +269,23 @@ function NuevoEmpleado() {
       return response.data.data || [];
     },
   });
+  const contractTemplatesQuery = useQuery({
+    queryKey: ['contrato-templates', 'empleado-form'],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/documentos/contrato/plantillas');
+      return response.data.templates || [];
+    },
+  });
   const activeWorkShifts = (workShiftsQuery.data || []).filter((item) => item.status !== 'inactivo');
   const activeOrganizationUnits = (organizationUnitsQuery.data || []).filter((item) => item.status !== 'inactivo');
   const activeJobPositions = (jobPositionsQuery.data || []).filter((item) => item.status === 'activo');
   const activeWorkZones = (workZonesQuery.data || []).filter((item) => item.status !== 'inactivo');
+  const contractTemplateOptions = contractTemplatesQuery.data?.length
+    ? contractTemplatesQuery.data
+    : [{ templateKey: DEFAULT_CONTRACT_TEMPLATE_KEY, displayName: 'Contrato indefinido general' }];
+  const currentContractTemplateVisible = contractTemplateOptions.some(
+    (template) => template.templateKey === formData.tipo_contrato,
+  );
   const provincesQuery = useQuery({
     queryKey: ['catalogos', 'ecuador', 'provincias'],
     queryFn: async () => {
@@ -521,7 +527,7 @@ function NuevoEmpleado() {
       const contenidoBase64 = await fileToBase64(file);
       await authenticatedApi.post('/documentos/adjuntar', {
         empleadoId: id,
-        tipoDocumento: 'contrato',
+        tipoDocumento: 'contrato_firmado',
         nombreArchivo: file.name,
         mimeType: file.type,
         contenidoBase64,
@@ -713,14 +719,25 @@ function NuevoEmpleado() {
           )}
           <Field label="Gastos personales anuales SRI" min="0" name="gastos_personales_anuales" onChange={handleChange} placeholder="0.00" step="0.01" type="number" value={formData.gastos_personales_anuales} />
           <Field label="Fecha de ingreso" name="fecha_ingreso" onChange={handleChange} required type="date" value={formData.fecha_ingreso} />
-          <Field label="Tipo de contrato" name="tipo_contrato" onChange={handleChange} value={formData.tipo_contrato}>
-            <select className={CONTROL_CLASS} name="tipo_contrato" onChange={handleChange} value={formData.tipo_contrato}>
-              <option value="indefinido">Indefinido</option>
-              <option value="ocasional">Ocasional</option>
-              <option value="obra">Obra o faena</option>
-              <option value="hora">Por hora</option>
+          <Field label="Modelo de contrato" name="tipo_contrato" onChange={handleChange} value={formData.tipo_contrato}>
+            <select
+              className={CONTROL_CLASS}
+              disabled={contractTemplatesQuery.isLoading}
+              name="tipo_contrato"
+              onChange={handleChange}
+              value={formData.tipo_contrato}
+            >
+              {!currentContractTemplateVisible && formData.tipo_contrato && (
+                <option value={formData.tipo_contrato}>Modelo registrado: {formData.tipo_contrato}</option>
+              )}
+              {contractTemplateOptions.map((template) => (
+                <option key={template.templateKey} value={template.templateKey}>{contractTemplateOptionLabel(template)}</option>
+              ))}
             </select>
           </Field>
+          <div className={`${FIELD_FULL} rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700`}>
+            Este modelo se usa como plantilla sugerida al generar el contrato PDF del trabajador. Debe escogerse segun la modalidad laboral real y el soporte del expediente.
+          </div>
           <Field label="Tipo relación IESS" name="iess_tipo_relacion" onChange={handleChange} value={formData.iess_tipo_relacion}>
             <select className={CONTROL_CLASS} name="iess_tipo_relacion" onChange={handleChange} value={formData.iess_tipo_relacion}>
               <option value="relacion_dependencia">Relacion de dependencia</option>

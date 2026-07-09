@@ -1,0 +1,58 @@
+{
+  "templateKey": "contrato_obra_cierta",
+  "version": "2026.07",
+  "sortOrder": 70,
+  "displayName": "Contrato por obra cierta",
+  "description": "Modelo referencial para ejecucion de una obra determinada por remuneracion pactada.",
+  "documentTitle": "CONTRATO INDIVIDUAL DE TRABAJO POR OBRA CIERTA",
+  "contractType": "obra_cierta",
+  "appliesTo": ["obra cierta", "proyecto", "entregable"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": false,
+    "days": 0
+  },
+  "legalBasis": [
+    {
+      "label": "Codigo del Trabajo de Ecuador, Art. 16",
+      "note": "en obra cierta el trabajador toma a su cargo la ejecucion de una labor determinada por una remuneracion que comprende la totalidad de la obra."
+    }
+  ],
+  "notices": [
+    "Definir claramente obra, entregables, criterios de aceptacion y evidencia de culminacion.",
+    "No usar cuando la relacion responda a una necesidad permanente ordinaria."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, y {{employee.fullName}}, con identificacion {{employee.idNumber}}."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- OBRA DETERMINADA",
+      "paragraphs": [
+        "EL TRABAJADOR ejecutara una obra cierta vinculada al cargo {{employee.position}}, cuya descripcion tecnica, entregables, ubicacion y criterios de aceptacion constan como anexo del expediente.",
+        "La obra debe ser identificable, medible y distinta de una relacion permanente sin objeto determinado."
+      ]
+    },
+    {
+      "title": "TERCERA.- DURACION Y ENTREGA",
+      "paragraphs": [
+        "La relacion se mantiene hasta la culminacion y recepcion de la obra, sin perjuicio de derechos laborales, seguridad social y liquidacion que correspondan."
+      ]
+    },
+    {
+      "title": "CUARTA.- REMUNERACION",
+      "paragraphs": [
+        "La remuneracion pactada es USD {{employee.salaryAmount}} ({{employee.salaryWords}}), conforme al alcance de la obra y sin afectar beneficios legales irrenunciables."
+      ]
+    },
+    {
+      "title": "QUINTA.- REGISTRO Y CIERRE",
+      "paragraphs": [
+        "La finalizacion de la obra debe documentarse mediante acta, evidencia de entrega o documento equivalente. SKNOMINA conserva el contrato y sus anexos como soporte laboral."
+      ]
+    }
+  ]
+}

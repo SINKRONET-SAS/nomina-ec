@@ -94,7 +94,7 @@ app.get('/api/privacidad/exportar', privacyController.exportData);
 app.get('/api/privacidad/exportar/:userId', privacyController.exportData);
 app.post('/api/privacidad/anonimizar/:userId', requireRole('superadmin'), requireFreshUser, privacyController.anonymize);
 app.post('/api/configuracion/onboarding/:stepCode', requireRole('owner', 'admin_rrhh'), configurationController.completeOnboardingStep);
-app.post('/api/configuracion/parametros-legales/obligatorios', requireRole('superadmin', 'owner', 'admin_rrhh'), requireFreshUser, configurationController.loadMandatoryLegalParameters);
+app.post('/api/configuracion/parametros-legales/obligatorios', requireRole('superadmin', 'owner'), requireFreshUser, configurationController.loadMandatoryLegalParameters);
 app.post('/api/configuracion/parametros-legales/sincronizar-globales', requireRole('superadmin', 'owner'), requireFreshUser, configurationController.syncLegalParametersFromGlobal);
 app.get('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.list);
 app.post('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), configurationController.create);
@@ -132,6 +132,7 @@ app.get('/api/empleados', requireRole('owner', 'admin_rrhh', 'supervisor'), empl
 app.get('/api/empleados/app-invitaciones', requireRole('owner', 'admin_rrhh'), employeeAppInviteController.listar);
 app.post('/api/empleados/app-invitaciones/:id/reenviar', requireRole('owner', 'admin_rrhh'), employeeAppInviteController.reenviar);
 app.post('/api/empleados/app-invitaciones/:id/revocar', requireRole('owner', 'admin_rrhh'), employeeAppInviteController.revocar);
+app.get('/api/empleados/terminacion/causas', requireRole('owner', 'admin_rrhh'), empleadoController.listarCausalesTerminacion);
 app.get('/api/empleados/importar/lotes', requireRole('owner', 'admin_rrhh'), empleadoController.listarLotesImportacion);
 app.post('/api/empleados/importar/preview', requireRole('owner', 'admin_rrhh'), empleadoController.previewImportacion);
 app.post('/api/empleados/importar/confirmar', requireRole('owner', 'admin_rrhh'), empleadoController.confirmarImportacion);
@@ -221,6 +222,8 @@ const nominaController = require('./controllers/nominaController');
 app.post('/api/nomina/calcular', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.calcularMes);
 app.get('/api/nomina/periodos/:anio', requireRole('owner', 'admin_rrhh'), nominaController.listarPeriodosAnuales);
 app.post('/api/nomina/periodos/generar-anual', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.generarPeriodosAnuales);
+app.post('/api/nomina/periodos/cerrar-anteriores-vacios', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.cerrarPeriodosAnterioresVacios);
+app.put('/api/nomina/periodo/:anio/:mes/fechas', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.actualizarFechasPeriodo);
 app.get('/api/nomina/periodo/:anio/:mes', requireRole('owner', 'admin_rrhh'), nominaController.obtenerEstadoPeriodo);
 app.post('/api/nomina/periodo/abrir', requireRole('owner', 'admin_rrhh'), nominaController.abrirPeriodo);
 app.post('/api/nomina/periodo/cerrar-operativo', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.cerrarPeriodoOperativo);
@@ -235,6 +238,7 @@ app.post('/api/nomina/cerrar', requireRole('owner', 'admin_rrhh'), requireFreshU
 app.post('/api/nomina/reabrir', requireRole('owner', 'admin_rrhh'), requireFreshUser, nominaController.reabrirMes);
 
 const documentoLegalController = require('./controllers/documentoLegalController');
+app.get('/api/documentos/contrato/tipos-ecuador', requireRole('owner', 'admin_rrhh'), documentoLegalController.listarTiposContratoEcuador);
 app.get('/api/documentos/contrato/plantillas', requireRole('owner', 'admin_rrhh'), documentoLegalController.listarPlantillasContrato);
 app.post('/api/documentos/contrato', requireRole('owner', 'admin_rrhh'), documentoLegalController.generarContrato);
 app.post('/api/documentos/finiquito', requireRole('owner', 'admin_rrhh'), documentoLegalController.generarFiniquito);

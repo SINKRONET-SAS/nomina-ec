@@ -1,0 +1,57 @@
+{
+  "templateKey": "contrato_aprendizaje",
+  "version": "2026.07",
+  "sortOrder": 160,
+  "displayName": "Contrato de aprendizaje",
+  "description": "Modelo referencial para modalidad de aprendizaje sujeta a reglas especiales.",
+  "documentTitle": "CONTRATO INDIVIDUAL DE APRENDIZAJE",
+  "contractType": "aprendizaje",
+  "appliesTo": ["aprendizaje", "aprendiz", "formacion"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": false,
+    "days": 0
+  },
+  "legalBasis": [
+    {
+      "label": "Codigo del Trabajo de Ecuador, modalidad de aprendizaje",
+      "note": "validar edad, formacion, plazo, remuneracion, tutor y registro aplicable antes de firma."
+    }
+  ],
+  "notices": [
+    "Usar solo si se cumplen requisitos legales de aprendizaje.",
+    "Anexar plan formativo, tutor, evaluacion y condiciones de seguridad."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, y {{employee.fullName}}, con identificacion {{employee.idNumber}}."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- OBJETO FORMATIVO",
+      "paragraphs": [
+        "EL APRENDIZ se incorpora al proceso formativo asociado al cargo {{employee.position}}, bajo supervision y plan de aprendizaje documentado por EL EMPLEADOR."
+      ]
+    },
+    {
+      "title": "TERCERA.- TUTOR, JORNADA Y ACTIVIDADES",
+      "paragraphs": [
+        "La jornada y actividades formativas constaran en el plan anexo. La jornada registrada en SKNOMINA es {{employee.workShift}}, sujeta a validacion legal de la modalidad."
+      ]
+    },
+    {
+      "title": "CUARTA.- REMUNERACION Y BENEFICIOS",
+      "paragraphs": [
+        "La remuneracion o estipendio registrado es USD {{employee.salaryAmount}}, sin perjuicio de los minimos, beneficios, afiliacion o reglas especiales aplicables."
+      ]
+    },
+    {
+      "title": "QUINTA.- REGISTRO Y EVALUACION",
+      "paragraphs": [
+        "El contrato, plan formativo, evaluaciones y registro oficial deben conservarse en el expediente laboral."
+      ]
+    }
+  ]
+}

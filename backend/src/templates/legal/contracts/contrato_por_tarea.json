@@ -1,0 +1,57 @@
+{
+  "templateKey": "contrato_por_tarea",
+  "version": "2026.07",
+  "sortOrder": 90,
+  "displayName": "Contrato por tarea",
+  "description": "Modelo referencial para ejecucion de una cantidad determinada de trabajo en periodo establecido.",
+  "documentTitle": "CONTRATO INDIVIDUAL DE TRABAJO POR TAREA",
+  "contractType": "tarea",
+  "appliesTo": ["tarea", "cantidad determinada", "entregable medible"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": false,
+    "days": 0
+  },
+  "legalBasis": [
+    {
+      "label": "Codigo del Trabajo de Ecuador, Art. 16",
+      "note": "en contrato por tarea el trabajador ejecuta una cantidad de obra o trabajo en una jornada o periodo previamente establecido."
+    }
+  ],
+  "notices": [
+    "Definir tarea, unidad de medicion, periodo, evidencia de cumplimiento y remuneracion.",
+    "No usar para desplazar jornada, salario minimo o beneficios laborales."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, y {{employee.fullName}}, con identificacion {{employee.idNumber}}."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- TAREA CONTRATADA",
+      "paragraphs": [
+        "EL TRABAJADOR ejecutara la tarea determinada en el anexo operativo, asociada al cargo {{employee.position}}, con cantidad, unidad de medida, periodo y criterios de aceptacion definidos."
+      ]
+    },
+    {
+      "title": "TERCERA.- PERIODO Y CONTROL",
+      "paragraphs": [
+        "La tarea se ejecutara dentro del periodo previamente establecido y se respaldara con evidencias de cumplimiento, asistencia y novedades cuando correspondan."
+      ]
+    },
+    {
+      "title": "CUARTA.- REMUNERACION Y DERECHOS",
+      "paragraphs": [
+        "La remuneracion pactada es USD {{employee.salaryAmount}} ({{employee.salaryWords}}), sin afectar derechos laborales irrenunciables, beneficios ni aportes aplicables."
+      ]
+    },
+    {
+      "title": "QUINTA.- REGISTRO",
+      "paragraphs": [
+        "El contrato y el anexo de tarea deben firmarse y conservarse. SKNOMINA no sustituye revision legal ni registro externo cuando corresponda."
+      ]
+    }
+  ]
+}

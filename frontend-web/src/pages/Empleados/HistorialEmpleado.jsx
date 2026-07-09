@@ -1,13 +1,37 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { ArrowLeft, Download, FileText, Upload } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { formatDateEC } from '../../utils/dateFormat';
+import { downloadUrl } from '../../utils/downloadUrl';
+import { fileToBase64 } from '../../utils/fileToBase64';
 import { money } from '../../utils/money';
+
+const DOCUMENT_TYPES = [
+  { value: 'contrato_firmado', label: 'Contrato firmado' },
+  { value: 'aviso_entrada_iess', label: 'Aviso de entrada IESS' },
+  { value: 'acta_entrega_dotacion_firmada', label: 'Acta de entrega de dotacion firmada' },
+  { value: 'otro_documento_laboral', label: 'Otro documento laboral' },
+];
+
+function documentLabel(documento) {
+  return documento.metadata?.displayName
+    || String(documento.tipo_documento || 'documento').replace(/_/g, ' ');
+}
+
+function getErrorMessage(err, fallback) {
+  return err.response?.data?.message || err.response?.data?.error || err.message || fallback;
+}
 
 function HistorialEmpleado() {
   const { id } = useParams();
+  const queryClient = useQueryClient();
+  const [tipoDocumento, setTipoDocumento] = useState('contrato_firmado');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [message, setMessage] = useState('');
+  const [uploadError, setUploadError] = useState('');
+  const [downloadingId, setDownloadingId] = useState('');
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['empleado-historial', id],
     queryFn: async () => {
@@ -24,6 +48,50 @@ function HistorialEmpleado() {
 
   const empleado = data?.empleado;
   const history = data?.history || { roles: [], novedades: [], permisos: [], documentos: [], resumen: {} };
+
+  const uploadMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedFile) {
+        throw new Error('Selecciona un PDF para adjuntar a la ficha laboral.');
+      }
+      if (selectedFile.type !== 'application/pdf') {
+        throw new Error('Solo se permiten documentos PDF.');
+      }
+
+      const contenidoBase64 = await fileToBase64(selectedFile);
+      const response = await authenticatedApi.post('/documentos/adjuntar', {
+        empleadoId: id,
+        tipoDocumento,
+        nombreArchivo: selectedFile.name,
+        mimeType: selectedFile.type,
+        contenidoBase64,
+      });
+      return response.data.documento;
+    },
+    onSuccess: () => {
+      setMessage('Documento adjuntado a la ficha laboral.');
+      setUploadError('');
+      setSelectedFile(null);
+      queryClient.invalidateQueries({ queryKey: ['empleado-historial', id] });
+    },
+    onError: (err) => {
+      setUploadError(getErrorMessage(err, 'No pudimos adjuntar el documento laboral.'));
+      setMessage('');
+    },
+  });
+
+  const descargarDocumento = async (documento) => {
+    setDownloadingId(documento.id);
+    setUploadError('');
+    try {
+      const response = await authenticatedApi.get(`/documentos/${documento.id}/download`);
+      downloadUrl(response.data.url, response.data.fileName || `${documento.tipo_documento || 'documento'}.pdf`);
+    } catch (err) {
+      setUploadError(getErrorMessage(err, 'No pudimos preparar la descarga del documento.'));
+    } finally {
+      setDownloadingId('');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -110,20 +178,59 @@ function HistorialEmpleado() {
 
           <section className="rounded-lg border border-slate-200 bg-white p-5">
             <h2 className="text-lg font-semibold text-slate-950">Documentos</h2>
+            <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-4">
+              <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)_auto]">
+                <label className="text-sm font-semibold text-slate-700">
+                  Tipo
+                  <select
+                    className="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
+                    value={tipoDocumento}
+                    onChange={(event) => setTipoDocumento(event.target.value)}
+                  >
+                    {DOCUMENT_TYPES.map((type) => (
+                      <option key={type.value} value={type.value}>{type.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-sm font-semibold text-slate-700">
+                  PDF firmado o soporte
+                  <input
+                    className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
+                  />
+                </label>
+                <button
+                  className="mt-6 inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300"
+                  disabled={uploadMutation.isPending || !selectedFile}
+                  type="button"
+                  onClick={() => uploadMutation.mutate()}
+                >
+                  <Upload className="h-4 w-4" />
+                  {uploadMutation.isPending ? 'Adjuntando' : 'Adjuntar'}
+                </button>
+              </div>
+              {message && <p className="mt-3 text-sm font-semibold text-emerald-700">{message}</p>}
+              {uploadError && <p className="mt-3 text-sm font-semibold text-red-700">{uploadError}</p>}
+            </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {history.documentos.length === 0 ? (
                 <p className="text-sm text-slate-600">Sin documentos asociados.</p>
               ) : history.documentos.map((documento) => (
-                <a
-                  className="flex items-center gap-3 rounded-md border border-slate-200 p-3 text-sm font-semibold text-teal-700 hover:border-teal-300"
-                  href={documento.documento_url}
+                <button
+                  className="flex items-center justify-between gap-3 rounded-md border border-slate-200 p-3 text-left text-sm font-semibold text-teal-700 hover:border-teal-300 disabled:opacity-60"
                   key={documento.id}
-                  rel="noreferrer"
-                  target="_blank"
+                  type="button"
+                  disabled={downloadingId === documento.id}
+                  onClick={() => descargarDocumento(documento)}
                 >
-                  <FileText className="h-4 w-4" />
-                  {documento.tipo_documento} - {documento.firmado ? 'Firmado' : 'Pendiente'}
-                </a>
+                  <span className="flex min-w-0 items-center gap-3">
+                    <FileText className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{documentLabel(documento)} - {documento.firmado ? 'Firmado' : 'Pendiente'}</span>
+                  </span>
+                  <Download className="h-4 w-4 shrink-0" />
+                </button>
               ))}
             </div>
           </section>

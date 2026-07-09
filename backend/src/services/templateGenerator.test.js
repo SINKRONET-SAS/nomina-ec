@@ -71,6 +71,16 @@ describe('templateGenerator', () => {
         probation: expect.objectContaining({ enabled: true, days: 90 }),
         sourcePath: expect.stringContaining('backend/src/templates/legal/contracts'),
       }),
+      expect.objectContaining({
+        templateKey: 'contrato_productivo',
+        contractType: 'productivo',
+        contractTypeAcceptedEcuador: true,
+      }),
+      expect.objectContaining({
+        templateKey: 'contrato_teletrabajo',
+        contractType: 'teletrabajo',
+        contractTypeAcceptedEcuador: true,
+      }),
     ]));
   });
 
@@ -128,6 +138,33 @@ describe('templateGenerator', () => {
       url: 'https://storage.local/contrato.pdf',
       template: { templateKey: 'contrato_indefinido_mercaderista_prueba' },
       documento: { id: 'doc-1', tipo_documento: 'contrato' },
+    });
+  });
+
+  test('usa el modelo definido en la ficha del empleado cuando no se envia plantilla manual', async () => {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [{
+          ...employee,
+          tipo_contrato: 'contrato_teletrabajo',
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [{ id: 'doc-2', tipo_documento: 'contrato' }] });
+
+    const result = await generarContrato(
+      { id: employee.id, tenant_id: tenant.id },
+      tenant,
+      null,
+      { generatedAt: new Date('2026-06-25T00:00:00Z'), year: 2026 },
+    );
+
+    expect(result.template).toMatchObject({
+      templateKey: 'contrato_teletrabajo',
+    });
+    const metadata = JSON.parse(db.query.mock.calls[1][1][3]);
+    expect(metadata).toMatchObject({
+      templateKey: 'contrato_teletrabajo',
+      tipoContrato: 'teletrabajo',
     });
   });
 

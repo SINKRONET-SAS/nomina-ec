@@ -23,9 +23,9 @@ describe('liquidacionService formulas', () => {
     expect(calcularIndemnizacionDespidoIntempestivo(1000, 31, 'despido_intempestivo')).toBe(25000);
   });
 
-  test('calcula desahucio solo para causas aplicables', () => {
+  test('calcula desahucio para renuncia y mutuo acuerdo', () => {
     expect(calcularDesahucio(1000, 4.8, 'renuncia_voluntaria')).toBe(1000);
-    expect(calcularDesahucio(1000, 4.8, 'mutuo_acuerdo')).toBe(0);
+    expect(calcularDesahucio(1000, 4.8, 'mutuo_acuerdo')).toBe(1000);
   });
 
   test('calcula vacaciones base sin adicional hasta cinco años completos', () => {

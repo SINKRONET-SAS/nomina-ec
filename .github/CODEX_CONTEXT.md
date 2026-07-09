@@ -1,6 +1,47 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-USUARIOS-ROLES-RBAC-MODULAR-SKNOMINA-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-USUARIOS-ROLES-RBAC-MODULAR-SKNOMINA-2026 |
+| Codigo | URR26 |
+| Estado | in-progress |
+| Fase actual | URR26-00 Baseline |
+| Requerimiento fuente | El campo "Acceso empleado" solo ofrece 3 opciones genericas que no cubren los modulos reales del sistema; los permisos se guardan pero no se aplican. |
+| Plan doc | `docs2/PLAN_HAIKY_USUARIOS_ROLES_RBAC_MODULAR_SKNOMINA_2026.md` |
+| Prompts | `.github/prompts/URR26-{00..03}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Alcance URR26
+
+URR26 reemplaza el dropdown simplista de "Acceso empleado" (3 opciones cosmeticas) por una matriz de permisos por modulo real del sistema. Los 9 modulos (empleados, asistencia, operacion, nomina, documentos, reportes, parametrizacion, comunicaciones, auditoria) se definen en `backend/src/config/modules.js`, se almacenan como `module_permissions JSONB` en la tabla `usuarios`, y se aplican con middleware `requireModule()` en backend y sidebar dinamico en frontend. Los roles `superadmin` y `owner` mantienen acceso total irrestricto. El campo `employee_access` se reemplaza por la matriz visual de checkboxes en la pestaña "Usuarios y roles" de Parametrizacion.
+
+### Modulos URR26
+
+| Modulo | Codigo | Roles base |
+|--------|--------|-----------|
+| Empleados | `empleados` | owner, admin_rrhh, supervisor |
+| Asistencia | `asistencia` | owner, admin_rrhh, supervisor |
+| Operacion | `operacion` | owner, admin_rrhh |
+| Nomina | `nomina` | owner, admin_rrhh |
+| Documentos | `documentos` | owner, admin_rrhh |
+| Reportes | `reportes` | owner, admin_rrhh |
+| Parametrizacion | `parametrizacion` | owner, admin_rrhh |
+| Comunicaciones | `comunicaciones` | owner, admin_rrhh |
+| Auditoria | `auditoria` | owner |
+
+### Gates URR26
+
+- `npm.cmd --workspace=backend test -- app.routes.test.js --runInBand`
+- `npm.cmd --workspace=frontend-web run build`
+- `npm.cmd run contracts`
+- `git diff --check`
+- UTF-8 sin BOM en archivos `.js`, `.jsx`, `.md`, `.json` modificados.
+
+---
+
 ## Closed Haiky Plan - HAIKY-COSTOS-PRODUCCION-DOCUMENTOS-SKNOMINA-2026
 
 | Campo | Valor |
@@ -2191,7 +2232,7 @@ Artefactos:
 Runtime cerrado:
 
 - Parametrizacion web queda sin mojibake visible en textos de nomina, parametros, decimos, validacion, calculo y matriz minima.
-- Los separadores corruptos `Â·` en metadatos de registros se reemplazan por guiones simples.
+- Los separadores corruptos historicos en metadatos de registros se reemplazan por guiones simples.
 - El escaneo repo-wide de archivos `.js`, `.jsx`, `.json`, `.md`, `.mjs`, `.ts` y `.tsx` queda sin coincidencias de mojibake ni caracteres de reemplazo.
 
 Gates HSH26 ejecutados:
@@ -2322,3 +2363,98 @@ Reglas V66:
 - Mantener `sendRolPagoDisponible()` como notificacion no bloqueante del cierre mensual.
 - No almacenar base64 medico en novedades; solo metadata documental y URL resuelta.
 - El selector movil cubre JPG/PNG; backend acepta PDF para compatibilidad futura.
+
+---
+
+## TFD26 - Terminacion laboral, Formulario 107 y documentos 2026
+
+Plan: `HAIKY-TERMINACION-FORM107-DOCUMENTOS-SKNOMINA-2026`.
+
+Estado: TFD26-00 a TFD26-04 ejecutadas localmente; QA verde.
+
+Fuente:
+
+- Solicitud del usuario sobre causales de terminacion Ecuador, error `generarActaFiniquito is not a function`, horas extra parametrizables, Formulario 107, ficha documental laboral, descarga de contratos y Safari.
+- Capturas de PWA en `Empleados > Terminar Relacion Laboral` y `Documentos > Contratos`.
+- Fuentes oficiales consultadas: Codigo del Trabajo publicado por Ministerio del Trabajo y pagina SRI de formularios/RDEP 2026.
+
+Artefactos:
+
+- `docs2/PLAN_HAIKY_TERMINACION_FORM107_DOCUMENTOS_2026.md`
+- `docs2/terminacion-form107-documentos-2026/INFORME_DIAGNOSTICO_TFD26.md`
+- `.github/prompts/TFD26-00-baseline.md`
+- `.github/prompts/TFD26-01-terminacion-finiquito.md`
+- `.github/prompts/TFD26-02-horas-extra-form107.md`
+- `.github/prompts/TFD26-03-documentos-descargas.md`
+- `.github/prompts/TFD26-04-qa-release.md`
+
+Runtime TFD26:
+
+- Backend expone `GET /api/empleados/terminacion/causas` con causales laborales versionadas, incluyendo terminacion unilateral durante periodo de prueba para empleador y trabajador, limitada a 90 dias.
+- `calcularLiquidacion()` valida la causal, aplica indemnizacion por despido intempestivo con fraccion anual como anio completo, calcula bonificacion por desahucio cuando corresponde y genera acta de finiquito PDF mediante `generarActaFiniquito()`.
+- La PWA consume causales desde backend, muestra base legal y bloquea causales que requieren revision previa antes de liquidacion automatica.
+- Horas extra quedan parametrizadas desde parametros legales del tenant/anio: jornada mensual, limite semanal, multiplicador suplementario y extraordinario. El detalle visible queda en cierre de nomina y rol PDF.
+- Formulario 107 queda versionado contra RDEP/Formulario 107 SRI 2026, con precheck, desglose de ingresos/deducciones y advertencia de revision tributaria antes de entrega oficial.
+- Ficha/historial de empleado permite cargar contrato firmado, aviso de entrada IESS, acta de dotacion firmada y otros documentos laborales.
+- Descargas documentales se resuelven por endpoint backend y URL absoluta; Safari abre cross-origin en nueva pestana para evitar el error de direccion invalida.
+
+Reglas operativas TFD26:
+
+- No tratar causales que requieren visto bueno, fuerza mayor o muerte/incapacidad como liquidacion automatica sin revision previa.
+- No marcar Formulario 107 como oficialmente valido sin validacion tributaria profesional y contraste final con estructura SRI/RDEP vigente.
+- No exponer enlaces crudos de storage/S3/local al frontend; toda descarga documental debe pasar por endpoint backend y URL resuelta.
+- Mantener mensajes visibles en espanol tecnico y errores con `correlationId` cuando el flujo pasa por API.
+
+Gates TFD26 ejecutados:
+
+- Backend completo: PASS, 52 suites y 273 tests.
+- `app.routes.test.js`: PASS, 23 tests e incluye `GET /api/empleados/terminacion/causas`.
+- Prisma schema: PASS con binario local de Prisma desde `backend`.
+- PWA build: PASS; Vite genero artefactos y se cerro el proceso por PID despues de `built in 2m 15s`.
+- `git diff --check`: PASS con avisos LF/CRLF esperados en Windows.
+- UTF-8 sin BOM: PASS en archivos modificados y nuevos gobernados.
+
+---
+
+## OAP26 - Ortografia, ayuda, parametros, periodos y contratos 2026
+
+Plan: `HAIKY-ORTOGRAFIA-AYUDA-PARAMETROS-PERIODOS-CONTRATOS-2026`.
+
+Estado: OAP26-00 a OAP26-04 ejecutadas localmente; QA final en curso.
+
+Fuente:
+
+- Solicitud del usuario sobre ortografia, `Año`, `Anticipos y préstamos`, menu `Descuento Anticipos`, parametros validados por owner, periodos enero-diciembre editables, cierre de meses previos vacios, tipos/modelos de contratos Ecuador 2026 y guia de uso.
+- Decision posterior del usuario: no atar modelos de contratos al cargo; deben ser visibles y escogerse en la ficha del empleado.
+- Regla adicional: no generar codigo duplicado innecesariamente.
+
+Artefactos:
+
+- `docs2/PLAN_HAIKY_ORTOGRAFIA_AYUDA_PARAMETROS_PERIODOS_CONTRATOS_2026.md`
+- `docs2/ortografia-ayuda-parametros-periodos-contratos-2026/INFORME_DIAGNOSTICO_OAP26.md`
+- `.github/prompts/OAP26-00-baseline.md`
+- `.github/prompts/OAP26-01-periodos.md`
+- `.github/prompts/OAP26-02-parametros-owner.md`
+- `.github/prompts/OAP26-03-contratos-modelos-ficha.md`
+- `.github/prompts/OAP26-04-ui-ayuda-ortografia.md`
+- `.github/prompts/OAP26-05-qa-release.md`
+
+Runtime OAP26:
+
+- `monthlyPeriodService` genera periodos del 1 de enero al 31 de diciembre, devuelve fechas `YYYY-MM-DD`, permite editar fechas solo en periodos no calculados/cerrados y agrega cierre de meses anteriores vacios.
+- `PeriodosNomina.jsx` expone edicion de fechas y cierre de vacios en PWA.
+- `configurationService` permite validacion legal por check owner/superadmin, registra aprobacion y bloquea modificacion/eliminacion para perfiles no autorizados.
+- `Parametrizacion.jsx` muestra check de owner y deshabilita edicion de parametros legales validados para perfiles distintos a owner/superadmin.
+- `ecuadorContractTypes` y plantillas JSON cubren modalidades contractuales referenciales Ecuador 2026.
+- `templateGenerator` valida tipo homologado y usa el modelo definido en la ficha del empleado o seleccion manual al emitir PDF.
+- `NuevoEmpleado.jsx` muestra `Modelo de contrato`, consume `/documentos/contrato/plantillas` y normaliza valores legados mediante `frontend-web/src/utils/contractTemplates.js`.
+- `ContratosGenerados.jsx` usa el modelo de la ficha como sugerencia; no consulta cargos ni mantiene catalogo duplicado.
+- `Beneficios.jsx`, `Layout.jsx` y `AyudaUsuario.jsx` corrigen nombres visibles y agregan guia operativa.
+
+Reglas OAP26:
+
+- No reintroducir plantilla de contrato como atributo de cargo/puesto.
+- No duplicar catalogos frontend de plantillas; consumir el backend y compartir normalizacion.
+- No permitir edicion de fechas de periodos con roles/calculo/cierre.
+- No permitir que admin_rrhh modifique parametros legales ya validados por owner.
+- No presentar plantillas como documentos oficiales sin revision laboral y registro externo cuando corresponda.

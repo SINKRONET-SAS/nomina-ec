@@ -1,0 +1,57 @@
+{
+  "templateKey": "contrato_a_destajo",
+  "version": "2026.07",
+  "sortOrder": 100,
+  "displayName": "Contrato a destajo",
+  "description": "Modelo referencial para trabajo por unidades de obra, piezas, trozos o medidas.",
+  "documentTitle": "CONTRATO INDIVIDUAL DE TRABAJO A DESTAJO",
+  "contractType": "destajo",
+  "appliesTo": ["destajo", "pieza", "unidad de obra"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": false,
+    "days": 0
+  },
+  "legalBasis": [
+    {
+      "label": "Codigo del Trabajo de Ecuador, Art. 16",
+      "note": "en el trabajo a destajo se realiza por piezas, trozos, medidas de superficie o unidades de obra."
+    }
+  ],
+  "notices": [
+    "Definir unidad, tarifa, evidencia de produccion y reglas de aceptacion.",
+    "No usar para suprimir jornada, descansos, salario minimo proporcional, afiliacion o beneficios aplicables."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, y {{employee.fullName}}, con identificacion {{employee.idNumber}}."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- UNIDADES DE OBRA",
+      "paragraphs": [
+        "EL TRABAJADOR ejecutara labores a destajo vinculadas al cargo {{employee.position}}, conforme a unidades, tarifa, controles de calidad y evidencias definidas en el anexo operativo."
+      ]
+    },
+    {
+      "title": "TERCERA.- CONTROL Y ACEPTACION",
+      "paragraphs": [
+        "Las unidades aceptadas se respaldaran con registros verificables. Las observaciones, rechazos o correcciones deberan documentarse y comunicarse oportunamente."
+      ]
+    },
+    {
+      "title": "CUARTA.- REMUNERACION Y DERECHOS",
+      "paragraphs": [
+        "La remuneracion base referencial registrada es USD {{employee.salaryAmount}} ({{employee.salaryWords}}), sin perjuicio de la liquidacion por unidades aceptadas y derechos laborales aplicables."
+      ]
+    },
+    {
+      "title": "QUINTA.- REGISTRO",
+      "paragraphs": [
+        "El contrato y anexo de destajo deben firmarse y conservarse en el expediente. SKNOMINA mantiene el registro externo como {{contract.sutRegistrationStatus}} hasta confirmacion documental."
+      ]
+    }
+  ]
+}

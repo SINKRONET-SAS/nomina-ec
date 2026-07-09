@@ -1,0 +1,57 @@
+{
+  "templateKey": "contrato_especial_emergente",
+  "version": "2026.07",
+  "sortOrder": 130,
+  "displayName": "Contrato especial emergente",
+  "description": "Modelo referencial para condiciones emergentes permitidas por normativa vigente.",
+  "documentTitle": "CONTRATO ESPECIAL EMERGENTE DE TRABAJO",
+  "contractType": "especial_emergente",
+  "appliesTo": ["emergente", "especial emergente", "crisis"],
+  "legalReviewRequired": true,
+  "probation": {
+    "enabled": false,
+    "days": 0
+  },
+  "legalBasis": [
+    {
+      "label": "Modalidad especial emergente vigente",
+      "note": "validar habilitacion normativa, causa emergente, plazo, jornada, renovaciones y registro."
+    }
+  ],
+  "notices": [
+    "Usar solo si existe causa emergente real y soporte documental.",
+    "Validar vigencia y condiciones legales antes de firma."
+  ],
+  "sections": [
+    {
+      "title": "PRIMERA.- COMPARECIENTES",
+      "paragraphs": [
+        "Comparecen {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, y {{employee.fullName}}, con identificacion {{employee.idNumber}}."
+      ]
+    },
+    {
+      "title": "SEGUNDA.- CAUSA EMERGENTE",
+      "paragraphs": [
+        "La contratacion responde a una condicion emergente documentada por EL EMPLEADOR, que requiere los servicios de {{employee.position}} bajo la modalidad especial aplicable."
+      ]
+    },
+    {
+      "title": "TERCERA.- PLAZO, JORNADA Y PAGO",
+      "paragraphs": [
+        "El plazo, jornada y condiciones especiales constaran en anexo validado por RRHH. La jornada base registrada es {{employee.workShift}} y la remuneracion pactada USD {{employee.salaryAmount}}."
+      ]
+    },
+    {
+      "title": "CUARTA.- DERECHOS Y CONTROL",
+      "paragraphs": [
+        "La modalidad no reduce derechos irrenunciables. Las novedades, asistencia, pago, seguridad social y documentos laborales se conservaran en SKNOMINA."
+      ]
+    },
+    {
+      "title": "QUINTA.- REGISTRO",
+      "paragraphs": [
+        "La vigencia de esta modalidad debe confirmarse antes de firma y registrarse en los sistemas oficiales cuando corresponda."
+      ]
+    }
+  ]
+}
