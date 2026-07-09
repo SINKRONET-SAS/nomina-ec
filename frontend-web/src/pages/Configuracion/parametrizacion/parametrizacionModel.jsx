@@ -10,7 +10,7 @@ import {
   TimerReset,
   UserCog,
 } from 'lucide-react';
-import { normalizeIncomeTaxBrackets } from './legalParameterDisplay';
+import { normalizeIncomeTaxBrackets, labelLegalParameter, legalParameterValue } from './legalParameterDisplay';
 
 const workDayOptions = [
   { value: 'monday', label: 'Lunes' },
@@ -150,6 +150,17 @@ function parseStructuredValue(text, fallback) {
   }
 }
 
+// Construye el valor JSON correcto segun el tipo de parametro legal
+const MULTIPLIER_LEGAL_KEYS = ['horas_extra_recargo_suplementaria', 'horas_extra_recargo_extraordinaria'];
+
+function buildLegalValueFallback(parameterKey, amountRaw) {
+  const num = Number(amountRaw);
+  if (MULTIPLIER_LEGAL_KEYS.includes(parameterKey)) {
+    return { multiplier: num, rate: num - 1, calculationBase: 'valor_hora' };
+  }
+  return { amount: num };
+}
+
 const formDefinitions = [
   {
     key: 'empresa',
@@ -207,10 +218,29 @@ const formDefinitions = [
     resource: 'legalParameters',
     stepCode: 'legal',
     fields: [
-      { name: 'parameter_key', label: 'Código', placeholder: 'sbu_2026', required: true },
+      {
+        name: 'parameter_key', label: 'Parámetro', type: 'select', required: true,
+        options: [
+          { value: '', label: '-- Seleccionar --' },
+          { value: 'sbu', label: 'Salario básico unificado (SBU)' },
+          { value: 'iess_aporte_personal', label: 'IESS aporte personal' },
+          { value: 'iess_aporte_patronal', label: 'IESS aporte patronal' },
+          { value: 'jornada_horas_mensuales', label: 'Horas mensuales (valor hora)' },
+          { value: 'jornada_maxima_semanal', label: 'Jornada máxima semanal' },
+          { value: 'horas_extra_limite_semanal', label: 'Horas extra: límite semanal' },
+          { value: 'horas_extra_recargo_suplementaria', label: 'Horas extra: multiplicador 50% (suplementaria)' },
+          { value: 'horas_extra_recargo_extraordinaria', label: 'Horas extra: multiplicador 100% (extraordinaria)' },
+          { value: 'provision_vacaciones', label: 'Provisión vacaciones' },
+          { value: 'vacaciones_dias_anuales', label: 'Vacaciones días anuales' },
+          { value: 'decimo_tercero', label: 'Décimo tercero' },
+          { value: 'decimo_cuarto_costa_galapagos', label: 'Décimo cuarto Costa/Galápagos' },
+          { value: 'decimo_cuarto_sierra_amazonia', label: 'Décimo cuarto Sierra/Amazonía' },
+          { value: 'fondo_reserva', label: 'Fondo de reserva' },
+        ],
+      },
       { name: 'period_year', label: 'Año', type: 'number', required: true },
-      { name: 'amount', label: 'Valor', type: 'number', step: '0.01', required: true },
-      { name: 'unit', label: 'Unidad', placeholder: 'USD, porcentaje, tabla', required: true },
+      { name: 'amount', label: 'Valor (monto, tasa o multiplicador)', type: 'number', step: '0.01', required: true },
+      { name: 'unit', label: 'Unidad', placeholder: 'USD, porcentaje, horas, regla', required: true },
       { name: 'source_name', label: 'Referencia revisada', placeholder: 'SRI, IESS, MDT, acuerdo o resolución' },
       { name: 'owner_validated', label: 'Validado por responsable', type: 'checkbox' },
       { name: 'value_json', label: 'Valor estructurado JSON (si se llena tiene prioridad)', type: 'textarea', wide: true },
@@ -232,7 +262,7 @@ const formDefinitions = [
       region_code: 'NACIONAL',
       period_year: Number(values.period_year),
       parameter_key: values.parameter_key.trim(),
-      value: parseStructuredValue(values.value_json, { amount: Number(values.amount) }),
+      value: parseStructuredValue(values.value_json, buildLegalValueFallback(values.parameter_key.trim(), values.amount)),
       unit: values.unit.trim(),
       owner_validated: Boolean(values.owner_validated),
       validation_status: values.owner_validated ? 'validado_oficial' : 'pendiente_validacion_oficial',
@@ -240,8 +270,8 @@ const formDefinitions = [
       source_url: '',
       notes: values.notes.trim(),
     }),
-    recordLabel: (record) => `${record.parameter_key} ${record.period_year}`,
-    recordMeta: (record) => `${record.value?.amount ?? '-'} ${record.unit || ''}`,
+    recordLabel: (record) => `${labelLegalParameter(record.parameter_key)} ${record.period_year}`,
+    recordMeta: (record) => legalParameterValue(record),
   },
   {
     key: 'ir',
@@ -1031,7 +1061,7 @@ function formValuesFromRecord(definition, record) {
       return {
         parameter_key: record.parameter_key || '',
         period_year: record.period_year || new Date().getFullYear(),
-        amount: String(value.amount ?? value.rate ?? 0),
+        amount: String(value.amount ?? value.multiplier ?? value.rate ?? 0),
         unit: record.unit || 'USD',
         source_name: record.source_name || '',
         source_url: record.source_url || '',
