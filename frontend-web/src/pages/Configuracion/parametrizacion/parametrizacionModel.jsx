@@ -663,7 +663,7 @@ const formDefinitions = [
       { name: 'owner_email', label: 'Owner / representante', type: 'email' },
       { name: 'admin_email', label: 'Administrador RRHH', type: 'email' },
       { name: 'supervisor_enabled', label: 'Usa supervisores', type: 'checkbox' },
-      { name: 'employee_access', label: 'Acceso empleado', type: 'select', options: ['marcaciones_y_roles', 'solo_marcaciones', 'sin_acceso'] },
+      { name: 'module_permissions', label: 'Permisos por módulo', type: 'modulePermissionMatrix', wide: true },
       { name: 'notes', label: 'Notas de control', type: 'textarea', wide: true },
     ],
     initial: {
@@ -672,7 +672,7 @@ const formDefinitions = [
       owner_email: '',
       admin_email: '',
       supervisor_enabled: true,
-      employee_access: 'marcaciones_y_roles',
+      module_permissions: {},
       notes: '',
     },
     buildPayload: (values) => ({
@@ -685,12 +685,20 @@ const formDefinitions = [
         ownerEmail: values.owner_email.trim(),
         adminRrhhEmail: values.admin_email.trim(),
         supervisorEnabled: Boolean(values.supervisor_enabled),
-        employeeAccess: values.employee_access,
+        modulePermissions: values.module_permissions || {},
         roles: ['owner', 'admin_rrhh', 'supervisor', 'empleado'],
       },
     }),
     recordLabel: (record) => record.name,
-    recordMeta: (record) => `${record.code} - ${record.payload?.employeeAccess || 'sin detalle'}`,
+    recordMeta: (record) => {
+      const mp = record.payload?.modulePermissions;
+      if (!mp || Object.keys(mp).length === 0) return `${record.code} - permisos por defecto`;
+      const customCount = Object.values(mp).reduce((acc, rolePerms) => {
+        if (!rolePerms || typeof rolePerms !== 'object') return acc;
+        return acc + Object.keys(rolePerms).length;
+      }, 0);
+      return `${record.code} - ${customCount} permiso(s) personalizado(s)`;
+    },
   },
 ];
 

@@ -694,6 +694,7 @@ async function sessionContext(req, res, next) {
     const result = await db.query(
       `SELECT
          u.id, u.tenant_id, u.email, u.rol, u.nombres, u.apellidos, u.email_verificado_en,
+         u.module_permissions,
          t.ruc AS tenant_ruc,
          t.razon_social AS tenant_razon_social,
          owner_user.nombres AS owner_nombres,
@@ -725,6 +726,12 @@ async function sessionContext(req, res, next) {
     const usuario = result.rows[0];
     const user = buildUserPayload(usuario);
 
+    const { resolveEffectivePermissions } = require('../config/modules');
+    const effectiveModulePermissions = resolveEffectivePermissions(
+      usuario.rol,
+      usuario.module_permissions
+    );
+
     return res.json({
       success: true,
       user,
@@ -735,6 +742,7 @@ async function sessionContext(req, res, next) {
         razonSocial: usuario.tenant_razon_social || null,
         ownerName: [usuario.owner_nombres, usuario.owner_apellidos].filter(Boolean).join(' ').trim() || null,
       },
+      modulePermissions: effectiveModulePermissions,
       correlationId: req.correlationId,
     });
   } catch (err) {

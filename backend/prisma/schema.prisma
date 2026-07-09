@@ -146,6 +146,7 @@ model User {
   nombres                 String                   @default("") @db.VarChar(120)
   apellidos               String                   @default("") @db.VarChar(120)
   activo                  Boolean                  @default(true)
+  modulePermissions       Json?                    @map("module_permissions")
   ultimoAcceso            DateTime?                @map("ultimo_acceso") @db.Timestamptz(6)
   emailVerificadoEn       DateTime?                @map("email_verificado_en") @db.Timestamptz(6)
   createdAt               DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)

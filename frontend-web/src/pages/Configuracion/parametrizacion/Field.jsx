@@ -1,8 +1,22 @@
 import React from 'react';
+import ModulePermissionMatrix from '../../../components/ModulePermissionMatrix';
 
 function Field({ field, value, onChange, options = [] }) {
   const baseClass = 'form-control';
   const fieldClass = field.wide ? 'form-field-full' : 'form-field-third';
+
+  if (field.type === 'modulePermissionMatrix') {
+    return (
+      <fieldset className="form-field-full">
+        <legend className="mb-2 text-sm font-medium text-slate-700">{field.label}</legend>
+        <ModulePermissionMatrix
+          value={value || {}}
+          onChange={(newValue) => onChange(field.name, newValue)}
+          readOnly={field.disabled}
+        />
+      </fieldset>
+    );
+  }
 
   if (field.type === 'textarea') {
     return (

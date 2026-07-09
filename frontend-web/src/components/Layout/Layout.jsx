@@ -25,9 +25,16 @@ function Layout() {
     retry: false,
   });
   const sessionTenant = sessionContextQuery.data?.tenant || null;
+  const modulePermissions = sessionContextQuery.data?.modulePermissions || {};
   const effectiveTenantName = sessionTenant?.razonSocial || usuario?.tenantRazonSocial || null;
   const effectiveTenantRuc = sessionTenant?.ruc || usuario?.tenantRuc || null;
   const effectiveOwnerName = sessionTenant?.ownerName || null;
+
+  function hasModuleAccess(moduleCode) {
+    if (!moduleCode) return true;
+    if (!sessionContextQuery.data) return true; // Mientras carga, mostrar todo
+    return modulePermissions[moduleCode] !== false;
+  }
 
   const menuItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Inicio', roles: ['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado'] },
@@ -46,6 +53,7 @@ function Layout() {
       label: 'Empleados',
       icon: Users,
       roles: ['owner', 'admin_rrhh', 'supervisor'],
+      module: 'empleados',
       submenu: [
         { path: '/dashboard/empleados', label: 'Lista de Empleados' },
         { path: '/dashboard/empleados/nuevo', label: 'Nuevo Empleado' },
@@ -56,6 +64,7 @@ function Layout() {
       label: 'Asistencia',
       icon: Clock,
       roles: ['owner', 'admin_rrhh', 'supervisor'],
+      module: 'asistencia',
       submenu: [
         { path: '/dashboard/asistencia/novedades', label: 'Ingreso manual y pendientes' },
         { path: '/dashboard/asistencia/reporte', label: 'Reporte de Asistencia' },
@@ -66,6 +75,7 @@ function Layout() {
       label: 'Operación',
       icon: Route,
       roles: ['owner', 'admin_rrhh'],
+      module: 'operacion',
       submenu: [
         { path: '/dashboard/operacion/permisos', label: 'Permisos' },
         { path: '/dashboard/operacion/movilizacion', label: 'Movilización' },
@@ -75,6 +85,7 @@ function Layout() {
       label: 'Nómina',
       icon: DollarSign,
       roles: ['owner', 'admin_rrhh'],
+      module: 'nomina',
       submenu: [
         { path: '/dashboard/nomina/periodos', label: 'Períodos' },
         { path: '/dashboard/nomina/cerrar', label: 'Cerrar Mes' },
@@ -88,17 +99,18 @@ function Layout() {
       label: 'Documentos',
       icon: FileText,
       roles: ['owner', 'admin_rrhh'],
+      module: 'documentos',
       submenu: [
         { path: '/dashboard/documentos/contratos', label: 'Contratos' },
         { path: '/dashboard/documentos/finiquitos', label: 'Actas de Finiquito' },
         { path: '/dashboard/documentos/dotacion', label: 'Entrega de dotacion' },
       ]
     },
-    { path: '/dashboard/configuracion/parametrizacion', icon: Settings2, label: 'Parametrización', roles: ['superadmin', 'owner', 'admin_rrhh'] },
-    { path: '/dashboard/configuracion/comunicaciones', icon: Mail, label: 'Comunicaciones', roles: ['superadmin', 'owner', 'admin_rrhh'] },
+    { path: '/dashboard/configuracion/parametrizacion', icon: Settings2, label: 'Parametrización', roles: ['superadmin', 'owner', 'admin_rrhh'], module: 'parametrizacion' },
+    { path: '/dashboard/configuracion/comunicaciones', icon: Mail, label: 'Comunicaciones', roles: ['superadmin', 'owner', 'admin_rrhh'], module: 'comunicaciones' },
     { path: '/dashboard/ayuda', icon: HelpCircle, label: 'Ayuda', roles: ['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado'] },
     { path: '/dashboard/facturacion', icon: CreditCard, label: 'Facturador interno', roles: ['superadmin'] },
-    { path: '/dashboard/auditoria', icon: ShieldCheck, label: 'Auditoría', roles: ['superadmin', 'owner'] },
+    { path: '/dashboard/auditoria', icon: ShieldCheck, label: 'Auditoría', roles: ['superadmin', 'owner'], module: 'auditoria' },
     { path: '/dashboard/privacidad', icon: ShieldCheck, label: 'Privacidad', roles: ['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado'] },
     { path: '/dashboard/superadmin', icon: CreditCard, label: 'Superadmin', roles: ['superadmin'] },
     { path: '/dashboard/planes', icon: CreditCard, label: 'Gestión de planes', roles: ['superadmin'] },
@@ -127,6 +139,7 @@ function Layout() {
         <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
           {menuItems.map((item, idx) => {
             if (!hasRoleAccess(usuario, item.roles)) return null;
+            if (item.module && !hasModuleAccess(item.module)) return null;
             
             if (item.submenu) {
               return (
