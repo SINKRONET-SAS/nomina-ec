@@ -1,60 +1,112 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-COSTOS-PRODUCCION-DOCUMENTOS-SKNOMINA-2026",
-  "planCode": "CPD26",
+  "plan": "HAIKY-HUMANIZACION-SINTESIS-PWA-2026",
+  "planCode": "HU26",
   "status": "completed-pass",
-  "phaseCompleted": "CPD26-03",
-  "currentPhase": "CPD26-03",
-  "updatedAt": "2026-07-05T15:14:53-05:00",
+  "phaseCompleted": "HU26-06",
+  "currentPhase": "HU26-06",
+  "updatedAt": "2026-07-09T07:52:52-05:00",
   "rulesSource": "RULES.md",
   "precedent": {
-    "plan": "HAIKY-GESTION-PERIODOS-ANUALES-NOMINA-2026",
-    "planCode": "GPA26",
-    "status": "completed-pass"
+    "plan": "HAIKY-HUMANIZACION-SINTESIS-PWA-2026",
+    "planCode": "HU26",
+    "status": "HU26-00 a HU26-04 completadas en primera pasada"
   },
-  "summary": "CPD26 cerrado: produccion inicial queda con sknomina-api como unico generador/descargador documental, Render Persistent Disk en /var/data, STORAGE_DRIVER=local, worker cron fuera del blueprint inicial y contratos anti-regresion activos.",
+  "summary": "HU26 segunda pasada cerrada: SKNOMINA queda expresado como SaaS y no como parte contractual laboral; las plantillas legales atribuyen obligaciones a EL EMPLEADOR y EL TRABAJADOR; terminos y condiciones refuerzan responsabilidad legal del cliente; la UI reemplaza owner/fundador/Superadmin visibles por Administrador principal y Soporte global.",
   "filesModified": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/CPD26-00-baseline-gobierno.md",
-    ".github/prompts/CPD26-01-render-storage-local.md",
-    ".github/prompts/CPD26-02-cron-operacion-manual.md",
-    ".github/prompts/CPD26-03-qa-release.md",
+    ".github/prompts/HU26-05-saas-contratos-roles.md",
+    ".github/prompts/HU26-06-qa-release-saas.md",
     ".vscode/AuditLock.json",
-    "backend/.env.example",
-    "docs2/PLAN_HAIKY_COSTOS_PRODUCCION_DOCUMENTOS_SKNOMINA_2026.md",
-    "docs2/costos-produccion-documentos-sknomina-2026/REPORTE_CPD26_00_03_EJECUCION.md",
-    "render.yaml",
-    "scripts/verify-system-contracts.mjs"
+    "backend/src/templates/legal/contracts/contrato_a_destajo.json",
+    "backend/src/templates/legal/contracts/contrato_aprendizaje.json",
+    "backend/src/templates/legal/contracts/contrato_emprendimiento.json",
+    "backend/src/templates/legal/contracts/contrato_especial_emergente.json",
+    "backend/src/templates/legal/contracts/contrato_eventual.json",
+    "backend/src/templates/legal/contracts/contrato_indefinido_general.json",
+    "backend/src/templates/legal/contracts/contrato_indefinido_mercaderista_prueba.json",
+    "backend/src/templates/legal/contracts/contrato_jornada_parcial_permanente.json",
+    "backend/src/templates/legal/contracts/contrato_obra_cierta.json",
+    "backend/src/templates/legal/contracts/contrato_obra_servicio_giro_negocio.json",
+    "backend/src/templates/legal/contracts/contrato_ocasional.json",
+    "backend/src/templates/legal/contracts/contrato_por_tarea.json",
+    "backend/src/templates/legal/contracts/contrato_temporada.json",
+    "backend/src/templates/legal/contracts/contrato_trabajo_juvenil.json",
+    "backend/src/templates/legal/contracts/contrato_turistico_cultural_creativo.json",
+    "docs2/PLAN_HAIKY_HUMANIZACION_SINTESIS_PWA_2026.md",
+    "docs2/humanizacion-sintesis-pwa-2026/INFORME_DIAGNOSTICO_HU26.md",
+    "frontend-web/src/components/Layout/Layout.jsx",
+    "frontend-web/src/components/ModulePermissionMatrix.jsx",
+    "frontend-web/src/pages/AyudaUsuario.jsx",
+    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
+    "frontend-web/src/pages/Configuracion/parametrizacion/IncomeTaxTableFields.jsx",
+    "frontend-web/src/pages/Configuracion/parametrizacion/parametrizacionModel.jsx",
+    "frontend-web/src/pages/LegalText.jsx",
+    "frontend-web/src/pages/PlanesGestion.jsx",
+    "frontend-web/src/pages/Register.jsx",
+    "frontend-web/src/pages/Superadmin.jsx",
+    "frontend-web/src/utils/access.js"
   ],
   "fases": [
     {
-      "phase": "CPD26-00",
+      "phase": "HU26-00",
       "status": "completed",
-      "detail": "Plan, prompts, contexto y AuditLock registrados."
+      "detail": "Baseline de pantallas PWA con ruido textual, jerga de desarrollo y microcopy extensa."
     },
     {
-      "phase": "CPD26-01",
+      "phase": "HU26-01",
       "status": "completed",
-      "detail": "Render usa STORAGE_DRIVER=local, disco persistente en /var/data y ruta documental /var/data/sknomina-documents."
+      "detail": "Avisos compactos reutilizables mediante CompactNotice."
     },
     {
-      "phase": "CPD26-02",
+      "phase": "HU26-02",
       "status": "completed",
-      "detail": "Worker cron retirado del blueprint inicial; documentos quedan bajo endpoints del backend API."
+      "detail": "Documentos, reportes, pagos bancarios y comunicaciones sintetizados."
     },
     {
-      "phase": "CPD26-03",
+      "phase": "HU26-03",
+      "status": "completed",
+      "detail": "Ficha de trabajador, pagos y menu de nomina humanizados."
+    },
+    {
+      "phase": "HU26-04",
       "status": "completed-pass",
-      "detail": "Contratos, UTF-8, git diff check y cierre documental en PASS."
+      "detail": "Primera pasada validada y publicada."
+    },
+    {
+      "phase": "HU26-05",
+      "status": "completed",
+      "detail": "Contratos, terminos SaaS y etiquetas de roles visibles corregidas."
+    },
+    {
+      "phase": "HU26-06",
+      "status": "completed-pass",
+      "detail": "QA release SaaS con build, pruebas, contratos, diff check, UTF-8 y busquedas anti-regresion."
     }
   ],
   "validationChecks": [
     {
-      "gate": "node --check scripts/verify-system-contracts.mjs",
+      "gate": "Parse JSON backend/src/templates/legal/contracts/*.json",
       "result": "PASS"
     },
     {
+      "gate": "rg SKNOMINA backend/src/templates/legal/contracts",
+      "result": "PASS: sin coincidencias"
+    },
+    {
+      "gate": "rg Owner/owner/fundador/Superadmin visible en frontend",
+      "result": "PASS: coincidencias restantes son identificadores tecnicos, nombres de funciones o variables"
+    },
+    {
+      "gate": "npm.cmd --workspace=backend test -- templateGenerator.test.js --runInBand",
+      "result": "PASS: 1 suite, 6 tests"
+    },
+    {
       "gate": "npm.cmd run contracts",
+      "result": "PASS"
+    },
+    {
+      "gate": "npm.cmd --workspace=frontend-web run build",
       "result": "PASS"
     },
     {
@@ -62,18 +114,18 @@
       "result": "PASS"
     },
     {
-      "gate": "UTF-8 sin BOM en archivos modificados .js/.md/.json/.yaml",
+      "gate": "UTF-8 sin BOM en archivos modificados y nuevos",
       "result": "PASS"
     }
   ],
   "riskControls": [
-    "No se declara AWS/S3 obligatorio en render.yaml para produccion inicial.",
-    "El worker cron no queda en el blueprint inicial para evitar costo extra y calculo automatico no revisado.",
-    "Los documentos se escriben bajo /var/data, ruta cubierta por disco persistente Render.",
-    "Los roles PDF y archivos bancarios se generan por endpoints del backend API.",
-    "La reintroduccion de worker requiere storage compartido S3/R2 o alcance sin documentos."
+    "No se renombraron roles tecnicos owner/superadmin en API, RBAC ni persistencia.",
+    "SKNOMINA no aparece en plantillas contractuales como empleador, representante, asesor, intermediario o parte laboral.",
+    "Terminos de servicio explican que la empresa contratante valida datos, parametros, documentos, registros oficiales y cumplimiento legal.",
+    "Las plantillas y calculos quedan presentados como herramientas SaaS de apoyo, no como asesoria legal, laboral, tributaria o contable.",
+    "El cierre no modifica contratos publicos de API ni migraciones."
   ],
-  "previousAuditLockHash": "B12808404A0F77D123AFC0CF023F60964A0B360841D25D0A48F5722C0B47DEAA",
+  "previousAuditLockHash": "FBDA9A946B2D008B654B285C12878D78743D32EBC88599A06E98DF5C2530EF67",
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "952DA54F2B63DE41F259EACFD31BFECD8549DEEC2D992DF44C9BA3CEB86EE9C1"
+  "signature": "A7DAB5A88778D9BCADA5642ABA92AA51CD696E24FF843A70A945688B6EB73DAE"
 }

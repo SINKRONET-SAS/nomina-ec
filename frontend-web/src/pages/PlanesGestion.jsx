@@ -391,7 +391,7 @@ function PlanesGestion({ showSuperadminConsole = true }) {
                 <h3 className="font-semibold text-slate-950">Registrar incidencia</h3>
               </div>
               <label className="mt-4 block text-sm font-semibold text-slate-700">
-                Owner
+                Empresa
                 <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" value={incidentDraft.tenantId} onChange={(event) => updateIncidentField('tenantId', event.target.value)}>
                   <option value="">General plataforma</option>
                   {(overviewQuery.data?.owners || []).map((owner) => (
@@ -432,7 +432,7 @@ function PlanesGestion({ showSuperadminConsole = true }) {
                 <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
                   <tr>
                     <th className="px-4 py-3">Caso</th>
-                    <th className="px-4 py-3">Owner</th>
+                    <th className="px-4 py-3">Empresa</th>
                     <th className="px-4 py-3">Severidad</th>
                     <th className="px-4 py-3">Estado</th>
                     <th className="px-4 py-3">Acción</th>

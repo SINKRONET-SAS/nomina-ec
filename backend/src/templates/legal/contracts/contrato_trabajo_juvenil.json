@@ -38,7 +38,7 @@
     {
       "title": "TERCERA.- JORNADA Y FUNCIONES",
       "paragraphs": [
-        "EL TRABAJADOR cumplira funciones propias del cargo, con jornada {{employee.workShift}}, supervision y registros de asistencia o novedades en SKNOMINA."
+        "EL TRABAJADOR cumplira funciones propias del cargo, con jornada {{employee.workShift}}, supervision y registros de asistencia o novedades gestionados por EL EMPLEADOR."
       ]
     },
     {
@@ -50,7 +50,7 @@
     {
       "title": "QUINTA.- REGISTRO",
       "paragraphs": [
-        "La modalidad debe revisarse y registrarse cuando corresponda. SKNOMINA conserva evidencia y no reemplaza registros oficiales."
+        "La modalidad debe revisarse y registrarse cuando corresponda. EL EMPLEADOR conserva evidencia y no debe considerar reemplazados los registros oficiales."
       ]
     }
   ]

@@ -112,7 +112,7 @@ function Layout() {
     { path: '/dashboard/facturacion', icon: CreditCard, label: 'Facturador interno', roles: ['superadmin'] },
     { path: '/dashboard/auditoria', icon: ShieldCheck, label: 'Auditoría', roles: ['superadmin', 'owner'], module: 'auditoria' },
     { path: '/dashboard/privacidad', icon: ShieldCheck, label: 'Privacidad', roles: ['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado'] },
-    { path: '/dashboard/superadmin', icon: CreditCard, label: 'Superadmin', roles: ['superadmin'] },
+    { path: '/dashboard/superadmin', icon: CreditCard, label: 'Soporte global', roles: ['superadmin'] },
     { path: '/dashboard/planes', icon: CreditCard, label: 'Gestión de planes', roles: ['superadmin'] },
   ];
 

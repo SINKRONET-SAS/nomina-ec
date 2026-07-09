@@ -121,7 +121,7 @@ export default function ModulePermissionMatrix({ value, onChange, readOnly }) {
         </tbody>
       </table>
       <p className="mt-2 text-xs text-gray-500">
-        Los permisos de Owner y Superadmin son irrestrictos y no pueden ser limitados.
+        Los permisos del administrador principal y soporte global son irrestrictos y no pueden ser limitados.
         <span className="ml-2 inline-flex items-center gap-1">
           <span className="inline-block h-3 w-3 rounded ring-2 ring-amber-400" /> = personalizado (distinto al default del rol)
         </span>

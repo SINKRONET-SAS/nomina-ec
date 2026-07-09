@@ -58,7 +58,7 @@ function Register() {
     setError('');
 
     if (!form.acceptedTerms || !form.acceptedPrivacy || !form.acceptedDataProcessing) {
-      setError('Debes aceptar terminos, privacidad y tratamiento de datos personales para crear la cuenta.');
+      setError('Debes aceptar términos, privacidad y tratamiento de datos personales para crear la cuenta.');
       return;
     }
 
@@ -117,7 +117,7 @@ function Register() {
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Registro comercial</p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-950">Crear cuenta en SKNOMINA</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Datos mínimos para activar la empresa y el usuario propietario.
+                Datos mínimos para activar la empresa y el administrador principal.
               </p>
             </div>
             <Link className="text-sm font-semibold text-teal-800" to="/login">Ingresar</Link>
@@ -207,7 +207,7 @@ function Register() {
           <div className="mt-6 space-y-3 rounded-md bg-slate-50 p-4">
             <label className="flex gap-3 text-sm text-slate-700">
               <input className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600" type="checkbox" required checked={form.acceptedTerms} onChange={(e) => update('acceptedTerms', e.target.checked)} />
-              <span>Acepto los términos de servicio de SKNOMINA.</span>
+              <span>Acepto los términos de servicio y entiendo que mi empresa es responsable del cumplimiento laboral, tributario y de protección de datos.</span>
             </label>
             <label className="flex gap-3 text-sm text-slate-700">
               <input className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600" type="checkbox" required checked={form.acceptedPrivacy} onChange={(e) => update('acceptedPrivacy', e.target.checked)} />

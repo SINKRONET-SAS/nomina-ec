@@ -27,7 +27,7 @@
       "note": "la actividad de mercaderista/promotor se documenta como relacion laboral dependiente cuando existe subordinacion, jornada, remuneracion y control operativo."
     },
     {
-      "label": "Parametros legales SKNOMINA {{legal.year}}",
+      "label": "Parametros legales configurados por EL EMPLEADOR {{legal.year}}",
       "note": "SBU configurado USD {{legal.sbuAmount}}, aporte personal IESS {{legal.personalIessRate}} y aporte patronal IESS {{legal.employerIessRate}}."
     }
   ],
@@ -68,14 +68,14 @@
       "title": "QUINTA.- JORNADA, DESCANSO Y HORAS SUPLEMENTARIAS",
       "paragraphs": [
         "La jornada aplicable es {{employee.workShift}}, respetando el limite semanal configurado de {{legal.weeklyMaxHours}} horas y los descansos que correspondan.",
-        "Las horas suplementarias, extraordinarias, trabajo en descanso o recargos solo procederan cuando exista autorizacion, registro verificable y calculo conforme a los parametros legales vigentes de SKNOMINA. La ruta comercial no autoriza por si sola trabajo fuera de jornada."
+        "Las horas suplementarias, extraordinarias, trabajo en descanso o recargos solo procederan cuando exista autorizacion, registro verificable y calculo conforme a los parametros legales configurados por EL EMPLEADOR. La ruta comercial no autoriza por si sola trabajo fuera de jornada."
       ]
     },
     {
       "title": "SEXTA.- REMUNERACION, IESS Y BENEFICIOS",
       "paragraphs": [
         "EL EMPLEADOR pagara a EL TRABAJADOR una remuneracion mensual de USD {{employee.salaryAmount}} ({{employee.salaryWords}}), sin que pueda ser inferior al SBU vigente configurado para {{legal.year}}.",
-        "EL TRABAJADOR tendra derecho a afiliacion y aportes al IESS cuando correspondan, decimo tercero, decimo cuarto, vacaciones, fondos de reserva una vez cumplido el supuesto legal y demas beneficios calculados por SKNOMINA conforme a parametros vigentes."
+        "EL TRABAJADOR tendra derecho a afiliacion y aportes al IESS cuando correspondan, decimo tercero, decimo cuarto, vacaciones, fondos de reserva una vez cumplido el supuesto legal y demas beneficios calculados por EL EMPLEADOR conforme a parametros vigentes."
       ]
     },
     {
@@ -107,7 +107,7 @@
     {
       "title": "DECIMA PRIMERA.- REGISTRO Y ANEXOS",
       "paragraphs": [
-        "El presente documento debe ser revisado, firmado y registrado en los sistemas oficiales cuando corresponda. SKNOMINA conserva la evidencia generada y mantiene el estado externo como {{contract.sutRegistrationStatus}} hasta que exista confirmacion documental.",
+        "El presente documento debe ser revisado, firmado y registrado en los sistemas oficiales cuando corresponda. EL EMPLEADOR conserva la evidencia generada en su expediente y mantiene el estado externo como {{contract.sutRegistrationStatus}} hasta que exista confirmacion documental.",
         "Forman parte referencial del expediente laboral la ficha del trabajador, cargo parametrizado, jornada, zona de marcacion, rutas autorizadas, actas de entrega de dotacion o equipos, roles de pago, novedades aprobadas y demas documentos generados desde el sistema."
       ]
     }

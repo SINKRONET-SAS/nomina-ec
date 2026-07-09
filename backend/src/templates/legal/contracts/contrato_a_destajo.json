@@ -50,7 +50,7 @@
     {
       "title": "QUINTA.- REGISTRO",
       "paragraphs": [
-        "El contrato y anexo de destajo deben firmarse y conservarse en el expediente. SKNOMINA mantiene el registro externo como {{contract.sutRegistrationStatus}} hasta confirmacion documental."
+        "El contrato y anexo de destajo deben firmarse y conservarse en el expediente. EL EMPLEADOR mantiene el registro externo como {{contract.sutRegistrationStatus}} hasta confirmacion documental."
       ]
     }
   ]

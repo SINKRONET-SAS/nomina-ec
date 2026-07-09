@@ -292,7 +292,7 @@ function Superadmin() {
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Consola fundador</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Soporte global</p>
             <h1 className="mt-2 text-2xl font-semibold text-slate-950">Supervisión SKNOMINA</h1>
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
               Revisa empresas, planes, estado contractual e incidencias de plataforma sin entrar a la operación
@@ -312,7 +312,7 @@ function Superadmin() {
 
       {overviewQuery.isError && (
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
-          {extractApiError(overviewQuery.error, 'No pudimos cargar la consola fundador.')}
+          {extractApiError(overviewQuery.error, 'No pudimos cargar la consola de soporte.')}
         </div>
       )}
       {createIncidentMutation.isError && (
@@ -368,7 +368,7 @@ function Superadmin() {
                     <CheckCircle2 className="h-4 w-4" />
                     Sin incidencias abiertas
                   </div>
-                  <p className="mt-2 leading-6">La plataforma no registra bloqueos pendientes para seguimiento fundador.</p>
+                  <p className="mt-2 leading-6">La plataforma no registra bloqueos pendientes para seguimiento de soporte.</p>
                 </div>
               ) : (
                 <div className="space-y-3">

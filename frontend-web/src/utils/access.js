@@ -20,6 +20,14 @@ export function hasRoleAccess(user, requiredRoles) {
 }
 
 export function sessionRoleLabel(user) {
-  if (isFounderTenantSession(user)) return 'fundador';
-  return normalizeRole(user?.rol);
+  if (isFounderTenantSession(user)) return 'Soporte global';
+  const labels = {
+    owner: 'Administrador principal',
+    admin_rrhh: 'RRHH',
+    supervisor: 'Supervisor',
+    empleado: 'Empleado',
+    superadmin: 'Soporte global',
+  };
+  const role = normalizeRole(user?.rol);
+  return labels[role] || role;
 }

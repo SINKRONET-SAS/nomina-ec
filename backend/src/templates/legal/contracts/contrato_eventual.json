@@ -52,7 +52,7 @@
     {
       "title": "QUINTA.- REGISTRO Y EVIDENCIA",
       "paragraphs": [
-        "El contrato debe revisarse, firmarse y registrarse cuando corresponda. SKNOMINA conserva la evidencia generada y marca el estado externo como {{contract.sutRegistrationStatus}} hasta confirmacion documental."
+        "El contrato debe revisarse, firmarse y registrarse cuando corresponda. EL EMPLEADOR conserva la evidencia generada y marca el estado externo como {{contract.sutRegistrationStatus}} hasta confirmacion documental."
       ]
     }
   ]

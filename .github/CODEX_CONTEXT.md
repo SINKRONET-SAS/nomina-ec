@@ -2465,11 +2465,12 @@ Reglas OAP26:
 
 Plan: `HAIKY-HUMANIZACION-SINTESIS-PWA-2026`.
 
-Estado: HU26-00 a HU26-04 ejecutadas localmente; QA final en curso.
+Estado: HU26-00 a HU26-06 ejecutadas localmente; QA final en curso.
 
 Fuente:
 
 - Solicitud del usuario: "Humanizar, sintetizar la PWA para que deje de tener tanto texto que confunda, corregir texto del desarrollador y mejorar UI/UX".
+- Segunda pasada: eliminar `owner` visible, aclarar que SKNOMINA se monetiza como SaaS y no es parte de contratos laborales; el cliente conserva la responsabilidad legal, laboral, tributaria y de proteccion de datos.
 
 Artefactos:
 
@@ -2480,6 +2481,8 @@ Artefactos:
 - `.github/prompts/HU26-02-documentos-reportes-comunicaciones.md`
 - `.github/prompts/HU26-03-parametrizacion-empleado-pagos.md`
 - `.github/prompts/HU26-04-qa-release.md`
+- `.github/prompts/HU26-05-saas-contratos-roles.md`
+- `.github/prompts/HU26-06-qa-release-saas.md`
 
 Runtime HU26:
 
@@ -2490,10 +2493,15 @@ Runtime HU26:
 - Comunicaciones deja de exponer "modo dev" y `dev_logged` como texto de usuario; se muestra "pruebas".
 - Resultado de pago deja de mostrar "mock" y usa "pendiente de confirmacion".
 - Ficha de trabajador corrige microcopy, acentos visibles y enlace a "Descuento Anticipos".
+- Terminos y condiciones declaran la naturaleza SaaS: SKNOMINA provee software, automatizacion, plantillas y almacenamiento; no es empleador, representante, agente, asesor, contador, auditor, intermediario ni parte de contratos laborales.
+- Plantillas de contratos legales dejan de mencionar SKNOMINA como sujeto contractual o fuente de calculos laborales; las obligaciones documentales quedan en EL EMPLEADOR y EL TRABAJADOR.
+- Etiquetas visibles de rol cambian a "Administrador principal" y "Soporte global"; `owner` y `superadmin` permanecen solo como identificadores tecnicos RBAC/API.
+- Parametrizacion, ayuda, registro y planes usan "responsable", "empresa" y "administrador principal" en lugar de jerga interna.
 
 Reglas HU26:
 
 - No cambiar contratos de API, payloads ni reglas legales por cambios editoriales.
 - No ocultar bloqueos; sintetizar con siguiente accion clara.
 - No duplicar bloques de aviso por pantalla; usar componente compartido.
-- No mezclar cambios URR26 abiertos en el arbol con el commit HU26.
+- No renombrar roles tecnicos en codigo persistente; solo humanizar etiquetas visibles.
+- No presentar plantillas o calculos SaaS como asesoria legal, laboral, tributaria o contable.

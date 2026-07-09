@@ -212,7 +212,7 @@ const formDefinitions = [
       { name: 'amount', label: 'Valor', type: 'number', step: '0.01', required: true },
       { name: 'unit', label: 'Unidad', placeholder: 'USD, porcentaje, tabla', required: true },
       { name: 'source_name', label: 'Referencia revisada', placeholder: 'SRI, IESS, MDT, acuerdo o resolución' },
-      { name: 'owner_validated', label: 'Validado por owner', type: 'checkbox' },
+      { name: 'owner_validated', label: 'Validado por responsable', type: 'checkbox' },
       { name: 'value_json', label: 'Valor estructurado JSON (si se llena tiene prioridad)', type: 'textarea', wide: true },
       { name: 'notes', label: 'Notas', type: 'textarea', wide: true },
     ],
@@ -661,7 +661,7 @@ const formDefinitions = [
     fields: [
       { name: 'code', label: 'Código matriz', placeholder: 'MATRIZ_RRHH', required: true },
       { name: 'name', label: 'Nombre', placeholder: 'Matriz de roles RRHH', required: true },
-      { name: 'owner_email', label: 'Owner / representante', type: 'email' },
+      { name: 'owner_email', label: 'Responsable / representante', type: 'email' },
       { name: 'admin_email', label: 'Administrador RRHH', type: 'email' },
       { name: 'supervisor_enabled', label: 'Usa supervisores', type: 'checkbox' },
       { name: 'module_permissions', label: 'Permisos por módulo', type: 'modulePermissionMatrix', wide: true },

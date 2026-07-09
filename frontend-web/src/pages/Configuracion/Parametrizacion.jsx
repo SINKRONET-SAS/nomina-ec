@@ -385,7 +385,7 @@ function Parametrizacion() {
     mutationFn: async ({ definition, values, record }) => {
       const payload = definition.buildPayload(values);
       if (definition.resource === 'legalParameters' && payload.validation_status === 'validado_oficial' && !canValidateLegalParameters) {
-        throw new Error('Solo el owner puede marcar parámetros legales como validados.');
+        throw new Error('Solo el administrador principal puede marcar parámetros legales como validados.');
       }
       const savedRecord = record
         ? await updateConfigurationResource(token, definition.resource, record.id, payload)
@@ -685,7 +685,7 @@ function Parametrizacion() {
           <div>
             <h2 className="text-lg font-semibold text-teal-950">Carga de valores legales obligatorios</h2>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-teal-900">
-              Carga la base legal del año seleccionado. El owner debe revisarla antes de marcarla como validada.
+              Carga la base legal del año seleccionado. El responsable de la empresa debe revisarla antes de marcarla como validada.
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
@@ -793,13 +793,13 @@ function Parametrizacion() {
                   'horas_extra_limite_semanal: tope semanal antes de bloquear el cálculo.',
                 ]}
               >
-                Se parametriza en Valores legales. Carga los valores obligatorios del año y edita estos códigos con perfil owner.
+                Se parametriza en Valores legales. Carga los valores obligatorios del año y edita estos códigos con perfil de administrador principal.
               </CompactNotice>
             )}
 
             {isLegalParameterForm && (
-              <CompactNotice className="mt-4" tone="amber" title="Validación del owner">
-                El check habilita el parámetro para cálculo. Luego solo owner o superadmin puede cambiarlo.
+              <CompactNotice className="mt-4" tone="amber" title="Validación del responsable">
+                El check habilita el parámetro para cálculo. Luego solo el administrador principal o soporte global puede cambiarlo.
               </CompactNotice>
             )}
 
@@ -893,7 +893,7 @@ function Parametrizacion() {
                         type="button"
                         disabled={recordLocked}
                         onClick={() => startEdit(activeDefinition, record)}
-                        title={recordLocked ? 'Solo owner puede modificar parámetros validados' : 'Editar registro'}
+                        title={recordLocked ? 'Solo el administrador principal puede modificar parámetros validados' : 'Editar registro'}
                       >
                         <Edit3 className="h-4 w-4" />
                       </button>
@@ -922,7 +922,7 @@ function Parametrizacion() {
                           type="button"
                           disabled={recordLocked}
                           onClick={() => requestDelete(record.id)}
-                          title={recordLocked ? 'Solo owner puede eliminar parámetros validados' : 'Eliminar si no tiene consumos'}
+                          title={recordLocked ? 'Solo el administrador principal puede eliminar parámetros validados' : 'Eliminar si no tiene consumos'}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>

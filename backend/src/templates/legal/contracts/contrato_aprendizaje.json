@@ -38,7 +38,7 @@
     {
       "title": "TERCERA.- TUTOR, JORNADA Y ACTIVIDADES",
       "paragraphs": [
-        "La jornada y actividades formativas constaran en el plan anexo. La jornada registrada en SKNOMINA es {{employee.workShift}}, sujeta a validacion legal de la modalidad."
+        "La jornada y actividades formativas constaran en el plan anexo. La jornada registrada por EL EMPLEADOR es {{employee.workShift}}, sujeta a validacion legal de la modalidad."
       ]
     },
     {

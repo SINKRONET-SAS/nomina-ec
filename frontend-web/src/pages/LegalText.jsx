@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-const version = 'LOPDP-2026-06';
+const version = 'SAAS-LOPDP-2026-07';
 
 const content = {
   '/privacidad': {
     title: 'Política de privacidad',
-    intro: 'SKNOMINA trata datos personales laborales para operar nómina, asistencia, documentos, auditoría, archivo bancario y reportes requeridos por entidades públicas ecuatorianas.',
+    intro: 'SKNOMINA trata datos personales laborales como plataforma SaaS para operar nómina, asistencia, documentos, auditoría, archivo bancario y reportes requeridos por la empresa contratante.',
     sections: [
       ['Responsable', 'Cada empresa contratante actúa como responsable del tratamiento de los datos de sus trabajadores. SKNOMINA actúa como proveedor tecnológico y encargado cuando procesa datos por cuenta de la empresa.'],
       ['Finalidades', 'Registro de empresas, administración de usuarios, marcaciones, roles de pago, documentos laborales, reportes RDEP/IESS, soporte, seguridad, auditoría y cumplimiento contractual.'],
@@ -21,11 +21,14 @@ const content = {
   },
   '/terminos': {
     title: 'Términos de servicio',
-    intro: 'El uso de SKNOMINA está sujeto a configuración segura por empresa, validación legal Ecuador y activación comercial del plan contratado.',
+    intro: 'SKNOMINA es una plataforma SaaS. La empresa contratante conserva la responsabilidad laboral, tributaria, documental y de protección de datos frente a sus trabajadores y autoridades.',
     sections: [
+      ['Naturaleza SaaS', 'SKNOMINA provee software, automatización, plantillas y almacenamiento operativo. No es empleador, representante, mandatario, asesor legal, contador, auditor, intermediario laboral ni parte de los contratos o documentos laborales generados por la empresa.'],
+      ['Responsabilidad del cliente', 'La empresa contratante debe validar datos, parámetros legales, cargos, jornadas, beneficios, documentos, registros externos, autorizaciones, soportes y reportes antes de usarlos en producción o presentarlos ante terceros.'],
       ['Uso autorizado', 'El servicio debe usarse para operaciones laborales legítimas y con usuarios autorizados por la empresa.'],
-      ['Configuración', 'Antes de producción se deben completar datos de empresa, usuarios y roles, bancos, archivo plano, parámetros legales y políticas aplicables.'],
-      ['Limitaciones', 'SKNOMINA no garantiza aprobación automática de entidades públicas ni reemplaza asesoría legal, laboral, tributaria o de protección de datos.'],
+      ['Configuración', 'Antes de producción se deben completar y revisar datos de empresa, usuarios y roles, bancos, archivo plano, parámetros legales, políticas aplicables y permisos de tratamiento de datos.'],
+      ['Plantillas y cálculos', 'Las plantillas, cálculos, reportes y advertencias del sistema son herramientas de apoyo. Su validez depende de la información ingresada, la configuración aprobada por la empresa y la revisión profesional que corresponda.'],
+      ['Limitaciones', 'SKNOMINA no garantiza aprobación automática de entidades públicas, no realiza registros oficiales por cuenta de la empresa y no reemplaza asesoría legal, laboral, tributaria, contable o de protección de datos.'],
       ['Pagos y planes', 'Los planes comerciales, periodos de prueba y pagos se rigen por la oferta vigente y las condiciones aceptadas por la empresa contratante.'],
       ['Suspensión', 'El servicio puede restringirse por incumplimiento contractual, uso indebido, riesgo de seguridad, plan vencido o mandato legal.'],
     ],

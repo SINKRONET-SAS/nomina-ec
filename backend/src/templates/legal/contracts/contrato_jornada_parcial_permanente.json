@@ -18,7 +18,7 @@
       "note": "la modalidad debe documentar jornada, remuneracion proporcional, beneficios y afiliacion cuando corresponda."
     },
     {
-      "label": "Parametros legales SKNOMINA {{legal.year}}",
+      "label": "Parametros legales configurados por EL EMPLEADOR {{legal.year}}",
       "note": "SBU configurado USD {{legal.sbuAmount}}; validar proporcionalidad y tablas sectoriales antes de firma."
     }
   ],
@@ -56,7 +56,7 @@
     {
       "title": "QUINTA.- REGISTRO Y SOPORTE",
       "paragraphs": [
-        "El contrato debe firmarse y registrarse cuando corresponda en los sistemas oficiales. SKNOMINA conserva la evidencia y mantiene el registro externo como {{contract.sutRegistrationStatus}} hasta confirmacion documental.",
+        "El contrato debe firmarse y registrarse cuando corresponda en los sistemas oficiales. EL EMPLEADOR conserva la evidencia en su expediente y mantiene el registro externo como {{contract.sutRegistrationStatus}} hasta confirmacion documental.",
         "Forman parte del expediente la ficha del trabajador, horario, soporte de jornada parcial, roles de pago, novedades aprobadas y documentos laborales asociados."
       ]
     }

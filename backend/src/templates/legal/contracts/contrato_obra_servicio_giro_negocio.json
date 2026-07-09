@@ -51,7 +51,7 @@
     {
       "title": "QUINTA.- REGISTRO Y EVIDENCIA",
       "paragraphs": [
-        "El contrato, sus anexos y el cierre de obra o servicio deben conservarse en el expediente. SKNOMINA marca registro externo como {{contract.sutRegistrationStatus}} hasta confirmacion documental."
+        "El contrato, sus anexos y el cierre de obra o servicio deben conservarse en el expediente. EL EMPLEADOR marca registro externo como {{contract.sutRegistrationStatus}} hasta confirmacion documental."
       ]
     }
   ]

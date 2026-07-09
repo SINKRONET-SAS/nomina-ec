@@ -22,7 +22,7 @@
       "note": "la relacion laboral directa debe documentar cargo, jornada, remuneracion y obligaciones esenciales."
     },
     {
-      "label": "Parametros legales SKNOMINA {{legal.year}}",
+      "label": "Parametros legales configurados por EL EMPLEADOR {{legal.year}}",
       "note": "SBU configurado USD {{legal.sbuAmount}}, aporte personal IESS {{legal.personalIessRate}} y aporte patronal IESS {{legal.employerIessRate}}."
     }
   ],
@@ -47,7 +47,7 @@
       "title": "TERCERA.- CARGO Y FUNCIONES",
       "paragraphs": [
         "EL TRABAJADOR prestara servicios personales y licitos en el cargo de {{employee.position}}, dentro de la unidad {{employee.organizationUnit}}, cumpliendo las funciones propias del cargo, politicas internas, instrucciones razonables del empleador y normas de seguridad y confidencialidad.",
-        "El cargo queda asociado a la ficha laboral y al catalogo de cargos vigente de SKNOMINA, sin perjuicio de los cambios organizativos permitidos por la normativa laboral y documentados por escrito."
+        "El cargo queda asociado a la ficha laboral y al catalogo de cargos definido por EL EMPLEADOR, sin perjuicio de los cambios organizativos permitidos por la normativa laboral y documentados por escrito."
       ]
     },
     {
@@ -62,7 +62,7 @@
       "title": "QUINTA.- REMUNERACION Y BENEFICIOS",
       "paragraphs": [
         "EL EMPLEADOR pagara a EL TRABAJADOR una remuneracion mensual de USD {{employee.salaryAmount}} ({{employee.salaryWords}}), sin que pueda ser inferior al SBU vigente configurado para {{legal.year}}.",
-        "EL TRABAJADOR tendra derecho a los beneficios laborales que correspondan conforme a la normativa ecuatoriana aplicable, incluyendo afiliacion y aportes al IESS, decimos, vacaciones, fondos de reserva cuando correspondan y demas rubros calculados por SKNOMINA."
+        "EL TRABAJADOR tendra derecho a los beneficios laborales que correspondan conforme a la normativa ecuatoriana aplicable, incluyendo afiliacion y aportes al IESS, decimos, vacaciones, fondos de reserva cuando correspondan y demas rubros calculados por EL EMPLEADOR con base en sus parametros de nomina."
       ]
     },
     {
@@ -81,13 +81,13 @@
     {
       "title": "OCTAVA.- DERECHOS IRRENUNCIABLES",
       "paragraphs": [
-        "Las partes reconocen que los derechos del trabajador son irrenunciables e intangibles. Cualquier clausula, politica o practica que disminuya derechos laborales minimos se tendra por no escrita y no podra ser usada por SKNOMINA como base de calculo o evidencia valida."
+        "Las partes reconocen que los derechos del trabajador son irrenunciables e intangibles. Cualquier clausula, politica o practica que disminuya derechos laborales minimos se tendra por no escrita y no podra ser usada por EL EMPLEADOR como base de calculo o evidencia valida."
       ]
     },
     {
       "title": "NOVENA.- REGISTRO Y ANEXOS",
       "paragraphs": [
-        "El presente documento debe ser revisado, firmado y registrado en los sistemas oficiales cuando corresponda. SKNOMINA conserva la evidencia generada y marca el estado externo como {{contract.sutRegistrationStatus}} hasta que exista confirmacion documental.",
+        "El presente documento debe ser revisado, firmado y registrado en los sistemas oficiales cuando corresponda. EL EMPLEADOR conserva la evidencia generada en su expediente y marca el estado externo como {{contract.sutRegistrationStatus}} hasta que exista confirmacion documental.",
         "Forman parte referencial del expediente laboral la ficha del trabajador, cargo parametrizado, jornada, zona de marcacion, actas de entrega de dotacion o equipos, roles de pago, novedades aprobadas y demas documentos generados desde el sistema."
       ]
     }

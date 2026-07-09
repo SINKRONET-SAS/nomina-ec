@@ -36,7 +36,7 @@ function IncomeTaxTableFields({ values, onFieldChange, onBracketChange, onAddBra
             onChange={(event) => onFieldChange('owner_validated', event.target.checked)}
             disabled={disabled || !canValidate}
           />
-          <span className="text-sm font-medium text-slate-700">Validado por owner</span>
+          <span className="text-sm font-medium text-slate-700">Validado por responsable</span>
         </label>
         <label className="form-field-third">
           <span className="text-sm font-medium text-slate-700">Fecha de fuente</span>

@@ -38,7 +38,7 @@
     {
       "title": "TERCERA.- FUNCIONES Y JORNADA",
       "paragraphs": [
-        "EL TRABAJADOR cumplira funciones propias del cargo, con jornada {{employee.workShift}} y controles de asistencia, novedades y entregables registrados en SKNOMINA."
+        "EL TRABAJADOR cumplira funciones propias del cargo, con jornada {{employee.workShift}} y controles de asistencia, novedades y entregables registrados por EL EMPLEADOR."
       ]
     },
     {
@@ -50,7 +50,7 @@
     {
       "title": "QUINTA.- REGISTRO Y VIGENCIA",
       "paragraphs": [
-        "La modalidad, plazo y registro deben validarse antes de firma. SKNOMINA conserva evidencia y no reemplaza registro externo."
+        "La modalidad, plazo y registro deben validarse antes de firma. EL EMPLEADOR conserva evidencia y no debe considerar reemplazado el registro externo."
       ]
     }
   ]

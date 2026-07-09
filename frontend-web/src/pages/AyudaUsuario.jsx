@@ -7,7 +7,7 @@ const sections = [
     icon: Settings2,
     items: [
       'Registra datos de empresa, representante legal, cargos, jornadas, zonas y banco antes de operar nómina.',
-      'El owner valida parámetros legales con el check de responsabilidad. Luego solo owner o superadmin puede modificarlos.',
+      'El administrador principal valida parámetros legales con el check de responsabilidad. Luego solo el administrador principal o soporte global puede modificarlos.',
       'En cada cargo define la plantilla de contrato que debe sugerirse al generar documentos laborales.',
     ],
   },
@@ -26,7 +26,7 @@ const sections = [
     items: [
       'Escoge el modelo de contrato en la ficha del empleado; cambia la plantilla al emitir PDF solo cuando exista justificación y soporte.',
       'Adjunta contrato firmado, aviso de entrada IESS, actas de dotación y otros documentos desde la ficha del empleado.',
-      'Registra externamente en SUT/IESS cuando corresponda; SKNOMINA conserva evidencia, no reemplaza sistemas oficiales.',
+      'Registra externamente en SUT/IESS cuando corresponda; la empresa conserva evidencia en su expediente y el sistema no reemplaza portales oficiales.',
     ],
   },
   {
