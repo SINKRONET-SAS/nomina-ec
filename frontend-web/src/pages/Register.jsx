@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, UserRound } from 'lucide-react';
 import PlanFunctionalityList from '../components/PlanFunctionalityList';
 import { formatPublicPlanPrice, normalizePublicPlans } from '../config/publicPlanPresentation';
-import { extractApiError, fetchPlans, publicRegister } from '../services/publicApi';
+import { confirmEmailVerification, extractApiError, fetchPlans, publicRegister, requestEmailVerification } from '../services/publicApi';
 import { useAuth } from '../context/AuthContext';
 import BrandLogo from '../components/Brand/BrandLogo';
 
@@ -28,7 +28,10 @@ function Register() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [plans, setPlans] = useState(() => normalizePublicPlans());
-  const { setSessionFromPayload } = useAuth();
+  const [verification, setVerification] = useState(null);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationMessage, setVerificationMessage] = useState('');
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
@@ -57,6 +60,11 @@ function Register() {
     event.preventDefault();
     setError('');
 
+    if (verification) {
+      setError('Completa la verificación del correo antes de continuar.');
+      return;
+    }
+
     if (!form.acceptedTerms || !form.acceptedPrivacy || !form.acceptedDataProcessing) {
       setError('Debes aceptar términos, privacidad y tratamiento de datos personales para crear la cuenta.');
       return;
@@ -75,10 +83,50 @@ function Register() {
           acceptedDataProcessing: form.acceptedDataProcessing,
         },
       });
-      setSessionFromPayload(payload);
-      navigate('/dashboard');
+      setVerification({
+        email: payload.user?.email || form.email,
+        tenantId: payload.tenant?.id || '',
+      });
+      setVerificationCode('');
+      setVerificationMessage('Te enviamos un código. Verifica el correo para ingresar.');
     } catch (err) {
       setError(extractApiError(err, 'No se pudo crear la cuenta.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyEmail = async () => {
+    setError('');
+    setVerificationMessage('');
+    setLoading(true);
+    try {
+      await confirmEmailVerification({
+        email: verification.email,
+        code: verificationCode,
+        tenantId: verification.tenantId,
+      });
+      await login(verification.email, form.password, '', verification.tenantId);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(extractApiError(err, 'No pudimos verificar el correo.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setError('');
+    setVerificationMessage('');
+    setLoading(true);
+    try {
+      await requestEmailVerification({
+        email: verification.email,
+        tenantId: verification.tenantId,
+      });
+      setVerificationMessage('Enviamos un nuevo código. Usa el último recibido.');
+    } catch (err) {
+      setError(extractApiError(err, 'No pudimos reenviar el código.'));
     } finally {
       setLoading(false);
     }
@@ -124,6 +172,46 @@ function Register() {
           </div>
 
           {error && <div className="mb-5 status-error">{error}</div>}
+          {verification && (
+            <section className="mb-5 rounded-md border border-amber-200 bg-amber-50 p-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-amber-950">Verifica el correo</p>
+                  <p className="mt-1 text-sm leading-6 text-amber-900">
+                    Ingresa el código enviado a {verification.email}. La cuenta no permite ingresar hasta completar este paso.
+                  </p>
+                  {verificationMessage && (
+                    <p className="mt-2 text-sm font-semibold text-amber-950">{verificationMessage}</p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    className="min-h-10 rounded-md border border-amber-300 bg-white px-3 py-2 font-mono text-sm outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-100"
+                    maxLength={6}
+                    onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="Código"
+                    value={verificationCode}
+                  />
+                  <button
+                    className="inline-flex min-h-10 items-center justify-center rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300"
+                    disabled={loading || verificationCode.length < 6}
+                    onClick={handleVerifyEmail}
+                    type="button"
+                  >
+                    Confirmar
+                  </button>
+                  <button
+                    className="inline-flex min-h-10 items-center justify-center rounded-md border border-amber-300 bg-white px-4 text-sm font-semibold text-amber-900 disabled:opacity-60"
+                    disabled={loading}
+                    onClick={handleResendCode}
+                    type="button"
+                  >
+                    Reenviar
+                  </button>
+                </div>
+              </div>
+            </section>
+          )}
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="space-y-2">
@@ -219,8 +307,8 @@ function Register() {
             </label>
           </div>
 
-          <button className="primary-button mt-6 w-full" disabled={loading}>
-            {loading ? 'Creando empresa...' : 'Crear cuenta y entrar'}
+          <button className="primary-button mt-6 w-full" disabled={loading || Boolean(verification)}>
+            {loading ? 'Creando empresa...' : verification ? 'Correo pendiente de verificación' : 'Crear cuenta y verificar correo'}
             {!loading && <ArrowRight size={18} />}
           </button>
         </form>

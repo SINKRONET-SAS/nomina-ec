@@ -48,8 +48,9 @@ export async function resetPassword(payload) {
   return response.data;
 }
 
-export async function requestEmailVerification(email) {
-  const response = await publicApi.post('/auth/email-verification/request', { email });
+export async function requestEmailVerification(emailOrPayload) {
+  const payload = typeof emailOrPayload === 'string' ? { email: emailOrPayload } : emailOrPayload;
+  const response = await publicApi.post('/auth/email-verification/request', payload);
   return response.data;
 }
 

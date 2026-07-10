@@ -64,6 +64,54 @@ function normalizeTenantHint(body = {}) {
   return { tenantId, tenantRuc };
 }
 
+function applyTenantHintFilters(tenantHint, params, alias = 't', userAlias = 'u') {
+  const filters = [];
+  if (tenantHint.tenantId) {
+    params.push(tenantHint.tenantId);
+    filters.push(`${userAlias}.tenant_id = $${params.length}`);
+  }
+  if (tenantHint.tenantRuc) {
+    params.push(tenantHint.tenantRuc);
+    filters.push(`regexp_replace(COALESCE(${alias}.ruc, ''), '\\D', '', 'g') = $${params.length}`);
+  }
+  return filters;
+}
+
+function requiresEmailVerification(usuario) {
+  return normalizeRole(usuario?.rol) !== 'superadmin'
+    && !usuario?.email_verificado_en
+    && !usuario?.emailVerificadoEn;
+}
+
+async function createEmailVerificationToken(queryable, usuario, correlationId) {
+  await queryable.query(
+    `UPDATE email_verification_tokens
+     SET confirmado_en = COALESCE(confirmado_en, NOW())
+     WHERE usuario_id = $1
+       AND confirmado_en IS NULL`,
+    [usuario.id]
+  );
+
+  const code = generateVerificationCode();
+  await queryable.query(
+    `INSERT INTO email_verification_tokens (usuario_id, token_hash, expira_en)
+     VALUES ($1, $2, NOW() + INTERVAL '24 hours')`,
+    [usuario.id, hashCode(code)]
+  );
+
+  return {
+    code,
+    deliveryPayload: {
+      to: usuario.email,
+      code,
+      name: usuario.nombres,
+      correlationId,
+      userId: usuario.id,
+      tenantId: usuario.tenant_id,
+    },
+  };
+}
+
 function publicTenantChoice(row) {
   return {
     tenantId: row.tenant_id,
@@ -153,15 +201,7 @@ async function login(req, res, next) {
     }
 
     const params = [email];
-    const tenantFilters = [];
-    if (tenantHint.tenantId) {
-      params.push(tenantHint.tenantId);
-      tenantFilters.push(`u.tenant_id = $${params.length}`);
-    }
-    if (tenantHint.tenantRuc) {
-      params.push(tenantHint.tenantRuc);
-      tenantFilters.push(`regexp_replace(COALESCE(t.ruc, ''), '\\D', '', 'g') = $${params.length}`);
-    }
+    const tenantFilters = applyTenantHintFilters(tenantHint, params);
 
     const result = await db.query(
       `SELECT
@@ -213,6 +253,16 @@ async function login(req, res, next) {
     }
 
     const usuario = superadminMatch || pickAuthenticatedUser(matchingUsers);
+    if (requiresEmailVerification(usuario)) {
+      return res.status(403).json({
+        error: 'AUTH_EMAIL_NO_VERIFICADO',
+        message: 'Correo no verificado. Revisa tu bandeja o solicita un nuevo codigo.',
+        nextStep: 'email-verification',
+        email: usuario.email,
+        correlationId: req.correlationId,
+      });
+    }
+
     await db.query('UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = $1', [usuario.id]);
 
     const token = generateToken(usuario);
@@ -277,20 +327,8 @@ async function register(req, res, next) {
       [tenantId, email, passwordHash, rol, nombres || '', apellidos || '']
     );
 
-    const verificationCode = generateVerificationCode();
-    await db.query(
-      `INSERT INTO email_verification_tokens (usuario_id, token_hash, expira_en)
-       VALUES ($1, $2, NOW() + INTERVAL '24 hours')`,
-      [result.rows[0].id, hashCode(verificationCode)]
-    );
-    const delivery = await sendEmailVerification({
-      to: result.rows[0].email,
-      code: verificationCode,
-      name: result.rows[0].nombres,
-      correlationId: req.correlationId,
-      userId: result.rows[0].id,
-      tenantId: result.rows[0].tenant_id,
-    });
+    const verification = await createEmailVerificationToken(db, result.rows[0], req.correlationId);
+    const delivery = await sendEmailVerification(verification.deliveryPayload);
 
     const user = buildUserPayload(result.rows[0]);
     return res.status(201).json({ success: true, usuario: user, user, nextStep: 'email-verification', delivery });
@@ -390,30 +428,15 @@ async function publicRegister(req, res, next) {
       [tenant.id, selectedPlanId, JSON.stringify({ source: 'public-register' })]
     );
 
-    const verificationCode = generateVerificationCode();
-    await client.query(
-      `INSERT INTO email_verification_tokens (usuario_id, token_hash, expira_en)
-       VALUES ($1, $2, NOW() + INTERVAL '24 hours')`,
-      [userResult.rows[0].id, hashCode(verificationCode)]
-    );
-
-    const token = generateToken(userResult.rows[0]);
+    const verification = await createEmailVerificationToken(client, userResult.rows[0], req.correlationId);
     const user = buildUserPayload(userResult.rows[0]);
 
     await client.query('COMMIT');
 
-    const delivery = await sendEmailVerification({
-      to: userResult.rows[0].email,
-      code: verificationCode,
-      name: userResult.rows[0].nombres,
-      correlationId: req.correlationId,
-      userId: userResult.rows[0].id,
-      tenantId: tenant.id,
-    });
+    const delivery = await sendEmailVerification(verification.deliveryPayload);
 
     return res.status(201).json({
       success: true,
-      token,
       usuario: user,
       user,
       tenant: {
@@ -473,6 +496,16 @@ async function refreshToken(req, res, next) {
     }
 
     const usuario = result.rows[0];
+    if (requiresEmailVerification(usuario)) {
+      return res.status(403).json({
+        error: 'AUTH_EMAIL_NO_VERIFICADO',
+        message: 'Correo no verificado. Revisa tu bandeja o solicita un nuevo codigo.',
+        nextStep: 'email-verification',
+        email: usuario.email,
+        correlationId: req.correlationId,
+      });
+    }
+
     const newToken = generateToken(usuario);
     const user = buildUserPayload(usuario);
 
@@ -595,6 +628,7 @@ async function resetPassword(req, res, next) {
 async function requestEmailVerification(req, res, next) {
   try {
     const { email } = req.body;
+    const tenantHint = normalizeTenantHint(req.body);
 
     if (!email) {
       return res.status(400).json({
@@ -604,27 +638,23 @@ async function requestEmailVerification(req, res, next) {
       });
     }
 
+    const params = [email];
+    const tenantFilters = applyTenantHintFilters(tenantHint, params);
     const result = await db.query(
-      'SELECT id, tenant_id, email, nombres FROM usuarios WHERE lower(email) = lower($1) AND activo = true ORDER BY created_at DESC LIMIT 1',
-      [email]
+      `SELECT u.id, u.tenant_id, u.email, u.nombres
+       FROM usuarios u
+       LEFT JOIN tenants t ON t.id = u.tenant_id
+       WHERE lower(u.email) = lower($1)
+         AND u.activo = true
+         ${tenantFilters.length > 0 ? `AND ${tenantFilters.join(' AND ')}` : ''}
+       ORDER BY u.created_at DESC
+       LIMIT 1`,
+      params
     );
 
     if (result.rows.length > 0) {
-      const code = generateVerificationCode();
-      await db.query(
-        `INSERT INTO email_verification_tokens (usuario_id, token_hash, expira_en)
-         VALUES ($1, $2, NOW() + INTERVAL '24 hours')`,
-        [result.rows[0].id, hashCode(code)]
-      );
-
-      await sendEmailVerification({
-        to: result.rows[0].email,
-        code,
-        name: result.rows[0].nombres,
-        correlationId: req.correlationId,
-        userId: result.rows[0].id,
-        tenantId: result.rows[0].tenant_id,
-      });
+      const verification = await createEmailVerificationToken(db, result.rows[0], req.correlationId);
+      await sendEmailVerification(verification.deliveryPayload);
     }
 
     return res.json({
@@ -639,6 +669,7 @@ async function requestEmailVerification(req, res, next) {
 async function confirmEmailVerification(req, res, next) {
   try {
     const { email, code } = req.body;
+    const tenantHint = normalizeTenantHint(req.body);
 
     if (!email || !code) {
       return res.status(400).json({
@@ -648,23 +679,34 @@ async function confirmEmailVerification(req, res, next) {
       });
     }
 
+    const params = [email, hashCode(code)];
+    const tenantFilters = applyTenantHintFilters(tenantHint, params);
     const result = await db.query(
-      `SELECT evt.id AS token_id, u.id AS usuario_id
+      `SELECT evt.id AS token_id, evt.expira_en, u.id AS usuario_id
        FROM email_verification_tokens evt
        JOIN usuarios u ON u.id = evt.usuario_id
+       LEFT JOIN tenants t ON t.id = u.tenant_id
        WHERE lower(u.email) = lower($1)
          AND evt.token_hash = $2
          AND evt.confirmado_en IS NULL
-         AND evt.expira_en > NOW()
+         ${tenantFilters.length > 0 ? `AND ${tenantFilters.join(' AND ')}` : ''}
        ORDER BY evt.created_at DESC
        LIMIT 1`,
-      [email, hashCode(code)]
+      params
     );
 
     if (result.rows.length === 0) {
       return res.status(400).json({
         error: 'AUTH_VERIFICACION_INVALIDA',
-        message: 'Código inválido o expirado.',
+        message: 'Código de verificación inválido. Solicita un nuevo código si reenviaste otro.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    if (new Date(result.rows[0].expira_en).getTime() <= Date.now()) {
+      return res.status(400).json({
+        error: 'AUTH_VERIFICACION_EXPIRADA',
+        message: 'Codigo de verificacion expirado. Solicita un nuevo codigo.',
         correlationId: req.correlationId,
       });
     }

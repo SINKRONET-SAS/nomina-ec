@@ -22,7 +22,7 @@ const db = require('../config/database');
 const { sendEmailVerification } = require('../services/communicationService');
 const { verifyJwt } = require('../config/jwt');
 const bcrypt = require('bcryptjs');
-const { login, refreshToken, register } = require('./authController');
+const { confirmEmailVerification, login, refreshToken, register } = require('./authController');
 
 function createResponse() {
   return {
@@ -59,6 +59,7 @@ describe('authController register', () => {
           apellidos: 'Usuario',
         }],
       })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
     const req = {
       usuario: { rol: 'owner', tenantId: 'tenant-real' },
@@ -103,6 +104,7 @@ describe('authController register', () => {
           apellidos: 'RRHH',
         }],
       })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
     const req = {
       usuario: { rol: 'superadmin', tenantId: 'tenant-plataforma' },
@@ -151,7 +153,7 @@ describe('authController login', () => {
             apellidos: 'Empleado',
             password_hash: 'hash-employee',
             activo: true,
-            email_verificado_en: null,
+            email_verificado_en: '2026-07-09T00:00:00.000Z',
             created_at: new Date('2026-06-29T12:00:00Z'),
           },
           {
@@ -163,7 +165,7 @@ describe('authController login', () => {
             apellidos: 'Owner',
             password_hash: 'hash-owner',
             activo: true,
-            email_verificado_en: null,
+            email_verificado_en: '2026-07-09T00:00:00.000Z',
             created_at: new Date('2026-06-01T12:00:00Z'),
           },
         ],
@@ -207,7 +209,7 @@ describe('authController login', () => {
             apellidos: 'Tenant',
             password_hash: 'hash-owner',
             activo: true,
-            email_verificado_en: null,
+            email_verificado_en: '2026-07-09T00:00:00.000Z',
             created_at: new Date('2026-06-29T12:00:00Z'),
           },
           {
@@ -249,6 +251,75 @@ describe('authController login', () => {
       'UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = $1',
       ['user-superadmin']
     );
+  });
+
+  test('bloquea login de usuario no verificado aunque la clave sea correcta', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'user-owner',
+        tenant_id: 'tenant-1',
+        tenant_ruc: '0999999999001',
+        tenant_razon_social: 'Empresa Demo',
+        email: 'owner@example.com',
+        rol: 'owner',
+        nombres: 'Owner',
+        apellidos: 'Tenant',
+        password_hash: 'hash-owner',
+        activo: true,
+        email_verificado_en: null,
+        created_at: new Date('2026-07-09T12:00:00Z'),
+      }],
+    });
+    bcrypt.compare.mockResolvedValue(true);
+    const req = {
+      body: { email: 'owner@example.com', password: 'secret', tenantRuc: '0999999999001' },
+      correlationId: 'corr-login-unverified',
+    };
+    const res = createResponse();
+    const next = jest.fn();
+
+    await login(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toMatchObject({
+      error: 'AUTH_EMAIL_NO_VERIFICADO',
+      nextStep: 'email-verification',
+      correlationId: 'corr-login-unverified',
+    });
+    expect(db.query).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('authController confirmEmailVerification', () => {
+  beforeEach(() => {
+    db.query.mockReset();
+  });
+
+  test('rechaza codigo expirado sin marcar correo como verificado', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        token_id: 'token-1',
+        usuario_id: 'user-1',
+        expira_en: new Date(Date.now() - 60_000).toISOString(),
+      }],
+    });
+    const req = {
+      body: { email: 'owner@example.com', code: '123456', tenantId: 'tenant-1' },
+      correlationId: 'corr-email-expired',
+    };
+    const res = createResponse();
+    const next = jest.fn();
+
+    await confirmEmailVerification(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'AUTH_VERIFICACION_EXPIRADA',
+      correlationId: 'corr-email-expired',
+    });
+    expect(db.query).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -102,11 +102,14 @@ export function AuthProvider({ children }) {
       .finally(() => setCargando(false));
   }, []);
 
-  const login = async (email, password, tenantRuc = '') => {
+  const login = async (email, password, tenantRuc = '', tenantId = '') => {
     try {
       const payload = { email, password };
       if (String(tenantRuc || '').trim()) {
         payload.tenantRuc = String(tenantRuc).trim();
+      }
+      if (String(tenantId || '').trim()) {
+        payload.tenantId = String(tenantId).trim();
       }
       const response = await axios.post(`${API_URL}/auth/login`, payload);
       setSessionFromPayload(response.data);

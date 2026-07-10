@@ -62,7 +62,7 @@ describe('auth middleware', () => {
         tenant_id: 'tenant-legacy',
         email: 'legacy@example.com',
         rol: 'admin_rrhh',
-        email_verificado_en: null,
+        email_verificado_en: '2026-07-09T00:00:00.000Z',
       }],
     });
 
@@ -108,6 +108,74 @@ describe('auth middleware', () => {
       correlationId: 'corr-auth-1',
     });
     expect(next).not.toHaveBeenCalled();
+  });
+
+  test('bloquea token no verificado para rutas operativas', async () => {
+    verifyJwt.mockReturnValueOnce({
+      userId: 'user-unverified',
+      tenantId: 'tenant-1',
+      email: 'owner@example.com',
+      rol: 'owner',
+      emailVerificadoEn: null,
+    });
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'user-unverified',
+        tenant_id: 'tenant-1',
+        email: 'owner@example.com',
+        rol: 'owner',
+        email_verificado_en: null,
+      }],
+    });
+
+    const req = {
+      headers: { authorization: 'Bearer token-no-verificado' },
+      originalUrl: '/api/nomina/2026/7',
+      correlationId: 'corr-auth-unverified',
+    };
+    const res = mockResponse();
+    const next = jest.fn();
+
+    await authenticateToken(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      error: 'AUTH_EMAIL_NO_VERIFICADO',
+      correlationId: 'corr-auth-unverified',
+    }));
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  test('permite consultar estado de verificacion con token no verificado', async () => {
+    verifyJwt.mockReturnValueOnce({
+      userId: 'user-unverified',
+      tenantId: 'tenant-1',
+      email: 'owner@example.com',
+      rol: 'owner',
+      emailVerificadoEn: null,
+    });
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'user-unverified',
+        tenant_id: 'tenant-1',
+        email: 'owner@example.com',
+        rol: 'owner',
+        email_verificado_en: null,
+      }],
+    });
+
+    const req = {
+      headers: { authorization: 'Bearer token-no-verificado' },
+      originalUrl: '/api/auth/email-verification/status',
+      correlationId: 'corr-auth-status',
+    };
+    const res = mockResponse();
+    const next = jest.fn();
+
+    await authenticateToken(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.status).not.toHaveBeenCalled();
   });
 
   test('mantiene 403 cuando el usuario autenticado no tiene el rol requerido', () => {

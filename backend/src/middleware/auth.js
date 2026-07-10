@@ -26,6 +26,14 @@ function userFromClaims(decoded = {}) {
   };
 }
 
+function requiresEmailVerification(usuario) {
+  return normalizeRole(usuario?.rol) !== 'superadmin' && !usuario?.emailVerificadoEn;
+}
+
+function canBypassEmailVerification(req) {
+  return String(req.originalUrl || req.path || '').includes('/auth/email-verification/status');
+}
+
 function attachAuthenticatedUser(req, usuario) {
   req.usuario = usuario;
   req.tenantId = usuario.tenantId;
@@ -64,7 +72,10 @@ const authenticateToken = async (req, res, next) => {
 
   try {
     const decoded = verifyJwt(token);
-    const usuario = userFromClaims(decoded) || await loadActiveUser(decoded.userId);
+    let usuario = userFromClaims(decoded);
+    if (!usuario || requiresEmailVerification(usuario)) {
+      usuario = await loadActiveUser(decoded.userId);
+    }
 
     if (!usuario) {
       return res.status(401).json({
@@ -75,6 +86,14 @@ const authenticateToken = async (req, res, next) => {
     }
 
     attachAuthenticatedUser(req, usuario);
+
+    if (requiresEmailVerification(usuario) && !canBypassEmailVerification(req)) {
+      return res.status(403).json({
+        error: 'AUTH_EMAIL_NO_VERIFICADO',
+        message: 'Correo no verificado. Revisa tu bandeja o solicita un nuevo codigo.',
+        correlationId: req.correlationId,
+      });
+    }
 
     return next();
   } catch (err) {
