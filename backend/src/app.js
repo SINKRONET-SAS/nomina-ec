@@ -88,8 +88,8 @@ app.get('/api/configuracion/onboarding', requireRole('superadmin', 'owner', 'adm
 app.get('/api/catalogos/ecuador/provincias', requireRole('superadmin', 'owner', 'admin_rrhh'), ecuadorCatalogController.provincias);
 app.get('/api/catalogos/ecuador/ciudades', requireRole('superadmin', 'owner', 'admin_rrhh'), ecuadorCatalogController.ciudades);
 app.get('/api/privacidad/consentimientos', privacyController.consentStatus);
-app.patch('/api/privacidad/consentimientos', privacyController.updateConsents);
-app.post('/api/privacidad/consentimientos/retirar-todo', privacyController.withdrawAll);
+app.patch('/api/privacidad/consentimientos', requireRole('superadmin'), privacyController.updateConsents);
+app.post('/api/privacidad/consentimientos/retirar-todo', requireRole('superadmin'), privacyController.withdrawAll);
 app.get('/api/privacidad/consentimientos/historial', privacyController.history);
 app.get('/api/privacidad/exportar', privacyController.exportData);
 app.get('/api/privacidad/exportar/:userId', privacyController.exportData);
