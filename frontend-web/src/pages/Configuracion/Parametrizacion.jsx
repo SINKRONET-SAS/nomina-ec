@@ -498,8 +498,13 @@ function Parametrizacion() {
   const activeDefinition = formDefinitions.find((definition) => definition.key === activeForm) || formDefinitions[0];
   const activeValues = forms[activeDefinition.key];
   const isEditingActiveRecord = editingRecord?.definitionKey === activeDefinition.key;
-  const canValidateLegalParameters = ['superadmin', 'owner'].includes(usuario?.rol);
+  const currentRole = String(usuario?.rol || '').trim().toLowerCase();
+  const canValidateLegalParameters = ['superadmin', 'owner'].includes(currentRole);
   const isLegalParameterForm = activeDefinition.resource === 'legalParameters';
+  const legalParameterLoadDisabled = loadMandatoryMutation.isPending || !canValidateLegalParameters;
+  const legalParameterLoadHelp = canValidateLegalParameters
+    ? 'Carga los valores base del año fiscal para iniciar la parametrización legal.'
+    : 'Disponible para el administrador principal o soporte global.';
   const isLockedValidatedLegalRecord = isLegalParameterForm
     && isEditingActiveRecord
     && editingRecord?.validation_status === 'validado_oficial'
@@ -651,6 +656,50 @@ function Parametrizacion() {
     if (formKey) selectForm(formKey);
   }
 
+  function MandatoryLegalParametersAction({ compact = false } = {}) {
+    const containerClass = compact
+      ? 'mt-4 rounded-md border border-teal-200 bg-teal-50 p-4'
+      : 'flex flex-wrap items-end gap-3';
+    const controlClass = compact
+      ? 'mt-3 flex flex-wrap items-end gap-3'
+      : 'flex flex-wrap items-end gap-3';
+
+    return (
+      <div className={containerClass}>
+        {compact && (
+          <div>
+            <p className="text-sm font-semibold text-teal-950">Carga inicial de valores legales</p>
+            <p className="mt-1 text-sm leading-6 text-teal-900">{legalParameterLoadHelp}</p>
+          </div>
+        )}
+        <div className={controlClass}>
+          <label>
+            <span className="text-sm font-medium text-teal-950">Año fiscal</span>
+            <input
+              className="mt-1 w-32 rounded-md border border-teal-300 bg-white px-3 py-2 text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+              type="number"
+              value={mandatoryYear}
+              onChange={(event) => setMandatoryYear(Number(event.target.value))}
+            />
+          </label>
+          <button
+            className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={legalParameterLoadDisabled}
+            type="button"
+            title={legalParameterLoadHelp}
+            onClick={() => loadMandatoryMutation.mutate()}
+          >
+            <Download className="h-4 w-4" />
+            {loadMandatoryMutation.isPending ? 'Cargando...' : 'Cargar valores legales'}
+          </button>
+          {!canValidateLegalParameters && (
+            <p className="max-w-xs text-xs leading-5 text-teal-900">{legalParameterLoadHelp}</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -700,8 +749,9 @@ function Parametrizacion() {
             </label>
             <button
               className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60"
-              disabled={loadMandatoryMutation.isPending || !canValidateLegalParameters}
+              disabled={legalParameterLoadDisabled}
               type="button"
+              title={legalParameterLoadHelp}
               onClick={() => loadMandatoryMutation.mutate()}
             >
               <Download className="h-4 w-4" />
@@ -802,6 +852,8 @@ function Parametrizacion() {
                 El check habilita el parámetro para cálculo. Luego solo el administrador principal o soporte global puede cambiarlo.
               </CompactNotice>
             )}
+
+            {isLegalParameterForm && <MandatoryLegalParametersAction compact />}
 
             {activeDefinition.customType === 'incomeTaxTable' ? (
               <div className="mt-5">
