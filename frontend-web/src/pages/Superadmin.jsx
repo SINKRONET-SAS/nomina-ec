@@ -16,6 +16,7 @@ import {
 import PlanesGestion from './PlanesGestion';
 import { fetchAdminPlans } from '../services/beneficiosApi';
 import {
+  assignOwnerPlan,
   applyManualBankTransfer,
   confirmManualBankTransfer,
   createManualBankTransfer,
@@ -211,6 +212,173 @@ function CompaniesTable({ owners }) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+function DirectPlanAssignmentForm({ owners }) {
+  const queryClient = useQueryClient();
+  const [draft, setDraft] = useState({
+    tenantId: '',
+    planId: '',
+    billingPeriod: 'monthly',
+    expiresAt: '',
+    notes: '',
+  });
+  const [feedback, setFeedback] = useState({ type: '', message: '' });
+
+  const plansQuery = useQuery({
+    queryKey: ['admin-plans'],
+    queryFn: fetchAdminPlans,
+  });
+
+  const plans = plansQuery.data || [];
+  const selectedPlan = plans.find((plan) => plan.id === draft.planId);
+  const minCustomExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  const updateDraft = (name, value) => {
+    setDraft((current) => ({ ...current, [name]: value }));
+  };
+
+  const assignmentMutation = useMutation({
+    mutationFn: () => assignOwnerPlan(draft.tenantId, {
+      planId: draft.planId,
+      billingPeriod: draft.billingPeriod,
+      expiresAt: draft.billingPeriod === 'custom' ? draft.expiresAt : undefined,
+      notes: draft.notes,
+    }),
+    onSuccess: (assignment) => {
+      setFeedback({
+        type: 'success',
+        message: `Plan ${assignment.planNombre || assignment.planId} asignado hasta ${formatDate(assignment.venceEn)}.`,
+      });
+      setDraft((current) => ({
+        ...current,
+        notes: '',
+        expiresAt: '',
+      }));
+      queryClient.invalidateQueries({ queryKey: ['superadmin-overview'] });
+    },
+    onError: (err) => {
+      setFeedback({ type: 'error', message: extractApiError(err, 'No pudimos asignar el plan al owner.') });
+    },
+  });
+
+  const submit = (event) => {
+    event.preventDefault();
+    if (!draft.tenantId || !draft.planId) {
+      setFeedback({ type: 'error', message: 'Selecciona empresa owner y plan comercial.' });
+      return;
+    }
+    if (draft.billingPeriod === 'custom' && !draft.expiresAt) {
+      setFeedback({ type: 'error', message: 'Selecciona la fecha pactada de vigencia.' });
+      return;
+    }
+    assignmentMutation.mutate();
+  };
+
+  return (
+    <form className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" onSubmit={submit}>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <PackagePlus className="h-5 w-5 text-teal-700" />
+            <h2 className="text-lg font-semibold text-slate-950">Asignacion directa de plan</h2>
+          </div>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Aplica un upgrade comercial acordado sin checkout ni comprobante bancario.
+          </p>
+        </div>
+        {feedback.message && (
+          <div className={feedback.type === 'success' ? 'rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800' : 'rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800'}>
+            {feedback.message}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <label className="text-sm font-semibold text-slate-700 xl:col-span-2">
+          Owner / empresa
+          <select
+            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            onChange={(event) => updateDraft('tenantId', event.target.value)}
+            value={draft.tenantId}
+          >
+            <option value="">Seleccionar empresa</option>
+            {owners.map((owner) => (
+              <option key={owner.id} value={owner.id}>
+                {owner.razonSocial || owner.ownerEmail || owner.ruc || owner.id}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm font-semibold text-slate-700 xl:col-span-2">
+          Plan
+          <select
+            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            disabled={plansQuery.isLoading}
+            onChange={(event) => updateDraft('planId', event.target.value)}
+            value={draft.planId}
+          >
+            <option value="">{plansQuery.isLoading ? 'Cargando planes...' : 'Seleccionar plan'}</option>
+            {plans.map((plan) => (
+              <option key={plan.id} value={plan.id}>
+                {plan.nombre || plan.id} - {formatMoneyFromCents(plan.precioMensualCentavos)}/mes
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm font-semibold text-slate-700">
+          Vigencia
+          <select
+            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            onChange={(event) => updateDraft('billingPeriod', event.target.value)}
+            value={draft.billingPeriod}
+          >
+            <option value="monthly">Mensual</option>
+            <option value="annual">Anual</option>
+            <option value="custom">Fecha pactada</option>
+          </select>
+        </label>
+        {draft.billingPeriod === 'custom' && (
+          <label className="text-sm font-semibold text-slate-700">
+            Vence
+            <input
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              min={minCustomExpiry}
+              onChange={(event) => updateDraft('expiresAt', event.target.value)}
+              type="date"
+              value={draft.expiresAt}
+            />
+          </label>
+        )}
+        <label className="text-sm font-semibold text-slate-700 md:col-span-2 xl:col-span-3">
+          Observacion comercial
+          <input
+            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            maxLength={240}
+            onChange={(event) => updateDraft('notes', event.target.value)}
+            placeholder="Alcance pactado, acta, contrato o excepcion aprobada"
+            value={draft.notes}
+          />
+        </label>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-slate-600">
+          {selectedPlan
+            ? `Activara ${selectedPlan.nombre || selectedPlan.id} con renovacion automatica desactivada.`
+            : 'La asignacion actualiza la suscripcion activa del tenant.'}
+        </p>
+        <button
+          className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300"
+          disabled={assignmentMutation.isPending || plansQuery.isLoading}
+          type="submit"
+        >
+          <PackagePlus className="h-4 w-4" />
+          {assignmentMutation.isPending ? 'Aplicando' : 'Aplicar upgrade'}
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -649,7 +817,10 @@ function Superadmin() {
       )}
 
       {!overviewQuery.isLoading && activeTab === 'empresas' && (
-        <CompaniesTable owners={owners} />
+        <section className="space-y-5">
+          <DirectPlanAssignmentForm owners={owners} />
+          <CompaniesTable owners={owners} />
+        </section>
       )}
 
       {!overviewQuery.isLoading && activeTab === 'incidencias' && (

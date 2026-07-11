@@ -60,6 +60,7 @@ describe('app route order', () => {
     expect(source).toContain("app.post('/api/pagos/planes', requireRole('superadmin'), requireFreshUser, paymentController.upsertPlan)");
     expect(source).toContain("app.put('/api/pagos/planes/:planId', requireRole('superadmin'), requireFreshUser, paymentController.upsertPlan)");
     expect(source).toContain("app.delete('/api/pagos/planes/:planId', requireRole('superadmin'), requireFreshUser, paymentController.deletePlan)");
+    expect(source).toContain("app.post('/api/superadmin/owners/:tenantId/plan', requireRole('superadmin'), requireFreshUser, superadminController.assignPlanToOwner)");
   });
 
   test('monetiza rutas y app movil con capacidades de plan', () => {

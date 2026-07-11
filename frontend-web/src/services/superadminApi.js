@@ -15,6 +15,11 @@ export async function updateSupportIncident(id, status) {
   return response.data?.data;
 }
 
+export async function assignOwnerPlan(tenantId, payload) {
+  const response = await authenticatedApi.post(`/superadmin/owners/${tenantId}/plan`, payload);
+  return response.data?.data;
+}
+
 export async function fetchManualBankTransfers(params = {}) {
   const response = await authenticatedApi.get('/pagos/transferencias/admin', { params });
   return response.data?.data?.items || [];

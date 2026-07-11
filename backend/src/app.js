@@ -111,6 +111,7 @@ app.post('/api/integraciones/clientes', requireRole('superadmin', 'owner'), inte
 
 const superadminController = require('./controllers/superadminController');
 app.get('/api/superadmin/overview', requireRole('superadmin'), superadminController.overview);
+app.post('/api/superadmin/owners/:tenantId/plan', requireRole('superadmin'), requireFreshUser, superadminController.assignPlanToOwner);
 app.post('/api/superadmin/incidencias', requireRole('superadmin'), requireFreshUser, superadminController.createSupportIncident);
 app.put('/api/superadmin/incidencias/:id', requireRole('superadmin'), requireFreshUser, superadminController.updateSupportIncident);
 

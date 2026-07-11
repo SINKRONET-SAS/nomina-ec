@@ -1,4 +1,5 @@
 const {
+  assignOwnerPlan,
   createIncident,
   getSuperadminOverview,
   updateIncidentStatus,
@@ -49,7 +50,27 @@ async function updateSupportIncident(req, res) {
   }
 }
 
+async function assignPlanToOwner(req, res) {
+  try {
+    const assignment = await assignOwnerPlan({
+      tenantId: req.params.tenantId,
+      payload: req.body || {},
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+    });
+    return res.json({ success: true, data: assignment, correlationId: req.correlationId });
+  } catch (err) {
+    return res.status(err.statusCode || 400).json({
+      error: err.code || 'SUPERADMIN_OWNER_PLAN_ASSIGN_ERROR',
+      message: err.message,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
 module.exports = {
+  assignPlanToOwner,
   createSupportIncident,
   overview,
   updateSupportIncident,
