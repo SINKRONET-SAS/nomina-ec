@@ -11,6 +11,9 @@ const EMPTY_PLAN = {
   nombre: '',
   descripcion: '',
   precioMensualCentavos: 0,
+  precioAnualCentavos: 0,
+  billingPeriod: 'monthly',
+  trialDays: 14,
   empleadosMax: '',
   empresasMax: 1,
   usuariosMax: 3,
@@ -32,6 +35,9 @@ function normalizeDraft(plan = {}) {
     nombre: plan.nombre || '',
     descripcion: plan.descripcion || '',
     precioMensualCentavos: plan.precioMensualCentavos ?? 0,
+    precioAnualCentavos: plan.precioAnualCentavos ?? Number(plan.precioMensualCentavos || 0) * 12,
+    billingPeriod: plan.billingPeriod || plan.metadata?.billingPeriod || 'monthly',
+    trialDays: plan.trialDays ?? plan.metadata?.trialDays ?? (plan.id === 'TRIAL' ? 14 : 0),
     empleadosMax: plan.empleadosMax ?? '',
     empresasMax: plan.empresasMax ?? 1,
     usuariosMax: plan.usuariosMax ?? 3,
@@ -55,6 +61,9 @@ function validateDraft(draft) {
   }
   if (!String(draft.nombre || '').trim()) errors.push('El nombre es requerido.');
   if (Number(draft.precioMensualCentavos) < 0) errors.push('El precio no puede ser negativo.');
+  if (Number(draft.precioAnualCentavos) < 0) errors.push('El precio anual no puede ser negativo.');
+  if (!['monthly', 'annual'].includes(String(draft.billingPeriod))) errors.push('El cobro activo debe ser mensual o anual.');
+  if (Number(draft.trialDays) < 0) errors.push('Los días de prueba no pueden ser negativos.');
   if (draft.empleadosMax !== '' && Number(draft.empleadosMax) < 0) errors.push('El límite de empleados no puede ser negativo.');
   if (Number(draft.empresasMax) < 1) errors.push('Debe permitir al menos una empresa.');
   if (Number(draft.usuariosMax) < 1) errors.push('Debe permitir al menos un usuario.');
@@ -104,6 +113,9 @@ function PlanesGestion({ showSuperadminConsole = true }) {
         ...draft,
         id: String(draft.id).trim().toUpperCase(),
         precioMensualCentavos: Math.round(Number(draft.precioMensualCentavos || 0)),
+        precioAnualCentavos: Math.round(Number(draft.precioAnualCentavos || 0)),
+        billingPeriod: draft.billingPeriod === 'annual' ? 'annual' : 'monthly',
+        trialDays: Math.max(0, Math.round(Number(draft.trialDays || 0))),
         empleadosMax: draft.empleadosMax === '' ? null : Math.round(Number(draft.empleadosMax)),
         empresasMax: Math.round(Number(draft.empresasMax || 1)),
         usuariosMax: Math.round(Number(draft.usuariosMax || 1)),
@@ -220,6 +232,21 @@ function PlanesGestion({ showSuperadminConsole = true }) {
               <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="0" value={draft.precioMensualCentavos} onChange={(event) => updateField('precioMensualCentavos', event.target.value)} />
             </label>
             <label>
+              <span className="text-sm font-medium text-slate-700">Precio anual centavos</span>
+              <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="0" value={draft.precioAnualCentavos} onChange={(event) => updateField('precioAnualCentavos', event.target.value)} />
+            </label>
+            <label>
+              <span className="text-sm font-medium text-slate-700">Cobro activo</span>
+              <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={draft.billingPeriod} onChange={(event) => updateField('billingPeriod', event.target.value)}>
+                <option value="monthly">Mensual</option>
+                <option value="annual">Anual</option>
+              </select>
+            </label>
+            <label>
+              <span className="text-sm font-medium text-slate-700">Días de prueba</span>
+              <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="0" value={draft.trialDays} onChange={(event) => updateField('trialDays', event.target.value)} />
+            </label>
+            <label>
               <span className="text-sm font-medium text-slate-700">Orden</span>
               <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" value={draft.orden} onChange={(event) => updateField('orden', event.target.value)} />
             </label>
@@ -275,6 +302,7 @@ function PlanesGestion({ showSuperadminConsole = true }) {
                 <tr>
                   <th className="px-4 py-3">Plan</th>
                   <th className="px-4 py-3 text-right">Precio</th>
+                  <th className="px-4 py-3">Cobro</th>
                   <th className="px-4 py-3">Limites</th>
                   <th className="px-4 py-3">Capacidades</th>
                   <th className="px-4 py-3">Estado</th>
@@ -283,14 +311,21 @@ function PlanesGestion({ showSuperadminConsole = true }) {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {plansQuery.isLoading ? (
-                  <tr><td className="px-4 py-6 text-center" colSpan="6">Cargando...</td></tr>
+                  <tr><td className="px-4 py-6 text-center" colSpan="7">Cargando...</td></tr>
                 ) : (plansQuery.data || []).map((plan) => (
                   <tr key={plan.id}>
                     <td className="px-4 py-3">
                       <p className="font-semibold text-slate-950">{plan.nombre}</p>
                       <p className="text-xs text-slate-500">{plan.id}</p>
                     </td>
-                    <td className="px-4 py-3 text-right">{price(plan.precioMensualCentavos)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <p>{price(plan.precioMensualCentavos)}/mes</p>
+                      <p className="text-xs text-slate-500">{price(plan.precioAnualCentavos)}/año</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p>{plan.billingPeriod === 'annual' ? 'Anual' : 'Mensual'}</p>
+                      <p className="text-xs text-slate-500">{Number(plan.trialDays || 0)} días trial</p>
+                    </td>
                     <td className="px-4 py-3">Emp. {plan.empleadosMax || 'sin límite'} | Empresas {plan.empresasMax} | Usuarios {plan.usuariosMax}</td>
                     <td className="px-4 py-3">{planCapabilitiesText(plan)}</td>
                     <td className="px-4 py-3">{plan.activo ? 'Activo' : 'Inactivo'} | {plan.publico ? 'Público' : 'Interno'}</td>

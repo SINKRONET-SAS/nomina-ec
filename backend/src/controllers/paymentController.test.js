@@ -29,6 +29,7 @@ describe('paymentController PayPhone gates', () => {
   });
 
   test('bloquea checkout cuando PayPhone esta en mock', async () => {
+    process.env.DIRECT_PAYMENTS_ENABLED = 'true';
     process.env.PAYPHONE_MOCK_MODE = 'true';
     process.env.PAYPHONE_TOKEN = 'token-real';
     process.env.PAYPHONE_STORE_ID = 'store-1';
@@ -52,6 +53,7 @@ describe('paymentController PayPhone gates', () => {
   });
 
   test('reporta capacidades publicas de pago junto con planes', async () => {
+    process.env.DIRECT_PAYMENTS_ENABLED = 'true';
     process.env.PAYPHONE_MOCK_MODE = 'false';
     process.env.PAYPHONE_TOKEN = 'token-real';
     process.env.PAYPHONE_STORE_ID = 'store-1';
@@ -69,6 +71,30 @@ describe('paymentController PayPhone gates', () => {
         status: 'ready',
       }),
     });
+  });
+
+  test('deshabilita pagos directos por defecto y anuncia transferencia manual', async () => {
+    delete process.env.DIRECT_PAYMENTS_ENABLED;
+    delete process.env.PAYPHONE_CHECKOUT_ENABLED;
+    const req = {
+      body: { planId: 'PRO' },
+      usuario: { tenantId: 'tenant-1', id: 'user-1' },
+      correlationId: 'corr-manual-only',
+    };
+    const res = mockResponse();
+
+    await paymentController.createCheckoutIntent(req, res, jest.fn());
+
+    expect(db.query).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      error: 'PAGOS_DIRECTOS_DESHABILITADOS',
+      capabilities: expect.objectContaining({
+        provider: 'BANK_TRANSFER_MANUAL',
+        checkoutAvailable: false,
+        supportsManualEntry: true,
+      }),
+    }));
   });
 
   test('versiona un plan existente cuando tiene suscripciones activas', async () => {
@@ -138,6 +164,7 @@ describe('paymentController PayPhone gates', () => {
   });
 
   test('webhook PayPhone aprobado activa suscripcion de forma backend', async () => {
+    process.env.DIRECT_PAYMENTS_ENABLED = 'true';
     db.query
       .mockResolvedValueOnce({
         rows: [{
@@ -154,8 +181,11 @@ describe('paymentController PayPhone gates', () => {
           provider_transaction_id: 'trx-1',
           tenant_id: 'tenant-1',
           plan_id: 'PRO',
+          metadata: {},
         }],
       })
+      .mockResolvedValueOnce({ rows: [{ id: 'PRO', metadata: { billingPeriod: 'monthly' }, precio_mensual_centavos: 1200 }] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
     const req = {
       body: {
@@ -177,7 +207,7 @@ describe('paymentController PayPhone gates', () => {
       ['pay-1']
     );
     expect(db.query.mock.calls[1][0]).toContain('UPDATE transacciones_pago');
-    expect(db.query.mock.calls[2][0]).toContain('INSERT INTO suscripciones');
+    expect(db.query.mock.calls[4][0]).toContain('INSERT INTO suscripciones');
     expect(queueInvoiceForApprovedTransaction).toHaveBeenCalledWith(
       expect.objectContaining({ client_transaction_id: 'pay-1' }),
       expect.objectContaining({ correlationId: 'corr-webhook' })
@@ -187,5 +217,89 @@ describe('paymentController PayPhone gates', () => {
       processed: true,
     }));
     expect(next).not.toHaveBeenCalled();
+  });
+
+  test('aplica transferencia manual y actualiza suscripcion con periodo anual', async () => {
+    const previousSubscription = {
+      plan_id: 'MICRO',
+      estado: 'active',
+      inicio_en: '2026-06-01T00:00:00.000Z',
+      vence_en: '2026-07-01T00:00:00.000Z',
+      renovacion_automatica: false,
+      metadata: {},
+    };
+    db.query
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'tx-db-id',
+          tenant_id: 'tenant-1',
+          usuario_id: 'owner-1',
+          plan_id: 'PRO',
+          proveedor: 'BANK_TRANSFER_MANUAL',
+          estado: 'CONFIRMED',
+          monto_centavos: 12000,
+          moneda: 'USD',
+          client_transaction_id: 'sknomina-bank-1',
+          provider_transaction_id: 'TRX-001',
+          metadata: { manualBankStatus: 'CONFIRMED', billingPeriod: 'annual', bankReference: 'TRX-001' },
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [previousSubscription] })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'tx-db-id',
+          tenant_id: 'tenant-1',
+          usuario_id: 'owner-1',
+          plan_id: 'PRO',
+          proveedor: 'BANK_TRANSFER_MANUAL',
+          estado: 'APPROVED',
+          monto_centavos: 12000,
+          moneda: 'USD',
+          client_transaction_id: 'sknomina-bank-1',
+          provider_transaction_id: 'TRX-001',
+          metadata: { manualBankStatus: 'APPLIED', billingPeriod: 'annual', previousSubscription },
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [{ id: 'PRO', metadata: { billingPeriod: 'annual' }, precio_mensual_centavos: 1000 }] })
+      .mockResolvedValueOnce({ rows: [previousSubscription] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'tx-db-id',
+          tenant_id: 'tenant-1',
+          usuario_id: 'owner-1',
+          plan_id: 'PRO',
+          proveedor: 'BANK_TRANSFER_MANUAL',
+          estado: 'APPROVED',
+          monto_centavos: 12000,
+          moneda: 'USD',
+          client_transaction_id: 'sknomina-bank-1',
+          provider_transaction_id: 'TRX-001',
+          metadata: { manualBankStatus: 'APPLIED', billingPeriod: 'annual', appliedAt: '2026-07-10T00:00:00.000Z' },
+          plan_nombre: 'Pro',
+        }],
+      });
+    const req = {
+      params: { id: 'tx-db-id' },
+      body: {},
+      usuario: { id: 'super-1', rol: 'superadmin' },
+      usuarioId: 'super-1',
+      correlationId: 'corr-manual-apply',
+    };
+    const res = mockResponse();
+
+    await paymentController.applyManualBankTransfer(req, res, jest.fn());
+
+    expect(db.query.mock.calls[5][0]).toContain('INSERT INTO suscripciones');
+    expect(db.query.mock.calls[5][1][2]).toBeInstanceOf(Date);
+    expect(db.query.mock.calls[5][1][3]).toBe(false);
+    expect(queueInvoiceForApprovedTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ client_transaction_id: 'sknomina-bank-1' }),
+      expect.objectContaining({ correlationId: 'corr-manual-apply' })
+    );
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      data: expect.objectContaining({ status: 'APPLIED', billingPeriod: 'annual' }),
+    }));
   });
 });

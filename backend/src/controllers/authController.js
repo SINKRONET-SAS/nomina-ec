@@ -7,6 +7,7 @@ const {
   sendEmailVerification,
   sendPasswordReset,
 } = require('../services/communicationService');
+const { DEFAULT_TRIAL_DAYS, getPlanTrialDays } = require('../services/planTrialService');
 const { CONSENT_SCOPES, LOPDP_VERSION } = require('../services/privacyConsentService');
 
 const OWNER_LOPDP_VERSION = 'LOPDP-2026-06';
@@ -417,15 +418,37 @@ async function publicRegister(req, res, next) {
 
     const requestedPlan = String(planId || 'TRIAL').trim().toUpperCase();
     const planCheck = await client.query(
-      'SELECT id FROM planes_comerciales WHERE id = $1 AND activo = true',
+      'SELECT id, metadata FROM planes_comerciales WHERE id = $1 AND activo = true',
       [requestedPlan]
     );
-    const selectedPlanId = planCheck.rows[0]?.id || 'TRIAL';
+    let selectedPlan = planCheck.rows[0] || null;
+    if (!selectedPlan && requestedPlan !== 'TRIAL') {
+      const fallbackPlan = await client.query(
+        'SELECT id, metadata FROM planes_comerciales WHERE id = $1 AND activo = true',
+        ['TRIAL']
+      );
+      selectedPlan = fallbackPlan.rows[0] || null;
+    }
+    const selectedPlanId = selectedPlan?.id || 'TRIAL';
+    const trialDays = getPlanTrialDays(selectedPlan || { id: selectedPlanId }, {
+      fallback: selectedPlanId === 'TRIAL' ? DEFAULT_TRIAL_DAYS : 0,
+    });
+    const subscriptionStatus = trialDays > 0 ? 'trial' : 'pending_payment';
 
     await client.query(
       `INSERT INTO suscripciones (tenant_id, plan_id, estado, vence_en, metadata)
-       VALUES ($1, $2, 'trial', NOW() + INTERVAL '14 days', $3)`,
-      [tenant.id, selectedPlanId, JSON.stringify({ source: 'public-register' })]
+       VALUES ($1, $2, $3, CASE WHEN $4::int > 0 THEN NOW() + ($4::int * INTERVAL '1 day') ELSE NULL END, $5)`,
+      [
+        tenant.id,
+        selectedPlanId,
+        subscriptionStatus,
+        trialDays,
+        JSON.stringify({
+          source: 'public-register',
+          trialDays,
+          requiresManualPayment: subscriptionStatus === 'pending_payment',
+        }),
+      ]
     );
 
     const verification = await createEmailVerificationToken(client, userResult.rows[0], req.correlationId);

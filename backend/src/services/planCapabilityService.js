@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const AppError = require('../utils/AppError');
+const { resolveSubscriptionRuntimeState } = require('./planTrialService');
 
 const CAPABILITY_FIELDS = {
   bankFiles: 'archivos_bancarios',
@@ -19,11 +20,17 @@ const CAPABILITY_LABELS = {
 
 async function getTenantPlanCapabilities(tenantId) {
   const result = await db.query(`
-    SELECT p.*
+    SELECT p.*,
+      s.estado AS subscription_estado,
+      s.inicio_en AS subscription_inicio_en,
+      s.vence_en AS subscription_vence_en
     FROM suscripciones s
     JOIN planes_comerciales p ON p.id = s.plan_id
     WHERE s.tenant_id = $1
-      AND s.estado IN ('trial', 'active')
+      AND (
+        (s.estado = 'active' AND s.vence_en IS NOT NULL AND s.vence_en > NOW())
+        OR (s.estado = 'trial' AND s.vence_en IS NOT NULL AND s.vence_en > NOW())
+      )
       AND p.activo = true
     ORDER BY s.updated_at DESC
     LIMIT 1
@@ -52,6 +59,14 @@ async function getTenantPlanCapabilities(tenantId) {
   return {
     planId: plan.id,
     planNombre: plan.nombre,
+    subscription: {
+      estado: resolveSubscriptionRuntimeState({
+        estado: plan.subscription_estado,
+        vence_en: plan.subscription_vence_en,
+      }),
+      inicioEn: plan.subscription_inicio_en,
+      venceEn: plan.subscription_vence_en,
+    },
     allowed: {
       bankFiles: Boolean(plan.archivos_bancarios),
       advancedReports: Boolean(plan.reportes_avanzados),

@@ -32,6 +32,7 @@ async function getSuperadminOverview() {
       SELECT t.id, t.ruc, t.razon_social, t.activo, t.created_at,
         s.plan_id, s.estado AS subscription_status, s.vence_en,
         p.nombre AS plan_nombre,
+        MIN(CASE WHEN u.rol = 'owner' THEN u.email ELSE NULL END) AS owner_email,
         COUNT(DISTINCT e.id)::int AS empleados,
         COUNT(DISTINCT u.id)::int AS usuarios
       FROM tenants t
@@ -66,6 +67,7 @@ async function getSuperadminOverview() {
       planNombre: row.plan_nombre,
       subscriptionStatus: row.subscription_status,
       venceEn: row.vence_en,
+      ownerEmail: row.owner_email,
       empleados: row.empleados,
       usuarios: row.usuarios,
     })),

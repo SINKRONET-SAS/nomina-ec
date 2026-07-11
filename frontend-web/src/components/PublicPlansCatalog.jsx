@@ -39,14 +39,14 @@ function PublicPlansCatalog() {
   }, []);
 
   const handleCheckout = async (planId) => {
-    const checkoutBlocked = planId !== 'TRIAL' && paymentCapabilities?.checkoutAvailable === false;
-    if (checkoutBlocked) {
-      setError(paymentCapabilities?.blockedReason || 'Checkout de pago no disponible.');
+    if (!token) {
+      navigate(`/registro?plan=${encodeURIComponent(planId)}`);
       return;
     }
 
-    if (!token) {
-      navigate(`/registro?plan=${encodeURIComponent(planId)}`);
+    const checkoutBlocked = planId !== 'TRIAL' && paymentCapabilities?.checkoutAvailable === false;
+    if (checkoutBlocked) {
+      setError(paymentCapabilities?.blockedReason || 'La activación se realiza con transferencia bancaria revisada por SUPERADMIN.');
       return;
     }
 
@@ -75,7 +75,7 @@ function PublicPlansCatalog() {
       {error && <div className="status-error">{error}</div>}
       {paymentCapabilities?.checkoutAvailable === false && (
         <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          Checkout PayPhone bloqueado: {paymentCapabilities.blockedReason || 'faltan credenciales de cobro real'}.
+          {paymentCapabilities.blockedReason || 'Los pagos directos están deshabilitados. La activación se realiza por transferencia bancaria revisada.'}
         </div>
       )}
 
@@ -102,17 +102,17 @@ function PublicPlansCatalog() {
                 <div className="mt-5 rounded-md border border-teal-200 bg-white p-4 text-sm text-slate-700">
                   <p className="font-semibold text-slate-950">Resumen de checkout</p>
                   <p className="mt-1 leading-6">
-                    Se abrira PayPhone para activar {plan.nombre} con las funcionalidades listadas en esta tarjeta.
+                    Se abrirá la pasarela para activar {plan.nombre} con las funcionalidades listadas en esta tarjeta.
                   </p>
                 </div>
               )}
               <button
                 className="primary-button mt-6 w-full"
-                disabled={loadingPlan === plan.id || checkoutBlocked}
+                disabled={loadingPlan === plan.id}
                 onClick={() => handleCheckout(plan.id)}
                 type="button"
               >
-                {checkoutBlocked ? 'Checkout no configurado' : loadingPlan === plan.id ? 'Abriendo checkout...' : checkoutSelected ? 'Continuar a PayPhone' : publicPlanActionLabel(plan)}
+                {checkoutBlocked ? 'Activación por transferencia' : loadingPlan === plan.id ? 'Abriendo checkout...' : checkoutSelected ? 'Continuar a pago' : publicPlanActionLabel(plan)}
                 {loadingPlan !== plan.id && <ArrowRight size={18} />}
               </button>
             </article>

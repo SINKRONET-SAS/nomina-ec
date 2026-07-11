@@ -124,6 +124,11 @@ app.get('/api/pagos/planes/admin', requireRole('superadmin'), paymentController.
 app.post('/api/pagos/planes', requireRole('superadmin'), requireFreshUser, paymentController.upsertPlan);
 app.put('/api/pagos/planes/:planId', requireRole('superadmin'), requireFreshUser, paymentController.upsertPlan);
 app.delete('/api/pagos/planes/:planId', requireRole('superadmin'), requireFreshUser, paymentController.deletePlan);
+app.get('/api/pagos/transferencias/admin', requireRole('superadmin'), paymentController.listManualBankTransfers);
+app.post('/api/pagos/transferencias', requireRole('superadmin'), requireFreshUser, paymentController.createManualBankTransfer);
+app.post('/api/pagos/transferencias/:id/aplicar', requireRole('superadmin'), requireFreshUser, paymentController.applyManualBankTransfer);
+app.post('/api/pagos/transferencias/:id/reversar', requireRole('superadmin'), requireFreshUser, paymentController.reverseManualBankTransfer);
+app.post('/api/pagos/transferencias/:id/:action(confirmar|rechazar)', requireRole('superadmin'), requireFreshUser, paymentController.updateManualBankTransferStatus);
 app.get('/api/facturacion/status', requireRole('superadmin'), fiscalBillingController.status);
 app.get('/api/facturacion/documentos', requireRole('superadmin'), fiscalBillingController.list);
 app.post('/api/facturacion/transacciones/:paymentTransactionId/emitir', requireRole('superadmin'), requireFreshUser, fiscalBillingController.emitForTransaction);

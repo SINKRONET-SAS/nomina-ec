@@ -55,4 +55,14 @@ describe('planCapabilityService', () => {
     await expect(assertCapability('tenant-1', 'bankFiles', { userId: 'user-1' }))
       .rejects.toMatchObject({ code: 'PLAN_CAPABILITY_BLOCKED', statusCode: 402 });
   });
+
+  test('no concede capacidades cuando no hay suscripcion vigente', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    const result = await getTenantPlanCapabilities('tenant-1');
+
+    expect(result.planId).toBeNull();
+    expect(result.allowed.bankFiles).toBe(false);
+    expect(db.query.mock.calls[0][0]).toContain("s.estado = 'trial' AND s.vence_en IS NOT NULL AND s.vence_en > NOW()");
+  });
 });

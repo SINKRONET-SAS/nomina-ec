@@ -84,6 +84,9 @@ export function normalizePublicPlan(plan = {}) {
     id: String(plan.id || '').trim().toUpperCase(),
     nombre: normalizeBrandText(plan.nombre),
     descripcion: normalizeBrandText(plan.descripcion),
+    precioAnualCentavos: plan.precioAnualCentavos ?? plan.metadata?.precioAnualCentavos ?? Number(plan.precioMensualCentavos || 0) * 12,
+    billingPeriod: plan.billingPeriod || plan.metadata?.billingPeriod || 'monthly',
+    trialDays: plan.trialDays ?? plan.metadata?.trialDays ?? (String(plan.id || '').trim().toUpperCase() === 'TRIAL' ? 14 : 0),
     archivosBancarios: Boolean(plan.archivosBancarios),
     reportesAvanzados: Boolean(plan.reportesAvanzados),
     apiAccess: Boolean(plan.apiAccess),
@@ -102,6 +105,9 @@ export function normalizePublicPlans(plans = []) {
 export function formatPublicPlanPrice(plan) {
   if (!plan?.precioMensualCentavos) {
     return plan?.id === 'CORPORATIVO' ? 'Contrato' : '$0.00';
+  }
+  if (plan?.billingPeriod === 'annual') {
+    return `$${(Number(plan.precioAnualCentavos || 0) / 100).toFixed(2)}/año`;
   }
   return `$${(Number(plan.precioMensualCentavos) / 100).toFixed(2)}/mes`;
 }
@@ -198,5 +204,6 @@ export function getPlanLimits(plan = {}) {
     `${plan.empleadosMax || 'Capacidad pactada'} empleados`,
     `${plan.empresasMax || 1} empresa${Number(plan.empresasMax || 1) === 1 ? '' : 's'}`,
     `${plan.usuariosMax || 'Usuarios pactados'} usuarios`,
+    `${Number(plan.trialDays || 0)} dias de prueba`,
   ];
 }

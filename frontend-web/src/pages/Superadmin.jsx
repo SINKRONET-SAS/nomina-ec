@@ -2,16 +2,30 @@ import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
+  Banknote,
   Building2,
   CheckCircle2,
   CreditCard,
   LifeBuoy,
+  PackagePlus,
   RefreshCw,
   ShieldCheck,
   Users,
+  XCircle,
 } from 'lucide-react';
 import PlanesGestion from './PlanesGestion';
-import { createSupportIncident, fetchSuperadminOverview, updateSupportIncident } from '../services/superadminApi';
+import { fetchAdminPlans } from '../services/beneficiosApi';
+import {
+  applyManualBankTransfer,
+  confirmManualBankTransfer,
+  createManualBankTransfer,
+  createSupportIncident,
+  fetchManualBankTransfers,
+  fetchSuperadminOverview,
+  rejectManualBankTransfer,
+  reverseManualBankTransfer,
+  updateSupportIncident,
+} from '../services/superadminApi';
 import { extractApiError } from '../services/publicApi';
 
 const tabs = [
@@ -19,6 +33,7 @@ const tabs = [
   { id: 'empresas', label: 'Empresas' },
   { id: 'incidencias', label: 'Incidencias' },
   { id: 'planes', label: 'Planes' },
+  { id: 'transferencias', label: 'Transferencias' },
 ];
 
 const incidentStatuses = [
@@ -35,6 +50,10 @@ function formatDate(value) {
     month: '2-digit',
     year: 'numeric',
   }).format(new Date(value));
+}
+
+function formatMoneyFromCents(value) {
+  return `$${(Number(value || 0) / 100).toFixed(2)}`;
 }
 
 function statusTone(status) {
@@ -252,6 +271,243 @@ function IncidentsTable({ incidents, updateMutation }) {
   );
 }
 
+function ManualBankTransfersPanel({ owners }) {
+  const queryClient = useQueryClient();
+  const [statusFilter, setStatusFilter] = useState('');
+  const [draft, setDraft] = useState({
+    tenantId: '',
+    planId: '',
+    billingPeriod: 'monthly',
+    amount: '',
+    bankReference: '',
+    paidAt: new Date().toISOString().slice(0, 10),
+    notes: '',
+    evidenceUrl: '',
+  });
+  const [feedback, setFeedback] = useState({ type: '', message: '' });
+
+  const plansQuery = useQuery({
+    queryKey: ['admin-plans'],
+    queryFn: fetchAdminPlans,
+  });
+
+  const transfersQuery = useQuery({
+    queryKey: ['manual-bank-transfers', statusFilter],
+    queryFn: () => fetchManualBankTransfers(statusFilter ? { status: statusFilter } : {}),
+  });
+
+  const plans = plansQuery.data || [];
+  const transfers = transfersQuery.data || [];
+
+  const updateDraft = (name, value) => {
+    setDraft((current) => ({ ...current, [name]: value }));
+  };
+
+  const createMutation = useMutation({
+    mutationFn: () => createManualBankTransfer({
+      tenantId: draft.tenantId,
+      planId: draft.planId,
+      billingPeriod: draft.billingPeriod,
+      amount: draft.amount,
+      bankReference: draft.bankReference,
+      paidAt: draft.paidAt,
+      notes: draft.notes,
+      evidenceUrl: draft.evidenceUrl,
+    }),
+    onSuccess: () => {
+      setFeedback({ type: 'success', message: 'Transferencia registrada en revisión.' });
+      setDraft((current) => ({
+        ...current,
+        amount: '',
+        bankReference: '',
+        notes: '',
+        evidenceUrl: '',
+        paidAt: new Date().toISOString().slice(0, 10),
+      }));
+      queryClient.invalidateQueries({ queryKey: ['manual-bank-transfers'] });
+    },
+    onError: (err) => {
+      setFeedback({ type: 'error', message: extractApiError(err, 'No pudimos registrar la transferencia.') });
+    },
+  });
+
+  const actionMutation = useMutation({
+    mutationFn: async ({ id, action }) => {
+      if (action === 'confirm') return confirmManualBankTransfer(id);
+      if (action === 'apply') return applyManualBankTransfer(id);
+      if (action === 'reject') {
+        const reason = window.prompt('Motivo de rechazo') || '';
+        if (!reason.trim()) return null;
+        return rejectManualBankTransfer(id, { reason });
+      }
+      if (action === 'reverse') {
+        const reason = window.prompt('Motivo de reversa') || '';
+        if (!reason.trim()) return null;
+        return reverseManualBankTransfer(id, { reason });
+      }
+      return null;
+    },
+    onSuccess: (payload) => {
+      if (!payload) return;
+      setFeedback({ type: 'success', message: 'Transferencia actualizada.' });
+      queryClient.invalidateQueries({ queryKey: ['manual-bank-transfers'] });
+      queryClient.invalidateQueries({ queryKey: ['superadmin-overview'] });
+    },
+    onError: (err) => {
+      setFeedback({ type: 'error', message: extractApiError(err, 'No pudimos completar la acción.') });
+    },
+  });
+
+  const submit = (event) => {
+    event.preventDefault();
+    if (!draft.tenantId || !draft.planId || !draft.amount || !draft.bankReference.trim()) {
+      setFeedback({ type: 'error', message: 'Completa empresa, plan, monto y referencia bancaria.' });
+      return;
+    }
+    createMutation.mutate();
+  };
+
+  const statusToneClass = (status) => {
+    if (status === 'APPLIED') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
+    if (status === 'CONFIRMED') return 'border-blue-200 bg-blue-50 text-blue-800';
+    if (status === 'PENDING_REVIEW') return 'border-amber-200 bg-amber-50 text-amber-900';
+    return 'border-slate-200 bg-slate-50 text-slate-700';
+  };
+
+  return (
+    <section className="space-y-5">
+      {feedback.message && (
+        <div className={feedback.type === 'success' ? 'rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800' : 'rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800'}>
+          {feedback.message}
+        </div>
+      )}
+
+      <form className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" onSubmit={submit}>
+        <div className="flex items-center gap-2">
+          <Banknote className="h-5 w-5 text-teal-700" />
+          <h2 className="text-lg font-semibold text-slate-950">Registrar comprobante</h2>
+        </div>
+        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <label className="text-sm font-semibold text-slate-700">
+            Empresa
+            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={draft.tenantId} onChange={(event) => updateDraft('tenantId', event.target.value)}>
+              <option value="">Seleccionar empresa</option>
+              {owners.map((owner) => (
+                <option key={owner.id} value={owner.id}>{owner.razonSocial || owner.ruc || owner.id}</option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm font-semibold text-slate-700">
+            Plan
+            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={draft.planId} onChange={(event) => updateDraft('planId', event.target.value)}>
+              <option value="">Seleccionar plan</option>
+              {plans.map((plan) => (
+                <option key={plan.id} value={plan.id}>{plan.nombre || plan.id}</option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm font-semibold text-slate-700">
+            Cobro
+            <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={draft.billingPeriod} onChange={(event) => updateDraft('billingPeriod', event.target.value)}>
+              <option value="monthly">Mensual</option>
+              <option value="annual">Anual</option>
+            </select>
+          </label>
+          <label className="text-sm font-semibold text-slate-700">
+            Monto recibido
+            <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" inputMode="decimal" value={draft.amount} onChange={(event) => updateDraft('amount', event.target.value)} placeholder="0.00" />
+          </label>
+          <label className="text-sm font-semibold text-slate-700">
+            Referencia bancaria
+            <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={draft.bankReference} onChange={(event) => updateDraft('bankReference', event.target.value)} placeholder="TRX-000123" />
+          </label>
+          <label className="text-sm font-semibold text-slate-700">
+            Fecha de pago
+            <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="date" value={draft.paidAt} onChange={(event) => updateDraft('paidAt', event.target.value)} />
+          </label>
+          <label className="text-sm font-semibold text-slate-700 xl:col-span-2">
+            Observación
+            <textarea className="mt-1 min-h-20 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={draft.notes} onChange={(event) => updateDraft('notes', event.target.value)} />
+          </label>
+          <label className="text-sm font-semibold text-slate-700">
+            URL evidencia
+            <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={draft.evidenceUrl} onChange={(event) => updateDraft('evidenceUrl', event.target.value)} placeholder="Opcional" />
+          </label>
+        </div>
+        <button className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={createMutation.isPending} type="submit">
+          <PackagePlus className="h-4 w-4" />
+          {createMutation.isPending ? 'Registrando' : 'Registrar transferencia'}
+        </button>
+      </form>
+
+      <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">Aplicación de pagos y upgrades</h2>
+            <p className="mt-1 text-sm text-slate-600">Canal interno {`BANK_TRANSFER_MANUAL`}; no se muestra en checkout público.</p>
+          </div>
+          <div className="flex gap-2">
+            <select className="min-h-10 rounded-md border border-slate-300 px-3 text-sm" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+              <option value="">Todos</option>
+              <option value="PENDING_REVIEW">En revisión</option>
+              <option value="CONFIRMED">Confirmadas</option>
+              <option value="APPLIED">Aplicadas</option>
+              <option value="REJECTED">Rechazadas</option>
+              <option value="REVERSED">Reversadas</option>
+            </select>
+            <button className="inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700" onClick={() => transfersQuery.refetch()} type="button">
+              <RefreshCw className="h-4 w-4" />
+              Actualizar
+            </button>
+          </div>
+        </div>
+
+        {transfersQuery.isLoading ? (
+          <EmptyState>Cargando transferencias...</EmptyState>
+        ) : transfers.length === 0 ? (
+          <EmptyState>No hay transferencias para el filtro actual.</EmptyState>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {transfers.map((payment) => (
+              <article className="rounded-lg border border-slate-200 p-4" key={payment.id}>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-slate-950">{payment.bankReference || payment.clientTransactionId}</p>
+                    <p className="mt-1 text-sm text-slate-600">{payment.tenantName || payment.tenantRuc || payment.tenantId} · {payment.planNombre} · {formatMoneyFromCents(payment.amountCentavos)}</p>
+                    <p className="mt-1 text-xs text-slate-500">Pago {formatDate(payment.paidAt)} · Aplicado {formatDate(payment.appliedAt)} · Cobro {payment.billingPeriod === 'annual' ? 'anual' : 'mensual'}</p>
+                  </div>
+                  <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${statusToneClass(payment.status)}`}>
+                    {payment.status}
+                  </span>
+                </div>
+                {payment.notes && <p className="mt-3 text-sm text-slate-600">{payment.notes}</p>}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button className="inline-flex min-h-9 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-semibold text-slate-700 disabled:opacity-50" disabled={payment.status !== 'PENDING_REVIEW' || actionMutation.isPending} onClick={() => actionMutation.mutate({ id: payment.id, action: 'confirm' })} type="button">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Confirmar
+                  </button>
+                  <button className="inline-flex min-h-9 items-center gap-2 rounded-md bg-teal-700 px-3 text-sm font-semibold text-white disabled:opacity-50" disabled={payment.status !== 'CONFIRMED' || actionMutation.isPending} onClick={() => actionMutation.mutate({ id: payment.id, action: 'apply' })} type="button">
+                    <PackagePlus className="h-4 w-4" />
+                    Aplicar
+                  </button>
+                  <button className="inline-flex min-h-9 items-center gap-2 rounded-md border border-red-200 px-3 text-sm font-semibold text-red-700 disabled:opacity-50" disabled={!['PENDING_REVIEW', 'CONFIRMED'].includes(payment.status) || actionMutation.isPending} onClick={() => actionMutation.mutate({ id: payment.id, action: 'reject' })} type="button">
+                    <XCircle className="h-4 w-4" />
+                    Rechazar
+                  </button>
+                  <button className="inline-flex min-h-9 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-semibold text-slate-700 disabled:opacity-50" disabled={payment.status !== 'APPLIED' || actionMutation.isPending} onClick={() => actionMutation.mutate({ id: payment.id, action: 'reverse' })} type="button">
+                    <RefreshCw className="h-4 w-4" />
+                    Reversar
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function Superadmin() {
   const [activeTab, setActiveTab] = useState('vision');
   const queryClient = useQueryClient();
@@ -405,6 +661,10 @@ function Superadmin() {
 
       {!overviewQuery.isLoading && activeTab === 'planes' && (
         <PlanesGestion showSuperadminConsole={false} />
+      )}
+
+      {!overviewQuery.isLoading && activeTab === 'transferencias' && (
+        <ManualBankTransfersPanel owners={owners} />
       )}
     </div>
   );
