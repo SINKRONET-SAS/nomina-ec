@@ -97,6 +97,45 @@ describe('paymentController PayPhone gates', () => {
     }));
   });
 
+  test('listado admin pide solo la version vigente por raiz de plan', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'TRIAL_V9270000000',
+        nombre: 'Prueba',
+        descripcion: 'Actualizado',
+        precio_mensual_centavos: 0,
+        moneda: 'USD',
+        empleados_max: 10,
+        empresas_max: 1,
+        usuarios_max: 2,
+        archivos_bancarios: false,
+        reportes_avanzados: false,
+        api_access: false,
+        app_movil: true,
+        rutas_campo: false,
+        soporte: 'comunidad',
+        publico: false,
+        activo: true,
+        orden: 1,
+        metadata: { rootPlanId: 'TRIAL' },
+      }],
+    });
+    const res = mockResponse();
+
+    await paymentController.listAdminPlans({}, res, jest.fn());
+
+    expect(db.query.mock.calls[0][0]).toContain('ROW_NUMBER() OVER');
+    expect(db.query.mock.calls[0][0]).toContain('catalog_rank = 1');
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      data: [expect.objectContaining({
+        id: 'TRIAL_V9270000000',
+        rootPlanId: 'TRIAL',
+        catalogStatus: 'current',
+      })],
+    }));
+  });
+
   test('versiona un plan existente cuando tiene suscripciones activas', async () => {
     const now = jest.spyOn(Date, 'now').mockReturnValue(1719270000000);
     db.query
@@ -156,10 +195,14 @@ describe('paymentController PayPhone gates', () => {
       data: expect.objectContaining({ id: 'PRO_V9270000000' }),
       meta: expect.objectContaining({ versioned: true, activeSubscriptions: 2 }),
     }));
-    expect(db.query).toHaveBeenLastCalledWith(
-      'UPDATE planes_comerciales SET publico = false, updated_at = NOW() WHERE id = $1',
-      ['PRO']
-    );
+    const supersedeCall = db.query.mock.calls[3];
+    expect(supersedeCall[0]).toContain('metadata = metadata || $2::jsonb');
+    expect(supersedeCall[1][0]).toBe('PRO');
+    expect(JSON.parse(supersedeCall[1][1])).toMatchObject({
+      catalogStatus: 'superseded',
+      supersededByPlanId: 'PRO_V9270000000',
+      runtimeOnly: true,
+    });
     now.mockRestore();
   });
 

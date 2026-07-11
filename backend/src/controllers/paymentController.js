@@ -80,12 +80,23 @@ function getPlanChargeForPeriod(plan, requestedPeriod) {
   };
 }
 
+function stripVersionSuffix(planId) {
+  return String(planId || '').trim().toUpperCase().replace(/(_V\d+)+$/i, '');
+}
+
+function getCommercialPlanRootId(plan = {}) {
+  const metadata = normalizePlanMetadata(plan.metadata);
+  return stripVersionSuffix(metadata.rootPlanId || metadata.previousPlanId || plan.id);
+}
+
 function normalizePlan(row) {
   const metadata = normalizePlanMetadata(row.metadata);
   const trialDays = getPlanTrialDays({ ...row, metadata });
   const billing = getPlanBillingMetadata({ ...row, metadata });
+  const isSuperseded = metadata.catalogStatus === 'superseded' || Boolean(metadata.supersededByPlanId);
   return {
     id: row.id,
+    rootPlanId: getCommercialPlanRootId({ ...row, metadata }),
     nombre: normalizeBrandText(row.nombre),
     descripcion: normalizeBrandText(row.descripcion),
     precioMensualCentavos: billing.precioMensualCentavos,
@@ -107,6 +118,10 @@ function normalizePlan(row) {
     activo: row.activo,
     orden: row.orden,
     trialDays,
+    catalogStatus: isSuperseded ? 'superseded' : 'current',
+    isSuperseded,
+    supersededByPlanId: metadata.supersededByPlanId || null,
+    runtimeOnly: Boolean(metadata.runtimeOnly),
     metadata: {
       ...metadata,
       trialDays,
@@ -146,7 +161,29 @@ async function listPublicPlans(_req, res, next) {
 async function listAdminPlans(_req, res, next) {
   try {
     const result = await db.query(
-      'SELECT * FROM planes_comerciales ORDER BY orden ASC, id ASC'
+      `WITH ranked AS (
+        SELECT p.*,
+          ROW_NUMBER() OVER (
+            PARTITION BY COALESCE(
+              NULLIF(p.metadata->>'rootPlanId', ''),
+              NULLIF(p.metadata->>'previousPlanId', ''),
+              regexp_replace(p.id, '(_V[0-9]+)+$', '', 'i')
+            )
+            ORDER BY
+              CASE WHEN COALESCE(p.metadata->>'catalogStatus', '') = 'superseded'
+                OR NULLIF(p.metadata->>'supersededByPlanId', '') IS NOT NULL
+                THEN 0 ELSE 1 END DESC,
+              CASE WHEN p.id ~ '_V[0-9]+$' THEN 1 ELSE 0 END DESC,
+              p.created_at DESC,
+              p.updated_at DESC,
+              p.id DESC
+          ) AS catalog_rank
+        FROM planes_comerciales p
+      )
+      SELECT *
+      FROM ranked
+      WHERE catalog_rank = 1
+      ORDER BY orden ASC, id ASC`
     );
 
     res.json({
@@ -227,6 +264,8 @@ async function upsertPlan(req, res, next) {
     const payload = validatePlanPayload({ ...req.body, id: req.params.planId || req.body.id });
     const existing = await db.query('SELECT * FROM planes_comerciales WHERE id = $1', [payload.id]);
     if (existing.rows.length > 0 && req.params.planId) {
+      const existingPlan = existing.rows[0];
+      const rootPlanId = getCommercialPlanRootId(existingPlan);
       const activeSubscriptions = await db.query(
         `SELECT COUNT(*)::int AS total
          FROM suscripciones
@@ -241,10 +280,10 @@ async function upsertPlan(req, res, next) {
       if (hasActiveSubscribers && req.body.forceInPlace !== true) {
         const versionedPayload = {
           ...payload,
-          id: buildVersionedCommercialPlanId(payload.id),
+          id: buildVersionedCommercialPlanId(rootPlanId),
           metadata: {
             ...payload.metadata,
-            rootPlanId: payload.id,
+            rootPlanId,
             previousPlanId: payload.id,
             versionedFromActiveSubscriptions: true,
             versionedAt: new Date().toISOString(),
@@ -252,8 +291,20 @@ async function upsertPlan(req, res, next) {
         };
         const versioned = await insertCommercialPlan(versionedPayload);
         await db.query(
-          'UPDATE planes_comerciales SET publico = false, updated_at = NOW() WHERE id = $1',
-          [payload.id]
+          `UPDATE planes_comerciales
+           SET publico = false,
+               metadata = metadata || $2::jsonb,
+               updated_at = NOW()
+           WHERE id = $1`,
+          [
+            payload.id,
+            JSON.stringify({
+              catalogStatus: 'superseded',
+              supersededByPlanId: versionedPayload.id,
+              supersededAt: new Date().toISOString(),
+              runtimeOnly: true,
+            }),
+          ]
         );
         return res.status(201).json({
           success: true,
@@ -324,7 +375,7 @@ async function upsertPlan(req, res, next) {
 }
 
 function buildVersionedCommercialPlanId(rootPlanId) {
-  const root = String(rootPlanId || '').trim().toUpperCase().slice(0, 26);
+  const root = stripVersionSuffix(rootPlanId).slice(0, 26);
   const suffix = String(Date.now()).slice(-10);
   return `${root}_V${suffix}`;
 }

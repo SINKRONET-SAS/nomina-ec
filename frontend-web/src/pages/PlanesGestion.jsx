@@ -328,13 +328,15 @@ function PlanesGestion({ showSuperadminConsole = true }) {
                     </td>
                     <td className="px-4 py-3">Emp. {plan.empleadosMax || 'sin límite'} | Empresas {plan.empresasMax} | Usuarios {plan.usuariosMax}</td>
                     <td className="px-4 py-3">{planCapabilitiesText(plan)}</td>
-                    <td className="px-4 py-3">{plan.activo ? 'Activo' : 'Inactivo'} | {plan.publico ? 'Público' : 'Interno'}</td>
+                    <td className="px-4 py-3">
+                      {plan.isSuperseded ? 'Reemplazado' : (plan.activo ? 'Activo' : 'Inactivo')} | {plan.publico ? 'Público' : 'Interno'}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
-                        <button className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-teal-700" type="button" onClick={() => setDraft(normalizeDraft(plan))} title="Editar plan">
+                        <button className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-teal-700 disabled:opacity-50" disabled={plan.isSuperseded} type="button" onClick={() => setDraft(normalizeDraft(plan))} title={plan.isSuperseded ? 'Versión reemplazada' : 'Editar plan'}>
                           <Edit3 className="h-4 w-4" />
                         </button>
-                        <button className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-red-200 text-red-700 disabled:opacity-50" disabled={deleteMutation.isPending || plan.id === 'TRIAL'} type="button" onClick={() => deleteMutation.mutate(plan.id)} title="Desactivar plan">
+                        <button className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-red-200 text-red-700 disabled:opacity-50" disabled={deleteMutation.isPending || plan.id === 'TRIAL' || plan.isSuperseded} type="button" onClick={() => deleteMutation.mutate(plan.id)} title="Desactivar plan">
                           <XCircle className="h-4 w-4" />
                         </button>
                       </div>
