@@ -333,6 +333,18 @@ function NuevoEmpleado() {
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormData((current) => {
+      if (name === 'departamento') {
+        const nextUnit = activeOrganizationUnits.find((unit) => unit.name === value);
+        const currentPosition = activeJobPositions.find((position) => position.id === current.position_id);
+        const keepPosition = currentPosition && nextUnit && currentPosition.organization_unit_id === nextUnit.id;
+        return {
+          ...current,
+          departamento: value,
+          unidad_organizativa_codigo: nextUnit?.code || '',
+          position_id: keepPosition ? current.position_id : '',
+          cargo: keepPosition ? current.cargo : '',
+        };
+      }
       if (name === 'unidad_organizativa_codigo') {
         const nextUnit = activeOrganizationUnits.find((unit) => unit.code === value);
         const currentPosition = activeJobPositions.find((position) => position.id === current.position_id);
@@ -340,6 +352,7 @@ function NuevoEmpleado() {
         return {
           ...current,
           unidad_organizativa_codigo: value,
+          departamento: nextUnit?.name || '',
           position_id: keepPosition ? current.position_id : '',
           cargo: keepPosition ? current.cargo : '',
         };
@@ -670,7 +683,14 @@ function NuevoEmpleado() {
         </Section>
 
         <Section title="Relación laboral" description="Datos base para nómina, contratos y reportes.">
-          <Field label="Departamento o unidad" name="departamento" onChange={handleChange} value={formData.departamento} />
+          <Field label="Departamento o unidad" name="departamento" onChange={handleChange} value={formData.departamento}>
+            <select className={CONTROL_CLASS} name="departamento" onChange={handleChange} value={formData.departamento}>
+              <option value="">{organizationUnitsQuery.isLoading ? 'Cargando unidades...' : 'Seleccionar unidad parametrizada...'}</option>
+              {activeOrganizationUnits.map((unit) => (
+                <option key={unit.id || unit.code} value={unit.name}>{unit.name}</option>
+              ))}
+            </select>
+          </Field>
           <Field label="Unidad organizativa" name="unidad_organizativa_codigo" onChange={handleChange} value={formData.unidad_organizativa_codigo}>
             <select className={CONTROL_CLASS} name="unidad_organizativa_codigo" onChange={handleChange} value={formData.unidad_organizativa_codigo}>
               <option value="">{organizationUnitsQuery.isLoading ? 'Cargando unidades...' : 'Seleccionar unidad parametrizada...'}</option>
