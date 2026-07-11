@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, FileUp, ShieldCheck } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
+import { fetchPlanCapabilities } from '../../services/beneficiosApi';
 import { contractTemplateOptionLabel, DEFAULT_CONTRACT_TEMPLATE_KEY, normalizeContractTemplateKey } from '../../utils/contractTemplates';
 import { fileToBase64 } from '../../utils/fileToBase64';
 
@@ -269,6 +270,14 @@ function NuevoEmpleado() {
       return response.data.data || [];
     },
   });
+  const capabilitiesQuery = useQuery({
+    queryKey: ['plan-capabilities'],
+    queryFn: fetchPlanCapabilities,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+  const fieldRoutesEnabled = Boolean(capabilitiesQuery.data?.allowed?.fieldRoutes);
+  const [showCoordinates, setShowCoordinates] = useState(false);
   const contractTemplatesQuery = useQuery({
     queryKey: ['contrato-templates', 'empleado-form'],
     queryFn: async () => {
@@ -321,7 +330,10 @@ function NuevoEmpleado() {
     && (salaryNumber < selectedSalaryMin || salaryNumber > selectedSalaryMax);
 
   useEffect(() => {
-    if (empleadoQuery.data) setFormData(normalizeEmpleado(empleadoQuery.data));
+    if (empleadoQuery.data) {
+      setFormData(normalizeEmpleado(empleadoQuery.data));
+      if (empleadoQuery.data.domicilio_lat || empleadoQuery.data.domicilio_lng) setShowCoordinates(true);
+    }
   }, [empleadoQuery.data]);
 
   useEffect(() => {
@@ -662,8 +674,20 @@ function NuevoEmpleado() {
             <span className="text-sm font-medium text-slate-700">Dirección del domicilio *</span>
             <textarea className={TEXTAREA_CLASS} name="direccion_domicilio" onChange={handleChange} required value={formData.direccion_domicilio} />
           </label>
-          <Field label="Latitud del domicilio" name="domicilio_lat" onChange={handleChange} placeholder="-0.180653" required step="0.0000001" type="number" value={formData.domicilio_lat} />
-          <Field label="Longitud del domicilio" name="domicilio_lng" onChange={handleChange} placeholder="-78.467834" required step="0.0000001" type="number" value={formData.domicilio_lng} />
+          {fieldRoutesEnabled && (
+            <>
+              <label className={`flex items-center gap-2 ${FIELD_FULL} cursor-pointer`}>
+                <input type="checkbox" checked={showCoordinates} onChange={(e) => setShowCoordinates(e.target.checked)} />
+                <span className="text-sm font-medium text-slate-700">Registrar coordenadas de domicilio</span>
+              </label>
+              {showCoordinates && (
+                <>
+                  <Field label="Latitud del domicilio" name="domicilio_lat" onChange={handleChange} placeholder="-0.180653" step="0.0000001" type="number" value={formData.domicilio_lat} />
+                  <Field label="Longitud del domicilio" name="domicilio_lng" onChange={handleChange} placeholder="-78.467834" step="0.0000001" type="number" value={formData.domicilio_lng} />
+                </>
+              )}
+            </>
+          )}
           <label className={`block ${FIELD_FULL}`}>
             <span className="text-sm font-medium text-slate-700">Croquis de llegada al domicilio</span>
             <input accept="image/jpeg,image/png,image/webp" className={FILE_CONTROL_CLASS} onChange={(event) => handleCroquisFile(event.target.files?.[0])} type="file" />

@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Mail, Settings2, LogOut, Menu, ShieldCheck, X, Home, Route, HelpCircle } from 'lucide-react';
 import BrandLogo from '../Brand/BrandLogo';
 import { authenticatedApi } from '../../services/authenticatedApi';
+import { fetchPlanCapabilities } from '../../services/beneficiosApi';
 import { hasRoleAccess, sessionRoleLabel } from '../../utils/access';
 
 function Layout() {
@@ -29,6 +30,15 @@ function Layout() {
   const effectiveTenantName = sessionTenant?.razonSocial || usuario?.tenantRazonSocial || null;
   const effectiveTenantRuc = sessionTenant?.ruc || usuario?.tenantRuc || null;
   const effectiveOwnerName = sessionTenant?.ownerName || null;
+
+  const capabilitiesQuery = useQuery({
+    queryKey: ['plan-capabilities'],
+    queryFn: fetchPlanCapabilities,
+    enabled: Boolean(usuario),
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+  const planCapabilities = capabilitiesQuery.data?.allowed || {};
 
   function hasModuleAccess(moduleCode) {
     if (!moduleCode) return true;
@@ -68,7 +78,7 @@ function Layout() {
       submenu: [
         { path: '/dashboard/asistencia/novedades', label: 'Ingreso manual y pendientes' },
         { path: '/dashboard/asistencia/reporte', label: 'Reporte de Asistencia' },
-        { path: '/dashboard/asistencia/rutas', label: 'Rutas de campo' },
+        { path: '/dashboard/asistencia/rutas', label: 'Rutas de campo', capability: 'fieldRoutes' },
       ]
     },
     {
@@ -149,7 +159,7 @@ function Layout() {
                     <span className="font-medium">{item.label}</span>
                   </div>
                   <div className="ml-8 mt-1 space-y-1">
-                    {item.submenu.map((sub, subIdx) => (
+                    {item.submenu.filter((sub) => !sub.capability || planCapabilities[sub.capability]).map((sub, subIdx) => (
                       <Link
                         key={subIdx}
                         to={sub.path}
