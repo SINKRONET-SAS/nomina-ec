@@ -6,7 +6,12 @@ const AppError = require('../utils/AppError');
 const { resolveStorageUrl } = require('../config/s3');
 const { recordAudit } = require('../services/auditService');
 const { ensureWritablePayrollPeriodForDate, formatPeriodMarker, validatePeriod } = require('../services/monthlyPeriodService');
-const { ensureNoveltyTypeAllowed, normalizeNoveltyCode } = require('../services/payrollNoveltyService');
+const {
+  ensureNoveltyTypeAllowed,
+  getActiveNoveltyTypeConfigs,
+  normalizeNoveltyCode,
+} = require('../services/payrollNoveltyService');
+const { monthInEcuador, yearInEcuador } = require('../utils/dateEcuador');
 const { sendNotificacionPermisoResuelto } = require('../services/communicationService');
 
 const NOVELTY_BULK_TEMPLATE_COLUMNS = [
@@ -211,6 +216,51 @@ async function crear(req, res) {
       error: err.code || 'NOVEDAD_MANUAL_CREATE_ERROR',
       message: err.message || 'Error interno',
       details: err.details,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function listarTipos(req, res) {
+  try {
+    const { tenantId } = req;
+    const fecha = String(req.query?.fecha || '').slice(0, 10);
+    const dateParts = /^(\d{4})-(\d{2})-\d{2}$/.exec(fecha);
+    const anio = Number(req.query?.anio || dateParts?.[1] || yearInEcuador());
+    const mes = Number(req.query?.mes || dateParts?.[2] || monthInEcuador());
+    const configs = await getActiveNoveltyTypeConfigs(tenantId, anio, mes);
+
+    return res.json({
+      success: true,
+      tipos: configs.map((config) => ({
+        id: config.id,
+        code: config.code,
+        name: config.name,
+        description: config.description,
+        payrollImpact: config.payrollImpact,
+        calculationMode: config.calculationMode,
+        conceptCode: config.conceptCode,
+        affectsIess: config.affectsIess,
+        affectsIncomeTax: config.affectsIncomeTax,
+        affectsDecimos: config.affectsDecimos,
+        affectsVacation: config.affectsVacation,
+        affectsBankFile: config.affectsBankFile,
+        metadata: config.metadata,
+      })),
+      period: { anio, mes },
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[NOVEDADES] Error listando tipos de novedad', {
+      code: err.code || 'NOVEDAD_TIPOS_LIST_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'NOVEDAD_TIPOS_LIST_ERROR',
+      message: err.message || 'Error interno',
       correlationId: req.correlationId,
     });
   }
@@ -793,6 +843,7 @@ function csvCell(value) {
 module.exports = {
   listar,
   listarPendientes,
+  listarTipos,
   crear,
   actualizar,
   eliminar,

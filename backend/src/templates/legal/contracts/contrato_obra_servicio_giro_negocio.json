@@ -1,57 +1,187 @@
 {
   "templateKey": "contrato_obra_servicio_giro_negocio",
-  "version": "2026.07",
+  "version": "2026.07.02",
   "sortOrder": 80,
-  "displayName": "Contrato por obra o servicio dentro del giro del negocio",
-  "description": "Modelo referencial para obra o servicio determinado dentro del giro del negocio.",
-  "documentTitle": "CONTRATO INDIVIDUAL POR OBRA O SERVICIO DETERMINADO DENTRO DEL GIRO DEL NEGOCIO",
+  "displayName": "Contrato por obra o servicio dentro del giro del negocio para mercaderistas",
+  "description": "Modelo de contrato por obra o servicio determinado dentro del giro del negocio, adaptado al modelo revisado por abogado para mercaderistas y personal de punto de venta.",
+  "documentTitle": "CONTRATO DE TRABAJO POR OBRA O SERVICIO DETERMINADO DENTRO DEL GIRO DEL NEGOCIO",
   "contractType": "obra_servicio_giro_negocio",
-  "appliesTo": ["obra servicio", "giro del negocio", "proyecto operativo"],
-  "legalReviewRequired": true,
+  "appliesTo": ["obra servicio", "giro del negocio", "mercaderista", "trade marketing", "punto de venta", "rutas"],
+  "legalReviewRequired": false,
   "probation": {
-    "enabled": false,
-    "days": 0
+    "enabled": true,
+    "days": 90,
+    "basis": "Periodo de prueba pactado en el modelo revisado para esta modalidad; validar los datos variables antes de firma."
   },
   "legalBasis": [
     {
       "label": "Codigo del Trabajo de Ecuador, Art. 16.1",
-      "note": "la modalidad aplica para ejecucion de obra o servicio determinado dentro del giro del negocio, con reglas especiales de llamados."
+      "note": "la modalidad aplica para la ejecucion de una obra o servicio determinado dentro del giro del negocio, con reglas de nuevo llamamiento."
+    },
+    {
+      "label": "Codigo del Trabajo de Ecuador, Arts. 47, 55 y 57",
+      "note": "la jornada, descansos y horas suplementarias o extraordinarias deben registrarse y pagarse conforme a la normativa aplicable."
+    },
+    {
+      "label": "Codigo del Trabajo de Ecuador, Arts. 111, 113, 169, 172 y 173",
+      "note": "el contrato reconoce beneficios sociales y causales de terminacion aplicables a la modalidad."
+    },
+    {
+      "label": "Ley de Comercio Electronico, Firmas y Mensajes de Datos, Arts. 52 y 56",
+      "note": "las partes aceptan comunicaciones y notificaciones electronicas vinculadas al SUT y a los medios declarados."
+    },
+    {
+      "label": "Proteccion de datos personales y confidencialidad",
+      "note": "el trabajador asume obligaciones de uso, custodia, reporte de incidentes, devolucion y reserva sobre informacion corporativa, de clientes y datos personales."
     }
   ],
   "notices": [
-    "Definir obra o servicio, plazo estimado, criterios de culminacion y soporte documental.",
-    "Validar reglas de llamado posterior, registro SUT/IESS y liquidacion al cierre."
+    "Modelo implementado con base en el documento revisado por abogado para contrato por obra o servicio determinado dentro del giro del negocio. Validar que los datos variables del empleador, trabajador, lugar, duracion, servicio y medios de contacto esten completos antes de firma.",
+    "Registro SUT/MDT: {{contract.sutRegistrationStatus}}. Revision legal: {{contract.legalReviewStatus}}."
   ],
   "sections": [
     {
-      "title": "PRIMERA.- COMPARECIENTES",
+      "title": "COMPARECIENTES",
       "paragraphs": [
-        "Comparecen {{company.legalName}}, con RUC {{company.ruc}}, representada por {{company.legalRepresentative}}, y {{employee.fullName}}, con identificacion {{employee.idNumber}}."
+        "En la ciudad de {{company.city}}, el dia {{contract.generatedDate}}, comparecen a la celebracion del presente contrato, por una parte, la compania {{company.legalName}}, con RUC {{company.ruc}}, debidamente representada por {{company.legalRepresentative}}, a quien en adelante y para efectos del presente contrato se denominara LA EMPLEADORA; y, por otra parte, {{employee.fullName}}, por sus propios y personales derechos, portador de la cedula de ciudadania nro. {{employee.idNumber}}, a quien en adelante y para efectos del presente instrumento se denominara TRABAJADOR/A. En las declaraciones en conjunto se los denominara las PARTES."
       ]
     },
     {
-      "title": "SEGUNDA.- OBRA O SERVICIO",
+      "title": "CLAUSULA PRIMERA.- ANTECEDENTES",
       "paragraphs": [
-        "EL TRABAJADOR prestara servicios como {{employee.position}} para una obra o servicio determinado dentro del giro del negocio, descrito en el anexo operativo.",
-        "El anexo debe identificar cliente, proyecto, frente de trabajo, entregables, cronograma referencial y criterio de finalizacion."
+        "LA EMPLEADORA se dedica al giro de negocio de {{company.businessPurpose}} y requiere contratar los servicios de un trabajador para desempenar el cargo de {{employee.position}}.",
+        "El servicio u obra determinada queda descrito para este expediente como: {{contract.serviceDescription}}."
       ]
     },
     {
-      "title": "TERCERA.- DURACION Y NUEVO LLAMADO",
+      "title": "CLAUSULA SEGUNDA.- OBJETO DEL CONTRATO",
       "paragraphs": [
-        "La relacion se mantiene por el tiempo necesario para ejecutar la obra o servicio determinado. EL EMPLEADOR debera observar las reglas legales aplicables para nuevos llamados o continuidad."
+        "Las partes dejan expresa constancia de que el presente contrato se celebra bajo la modalidad de contrato por obra o servicio determinado dentro del giro del negocio, de conformidad con lo previsto en el Codigo del Trabajo y la normativa expedida por el Ministerio del Trabajo, habiendose formalizado por escrito y conteniendo los requisitos exigidos por la legislacion laboral vigente.",
+        "EL TRABAJADOR/A es contratado como {{employee.position}}, bajo relacion de dependencia exclusiva con LA EMPLEADORA, quien asume integramente la calidad de empleador para todos los efectos legales, laborales, de seguridad social y administrativos, sin que exista ni pueda interpretarse relacion laboral alguna entre EL TRABAJADOR/A y los clientes de LA EMPLEADORA."
       ]
     },
     {
-      "title": "CUARTA.- JORNADA Y PAGO",
+      "title": "CLAUSULA TERCERA.- FUNCIONES",
       "paragraphs": [
-        "La jornada aplicable es {{employee.workShift}}. La remuneracion pactada es USD {{employee.salaryAmount}} ({{employee.salaryWords}}), con beneficios, aportes y recargos aplicables."
+        "En cumplimiento de su cargo, EL TRABAJADOR/A realizara principalmente las siguientes funciones, dentro de las rutas, puntos de venta y cronogramas definidos por LA EMPLEADORA:",
+        "a) Ejecutar actividades de colocacion, reposicion y rotacion de productos en los puntos de venta asignados, asegurando la correcta exhibicion conforme a los lineamientos comerciales de la empresa.",
+        "b) Verificar la disponibilidad de inventario en gondolas, exhibidores y bodegas del cliente, reportando de forma oportuna faltantes, excesos o productos proximos a vencerse.",
+        "c) Mantener la adecuada presentacion, limpieza y orden de los productos y espacios asignados en el punto de venta.",
+        "d) Implementar y dar seguimiento a material POP, exhibiciones especiales, promociones y campanas comerciales, conforme a las directrices de LA EMPLEADORA.",
+        "e) Realizar el levantamiento de informacion en punto de venta, incluyendo precios, competencia, participacion de mercado, rotacion y otras variables comerciales requeridas.",
+        "f) Reportar diariamente o con la periodicidad establecida por la empresa, mediante los medios fisicos o digitales asignados, las actividades ejecutadas, novedades e incidencias detectadas en el punto de venta.",
+        "g) Coordinar con personal del establecimiento comercial la correcta ejecucion de actividades de exhibicion, reposicion o ajustes de inventario, sin que ello implique subordinacion al cliente final.",
+        "h) Cumplir con las rutas, horarios, protocolos de visita y lineamientos operativos establecidos por LA EMPLEADORA.",
+        "i) Utilizar adecuadamente los equipos, herramientas, aplicaciones moviles y demas recursos proporcionados por la empresa para el cumplimiento de sus funciones.",
+        "j) Ejecutar las demas actividades compatibles con la naturaleza del cargo que le sean asignadas por LA EMPLEADORA en el ambito de la relacion laboral."
       ]
     },
     {
-      "title": "QUINTA.- REGISTRO Y EVIDENCIA",
+      "title": "CLAUSULA CUARTA.- REMUNERACION",
       "paragraphs": [
-        "El contrato, sus anexos y el cierre de obra o servicio deben conservarse en el expediente. EL EMPLEADOR marca registro externo como {{contract.sutRegistrationStatus}} hasta confirmacion documental."
+        "Las partes de mutuo acuerdo establecen que LA EMPLEADORA pagara como remuneracion mensual a EL TRABAJADOR/A la cantidad de USD {{employee.salaryAmount}} ({{employee.salaryWords}}). EL TRABAJADOR/A acepta la remuneracion acordada como pago por sus servicios descritos en el presente contrato.",
+        "LA EMPLEADORA cancelara, ademas, los beneficios sociales establecidos en los articulos 111 y 113 del Codigo del Trabajo y los demas rubros que correspondan conforme a la normativa laboral aplicable y a los parametros de nomina vigentes."
+      ]
+    },
+    {
+      "title": "CLAUSULA QUINTA.- LUGAR DE TRABAJO",
+      "paragraphs": [
+        "EL TRABAJADOR/A prestara sus servicios en la ciudad de {{contract.workCity}}, provincia de {{contract.workProvince}}, en las oficinas de LA EMPLEADORA ubicadas en {{contract.workAddress}}, asi como en los lugares en donde, por las actividades que realiza LA EMPLEADORA, se requiera de los servicios de EL TRABAJADOR/A.",
+        "La zona de marcacion o referencia operativa registrada para el trabajador es {{employee.workZone}}, sin perjuicio de las rutas, puntos de venta, clientes, campanas o establecimientos que LA EMPLEADORA asigne conforme a sus necesidades operativas."
+      ]
+    },
+    {
+      "title": "CLAUSULA SEXTA.- DURACION DEL CONTRATO",
+      "paragraphs": [
+        "Este contrato fenecera una vez terminado el giro del negocio, obra o servicio objeto del contrato; se estima una duracion aproximada de {{contract.estimatedDuration}}, sin perjuicio de que el plazo se adapte al tiempo real que tome la culminacion de la labor contratada. Los contratantes estipulan un periodo de prueba de {{contract.probationDays}} dias, cuya fecha referencial de cierre es {{contract.probationEndDate}}.",
+        "Ademas, este contrato podra terminar por las causales establecidas en los articulos 169, 172 y 173 del Codigo del Trabajo, en cuanto sean aplicables para este tipo de contratos.",
+        "En caso de que exista otra produccion, proyecto, obra o servicio compatible con el servicio convenido, LA EMPLEADORA se compromete a llamar a EL TRABAJADOR/A conforme a las reglas legales aplicables para esta modalidad."
+      ]
+    },
+    {
+      "title": "CLAUSULA SEPTIMA.- JORNADA Y HORARIO DE TRABAJO",
+      "paragraphs": [
+        "EL TRABAJADOR/A se obliga a laborar en la jornada legal maxima establecida en el articulo 47 del Codigo del Trabajo. La jornada registrada para este contrato es {{employee.workShift}}, con los descansos que correspondan de acuerdo con el articulo 57 del mismo cuerpo legal.",
+        "Sin embargo, previo acuerdo de las partes, este horario podra ser modificado por LA EMPLEADORA de acuerdo con sus necesidades y actividades.",
+        "En el evento de que sea requerido por LA EMPLEADORA, EL TRABAJADOR/A se compromete a ejecutar trabajos en jornadas suplementarias o extraordinarias, para lo cual se aplicaran las disposiciones establecidas en el articulo 55 del Codigo del Trabajo. No se consideraran trabajos suplementarios o extraordinarios aquellos realizados sin la autorizacion de LA EMPLEADORA."
+      ]
+    },
+    {
+      "title": "CLAUSULA OCTAVA.- MEDIOS DE CONTACTO Y ACTUALIZACION DE DATOS",
+      "paragraphs": [
+        "Para todos los efectos derivados del presente contrato y, especialmente, para los futuros llamamientos relacionados con la ejecucion de nuevas obras o servicios, EL TRABAJADOR/A senala como medios oficiales de comunicacion la direccion de correo electronico {{employee.contactEmail}} y el numero telefonico o medio de contacto {{employee.contactPhone}}, autorizando expresamente a LA EMPLEADORA para remitir a dichos medios cualquier comunicacion, convocatoria, notificacion o llamamiento relacionado con la ejecucion de nuevos proyectos, obras o servicios.",
+        "EL TRABAJADOR/A declara que los medios de contacto consignados en este contrato son de su uso personal, habitual y exclusivo, comprometiendose a mantenerlos activos, operativos y bajo su control durante la vigencia de la relacion laboral y mientras subsista el derecho preferente de llamamiento previsto en la legislacion laboral.",
+        "EL TRABAJADOR/A acepta que la evidencia electronica del envio de la comunicacion, tal como correo electronico remitido al buzon registrado, reporte de entrega de WhatsApp, registro de llamada telefonica o cualquier otro medio equivalente, constituira prueba suficiente de que LA EMPLEADORA cumplio con su obligacion legal de efectuar el llamamiento.",
+        "En caso de que EL TRABAJADOR/A no informe oportunamente la modificacion de sus datos de contacto y, como consecuencia de ello, no atienda el llamamiento realizado por LA EMPLEADORA para la ejecucion de una nueva obra o servicio, las partes reconocen expresamente que quedara sin efecto la obligacion de LA EMPLEADORA de volver a contratarlo para futuros proyectos, de conformidad con la normativa laboral aplicable."
+      ]
+    },
+    {
+      "title": "CLAUSULA NOVENA.- RECONOCIMIENTO DE LAS PARTES SOBRE LA NATURALEZA DE LA RELACION LABORAL, LA SUBORDINACION Y LA EJECUCION DE LOS SERVICIOS",
+      "paragraphs": [
+        "LA EMPLEADORA y EL TRABAJADOR/A declaran expresamente que conocen, comprenden y aceptan la naturaleza juridica del presente contrato de trabajo, asi como la forma en que se desarrollaran las actividades objeto del mismo, manifestando que las siguientes declaraciones constituyen condiciones esenciales de la relacion laboral:",
+        "a) Que LA EMPLEADORA presta servicios especializados a diversos clientes mediante contratos de naturaleza civil o mercantil, razon por la cual EL TRABAJADOR/A podra ejecutar sus labores en establecimientos comerciales, oficinas, instalaciones o dependencias pertenecientes a dichos clientes o a terceros, sin que ello modifique la identidad de su empleador ni implique el nacimiento de relacion laboral alguna con tales clientes.",
+        "b) Que la presencia de EL TRABAJADOR/A en las instalaciones de los clientes responde exclusivamente a la ejecucion de los servicios contratados por LA EMPLEADORA, manteniendose en todo momento la subordinacion juridica exclusivamente respecto de esta.",
+        "c) Que cualquier coordinacion, observacion o indicacion que pudiera provenir del cliente o del personal del establecimiento donde se ejecuten los servicios tendra exclusivamente caracter operativo, logistico o de coordinacion comercial para facilitar la adecuada prestacion del servicio, sin constituir bajo ninguna circunstancia ejercicio de subordinacion laboral o direccion del trabajo.",
+        "d) Que, por la naturaleza de la actividad economica de LA EMPLEADORA y de los contratos comerciales que esta celebra con sus clientes, EL TRABAJADOR/A conoce y acepta que podra ser asignado o reasignado a diferentes proyectos, campanas, clientes, establecimientos comerciales, zonas geograficas, rutas o puntos de venta, asi como modificarse la distribucion de dichas rutas conforme a las necesidades operativas de LA EMPLEADORA, siempre que tales cambios no impliquen modificacion de las condiciones esenciales del contrato de trabajo ni vulneren los derechos reconocidos por la legislacion laboral.",
+        "e) Que la duracion, renovacion, suspension o terminacion de los contratos comerciales celebrados entre LA EMPLEADORA y sus clientes constituye una circunstancia propia de la actividad empresarial de LA EMPLEADORA y podra incidir en la ejecucion del servicio u obra contratada, sin modificar la identidad del empleador ni generar relacion laboral con clientes o terceros.",
+        "f) Que EL TRABAJADOR/A reconoce expresamente que no forma parte de la estructura organizacional, nomina, organigrama, administracion o personal de los clientes de LA EMPLEADORA, ni recibe de estos remuneraciones o beneficios."
+      ]
+    },
+    {
+      "title": "CLAUSULA DECIMA.- TRATAMIENTO DE DATOS PERSONALES Y CONFIDENCIALIDAD",
+      "paragraphs": [
+        "EL TRABAJADOR/A reconoce expresamente que los datos personales a los que tenga acceso son de caracter confidencial y propiedad de LA EMPLEADORA o de sus respectivos titulares, obligandose a:",
+        "a) Utilizar la informacion unicamente para el cumplimiento de las funciones y actividades autorizadas por LA EMPLEADORA.",
+        "b) Abstenerse de divulgar, reproducir, transferir, comercializar, compartir o permitir el acceso de terceros no autorizados a cualquier dato personal o informacion confidencial.",
+        "c) Adoptar las medidas razonables de seguridad y cuidado necesarias para evitar perdida, alteracion, acceso no autorizado, filtracion o uso indebido de la informacion.",
+        "d) Cumplir las politicas internas, protocolos tecnologicos y lineamientos corporativos establecidos por LA EMPLEADORA respecto al manejo y proteccion de datos personales.",
+        "e) Informar inmediatamente a LA EMPLEADORA sobre cualquier incidente de seguridad, acceso no autorizado o uso indebido de la informacion de la cual tenga conocimiento.",
+        "f) Almacenar de manera oportuna toda la informacion, documentos, archivos, piezas, accesos, bases de datos y materiales relacionados con la operacion de la compania y sus clientes en los repositorios, plataformas y sistemas institucionales definidos o autorizados por LA EMPLEADORA.",
+        "g) Abstenerse de mantener de forma exclusiva informacion corporativa o de clientes en dispositivos personales, computadores individuales o medios de almacenamiento no autorizados por LA EMPLEADORA.",
+        "h) Garantizar el adecuado respaldo y organizacion de la informacion vinculada a los proyectos, cuentas o clientes bajo su gestion, siendo responsable por cualquier perdida de informacion derivada del incumplimiento de las politicas internas de almacenamiento, respaldo y manejo de informacion establecidas por LA EMPLEADORA.",
+        "i) Una vez terminada la relacion laboral con LA EMPLEADORA, EL TRABAJADOR/A se obliga a devolver o destruir, segun las instrucciones de LA EMPLEADORA, toda documentacion, archivos, respaldos, dispositivos, accesos o informacion fisica o digital que contenga datos personales o informacion corporativa, sin conservar copias totales o parciales de la misma.",
+        "El incumplimiento de las obligaciones previstas en la presente clausula podra constituir falta grave laboral, sin perjuicio de las acciones civiles, administrativas o penales a que hubiere lugar conforme a la legislacion aplicable.",
+        "EL TRABAJADOR/A se obliga adicionalmente a mantener absoluta confidencialidad respecto de toda informacion tecnica, comercial, estrategica o creativa relacionada con los proyectos de la empresa y sus clientes; a no reproducir, utilizar, comercializar, divulgar, transferir o aprovechar en beneficio propio o de terceros ningun desarrollo, metodologia, diseno, contenido o material generado durante la relacion laboral; y a no acceder, alterar, grabar, copiar o retirar informacion documentada o sistematica sin la debida autorizacion de LA EMPLEADORA."
+      ]
+    },
+    {
+      "title": "CLAUSULA DECIMO PRIMERA.- USO RESPONSABLE DE REDES SOCIALES, IMAGEN CORPORATIVA Y NEUTRALIDAD PUBLICA",
+      "paragraphs": [
+        "En atencion a la naturaleza del cargo desempenado por EL TRABAJADOR/A, este se obliga a mantener una conducta publica compatible con los principios de prudencia, neutralidad institucional, confidencialidad y proteccion reputacional de LA EMPLEADORA y sus clientes, tanto durante la vigencia de la relacion laboral como en aquellos actos o manifestaciones publicas que pudieren asociarlo razonablemente con la empresa.",
+        "En consecuencia, EL TRABAJADOR/A se compromete a no utilizar el nombre comercial, marcas, cargos corporativos, correos institucionales, imagenes empresariales, uniformes, instalaciones, informacion interna o cualquier elemento que permita vincular publicamente sus opiniones personales con la compania; y a mantener especial diligencia en publicaciones que puedan afectar la reputacion, neutralidad comercial, relaciones corporativas, licencias, contratos, clientes, inversionistas o posicionamiento institucional de la empresa.",
+        "Las partes dejan expresa constancia de que la presente clausula no constituye una limitacion absoluta al derecho constitucional de libertad de expresion, opinion o participacion politica de EL TRABAJADOR/A en su esfera estrictamente privada y personal; sin embargo, se establece un deber reforzado de reserva, prudencia y desvinculacion institucional respecto de actividades o manifestaciones publicas que puedan comprometer objetiva y razonablemente los intereses empresariales de la compania.",
+        "El incumplimiento de esta obligacion podra ser considerado como falta grave contractual, unicamente cuando exista afectacion objetiva, verificable y proporcional a la reputacion, operacion, relaciones comerciales o intereses legitimos de la empresa, observandose en todo momento los principios de razonabilidad, proporcionalidad y la normativa laboral y constitucional aplicable."
+      ]
+    },
+    {
+      "title": "CLAUSULA DECIMO QUINTA.- OBLIGACIONES DE LOS TRABAJADORES Y EMPLEADORES",
+      "paragraphs": [
+        "En lo que respecta a las obligaciones, derechos y prohibiciones de LA EMPLEADORA y de EL TRABAJADOR/A, estos se sujetan estrictamente a lo dispuesto en el Codigo del Trabajo en su Capitulo IV, De las obligaciones de LA EMPLEADORA y de EL TRABAJADOR/A, ademas de las estipuladas en este contrato."
+      ]
+    },
+    {
+      "title": "CLAUSULA DECIMO SEXTA.- ACEPTACION DE MEDIOS ELECTRONICOS",
+      "paragraphs": [
+        "LA EMPLEADORA asume la responsabilidad total de la vigencia, veracidad y coherencia de la informacion ingresada en el Sistema Unico de Trabajo SUT, en cumplimiento de sus obligaciones laborales.",
+        "LA EMPLEADORA acepta recibir notificaciones de cualquier indole que realice el Ministerio del Trabajo, en aplicacion de los articulos 52 y 56 de la Ley de Comercio Electronico, Firmas y Mensajes de Datos; y acepta que el Ministerio del Trabajo podra ejecutar todos los actos de notificacion a traves del Sistema Unico de Trabajo SUT."
+      ]
+    },
+    {
+      "title": "CLAUSULA DECIMO SEPTIMA.- LEGISLACION APLICABLE",
+      "paragraphs": [
+        "Las partes se sujetan expresamente a lo acordado en este contrato y, en todo aquello que no estuviere especificado, a las normas del Codigo del Trabajo, Ley de Seguridad Social, Reglamento Interno de Trabajo y a los correspondientes manuales o procedimientos determinados por LA EMPLEADORA."
+      ]
+    },
+    {
+      "title": "CLAUSULA DECIMA OCTAVA.- JURISDICCION Y COMPETENCIA",
+      "paragraphs": [
+        "En caso de suscitarse discrepancias en la interpretacion, cumplimiento y ejecucion del presente contrato y cuando no fuere posible llegar a un acuerdo amistoso entre las partes, estas se someteran a los jueces competentes del lugar en que este contrato ha sido celebrado, asi como al procedimiento oral determinado por la ley."
+      ]
+    },
+    {
+      "title": "CLAUSULA DECIMA NOVENA.- SUSCRIPCION",
+      "paragraphs": [
+        "Las partes se ratifican en todas y cada una de las clausulas precedentes y, para constancia y plena validez de lo estipulado, firman este contrato por triplicado."
       ]
     }
   ]

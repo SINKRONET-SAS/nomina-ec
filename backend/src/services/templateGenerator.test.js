@@ -18,6 +18,8 @@ const pdfmake = require('pdfmake/build/pdfmake');
 const db = require('../config/database');
 const { s3Upload } = require('../config/s3');
 const {
+  buildContractContext,
+  buildContractDocDefinition,
   generarContrato,
   interpolate,
   listContractTemplates,
@@ -91,6 +93,64 @@ describe('templateGenerator', () => {
       templateKey: 'contrato_indefinido_mercaderista_prueba',
       contractType: 'indefinido',
     });
+  });
+
+  test('carga modelo de obra o servicio revisado para mercaderistas con contexto de contacto', () => {
+    const template = loadContractTemplate({ tipoContrato: 'obra_servicio_giro_negocio' });
+    const context = buildContractContext({
+      employee: {
+        ...employee,
+        email_personal: 'carla@example.com',
+        telefono: '0999999999',
+      },
+      tenant: {
+        ...tenant,
+        configuracion: {
+          ...tenant.configuracion,
+          giroNegocio: 'campanas de comercializacion y trade marketing',
+          contratoObraServicio: {
+            descripcionServicio: 'campana de mercaderismo en puntos de venta',
+            duracionEstimada: '6 meses',
+            ciudadPrestacion: 'Quito',
+            provinciaPrestacion: 'Pichincha',
+          },
+        },
+      },
+      template,
+      legalParameters: {
+        payroll: {
+          unifiedBaseSalary: 470,
+          personalIessRate: 0.0945,
+          employerIessRate: 0.1115,
+          weeklyMaxHours: 40,
+        },
+      },
+      year: 2026,
+      generatedAt: new Date('2026-07-02T00:00:00Z'),
+    });
+
+    expect(template).toMatchObject({
+      templateKey: 'contrato_obra_servicio_giro_negocio',
+      legalReviewRequired: false,
+      probation: expect.objectContaining({ enabled: true, days: 90 }),
+    });
+    expect(context).toMatchObject({
+      employee: {
+        contactEmail: 'carla@example.com',
+        contactPhone: '0999999999',
+      },
+      contract: {
+        serviceDescription: 'campana de mercaderismo en puntos de venta',
+        estimatedDuration: '6 meses',
+        workCity: 'Quito',
+        workProvince: 'Pichincha',
+        legalReviewStatus: expect.stringContaining('modelo revisado'),
+      },
+    });
+    const rendered = JSON.stringify(buildContractDocDefinition({ template, context }));
+    expect(rendered).toContain('campana de mercaderismo en puntos de venta');
+    expect(rendered).toContain('carla@example.com');
+    expect(rendered).not.toContain('{{');
   });
 
   test('interpela variables sin ejecutar codigo externo', () => {

@@ -68,6 +68,18 @@ function safeJson(value) {
   }
 }
 
+function objectValue(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function firstClean(values, fallback = '') {
+  for (const value of values) {
+    const text = cleanText(value);
+    if (text) return text;
+  }
+  return fallback;
+}
+
 function formatDateEC(value) {
   const date = value instanceof Date
     ? value
@@ -287,14 +299,80 @@ function buildContractContext({ employee, tenant, template, legalParameters, yea
   const salary = Number(employee.sueldo_bruto_mensual || 0);
   const cents = String(Math.round((salary - Math.floor(salary)) * 100)).padStart(2, '0');
   const probationEndDate = probationDays > 0 ? addDays(startDate, probationDays - 1) : '';
+  const contractDefaults = objectValue(tenantConfig.contratos || tenantConfig.contracts);
+  const obraServicioConfig = objectValue(
+    tenantConfig.obraServicioGiroNegocio
+      || tenantConfig.obra_servicio_giro_negocio
+      || tenantConfig.contratoObraServicio
+      || tenantConfig.contrato_obra_servicio
+      || contractDefaults.obraServicioGiroNegocio
+      || contractDefaults.obra_servicio_giro_negocio
+      || contractDefaults.obraServicio
+      || contractDefaults.obra_servicio
+  );
+  const companyCity = firstClean([tenantConfig.ciudad, tenantConfig.canton], 'Quito');
+  const companyAddress = firstClean([
+    tenant.direccion,
+    tenantConfig.direccion,
+    tenantConfig.direccionMatriz,
+    tenantConfig.direccion_matriz,
+  ], 'no registrada');
+  const companyProvince = firstClean([tenantConfig.provincia, tenantConfig.province], '');
+  const businessPurpose = firstClean([
+    obraServicioConfig.giroNegocio,
+    obraServicioConfig.giro_negocio,
+    tenantConfig.giroNegocio,
+    tenantConfig.giro_negocio,
+    tenantConfig.actividadEconomica,
+    tenantConfig.actividad_economica,
+    tenantConfig.objetoSocial,
+    tenantConfig.objeto_social,
+  ], 'el giro de negocio y actividades economicas registradas por LA EMPLEADORA');
+  const employeePosition = cleanText(employee.position_name || employee.cargo, 'mercaderista');
+  const serviceDescription = firstClean([
+    obraServicioConfig.descripcionServicio,
+    obraServicioConfig.descripcion_servicio,
+    obraServicioConfig.servicio,
+    obraServicioConfig.proyecto,
+    tenantConfig.descripcionServicio,
+    tenantConfig.descripcion_servicio,
+  ], `servicios de ${employeePosition} dentro del giro del negocio de LA EMPLEADORA`);
+  const estimatedDuration = firstClean([
+    obraServicioConfig.duracionEstimada,
+    obraServicioConfig.duracion_estimada,
+    obraServicioConfig.plazoEstimado,
+    obraServicioConfig.plazo_estimado,
+    tenantConfig.contratoObraServicioDuracionEstimada,
+  ], '6 meses');
+  const workCity = firstClean([
+    obraServicioConfig.ciudadPrestacion,
+    obraServicioConfig.ciudad_prestacion,
+    obraServicioConfig.ciudad,
+    employee.ciudad_domicilio,
+    companyCity,
+  ], companyCity);
+  const workProvince = firstClean([
+    obraServicioConfig.provinciaPrestacion,
+    obraServicioConfig.provincia_prestacion,
+    obraServicioConfig.provincia,
+    employee.provincia_domicilio,
+    companyProvince,
+  ], companyProvince || 'provincia no registrada');
+  const legalReviewStatus = template.legalReviewRequired === false
+    ? 'modelo revisado por asesor legal del empleador; validar datos variables antes de firma y registro'
+    : 'requiere revisión laboral previa a producción';
 
   return {
     company: {
       legalName: cleanText(tenant.razon_social || tenant.razonSocial, 'Empleador'),
       commercialName: cleanText(tenant.nombre_comercial || tenant.nombreComercial),
       ruc: cleanText(tenant.ruc, 'no registrado'),
-      address: cleanText(tenant.direccion || tenantConfig.direccion || tenantConfig.direccionMatriz, 'no registrada'),
-      city: cleanText(tenantConfig.ciudad || tenantConfig.canton || 'Quito'),
+      address: companyAddress,
+      city: companyCity,
+      province: companyProvince || 'provincia no registrada',
+      businessPurpose,
+      administrativeEmail: firstClean([tenant.email, tenantConfig.email, tenantConfig.correoAdministrativo], 'no registrado'),
+      phone: firstClean([tenant.telefono, tenantConfig.telefono, tenantConfig.phone], 'no registrado'),
       legalRepresentative: cleanText(tenantConfig.representanteLegal || tenantConfig.representante_legal, 'representante autorizado'),
       legalRepresentativeId: cleanText(
         tenantConfig.representanteLegalIdentificacion
@@ -308,7 +386,11 @@ function buildContractContext({ employee, tenant, template, legalParameters, yea
       fullName: employeeName(employee),
       idNumber: cleanText(employee.cedula, 'no registrada'),
       address: cleanText(employee.direccion_domicilio || employee.direccion, 'no registrado'),
-      position: cleanText(employee.position_name || employee.cargo, 'cargo no registrado'),
+      city: firstClean([employee.ciudad_domicilio, employee.ciudad_nombre], 'ciudad no registrada'),
+      province: firstClean([employee.provincia_domicilio, employee.provincia_nombre], 'provincia no registrada'),
+      contactEmail: firstClean([employee.email_personal, employee.email], 'no registrado'),
+      contactPhone: firstClean([employee.telefono, employee.celular, employee.phone], 'no registrado'),
+      position: employeePosition,
       positionCode: cleanText(employee.position_code || employee.cargo_codigo),
       organizationUnit: cleanText(employee.organization_unit_name || employee.unidad_organizativa_codigo, 'unidad no registrada'),
       workZone: cleanText(employee.work_zone_name || employee.zona_marcacion_codigo, 'zona no registrada'),
@@ -329,8 +411,19 @@ function buildContractContext({ employee, tenant, template, legalParameters, yea
       probationEnabled: template.probation?.enabled ? 'si' : 'no',
       probationDays: probationDays ? String(probationDays) : 'no aplica',
       probationEndDate: probationEndDate ? formatDateEC(probationEndDate) : 'no aplica',
+      serviceDescription,
+      estimatedDuration,
+      workCity,
+      workProvince,
+      workAddress: firstClean([
+        obraServicioConfig.lugarTrabajo,
+        obraServicioConfig.lugar_trabajo,
+        obraServicioConfig.direccionPrestacion,
+        obraServicioConfig.direccion_prestacion,
+        companyAddress,
+      ], companyAddress),
       sutRegistrationStatus: 'pendiente de gestion externa',
-      legalReviewStatus: 'requiere revisión laboral previa a producción',
+      legalReviewStatus,
     },
     legal: {
       year: String(year),

@@ -110,6 +110,12 @@ describe('AISK26-01: cierre brechas RBAC', () => {
     );
   });
 
+  test('GET /api/novedades/tipos requiere rol y modulo asistencia', () => {
+    expect(source).toContain(
+      "app.get('/api/novedades/tipos', requireRole('owner', 'admin_rrhh', 'supervisor'), requireModule('asistencia'), novedadController.listarTipos)"
+    );
+  });
+
   test('PUT/DELETE /api/novedades/:id requiere rol y modulo asistencia', () => {
     expect(source).toContain(
       "app.put('/api/novedades/:id', requireRole('owner', 'admin_rrhh'), requireModule('asistencia'), novedadController.actualizar)"

@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { Check, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { formatDateEC } from '../../utils/dateFormat';
 import {
+  buildNoveltyTypeOptions,
   getNoveltyTypeLabel,
   hoursToMinutes,
   isAmountNoveltyType,
   minutesToHours,
-  NOVELTY_TYPES,
 } from '../../config/noveltyTypes';
 
 const initialForm = {
@@ -59,6 +59,32 @@ function NovedadesPendientes() {
       setError(err.response?.data?.message || err.response?.data?.error || 'No pudimos registrar la novedad manual.');
     },
   });
+
+  const { data: noveltyTypesResponse, isLoading: noveltyTypesLoading } = useQuery({
+    queryKey: ['novedades-tipos', form.fecha],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/novedades/tipos', {
+        params: { fecha: form.fecha },
+      });
+      return response.data;
+    },
+  });
+
+  const noveltyTypeOptions = useMemo(
+    () => buildNoveltyTypeOptions(noveltyTypesResponse?.tipos || []),
+    [noveltyTypesResponse]
+  );
+
+  useEffect(() => {
+    if (noveltyTypeOptions.length === 0) return;
+    if (!noveltyTypeOptions.some((type) => type.value === form.tipoNovedad)) {
+      setForm((current) => ({
+        ...current,
+        tipoNovedad: noveltyTypeOptions[0].value,
+        minutos: isAmountNoveltyType(noveltyTypeOptions[0].value, noveltyTypeOptions) ? '0' : current.minutos || '60',
+      }));
+    }
+  }, [form.tipoNovedad, noveltyTypeOptions]);
 
   const actualizarMutation = useMutation({
     mutationFn: ({ id, payload }) => authenticatedApi.put(`/novedades/${id}`, payload),
@@ -127,7 +153,7 @@ function NovedadesPendientes() {
     setForm((current) => ({
       ...current,
       tipoNovedad: value,
-      minutos: isAmountNoveltyType(value) ? '0' : current.minutos || '60',
+      minutos: isAmountNoveltyType(value, noveltyTypeOptions) ? '0' : current.minutos || '60',
     }));
   }
 
@@ -207,7 +233,7 @@ function NovedadesPendientes() {
     }
   }
 
-  const requiresAmount = isAmountNoveltyType(form.tipoNovedad);
+  const requiresAmount = isAmountNoveltyType(form.tipoNovedad, noveltyTypeOptions);
 
   return (
     <div className="space-y-6">
@@ -257,13 +283,14 @@ function NovedadesPendientes() {
             <span className="mt-1 block text-xs font-normal text-slate-500">Debe corresponder a un mes de nómina abierto.</span>
           </label>
           <label className="block text-sm font-medium text-slate-700">
-            Tipo
+            Tipo de novedad
             <select
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+              disabled={noveltyTypesLoading || noveltyTypeOptions.length === 0}
               value={form.tipoNovedad}
               onChange={(event) => updateNoveltyType(event.target.value)}
             >
-              {NOVELTY_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
+              {noveltyTypeOptions.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
             </select>
           </label>
           <label className="block text-sm font-medium text-slate-700">
@@ -386,7 +413,7 @@ function NovedadesPendientes() {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Empleado</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo de novedad</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Horas</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
@@ -409,7 +436,7 @@ function NovedadesPendientes() {
                         nov.tipo_novedad === 'hora_extra_100' ? 'bg-purple-100 text-purple-800' :
                         'bg-red-100 text-red-800'
                       }`}>
-                        {getNoveltyTypeLabel(nov.tipo_novedad)}
+                        {getNoveltyTypeLabel(nov.tipo_novedad, noveltyTypeOptions)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">{minutesToHours(nov.minutos)} h</td>

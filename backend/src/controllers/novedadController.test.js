@@ -8,7 +8,13 @@ jest.mock('../services/auditService', () => ({
 
 const db = require('../config/database');
 const { recordAudit } = require('../services/auditService');
-const { actualizar, crear, eliminar, resolverPeriodo } = require('./novedadController');
+const {
+  actualizar,
+  crear,
+  eliminar,
+  listarTipos,
+  resolverPeriodo,
+} = require('./novedadController');
 
 function createResponse() {
   return {
@@ -82,6 +88,57 @@ describe('novedadController resolverPeriodo', () => {
     expect(res.statusCode).toBe(422);
     expect(res.body.error).toBe('MOTIVO_RECHAZO_REQUERIDO');
     expect(db.query).not.toHaveBeenCalled();
+  });
+});
+
+describe('novedadController listarTipos', () => {
+  beforeEach(() => {
+    db.query.mockReset();
+    recordAudit.mockReset();
+  });
+
+  test('lista tipos de novedad activos desde parametrizacion de nomina', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'type-1',
+        code: 'movilizacion',
+        name: 'MOVILIZACION',
+        description: 'Reembolso o anticipo de movilizacion',
+        payroll_impact: 'informativo',
+        applicability: { calculationMode: 'informational' },
+        affects_iess: false,
+        affects_income_tax: false,
+        affects_decimos: false,
+        affects_vacation: false,
+        affects_bank_file: false,
+        status: 'activo',
+      }],
+    });
+    const req = {
+      tenantId: 'tenant-1',
+      correlationId: 'corr-types',
+      query: { fecha: '2026-07-10' },
+    };
+    const res = createResponse();
+
+    await listarTipos(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({
+      success: true,
+      period: { anio: 2026, mes: 7 },
+      tipos: [
+        expect.objectContaining({
+          code: 'movilizacion',
+          name: 'MOVILIZACION',
+          calculationMode: 'informational',
+        }),
+      ],
+    });
+    expect(db.query).toHaveBeenCalledWith(
+      expect.stringContaining('FROM novelty_type_configs'),
+      ['tenant-1', '2026-07-01']
+    );
   });
 });
 

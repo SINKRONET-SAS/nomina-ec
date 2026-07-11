@@ -14,13 +14,69 @@ export const NOVELTY_TYPES = [
 
 const AMOUNT_NOVELTY_TYPE_VALUES = new Set(['bono_desempeno', 'comision']);
 const NOVELTY_TYPE_LABELS = new Map(NOVELTY_TYPES.map((type) => [type.value, type.label]));
+const AMOUNT_CALCULATION_MODES = new Set(['amount']);
 
-export function isAmountNoveltyType(value) {
-  return AMOUNT_NOVELTY_TYPE_VALUES.has(value);
+function normalizeNoveltyCode(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, '_')
+    .replace(/^_+|_+$/g, '');
 }
 
-export function getNoveltyTypeLabel(value) {
-  return NOVELTY_TYPE_LABELS.get(value) || String(value || '').replace(/_/g, ' ');
+export function normalizeNoveltyTypeOption(type = {}) {
+  const value = normalizeNoveltyCode(type.value || type.code || type.tipo_novedad);
+  if (!value) return null;
+
+  const applicability = type.applicability && typeof type.applicability === 'object' ? type.applicability : {};
+  const calculationMode = String(
+    type.calculationMode
+      || type.calculation_mode
+      || applicability.calculationMode
+      || ''
+  ).trim();
+
+  return {
+    ...type,
+    value,
+    label: String(type.label || type.name || value.replace(/_/g, ' ')).trim(),
+    calculationMode,
+    payrollImpact: type.payrollImpact || type.payroll_impact || '',
+    status: type.status || 'activo',
+  };
+}
+
+export function buildNoveltyTypeOptions(types = []) {
+  const seen = new Set();
+  const options = [];
+
+  for (const type of types) {
+    const option = normalizeNoveltyTypeOption(type);
+    if (!option || seen.has(option.value)) continue;
+    if (String(option.status || '').toLowerCase() !== 'activo') continue;
+    seen.add(option.value);
+    options.push(option);
+  }
+
+  return options.length > 0 ? options : NOVELTY_TYPES;
+}
+
+function findNoveltyType(value, types = NOVELTY_TYPES) {
+  const normalized = normalizeNoveltyCode(value);
+  return buildNoveltyTypeOptions(types).find((type) => type.value === normalized);
+}
+
+export function isAmountNoveltyType(value, types = NOVELTY_TYPES) {
+  const type = findNoveltyType(value, types);
+  if (type?.calculationMode) return AMOUNT_CALCULATION_MODES.has(type.calculationMode);
+  return AMOUNT_NOVELTY_TYPE_VALUES.has(normalizeNoveltyCode(value));
+}
+
+export function getNoveltyTypeLabel(value, types = NOVELTY_TYPES) {
+  const type = findNoveltyType(value, types);
+  if (type?.label) return type.label;
+  const normalized = normalizeNoveltyCode(value);
+  return NOVELTY_TYPE_LABELS.get(normalized) || String(value || '').replace(/_/g, ' ');
 }
 
 export function minutesToHours(value) {

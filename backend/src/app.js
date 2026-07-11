@@ -203,6 +203,7 @@ app.get('/api/mobile/nomina/:anio/:mes', requireRole('empleado', 'owner', 'admin
 const novedadController = require('./controllers/novedadController');
 app.get('/api/novedades', requireRole('owner', 'admin_rrhh', 'supervisor'), requireModule('asistencia'), novedadController.listar);
 app.get('/api/novedades/pendientes', requireRole('owner', 'admin_rrhh', 'supervisor'), requireModule('asistencia'), novedadController.listarPendientes);
+app.get('/api/novedades/tipos', requireRole('owner', 'admin_rrhh', 'supervisor'), requireModule('asistencia'), novedadController.listarTipos);
 app.get('/api/novedades/plantilla-carga-masiva', requireRole('owner', 'admin_rrhh', 'supervisor'), requireModule('asistencia'), novedadController.descargarPlantillaCargaMasiva);
 app.post('/api/novedades', requireRole('owner', 'admin_rrhh', 'supervisor'), requireModule('asistencia'), novedadController.crear);
 app.post('/api/novedades/carga-masiva', requireRole('owner', 'admin_rrhh'), requireModule('asistencia'), novedadController.cargaMasiva);
