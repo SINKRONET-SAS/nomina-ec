@@ -1,0 +1,113 @@
+{
+  "generatedAt": "2026-07-12T16:43:14.519Z",
+  "source": {
+    "sknomina": {
+      "path": "assets/brand/source/SKNOMINA_LOGO.png",
+      "sha256": "88fc60dfc0e0eb906fd8556fe2b22abc2ec0e21dca96b6dec5053730ebdaa10c"
+    },
+    "sinkronet": {
+      "path": "assets/brand/source/SINKRONET.png",
+      "sha256": "0b929e1092f945b37a43596bf9205f73980e585f18ce77787b42c2d5e03cd31e"
+    }
+  },
+  "formats": {
+    "pwaIcons": [
+      "192x192 PNG",
+      "512x512 PNG",
+      "maskable 192x192 PNG",
+      "maskable 512x512 PNG",
+      "apple-touch 180x180 PNG"
+    ],
+    "browserTab": [
+      "32x32 PNG favicon",
+      "48x48 PNG favicon",
+      "64x64 PNG favicon"
+    ],
+    "social": [
+      "1200x630 PNG"
+    ],
+    "storeMobile": [
+      "1024x1024 PNG launcher",
+      "512x512 PNG notification",
+      "1242x2436 PNG splash"
+    ],
+    "screenshots": [
+      "1280x720 PNG wide",
+      "390x844 PNG mobile"
+    ]
+  },
+  "generatedAssets": [
+    {
+      "path": "frontend-web/public/brand/sknomina-logo-512.png",
+      "sha256": "85ea6a078c794cd8fa987424c66221ec89d95d8d48f34713c72cd4cfe6a1d3e4"
+    },
+    {
+      "path": "frontend-web/public/brand/sknomina-logo-1024.png",
+      "sha256": "11059a616c00f3a8e6fca5ef2d68b058f39040f5c6d97c845647b9114b4562e3"
+    },
+    {
+      "path": "frontend-web/public/brand/sknomina-og.png",
+      "sha256": "d2abe389ee5daf6dd1f9e0d64235235ec40c5d358122f11bf4314b10249b0495"
+    },
+    {
+      "path": "frontend-web/public/brand/pwa-screenshot-wide.png",
+      "sha256": "4cfeef4a83a6b20ecb26be7dc5d79967e5949d0b984efe63a0f671bf4f0214a8"
+    },
+    {
+      "path": "frontend-web/public/brand/pwa-screenshot-mobile.png",
+      "sha256": "c7b3c40d1ed8b746debe992c65763f3ec7a1bd378dae0b8ee014a678da468d9f"
+    },
+    {
+      "path": "frontend-web/public/icon-192.png",
+      "sha256": "256099da8643efe83dfcd7764da7a39e245617e0793338542202babd9b94defe"
+    },
+    {
+      "path": "frontend-web/public/icon-512.png",
+      "sha256": "85ea6a078c794cd8fa987424c66221ec89d95d8d48f34713c72cd4cfe6a1d3e4"
+    },
+    {
+      "path": "frontend-web/public/icon-192-maskable.png",
+      "sha256": "256099da8643efe83dfcd7764da7a39e245617e0793338542202babd9b94defe"
+    },
+    {
+      "path": "frontend-web/public/icon-512-maskable.png",
+      "sha256": "85ea6a078c794cd8fa987424c66221ec89d95d8d48f34713c72cd4cfe6a1d3e4"
+    },
+    {
+      "path": "frontend-web/public/favicon-32.png",
+      "sha256": "1328096adcfe5db973beff9846b9f4009770e6380ed296e5c939140a471f5b0d"
+    },
+    {
+      "path": "frontend-web/public/favicon-48.png",
+      "sha256": "4db62690cd4c2945ae6dfc0307a9c7338a361fbb585ec94f437e58ceb5013d99"
+    },
+    {
+      "path": "frontend-web/public/favicon-64.png",
+      "sha256": "79a44f1d7e5028fcdab1e5c0f3a8cb0df8ae5aaaf1de1abdc44532d214df1f0c"
+    },
+    {
+      "path": "frontend-web/public/apple-touch-icon.png",
+      "sha256": "a26ea9d32baced6479df7589a2695cc984477f3ff7eac1327bb7ac8ae0620614"
+    },
+    {
+      "path": "app-movil/assets/icon.png",
+      "sha256": "11059a616c00f3a8e6fca5ef2d68b058f39040f5c6d97c845647b9114b4562e3"
+    },
+    {
+      "path": "app-movil/assets/adaptive-icon.png",
+      "sha256": "11059a616c00f3a8e6fca5ef2d68b058f39040f5c6d97c845647b9114b4562e3"
+    },
+    {
+      "path": "app-movil/assets/notification-icon.png",
+      "sha256": "85ea6a078c794cd8fa987424c66221ec89d95d8d48f34713c72cd4cfe6a1d3e4"
+    },
+    {
+      "path": "app-movil/assets/splash.png",
+      "sha256": "a3c36eab109e9a319549320944dd9192f92e715baf6794a7810a4a2f3a15aee2"
+    },
+    {
+      "path": "frontend-web/public/brand/sinkronet-logo-512.png",
+      "sha256": "762bddd7f93417aa7e48d1c022cf8fe43da025638ecd8b188578a22a3361cb5f"
+    }
+  ]
+}

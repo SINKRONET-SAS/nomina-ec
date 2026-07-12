@@ -71,7 +71,23 @@ if (!manifest.shortcuts || manifest.shortcuts.length < 2) {
   fail('El manifest debe declarar shortcuts operativos.');
 }
 
-for (const asset of ['icon.svg', 'icon-192.png', 'icon-512.png', 'maskable-icon.svg', 'apple-touch-icon.svg', 'apple-touch-icon.png', 'pwa-screenshot-wide.svg', 'pwa-screenshot-mobile.svg', 'robots.txt', 'sitemap.xml']) {
+for (const asset of [
+  'icon.svg',
+  'icon-192.png',
+  'icon-512.png',
+  'favicon-32.png',
+  'favicon-48.png',
+  'favicon-64.png',
+  'maskable-icon.svg',
+  'apple-touch-icon.svg',
+  'apple-touch-icon.png',
+  'brand/sknomina-logo-512.png',
+  'brand/sknomina-og.png',
+  'brand/pwa-screenshot-wide.png',
+  'brand/pwa-screenshot-mobile.png',
+  'robots.txt',
+  'sitemap.xml',
+]) {
   if (!existsSync(join(dist, asset))) {
     fail(`Asset PWA faltante en dist: ${asset}`);
   }
@@ -79,14 +95,41 @@ for (const asset of ['icon.svg', 'icon-192.png', 'icon-512.png', 'maskable-icon.
 
 assertPngDimensions('icon-192.png', 192, 192);
 assertPngDimensions('icon-512.png', 512, 512);
+assertPngDimensions('favicon-32.png', 32, 32);
+assertPngDimensions('favicon-48.png', 48, 48);
+assertPngDimensions('favicon-64.png', 64, 64);
 assertPngDimensions('apple-touch-icon.png', 180, 180);
+assertPngDimensions('brand/sknomina-logo-512.png', 512, 512);
+assertPngDimensions('brand/sknomina-og.png', 1200, 630);
+assertPngDimensions('brand/pwa-screenshot-wide.png', 1280, 720);
+assertPngDimensions('brand/pwa-screenshot-mobile.png', 390, 844);
 
-if (!html.includes('href="/icon.svg"') || !html.includes('href="/icon-192.png"') || !html.includes('href="/apple-touch-icon.png"')) {
-  fail('index.html debe enlazar icon.svg, icon-192.png y apple-touch-icon.png.');
+if (html.includes('href="/icon.svg"')) {
+  fail('index.html no debe priorizar icon.svg como favicon de pestana.');
 }
 
-if (!html.includes('content="/icon-512.png"')) {
-  fail('Metadatos sociales deben usar el icono de sistema PNG.');
+if (!html.includes('href="/favicon-32.png"') || !html.includes('href="/favicon-48.png"') || !html.includes('href="/favicon-64.png"')) {
+  fail('index.html debe enlazar favicons PNG oficiales para la pestana.');
+}
+
+if (!html.includes('href="/icon-192.png"') || !html.includes('href="/apple-touch-icon.png"')) {
+  fail('index.html debe enlazar icon-192.png y apple-touch-icon.png.');
+}
+
+if (!html.includes('content="/brand/sknomina-og.png"')) {
+  fail('Metadatos sociales deben usar la imagen comercial SKNOMINA 1200x630.');
+}
+
+if (!html.includes('href="/brand/sknomina-logo-512.png"')) {
+  fail('index.html debe precargar el logo comercial SKNOMINA.');
+}
+
+if (!manifest.screenshots?.some((item) => item.src === '/brand/pwa-screenshot-wide.png' && item.type === 'image/png')) {
+  fail('Manifest debe usar screenshot wide PNG de marca.');
+}
+
+if (!manifest.screenshots?.some((item) => item.src === '/brand/pwa-screenshot-mobile.png' && item.type === 'image/png')) {
+  fail('Manifest debe usar screenshot mobile PNG de marca.');
 }
 
 if (/[ÃÂ]/.test(`${html}\n${JSON.stringify(manifest)}`)) {

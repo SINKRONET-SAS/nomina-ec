@@ -1,6 +1,44 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-ASSETS-COMERCIAL-UIUX-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-ASSETS-COMERCIAL-UIUX-2026 |
+| Codigo | HAIKY-ASSET |
+| Estado | completed-pass |
+| Fecha | 2026-07-12 |
+| Requerimiento fuente | Revisar LANDING, PWA, BACKEND y MOBILE por regresion de logo, imagen comercial, UI/UX y uso real de assets; definir formatos/tamanos, scripts JS, plan, prompts, AuditLock, gates, commit y push. |
+| Plan doc | `docs2/PLAN_HAIKY_ASSETS_COMERCIAL_UIUX_2026.md` |
+| Informe | `docs2/auditoria-assets-comercial-haiky-2026/INFORME_DIAGNOSTICO.md` |
+| Diagnostico JSON | `docs2/auditoria-assets-comercial-haiky-2026/DIAGNOSTICO_JSON.json` |
+| Evidencia visual | `docs2/auditoria-assets-comercial-haiky-2026/evidencia-visual/` |
+| Prompts | `.github/prompts/HAIKY-ASSETS-COMERCIAL-2026-{00..05}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` y `.vscode/AudiLock.json` |
+
+### Hallazgos HAIKY-ASSET
+
+- Regresion confirmada: `frontend-web/public/icon-512.png` y `app-movil/assets/icon.png` mostraban placeholder `Nomina-Ec / datos ficticios`.
+- Fuente canonica incorporada: `assets/brand/source/SKNOMINA_LOGO.png`, con hashes en `assets/brand/manifest.json`.
+- LANDING/PWA usan `/brand/sknomina-logo-512.png`, `/brand/sknomina-og.png` y screenshots PNG de marca.
+- Favicon de pestana corregido: `index.html` usa `favicon-32.png`, `favicon-48.png` y `favicon-64.png` generados desde SKNOMINA; `/icon.svg` ya no es favicon principal.
+- MOBILE usa launcher, adaptive icon, notification y splash generados desde la misma fuente.
+- Banner de cookies se reduce para no bloquear controles en mobile.
+- Header mobile ajustado para mantener logo oficial y evitar overflow horizontal en 390px.
+
+### Scripts HAIKY-ASSET
+
+- `npm.cmd run brand:assets:solution`
+- `npm.cmd run audit:brand-assets`
+- `npm.cmd run brand:assets:auditlock`
+- `npm.cmd --workspace=frontend-web run smoke:pwa`
+- `npm.cmd run audit:brand-visual`
+
+Reglas: no reintroducir placeholders de tienda, no aceptar screenshots ficticios como manifest principal, no volver a enlazar `/icon.svg` como favicon de pestana, y no eliminar SVG/legacy hasta confirmar cero referencias productivas con `rg`.
+
+---
+
 ## Open Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-NOMINA-EC-2026
 
 | Campo | Valor |

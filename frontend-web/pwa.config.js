@@ -57,16 +57,16 @@ export const pwaManifest = {
   ],
   screenshots: [
     {
-      src: '/pwa-screenshot-wide.svg',
+      src: '/brand/pwa-screenshot-wide.png',
       sizes: '1280x720',
-      type: 'image/svg+xml',
+      type: 'image/png',
       form_factor: 'wide',
       label: 'Panel operativo de SKNOMINA para cierre mensual',
     },
     {
-      src: '/pwa-screenshot-mobile.svg',
+      src: '/brand/pwa-screenshot-mobile.png',
       sizes: '390x844',
-      type: 'image/svg+xml',
+      type: 'image/png',
       form_factor: 'narrow',
       label: 'Vista móvil de la operación mensual de SKNOMINA',
     },

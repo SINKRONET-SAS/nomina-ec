@@ -41,22 +41,21 @@ export default function CookieConsent() {
 
   return (
     <section className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white shadow-2xl">
-      <div className="page-container flex flex-col gap-4 py-4 md:flex-row md:items-center md:justify-between">
+      <div className="page-container grid gap-3 py-3 md:grid-cols-[1fr_auto] md:items-center md:py-4">
         <div className="max-w-3xl">
           <p className="text-sm font-semibold text-slate-950">Privacidad y cookies</p>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            Usamos cookies necesarias para operar la sesión y, solo con autorización, medición no esencial.
-            No activamos analítica ni cacheamos datos personales de nómina sin consentimiento.
+          <p className="mt-1 text-sm leading-5 text-slate-600">
+            Usamos cookies necesarias para la sesión. La medición no esencial solo se activa si la autorizas.
           </p>
-          <Link className="mt-2 inline-flex text-sm font-semibold text-teal-800" to="/privacidad">
+          <Link className="mt-1 inline-flex text-sm font-semibold text-teal-800 sm:mt-2" to="/privacidad">
             Ver política de privacidad
           </Link>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button className="secondary-button" type="button" onClick={() => accept(false)}>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          <button className="secondary-button min-h-10 px-3 text-sm" type="button" onClick={() => accept(false)}>
             Solo necesarias
           </button>
-          <button className="primary-button" type="button" onClick={() => accept(true)}>
+          <button className="primary-button min-h-10 px-3 text-sm" type="button" onClick={() => accept(true)}>
             Permitir medición
           </button>
         </div>

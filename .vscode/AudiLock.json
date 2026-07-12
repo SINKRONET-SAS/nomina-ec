@@ -1,46 +1,52 @@
 {
-  "plan": "HAIKY-AUDITORIA-INTEGRAL-NOMINA-EC-2026",
-  "phaseCompleted": "HAIKY-AUDITORIA-INTEGRAL-2026-05-qa-release",
+  "plan": "HAIKY-ASSETS-COMERCIAL-UIUX-2026",
+  "phaseCompleted": "HAIKY-ASSETS-COMERCIAL-2026-05-qa-release",
   "summary": [
-    "Diagnostico integral LANDING/PWA/BACKEND/MOBILE actualizado.",
-    "SBU 2026 USD 482 reconfirmado por usuario contra pagina del Ministerio del Trabajo.",
-    "Modo mock/placeholder clasificado como senal controlada cuando existe gate y no activa funcionalidad productiva.",
-    "Persistencia de sesion en PWA/mobile queda opt-in y la limpieza de sesion movil ya no usa catch silencioso."
+    "Regresion de logo Nomina-Ec / datos ficticios corregida con fuente SKNOMINA entregada por usuario.",
+    "Assets PWA, Open Graph, screenshots de manifest, Expo launcher, notification y splash generados por script JS.",
+    "Favicon de pestana corregido con PNG oficiales 32/48/64 desde SKNOMINA.",
+    "Landing, login, BrandLogo y contratos apuntan a assets comerciales reales.",
+    "Banner de cookies y header mobile ajustados; QA visual PASS en landing/login desktop/mobile."
   ],
   "filesModified": [
-    ".github/CODEX_CONTEXT.md",
-    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-00-baseline.md",
-    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-01-zero-silent-failures.md",
-    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-02-movilizacion-sqlite-cierre.md",
-    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-03-lopdp-legal-pagos-email.md",
-    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-04-reportes-uiux-humanizacion.md",
-    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-05-qa-release.md",
-    ".vscode/AuditLock.json",
-    ".vscode/AudiLock.json",
-    "AuditLock.json",
-    "app-movil/src/App.js",
-    "app-movil/src/screens/LoginScreen.js",
-    "app-movil/src/services/api.js",
-    "frontend-web/src/context/AuthContext.jsx",
-    "frontend-web/src/pages/Login.jsx",
-    "frontend-web/src/services/authenticatedApi.js",
-    "frontend-web/src/services/authStorage.js",
-    "docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_NOMINA_EC_2026.md",
-    "docs2/auditoria-integral-haiky-2026/INFORME_DIAGNOSTICO.md",
-    "docs2/auditoria-integral-haiky-2026/DIAGNOSTICO_JSON.json",
-    "docs2/auditoria-integral-haiky-2026/DIAGNOSTICO_AUTOMATIZADO.md",
-    "scripts/haiky-integral-diagnostic.mjs",
-    "scripts/haiky-integral-solution.mjs",
+    "assets/brand/manifest.json",
+    "assets/brand/source/SINKRONET.png",
+    "assets/brand/source/SINKRONET-LOGO.jpg",
+    "assets/brand/source/SKNOMINA_LOGO.png",
+    "app-movil/assets/adaptive-icon.png",
+    "app-movil/assets/icon.png",
+    "app-movil/assets/notification-icon.png",
+    "app-movil/assets/splash.png",
+    "docs2/PLAN_HAIKY_ASSETS_COMERCIAL_UIUX_2026.md",
+    "docs2/auditoria-assets-comercial-haiky-2026/DIAGNOSTICO_AUTOMATIZADO.md",
+    "docs2/auditoria-assets-comercial-haiky-2026/DIAGNOSTICO_JSON.json",
+    "docs2/auditoria-assets-comercial-haiky-2026/INFORME_DIAGNOSTICO.md",
+    "docs2/auditoria-assets-comercial-haiky-2026/VISUAL_QA.md",
+    "docs2/auditoria-assets-comercial-haiky-2026/VISUAL_QA_JSON.json",
+    "frontend-web/public/favicon-32.png",
+    "frontend-web/public/favicon-48.png",
+    "frontend-web/public/favicon-64.png",
+    "frontend-web/index.html",
+    "frontend-web/pwa.config.js",
+    "frontend-web/scripts/smoke-pwa-lpa26.mjs",
+    "frontend-web/src/components/Brand/BrandLogo.jsx",
+    "frontend-web/src/components/Privacy/CookieConsent.jsx",
+    "frontend-web/src/pages/Landing.jsx",
+    "frontend-web/vite.config.js",
+    "scripts/haiky-brand-assets-auditlock.mjs",
+    "scripts/haiky-brand-assets-diagnostic.mjs",
+    "scripts/haiky-brand-assets-solution.mjs",
+    "scripts/haiky-visual-regression-capture.mjs",
     "scripts/verify-system-contracts.mjs"
   ],
   "validationChecks": [
     {
-      "name": "diagnostico_integral_js",
+      "name": "brand_assets_diagnostic",
       "ok": true,
-      "output": "{\n  \"ok\": true,\n  \"outDir\": \"docs2/auditoria-integral-haiky-2026\",\n  \"filesScanned\": 876,\n  \"findingSummary\": {}\n}"
+      "output": "{\n  \"ok\": true,\n  \"outDir\": \"docs2/auditoria-assets-comercial-haiky-2026\",\n  \"findingSummary\": {}\n}"
     },
     {
-      "name": "contratos_sistema",
+      "name": "contracts_system",
       "ok": true,
       "output": "[CONTRACTS] OK: frontend, backend, Prisma y reportes mantienen contrato de sistema unico."
     },
@@ -50,16 +56,11 @@
       "output": "> sknomina-system@1.0.0 check:mobile\n> npm --workspace=app-movil run check:stores\n\n\n> sknomina-app@1.0.0 check:stores\n> node scripts/check-store-readiness.mjs\n\n[LPA26-STORES] Configuracion, identificadores, URLs y assets de tienda verificados."
     },
     {
-      "name": "sin_catch_silencioso_runtime",
+      "name": "visual_qa_artifact",
       "ok": true,
-      "output": ""
-    },
-    {
-      "name": "utf8_runtime",
-      "ok": true,
-      "output": ""
+      "output": "docs2/auditoria-assets-comercial-haiky-2026/VISUAL_QA_JSON.json: PASS 4 escenarios"
     }
   ],
-  "timestamp": "2026-07-12T04:09:51.236Z",
-  "signature": "075c15ce37bcec213431cf264d164ab4c4acef3db46706539751245a1b06d770"
+  "timestamp": "2026-07-12T19:23:43.690Z",
+  "signature": "7ed584bec64ece1564fe0d943dfa012b9da5edd06dcc622633d4e6daac9c3feb"
 }

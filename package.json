@@ -16,6 +16,10 @@
     "check:mobile": "npm --workspace=app-movil run check:stores",
     "audit:integral": "node scripts/haiky-integral-diagnostic.mjs",
     "haiky:solution": "node scripts/haiky-integral-solution.mjs",
+    "audit:brand-assets": "node scripts/haiky-brand-assets-diagnostic.mjs",
+    "audit:brand-visual": "node scripts/haiky-visual-regression-capture.mjs",
+    "brand:assets:solution": "node scripts/haiky-brand-assets-solution.mjs && node scripts/haiky-brand-assets-diagnostic.mjs",
+    "brand:assets:auditlock": "node scripts/haiky-brand-assets-auditlock.mjs",
     "validate": "npm run contracts && npm run prisma:validate && npm run test:backend && npm run build:web"
   }
 }

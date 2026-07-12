@@ -1,0 +1,234 @@
+{
+  "generatedAt": "2026-07-12T19:23:41.845Z",
+  "plan": "HAIKY-ASSETS-COMERCIAL-UIUX-2026",
+  "sourceScope": "LANDING, PWA, BACKEND contracts y MOBILE assets",
+  "initialConfirmedRegression": [
+    "frontend-web/public/icon-512.png mostraba placeholder Nomina-Ec / Datos ficticios para tienda antes de regenerar.",
+    "frontend-web/index.html priorizaba /icon.svg como favicon, manteniendo un icono de pestana no homologado con SKNOMINA.",
+    "app-movil/assets/icon.png mostraba placeholder Nomina-Ec / Datos ficticios para tienda antes de regenerar.",
+    "Manifest PWA usaba screenshots SVG ficticios en vez de assets comerciales PNG."
+  ],
+  "imageChecks": [
+    {
+      "ok": true,
+      "label": "Fuente SKNOMINA entregada por usuario",
+      "path": "assets/brand/source/SKNOMINA_LOGO.png",
+      "expected": "1254x1254",
+      "actual": "1254x1254",
+      "type": "png",
+      "sha256": "88fc60dfc0e0eb906fd8556fe2b22abc2ec0e21dca96b6dec5053730ebdaa10c",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Logo comercial PWA",
+      "path": "frontend-web/public/brand/sknomina-logo-512.png",
+      "expected": "512x512",
+      "actual": "512x512",
+      "type": "png",
+      "sha256": "85ea6a078c794cd8fa987424c66221ec89d95d8d48f34713c72cd4cfe6a1d3e4",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Logo comercial alta resolucion",
+      "path": "frontend-web/public/brand/sknomina-logo-1024.png",
+      "expected": "1024x1024",
+      "actual": "1024x1024",
+      "type": "png",
+      "sha256": "11059a616c00f3a8e6fca5ef2d68b058f39040f5c6d97c845647b9114b4562e3",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Imagen social Open Graph",
+      "path": "frontend-web/public/brand/sknomina-og.png",
+      "expected": "1200x630",
+      "actual": "1200x630",
+      "type": "png",
+      "sha256": "d2abe389ee5daf6dd1f9e0d64235235ec40c5d358122f11bf4314b10249b0495",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Screenshot PWA wide",
+      "path": "frontend-web/public/brand/pwa-screenshot-wide.png",
+      "expected": "1280x720",
+      "actual": "1280x720",
+      "type": "png",
+      "sha256": "4cfeef4a83a6b20ecb26be7dc5d79967e5949d0b984efe63a0f671bf4f0214a8",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Screenshot PWA mobile",
+      "path": "frontend-web/public/brand/pwa-screenshot-mobile.png",
+      "expected": "390x844",
+      "actual": "390x844",
+      "type": "png",
+      "sha256": "c7b3c40d1ed8b746debe992c65763f3ec7a1bd378dae0b8ee014a678da468d9f",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Icono PWA 192",
+      "path": "frontend-web/public/icon-192.png",
+      "expected": "192x192",
+      "actual": "192x192",
+      "type": "png",
+      "sha256": "256099da8643efe83dfcd7764da7a39e245617e0793338542202babd9b94defe",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Icono PWA 512",
+      "path": "frontend-web/public/icon-512.png",
+      "expected": "512x512",
+      "actual": "512x512",
+      "type": "png",
+      "sha256": "85ea6a078c794cd8fa987424c66221ec89d95d8d48f34713c72cd4cfe6a1d3e4",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Icono maskable 192",
+      "path": "frontend-web/public/icon-192-maskable.png",
+      "expected": "192x192",
+      "actual": "192x192",
+      "type": "png",
+      "sha256": "256099da8643efe83dfcd7764da7a39e245617e0793338542202babd9b94defe",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Icono maskable 512",
+      "path": "frontend-web/public/icon-512-maskable.png",
+      "expected": "512x512",
+      "actual": "512x512",
+      "type": "png",
+      "sha256": "85ea6a078c794cd8fa987424c66221ec89d95d8d48f34713c72cd4cfe6a1d3e4",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Favicon browser tab 32",
+      "path": "frontend-web/public/favicon-32.png",
+      "expected": "32x32",
+      "actual": "32x32",
+      "type": "png",
+      "sha256": "1328096adcfe5db973beff9846b9f4009770e6380ed296e5c939140a471f5b0d",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Favicon browser tab 48",
+      "path": "frontend-web/public/favicon-48.png",
+      "expected": "48x48",
+      "actual": "48x48",
+      "type": "png",
+      "sha256": "4db62690cd4c2945ae6dfc0307a9c7338a361fbb585ec94f437e58ceb5013d99",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Favicon browser tab 64",
+      "path": "frontend-web/public/favicon-64.png",
+      "expected": "64x64",
+      "actual": "64x64",
+      "type": "png",
+      "sha256": "79a44f1d7e5028fcdab1e5c0f3a8cb0df8ae5aaaf1de1abdc44532d214df1f0c",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Apple touch icon",
+      "path": "frontend-web/public/apple-touch-icon.png",
+      "expected": "180x180",
+      "actual": "180x180",
+      "type": "png",
+      "sha256": "a26ea9d32baced6479df7589a2695cc984477f3ff7eac1327bb7ac8ae0620614",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Launcher mobile",
+      "path": "app-movil/assets/icon.png",
+      "expected": "1024x1024",
+      "actual": "1024x1024",
+      "type": "png",
+      "sha256": "11059a616c00f3a8e6fca5ef2d68b058f39040f5c6d97c845647b9114b4562e3",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Adaptive icon mobile",
+      "path": "app-movil/assets/adaptive-icon.png",
+      "expected": "1024x1024",
+      "actual": "1024x1024",
+      "type": "png",
+      "sha256": "11059a616c00f3a8e6fca5ef2d68b058f39040f5c6d97c845647b9114b4562e3",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Notification icon mobile",
+      "path": "app-movil/assets/notification-icon.png",
+      "expected": "512x512",
+      "actual": "512x512",
+      "type": "png",
+      "sha256": "85ea6a078c794cd8fa987424c66221ec89d95d8d48f34713c72cd4cfe6a1d3e4",
+      "severity": "info"
+    },
+    {
+      "ok": true,
+      "label": "Splash mobile",
+      "path": "app-movil/assets/splash.png",
+      "expected": "1242x2436",
+      "actual": "1242x2436",
+      "type": "png",
+      "sha256": "a3c36eab109e9a319549320944dd9192f92e715baf6794a7810a4a2f3a15aee2",
+      "severity": "info"
+    }
+  ],
+  "contractChecks": [
+    {
+      "ok": true,
+      "label": "BrandLogo usa logo comercial real",
+      "evidence": "frontend-web/src/components/Brand/BrandLogo.jsx",
+      "severity": "alta"
+    },
+    {
+      "ok": true,
+      "label": "HTML publico usa assets comerciales en preload/social/favicon",
+      "evidence": "frontend-web/index.html",
+      "severity": "media"
+    },
+    {
+      "ok": true,
+      "label": "Manifest PWA usa screenshots PNG de marca",
+      "evidence": "frontend-web/pwa.config.js",
+      "severity": "media"
+    },
+    {
+      "ok": true,
+      "label": "Landing usa asset de marca en primer viewport",
+      "evidence": "frontend-web/src/pages/Landing.jsx",
+      "severity": "alta"
+    },
+    {
+      "ok": true,
+      "label": "Mobile usa launcher generado desde la misma fuente",
+      "evidence": "app-movil",
+      "severity": "alta"
+    },
+    {
+      "ok": true,
+      "label": "Manifiesto de marca registra hash de fuente SKNOMINA",
+      "evidence": "assets/brand/manifest.json",
+      "severity": "media"
+    }
+  ],
+  "findingSummary": {},
+  "findings": [],
+  "evidenceHash": "89c12f8c1740af7078c35435308808b05b37c74f02404fa2cd4e376406edb8f3"
+}

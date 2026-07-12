@@ -16,10 +16,28 @@ import {
   Smartphone,
   UsersRound,
 } from 'lucide-react';
-import BrandLogo, { BRAND_NAME } from '../components/Brand/BrandLogo';
+import BrandLogo, { BRAND_LOGO_SRC, BRAND_NAME } from '../components/Brand/BrandLogo';
 import PublicPlansCatalog from '../components/PublicPlansCatalog';
 
 const BRAND = BRAND_NAME;
+
+function HeroBrandAsset() {
+  return (
+    <div className="mt-6 flex items-center gap-4">
+      <img
+        alt="Logo de SKNOMINA"
+        className="h-20 w-20 shrink-0 rounded-2xl object-contain shadow-xl shadow-slate-900/10"
+        src={BRAND_LOGO_SRC}
+      />
+      <div className="min-w-0">
+        <p className="text-sm font-semibold uppercase text-teal-900">Marca oficial</p>
+        <p className="mt-1 text-sm leading-6 text-slate-600">
+          Plataforma de SINKRONET S.A.S para operación laboral en Ecuador.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 const flow = [
   {
@@ -174,8 +192,8 @@ function Landing() {
     <main className="app-shell bg-white">
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="page-container flex h-16 items-center justify-between gap-4">
-          <Link className="flex min-w-0 items-center gap-3 font-semibold text-slate-950" to="/">
-            <BrandLogo imageClassName="h-10 w-10" />
+          <Link className="flex min-w-0 shrink-0 items-center gap-3 font-semibold text-slate-950" to="/">
+            <BrandLogo imageClassName="h-10 w-10" textClassName="hidden text-slate-950 sm:inline" />
           </Link>
           <nav className="flex items-center gap-2 sm:gap-3">
             <Link className="hidden text-sm font-semibold text-slate-700 hover:text-slate-950 sm:inline-flex" onClick={scrollToPlans} to="/#planes">Planes</Link>
@@ -184,7 +202,10 @@ function Landing() {
               <LogIn size={17} />
               <span className="hidden sm:inline">Ingresar</span>
             </Link>
-            <Link className="primary-button min-h-10 px-3 sm:px-4" to="/registro">Crear cuenta</Link>
+            <Link className="primary-button min-h-10 px-3 sm:px-4" to="/registro">
+              <span className="sm:hidden">Crear</span>
+              <span className="hidden sm:inline">Crear cuenta</span>
+            </Link>
           </nav>
         </div>
       </header>
@@ -199,6 +220,7 @@ function Landing() {
             <h1 className="mt-5 text-5xl font-semibold leading-none text-slate-950 sm:text-6xl lg:text-7xl">
               {BRAND}
             </h1>
+            <HeroBrandAsset />
             <p className="mt-5 text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
               Nómina, asistencia, pagos y reportes listos para cerrar el mes.
             </p>

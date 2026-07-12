@@ -1,0 +1,173 @@
+{
+  "ok": true,
+  "baseUrl": "http://127.0.0.1:4174",
+  "generatedAt": "2026-07-12T19:14:47.636Z",
+  "results": [
+    {
+      "id": "landing-desktop",
+      "fileName": "01-landing-desktop.png",
+      "pathName": "/",
+      "width": 1440,
+      "height": 1100,
+      "mobile": false,
+      "outputPath": "C:\\proyectos web\\nuevo_nomina\\docs2\\auditoria-assets-comercial-haiky-2026\\evidencia-visual\\01-landing-desktop.png",
+      "metrics": {
+        "url": "http://127.0.0.1:4174/",
+        "title": "SKNOMINA",
+        "viewportWidth": 1440,
+        "scrollWidth": 1425,
+        "horizontalOverflow": 0,
+        "brandVisible": true,
+        "brandImages": [
+          {
+            "alt": "SKNOMINA",
+            "src": "http://127.0.0.1:4174/brand/sknomina-logo-512.png",
+            "width": 40,
+            "height": 40,
+            "visible": true
+          },
+          {
+            "alt": "SKNOMINA",
+            "src": "http://127.0.0.1:4174/brand/sknomina-logo-512.png",
+            "width": 40,
+            "height": 40,
+            "visible": true
+          },
+          {
+            "alt": "Logo de SKNOMINA",
+            "src": "http://127.0.0.1:4174/brand/sknomina-logo-512.png",
+            "width": 80,
+            "height": 80,
+            "visible": true
+          }
+        ],
+        "hasCookieCopy": true,
+        "hasPrimaryCta": true,
+        "bodyLength": 5166
+      },
+      "findings": [],
+      "ok": true
+    },
+    {
+      "id": "login-desktop",
+      "fileName": "02-login-desktop.png",
+      "pathName": "/login",
+      "width": 1440,
+      "height": 1100,
+      "mobile": false,
+      "outputPath": "C:\\proyectos web\\nuevo_nomina\\docs2\\auditoria-assets-comercial-haiky-2026\\evidencia-visual\\02-login-desktop.png",
+      "metrics": {
+        "url": "http://127.0.0.1:4174/login",
+        "title": "SKNOMINA",
+        "viewportWidth": 1440,
+        "scrollWidth": 1440,
+        "horizontalOverflow": 0,
+        "brandVisible": true,
+        "brandImages": [
+          {
+            "alt": "SKNOMINA",
+            "src": "http://127.0.0.1:4174/brand/sknomina-logo-512.png",
+            "width": 44,
+            "height": 44,
+            "visible": true
+          },
+          {
+            "alt": "SKNOMINA",
+            "src": "http://127.0.0.1:4174/brand/sknomina-logo-512.png",
+            "width": 0,
+            "height": 0,
+            "visible": false
+          }
+        ],
+        "hasCookieCopy": true,
+        "hasPrimaryCta": true,
+        "bodyLength": 776
+      },
+      "findings": [],
+      "ok": true
+    },
+    {
+      "id": "landing-mobile",
+      "fileName": "03-landing-mobile.png",
+      "pathName": "/",
+      "width": 390,
+      "height": 1200,
+      "mobile": true,
+      "outputPath": "C:\\proyectos web\\nuevo_nomina\\docs2\\auditoria-assets-comercial-haiky-2026\\evidencia-visual\\03-landing-mobile.png",
+      "metrics": {
+        "url": "http://127.0.0.1:4174/",
+        "title": "SKNOMINA",
+        "viewportWidth": 390,
+        "scrollWidth": 390,
+        "horizontalOverflow": 0,
+        "brandVisible": true,
+        "brandImages": [
+          {
+            "alt": "SKNOMINA",
+            "src": "http://127.0.0.1:4174/brand/sknomina-logo-512.png",
+            "width": 40,
+            "height": 40,
+            "visible": true
+          },
+          {
+            "alt": "SKNOMINA",
+            "src": "http://127.0.0.1:4174/brand/sknomina-logo-512.png",
+            "width": 0,
+            "height": 0,
+            "visible": false
+          },
+          {
+            "alt": "Logo de SKNOMINA",
+            "src": "http://127.0.0.1:4174/brand/sknomina-logo-512.png",
+            "width": 80,
+            "height": 80,
+            "visible": true
+          }
+        ],
+        "hasCookieCopy": true,
+        "hasPrimaryCta": true,
+        "bodyLength": 5289
+      },
+      "findings": [],
+      "ok": true
+    },
+    {
+      "id": "login-mobile",
+      "fileName": "04-login-mobile.png",
+      "pathName": "/login",
+      "width": 390,
+      "height": 1200,
+      "mobile": true,
+      "outputPath": "C:\\proyectos web\\nuevo_nomina\\docs2\\auditoria-assets-comercial-haiky-2026\\evidencia-visual\\04-login-mobile.png",
+      "metrics": {
+        "url": "http://127.0.0.1:4174/login",
+        "title": "SKNOMINA",
+        "viewportWidth": 390,
+        "scrollWidth": 390,
+        "horizontalOverflow": 0,
+        "brandVisible": true,
+        "brandImages": [
+          {
+            "alt": "SKNOMINA",
+            "src": "http://127.0.0.1:4174/brand/sknomina-logo-512.png",
+            "width": 0,
+            "height": 0,
+            "visible": false
+          },
+          {
+            "alt": "SKNOMINA",
+            "src": "http://127.0.0.1:4174/brand/sknomina-logo-512.png",
+            "width": 40,
+            "height": 40,
+            "visible": true
+          }
+        ],
+        "hasCookieCopy": true,
+        "hasPrimaryCta": true,
+        "bodyLength": 418
+      },
+      "findings": [],
+      "ok": true
+    }
+  ]
+}
