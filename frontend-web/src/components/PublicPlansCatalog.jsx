@@ -46,7 +46,7 @@ function PublicPlansCatalog() {
 
     const checkoutBlocked = planId !== 'TRIAL' && paymentCapabilities?.checkoutAvailable === false;
     if (checkoutBlocked) {
-      setError(paymentCapabilities?.blockedReason || 'La activación se realiza con transferencia bancaria revisada por SUPERADMIN.');
+      setError(paymentCapabilities?.blockedReason || 'El checkout PayPhone no está disponible temporalmente.');
       return;
     }
 
@@ -75,12 +75,13 @@ function PublicPlansCatalog() {
       {error && <div className="status-error">{error}</div>}
       {paymentCapabilities?.checkoutAvailable === false && (
         <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          {paymentCapabilities.blockedReason || 'Los pagos directos están deshabilitados. La activación se realiza por transferencia bancaria revisada.'}
+          {paymentCapabilities.blockedReason || 'El checkout PayPhone no está disponible temporalmente.'}
         </div>
       )}
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {plans.map((plan, index) => {
+          const manualTransferOnly = paymentCapabilities?.status === 'manual_transfer_only';
           const checkoutBlocked = plan.id !== 'TRIAL' && paymentCapabilities?.checkoutAvailable === false;
           const checkoutSelected = checkoutPlanId === plan.id;
           return (
@@ -112,7 +113,7 @@ function PublicPlansCatalog() {
                 onClick={() => handleCheckout(plan.id)}
                 type="button"
               >
-                {checkoutBlocked ? 'Activación por transferencia' : loadingPlan === plan.id ? 'Abriendo checkout...' : checkoutSelected ? 'Continuar a PayPhone' : publicPlanActionLabel(plan)}
+                {checkoutBlocked ? (manualTransferOnly ? 'Activación por transferencia' : 'Checkout no disponible') : loadingPlan === plan.id ? 'Abriendo checkout...' : checkoutSelected ? 'Continuar a PayPhone' : publicPlanActionLabel(plan)}
                 {loadingPlan !== plan.id && <ArrowRight size={18} />}
               </button>
             </article>

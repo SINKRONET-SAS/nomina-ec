@@ -331,6 +331,9 @@ assert(paymentReferenceService.includes('sknomina-'), 'Pagos deben usar referenc
 assert(paymentController.includes('createPayPhonePayment'), 'Checkout debe llamar gateway PayPhone real.');
 assert(paymentController.includes('confirmPayPhonePayment'), 'Confirmacion debe consultar PayPhone antes de activar plan.');
 assert(paymentController.includes('PAYMENT_AMOUNT_MISMATCH'), 'Confirmacion debe bloquear monto PayPhone distinto al checkout.');
+assert(paymentController.includes('resolveDirectPaymentsEnabled'), 'Pagos deben resolver PayPhone como canal principal por defecto.');
+assert(paymentController.includes('process.env.DIRECT_PAYMENTS_ENABLED ?? process.env.PAYPHONE_CHECKOUT_ENABLED'), 'El apagado de pagos directos debe ser un flag explicito, no un fallback silencioso.');
+assert(renderYaml.includes('DIRECT_PAYMENTS_ENABLED') && renderYaml.includes('value: "true"'), 'render.yaml debe declarar PayPhone directo habilitado en produccion.');
 assert(paymentController.includes('versionedFromActiveSubscriptions'), 'Gestion de planes debe versionar cuando existen suscripciones activas.');
 assert(schema.includes('appMovil') && schema.includes('@map("app_movil")'), 'Prisma debe declarar app movil como canal monetizable de plan.');
 assert(schema.includes('rutasCampo') && schema.includes('@map("rutas_campo")'), 'Prisma debe declarar rutas de campo como canal monetizable de plan.');
@@ -363,6 +366,7 @@ assert(publicPlanPresentation.includes('App móvil de asistencia') && publicPlan
 assert(publicPlanPresentation.includes('getPlanFunctionality'), 'Catalogo publico debe exponer matriz de funcionalidades por plan.');
 assert(publicPlansCatalog.includes('PlanFunctionalityList'), 'Sitio publico debe mostrar funcionalidades ofrecidas por cada plan.');
 assert(publicPlansCatalog.includes('Resumen de checkout') && publicPlansCatalog.includes('Continuar a PayPhone'), 'Checkout publico debe mostrar resumen antes de redirigir a PayPhone.');
+assert(publicPlansCatalog.includes('Checkout no disponible'), 'Landing no debe asumir transferencia manual si PayPhone falla por configuracion.');
 assert(registroWeb.includes('PlanFunctionalityList') && registroWeb.includes('Resumen de checkout'), 'Registro/checkout debe mostrar funcionalidades del plan seleccionado.');
 assert(rutasCampo.includes('fetchPlanCapabilities') && rutasCampo.includes('Canal bloqueado por plan'), 'Pantalla de rutas debe mostrar bloqueo comercial del plan.');
 assert(app.includes("'/api/pagos/cancelado'"), 'Backend debe exponer cancelacion PayPhone.');

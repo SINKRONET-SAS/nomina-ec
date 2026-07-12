@@ -30,6 +30,7 @@ describe('paymentController PayPhone gates', () => {
 
   test('bloquea checkout cuando PayPhone esta en mock', async () => {
     process.env.DIRECT_PAYMENTS_ENABLED = 'true';
+    process.env.PAYMENT_PROVIDER = 'payphone';
     process.env.PAYPHONE_MOCK_MODE = 'true';
     process.env.PAYPHONE_TOKEN = 'token-real';
     process.env.PAYPHONE_STORE_ID = 'store-1';
@@ -54,6 +55,7 @@ describe('paymentController PayPhone gates', () => {
 
   test('reporta capacidades publicas de pago junto con planes', async () => {
     process.env.DIRECT_PAYMENTS_ENABLED = 'true';
+    process.env.PAYMENT_PROVIDER = 'payphone';
     process.env.PAYPHONE_MOCK_MODE = 'false';
     process.env.PAYPHONE_TOKEN = 'token-real';
     process.env.PAYPHONE_STORE_ID = 'store-1';
@@ -73,9 +75,34 @@ describe('paymentController PayPhone gates', () => {
     });
   });
 
-  test('deshabilita pagos directos por defecto y anuncia transferencia manual', async () => {
+  test('habilita PayPhone por defecto cuando es el proveedor principal configurado', async () => {
     delete process.env.DIRECT_PAYMENTS_ENABLED;
     delete process.env.PAYPHONE_CHECKOUT_ENABLED;
+    process.env.PAYMENT_PROVIDER = 'payphone';
+    process.env.PAYPHONE_MOCK_MODE = 'false';
+    process.env.PAYPHONE_TOKEN = 'token-real';
+    process.env.PAYPHONE_STORE_ID = 'store-1';
+    process.env.BACKEND_PUBLIC_URL = 'https://api.nomina.example';
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const res = mockResponse();
+
+    await paymentController.listPublicPlans({}, res, jest.fn());
+
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      data: [],
+      paymentCapabilities: expect.objectContaining({
+        provider: 'PAYPHONE',
+        checkoutAvailable: true,
+        directPaymentsEnabled: true,
+        status: 'ready',
+      }),
+    });
+  });
+
+  test('deshabilita pagos directos con flag explicito y anuncia transferencia manual', async () => {
+    process.env.DIRECT_PAYMENTS_ENABLED = 'false';
+    process.env.PAYMENT_PROVIDER = 'payphone';
     const req = {
       body: { planId: 'PRO' },
       usuario: { tenantId: 'tenant-1', id: 'user-1' },

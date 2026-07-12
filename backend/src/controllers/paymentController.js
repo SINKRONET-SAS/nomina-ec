@@ -22,11 +22,28 @@ const {
 
 const MANUAL_BANK_PROVIDER = 'BANK_TRANSFER_MANUAL';
 const DIRECT_PAYMENTS_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'si', 'sí', 'on']);
+const DIRECT_PAYMENTS_DISABLED_VALUES = new Set(['0', 'false', 'no', 'off', 'disabled', 'manual', 'manual_transfer', 'bank_transfer']);
 const BILLING_PERIODS = new Set(['monthly', 'annual']);
 
 function normalizeBillingPeriod(value, fallback = 'monthly') {
   const normalized = String(value || fallback || 'monthly').trim().toLowerCase();
   return BILLING_PERIODS.has(normalized) ? normalized : fallback;
+}
+
+function resolvePaymentProvider() {
+  return String(process.env.PAYMENT_PROVIDER || 'payphone').trim().toLowerCase();
+}
+
+function resolveDirectPaymentsEnabled(paymentProvider = resolvePaymentProvider()) {
+  const rawFlag = process.env.DIRECT_PAYMENTS_ENABLED ?? process.env.PAYPHONE_CHECKOUT_ENABLED;
+  const normalizedFlag = String(rawFlag || '').trim().toLowerCase();
+  if (DIRECT_PAYMENTS_ENABLED_VALUES.has(normalizedFlag)) return true;
+  if (DIRECT_PAYMENTS_DISABLED_VALUES.has(normalizedFlag)) return false;
+  if (normalizedFlag) return false;
+  return paymentProvider !== 'manual'
+    && paymentProvider !== 'manual_transfer'
+    && paymentProvider !== 'bank_transfer'
+    && paymentProvider !== MANUAL_BANK_PROVIDER.toLowerCase();
 }
 
 function getPlanBillingMetadata(plan = {}) {
@@ -501,9 +518,8 @@ async function subscriptionStatus(req, res, next) {
 }
 
 function buildPaymentCapabilities() {
-  const directPaymentsEnabled = DIRECT_PAYMENTS_ENABLED_VALUES.has(
-    String(process.env.DIRECT_PAYMENTS_ENABLED || process.env.PAYPHONE_CHECKOUT_ENABLED || '').trim().toLowerCase()
-  );
+  const paymentProvider = resolvePaymentProvider();
+  const directPaymentsEnabled = resolveDirectPaymentsEnabled(paymentProvider);
   if (!directPaymentsEnabled) {
     return {
       supportsMultiple: false,
@@ -522,7 +538,6 @@ function buildPaymentCapabilities() {
     };
   }
 
-  const paymentProvider = String(process.env.PAYMENT_PROVIDER || 'payphone').trim().toLowerCase();
   if (paymentProvider === 'stripe') {
     const stripeConfigured = Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET);
     return {

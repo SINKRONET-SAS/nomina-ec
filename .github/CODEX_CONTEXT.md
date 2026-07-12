@@ -1,6 +1,32 @@
 
 ---
 
+## Closed Haiky Plan - HAIKY-PAYPHONE-CANAL-PRINCIPAL-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-PAYPHONE-CANAL-PRINCIPAL-2026 |
+| Codigo | PAY26 |
+| Estado | completed-pass |
+| Fecha | 2026-07-12 |
+| Requerimiento fuente | Revisar regresion donde landing mostraba "Los pagos directos estan deshabilitados..." aunque PayPhone debe ser el canal principal. |
+| Informe | `docs2/REGRESION_CANAL_PAGOS_PAYPHONE_2026.md` |
+
+### Reglas PAY26
+
+- `PAYMENT_PROVIDER=payphone` habilita PayPhone por defecto cuando la configuracion real esta completa.
+- Transferencia bancaria manual es contingencia explicita: `DIRECT_PAYMENTS_ENABLED=false`, `PAYPHONE_CHECKOUT_ENABLED=false` o `PAYMENT_PROVIDER=manual_transfer`.
+- Produccion Render declara `DIRECT_PAYMENTS_ENABLED=true` junto con `PAYMENT_PROVIDER=payphone`.
+- Si faltan `PAYPHONE_TOKEN`, `PAYPHONE_STORE_ID` o `BACKEND_PUBLIC_URL` HTTPS, bloquear por configuracion PayPhone; no caer silenciosamente a transferencia.
+
+### Gates PAY26
+
+- `npm.cmd --workspace=backend test -- paymentController.test.js --runInBand`
+- `npm.cmd run contracts`
+- `npm.cmd --workspace=frontend-web run build`
+
+---
+
 ## Open Haiky Plan - HAIKY-ASSETS-COMERCIAL-UIUX-2026
 
 | Campo | Valor |
