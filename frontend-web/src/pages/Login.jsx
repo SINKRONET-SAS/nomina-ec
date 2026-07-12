@@ -1,7 +1,7 @@
 // ============================================================
 // SKNOMINA - Página de login
 // ============================================================
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -12,10 +12,17 @@ function Login() {
   const [tenantRuc, setTenantRuc] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [keepSession, setKeepSession] = useState(true);
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
-  const { login } = useAuth();
+  const { cargando: cargandoSesion, login, usuario } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!cargandoSesion && usuario) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [cargandoSesion, navigate, usuario]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,7 +30,7 @@ function Login() {
     setCargando(true);
 
     try {
-      await login(email, password, tenantRuc);
+      await login(email, password, tenantRuc, '', { persistLocal: keepSession });
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || err.error || 'Error al iniciar sesión');
@@ -153,6 +160,17 @@ function Login() {
                   </button>
                 </div>
               </div>
+
+              <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-700" htmlFor="keepSession">
+                <input
+                  checked={keepSession}
+                  className="h-4 w-4 rounded border-slate-300 accent-teal-700 focus:ring-teal-600"
+                  id="keepSession"
+                  onChange={(event) => setKeepSession(event.target.checked)}
+                  type="checkbox"
+                />
+                <span>Mantener sesión iniciada en este equipo</span>
+              </label>
 
               <button type="submit" disabled={cargando} className="primary-button w-full">
                 {cargando ? 'Validando acceso...' : 'Entrar al panel'}

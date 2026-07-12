@@ -112,7 +112,7 @@ function PublicPlansCatalog() {
                 onClick={() => handleCheckout(plan.id)}
                 type="button"
               >
-                {checkoutBlocked ? 'Activación por transferencia' : loadingPlan === plan.id ? 'Abriendo checkout...' : checkoutSelected ? 'Continuar a pago' : publicPlanActionLabel(plan)}
+                {checkoutBlocked ? 'Activación por transferencia' : loadingPlan === plan.id ? 'Abriendo checkout...' : checkoutSelected ? 'Continuar a PayPhone' : publicPlanActionLabel(plan)}
                 {loadingPlan !== plan.id && <ArrowRight size={18} />}
               </button>
             </article>

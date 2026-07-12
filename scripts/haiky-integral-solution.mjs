@@ -1,10 +1,15 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
 const ROOT = process.cwd();
-const LOCK_PATH = path.join(ROOT, 'AuditLock.json');
+const LOCK_PATHS = [
+  path.join(ROOT, '.vscode', 'AuditLock.json'),
+  path.join(ROOT, '.vscode', 'AudiLock.json'),
+  path.join(ROOT, 'AuditLock.json'),
+];
+const CANONICAL_LOCK_PATH = LOCK_PATHS[0];
 
 function runCheck(name, command, args) {
   try {
@@ -27,7 +32,7 @@ function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
 }
 
-const previousLock = existsSync(LOCK_PATH) ? readFileSync(LOCK_PATH, 'utf8') : '';
+const previousLock = existsSync(CANONICAL_LOCK_PATH) ? readFileSync(CANONICAL_LOCK_PATH, 'utf8') : '';
 const checks = [
   runCheck('diagnostico_integral_js', 'node', ['scripts/haiky-integral-diagnostic.mjs']),
   runCheck('contratos_sistema', 'node', ['scripts/verify-system-contracts.mjs']),
@@ -39,7 +44,14 @@ const checks = [
 const failed = checks.filter((check) => !check.ok);
 const timestamp = new Date().toISOString();
 const lock = {
-  phaseCompleted: failed.length ? 'AISK26-integral-blocked' : 'AISK26-integral-runtime-remediation',
+  plan: 'HAIKY-AUDITORIA-INTEGRAL-NOMINA-EC-2026',
+  phaseCompleted: failed.length ? 'HAIKY-AUDITORIA-INTEGRAL-2026-blocked' : 'HAIKY-AUDITORIA-INTEGRAL-2026-05-qa-release',
+  summary: [
+    'Diagnostico integral LANDING/PWA/BACKEND/MOBILE actualizado.',
+    'SBU 2026 USD 482 reconfirmado por usuario contra pagina del Ministerio del Trabajo.',
+    'Modo mock/placeholder clasificado como senal controlada cuando existe gate y no activa funcionalidad productiva.',
+    'Persistencia de sesion en PWA/mobile queda opt-in y la limpieza de sesion movil ya no usa catch silencioso.',
+  ],
   filesModified: [
     '.github/CODEX_CONTEXT.md',
     '.github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-00-baseline.md',
@@ -48,10 +60,16 @@ const lock = {
     '.github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-03-lopdp-legal-pagos-email.md',
     '.github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-04-reportes-uiux-humanizacion.md',
     '.github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-05-qa-release.md',
-    'app-movil/app.json',
-    'backend/src/app.js',
-    'app-movil/src/screens/GastosMovilizacionScreen.js',
-    'app-movil/src/screens/RutaHoyScreen.js',
+    '.vscode/AuditLock.json',
+    '.vscode/AudiLock.json',
+    'AuditLock.json',
+    'app-movil/src/App.js',
+    'app-movil/src/screens/LoginScreen.js',
+    'app-movil/src/services/api.js',
+    'frontend-web/src/context/AuthContext.jsx',
+    'frontend-web/src/pages/Login.jsx',
+    'frontend-web/src/services/authenticatedApi.js',
+    'frontend-web/src/services/authStorage.js',
     'docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_NOMINA_EC_2026.md',
     'docs2/auditoria-integral-haiky-2026/INFORME_DIAGNOSTICO.md',
     'docs2/auditoria-integral-haiky-2026/DIAGNOSTICO_JSON.json',
@@ -65,11 +83,18 @@ const lock = {
   signature: sha256(`${previousLock}${timestamp}${JSON.stringify(checks)}`),
 };
 
-writeFileSync(LOCK_PATH, `${JSON.stringify(lock, null, 2)}\n`, 'utf8');
+for (const lockPath of LOCK_PATHS) {
+  mkdirSync(path.dirname(lockPath), { recursive: true });
+  writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`, 'utf8');
+}
 
 if (failed.length) {
   console.error(JSON.stringify({ ok: false, failed }, null, 2));
   process.exit(1);
 }
 
-console.log(JSON.stringify({ ok: true, auditLock: 'AuditLock.json', signature: lock.signature }, null, 2));
+console.log(JSON.stringify({
+  ok: true,
+  auditLocks: LOCK_PATHS.map((lockPath) => path.relative(ROOT, lockPath).replaceAll('\\', '/')),
+  signature: lock.signature,
+}, null, 2));

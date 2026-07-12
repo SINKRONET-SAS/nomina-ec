@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { API_URL } from '../services/apiBase';
+import {
+  clearStoredAuthSession,
+  getStoredAuthToken,
+  getStoredAuthUser,
+  isStoredSessionPersistent,
+  storeAuthSession,
+} from '../services/authStorage';
 
 const AuthContext = createContext(null);
 
@@ -31,32 +38,31 @@ function normalizeAuthError(data) {
 
 function readStoredUser() {
   try {
-    const raw = localStorage.getItem('usuario');
+    const raw = getStoredAuthUser();
     return raw ? normalizeUser({ usuario: JSON.parse(raw) }) : null;
   } catch (err) {
     console.error('[AUTH] No se pudo leer usuario local', {
       message: err.message,
     });
-    localStorage.removeItem('usuario');
+    clearStoredAuthSession();
     return null;
   }
 }
 
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(readStoredUser);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(getStoredAuthToken);
   const [cargando, setCargando] = useState(true);
   const refreshStarted = useRef(false);
 
   const logout = () => {
     setToken(null);
     setUsuario(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
+    clearStoredAuthSession();
     delete axios.defaults.headers.common.Authorization;
   };
 
-  const setSessionFromPayload = (payload) => {
+  const setSessionFromPayload = (payload, options = {}) => {
     const nextToken = payload?.token;
     const nextUser = normalizeUser(payload);
 
@@ -64,10 +70,20 @@ export function AuthProvider({ children }) {
       throw new Error('Respuesta de autenticación inválida.');
     }
 
+    try {
+      storeAuthSession(nextToken, nextUser, {
+        persistLocal: options.persistLocal !== false,
+      });
+    } catch (err) {
+      clearStoredAuthSession();
+      const storageError = new Error('No se pudo guardar la sesión en este equipo. Revisa la configuración de privacidad del navegador.');
+      storageError.code = 'AUTH_SESSION_STORAGE_FAILED';
+      storageError.cause = err;
+      throw storageError;
+    }
+
     setToken(nextToken);
     setUsuario(nextUser);
-    localStorage.setItem('token', nextToken);
-    localStorage.setItem('usuario', JSON.stringify(nextUser));
     axios.defaults.headers.common.Authorization = `Bearer ${nextToken}`;
     return nextUser;
   };
@@ -76,22 +92,17 @@ export function AuthProvider({ children }) {
     if (refreshStarted.current) return;
     refreshStarted.current = true;
 
-    const storedToken = localStorage.getItem('token');
+    const storedToken = getStoredAuthToken();
+    const persistLocal = isStoredSessionPersistent();
 
     if (!storedToken) {
       setCargando(false);
       return;
     }
 
-    if (window.location.pathname === '/login') {
-      logout();
-      setCargando(false);
-      return;
-    }
-
     axios.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
     axios.post(`${API_URL}/auth/refresh`, { token: storedToken })
-      .then((response) => setSessionFromPayload(response.data))
+      .then((response) => setSessionFromPayload(response.data, { persistLocal }))
       .catch((err) => {
         console.error('[AUTH] No se pudo refrescar sesión', {
           code: err?.response?.data?.error || 'AUTH_REFRESH_FAILED',
@@ -102,7 +113,7 @@ export function AuthProvider({ children }) {
       .finally(() => setCargando(false));
   }, []);
 
-  const login = async (email, password, tenantRuc = '', tenantId = '') => {
+  const login = async (email, password, tenantRuc = '', tenantId = '', options = {}) => {
     try {
       const payload = { email, password };
       if (String(tenantRuc || '').trim()) {
@@ -112,9 +123,14 @@ export function AuthProvider({ children }) {
         payload.tenantId = String(tenantId).trim();
       }
       const response = await axios.post(`${API_URL}/auth/login`, payload);
-      setSessionFromPayload(response.data);
+      setSessionFromPayload(response.data, {
+        persistLocal: options.persistLocal !== false,
+      });
       return response.data;
     } catch (err) {
+      if (err.code === 'AUTH_SESSION_STORAGE_FAILED') {
+        throw err;
+      }
       throw normalizeAuthError(err.response?.data || {
         error: 'Error de conexión',
         message: 'No se pudo conectar con SKNOMINA.',

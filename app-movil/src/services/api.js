@@ -1,6 +1,16 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
+let memoryAuthToken = null;
+
+export function setMemoryAuthToken(token) {
+  memoryAuthToken = String(token || '').trim() || null;
+}
+
+export function clearMemoryAuthToken() {
+  memoryAuthToken = null;
+}
+
 const DEFAULT_API_URL = 'https://api.sknomina.com/api';
 
 function normalizeApiUrl(url) {
@@ -16,7 +26,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync('token');
+  const token = memoryAuthToken || await SecureStore.getItemAsync('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -27,6 +37,7 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
+      clearMemoryAuthToken();
       await SecureStore.deleteItemAsync('token');
     }
     return Promise.reject(error);

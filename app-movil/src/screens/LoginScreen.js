@@ -85,6 +85,9 @@ function PasswordInput({ label, value, onChangeText, placeholder, returnKeyType,
 function ConsentRow({ checked, label, onPress }) {
   return (
     <TouchableOpacity
+      accessibilityLabel={label}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
       activeOpacity={0.85}
       onPress={onPress}
       style={[styles.consentRow, checked && styles.consentRowOn]}
@@ -100,6 +103,7 @@ export default function LoginScreen({ onLogin }) {
   const [email, setEmail] = useState('');
   const [tenantRuc, setTenantRuc] = useState('');
   const [password, setPassword] = useState('');
+  const [keepSession, setKeepSession] = useState(true);
   const [resetCode, setResetCode] = useState('');
   const [activation, setActivation] = useState(initialActivation);
   const [loading, setLoading] = useState(false);
@@ -164,7 +168,7 @@ export default function LoginScreen({ onLogin }) {
       if (!token) {
         throw new Error('El backend autenticó la solicitud pero no devolvió token.');
       }
-      await onLogin(token, response.data);
+      await onLogin(token, response.data, { persistLocal: keepSession });
     } catch (err) {
       Alert.alert('No se pudo iniciar sesión', getErrorMessage(err, 'Credenciales inválidas.'));
     } finally {
@@ -328,6 +332,11 @@ export default function LoginScreen({ onLogin }) {
               placeholder="Clave"
               returnKeyType="go"
               value={password}
+            />
+            <ConsentRow
+              checked={keepSession}
+              label="Mantener sesión en este equipo"
+              onPress={() => setKeepSession((current) => !current)}
             />
             <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleLogin} disabled={loading}>
               <Text style={styles.buttonText}>{loading ? 'Ingresando...' : 'Ingresar'}</Text>

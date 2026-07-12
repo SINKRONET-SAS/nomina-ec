@@ -18,7 +18,12 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { initMovilizacionDB } from './db/movilizacion';
 import { initOfflineQueue, processQueue } from './db/offline-queue';
 import { initRouteCache } from './db/route-cache';
-import { API_URL, mobileAPI } from './services/api';
+import {
+  API_URL,
+  clearMemoryAuthToken,
+  mobileAPI,
+  setMemoryAuthToken,
+} from './services/api';
 
 const storedUserKey = 'mobileUser';
 const operationalAdminRoles = ['owner', 'admin_rrhh', 'supervisor'];
@@ -117,6 +122,7 @@ export default function App() {
   const [cargandoPerfil, setCargandoPerfil] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [isOnline, setIsOnline] = useState(true);
+  const [sessionPersisted, setSessionPersisted] = useState(false);
 
   useEffect(() => {
     cargarToken();
@@ -177,6 +183,8 @@ export default function App() {
       if (storedUser) {
         setAuthUser(JSON.parse(storedUser));
       }
+      setMemoryAuthToken(storedToken);
+      setSessionPersisted(Boolean(storedToken));
       setToken(storedToken);
     } catch (err) {
       console.error('[MOBILE] No se pudo cargar la sesión local', {
@@ -202,7 +210,9 @@ export default function App() {
       setMobileProfile(nextProfile);
       if (nextProfile.user) {
         setAuthUser(nextProfile.user);
-        await SecureStore.setItemAsync(storedUserKey, JSON.stringify(nextProfile.user));
+        if (sessionPersisted) {
+          await SecureStore.setItemAsync(storedUserKey, JSON.stringify(nextProfile.user));
+        }
       }
     } catch (err) {
       const role = fallbackUser?.rol;
@@ -232,15 +242,52 @@ export default function App() {
     }
   }, [token]);
 
-  const handleLogin = async (newToken, payload = {}) => {
+  const handleLogin = async (newToken, payload = {}, options = {}) => {
     if (!newToken || typeof newToken !== 'string') {
       throw new Error('La respuesta de autenticación no incluyó un token válido.');
     }
     setCargandoPerfil(true);
     const nextUser = payload?.usuario || payload?.user || null;
-    await SecureStore.setItemAsync('token', newToken);
+    const persistLocal = options.persistLocal !== false;
+    try {
+      if (persistLocal) {
+        await SecureStore.setItemAsync('token', newToken);
+        if (nextUser) {
+          await SecureStore.setItemAsync(storedUserKey, JSON.stringify(nextUser));
+        } else {
+          await SecureStore.deleteItemAsync(storedUserKey);
+        }
+      } else {
+        await SecureStore.deleteItemAsync('token');
+        await SecureStore.deleteItemAsync(storedUserKey);
+      }
+    } catch (err) {
+      clearMemoryAuthToken();
+      setCargandoPerfil(false);
+      setSessionPersisted(false);
+      for (const key of ['token', storedUserKey]) {
+        try {
+          await SecureStore.deleteItemAsync(key);
+        } catch (cleanupErr) {
+          console.error('[MOBILE] No se pudo limpiar la sesion local tras fallo de almacenamiento', {
+            code: 'SESSION_CLEANUP_FAILED',
+            statusCode: 500,
+            correlationId: 'mobile-login-storage',
+            userId: null,
+            key,
+            message: cleanupErr.message,
+          });
+        }
+      }
+      const storageError = new Error('No se pudo guardar la sesión local. Intenta nuevamente.');
+      storageError.code = 'SESSION_PERSIST_FAILED';
+      storageError.cause = err;
+      throw storageError;
+    }
+
+    setMemoryAuthToken(newToken);
+    setSessionPersisted(persistLocal);
     if (nextUser) {
-      await SecureStore.setItemAsync(storedUserKey, JSON.stringify(nextUser));
       setAuthUser(nextUser);
     }
     setToken(newToken);
@@ -249,6 +296,8 @@ export default function App() {
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync('token');
     await SecureStore.deleteItemAsync(storedUserKey);
+    clearMemoryAuthToken();
+    setSessionPersisted(false);
     setToken(null);
     setAuthUser(null);
     setMobileProfile(null);

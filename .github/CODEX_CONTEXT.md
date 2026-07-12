@@ -1,6 +1,47 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-NOMINA-EC-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-AUDITORIA-INTEGRAL-NOMINA-EC-2026 |
+| Codigo | HAIKY26 |
+| Estado | completed-pass |
+| Fecha | 2026-07-12 |
+| Requerimiento fuente | Auditoria integral LANDING, PWA, BACKEND y MOBILE; humanizacion, chunking, churn, ortografia, UTF-8, duplicados, codigo muerto, bugs, tablero, homologacion, legal Ecuador 2026, candidatos a eliminacion, scripts JS, prompts, AuditLock, commit y push. |
+| Plan doc | `docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_NOMINA_EC_2026.md` |
+| Informe | `docs2/auditoria-integral-haiky-2026/INFORME_DIAGNOSTICO.md` |
+| Diagnostico JSON | `docs2/auditoria-integral-haiky-2026/DIAGNOSTICO_JSON.json` |
+| Prompts | `.github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-{00..05}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` y `.vscode/AudiLock.json` |
+
+### Reconfirmacion HAIKY26
+
+- SBU Ecuador 2026 queda en USD 482; usuario valida el dato en la pagina del Ministerio del Trabajo. No cambiar sin fuente oficial vigente o aprobacion explicita.
+- Alcance juridico, laboral y tributario: Ecuador exclusivamente; Colombia queda fuera de alcance.
+- SRI facturacion electronica se trata como integracion fail-closed: firma electronica, autorizacion/validacion SRI, ambiente y facturador externo son dependencias productivas.
+- Proteccion de datos personales tiene controles implementados (consentimiento, exportacion, purga, privacidad, GPS/foto), pero exige revision juridica final antes de despliegue comercial amplio.
+- Senales `mock`/placeholder en PayPhone, storage y resultado de pago se clasifican como controladas cuando no activan funcionalidad productiva.
+
+### Runtime HAIKY26
+
+- `app-movil/src/App.js` elimina `catch(() => {})` en limpieza de sesion y registra errores estructurados.
+- Cambios locales de sesion PWA/mobile se preservan: `authStorage`, login PWA, login mobile, API mobile y cliente autenticado.
+- `scripts/haiky-integral-diagnostic.mjs` clasifica hallazgos, senales controladas y vigencia legal.
+- `scripts/haiky-integral-solution.mjs` ejecuta diagnostico, contratos, mobile readiness, anti silent failures, UTF-8 y escribe AuditLock canonico/espejo.
+
+### Gates HAIKY26
+
+- `npm.cmd run audit:integral`
+- `npm.cmd run haiky:solution`
+- `npm.cmd run validate` (PASS: contratos, Prisma, backend 52 suites/296 tests y build PWA)
+- `git diff --check` (PASS; solo avisos LF/CRLF esperados en Windows)
+
+Reglas: aplicar `RULES.md`, no reportar falsos positivos sin evidencia, no eliminar codigo sin probar imports/rutas/tests, y no desplegar si los gates detectan regresion.
+
+---
+
 ## Open Haiky Plan - HAIKY-USUARIOS-ROLES-RBAC-MODULAR-SKNOMINA-2026
 
 | Campo | Valor |

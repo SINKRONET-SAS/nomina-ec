@@ -1,131 +1,65 @@
 {
-  "schemaVersion": 1,
-  "plan": "HAIKY-HUMANIZACION-SINTESIS-PWA-2026",
-  "planCode": "HU26",
-  "status": "completed-pass",
-  "phaseCompleted": "HU26-06",
-  "currentPhase": "HU26-06",
-  "updatedAt": "2026-07-09T07:52:52-05:00",
-  "rulesSource": "RULES.md",
-  "precedent": {
-    "plan": "HAIKY-HUMANIZACION-SINTESIS-PWA-2026",
-    "planCode": "HU26",
-    "status": "HU26-00 a HU26-04 completadas en primera pasada"
-  },
-  "summary": "HU26 segunda pasada cerrada: SKNOMINA queda expresado como SaaS y no como parte contractual laboral; las plantillas legales atribuyen obligaciones a EL EMPLEADOR y EL TRABAJADOR; terminos y condiciones refuerzan responsabilidad legal del cliente; la UI reemplaza owner/fundador/Superadmin visibles por Administrador principal y Soporte global.",
+  "plan": "HAIKY-AUDITORIA-INTEGRAL-NOMINA-EC-2026",
+  "phaseCompleted": "HAIKY-AUDITORIA-INTEGRAL-2026-05-qa-release",
+  "summary": [
+    "Diagnostico integral LANDING/PWA/BACKEND/MOBILE actualizado.",
+    "SBU 2026 USD 482 reconfirmado por usuario contra pagina del Ministerio del Trabajo.",
+    "Modo mock/placeholder clasificado como senal controlada cuando existe gate y no activa funcionalidad productiva.",
+    "Persistencia de sesion en PWA/mobile queda opt-in y la limpieza de sesion movil ya no usa catch silencioso."
+  ],
   "filesModified": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/HU26-05-saas-contratos-roles.md",
-    ".github/prompts/HU26-06-qa-release-saas.md",
+    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-00-baseline.md",
+    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-01-zero-silent-failures.md",
+    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-02-movilizacion-sqlite-cierre.md",
+    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-03-lopdp-legal-pagos-email.md",
+    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-04-reportes-uiux-humanizacion.md",
+    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-2026-05-qa-release.md",
     ".vscode/AuditLock.json",
-    "backend/src/templates/legal/contracts/contrato_a_destajo.json",
-    "backend/src/templates/legal/contracts/contrato_aprendizaje.json",
-    "backend/src/templates/legal/contracts/contrato_emprendimiento.json",
-    "backend/src/templates/legal/contracts/contrato_especial_emergente.json",
-    "backend/src/templates/legal/contracts/contrato_eventual.json",
-    "backend/src/templates/legal/contracts/contrato_indefinido_general.json",
-    "backend/src/templates/legal/contracts/contrato_indefinido_mercaderista_prueba.json",
-    "backend/src/templates/legal/contracts/contrato_jornada_parcial_permanente.json",
-    "backend/src/templates/legal/contracts/contrato_obra_cierta.json",
-    "backend/src/templates/legal/contracts/contrato_obra_servicio_giro_negocio.json",
-    "backend/src/templates/legal/contracts/contrato_ocasional.json",
-    "backend/src/templates/legal/contracts/contrato_por_tarea.json",
-    "backend/src/templates/legal/contracts/contrato_temporada.json",
-    "backend/src/templates/legal/contracts/contrato_trabajo_juvenil.json",
-    "backend/src/templates/legal/contracts/contrato_turistico_cultural_creativo.json",
-    "docs2/PLAN_HAIKY_HUMANIZACION_SINTESIS_PWA_2026.md",
-    "docs2/humanizacion-sintesis-pwa-2026/INFORME_DIAGNOSTICO_HU26.md",
-    "frontend-web/src/components/Layout/Layout.jsx",
-    "frontend-web/src/components/ModulePermissionMatrix.jsx",
-    "frontend-web/src/pages/AyudaUsuario.jsx",
-    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-    "frontend-web/src/pages/Configuracion/parametrizacion/IncomeTaxTableFields.jsx",
-    "frontend-web/src/pages/Configuracion/parametrizacion/parametrizacionModel.jsx",
-    "frontend-web/src/pages/LegalText.jsx",
-    "frontend-web/src/pages/PlanesGestion.jsx",
-    "frontend-web/src/pages/Register.jsx",
-    "frontend-web/src/pages/Superadmin.jsx",
-    "frontend-web/src/utils/access.js"
-  ],
-  "fases": [
-    {
-      "phase": "HU26-00",
-      "status": "completed",
-      "detail": "Baseline de pantallas PWA con ruido textual, jerga de desarrollo y microcopy extensa."
-    },
-    {
-      "phase": "HU26-01",
-      "status": "completed",
-      "detail": "Avisos compactos reutilizables mediante CompactNotice."
-    },
-    {
-      "phase": "HU26-02",
-      "status": "completed",
-      "detail": "Documentos, reportes, pagos bancarios y comunicaciones sintetizados."
-    },
-    {
-      "phase": "HU26-03",
-      "status": "completed",
-      "detail": "Ficha de trabajador, pagos y menu de nomina humanizados."
-    },
-    {
-      "phase": "HU26-04",
-      "status": "completed-pass",
-      "detail": "Primera pasada validada y publicada."
-    },
-    {
-      "phase": "HU26-05",
-      "status": "completed",
-      "detail": "Contratos, terminos SaaS y etiquetas de roles visibles corregidas."
-    },
-    {
-      "phase": "HU26-06",
-      "status": "completed-pass",
-      "detail": "QA release SaaS con build, pruebas, contratos, diff check, UTF-8 y busquedas anti-regresion."
-    }
+    ".vscode/AudiLock.json",
+    "AuditLock.json",
+    "app-movil/src/App.js",
+    "app-movil/src/screens/LoginScreen.js",
+    "app-movil/src/services/api.js",
+    "frontend-web/src/context/AuthContext.jsx",
+    "frontend-web/src/pages/Login.jsx",
+    "frontend-web/src/services/authenticatedApi.js",
+    "frontend-web/src/services/authStorage.js",
+    "docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_NOMINA_EC_2026.md",
+    "docs2/auditoria-integral-haiky-2026/INFORME_DIAGNOSTICO.md",
+    "docs2/auditoria-integral-haiky-2026/DIAGNOSTICO_JSON.json",
+    "docs2/auditoria-integral-haiky-2026/DIAGNOSTICO_AUTOMATIZADO.md",
+    "scripts/haiky-integral-diagnostic.mjs",
+    "scripts/haiky-integral-solution.mjs",
+    "scripts/verify-system-contracts.mjs"
   ],
   "validationChecks": [
     {
-      "gate": "Parse JSON backend/src/templates/legal/contracts/*.json",
-      "result": "PASS"
+      "name": "diagnostico_integral_js",
+      "ok": true,
+      "output": "{\n  \"ok\": true,\n  \"outDir\": \"docs2/auditoria-integral-haiky-2026\",\n  \"filesScanned\": 876,\n  \"findingSummary\": {}\n}"
     },
     {
-      "gate": "rg SKNOMINA backend/src/templates/legal/contracts",
-      "result": "PASS: sin coincidencias"
+      "name": "contratos_sistema",
+      "ok": true,
+      "output": "[CONTRACTS] OK: frontend, backend, Prisma y reportes mantienen contrato de sistema unico."
     },
     {
-      "gate": "rg Owner/owner/fundador/Superadmin visible en frontend",
-      "result": "PASS: coincidencias restantes son identificadores tecnicos, nombres de funciones o variables"
+      "name": "mobile_store_readiness",
+      "ok": true,
+      "output": "> sknomina-system@1.0.0 check:mobile\n> npm --workspace=app-movil run check:stores\n\n\n> sknomina-app@1.0.0 check:stores\n> node scripts/check-store-readiness.mjs\n\n[LPA26-STORES] Configuracion, identificadores, URLs y assets de tienda verificados."
     },
     {
-      "gate": "npm.cmd --workspace=backend test -- templateGenerator.test.js --runInBand",
-      "result": "PASS: 1 suite, 6 tests"
+      "name": "sin_catch_silencioso_runtime",
+      "ok": true,
+      "output": ""
     },
     {
-      "gate": "npm.cmd run contracts",
-      "result": "PASS"
-    },
-    {
-      "gate": "npm.cmd --workspace=frontend-web run build",
-      "result": "PASS"
-    },
-    {
-      "gate": "git diff --check",
-      "result": "PASS"
-    },
-    {
-      "gate": "UTF-8 sin BOM en archivos modificados y nuevos",
-      "result": "PASS"
+      "name": "utf8_runtime",
+      "ok": true,
+      "output": ""
     }
   ],
-  "riskControls": [
-    "No se renombraron roles tecnicos owner/superadmin en API, RBAC ni persistencia.",
-    "SKNOMINA no aparece en plantillas contractuales como empleador, representante, asesor, intermediario o parte laboral.",
-    "Terminos de servicio explican que la empresa contratante valida datos, parametros, documentos, registros oficiales y cumplimiento legal.",
-    "Las plantillas y calculos quedan presentados como herramientas SaaS de apoyo, no como asesoria legal, laboral, tributaria o contable.",
-    "El cierre no modifica contratos publicos de API ni migraciones."
-  ],
-  "previousAuditLockHash": "FBDA9A946B2D008B654B285C12878D78743D32EBC88599A06E98DF5C2530EF67",
-  "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "A7DAB5A88778D9BCADA5642ABA92AA51CD696E24FF843A70A945688B6EB73DAE"
+  "timestamp": "2026-07-12T04:09:51.236Z",
+  "signature": "075c15ce37bcec213431cf264d164ab4c4acef3db46706539751245a1b06d770"
 }

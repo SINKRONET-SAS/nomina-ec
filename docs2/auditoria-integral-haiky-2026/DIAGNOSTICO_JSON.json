@@ -1,9 +1,16 @@
 {
-  "generatedAt": "2026-07-07T18:49:38.073Z",
+  "generatedAt": "2026-07-12T04:09:47.366Z",
   "repository": "SINKRONET-SAS/nomina-ec",
   "rulesSource": "RULES.md",
-  "filesScanned": 813,
-  "runtimeFilesScanned": 246,
+  "filesScanned": 876,
+  "runtimeFilesScanned": 274,
+  "legalScope": {
+    "country": "Ecuador",
+    "excludedCountries": [
+      "Colombia"
+    ],
+    "note": "La auditoria legal, laboral, tributaria y de proteccion de datos personales aplica solo a Ecuador."
+  },
   "confirmedCapabilities": [
     {
       "capability": "SQLite movilizacion local",
@@ -54,87 +61,143 @@
       ]
     }
   ],
-  "findingSummary": {
-    "funcionalidad_simulada_runtime": 11
-  },
-  "findings": [
+  "legalStatus": [
+    {
+      "domain": "Laboral Ecuador 2026",
+      "status": "validado_operativamente",
+      "evidence": [
+        "backend/src/config/legal-ecuador.js define unifiedBaseSalary = 482 para 2026",
+        "Usuario reconfirma SBU 2026 USD 482 en pagina del Ministerio del Trabajo de Ecuador",
+        "Portal oficial MDT expone servicio Salarios: https://salarios.trabajo.gob.ec/"
+      ],
+      "control": "No cambiar SBU 2026 sin fuente oficial vigente o aprobacion explicita del usuario."
+    },
+    {
+      "domain": "Facturacion electronica Ecuador",
+      "status": "controlado_por_integracion",
+      "evidence": [
+        "backend/src/services/fiscalInvoiceService.js",
+        "frontend-web/src/pages/Facturacion/FacturacionElectronica.jsx",
+        "SRI: https://www.sri.gob.ec/facturacion-electronica"
+      ],
+      "control": "Mantener emision fail-closed si faltan firma electronica, ambiente, autorizacion SRI o facturador externo configurado."
+    },
+    {
+      "domain": "Proteccion de datos personales Ecuador",
+      "status": "controles_implementados",
+      "evidence": [
+        "backend/src/services/privacyConsentService.js",
+        "backend/src/services/userDataExportService.js",
+        "backend/src/services/userDataPurgeService.js",
+        "frontend-web/src/pages/Configuracion/PrivacidadCuenta.jsx",
+        "app-movil/src/screens/MarcacionScreen.js"
+      ],
+      "control": "Requiere revision juridica final de avisos, encargados, transferencias, retencion y contratos antes de salida comercial amplia."
+    }
+  ],
+  "controlledSignals": [
     {
       "type": "funcionalidad_simulada_runtime",
       "severity": "media",
       "file": "backend/src/config/s3.js",
       "line": 30,
-      "evidence": "mock"
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "Placeholder de almacenamiento para desarrollo; produccion inicial documentada usa STORAGE_DRIVER=local o proveedor real configurado.",
+      "guard": "No habilitar S3/R2 productivo sin credenciales reales, bucket y validacion de descarga por backend."
     },
     {
       "type": "funcionalidad_simulada_runtime",
       "severity": "media",
       "file": "backend/src/controllers/paymentController.js",
-      "line": 383,
-      "evidence": "mock"
+      "line": 571,
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "Modo PayPhone de pruebas/dev; las activaciones productivas dependen de webhook/confirmacion firmada y pruebas gateway.",
+      "guard": "Mantener PAYPHONE_MOCK_MODE fuera de produccion real y bloquear aprobacion de plan sin confirmacion verificable."
     },
     {
       "type": "funcionalidad_simulada_runtime",
       "severity": "media",
       "file": "backend/src/controllers/paymentController.js",
-      "line": 507,
-      "evidence": "mock"
+      "line": 699,
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "Modo PayPhone de pruebas/dev; las activaciones productivas dependen de webhook/confirmacion firmada y pruebas gateway.",
+      "guard": "Mantener PAYPHONE_MOCK_MODE fuera de produccion real y bloquear aprobacion de plan sin confirmacion verificable."
     },
     {
       "type": "funcionalidad_simulada_runtime",
       "severity": "media",
       "file": "backend/src/controllers/paymentController.js",
-      "line": 507,
-      "evidence": "mock"
+      "line": 699,
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "Modo PayPhone de pruebas/dev; las activaciones productivas dependen de webhook/confirmacion firmada y pruebas gateway.",
+      "guard": "Mantener PAYPHONE_MOCK_MODE fuera de produccion real y bloquear aprobacion de plan sin confirmacion verificable."
     },
     {
       "type": "funcionalidad_simulada_runtime",
       "severity": "media",
       "file": "backend/src/controllers/paymentController.js",
-      "line": 510,
-      "evidence": "mock"
+      "line": 702,
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "Modo PayPhone de pruebas/dev; las activaciones productivas dependen de webhook/confirmacion firmada y pruebas gateway.",
+      "guard": "Mantener PAYPHONE_MOCK_MODE fuera de produccion real y bloquear aprobacion de plan sin confirmacion verificable."
     },
     {
       "type": "funcionalidad_simulada_runtime",
       "severity": "media",
       "file": "backend/src/controllers/paymentController.js",
-      "line": 511,
-      "evidence": "mock"
+      "line": 703,
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "Modo PayPhone de pruebas/dev; las activaciones productivas dependen de webhook/confirmacion firmada y pruebas gateway.",
+      "guard": "Mantener PAYPHONE_MOCK_MODE fuera de produccion real y bloquear aprobacion de plan sin confirmacion verificable."
     },
     {
       "type": "funcionalidad_simulada_runtime",
       "severity": "media",
       "file": "frontend-web/src/pages/PaymentResult.jsx",
       "line": 9,
-      "evidence": "mock"
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "Pantalla muestra pago pendiente de confirmacion cuando llega una referencia de prueba; no concede plan ni marca cobro exitoso.",
+      "guard": "No convertir el estado pendiente en exito sin consulta backend y comprobante firmado."
     },
     {
       "type": "funcionalidad_simulada_runtime",
       "severity": "media",
       "file": "frontend-web/src/pages/PaymentResult.jsx",
       "line": 9,
-      "evidence": "mock"
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "Pantalla muestra pago pendiente de confirmacion cuando llega una referencia de prueba; no concede plan ni marca cobro exitoso.",
+      "guard": "No convertir el estado pendiente en exito sin consulta backend y comprobante firmado."
     },
     {
       "type": "funcionalidad_simulada_runtime",
       "severity": "media",
       "file": "frontend-web/src/pages/PaymentResult.jsx",
       "line": 19,
-      "evidence": "mock"
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "Pantalla muestra pago pendiente de confirmacion cuando llega una referencia de prueba; no concede plan ni marca cobro exitoso.",
+      "guard": "No convertir el estado pendiente en exito sin consulta backend y comprobante firmado."
     },
     {
       "type": "funcionalidad_simulada_runtime",
       "severity": "media",
       "file": "frontend-web/src/pages/PaymentResult.jsx",
       "line": 26,
-      "evidence": "mock"
-    },
-    {
-      "type": "funcionalidad_simulada_runtime",
-      "severity": "media",
-      "file": "frontend-web/src/pages/PaymentResult.jsx",
-      "line": 28,
-      "evidence": "mock"
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "Pantalla muestra pago pendiente de confirmacion cuando llega una referencia de prueba; no concede plan ni marca cobro exitoso.",
+      "guard": "No convertir el estado pendiente en exito sin consulta backend y comprobante firmado."
     }
   ],
-  "evidenceHash": "5d0145b1e7d6bf66944a569a3811fd18c95251a10d9eefc91feb0d757f883a56"
+  "findingSummary": {},
+  "findings": [],
+  "evidenceHash": "cedccb45e947cce33b81fc7c340389415dd5620afbace75f43c3317cf1921293"
 }

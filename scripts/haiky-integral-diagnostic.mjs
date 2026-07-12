@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();
@@ -63,6 +63,37 @@ function scanPattern(files, pattern, type, severity) {
   return findings;
 }
 
+function classifyRuntimeSignal(finding) {
+  const knownSignals = [
+    {
+      file: 'backend/src/config/s3.js',
+      status: 'controlado',
+      reason: 'Placeholder de almacenamiento para desarrollo; produccion inicial documentada usa STORAGE_DRIVER=local o proveedor real configurado.',
+      guard: 'No habilitar S3/R2 productivo sin credenciales reales, bucket y validacion de descarga por backend.',
+    },
+    {
+      file: 'backend/src/controllers/paymentController.js',
+      status: 'controlado',
+      reason: 'Modo PayPhone de pruebas/dev; las activaciones productivas dependen de webhook/confirmacion firmada y pruebas gateway.',
+      guard: 'Mantener PAYPHONE_MOCK_MODE fuera de produccion real y bloquear aprobacion de plan sin confirmacion verificable.',
+    },
+    {
+      file: 'frontend-web/src/pages/PaymentResult.jsx',
+      status: 'controlado',
+      reason: 'Pantalla muestra pago pendiente de confirmacion cuando llega una referencia de prueba; no concede plan ni marca cobro exitoso.',
+      guard: 'No convertir el estado pendiente en exito sin consulta backend y comprobante firmado.',
+    },
+  ];
+  return {
+    ...finding,
+    ...(knownSignals.find((signal) => signal.file === finding.file) || {
+      status: 'requiere_revision',
+      reason: 'La señal puede representar funcionalidad simulada o deuda de UX/runtime; requiere evidencia manual antes de eliminar.',
+      guard: 'Confirmar contrato, flujo y test antes de remover o renombrar.',
+    }),
+  };
+}
+
 function hasFile(relativePath) {
   return existsSync(path.join(ROOT, relativePath));
 }
@@ -105,10 +136,13 @@ const todoFindings = scanPattern(
 
 const simulatedRuntimeFindings = scanPattern(
   appRuntimeFiles,
-  /\b(mock|simulad[oa]|fictici[oa]|coming soon|proximamente|pr[oó]ximamente)\b/gi,
+  /\b(mock|simulad[oa]|fictici[oa]|coming soon|proximamente|pr[o\u00f3]ximamente)\b/gi,
   'funcionalidad_simulada_runtime',
   'media'
 );
+
+const runtimeSignals = simulatedRuntimeFindings.map(classifyRuntimeSignal);
+const uncontrolledRuntimeSignals = runtimeSignals.filter((signal) => signal.status !== 'controlado');
 
 const confirmedCapabilities = [
   {
@@ -143,11 +177,52 @@ const confirmedCapabilities = [
   },
 ];
 
+const legalStatus = [
+  {
+    domain: 'Laboral Ecuador 2026',
+    status: 'validado_operativamente',
+    evidence: [
+      'backend/src/config/legal-ecuador.js define unifiedBaseSalary = 482 para 2026',
+      'Usuario reconfirma SBU 2026 USD 482 en pagina del Ministerio del Trabajo de Ecuador',
+      'Portal oficial MDT expone servicio Salarios: https://salarios.trabajo.gob.ec/',
+    ],
+    control: 'No cambiar SBU 2026 sin fuente oficial vigente o aprobacion explicita del usuario.',
+  },
+  {
+    domain: 'Facturacion electronica Ecuador',
+    status: 'controlado_por_integracion',
+    evidence: [
+      'backend/src/services/fiscalInvoiceService.js',
+      'frontend-web/src/pages/Facturacion/FacturacionElectronica.jsx',
+      'SRI: https://www.sri.gob.ec/facturacion-electronica',
+    ],
+    control: 'Mantener emision fail-closed si faltan firma electronica, ambiente, autorizacion SRI o facturador externo configurado.',
+  },
+  {
+    domain: 'Proteccion de datos personales Ecuador',
+    status: 'controles_implementados',
+    evidence: [
+      'backend/src/services/privacyConsentService.js',
+      'backend/src/services/userDataExportService.js',
+      'backend/src/services/userDataPurgeService.js',
+      'frontend-web/src/pages/Configuracion/PrivacidadCuenta.jsx',
+      'app-movil/src/screens/MarcacionScreen.js',
+    ],
+    control: 'Requiere revision juridica final de avisos, encargados, transferencias, retencion y contratos antes de salida comercial amplia.',
+  },
+];
+
+const legalScope = {
+  country: 'Ecuador',
+  excludedCountries: ['Colombia'],
+  note: 'La auditoria legal, laboral, tributaria y de proteccion de datos personales aplica solo a Ecuador.',
+};
+
 const findings = [
   ...silentCatchFindings,
   ...mojibakeFindings,
   ...todoFindings,
-  ...simulatedRuntimeFindings,
+  ...uncontrolledRuntimeSignals,
 ];
 
 const report = {
@@ -156,13 +231,16 @@ const report = {
   rulesSource: 'RULES.md',
   filesScanned: allFiles.length,
   runtimeFilesScanned: runtimeFiles.length,
+  legalScope,
   confirmedCapabilities,
+  legalStatus,
+  controlledSignals: runtimeSignals.filter((signal) => signal.status === 'controlado'),
   findingSummary: findings.reduce((acc, finding) => {
     acc[finding.type] = (acc[finding.type] || 0) + 1;
     return acc;
   }, {}),
   findings,
-  evidenceHash: sha256(JSON.stringify({ confirmedCapabilities, findings })),
+  evidenceHash: sha256(JSON.stringify({ legalScope, confirmedCapabilities, legalStatus, runtimeSignals, findings })),
 };
 
 mkdirSync(OUT_DIR, { recursive: true });
@@ -178,6 +256,20 @@ const markdown = [
   '## Capacidades confirmadas',
   '',
   ...confirmedCapabilities.map((item) => `- ${item.capability}: ${item.status} (${item.evidence.join(', ')})`),
+  '',
+  '## Alcance juridico',
+  '',
+  `- Pais aplicable: ${legalScope.country}.`,
+  `- Paises excluidos: ${legalScope.excludedCountries.join(', ')}.`,
+  `- Nota: ${legalScope.note}`,
+  '',
+  '## Vigencia legal 2026',
+  '',
+  ...legalStatus.map((item) => `- ${item.domain}: ${item.status}. Control: ${item.control}`),
+  '',
+  '## Senales controladas',
+  '',
+  ...report.controlledSignals.map((signal) => `- ${signal.file}:${signal.line} ${signal.evidence} => ${signal.status}. ${signal.reason}`),
   '',
   '## Hallazgos automatizados',
   '',

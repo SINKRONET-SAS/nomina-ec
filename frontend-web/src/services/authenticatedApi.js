@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { API_URL } from './apiBase';
 import { sanitizeApiErrorMessage } from './publicApi';
+import { clearStoredAuthSession, getStoredAuthToken } from './authStorage';
 
 export const authenticatedApi = axios.create({
   baseURL: API_URL,
@@ -8,7 +9,7 @@ export const authenticatedApi = axios.create({
 });
 
 authenticatedApi.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = getStoredAuthToken();
 
   if (token) {
     config.headers = config.headers || {};
@@ -38,8 +39,7 @@ authenticatedApi.interceptors.response.use(
     const sessionRejected = status === 401 || (status === 403 && ['TOKEN_INVALIDO', 'TOKEN_EXPIRADO'].includes(errorCode));
 
     if (sessionRejected) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('usuario');
+      clearStoredAuthSession();
       if (window.location.pathname !== '/login') {
         window.dispatchEvent(new CustomEvent('nomina-auth-expired'));
         window.location.assign('/login');
