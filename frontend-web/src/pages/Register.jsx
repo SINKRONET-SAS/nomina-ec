@@ -246,15 +246,14 @@ function Register() {
                   <div className="text-right">
                     <p className="text-xl font-semibold text-slate-950">{formatPublicPlanPrice(selectedPlan)}</p>
                     {selectedPricing.hasPrice && (
-                      <p className="mt-1 text-xs leading-5 text-slate-500">{selectedPricing.primaryTotalLabel}</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">{selectedPricing.monthlyTotalShortLabel}</p>
                     )}
                   </div>
                 </div>
                 {selectedPricing.hasPrice && (
-                  <div className="mt-3 grid gap-2 text-xs leading-5 text-slate-600 sm:grid-cols-3">
-                    <span>{selectedPricing.annualBaseLabel}</span>
-                    <span>{selectedPricing.monthlyBaseLabel}</span>
-                    <span>{selectedPricing.rateLabel}</span>
+                  <div className="mt-3 grid gap-2 text-xs leading-5 text-slate-600 sm:grid-cols-2">
+                    <span>{selectedPricing.annualTotalShortLabel}</span>
+                    {selectedPricing.rateDisclosure && <span>{selectedPricing.calculationLabel}</span>}
                   </div>
                 )}
                 <div className="mt-4">

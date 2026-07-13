@@ -47,6 +47,34 @@ function normalizeNominalAnnualRate(value, fallback = 0) {
   return Math.round(parsed * 100) / 100;
 }
 
+function normalizeOptionalCents(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = Math.round(Number(value) || 0);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function monthlyRateFromNominalAnnual(ratePercent) {
+  return normalizeNominalAnnualRate(ratePercent) / 100 / 12;
+}
+
+function computeMonthlyInstallmentFromAnnual(annualCents, ratePercent, installments) {
+  const principal = Math.max(0, Math.round(Number(annualCents) || 0));
+  const months = normalizeInstallmentCount(installments);
+  const monthlyRate = monthlyRateFromNominalAnnual(ratePercent);
+  if (!principal) return 0;
+  if (monthlyRate <= 0) return Math.round(principal / months);
+  return Math.round(principal * (monthlyRate / (1 - Math.pow(1 + monthlyRate, -months))));
+}
+
+function computeAnnualCashFromMonthly(monthlyCents, ratePercent, installments) {
+  const monthly = Math.max(0, Math.round(Number(monthlyCents) || 0));
+  const months = normalizeInstallmentCount(installments);
+  const monthlyRate = monthlyRateFromNominalAnnual(ratePercent);
+  if (!monthly) return 0;
+  if (monthlyRate <= 0) return Math.round(monthly * months);
+  return Math.round(monthly * ((1 - Math.pow(1 + monthlyRate, -months)) / monthlyRate));
+}
+
 function resolvePaymentProvider() {
   return String(process.env.PAYMENT_PROVIDER || 'payphone').trim().toLowerCase();
 }
@@ -69,31 +97,42 @@ function getPlanBillingMetadata(plan = {}) {
     plan.billingPeriod ?? plan.billing_period ?? metadata.billingPeriod ?? metadata.billing_period,
     'monthly'
   );
-  const monthlyCents = Math.max(0, Math.round(Number(
-    plan.precioMensualCentavos ?? plan.precio_mensual_centavos ?? metadata.precioMensualCentavos ?? 0
-  ) || 0));
+  const pricingInputMode = normalizePricingInputMode(
+    plan.pricingInputMode ?? plan.pricing_input_mode ?? metadata.pricingInputMode ?? metadata.pricing_input_mode,
+    'MONTHLY_PAYMENT'
+  );
+  const cuotasMensuales = normalizeInstallmentCount(
+    plan.cuotasMensuales ?? plan.cuotas_mensuales ?? metadata.cuotasMensuales ?? metadata.cuotas_mensuales,
+    12
+  );
+  const tasaNominalAnual = normalizeNominalAnnualRate(
+    plan.tasaNominalAnual ?? plan.tasa_nominal_anual ?? metadata.tasaNominalAnual ?? metadata.tasa_nominal_anual,
+    0
+  );
+  const rawMonthlyCents = normalizeOptionalCents(
+    plan.precioMensualCentavos ?? plan.precio_mensual_centavos ?? metadata.precioMensualCentavos
+  ) ?? 0;
   const annualCandidate = plan.precioAnualCentavos
     ?? plan.precio_anual_centavos
     ?? metadata.precioAnualCentavos
     ?? metadata.precio_anual_centavos;
-  const annualCents = annualCandidate === undefined || annualCandidate === null || annualCandidate === ''
-    ? monthlyCents * 12
-    : Math.max(0, Math.round(Number(annualCandidate) || 0));
+  const rawAnnualCents = normalizeOptionalCents(annualCandidate) ?? 0;
+  let monthlyCents = rawMonthlyCents;
+  let annualCents = rawAnnualCents;
+
+  if (pricingInputMode === 'ANNUAL_PRICE') {
+    annualCents = rawAnnualCents || computeAnnualCashFromMonthly(rawMonthlyCents, tasaNominalAnual, cuotasMensuales);
+    monthlyCents = computeMonthlyInstallmentFromAnnual(annualCents, tasaNominalAnual, cuotasMensuales);
+  } else {
+    monthlyCents = rawMonthlyCents || computeMonthlyInstallmentFromAnnual(rawAnnualCents, tasaNominalAnual, cuotasMensuales);
+    annualCents = computeAnnualCashFromMonthly(monthlyCents, tasaNominalAnual, cuotasMensuales);
+  }
 
   return {
     billingPeriod,
-    pricingInputMode: normalizePricingInputMode(
-      plan.pricingInputMode ?? plan.pricing_input_mode ?? metadata.pricingInputMode ?? metadata.pricing_input_mode,
-      'MONTHLY_PAYMENT'
-    ),
-    cuotasMensuales: normalizeInstallmentCount(
-      plan.cuotasMensuales ?? plan.cuotas_mensuales ?? metadata.cuotasMensuales ?? metadata.cuotas_mensuales,
-      12
-    ),
-    tasaNominalAnual: normalizeNominalAnnualRate(
-      plan.tasaNominalAnual ?? plan.tasa_nominal_anual ?? metadata.tasaNominalAnual ?? metadata.tasa_nominal_anual,
-      0
-    ),
+    pricingInputMode,
+    cuotasMensuales,
+    tasaNominalAnual,
     precioMensualCentavos: monthlyCents,
     precioAnualCentavos: annualCents,
   };

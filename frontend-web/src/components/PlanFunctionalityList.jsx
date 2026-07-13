@@ -2,17 +2,20 @@ import React from 'react';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { getPlanFunctionality, getPlanLimits } from '../config/publicPlanPresentation';
 
-function PlanFunctionalityList({ plan, showExcluded = true, compact = false }) {
+function PlanFunctionalityList({ plan, showExcluded = true, compact = false, maxItems = null }) {
   const functionality = getPlanFunctionality(plan);
   const limits = getPlanLimits(plan);
   const visibleItems = showExcluded ? functionality : functionality.filter((item) => item.enabled);
+  const displayedItems = Number.isFinite(Number(maxItems)) && Number(maxItems) > 0
+    ? visibleItems.slice(0, Number(maxItems))
+    : visibleItems;
 
   return (
     <div className={compact ? 'space-y-3' : 'space-y-4'}>
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Funcionalidad incluida</p>
         <ul className={compact ? 'mt-2 grid gap-2 text-sm' : 'mt-3 grid gap-2 text-sm'}>
-          {visibleItems.map((item) => {
+          {displayedItems.map((item) => {
             const Icon = item.enabled ? CheckCircle2 : XCircle;
             return (
               <li className={item.enabled ? 'flex items-center gap-2 text-slate-700' : 'flex items-center gap-2 text-slate-400'} key={item.key}>

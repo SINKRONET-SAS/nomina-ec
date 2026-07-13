@@ -2,7 +2,7 @@ export const FALLBACK_PUBLIC_PLANS = [
   {
     id: 'TRIAL',
     nombre: 'Prueba',
-    descripcion: 'Valida el ciclo completo de nomina, asistencia, roles y reportes antes de pagar.',
+    descripcion: 'Prueba SKNOMINA con tu flujo real antes de contratar.',
     precioMensualCentavos: 0,
     precioAnualCentavos: 0,
     pricingInputMode: 'MONTHLY_PAYMENT',
@@ -20,7 +20,7 @@ export const FALLBACK_PUBLIC_PLANS = [
   {
     id: 'MICRO',
     nombre: 'Micro',
-    descripcion: 'Opera nomina mensual de una empresa pequena con asistencia, roles y archivo bancario.',
+    descripcion: 'Nomina mensual para negocios pequenos con una empresa activa.',
     precioMensualCentavos: 1900,
     precioAnualCentavos: 22800,
     pricingInputMode: 'MONTHLY_PAYMENT',
@@ -38,7 +38,7 @@ export const FALLBACK_PUBLIC_PLANS = [
   {
     id: 'PYME',
     nombre: 'Pyme',
-    descripcion: 'Control recurrente para RRHH con reportes, pagos bancarios y trazabilidad de cierre.',
+    descripcion: 'Para equipos que necesitan reportes, bancos y cierre trazable.',
     precioMensualCentavos: 4900,
     precioAnualCentavos: 58800,
     pricingInputMode: 'MONTHLY_PAYMENT',
@@ -56,7 +56,7 @@ export const FALLBACK_PUBLIC_PLANS = [
   {
     id: 'EMPRESA',
     nombre: 'Empresa',
-    descripcion: 'Operacion multiempresa con auditoria visible, soporte ampliado y reportes avanzados.',
+    descripcion: 'Operacion multiempresa con soporte y reportes avanzados.',
     precioMensualCentavos: 9900,
     precioAnualCentavos: 118800,
     pricingInputMode: 'MONTHLY_PAYMENT',
@@ -75,17 +75,17 @@ export const FALLBACK_PUBLIC_PLANS = [
 ];
 
 const PLAN_COMMERCIAL_PROMISE = {
-  TRIAL: 'Prueba controlada para validar el cierre mensual completo sin compromiso.',
-  MICRO: 'Para negocios pequenos que necesitan pagar nomina sin improvisar archivos ni reportes.',
-  PYME: 'Para equipos de RRHH que requieren asistencia, bancos, reportes y auditoria en cada periodo.',
-  EMPRESA: 'Para grupos con varias empresas, mayor volumen operativo y supervision comercial.',
-  CORPORATIVO: 'Para operacion a medida con acompanamiento y capacidad pactada.',
+  TRIAL: 'Prueba el cierre mensual con tu equipo antes de contratar.',
+  MICRO: 'Para negocios pequenos que quieren pagar nomina sin improvisar.',
+  PYME: 'Para equipos de RRHH con asistencia, bancos y reportes en cada periodo.',
+  EMPRESA: 'Para grupos con varias empresas, mas usuarios y soporte ampliado.',
+  CORPORATIVO: 'Operacion a medida con acompanamiento y capacidad pactada.',
 };
 
 const PLAN_HIGHLIGHTS = {
-  TRIAL: ['Flujo completo de prueba', 'App movil de asistencia', 'Reportes de validacion'],
-  MICRO: ['Una empresa activa', 'App movil de asistencia', 'Archivo bancario incluido'],
-  PYME: ['Hasta 3 empresas', 'App movil de asistencia', 'Rutas de campo'],
+  TRIAL: ['Flujo completo de prueba', 'App de asistencia', 'Reportes de validacion'],
+  MICRO: ['Una empresa activa', 'App de asistencia', 'Archivo bancario incluido'],
+  PYME: ['Hasta 3 empresas', 'App de asistencia', 'Rutas de campo'],
   EMPRESA: ['Operacion multiempresa', 'Rutas de campo', 'Reportes avanzados'],
   CORPORATIVO: ['Capacidad pactada', 'App y rutas por contrato', 'Integraciones a medida'],
 };
@@ -165,24 +165,34 @@ export function normalizeBrandText(value) {
 
 export function normalizePublicPlan(plan = {}) {
   const metadata = plan.metadata || {};
-  const monthlyCents = normalizeCents(plan.precioMensualCentavos ?? metadata.precioMensualCentavos);
   const pricingInputMode = normalizePricingInputMode(
-    plan.pricingInputMode ?? metadata.pricingInputMode ?? (monthlyCents > 0 ? 'MONTHLY_PAYMENT' : 'ANNUAL_PRICE')
+    plan.pricingInputMode ?? metadata.pricingInputMode ?? 'MONTHLY_PAYMENT'
   );
   const cuotasMensuales = normalizeInstallments(plan.cuotasMensuales ?? metadata.cuotasMensuales);
   const tasaNominalAnual = normalizeNominalAnnualRate(plan.tasaNominalAnual ?? metadata.tasaNominalAnual);
+  const rawMonthlyCents = normalizeCents(plan.precioMensualCentavos ?? metadata.precioMensualCentavos);
   const annualCandidate = plan.precioAnualCentavos ?? metadata.precioAnualCentavos ?? metadata.precio_anual_centavos;
-  const annualCents = annualCandidate === undefined || annualCandidate === null || annualCandidate === ''
-    ? computeAnnualCashFromMonthly(monthlyCents, tasaNominalAnual, cuotasMensuales)
+  const rawAnnualCents = annualCandidate === undefined || annualCandidate === null || annualCandidate === ''
+    ? 0
     : normalizeCents(annualCandidate);
+  let precioMensualCentavos = rawMonthlyCents;
+  let precioAnualCentavos = rawAnnualCents;
+
+  if (pricingInputMode === 'ANNUAL_PRICE') {
+    precioAnualCentavos = rawAnnualCents || computeAnnualCashFromMonthly(rawMonthlyCents, tasaNominalAnual, cuotasMensuales);
+    precioMensualCentavos = computeMonthlyInstallmentFromAnnual(precioAnualCentavos, tasaNominalAnual, cuotasMensuales);
+  } else {
+    precioMensualCentavos = rawMonthlyCents || computeMonthlyInstallmentFromAnnual(rawAnnualCents, tasaNominalAnual, cuotasMensuales);
+    precioAnualCentavos = computeAnnualCashFromMonthly(precioMensualCentavos, tasaNominalAnual, cuotasMensuales);
+  }
 
   return {
     ...plan,
     id: String(plan.id || '').trim().toUpperCase(),
     nombre: normalizeBrandText(plan.nombre),
     descripcion: normalizeBrandText(plan.descripcion),
-    precioMensualCentavos: monthlyCents || computeMonthlyInstallmentFromAnnual(annualCents, tasaNominalAnual, cuotasMensuales),
-    precioAnualCentavos: annualCents,
+    precioMensualCentavos,
+    precioAnualCentavos,
     pricingInputMode,
     cuotasMensuales,
     tasaNominalAnual,
@@ -209,16 +219,17 @@ export function getPlanPriceBreakdown(plan = {}) {
   const installments = normalizeInstallments(normalized.cuotasMensuales);
   const rate = normalizeNominalAnnualRate(normalized.tasaNominalAnual);
   const pricingInputMode = normalizePricingInputMode(normalized.pricingInputMode);
-  const annualBaseCentavos = normalizeCents(normalized.precioAnualCentavos)
-    || computeAnnualCashFromMonthly(normalized.precioMensualCentavos, rate, installments);
-  const monthlyBaseCentavos = normalizeCents(normalized.precioMensualCentavos)
-    || computeMonthlyInstallmentFromAnnual(annualBaseCentavos, rate, installments);
+  const annualBaseCentavos = normalizeCents(normalized.precioAnualCentavos);
+  const monthlyBaseCentavos = normalizeCents(normalized.precioMensualCentavos);
   const activeBaseCentavos = normalized.billingPeriod === 'annual' ? annualBaseCentavos : monthlyBaseCentavos;
   const activeTax = addIva(activeBaseCentavos);
   const annualTax = addIva(annualBaseCentavos);
   const monthlyTax = addIva(monthlyBaseCentavos);
   const activeSuffix = normalized.billingPeriod === 'annual' ? 'anio' : 'mes';
-  const rateLabel = rate > 0 ? `Tasa nominal anual ${rate.toFixed(2)}%` : 'Sin tasa nominal';
+  const rateDisclosure = rate > 0 ? `TNA ${rate.toFixed(2)}%` : null;
+  const calculationLabel = pricingInputMode === 'ANNUAL_PRICE'
+    ? `${installments} mensualidades calculadas desde el precio de contado${rateDisclosure ? ` con ${rateDisclosure}` : ''}.`
+    : `Contado anual calculado desde la mensualidad${rateDisclosure ? ` con ${rateDisclosure}` : ''}.`;
 
   return {
     hasPrice: activeBaseCentavos > 0,
@@ -229,23 +240,28 @@ export function getPlanPriceBreakdown(plan = {}) {
     activeBaseCentavos,
     annualBaseCentavos,
     monthlyBaseCentavos,
-    primaryBaseLabel: `${activeTax.baseDisplay} + IVA/${activeSuffix}`,
+    primaryBaseLabel: `${activeTax.baseDisplay} + IVA / ${activeSuffix}`,
     primaryTotalLabel: `Total ${activeTax.totalDisplay} incl. IVA ${COMMERCIAL_IVA_PERCENT}%`,
     activeIvaDisplay: activeTax.ivaDisplay,
     activeTotalDisplay: activeTax.totalDisplay,
+    annualTotalDisplay: annualTax.totalDisplay,
+    monthlyTotalDisplay: monthlyTax.totalDisplay,
     annualBaseLabel: `Contado anual: ${annualTax.baseDisplay} + IVA`,
     annualTotalLabel: `Total contado: ${annualTax.totalDisplay}`,
     monthlyBaseLabel: `${installments} mensualidades: ${monthlyTax.baseDisplay} + IVA c/u`,
     monthlyTotalLabel: `Total mensual: ${monthlyTax.totalDisplay}`,
+    annualTotalShortLabel: `${annualTax.totalDisplay} contado anual incl. IVA`,
+    monthlyTotalShortLabel: `${monthlyTax.totalDisplay} al mes incl. IVA`,
     monthlyIvaDisplay: monthlyTax.ivaDisplay,
-    rateLabel,
+    rateDisclosure,
+    calculationLabel,
   };
 }
 
 export function formatPublicPlanPrice(plan) {
   const pricing = getPlanPriceBreakdown(plan);
   if (!pricing.hasPrice) {
-    return plan?.id === 'CORPORATIVO' ? 'Contrato' : '$0.00';
+    return plan?.id === 'CORPORATIVO' ? 'Contrato' : 'Sin costo';
   }
   return pricing.primaryBaseLabel;
 }
@@ -271,7 +287,7 @@ export function getPlanHighlights(plan = {}) {
   }
   if (PLAN_HIGHLIGHTS[planId]) return PLAN_HIGHLIGHTS[planId];
   const commercialCapabilities = [
-    plan.appMovil ? 'App movil de empleados' : '',
+    plan.appMovil ? 'App de asistencia' : '',
     plan.rutasCampo ? 'Rutas de campo' : '',
     plan.archivosBancarios ? 'Archivo bancario incluido' : '',
     plan.reportesAvanzados ? 'Reportes avanzados' : '',
@@ -289,25 +305,25 @@ export function getPlanFunctionality(plan = {}) {
   return [
     {
       key: 'payroll',
-      label: 'Nomina mensual, roles y novedades',
+      label: 'Nomina mensual y roles',
       enabled: true,
       group: 'base',
     },
     {
       key: 'attendance',
-      label: 'Asistencia y marcaciones',
+      label: 'Asistencia y permisos',
       enabled: true,
       group: 'base',
     },
     {
       key: 'mobileApp',
-      label: 'App movil para empleados',
+      label: 'App de asistencia',
       enabled: Boolean(plan.appMovil),
       group: 'operacion',
     },
     {
       key: 'fieldRoutes',
-      label: 'Rutas de campo y visitas por tienda',
+      label: 'Rutas de campo',
       enabled: Boolean(plan.rutasCampo),
       group: 'operacion',
     },
@@ -319,7 +335,7 @@ export function getPlanFunctionality(plan = {}) {
     },
     {
       key: 'advancedReports',
-      label: 'Reportes avanzados y trazabilidad',
+      label: 'Reportes y trazabilidad',
       enabled: Boolean(plan.reportesAvanzados),
       group: 'reportes',
     },
@@ -339,11 +355,14 @@ export function getPlanFunctionality(plan = {}) {
 }
 
 export function getPlanLimits(plan = {}) {
-  return [
+  const limits = [
     `${plan.empleadosMax || 'Capacidad pactada'} empleados`,
     `${plan.empresasMax || 1} empresa${Number(plan.empresasMax || 1) === 1 ? '' : 's'}`,
     `${plan.usuariosMax || 'Usuarios pactados'} usuarios`,
-    `${Number(plan.iessEstablecimientosMax) === -1 ? 'Establecimientos IESS sin limite' : `${plan.iessEstablecimientosMax || 1} establecimiento(s) IESS`}`,
-    `${Number(plan.trialDays || 0)} dias de prueba`,
+    `${Number(plan.iessEstablecimientosMax) === -1 ? 'IESS sin limite' : `${plan.iessEstablecimientosMax || 1} estab. IESS`}`,
   ];
+  if (Number(plan.trialDays || 0) > 0) {
+    limits.push(`${Number(plan.trialDays)} dias de prueba`);
+  }
+  return limits;
 }

@@ -103,6 +103,51 @@ describe('paymentController PayPhone gates', () => {
     });
   });
 
+  test('deriva mensualidad publica desde contado anual y tasa nominal', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'PRO',
+        nombre: 'Pro',
+        descripcion: 'Plan anual como fuente',
+        precio_mensual_centavos: 1,
+        moneda: 'USD',
+        empleados_max: 50,
+        empresas_max: 1,
+        usuarios_max: 3,
+        iess_establecimientos_max: 1,
+        archivos_bancarios: true,
+        reportes_avanzados: true,
+        api_access: false,
+        app_movil: true,
+        rutas_campo: true,
+        soporte: 'prioritario',
+        publico: true,
+        activo: true,
+        orden: 1,
+        metadata: {
+          pricingInputMode: 'ANNUAL_PRICE',
+          precioAnualCentavos: 120000,
+          cuotasMensuales: 12,
+          tasaNominalAnual: 12,
+        },
+      }],
+    });
+    const res = mockResponse();
+
+    await paymentController.listPublicPlans({}, res, jest.fn());
+
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.data[0]).toEqual(expect.objectContaining({
+      id: 'PRO',
+      pricingInputMode: 'ANNUAL_PRICE',
+      precioAnualCentavos: 120000,
+      cuotasMensuales: 12,
+      tasaNominalAnual: 12,
+    }));
+    expect(payload.data[0].precioMensualCentavos).toBeGreaterThan(10000);
+    expect(payload.data[0].precioMensualCentavos).toBeLessThan(11000);
+  });
+
   test('deshabilita pagos directos con flag explicito y anuncia transferencia manual', async () => {
     process.env.DIRECT_PAYMENTS_ENABLED = 'false';
     process.env.PAYMENT_PROVIDER = 'payphone';

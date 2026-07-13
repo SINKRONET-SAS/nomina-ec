@@ -80,54 +80,69 @@ function PublicPlansCatalog() {
         </div>
       )}
 
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid items-stretch gap-5 md:grid-cols-2 xl:grid-cols-4">
         {plans.map((plan, index) => {
           const manualTransferOnly = paymentCapabilities?.status === 'manual_transfer_only';
           const checkoutBlocked = plan.id !== 'TRIAL' && paymentCapabilities?.checkoutAvailable === false;
           const checkoutSelected = checkoutPlanId === plan.id;
           const pricing = getPlanPriceBreakdown(plan);
           return (
-            <article className={`soft-panel flex flex-col p-6 ${index === 1 ? 'border-teal-300 bg-teal-50' : ''}`} key={plan.id}>
+            <article className={`soft-panel flex min-h-full flex-col p-6 ${index === 1 ? 'border-teal-300 bg-teal-50' : ''}`} key={plan.id}>
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-xl font-semibold text-slate-950">{plan.nombre}</h3>
-                  <p className="mt-2 min-h-20 text-sm leading-6 text-slate-600">{getPlanCommercialPromise(plan)}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{getPlanCommercialPromise(plan)}</p>
                 </div>
                 <span className="rounded-md bg-teal-50 p-2 text-teal-800">
                   <Banknote size={20} />
                 </span>
               </div>
-              <div className="mt-6 space-y-2">
-                <p className="text-3xl font-semibold text-slate-950">{formatPublicPlanPrice(plan)}</p>
+              <div className="mt-5 rounded-md border border-slate-200 bg-white/70 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {pricing.hasPrice ? 'Precio mensual' : 'Prueba'}
+                </p>
+                <p className="mt-2 text-3xl font-semibold leading-tight text-slate-950">{formatPublicPlanPrice(plan)}</p>
                 {pricing.hasPrice && (
-                  <div className="space-y-1 text-sm leading-5 text-slate-600">
-                    <p>{pricing.primaryTotalLabel}</p>
-                    <p>{pricing.annualBaseLabel} | {pricing.annualTotalLabel}</p>
-                    <p>{pricing.monthlyBaseLabel} | {pricing.monthlyTotalLabel}</p>
-                    <p>{pricing.rateLabel}</p>
+                  <div className="mt-3 space-y-2 text-sm leading-5 text-slate-600">
+                    <div className="flex items-center justify-between gap-3">
+                      <span>Total mensual</span>
+                      <strong className="text-slate-950">{pricing.activeTotalDisplay}</strong>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span>Contado anual</span>
+                      <strong className="text-slate-950">{pricing.annualTotalDisplay}</strong>
+                    </div>
+                    {pricing.rateDisclosure && (
+                      <p className="rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">{pricing.calculationLabel}</p>
+                    )}
                   </div>
+                )}
+                {!pricing.hasPrice && (
+                  <p className="mt-2 text-sm leading-5 text-slate-600">Valida el flujo antes de activar un plan pagado.</p>
                 )}
               </div>
               <div className="mt-5">
-                <PlanFunctionalityList compact showExcluded={false} plan={plan} />
+                <PlanFunctionalityList compact maxItems={4} showExcluded={false} plan={plan} />
               </div>
               {checkoutSelected && (
                 <div className="mt-5 rounded-md border border-teal-200 bg-white p-4 text-sm text-slate-700">
                   <p className="font-semibold text-slate-950">Resumen de checkout</p>
                   <p className="mt-1 leading-6">
-                    Se abrirá la pasarela para activar {plan.nombre} con las funcionalidades listadas en esta tarjeta.
+                    Confirma para continuar con {plan.nombre}. Antes de pagar veras el total con IVA.
                   </p>
                 </div>
               )}
-              <button
-                className="primary-button mt-6 w-full"
-                disabled={loadingPlan === plan.id}
-                onClick={() => handleCheckout(plan.id)}
-                type="button"
-              >
-                {checkoutBlocked ? (manualTransferOnly ? 'Activación por transferencia' : 'Checkout no disponible') : loadingPlan === plan.id ? 'Abriendo checkout...' : checkoutSelected ? 'Continuar a PayPhone' : publicPlanActionLabel(plan)}
-                {loadingPlan !== plan.id && <ArrowRight size={18} />}
-              </button>
+              <div className="mt-auto pt-6">
+                <button
+                  className="primary-button w-full"
+                  disabled={loadingPlan === plan.id}
+                  onClick={() => handleCheckout(plan.id)}
+                  type="button"
+                >
+                  {checkoutBlocked ? (manualTransferOnly ? 'Solicitar activacion' : 'Checkout no disponible') : loadingPlan === plan.id ? 'Abriendo checkout...' : checkoutSelected ? 'Continuar a PayPhone' : publicPlanActionLabel(plan)}
+                  {loadingPlan !== plan.id && <ArrowRight size={18} />}
+                </button>
+              </div>
             </article>
           );
         })}

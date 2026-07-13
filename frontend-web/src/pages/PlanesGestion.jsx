@@ -269,6 +269,7 @@ function PlanesGestion({ showSuperadminConsole = true }) {
                 <option value="MONTHLY_PAYMENT">Mensualidades</option>
                 <option value="ANNUAL_PRICE">Contado anual</option>
               </select>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">Contado anual calcula la mensualidad con la tasa nominal. Mensualidades calcula el contado equivalente.</span>
             </label>
             <label>
               <span className="text-sm font-medium text-slate-700">Mensualidades</span>
@@ -277,6 +278,7 @@ function PlanesGestion({ showSuperadminConsole = true }) {
             <label>
               <span className="text-sm font-medium text-slate-700">Tasa nominal anual %</span>
               <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="0" step="0.01" value={draft.tasaNominalAnual} onChange={(event) => updateField('tasaNominalAnual', event.target.value)} />
+              <span className="mt-1 block text-xs leading-5 text-slate-500">Si es 0, no se muestra al cliente.</span>
             </label>
             <label>
               <span className="text-sm font-medium text-slate-700">Cobro activo</span>

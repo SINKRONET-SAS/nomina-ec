@@ -226,10 +226,12 @@ assert(schema.includes('iessEstablecimientosMax') && schema.includes('@map("iess
 assert(paymentController.includes('iess_establecimientos_max'), 'API de planes debe persistir limite de establecimientos IESS.');
 assert(planesGestion.includes('iessEstablecimientosMax'), 'Admin de planes debe editar limite de establecimientos IESS.');
 assert(paymentController.includes('pricingInputMode') && paymentController.includes('tasaNominalAnual') && paymentController.includes('cuotasMensuales'), 'API de planes debe persistir contado, mensualidades y tasa nominal en metadata.');
+assert(paymentController.includes('computeMonthlyInstallmentFromAnnual') && paymentController.includes('computeAnnualCashFromMonthly'), 'API de planes debe derivar mensualidad y contado anual con tasa nominal.');
 assert(paymentController.includes('WHERE p.publico = true AND p.activo = true') && paymentController.includes('WHERE catalog_rank = 1') && paymentController.includes("metadata->>'supersededByPlanId'"), 'Catalogo publico de planes debe publicar solo la ultima version vigente por raiz.');
 assert(planesGestion.includes('pricingInputMode') && planesGestion.includes('tasaNominalAnual') && planesGestion.includes('cuotasMensuales'), 'Admin de planes debe editar contado, mensualidades y tasa nominal.');
 assert(publicPlanPresentation.includes('COMMERCIAL_IVA_PERCENT') && publicPlanPresentation.includes('getPlanPriceBreakdown'), 'Presentacion publica de planes debe desglosar precio base, IVA y total.');
-assert(publicPlansCatalog.includes('primaryTotalLabel') && publicPlansCatalog.includes('annualBaseLabel') && publicPlansCatalog.includes('monthlyBaseLabel'), 'Catalogo publico debe mostrar precio mas IVA, contado anual y mensualidades.');
+assert(!publicPlanPresentation.includes('Sin tasa nominal') && !publicPlansCatalog.includes('Sin tasa nominal'), 'Catalogo publico no debe mostrar "Sin tasa nominal"; solo informar tasa cuando aplica.');
+assert(publicPlansCatalog.includes('Total mensual') && publicPlansCatalog.includes('Contado anual') && publicPlansCatalog.includes('calculationLabel'), 'Catalogo publico debe mostrar precio mas IVA, contado anual y nota de calculo cuando aplica.');
 assert(!landing.includes('XML SAE IESS'), 'La landing no debe prometer XML SAE IESS como reporte oficial.');
 assert(landing.includes('Batch IESS') || landing.includes('TXT IESS'), 'La landing debe comunicar IESS como batch TXT/DAT.');
 assert(app.includes("'/api/reportes/nomina/exportar'"), 'Backend debe exponer /api/reportes/nomina/exportar.');
@@ -381,7 +383,7 @@ assert(operacionMovil.includes('canCreateWorkZones && renderWorkZoneSection'), '
 assert(operacionMovil.includes('canCreateRouteSites && renderRouteSiteSection'), 'La app movil debe ocultar sitios cuando el perfil no puede crearlos.');
 assert(operacionMovil.includes('canAssignRoutes && renderAssignRouteSection'), 'La app movil debe ocultar asignacion cuando el perfil no puede ejecutarla.');
 assert(planesGestion.includes('appMovil') && planesGestion.includes('rutasCampo'), 'Gestion de planes debe mostrar canales app movil y rutas de campo.');
-assert(publicPlanPresentation.includes('App movil de asistencia') && publicPlanPresentation.includes('Rutas de campo'), 'Catalogo publico debe comunicar app movil y rutas cuando el plan las ofrece.');
+assert(publicPlanPresentation.includes('App de asistencia') && publicPlanPresentation.includes('Rutas de campo'), 'Catalogo publico debe comunicar app movil y rutas cuando el plan las ofrece.');
 assert(publicPlanPresentation.includes('getPlanFunctionality'), 'Catalogo publico debe exponer matriz de funcionalidades por plan.');
 assert(publicPlansCatalog.includes('PlanFunctionalityList'), 'Sitio publico debe mostrar funcionalidades ofrecidas por cada plan.');
 assert(publicPlansCatalog.includes('Resumen de checkout') && publicPlansCatalog.includes('Continuar a PayPhone'), 'Checkout publico debe mostrar resumen antes de redirigir a PayPhone.');

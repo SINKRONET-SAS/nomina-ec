@@ -30,9 +30,9 @@ function HeroBrandAsset() {
         src={BRAND_LOGO_SRC}
       />
       <div className="min-w-0">
-        <p className="text-sm font-semibold uppercase text-teal-900">Marca oficial</p>
+        <p className="text-sm font-semibold uppercase text-teal-900">Producto SINKRONET</p>
         <p className="mt-1 text-sm leading-6 text-slate-600">
-          Plataforma de SINKRONET S.A.S para operación laboral en Ecuador.
+          Hecho para operar nomina en Ecuador con respaldo de SINKRONET S.A.S.
         </p>
       </div>
     </div>
