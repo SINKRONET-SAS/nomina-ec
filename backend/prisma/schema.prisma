@@ -219,6 +219,7 @@ model CommercialPlan {
   empleadosMax          Int?                 @map("empleados_max")
   empresasMax           Int                  @default(1) @map("empresas_max")
   usuariosMax           Int                  @default(3) @map("usuarios_max")
+  iessEstablecimientosMax Int                @default(1) @map("iess_establecimientos_max")
   archivosBancarios     Boolean              @default(false) @map("archivos_bancarios")
   reportesAvanzados     Boolean              @default(false) @map("reportes_avanzados")
   apiAccess             Boolean              @default(false) @map("api_access")

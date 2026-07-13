@@ -11,7 +11,7 @@ const ALL_MODULES = [
   { code: 'operacion', label: 'Operacion', description: 'Permisos laborales, movilizacion' },
   { code: 'nomina', label: 'Nomina', description: 'Periodos, calculo, cierre, roles de pago' },
   { code: 'documentos', label: 'Documentos', description: 'Contratos, finiquitos, actas de dotacion' },
-  { code: 'reportes', label: 'Reportes', description: 'RDEP, Form107, prevalidacion IESS, archivos bancarios' },
+  { code: 'reportes', label: 'Reportes', description: 'RDEP, Form107, batch IESS TXT, archivos bancarios' },
   { code: 'parametrizacion', label: 'Parametrizacion', description: 'Centro de configuracion' },
   { code: 'comunicaciones', label: 'Comunicaciones', description: 'Email SMTP, notificaciones' },
   { code: 'auditoria', label: 'Auditoria', description: 'Log de auditoria del sistema' },

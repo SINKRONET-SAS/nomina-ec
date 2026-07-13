@@ -194,6 +194,100 @@ describe('configurationService metadata', () => {
     }));
   });
 
+  test('createResource parametriza establecimiento IESS sin valor hardcodeado', async () => {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'MICRO',
+          nombre: 'Micro',
+          empleados_max: 25,
+          empresas_max: 1,
+          usuarios_max: 3,
+          iess_establecimientos_max: 2,
+          archivos_bancarios: true,
+          reportes_avanzados: false,
+          api_access: false,
+          app_movil: true,
+          rutas_campo: false,
+          subscription_estado: 'active',
+          subscription_vence_en: '2026-12-31T00:00:00.000Z',
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [{ count: 0 }] })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'iess-1',
+          tenant_id: ownerUser.tenantId,
+          catalog_type: 'iess_establecimiento',
+          code: '0002',
+          name: 'Sucursal norte',
+          status: 'activo',
+          payload: { codigoEstablecimiento: '0002', principal: true, isPrincipal: true },
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [] });
+    recordAudit.mockResolvedValueOnce();
+
+    const result = await createResource('catalogs', {
+      catalog_type: 'iess_establecimiento',
+      code: '2',
+      name: 'Sucursal norte',
+      status: 'activo',
+      payload: {
+        principal: true,
+        direccion: 'Av. Norte',
+      },
+    }, ownerUser);
+
+    expect(result).toEqual(expect.objectContaining({
+      id: 'iess-1',
+      code: '0002',
+      catalog_type: 'iess_establecimiento',
+    }));
+    expect(db.query.mock.calls[2][0]).toContain('INSERT INTO configuration_catalogs');
+    expect(db.query.mock.calls[2][1]).toEqual(expect.arrayContaining(['0002']));
+    expect(db.query.mock.calls[2][1]).toEqual(expect.arrayContaining([
+      expect.stringContaining('"codigoEstablecimiento":"0002"'),
+    ]));
+    expect(db.query.mock.calls[3][0]).toContain("'{principal}'");
+  });
+
+  test('createResource bloquea establecimiento IESS si supera limite del plan', async () => {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'MICRO',
+          nombre: 'Micro',
+          empleados_max: 25,
+          empresas_max: 1,
+          usuarios_max: 3,
+          iess_establecimientos_max: 1,
+          archivos_bancarios: true,
+          reportes_avanzados: false,
+          api_access: false,
+          app_movil: true,
+          rutas_campo: false,
+          subscription_estado: 'active',
+          subscription_vence_en: '2026-12-31T00:00:00.000Z',
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [{ count: 1 }] });
+
+    await expect(
+      createResource('catalogs', {
+        catalog_type: 'iess_establecimiento',
+        code: '3',
+        name: 'Sucursal sur',
+        status: 'activo',
+        payload: { principal: false },
+      }, ownerUser)
+    ).rejects.toMatchObject({
+      code: 'PLAN_IESS_ESTABLISHMENT_LIMIT_REACHED',
+      statusCode: 402,
+    });
+    expect(recordAudit).not.toHaveBeenCalled();
+  });
+
   test('admin_rrhh no puede modificar ni eliminar parametro legal ya validado', async () => {
     db.query.mockResolvedValueOnce({
       rows: [{

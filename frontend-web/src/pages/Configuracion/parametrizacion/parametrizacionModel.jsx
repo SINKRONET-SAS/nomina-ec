@@ -161,6 +161,12 @@ function buildLegalValueFallback(parameterKey, amountRaw) {
   return { amount: num };
 }
 
+function normalizeIessEstablishmentCode(value) {
+  const clean = String(value || '').replace(/\D/g, '');
+  if (!clean || clean.length > 4) return clean;
+  return clean.padStart(4, '0');
+}
+
 const formDefinitions = [
   {
     key: 'empresa',
@@ -209,6 +215,58 @@ const formDefinitions = [
     }),
     recordLabel: (record) => record.name,
     recordMeta: (record) => `${record.code} - ${record.payload?.ciudad || 'sin ciudad'}`,
+  },
+  {
+    key: 'empresa_iess',
+    parentKey: 'empresa',
+    navigationLabel: 'IESS',
+    title: 'Datos de empresa - IESS',
+    description: 'Configura establecimientos IESS para cargas batch TXT/DAT y control comercial por plan.',
+    icon: Landmark,
+    resource: 'catalogs',
+    stepCode: 'empresa',
+    catalogType: 'iess_establecimiento',
+    recordsTitle: 'Establecimientos IESS',
+    emptyText: 'Aun no hay establecimientos IESS configurados.',
+    saveLabel: 'Guardar establecimiento IESS',
+    updateLabel: 'Actualizar establecimiento IESS',
+    fields: [
+      { name: 'codigo_establecimiento_iess', label: 'Codigo establecimiento IESS', placeholder: '0001', required: true },
+      { name: 'name', label: 'Nombre', placeholder: 'Matriz / Sucursal norte', required: true },
+      { name: 'status', label: 'Estado', type: 'select', options: ['activo', 'inactivo'] },
+      { name: 'is_principal', label: 'Principal', type: 'checkbox' },
+      { name: 'direccion', label: 'Direccion', type: 'textarea', wide: true },
+    ],
+    initial: {
+      codigo_establecimiento_iess: '',
+      name: '',
+      status: 'activo',
+      is_principal: true,
+      direccion: '',
+    },
+    buildPayload: (values) => {
+      const code = normalizeIessEstablishmentCode(values.codigo_establecimiento_iess);
+      return {
+        catalog_type: 'iess_establecimiento',
+        code,
+        name: values.name.trim(),
+        description: values.direccion.trim(),
+        status: values.status,
+        payload: {
+          codigoEstablecimiento: code,
+          principal: Boolean(values.is_principal),
+          isPrincipal: Boolean(values.is_principal),
+          direccion: values.direccion.trim(),
+          monetizable: true,
+          source: 'datos_empresa_iess',
+        },
+      };
+    },
+    recordLabel: (record) => record.name,
+    recordMeta: (record) => {
+      const principal = record.payload?.principal || record.payload?.isPrincipal;
+      return `${record.code} - ${principal ? 'principal' : 'alterno'} - ${record.status || 'activo'}`;
+    },
   },
   {
     key: 'legal',
@@ -1056,6 +1114,14 @@ function formValuesFromRecord(definition, record) {
         telefono: payload.telefono || '',
         ciudad: payload.ciudad || '',
         direccion: payload.direccion || '',
+      };
+    case 'empresa_iess':
+      return {
+        codigo_establecimiento_iess: payload.codigoEstablecimiento || record.code || '',
+        name: record.name || '',
+        status: record.status || 'activo',
+        is_principal: Boolean(payload.principal || payload.isPrincipal),
+        direccion: payload.direccion || record.description || '',
       };
     case 'legal':
       return {

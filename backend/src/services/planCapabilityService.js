@@ -51,6 +51,7 @@ async function getTenantPlanCapabilities(tenantId) {
         employeesMax: 0,
         companiesMax: 0,
         usersMax: 0,
+        iessEstablishmentsMax: 0,
       },
     };
   }
@@ -78,6 +79,7 @@ async function getTenantPlanCapabilities(tenantId) {
       employeesMax: plan.empleados_max,
       companiesMax: plan.empresas_max,
       usersMax: plan.usuarios_max,
+      iessEstablishmentsMax: plan.iess_establecimientos_max ?? 1,
     },
   };
 }

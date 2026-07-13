@@ -1,39 +1,61 @@
 {
-  "name": "IESS payroll preparation contract",
+  "name": "IESS batch ASCII TXT/DAT contract",
   "country": "EC",
   "year": 2026,
-  "observedAt": "2026-07-03",
-  "version": "SAE-IESS-2026-DPS26",
+  "observedAt": "2026-07-12",
+  "version": "IESS-BATCH-ASCII-2026-RPE26",
   "sources": [
     {
-      "kind": "official_institution",
-      "name": "Instituto Ecuatoriano de Seguridad Social",
-      "url": "https://www.iess.gob.ec/",
-      "status": "official_source_checked_2026",
-      "observedAt": "2026-07-03"
+      "kind": "official_iess_batch_portal",
+      "name": "IESS - Procesos batch para actualizar historia laboral",
+      "url": "https://hl5.iess.gob.ec/emp/PrjEmpNovBatJSPhtml/ksempm1320.jsp",
+      "status": "official_batch_source_checked_2026",
+      "observedAt": "2026-07-12"
+    },
+    {
+      "kind": "official_iess_batch_format",
+      "name": "IESS - Documento informativo de proceso batch",
+      "url": "https://hl5.iess.gob.ec/emp/PrjEmpNovBatJSPhtml/ksempm1320b.html",
+      "status": "official_batch_source_checked_2026",
+      "observedAt": "2026-07-12"
     },
     {
       "kind": "internal_structural_contract",
-      "name": "SKNOMINA IESS monthly data preparation",
+      "name": "SKNOMINA IESS MSU batch generator",
       "sha256": "runtime-generated",
       "status": "versioned_contract",
-      "observedAt": "2026-07-03"
+      "observedAt": "2026-07-12"
     }
   ],
   "validationPolicy": {
-    "officialSourceReconciliation": "checked_2026_07_03",
-    "schemaPolicy": "No public XML/XSD specification is bundled for IESS SAE. SKNOMINA treats this flow as data prevalidation and blocks XML download unless an experimental flag is enabled by a technical owner.",
-    "xmlFormatStatus": "pending_official_iess_format",
-    "runtimeGate": "fail_closed_when_manifest_or_closed_payroll_missing_or_xml_format_pending",
-    "experimentalXmlFlag": "ALLOW_EXPERIMENTAL_IESS_XML"
+    "officialSourceReconciliation": "checked_2026_07_12",
+    "schemaPolicy": "IESS batch uses ASCII TXT/DAT files with semicolon separator. No XML/XSD SAE format is exposed for IESS.",
+    "batchFormatStatus": "official_ascii_txt_dat",
+    "encoding": "ASCII",
+    "separator": ";",
+    "fileExtensions": [".txt", ".dat"],
+    "runtimeGate": "fail_closed_when_manifest_or_closed_payroll_missing_or_batch_checks_fail",
+    "supportedMovementTypes": ["MSU"],
+    "documentedMovementTypes": ["ENT", "SAL", "MSU", "INS", "PFR", "PFM", "PPF", "PFN", "PRA", "RRT"]
   },
   "requiredFields": [
     "empleador.ruc",
-    "empleador.razonSocial",
-    "empleador.periodo",
-    "detalleAportantes.aportante.identificacion",
-    "detalleAportantes.aportante.sueldo",
-    "detalleAportantes.aportante.aportePersonal",
-    "detalleAportantes.aportante.aportePatronal"
-  ]
+    "empleador.codigoEstablecimientoIess",
+    "periodo.anio",
+    "periodo.mes",
+    "movimiento.codigo",
+    "trabajador.identificacion",
+    "trabajador.sueldo"
+  ],
+  "recordLayout": {
+    "MSU": [
+      "empleador.ruc",
+      "empleador.codigoEstablecimientoIess",
+      "periodo.anio",
+      "periodo.mes",
+      "movimiento.codigo",
+      "trabajador.identificacion",
+      "trabajador.sueldo"
+    ]
+  }
 }

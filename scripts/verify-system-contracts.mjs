@@ -128,12 +128,14 @@ assert(authenticatedApiService.includes('sanitizeApiErrorMessage'), 'Cliente aut
 
 const app = read('backend/src/app.js');
 const configurationService = read('backend/src/services/configurationService.js');
+const iessSaeGenerator = read('backend/src/services/iessSaeGenerator.js');
 const reportService = read('backend/src/services/payrollReportService.js');
 const payrollAccountingService = read('backend/src/services/payrollAccountingService.js');
 const payrollNoveltyService = read('backend/src/services/payrollNoveltyService.js');
 const payrollCalculationService = read('backend/src/services/calculoNominaService.js');
 const schema = read('backend/prisma/schema.prisma');
 const parametrizacion = read('frontend-web/src/pages/Configuracion/Parametrizacion.jsx');
+const parametrizacionModel = read('frontend-web/src/pages/Configuracion/parametrizacion/parametrizacionModel.jsx');
 const appWeb = read('frontend-web/src/App.jsx');
 const layoutWeb = read('frontend-web/src/components/Layout/Layout.jsx');
 const comunicacionesWeb = read('frontend-web/src/pages/Configuracion/Comunicaciones.jsx');
@@ -153,6 +155,7 @@ const templateGenerator = read('backend/src/services/templateGenerator.js');
 const payrollRolePdfService = read('backend/src/services/payrollRolePdfService.js');
 const equipmentDeliveryActService = read('backend/src/services/equipmentDeliveryActService.js');
 const paymentController = read('backend/src/controllers/paymentController.js');
+const planesGestion = read('frontend-web/src/pages/PlanesGestion.jsx');
 const planCapabilityService = read('backend/src/services/planCapabilityService.js');
 const payphoneGatewayService = read('backend/src/services/payphoneGatewayService.js');
 const paymentReferenceService = read('backend/src/services/paymentReferenceService.js');
@@ -165,7 +168,6 @@ const planesPublicos = read('frontend-web/src/pages/Planes.jsx');
 const publicPlansCatalog = read('frontend-web/src/components/PublicPlansCatalog.jsx');
 const publicPlanPresentation = read('frontend-web/src/config/publicPlanPresentation.js');
 const registroWeb = read('frontend-web/src/pages/Register.jsx');
-const planesGestion = read('frontend-web/src/pages/PlanesGestion.jsx');
 const rutasCampo = read('frontend-web/src/pages/Asistencia/RutasCampo.jsx');
 const mobileApp = read('app-movil/src/App.js');
 const mobileApi = read('app-movil/src/services/api.js');
@@ -215,9 +217,21 @@ for (const reportCode of frontendReportCodes) {
 assert(!descargarReportes.includes('PAYROLL_ACCOUNTING_ENTRIES'), 'La PWA no debe mostrar el reporte contable legacy.');
 assert(descargarReportes.includes('PAYROLL_ACCOUNTING_REPORT'), 'La PWA debe mostrar el reporte contable gobernado.');
 assert(!descargarReportes.includes('Generar XML SAE'), 'IESS no debe exponerse como XML oficial en la pantalla de reportes.');
-assert(descargarReportes.includes('Prevalidar datos IESS'), 'La pantalla de reportes debe exponer IESS como prevalidacion.');
+assert(descargarReportes.includes('Generar TXT IESS'), 'La pantalla de reportes debe exponer batch IESS como TXT.');
+assert(iessSaeGenerator.includes("catalog_type = 'iess_establecimiento'"), 'Batch IESS debe resolver establecimiento desde catalogo parametrizable.');
+assert(!iessSaeGenerator.includes('IESS_DEFAULT_BRANCH_CODE'), 'Batch IESS no debe tener establecimiento IESS por defecto hardcodeado.');
+assert(parametrizacionModel.includes("catalogType: 'iess_establecimiento'"), 'Parametrizacion debe exponer submenu/catalogo de establecimientos IESS.');
+assert(parametrizacionModel.includes("parentKey: 'empresa'"), 'Establecimientos IESS deben colgar de Datos de empresa.');
+assert(schema.includes('iessEstablecimientosMax') && schema.includes('@map("iess_establecimientos_max")'), 'Planes deben monetizar limite de establecimientos IESS.');
+assert(paymentController.includes('iess_establecimientos_max'), 'API de planes debe persistir limite de establecimientos IESS.');
+assert(planesGestion.includes('iessEstablecimientosMax'), 'Admin de planes debe editar limite de establecimientos IESS.');
+assert(paymentController.includes('pricingInputMode') && paymentController.includes('tasaNominalAnual') && paymentController.includes('cuotasMensuales'), 'API de planes debe persistir contado, mensualidades y tasa nominal en metadata.');
+assert(paymentController.includes('WHERE p.publico = true AND p.activo = true') && paymentController.includes('WHERE catalog_rank = 1') && paymentController.includes("metadata->>'supersededByPlanId'"), 'Catalogo publico de planes debe publicar solo la ultima version vigente por raiz.');
+assert(planesGestion.includes('pricingInputMode') && planesGestion.includes('tasaNominalAnual') && planesGestion.includes('cuotasMensuales'), 'Admin de planes debe editar contado, mensualidades y tasa nominal.');
+assert(publicPlanPresentation.includes('COMMERCIAL_IVA_PERCENT') && publicPlanPresentation.includes('getPlanPriceBreakdown'), 'Presentacion publica de planes debe desglosar precio base, IVA y total.');
+assert(publicPlansCatalog.includes('primaryTotalLabel') && publicPlansCatalog.includes('annualBaseLabel') && publicPlansCatalog.includes('monthlyBaseLabel'), 'Catalogo publico debe mostrar precio mas IVA, contado anual y mensualidades.');
 assert(!landing.includes('XML SAE IESS'), 'La landing no debe prometer XML SAE IESS como reporte oficial.');
-assert(landing.includes('prevalidación IESS'), 'La landing debe comunicar IESS como prevalidacion.');
+assert(landing.includes('Batch IESS') || landing.includes('TXT IESS'), 'La landing debe comunicar IESS como batch TXT/DAT.');
 assert(app.includes("'/api/reportes/nomina/exportar'"), 'Backend debe exponer /api/reportes/nomina/exportar.');
 
 for (const [screenName, screenText] of [
@@ -367,7 +381,7 @@ assert(operacionMovil.includes('canCreateWorkZones && renderWorkZoneSection'), '
 assert(operacionMovil.includes('canCreateRouteSites && renderRouteSiteSection'), 'La app movil debe ocultar sitios cuando el perfil no puede crearlos.');
 assert(operacionMovil.includes('canAssignRoutes && renderAssignRouteSection'), 'La app movil debe ocultar asignacion cuando el perfil no puede ejecutarla.');
 assert(planesGestion.includes('appMovil') && planesGestion.includes('rutasCampo'), 'Gestion de planes debe mostrar canales app movil y rutas de campo.');
-assert(publicPlanPresentation.includes('App móvil de asistencia') && publicPlanPresentation.includes('Rutas de campo'), 'Catálogo público debe comunicar app móvil y rutas cuando el plan las ofrece.');
+assert(publicPlanPresentation.includes('App movil de asistencia') && publicPlanPresentation.includes('Rutas de campo'), 'Catalogo publico debe comunicar app movil y rutas cuando el plan las ofrece.');
 assert(publicPlanPresentation.includes('getPlanFunctionality'), 'Catalogo publico debe exponer matriz de funcionalidades por plan.');
 assert(publicPlansCatalog.includes('PlanFunctionalityList'), 'Sitio publico debe mostrar funcionalidades ofrecidas por cada plan.');
 assert(publicPlansCatalog.includes('Resumen de checkout') && publicPlansCatalog.includes('Continuar a PayPhone'), 'Checkout publico debe mostrar resumen antes de redirigir a PayPhone.');

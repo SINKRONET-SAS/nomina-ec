@@ -1,11 +1,10 @@
 // ============================================================
-// SKNOMINA - Preparacion de datos IESS
-// El XML SAE queda bloqueado salvo habilitacion experimental explicita.
+// SKNOMINA - Carga batch IESS
+// El portal IESS documenta archivos ASCII TXT/DAT, no XML SAE.
 // ============================================================
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { XMLBuilder } = require('fast-xml-parser');
 const { s3Upload } = require('../config/s3');
 const db = require('../config/database');
 const AppError = require('../utils/AppError');
@@ -16,12 +15,13 @@ const {
 const logger = require('../utils/logger');
 
 const SAE_MANIFEST_PATH = path.join(__dirname, '..', 'config', 'iess', 'sae-source-manifest.json');
-const SAE_CONTRACT_VERSION = 'SAE-IESS-2026-DPS26';
-const EXPERIMENTAL_IESS_XML_FLAG = 'ALLOW_EXPERIMENTAL_IESS_XML';
+const SAE_CONTRACT_VERSION = 'IESS-BATCH-ASCII-2026-RPE26';
+const IESS_BATCH_MOVEMENT_MSU = 'MSU';
+const IESS_BATCH_SEPARATOR = ';';
 
 function readSaeManifest() {
   if (!fs.existsSync(SAE_MANIFEST_PATH)) {
-    throw new AppError('No se encontro el manifiesto SAE IESS.', {
+    throw new AppError('No se encontro el manifiesto de carga batch IESS.', {
       code: 'SAE_SOURCE_MANIFEST_NOT_FOUND',
       statusCode: 500,
       details: { path: SAE_MANIFEST_PATH },
@@ -31,7 +31,7 @@ function readSaeManifest() {
   try {
     return JSON.parse(fs.readFileSync(SAE_MANIFEST_PATH, 'utf8'));
   } catch (error) {
-    throw new AppError('El manifiesto SAE IESS no pudo leerse.', {
+    throw new AppError('El manifiesto de carga batch IESS no pudo leerse.', {
       code: 'SAE_SOURCE_MANIFEST_INVALID',
       statusCode: 500,
       details: { path: SAE_MANIFEST_PATH, reason: error.message },
@@ -48,22 +48,70 @@ function money(value) {
   return numberValue(value).toFixed(2);
 }
 
-function normalizeText(value, fallback = 'NO REGISTRADO') {
-  const text = String(value || fallback)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^\w\s.-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return text || fallback;
-}
-
 function normalizeId(value) {
   return String(value || '').replace(/\D/g, '');
 }
 
-function isExperimentalIessXmlEnabled() {
-  return String(process.env[EXPERIMENTAL_IESS_XML_FLAG] || '').trim().toLowerCase() === 'true';
+function safeJsonObject(value) {
+  if (!value) return {};
+  if (typeof value === 'object') return value;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function normalizeIessEstablishmentCode(value) {
+  const clean = normalizeId(value);
+  if (!clean || clean.length > 4) return '';
+  return clean.padStart(4, '0');
+}
+
+function isEnabledFlag(value) {
+  return value === true || String(value || '').toLowerCase() === 'true';
+}
+
+function isActiveConfigRecord(record = {}) {
+  if (!record) return false;
+  const status = String(record.status || record.estado || 'activo').toLowerCase();
+  return status !== 'inactivo' && status !== 'archivado';
+}
+
+function resolveCompanyIessEstablishment(companyConfig = {}) {
+  const records = Array.isArray(companyConfig.iessEstablecimientos)
+    ? companyConfig.iessEstablecimientos
+    : [];
+  const activeRecords = records.filter(isActiveConfigRecord);
+  return activeRecords.find((record) => isEnabledFlag(record.principal) || isEnabledFlag(record.isPrincipal))
+    || activeRecords[0]
+    || {};
+}
+
+function resolveIessEstablishmentCode(tenant, companyConfig = {}, iessEstablishment = null) {
+  const tenantConfig = safeJsonObject(tenant?.configuracion);
+  const establishmentPayload = safeJsonObject(iessEstablishment?.payload);
+  const companyEstablishment = resolveCompanyIessEstablishment(companyConfig);
+  const candidates = [
+    establishmentPayload.codigoEstablecimiento,
+    establishmentPayload.iessCodigoEstablecimiento,
+    establishmentPayload.iess_codigo_establecimiento,
+    iessEstablishment?.code,
+    companyEstablishment.codigoEstablecimiento,
+    companyEstablishment.iessCodigoEstablecimiento,
+    companyEstablishment.iess_codigo_establecimiento,
+    companyEstablishment.code,
+    companyConfig.iess?.codigoEstablecimiento,
+    companyConfig.iessCodigoEstablecimiento,
+    companyConfig.iess_codigo_establecimiento,
+    tenantConfig.iess?.codigoEstablecimiento,
+    tenantConfig.iessCodigoEstablecimiento,
+    tenantConfig.iess_codigo_establecimiento,
+    tenantConfig.iessEstablishmentCode,
+  ];
+  const configured = candidates.find((candidate) => String(candidate || '').trim());
+  return normalizeIessEstablishmentCode(configured);
 }
 
 async function loadSaeData(tenantId, anio, mes) {
@@ -71,17 +119,43 @@ async function loadSaeData(tenantId, anio, mes) {
   assertLegalParametersReadyForProduction(legalParameters, {
     year: anio,
     tenantId,
-    operation: 'generacion_sae_iess',
+    operation: 'generacion_batch_iess_txt',
   });
   const employerIessRate = Number(legalParameters.payroll?.employerIessRate);
 
   const tenantResult = await db.query('SELECT * FROM tenants WHERE id = $1', [tenantId]);
   if (tenantResult.rows.length === 0) {
-    throw new AppError('Empresa no encontrada para generar SAE IESS.', {
+    throw new AppError('Empresa no encontrada para generar batch IESS.', {
       code: 'TENANT_NOT_FOUND',
       statusCode: 404,
     });
   }
+
+  const companyConfigResult = await db.query(`
+    SELECT payload
+    FROM configuration_catalogs
+    WHERE tenant_id = $1
+      AND catalog_type = 'empresa_operativa'
+      AND status = 'activo'
+    ORDER BY updated_at DESC, created_at DESC
+    LIMIT 1
+  `, [tenantId]);
+
+  const iessEstablishmentResult = await db.query(`
+    SELECT code, name, payload
+    FROM configuration_catalogs
+    WHERE tenant_id = $1
+      AND catalog_type = 'iess_establecimiento'
+      AND status = 'activo'
+    ORDER BY
+      CASE
+        WHEN LOWER(COALESCE(payload->>'principal', payload->>'isPrincipal', 'false')) = 'true' THEN 0
+        ELSE 1
+      END,
+      updated_at DESC,
+      created_at DESC
+    LIMIT 1
+  `, [tenantId]);
 
   const nominasResult = await db.query(`
     SELECT
@@ -103,17 +177,24 @@ async function loadSaeData(tenantId, anio, mes) {
 
   return {
     tenant: tenantResult.rows[0],
+    companyConfig: safeJsonObject(companyConfigResult.rows[0]?.payload),
+    iessEstablishment: iessEstablishmentResult.rows[0] || null,
     nominas: nominasResult.rows,
     legalParameters,
     employerIessRate,
   };
 }
 
-function buildSaeChecks({ tenant, nominas, employerIessRate, manifest, anio, mes }) {
-  const source = (manifest.sources || []).find((item) => item.kind === 'official_institution') || {};
+function uniqueIds(nominas) {
+  return new Set(nominas.map((row) => normalizeId(row.cedula)).filter(Boolean));
+}
+
+function buildSaeChecks({ tenant, companyConfig, iessEstablishment, nominas, employerIessRate, manifest, anio, mes }) {
+  const source = (manifest.sources || []).find((item) => item.kind === 'official_iess_batch_portal') || {};
   const reconciliation = manifest.validationPolicy?.officialSourceReconciliation || '';
-  const experimentalXmlEnabled = isExperimentalIessXmlEnabled();
-  const xmlFormatValidated = manifest.validationPolicy?.xmlFormatStatus === 'official_validated';
+  const batchFormatValidated = manifest.validationPolicy?.batchFormatStatus === 'official_ascii_txt_dat';
+  const distinctEmployees = uniqueIds(nominas);
+  const establishmentCode = resolveIessEstablishmentCode(tenant, companyConfig, iessEstablishment);
   const checks = [
     {
       code: 'empleador_ruc',
@@ -122,10 +203,10 @@ function buildSaeChecks({ tenant, nominas, employerIessRate, manifest, anio, mes
       detail: normalizeId(tenant.ruc) || 'Falta RUC del empleador.',
     },
     {
-      code: 'empleador_razon_social',
-      label: 'Razon social del empleador',
-      passed: Boolean(tenant.razon_social),
-      detail: tenant.razon_social || 'Falta razon social del empleador.',
+      code: 'iess_codigo_establecimiento',
+      label: 'Codigo de establecimiento IESS',
+      passed: Boolean(establishmentCode),
+      detail: establishmentCode || 'Configura Datos de empresa > IESS > Establecimientos antes de preparar el batch.',
     },
     {
       code: 'nomina_cerrada_periodo',
@@ -133,13 +214,15 @@ function buildSaeChecks({ tenant, nominas, employerIessRate, manifest, anio, mes
       passed: nominas.length > 0,
       detail: nominas.length > 0
         ? `${nominas.length} roles cerrados para ${String(mes).padStart(2, '0')}/${anio}.`
-        : 'Cierra la nomina del periodo antes de prevalidar IESS.',
+        : 'Cierra la nomina del periodo antes de preparar el batch IESS.',
     },
     {
-      code: 'iess_aporte_patronal',
-      label: 'Aporte patronal IESS vigente',
+      code: 'parametros_nomina_iess',
+      label: 'Parametros de nomina IESS vigentes',
       passed: Number.isFinite(employerIessRate) && employerIessRate > 0,
-      detail: Number.isFinite(employerIessRate) ? `${(employerIessRate * 100).toFixed(2)}%` : 'No configurado.',
+      detail: Number.isFinite(employerIessRate)
+        ? `Aporte patronal referencial ${(employerIessRate * 100).toFixed(2)}%.`
+        : 'No configurado.',
     },
     {
       code: 'trabajadores_identificados',
@@ -148,25 +231,31 @@ function buildSaeChecks({ tenant, nominas, employerIessRate, manifest, anio, mes
       detail: `${nominas.filter((row) => normalizeId(row.cedula)).length}/${nominas.length} trabajadores con identificacion.`,
     },
     {
-      code: 'fechas_ingreso',
-      label: 'Fechas de ingreso registradas',
-      passed: nominas.length > 0 && nominas.every((row) => row.fecha_ingreso),
-      detail: `${nominas.filter((row) => row.fecha_ingreso).length}/${nominas.length} trabajadores con fecha de ingreso.`,
+      code: 'un_registro_por_trabajador',
+      label: 'Un registro por trabajador',
+      passed: nominas.length > 0 && distinctEmployees.size === nominas.length,
+      detail: `${distinctEmployees.size}/${nominas.length} identificaciones unicas.`,
+    },
+    {
+      code: 'sueldos_msu',
+      label: 'Sueldos para movimiento MSU',
+      passed: nominas.length > 0 && nominas.every((row) => numberValue(row.total_ingresos) > 0),
+      detail: `${nominas.filter((row) => numberValue(row.total_ingresos) > 0).length}/${nominas.length} trabajadores con sueldo mayor a cero.`,
     },
     {
       code: 'fuente_iess_reconciliada',
-      label: 'Portal IESS consultado',
+      label: 'Instructivo batch IESS localizado',
       passed: String(source.status || '').includes('checked_2026')
         && String(reconciliation).startsWith('checked_'),
       detail: `${reconciliation || 'pendiente'}; ${source.observedAt || manifest.observedAt || 'sin fecha'}`,
     },
     {
       code: 'formato_carga_iess',
-      label: 'Formato oficial IESS para descarga',
-      passed: xmlFormatValidated || experimentalXmlEnabled,
-      detail: xmlFormatValidated
-        ? 'Formato oficial IESS validado.'
-        : `Pendiente de especificacion oficial; ${EXPERIMENTAL_IESS_XML_FLAG}=${experimentalXmlEnabled ? 'true' : 'false'}.`,
+      label: 'Formato de carga IESS TXT/DAT',
+      passed: batchFormatValidated,
+      detail: batchFormatValidated
+        ? 'Archivo ASCII TXT/DAT con separador punto y coma.'
+        : 'Pendiente de instructivo batch IESS.',
     },
   ];
 
@@ -177,21 +266,31 @@ async function precheckSAE(tenantId, anio, mes) {
   const year = Number(anio);
   const month = Number(mes);
   const manifest = readSaeManifest();
-  const { tenant, nominas, employerIessRate } = await loadSaeData(tenantId, year, month);
-  const checks = buildSaeChecks({ tenant, nominas, employerIessRate, manifest, anio: year, mes: month });
-  const dataChecks = checks.filter((check) => check.code !== 'formato_carga_iess');
+  const { tenant, companyConfig, iessEstablishment, nominas, employerIessRate } = await loadSaeData(tenantId, year, month);
+  const checks = buildSaeChecks({
+    tenant,
+    companyConfig,
+    iessEstablishment,
+    nominas,
+    employerIessRate,
+    manifest,
+    anio: year,
+    mes: month,
+  });
   const totalSalarios = nominas.reduce((sum, row) => sum + numberValue(row.total_ingresos), 0);
   const totalAportePersonal = nominas.reduce((sum, row) => sum + numberValue(row.aporte_iess_personal), 0);
   const totalAportePatronal = nominas.reduce(
     (sum, row) => sum + (numberValue(row.total_ingresos) * employerIessRate),
     0,
   );
+  const ready = checks.every((check) => check.passed);
 
   return {
-    ready: checks.every((check) => check.passed),
-    dataReady: dataChecks.every((check) => check.passed),
+    ready,
+    dataReady: ready,
     anio: year,
     mes: month,
+    movementType: IESS_BATCH_MOVEMENT_MSU,
     totalEmpleados: nominas.length,
     checks,
     totals: {
@@ -205,105 +304,77 @@ async function precheckSAE(tenantId, anio, mes) {
       observedAt: manifest.observedAt,
       officialSourceReconciliation: manifest.validationPolicy?.officialSourceReconciliation || '',
       schemaPolicy: manifest.validationPolicy?.schemaPolicy || '',
-      xmlFormatStatus: manifest.validationPolicy?.xmlFormatStatus || '',
-      experimentalXmlEnabled: isExperimentalIessXmlEnabled(),
+      batchFormatStatus: manifest.validationPolicy?.batchFormatStatus || '',
+      separator: manifest.validationPolicy?.separator || IESS_BATCH_SEPARATOR,
+      encoding: manifest.validationPolicy?.encoding || 'ASCII',
+      fileExtensions: manifest.validationPolicy?.fileExtensions || ['.txt', '.dat'],
+      supportedMovementTypes: manifest.validationPolicy?.supportedMovementTypes || [IESS_BATCH_MOVEMENT_MSU],
     },
   };
 }
 
-function buildSaeXml({ tenant, nominas, employerIessRate, anio, mes }) {
-  const detalleAportantes = nominas.map((row) => ({
-    aportante: {
-      tipoIdentificacion: 'CED',
-      identificacion: normalizeId(row.cedula),
-      apellidos: normalizeText(row.apellidos).toUpperCase(),
-      nombres: normalizeText(row.nombres).toUpperCase(),
-      fechaIngreso: new Date(row.fecha_ingreso).toISOString().split('T')[0],
-      sueldo: money(row.total_ingresos),
-      aportePersonal: money(row.aporte_iess_personal),
-      aportePatronal: money(numberValue(row.total_ingresos) * employerIessRate),
-    },
-  }));
+function buildIessBatchTxt({ tenant, companyConfig, iessEstablishment, nominas, anio, mes }) {
+  const ruc = normalizeId(tenant.ruc);
+  const establishmentCode = resolveIessEstablishmentCode(tenant, companyConfig, iessEstablishment);
+  const periodMonth = String(mes).padStart(2, '0');
 
-  const totalSalarios = nominas.reduce((sum, row) => sum + numberValue(row.total_ingresos), 0);
-  const totalAportePersonal = nominas.reduce((sum, row) => sum + numberValue(row.aporte_iess_personal), 0);
-  const totalAportePatronal = nominas.reduce(
-    (sum, row) => sum + (numberValue(row.total_ingresos) * employerIessRate),
-    0,
-  );
-
-  const sae = {
-    'sae:planilla': {
-      '@xmlns:sae': 'http://www.iess.gob.ec/schema/SAE',
-      '@version': SAE_CONTRACT_VERSION,
-      empleador: {
-        ruc: normalizeId(tenant.ruc),
-        razonSocial: normalizeText(tenant.razon_social),
-        periodo: `${String(mes).padStart(2, '0')}/${anio}`,
-        tipoPlanilla: 'PLANILLA_MENSUAL',
-      },
-      detalleAportantes,
-      totales: {
-        totalAportantes: nominas.length,
-        totalSalarios: money(totalSalarios),
-        totalAportePersonal: money(totalAportePersonal),
-        totalAportePatronal: money(totalAportePatronal),
-        totalAporte: money(totalAportePersonal + totalAportePatronal),
-      },
-    },
-  };
-
-  const builder = new XMLBuilder({
-    format: true,
-    ignoreAttributes: false,
-    attributeNamePrefix: '@',
-  });
-
-  return '<?xml version="1.0" encoding="UTF-8"?>\n' + builder.build(sae);
+  return nominas.map((row) => [
+    ruc,
+    establishmentCode,
+    String(anio),
+    periodMonth,
+    IESS_BATCH_MOVEMENT_MSU,
+    normalizeId(row.cedula),
+    money(row.total_ingresos),
+  ].join(IESS_BATCH_SEPARATOR)).join('\r\n') + '\r\n';
 }
 
-async function generarXML_SAE(tenantId, anio, mes) {
+async function generarArchivoIessBatch(tenantId, anio, mes) {
   const precheck = await precheckSAE(tenantId, anio, mes);
   if (!precheck.ready) {
-    const formatPending = precheck.checks.some((check) => check.code === 'formato_carga_iess' && !check.passed);
-    throw new AppError(
-      formatPending
-        ? 'IESS no tiene un formato XML oficial validado en SKNOMINA. Usa la prevalidacion y habilita XML solo como experimental con aprobacion tecnica.'
-        : 'IESS requiere datos validados antes de generar el XML experimental.',
-      {
-        code: formatPending ? 'IESS_XML_FORMAT_NOT_VALIDATED' : 'SAE_PRECHECK_FAILED',
-        statusCode: 423,
-        details: { checks: precheck.checks },
-      }
-    );
+    throw new AppError('IESS requiere datos validados antes de generar el archivo batch TXT/DAT.', {
+      code: 'IESS_BATCH_PRECHECK_FAILED',
+      statusCode: 423,
+      details: { checks: precheck.checks },
+    });
   }
 
-  const { tenant, nominas, employerIessRate } = await loadSaeData(tenantId, Number(anio), Number(mes));
-  const xmlString = buildSaeXml({ tenant, nominas, employerIessRate, anio: Number(anio), mes: Number(mes) });
-  const sha256 = crypto.createHash('sha256').update(xmlString.replace(/\r\n?/g, '\n'), 'utf8').digest('hex');
-  const fileName = `SAE_IESS_${anio}${String(mes).padStart(2, '0')}.xml`;
+  const { tenant, companyConfig, iessEstablishment, nominas } = await loadSaeData(tenantId, Number(anio), Number(mes));
+  const batchString = buildIessBatchTxt({
+    tenant,
+    companyConfig,
+    iessEstablishment,
+    nominas,
+    anio: Number(anio),
+    mes: Number(mes),
+  });
+  const sha256 = crypto.createHash('sha256').update(batchString.replace(/\r\n?/g, '\n'), 'ascii').digest('hex');
+  const fileName = `IESS_MSU_${anio}${String(mes).padStart(2, '0')}.txt`;
   const key = `reportes/${tenantId}/iess/${fileName}`;
-  const url = await s3Upload(Buffer.from(xmlString, 'utf8'), key, 'application/xml');
+  const contentType = 'text/plain; charset=us-ascii';
+  const url = await s3Upload(Buffer.from(batchString, 'ascii'), key, contentType);
 
   logger.info({
-    code: 'IESS_XML_EXPERIMENTAL_GENERATED',
-    correlationId: process.env.CORRELATION_ID || 'sae-generator',
+    code: 'IESS_BATCH_TXT_GENERATED',
+    correlationId: process.env.CORRELATION_ID || 'iess-batch-generator',
     tenantId,
     anio,
     mes,
+    movementType: IESS_BATCH_MOVEMENT_MSU,
     totalEmpleados: nominas.length,
-  }, 'XML IESS experimental generado');
+  }, 'Archivo batch IESS TXT generado');
 
   return {
     url,
     fileName,
-    contentType: 'application/xml',
+    contentType,
     totalEmpleados: nominas.length,
-    xmlString,
+    batchString,
     sha256,
+    movementType: IESS_BATCH_MOVEMENT_MSU,
     validation: {
       valid: true,
-      mode: 'experimental_versioned_structural_contract',
+      mode: 'iess_batch_ascii_txt_dat',
       contractVersion: SAE_CONTRACT_VERSION,
       checkedAt: new Date().toISOString(),
     },
@@ -313,6 +384,7 @@ async function generarXML_SAE(tenantId, anio, mes) {
 
 module.exports = {
   SAE_CONTRACT_VERSION,
-  generarXML_SAE,
+  generarArchivoIessBatch,
+  generarXML_SAE: generarArchivoIessBatch,
   precheckSAE,
 };

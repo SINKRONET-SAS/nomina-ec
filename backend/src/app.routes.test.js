@@ -31,7 +31,7 @@ describe('app route order', () => {
     expect(source).toContain('reporteController.exportarConsolidadoAnual');
   });
 
-  test('expone precheck IESS antes de generar XML experimental', () => {
+  test('expone precheck IESS antes de generar batch TXT', () => {
     const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
     const precheckIndex = source.indexOf("app.post('/api/reportes/sae/precheck'");
     const generateIndex = source.indexOf("app.post('/api/reportes/sae',");

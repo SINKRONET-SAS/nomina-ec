@@ -24,10 +24,27 @@ const MANUAL_BANK_PROVIDER = 'BANK_TRANSFER_MANUAL';
 const DIRECT_PAYMENTS_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'si', 'sí', 'on']);
 const DIRECT_PAYMENTS_DISABLED_VALUES = new Set(['0', 'false', 'no', 'off', 'disabled', 'manual', 'manual_transfer', 'bank_transfer']);
 const BILLING_PERIODS = new Set(['monthly', 'annual']);
+const PRICING_INPUT_MODES = new Set(['ANNUAL_PRICE', 'MONTHLY_PAYMENT']);
 
 function normalizeBillingPeriod(value, fallback = 'monthly') {
   const normalized = String(value || fallback || 'monthly').trim().toLowerCase();
   return BILLING_PERIODS.has(normalized) ? normalized : fallback;
+}
+
+function normalizePricingInputMode(value, fallback = 'ANNUAL_PRICE') {
+  const normalized = String(value || fallback || 'ANNUAL_PRICE').trim().toUpperCase();
+  return PRICING_INPUT_MODES.has(normalized) ? normalized : fallback;
+}
+
+function normalizeInstallmentCount(value, fallback = 12) {
+  const parsed = Math.round(Number(value ?? fallback));
+  return Number.isFinite(parsed) && parsed >= 1 ? parsed : fallback;
+}
+
+function normalizeNominalAnnualRate(value, fallback = 0) {
+  const parsed = Number(value ?? fallback);
+  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+  return Math.round(parsed * 100) / 100;
 }
 
 function resolvePaymentProvider() {
@@ -65,6 +82,18 @@ function getPlanBillingMetadata(plan = {}) {
 
   return {
     billingPeriod,
+    pricingInputMode: normalizePricingInputMode(
+      plan.pricingInputMode ?? plan.pricing_input_mode ?? metadata.pricingInputMode ?? metadata.pricing_input_mode,
+      'MONTHLY_PAYMENT'
+    ),
+    cuotasMensuales: normalizeInstallmentCount(
+      plan.cuotasMensuales ?? plan.cuotas_mensuales ?? metadata.cuotasMensuales ?? metadata.cuotas_mensuales,
+      12
+    ),
+    tasaNominalAnual: normalizeNominalAnnualRate(
+      plan.tasaNominalAnual ?? plan.tasa_nominal_anual ?? metadata.tasaNominalAnual ?? metadata.tasa_nominal_anual,
+      0
+    ),
     precioMensualCentavos: monthlyCents,
     precioAnualCentavos: annualCents,
   };
@@ -120,11 +149,15 @@ function normalizePlan(row) {
     precioMensual: Number(billing.precioMensualCentavos || 0) / 100,
     precioAnualCentavos: billing.precioAnualCentavos,
     precioAnual: Number(billing.precioAnualCentavos || 0) / 100,
+    pricingInputMode: billing.pricingInputMode,
+    cuotasMensuales: billing.cuotasMensuales,
+    tasaNominalAnual: billing.tasaNominalAnual,
     billingPeriod: billing.billingPeriod,
     moneda: row.moneda,
     empleadosMax: row.empleados_max,
     empresasMax: row.empresas_max,
     usuariosMax: row.usuarios_max,
+    iessEstablecimientosMax: row.iess_establecimientos_max ?? 1,
     archivosBancarios: row.archivos_bancarios,
     reportesAvanzados: row.reportes_avanzados,
     apiAccess: row.api_access,
@@ -144,6 +177,9 @@ function normalizePlan(row) {
       trialDays,
       billingPeriod: billing.billingPeriod,
       precioAnualCentavos: billing.precioAnualCentavos,
+      pricingInputMode: billing.pricingInputMode,
+      cuotasMensuales: billing.cuotasMensuales,
+      tasaNominalAnual: billing.tasaNominalAnual,
     },
   };
 }
@@ -159,10 +195,32 @@ function normalizeBrandText(value) {
 async function listPublicPlans(_req, res, next) {
   try {
     const result = await db.query(
-      `SELECT *
-       FROM planes_comerciales
-       WHERE publico = true AND activo = true
-       ORDER BY orden ASC, precio_mensual_centavos ASC`
+      `WITH ranked AS (
+        SELECT p.*,
+          ROW_NUMBER() OVER (
+            PARTITION BY COALESCE(
+              NULLIF(p.metadata->>'rootPlanId', ''),
+              NULLIF(p.metadata->>'previousPlanId', ''),
+              regexp_replace(p.id, '(_V[0-9]+)+$', '', 'i')
+            )
+            ORDER BY
+              CASE WHEN COALESCE(p.metadata->>'catalogStatus', '') = 'superseded'
+                OR NULLIF(p.metadata->>'supersededByPlanId', '') IS NOT NULL
+                THEN 0 ELSE 1 END DESC,
+              CASE WHEN p.id ~ '_V[0-9]+$' THEN 1 ELSE 0 END DESC,
+              p.created_at DESC,
+              p.updated_at DESC,
+              p.id DESC
+          ) AS catalog_rank
+        FROM planes_comerciales p
+        WHERE p.publico = true AND p.activo = true
+      )
+      SELECT *
+      FROM ranked
+      WHERE catalog_rank = 1
+        AND COALESCE(metadata->>'catalogStatus', '') <> 'superseded'
+        AND NULLIF(metadata->>'supersededByPlanId', '') IS NULL
+      ORDER BY orden ASC, precio_mensual_centavos ASC`
     );
 
     res.json({
@@ -225,6 +283,18 @@ function validatePlanPayload(body) {
     body.billingPeriod ?? incomingMetadata.billingPeriod ?? incomingMetadata.billing_period,
     'monthly'
   );
+  const pricingInputMode = normalizePricingInputMode(
+    body.pricingInputMode ?? incomingMetadata.pricingInputMode ?? incomingMetadata.pricing_input_mode,
+    'MONTHLY_PAYMENT'
+  );
+  const cuotasMensuales = normalizeInstallmentCount(
+    body.cuotasMensuales ?? incomingMetadata.cuotasMensuales ?? incomingMetadata.cuotas_mensuales,
+    12
+  );
+  const tasaNominalAnual = normalizeNominalAnnualRate(
+    body.tasaNominalAnual ?? incomingMetadata.tasaNominalAnual ?? incomingMetadata.tasa_nominal_anual,
+    0
+  );
   const precioAnualCentavos = Math.max(0, Math.round(Number(
     body.precioAnualCentavos
       ?? incomingMetadata.precioAnualCentavos
@@ -246,6 +316,14 @@ function validatePlanPayload(body) {
     throw err;
   }
 
+  const rawIessEstablishmentsMax = body.iessEstablecimientosMax
+    ?? incomingMetadata.iessEstablecimientosMax
+    ?? incomingMetadata.iess_establecimientos_max
+    ?? 1;
+  const iessEstablecimientosMax = Number(rawIessEstablishmentsMax) === -1
+    ? -1
+    : Math.max(1, Math.round(Number(rawIessEstablishmentsMax) || 1));
+
   return {
     id,
     nombre,
@@ -256,6 +334,7 @@ function validatePlanPayload(body) {
       : Math.max(0, Math.round(Number(body.empleadosMax))),
     empresasMax: Math.max(1, Math.round(Number(body.empresasMax || 1))),
     usuariosMax: Math.max(1, Math.round(Number(body.usuariosMax || 3))),
+    iessEstablecimientosMax,
     archivosBancarios: Boolean(body.archivosBancarios),
     reportesAvanzados: Boolean(body.reportesAvanzados),
     apiAccess: Boolean(body.apiAccess),
@@ -267,10 +346,16 @@ function validatePlanPayload(body) {
     orden: Math.round(Number(body.orden || 0)),
     trialDays,
     billingPeriod,
+    pricingInputMode,
+    cuotasMensuales,
+    tasaNominalAnual,
     precioAnualCentavos,
     metadata: {
       ...withPlanTrialMetadata(incomingMetadata, trialDays),
       billingPeriod,
+      pricingInputMode,
+      cuotasMensuales,
+      tasaNominalAnual,
       precioAnualCentavos,
     },
   };
@@ -338,10 +423,10 @@ async function upsertPlan(req, res, next) {
     const result = await db.query(
       `INSERT INTO planes_comerciales (
         id, nombre, descripcion, precio_mensual_centavos, empleados_max, empresas_max,
-        usuarios_max, archivos_bancarios, reportes_avanzados, api_access, app_movil, rutas_campo,
+        usuarios_max, iess_establecimientos_max, archivos_bancarios, reportes_avanzados, api_access, app_movil, rutas_campo,
         soporte, publico, activo, orden, metadata
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
       ON CONFLICT (id) DO UPDATE SET
         nombre = EXCLUDED.nombre,
         descripcion = EXCLUDED.descripcion,
@@ -349,6 +434,7 @@ async function upsertPlan(req, res, next) {
         empleados_max = EXCLUDED.empleados_max,
         empresas_max = EXCLUDED.empresas_max,
         usuarios_max = EXCLUDED.usuarios_max,
+        iess_establecimientos_max = EXCLUDED.iess_establecimientos_max,
         archivos_bancarios = EXCLUDED.archivos_bancarios,
         reportes_avanzados = EXCLUDED.reportes_avanzados,
         api_access = EXCLUDED.api_access,
@@ -369,6 +455,7 @@ async function upsertPlan(req, res, next) {
         payload.empleadosMax,
         payload.empresasMax,
         payload.usuariosMax,
+        payload.iessEstablecimientosMax,
         payload.archivosBancarios,
         payload.reportesAvanzados,
         payload.apiAccess,
@@ -401,10 +488,10 @@ function insertCommercialPlan(payload) {
   return db.query(
     `INSERT INTO planes_comerciales (
       id, nombre, descripcion, precio_mensual_centavos, empleados_max, empresas_max,
-      usuarios_max, archivos_bancarios, reportes_avanzados, api_access, app_movil, rutas_campo,
+      usuarios_max, iess_establecimientos_max, archivos_bancarios, reportes_avanzados, api_access, app_movil, rutas_campo,
       soporte, publico, activo, orden, metadata
     )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
     RETURNING *`,
     [
       payload.id,
@@ -414,6 +501,7 @@ function insertCommercialPlan(payload) {
       payload.empleadosMax,
       payload.empresasMax,
       payload.usuariosMax,
+      payload.iessEstablecimientosMax,
       payload.archivosBancarios,
       payload.reportesAvanzados,
       payload.apiAccess,

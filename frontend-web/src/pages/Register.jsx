@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, UserRound } from 'lucide-react';
 import PlanFunctionalityList from '../components/PlanFunctionalityList';
-import { formatPublicPlanPrice, normalizePublicPlans } from '../config/publicPlanPresentation';
+import { formatPublicPlanPrice, getPlanPriceBreakdown, normalizePublicPlans } from '../config/publicPlanPresentation';
 import { confirmEmailVerification, extractApiError, fetchPlans, publicRegister, requestEmailVerification } from '../services/publicApi';
 import { useAuth } from '../context/AuthContext';
 import BrandLogo from '../components/Brand/BrandLogo';
@@ -39,6 +39,7 @@ function Register() {
     () => plans.find((plan) => plan.id === String(form.planId || '').trim().toUpperCase()) || normalizePublicPlans().find((plan) => plan.id === 'TRIAL'),
     [form.planId, plans]
   );
+  const selectedPricing = useMemo(() => getPlanPriceBreakdown(selectedPlan), [selectedPlan]);
 
   useEffect(() => {
     let mounted = true;
@@ -242,8 +243,20 @@ function Register() {
                     <h3 className="mt-1 text-lg font-semibold text-slate-950">{selectedPlan.nombre}</h3>
                     <p className="mt-1 text-sm leading-6 text-slate-600">{selectedPlan.descripcion}</p>
                   </div>
-                  <p className="text-xl font-semibold text-slate-950">{formatPublicPlanPrice(selectedPlan)}</p>
+                  <div className="text-right">
+                    <p className="text-xl font-semibold text-slate-950">{formatPublicPlanPrice(selectedPlan)}</p>
+                    {selectedPricing.hasPrice && (
+                      <p className="mt-1 text-xs leading-5 text-slate-500">{selectedPricing.primaryTotalLabel}</p>
+                    )}
+                  </div>
                 </div>
+                {selectedPricing.hasPrice && (
+                  <div className="mt-3 grid gap-2 text-xs leading-5 text-slate-600 sm:grid-cols-3">
+                    <span>{selectedPricing.annualBaseLabel}</span>
+                    <span>{selectedPricing.monthlyBaseLabel}</span>
+                    <span>{selectedPricing.rateLabel}</span>
+                  </div>
+                )}
                 <div className="mt-4">
                   <PlanFunctionalityList compact plan={selectedPlan} />
                 </div>

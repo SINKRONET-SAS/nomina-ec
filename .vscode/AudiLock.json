@@ -1,39 +1,48 @@
 {
   "plan": "HAIKY-REPORTES-ENTIDADES-PUBLICAS-EC-2026",
-  "phaseCompleted": "RPE26-04-qa-release",
+  "phaseCompleted": "RPE26-05-iess-batch-establecimientos-pricing",
   "summary": [
-    "RDEP y Formulario 107 quedan como reportes SRI validados por fuentes versionadas.",
-    "IESS queda degradado a preparacion y prevalidacion operativa hasta contar con formato oficial validado.",
-    "El endpoint legado de XML IESS falla cerrado con IESS_XML_FORMAT_NOT_VALIDATED salvo flag experimental explicito.",
-    "La PWA separa reportes SRI, preparacion IESS y reportes internos; Formulario 107 agrega busqueda de empleados.",
-    "Los reportes internos priorizan estructuras verticales y marcan la matriz dinamica como uso puntual."
+    "IESS queda como batch ASCII TXT/DAT MSU, no como XML SAE productivo.",
+    "El establecimiento IESS se parametriza en Datos de empresa > IESS y no tiene fallback hardcodeado.",
+    "Los planes monetizan establecimientos IESS con iess_establecimientos_max y bloquean excesos por plan.",
+    "El sitio publico muestra precio base + IVA 15%, total, contado anual, mensualidades y tasa nominal anual.",
+    "El catalogo publico de planes rankea por raiz comercial y publica solo la ultima version vigente."
   ],
   "filesModified": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/RPE26-00-baseline-gobierno.md",
-    ".github/prompts/RPE26-01-fuentes-sri-iess.md",
     ".github/prompts/RPE26-02-runtime-pwa-backend.md",
-    ".github/prompts/RPE26-03-reportes-escala.md",
-    ".github/prompts/RPE26-04-qa-release.md",
+    ".github/prompts/RPE26-05-iess-batch-establecimientos.md",
     ".vscode/AudiLock.json",
     ".vscode/AuditLock.json",
     "AuditLock.json",
     "README.md",
+    "backend/prisma/migrations/20260712193000_rpe26_iess_establishments_limit/migration.sql",
+    "backend/prisma/schema.prisma",
     "backend/src/app.routes.test.js",
     "backend/src/config/iess/sae-source-manifest.json",
     "backend/src/config/modules.js",
+    "backend/src/controllers/paymentController.js",
+    "backend/src/controllers/paymentController.test.js",
+    "backend/src/services/configurationService.js",
+    "backend/src/services/configurationService.test.js",
     "backend/src/services/iessSaeGenerator.js",
     "backend/src/services/iessSaeGenerator.test.js",
-    "docs/CUMPLIMIENTO_LEGAL.md",
+    "backend/src/services/planCapabilityService.js",
     "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_DIAGNOSTICO_PRELIMINAR_SKNOMINA_2026.md",
     "docs2/PLAN_HAIKY_REPORTES_ENTIDADES_PUBLICAS_EC_2026.md",
-    "docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/CONTRATO_DPS26_CIERRE_DEFINITIVO.md",
     "docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/MATRIZ_DPS26_HALLAZGOS.md",
     "docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/REPORTE_DPS26_00_BASELINE.md",
     "docs2/reportes-entidades-publicas-ec-2026/REPORTE_RPE26_00_04_EJECUCION.md",
+    "docs2/reportes-entidades-publicas-ec-2026/REPORTE_RPE26_05_IESS_BATCH_ESTABLECIMIENTOS.md",
     "frontend-web/src/components/ModulePermissionMatrix.jsx",
+    "frontend-web/src/components/PublicPlansCatalog.jsx",
+    "frontend-web/src/config/publicPlanPresentation.js",
+    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
+    "frontend-web/src/pages/Configuracion/parametrizacion/parametrizacionModel.jsx",
     "frontend-web/src/pages/Landing.jsx",
     "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
+    "frontend-web/src/pages/PlanesGestion.jsx",
+    "frontend-web/src/pages/Register.jsx",
     "scripts/verify-system-contracts.mjs"
   ],
   "validationChecks": [
@@ -43,6 +52,16 @@
       "output": "node --check backend/src/services/iessSaeGenerator.js"
     },
     {
+      "name": "node_check_configuration_service",
+      "ok": true,
+      "output": "node --check backend/src/services/configurationService.js"
+    },
+    {
+      "name": "node_check_payment_controller",
+      "ok": true,
+      "output": "node --check backend/src/controllers/paymentController.js"
+    },
+    {
       "name": "node_check_contracts_script",
       "ok": true,
       "output": "node --check scripts/verify-system-contracts.mjs"
@@ -50,7 +69,12 @@
     {
       "name": "backend_targeted_tests",
       "ok": true,
-      "output": "npm.cmd --workspace=backend test -- iessSaeGenerator.test.js app.routes.test.js --runInBand: PASS, 2 suites, 29 tests"
+      "output": "npm.cmd --workspace=backend test -- iessSaeGenerator.test.js app.routes.test.js configurationService.test.js paymentController.test.js --runInBand: PASS, 4 suites, 53 tests"
+    },
+    {
+      "name": "prisma_validate",
+      "ok": true,
+      "output": "npm.cmd --workspace=backend run prisma:validate: schema valid"
     },
     {
       "name": "contracts_system",
@@ -60,7 +84,7 @@
     {
       "name": "frontend_build",
       "ok": true,
-      "output": "npm.cmd --workspace=frontend-web run build: PASS; PWA files generated"
+      "output": "npm.cmd --workspace=frontend-web run build: PASS; PWA files generated; chunk warning known"
     },
     {
       "name": "git_diff_check",
@@ -70,9 +94,9 @@
     {
       "name": "utf8_no_bom",
       "ok": true,
-      "output": "UTF8 sin BOM OK 17 archivos"
+      "output": "UTF8 BOM check OK 34 files"
     }
   ],
-  "timestamp": "2026-07-13T00:28:32.566Z",
-  "signature": "ea3aed5f1b3dbc7e644d07895073617ae5f05e534348c1d989ba5bcea805edd3"
+  "timestamp": "2026-07-13T01:55:00.000Z",
+  "signature": "66034977cb9833f2725d1f1fb6027313c0b75423c29b006a7e2cabdd1e500807"
 }

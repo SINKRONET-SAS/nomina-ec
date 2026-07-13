@@ -73,7 +73,7 @@ const flow = [
   {
     icon: FileSpreadsheet,
     title: 'Reportes SRI e internos',
-    text: 'RDEP, Formulario 107, prevalidación IESS y reportes internos con datos trazables.',
+    text: 'RDEP, Formulario 107, Batch IESS TXT y reportes internos con datos trazables.',
   },
 ];
 
@@ -82,7 +82,7 @@ const modules = [
   ['Operación móvil', 'Marcación móvil, permisos con o sin sueldo, rutas de campo y evidencias del periodo.'],
   ['Bancos y pagos', 'Perfiles bancarios, homologación y archivo de pago por periodo.'],
   ['Documentos', 'Contratos, actas, roles PDF, finiquitos y soportes por trabajador.'],
-  ['Legal, SRI e IESS', 'Parámetros por año, RDEP, Formulario 107, prevalidaciones e informes auditables.'],
+  ['Legal, SRI e IESS', 'Parámetros por año, RDEP, Formulario 107, batch IESS TXT e informes auditables.'],
   ['Privacidad', 'Consentimientos, minimización de datos y bitácora por usuario.'],
 ];
 
@@ -154,7 +154,7 @@ function ProductScene() {
           <div className="rounded-lg border border-slate-200 bg-white/95 p-4 shadow-lg shadow-slate-200/60">
             <p className="text-xs font-semibold uppercase text-slate-500">Reportes y prevalidaciones</p>
             <div className="mt-4 space-y-2">
-              {['XML RDEP', 'PDF Formulario 107', 'Prevalidación IESS'].map((item, index) => (
+              {['XML RDEP', 'PDF Formulario 107', 'TXT IESS'].map((item, index) => (
                 <div className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-2 text-sm" key={item}>
                   <span className="text-slate-700">{item}</span>
                   <CheckCircle2 className={index === 1 ? 'h-4 w-4 text-sky-700' : 'h-4 w-4 text-teal-700'} />
@@ -227,7 +227,7 @@ function Landing() {
             <p className="mt-5 max-w-lg text-base leading-8 text-slate-700">
               Una plataforma para RRHH y administración: fichas laborales completas, roles de pago,
               permisos con o sin sueldo, archivo bancario por banco, rutas de campo, RDEP,
-              Formulario 107, prevalidación IESS y auditoría por usuario.
+              Formulario 107, Batch IESS TXT y auditoría por usuario.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link className="primary-button" to="/registro">Empezar prueba <ArrowRight size={18} /></Link>

@@ -7,6 +7,7 @@ import { extractApiError, fetchPlans, startCheckout } from '../services/publicAp
 import {
   formatPublicPlanPrice,
   getPlanCommercialPromise,
+  getPlanPriceBreakdown,
   normalizePublicPlans,
   publicPlanActionLabel,
 } from '../config/publicPlanPresentation';
@@ -84,6 +85,7 @@ function PublicPlansCatalog() {
           const manualTransferOnly = paymentCapabilities?.status === 'manual_transfer_only';
           const checkoutBlocked = plan.id !== 'TRIAL' && paymentCapabilities?.checkoutAvailable === false;
           const checkoutSelected = checkoutPlanId === plan.id;
+          const pricing = getPlanPriceBreakdown(plan);
           return (
             <article className={`soft-panel flex flex-col p-6 ${index === 1 ? 'border-teal-300 bg-teal-50' : ''}`} key={plan.id}>
               <div className="flex items-start justify-between gap-4">
@@ -95,7 +97,17 @@ function PublicPlansCatalog() {
                   <Banknote size={20} />
                 </span>
               </div>
-              <p className="mt-6 text-3xl font-semibold text-slate-950">{formatPublicPlanPrice(plan)}</p>
+              <div className="mt-6 space-y-2">
+                <p className="text-3xl font-semibold text-slate-950">{formatPublicPlanPrice(plan)}</p>
+                {pricing.hasPrice && (
+                  <div className="space-y-1 text-sm leading-5 text-slate-600">
+                    <p>{pricing.primaryTotalLabel}</p>
+                    <p>{pricing.annualBaseLabel} | {pricing.annualTotalLabel}</p>
+                    <p>{pricing.monthlyBaseLabel} | {pricing.monthlyTotalLabel}</p>
+                    <p>{pricing.rateLabel}</p>
+                  </div>
+                )}
+              </div>
               <div className="mt-5">
                 <PlanFunctionalityList compact showExcluded={false} plan={plan} />
               </div>

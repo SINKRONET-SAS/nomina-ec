@@ -88,6 +88,9 @@ describe('paymentController PayPhone gates', () => {
 
     await paymentController.listPublicPlans({}, res, jest.fn());
 
+    expect(db.query.mock.calls[0][0]).toContain('ROW_NUMBER() OVER');
+    expect(db.query.mock.calls[0][0]).toContain('catalog_rank = 1');
+    expect(db.query.mock.calls[0][0]).toContain("supersededByPlanId");
     expect(res.json).toHaveBeenCalledWith({
       success: true,
       data: [],

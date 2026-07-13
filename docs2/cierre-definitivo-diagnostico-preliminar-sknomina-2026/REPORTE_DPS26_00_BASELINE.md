@@ -61,5 +61,5 @@ DPS26 queda abierto como plan documental. Las fases DPS26-01 a DPS26-10 requiere
 
 - El diagnostico debe contrastarse contra codigo real antes de declarar hallazgos definitivos.
 - La promesa comercial de cumplimiento Ecuador 2026 requiere evidencia legal, tributaria y funcional.
-- RDEP, Formulario 107, prevalidacion IESS y reportes internos deben validar vigencia 2026 antes de considerarse productivos.
+- RDEP, Formulario 107, batch IESS TXT y reportes internos deben validar vigencia 2026 antes de considerarse productivos.
 - Los cambios runtime existentes en el workspace deben preservarse y evaluarse por separado.

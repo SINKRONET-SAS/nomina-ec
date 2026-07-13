@@ -515,6 +515,8 @@ function Parametrizacion() {
     ? dedupeNoveltyRecords(baseRecords)
     : baseRecords;
   const legalRecords = summary?.resources?.legalParameters || [];
+  const rootFormDefinitions = formDefinitions.filter((definition) => !definition.parentKey);
+  const childFormDefinitions = (parentKey) => formDefinitions.filter((definition) => definition.parentKey === parentKey);
 
   useEffect(() => {
     if (requestedSection && formDefinitions.some((definition) => definition.key === requestedSection)) {
@@ -781,24 +783,52 @@ function Parametrizacion() {
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-2">
-          {formDefinitions.map((definition) => {
+        <div className="mt-5 flex flex-wrap items-start gap-2">
+          {rootFormDefinitions.map((definition) => {
             const Icon = definition.icon;
             const isActive = definition.key === activeDefinition.key;
+            const children = childFormDefinitions(definition.key);
+            const hasActiveChild = children.some((child) => child.key === activeDefinition.key);
             return (
-              <button
-                className={`inline-flex min-h-10 items-center gap-2 rounded-md border px-3 text-sm font-semibold ${
-                  isActive
-                    ? 'border-teal-700 bg-teal-700 text-white'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-teal-300'
-                }`}
-                key={definition.key}
-                type="button"
-                onClick={() => selectForm(definition.key)}
-              >
-                <Icon className="h-4 w-4" />
-                {definition.title}
-              </button>
+              <div className="flex flex-col gap-2" key={definition.key}>
+                <button
+                  className={`inline-flex min-h-10 items-center gap-2 rounded-md border px-3 text-sm font-semibold ${
+                    isActive
+                      ? 'border-teal-700 bg-teal-700 text-white'
+                      : hasActiveChild
+                        ? 'border-teal-300 bg-teal-50 text-teal-900'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-teal-300'
+                  }`}
+                  type="button"
+                  onClick={() => selectForm(definition.key)}
+                >
+                  <Icon className="h-4 w-4" />
+                  {definition.title}
+                </button>
+                {children.length > 0 && (
+                  <div className="ml-3 flex flex-wrap gap-2 border-l border-slate-200 pl-3">
+                    {children.map((child) => {
+                      const ChildIcon = child.icon;
+                      const childActive = child.key === activeDefinition.key;
+                      return (
+                        <button
+                          className={`inline-flex min-h-9 items-center gap-2 rounded-md border px-3 text-xs font-semibold ${
+                            childActive
+                              ? 'border-teal-700 bg-teal-700 text-white'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-teal-300'
+                          }`}
+                          key={child.key}
+                          type="button"
+                          onClick={() => selectForm(child.key)}
+                        >
+                          <ChildIcon className="h-3.5 w-3.5" />
+                          {child.navigationLabel || child.title}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>

@@ -39,7 +39,7 @@ DPS26 cubre el producto completo declarado por el repo: `backend`, `frontend-web
 | P1 | Seguridad, tenant y datos sensibles | RLS activo, queries tenant-aware, cuentas bancarias cifradas, JWT seguro, documentos protegidos y logs sin PII. |
 | P1 | PWA operativa | Flujos criticos con estados de carga, error, retry, vacio y bloqueo legal visible. |
 | P1 | App movil GPS/foto | Permisos minimos, aviso LOPDP, manejo offline seguro y requisitos Android/iOS. |
-| P0 | Reportes oficiales y exportables | RDEP, Formulario 107, prevalidacion IESS y reportes internos validables contra formatos vigentes 2026, con snapshots y hash de salida. Supersedido por RPE26 para alcance IESS. |
+| P0 | Reportes oficiales y exportables | RDEP, Formulario 107, batch IESS TXT y reportes internos validables contra formatos vigentes 2026, con snapshots y hash de salida. Supersedido por RPE26 para alcance IESS. |
 | P2 | Dependencias y builds | Versiones soportadas, builds reproducibles y checks de mantenimiento. |
 | P2 | Observabilidad | Logs estructurados, correlationId y alertas operativas. |
 | P3 | Documentacion | Runbooks de soporte, release y auditoria. |

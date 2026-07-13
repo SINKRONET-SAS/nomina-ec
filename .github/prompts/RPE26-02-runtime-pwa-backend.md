@@ -8,12 +8,11 @@ Reglas:
 - Errores backend con codigo y estado explicitos.
 
 Tareas:
-- Cambiar la PWA para mostrar RDEP/Formulario 107 como reportes SRI e IESS como preparacion.
-- Bloquear XML IESS por defecto con `IESS_XML_FORMAT_NOT_VALIDATED`.
-- Mantener generacion XML solo con `ALLOW_EXPERIMENTAL_IESS_XML=true`.
+- Cambiar la PWA para mostrar RDEP/Formulario 107 como reportes SRI e IESS como batch TXT/DAT.
+- No exponer XML IESS productivo.
+- Mantener compatibilidad de endpoint legado apuntando al generador batch.
 - Cambiar landing para no prometer `XML SAE IESS`.
 
 Cierre:
 - `node --check backend/src/services/iessSaeGenerator.js`.
 - Contrato frontend/backend sin rutas rotas.
-

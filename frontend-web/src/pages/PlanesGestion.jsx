@@ -12,11 +12,15 @@ const EMPTY_PLAN = {
   descripcion: '',
   precioMensualCentavos: 0,
   precioAnualCentavos: 0,
+  pricingInputMode: 'MONTHLY_PAYMENT',
+  cuotasMensuales: 12,
+  tasaNominalAnual: 0,
   billingPeriod: 'monthly',
   trialDays: 14,
   empleadosMax: '',
   empresasMax: 1,
   usuariosMax: 3,
+  iessEstablecimientosMax: 1,
   archivosBancarios: false,
   reportesAvanzados: false,
   apiAccess: false,
@@ -36,11 +40,15 @@ function normalizeDraft(plan = {}) {
     descripcion: plan.descripcion || '',
     precioMensualCentavos: plan.precioMensualCentavos ?? 0,
     precioAnualCentavos: plan.precioAnualCentavos ?? Number(plan.precioMensualCentavos || 0) * 12,
+    pricingInputMode: plan.pricingInputMode || plan.metadata?.pricingInputMode || 'MONTHLY_PAYMENT',
+    cuotasMensuales: plan.cuotasMensuales ?? plan.metadata?.cuotasMensuales ?? 12,
+    tasaNominalAnual: plan.tasaNominalAnual ?? plan.metadata?.tasaNominalAnual ?? 0,
     billingPeriod: plan.billingPeriod || plan.metadata?.billingPeriod || 'monthly',
     trialDays: plan.trialDays ?? plan.metadata?.trialDays ?? (plan.id === 'TRIAL' ? 14 : 0),
     empleadosMax: plan.empleadosMax ?? '',
     empresasMax: plan.empresasMax ?? 1,
     usuariosMax: plan.usuariosMax ?? 3,
+    iessEstablecimientosMax: plan.iessEstablecimientosMax ?? 1,
     archivosBancarios: Boolean(plan.archivosBancarios),
     reportesAvanzados: Boolean(plan.reportesAvanzados),
     apiAccess: Boolean(plan.apiAccess),
@@ -62,16 +70,26 @@ function validateDraft(draft) {
   if (!String(draft.nombre || '').trim()) errors.push('El nombre es requerido.');
   if (Number(draft.precioMensualCentavos) < 0) errors.push('El precio no puede ser negativo.');
   if (Number(draft.precioAnualCentavos) < 0) errors.push('El precio anual no puede ser negativo.');
+  if (!['ANNUAL_PRICE', 'MONTHLY_PAYMENT'].includes(String(draft.pricingInputMode))) errors.push('El modo de precio debe ser contado anual o mensualidad.');
+  if (Number(draft.cuotasMensuales) < 1) errors.push('Las mensualidades deben ser al menos 1.');
+  if (Number(draft.tasaNominalAnual) < 0) errors.push('La tasa nominal anual no puede ser negativa.');
   if (!['monthly', 'annual'].includes(String(draft.billingPeriod))) errors.push('El cobro activo debe ser mensual o anual.');
   if (Number(draft.trialDays) < 0) errors.push('Los días de prueba no pueden ser negativos.');
   if (draft.empleadosMax !== '' && Number(draft.empleadosMax) < 0) errors.push('El límite de empleados no puede ser negativo.');
   if (Number(draft.empresasMax) < 1) errors.push('Debe permitir al menos una empresa.');
   if (Number(draft.usuariosMax) < 1) errors.push('Debe permitir al menos un usuario.');
+  if (Number(draft.iessEstablecimientosMax) !== -1 && Number(draft.iessEstablecimientosMax) < 1) {
+    errors.push('Establecimientos IESS debe ser -1 o al menos 1.');
+  }
   return errors;
 }
 
 function price(cents) {
   return `$${(Number(cents || 0) / 100).toFixed(2)}`;
+}
+
+function pricingModeLabel(value) {
+  return value === 'ANNUAL_PRICE' ? 'Contado anual' : 'Mensualidades';
 }
 
 function planCapabilitiesText(plan) {
@@ -82,6 +100,10 @@ function planCapabilitiesText(plan) {
     plan.appMovil ? 'App móvil' : '',
     plan.rutasCampo ? 'Rutas de campo' : '',
   ].filter(Boolean).join(' | ') || 'Capacidades base';
+}
+
+function planIessLimitText(value) {
+  return Number(value) === -1 ? 'sin limite' : String(value || 1);
 }
 
 function PlanesGestion({ showSuperadminConsole = true }) {
@@ -114,11 +136,17 @@ function PlanesGestion({ showSuperadminConsole = true }) {
         id: String(draft.id).trim().toUpperCase(),
         precioMensualCentavos: Math.round(Number(draft.precioMensualCentavos || 0)),
         precioAnualCentavos: Math.round(Number(draft.precioAnualCentavos || 0)),
+        pricingInputMode: draft.pricingInputMode === 'ANNUAL_PRICE' ? 'ANNUAL_PRICE' : 'MONTHLY_PAYMENT',
+        cuotasMensuales: Math.max(1, Math.round(Number(draft.cuotasMensuales || 12))),
+        tasaNominalAnual: Math.max(0, Number(draft.tasaNominalAnual || 0)),
         billingPeriod: draft.billingPeriod === 'annual' ? 'annual' : 'monthly',
         trialDays: Math.max(0, Math.round(Number(draft.trialDays || 0))),
         empleadosMax: draft.empleadosMax === '' ? null : Math.round(Number(draft.empleadosMax)),
         empresasMax: Math.round(Number(draft.empresasMax || 1)),
         usuariosMax: Math.round(Number(draft.usuariosMax || 1)),
+        iessEstablecimientosMax: Number(draft.iessEstablecimientosMax) === -1
+          ? -1
+          : Math.max(1, Math.round(Number(draft.iessEstablecimientosMax || 1))),
         orden: Math.round(Number(draft.orden || 0)),
       };
       return saveAdminPlan(payload);
@@ -236,6 +264,21 @@ function PlanesGestion({ showSuperadminConsole = true }) {
               <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="0" value={draft.precioAnualCentavos} onChange={(event) => updateField('precioAnualCentavos', event.target.value)} />
             </label>
             <label>
+              <span className="text-sm font-medium text-slate-700">Modo de precio</span>
+              <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={draft.pricingInputMode} onChange={(event) => updateField('pricingInputMode', event.target.value)}>
+                <option value="MONTHLY_PAYMENT">Mensualidades</option>
+                <option value="ANNUAL_PRICE">Contado anual</option>
+              </select>
+            </label>
+            <label>
+              <span className="text-sm font-medium text-slate-700">Mensualidades</span>
+              <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="1" value={draft.cuotasMensuales} onChange={(event) => updateField('cuotasMensuales', event.target.value)} />
+            </label>
+            <label>
+              <span className="text-sm font-medium text-slate-700">Tasa nominal anual %</span>
+              <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="0" step="0.01" value={draft.tasaNominalAnual} onChange={(event) => updateField('tasaNominalAnual', event.target.value)} />
+            </label>
+            <label>
               <span className="text-sm font-medium text-slate-700">Cobro activo</span>
               <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={draft.billingPeriod} onChange={(event) => updateField('billingPeriod', event.target.value)}>
                 <option value="monthly">Mensual</option>
@@ -261,6 +304,10 @@ function PlanesGestion({ showSuperadminConsole = true }) {
             <label>
               <span className="text-sm font-medium text-slate-700">Usuarios max.</span>
               <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="1" value={draft.usuariosMax} onChange={(event) => updateField('usuariosMax', event.target.value)} />
+            </label>
+            <label>
+              <span className="text-sm font-medium text-slate-700">Establecimientos IESS max.</span>
+              <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="-1" value={draft.iessEstablecimientosMax} onChange={(event) => updateField('iessEstablecimientosMax', event.target.value)} />
             </label>
             <label>
               <span className="text-sm font-medium text-slate-700">Soporte</span>
@@ -323,10 +370,11 @@ function PlanesGestion({ showSuperadminConsole = true }) {
                       <p className="text-xs text-slate-500">{price(plan.precioAnualCentavos)}/año</p>
                     </td>
                     <td className="px-4 py-3">
-                      <p>{plan.billingPeriod === 'annual' ? 'Anual' : 'Mensual'}</p>
+                      <p>{plan.billingPeriod === 'annual' ? 'Anual' : 'Mensual'} | {pricingModeLabel(plan.pricingInputMode)}</p>
+                      <p className="text-xs text-slate-500">{Number(plan.cuotasMensuales || 12)} cuotas | TNA {Number(plan.tasaNominalAnual || 0).toFixed(2)}%</p>
                       <p className="text-xs text-slate-500">{Number(plan.trialDays || 0)} días trial</p>
                     </td>
-                    <td className="px-4 py-3">Emp. {plan.empleadosMax || 'sin límite'} | Empresas {plan.empresasMax} | Usuarios {plan.usuariosMax}</td>
+                    <td className="px-4 py-3">Emp. {plan.empleadosMax || 'sin límite'} | Empresas {plan.empresasMax} | Usuarios {plan.usuariosMax} | IESS {planIessLimitText(plan.iessEstablecimientosMax)}</td>
                     <td className="px-4 py-3">{planCapabilitiesText(plan)}</td>
                     <td className="px-4 py-3">
                       {plan.isSuperseded ? 'Reemplazado' : (plan.activo ? 'Activo' : 'Inactivo')} | {plan.publico ? 'Público' : 'Interno'}

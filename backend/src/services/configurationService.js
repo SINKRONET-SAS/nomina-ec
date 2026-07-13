@@ -1,6 +1,7 @@
 const db = require('../config/database');
 const AppError = require('../utils/AppError');
 const { recordAudit } = require('./auditService');
+const { getTenantPlanCapabilities } = require('./planCapabilityService');
 const { getLegalParameters } = require('../config/legal-ecuador');
 const {
   PAYROLL_CONCEPTS,
@@ -158,6 +159,7 @@ function normalizePayload(config, payload, user) {
 
   if (config.table === 'configuration_catalogs') {
     values.scope = canUseGlobalScope(user, payload) ? 'global' : 'tenant';
+    return normalizeConfigurationCatalogPayload(values, payload, user);
   }
 
   return values;
@@ -313,6 +315,70 @@ function normalizeOptionalNumber(value) {
   if (typeof value === 'undefined') return undefined;
   if (value === null || value === '') return null;
   return Number(value);
+}
+
+function normalizeDigits(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+function normalizeIessEstablishmentCode(value) {
+  const clean = normalizeDigits(value);
+  if (!clean || clean.length > 4) return '';
+  return clean.padStart(4, '0');
+}
+
+function booleanFlag(value) {
+  return value === true || String(value || '').toLowerCase() === 'true';
+}
+
+function safeObject(value) {
+  if (!value) return {};
+  if (typeof value === 'object') return value;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function normalizeConfigurationCatalogPayload(values, payload = {}, user) {
+  if (values.catalog_type !== 'iess_establecimiento') return values;
+
+  const payloadBody = safeObject(values.payload);
+  const code = normalizeIessEstablishmentCode(
+    values.code
+      || payloadBody.codigoEstablecimiento
+      || payloadBody.iessCodigoEstablecimiento
+      || payloadBody.iess_codigo_establecimiento
+  );
+  if (!code) {
+    throw new AppError('El establecimiento IESS requiere un codigo numerico de 1 a 4 digitos.', {
+      code: 'IESS_ESTABLISHMENT_CODE_REQUIRED',
+      statusCode: 400,
+      userId: user?.id,
+    });
+  }
+
+  const principal = booleanFlag(payloadBody.principal ?? payloadBody.isPrincipal);
+  const direccion = normalizeOptionalText(payloadBody.direccion ?? payload.direccion) || '';
+  return {
+    ...values,
+    catalog_type: 'iess_establecimiento',
+    code,
+    name: normalizeOptionalText(values.name) || `Establecimiento IESS ${code}`,
+    description: normalizeOptionalText(values.description) || direccion,
+    status: normalizeOptionalText(values.status, { lowercase: true }) || 'activo',
+    payload: {
+      ...payloadBody,
+      codigoEstablecimiento: code,
+      principal,
+      isPrincipal: principal,
+      direccion,
+      monetizable: true,
+      source: payloadBody.source || 'datos_empresa_iess',
+    },
+  };
 }
 
 function normalizeJobPositionPayload(payload = {}) {
@@ -1149,6 +1215,68 @@ async function synchronizeUnifiedAccountingMatrix(config, record, user, context 
   });
 }
 
+function isIessEstablishmentCatalog(values = {}) {
+  return values.catalog_type === 'iess_establecimiento';
+}
+
+async function assertIessEstablishmentLimitAvailable(values, tenantId, user, currentId = null) {
+  if (!isIessEstablishmentCatalog(values) || !tenantId) return;
+  if (String(values.status || 'activo').toLowerCase() !== 'activo') return;
+
+  const capabilities = await getTenantPlanCapabilities(tenantId);
+  const rawLimit = Number(capabilities.limits?.iessEstablishmentsMax ?? 1);
+  if (rawLimit === -1) return;
+
+  const limit = Number.isFinite(rawLimit) ? rawLimit : 1;
+  const params = [tenantId];
+  let exclusion = '';
+  if (currentId) {
+    params.push(currentId);
+    exclusion = ` AND id <> $${params.length}`;
+  }
+
+  const result = await db.query(`
+    SELECT COUNT(*)::int AS count
+    FROM configuration_catalogs
+    WHERE tenant_id = $1
+      AND catalog_type = 'iess_establecimiento'
+      AND status = 'activo'
+      ${exclusion}
+  `, params);
+
+  if (Number(result.rows[0]?.count || 0) >= limit) {
+    throw new AppError('El plan actual no permite registrar mas establecimientos IESS activos.', {
+      code: 'PLAN_IESS_ESTABLISHMENT_LIMIT_REACHED',
+      statusCode: 402,
+      userId: user.id,
+      details: {
+        limit,
+        current: Number(result.rows[0]?.count || 0),
+      },
+    });
+  }
+}
+
+async function ensureSinglePrincipalIessEstablishment(config, record) {
+  if (config.table !== 'configuration_catalogs' || !isIessEstablishmentCatalog(record)) return;
+  const payload = safeObject(record.payload);
+  if (!booleanFlag(payload.principal) && !booleanFlag(payload.isPrincipal)) return;
+  if (!record.tenant_id || !record.id) return;
+
+  await db.query(`
+    UPDATE configuration_catalogs
+    SET payload = jsonb_set(
+          jsonb_set(COALESCE(payload, '{}'::jsonb), '{principal}', 'false'::jsonb, true),
+          '{isPrincipal}', 'false'::jsonb,
+          true
+        ),
+        updated_at = now()
+    WHERE tenant_id = $1
+      AND catalog_type = 'iess_establecimiento'
+      AND id <> $2
+  `, [record.tenant_id, record.id]);
+}
+
 async function createResource(resource, payload, user, context = {}) {
   ensureWriteAllowed(user);
   const config = getResourceConfig(resource);
@@ -1173,6 +1301,7 @@ async function createResource(resource, payload, user, context = {}) {
     assertLegalParameterOwnerValidationAllowed(user, values);
     applyLegalParameterApprovalMetadata(values, user);
   }
+  await assertIessEstablishmentLimitAvailable(values, tenantId, user);
 
   const columns = Object.keys(values);
   if (columns.length === 0) {
@@ -1272,6 +1401,7 @@ async function createResource(resource, payload, user, context = {}) {
   });
 
   await synchronizeUnifiedAccountingMatrix(config, result.rows[0], user, context);
+  await ensureSinglePrincipalIessEstablishment(config, result.rows[0]);
 
   return result.rows[0];
 }
@@ -1323,6 +1453,10 @@ async function updateResource(resource, id, payload, user, context = {}) {
     assertLegalParameterOwnerValidationAllowed(user, values, previous.rows[0]);
     applyLegalParameterApprovalMetadata(values, user, previous.rows[0]);
   }
+  await assertIessEstablishmentLimitAvailable({
+    ...previous.rows[0],
+    ...values,
+  }, previous.rows[0].tenant_id || user.tenantId, user, id);
 
   const columns = Object.keys(values);
   const setClause = columns.map((column, index) => `${column} = $${index + 1}`).join(', ');
@@ -1367,6 +1501,7 @@ async function updateResource(resource, id, payload, user, context = {}) {
   });
 
   await synchronizeUnifiedAccountingMatrix(config, result.rows[0], user, context);
+  await ensureSinglePrincipalIessEstablishment(config, result.rows[0]);
 
   return result.rows[0];
 }

@@ -30,11 +30,12 @@ const institutionalReports = [
 
 const iessPreparationReport = {
   type: 'sae',
-  title: 'Preparación IESS',
+  title: 'Batch IESS',
   entity: 'Instituto Ecuatoriano de Seguridad Social',
-  description: 'Prevalida datos de empleador, trabajadores, sueldos y aportes. La descarga XML queda bloqueada hasta contar con formato oficial IESS validado.',
-  status: 'Formato oficial pendiente',
-  statusTone: 'amber',
+  description: 'Genera archivo ASCII TXT para movimiento MSU (nuevo sueldo), separado por punto y coma y con una fila por trabajador.',
+  button: 'Generar TXT IESS',
+  status: 'TXT/DAT IESS',
+  statusTone: 'emerald',
 };
 
 const pendingRequirements = [
@@ -159,9 +160,9 @@ function DescargarReportes() {
     try {
       const response = await authenticatedApi.post('/reportes/sae/precheck', { anio, mes });
       setSaePrecheck(response.data.precheck);
-      setMessage(response.data.precheck.dataReady
-        ? 'Datos IESS completos para revisión operativa. La descarga XML sigue bloqueada hasta validar formato oficial.'
-        : 'IESS requiere acciones antes de completar la prevalidación.');
+      setMessage(response.data.precheck.ready
+        ? 'Archivo batch IESS MSU listo para generar en TXT/DAT.'
+        : 'IESS requiere acciones antes de generar el archivo batch.');
       return response.data.precheck;
     } catch (err) {
       const nextError = err.response?.data?.message || err.response?.data?.error || 'No pudimos prevalidar datos IESS.';
@@ -298,12 +299,12 @@ function DescargarReportes() {
       <div>
         <h1 className="text-2xl font-bold text-slate-950">Reportes para entidades públicas</h1>
         <p className="mt-2 max-w-4xl text-sm text-slate-600">
-          Genera reportes SRI validados, prevalidaciones IESS y archivos internos aplicables a nómina Ecuador.
+          Genera reportes SRI validados, batch IESS TXT/DAT y archivos internos aplicables a nómina Ecuador.
         </p>
       </div>
 
       <CompactNotice tone="amber" title="Gobierno de formatos">
-        RDEP y Formulario 107 se tratan como reportes SRI validados contra fuentes versionadas. IESS se mantiene como prevalidación operativa hasta contar con formato oficial de carga o guía técnica aprobada.
+        RDEP y Formulario 107 se tratan como reportes SRI validados contra fuentes versionadas. IESS usa carga batch ASCII TXT/DAT para novedades; SKNOMINA genera MSU y no expone XML IESS.
       </CompactNotice>
 
       {message && <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{message}</div>}
@@ -429,10 +430,10 @@ function DescargarReportes() {
         })}
       </div>
 
-      <section className="rounded-lg border border-amber-200 bg-white p-6 shadow-sm">
+      <section className="rounded-lg border border-emerald-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-start gap-3">
-            <Landmark className="mt-1 h-5 w-5 text-amber-700" />
+            <Landmark className="mt-1 h-5 w-5 text-emerald-700" />
             <div>
               <div className="flex flex-wrap items-center gap-3">
                 <h2 className="text-lg font-semibold text-slate-950">{iessPreparationReport.title}</h2>
@@ -440,17 +441,29 @@ function DescargarReportes() {
               </div>
               <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{iessPreparationReport.entity}</p>
               <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-600">{iessPreparationReport.description}</p>
+              <p className="mt-2 text-xs font-semibold text-emerald-800">Usa el establecimiento principal configurado en Datos de empresa &gt; IESS.</p>
             </div>
           </div>
-          <button
-            onClick={validarSae}
-            disabled={cargando === 'sae-precheck'}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-amber-300 px-4 text-sm font-semibold text-amber-800 hover:border-amber-500 disabled:opacity-50"
-            type="button"
-          >
-            <ShieldCheck size={18} />
-            {cargando === 'sae-precheck' ? 'Validando...' : 'Prevalidar datos IESS'}
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => generarReporte(iessPreparationReport.type)}
+              disabled={cargando === iessPreparationReport.type}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
+              type="button"
+            >
+              <Download size={18} />
+              {cargando === iessPreparationReport.type ? 'Generando...' : iessPreparationReport.button}
+            </button>
+            <button
+              onClick={validarSae}
+              disabled={cargando === 'sae-precheck'}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-emerald-300 px-4 text-sm font-semibold text-emerald-800 hover:border-emerald-500 disabled:opacity-50"
+              type="button"
+            >
+              <ShieldCheck size={18} />
+              {cargando === 'sae-precheck' ? 'Validando...' : 'Prevalidar batch'}
+            </button>
+          </div>
         </div>
       </section>
 
@@ -614,12 +627,12 @@ function DescargarReportes() {
               </div>
             ))}
             <div className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-700 lg:col-span-2">
-              Prevalidación IESS: <span className="font-mono text-xs">{saePrecheck.manifest?.version}</span>
+              Batch IESS: <span className="font-mono text-xs">{saePrecheck.manifest?.version}</span>
               <span className="ml-2 text-xs text-slate-500">
                 {saePrecheck.totalEmpleados || 0} trabajadores, periodo {String(saePrecheck.mes).padStart(2, '0')}/{saePrecheck.anio}.
               </span>
               <span className="mt-1 block text-xs text-slate-500">
-                Fuente IESS: {saePrecheck.manifest?.officialSourceReconciliation || 'pendiente'}; {saePrecheck.manifest?.schemaPolicy || ''}
+                Fuente IESS: {saePrecheck.manifest?.officialSourceReconciliation || 'pendiente'}; formato {saePrecheck.manifest?.batchFormatStatus || 'pendiente'}; {saePrecheck.manifest?.encoding || 'ASCII'} separado por {saePrecheck.manifest?.separator || ';'}
               </span>
             </div>
           </div>

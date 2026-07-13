@@ -11,24 +11,30 @@
 | Fecha | 2026-07-12 |
 | Requerimiento fuente | Revisar Reportes Entidades: confirmar si IESS usa XML, evitar reportes ineficientes para nominas grandes y proponer mejoras ejecutables. |
 | Plan doc | `docs2/PLAN_HAIKY_REPORTES_ENTIDADES_PUBLICAS_EC_2026.md` |
-| Reporte | `docs2/reportes-entidades-publicas-ec-2026/REPORTE_RPE26_00_04_EJECUCION.md` |
-| Prompts | `.github/prompts/RPE26-{00..04}-*.md` |
+| Reporte | `docs2/reportes-entidades-publicas-ec-2026/REPORTE_RPE26_05_IESS_BATCH_ESTABLECIMIENTOS.md` |
+| Prompts | `.github/prompts/RPE26-{00..05}-*.md` |
 | AuditLock | `.vscode/AuditLock.json` y `.vscode/AudiLock.json` |
 
 ### Decision RPE26
 
 - RDEP queda como XML oficial SRI porque el repo conserva XSD, manifest y validacion estructural.
 - Formulario 107 queda como PDF anual por trabajador basado en roles cerrados y referencia SRI/RDEP.
-- IESS no se expone como XML oficial: la PWA muestra `Preparacion IESS` y `Prevalidar datos IESS`.
-- El endpoint legado `/api/reportes/sae` se conserva por compatibilidad, pero falla cerrado con `IESS_XML_FORMAT_NOT_VALIDATED` salvo `ALLOW_EXPERIMENTAL_IESS_XML=true`.
-- La landing deja de prometer `XML SAE IESS`; comunica `prevalidacion IESS`.
+- IESS no se expone como XML SAE: la PWA muestra `Batch IESS` y `Generar TXT IESS`.
+- La fuente IESS revisada documenta archivos batch ASCII `.txt`/`.dat` separados por `;`; SKNOMINA genera MSU.
+- El endpoint legado `/api/reportes/sae` se conserva por compatibilidad, pero retorna batch TXT/DAT.
+- El establecimiento IESS no tiene fallback hardcodeado: se configura en Datos de empresa > IESS.
+- Los planes comerciales monetizan establecimientos con `iess_establecimientos_max` (`-1` = ilimitado).
+- Los planes publicos muestran precio base + IVA 15%, total, contado anual, mensualidades y tasa nominal anual desde metadata comercial.
+- El catalogo publico de planes rankea por raiz comercial y muestra solo la ultima version vigente, excluyendo versiones `superseded`.
+- La landing deja de prometer `XML SAE IESS`; comunica `Batch IESS TXT`.
 - Para nominas grandes, los reportes recomendados son verticales: detalle tabular, detalle por concepto y ledger de beneficios. La matriz dinamica queda como uso puntual.
 
 ### Gates RPE26
 
 - `node --check backend/src/services/iessSaeGenerator.js`
 - `node --check scripts/verify-system-contracts.mjs`
-- `npm.cmd --workspace=backend test -- iessSaeGenerator.test.js app.routes.test.js --runInBand`
+- `npm.cmd --workspace=backend test -- iessSaeGenerator.test.js app.routes.test.js configurationService.test.js paymentController.test.js --runInBand`
+- `npx prisma validate --schema backend/prisma/schema.prisma`
 - `npm.cmd run contracts`
 - `npm.cmd --workspace=frontend-web run build`
 - `git diff --check`
@@ -454,7 +460,7 @@ DPS26-05, DPS26-06, DPS26-07 y DPS26-10 reforzaron estos cambios con pruebas ant
 | DPS26-06 | P1 | completed_local | Paridad comercial, landing, planes, PWA y app. |
 | DPS26-07 | P1 | completed_local | Flujos PWA criticos. |
 | DPS26-08 | P1 | completed_local | App movil GPS/foto, privacidad y stores. |
-| DPS26-09 | P0 | superseded_by_RPE26 | RDEP, Formulario 107 PDF, prevalidacion IESS y reportes internos trazables. |
+| DPS26-09 | P0 | superseded_by_RPE26 | RDEP, Formulario 107 PDF, batch IESS TXT y reportes internos trazables. |
 | DPS26-10 | P0 | completed_local | QA final, dependencias, observabilidad, docs, AuditLock y release. |
 
 ---
