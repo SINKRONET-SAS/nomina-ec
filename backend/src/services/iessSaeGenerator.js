@@ -1,6 +1,6 @@
 // ============================================================
-// SKNOMINA - Generador de XML SAE para IESS
-// Sistema de Aviso de Entrada/Salida
+// SKNOMINA - Preparacion de datos IESS
+// El XML SAE queda bloqueado salvo habilitacion experimental explicita.
 // ============================================================
 const crypto = require('crypto');
 const fs = require('fs');
@@ -17,6 +17,7 @@ const logger = require('../utils/logger');
 
 const SAE_MANIFEST_PATH = path.join(__dirname, '..', 'config', 'iess', 'sae-source-manifest.json');
 const SAE_CONTRACT_VERSION = 'SAE-IESS-2026-DPS26';
+const EXPERIMENTAL_IESS_XML_FLAG = 'ALLOW_EXPERIMENTAL_IESS_XML';
 
 function readSaeManifest() {
   if (!fs.existsSync(SAE_MANIFEST_PATH)) {
@@ -59,6 +60,10 @@ function normalizeText(value, fallback = 'NO REGISTRADO') {
 
 function normalizeId(value) {
   return String(value || '').replace(/\D/g, '');
+}
+
+function isExperimentalIessXmlEnabled() {
+  return String(process.env[EXPERIMENTAL_IESS_XML_FLAG] || '').trim().toLowerCase() === 'true';
 }
 
 async function loadSaeData(tenantId, anio, mes) {
@@ -107,6 +112,8 @@ async function loadSaeData(tenantId, anio, mes) {
 function buildSaeChecks({ tenant, nominas, employerIessRate, manifest, anio, mes }) {
   const source = (manifest.sources || []).find((item) => item.kind === 'official_institution') || {};
   const reconciliation = manifest.validationPolicy?.officialSourceReconciliation || '';
+  const experimentalXmlEnabled = isExperimentalIessXmlEnabled();
+  const xmlFormatValidated = manifest.validationPolicy?.xmlFormatStatus === 'official_validated';
   const checks = [
     {
       code: 'empleador_ruc',
@@ -126,7 +133,7 @@ function buildSaeChecks({ tenant, nominas, employerIessRate, manifest, anio, mes
       passed: nominas.length > 0,
       detail: nominas.length > 0
         ? `${nominas.length} roles cerrados para ${String(mes).padStart(2, '0')}/${anio}.`
-        : 'Cierra la nomina del periodo antes de generar SAE IESS.',
+        : 'Cierra la nomina del periodo antes de prevalidar IESS.',
     },
     {
       code: 'iess_aporte_patronal',
@@ -148,16 +155,18 @@ function buildSaeChecks({ tenant, nominas, employerIessRate, manifest, anio, mes
     },
     {
       code: 'fuente_iess_reconciliada',
-      label: 'Fuente IESS reconciliada',
+      label: 'Portal IESS consultado',
       passed: String(source.status || '').includes('checked_2026')
         && String(reconciliation).startsWith('checked_'),
       detail: `${reconciliation || 'pendiente'}; ${source.observedAt || manifest.observedAt || 'sin fecha'}`,
     },
     {
-      code: 'contrato_xml_versionado',
-      label: 'Contrato XML versionado',
-      passed: manifest.version === SAE_CONTRACT_VERSION,
-      detail: manifest.version || 'Sin version.',
+      code: 'formato_carga_iess',
+      label: 'Formato oficial IESS para descarga',
+      passed: xmlFormatValidated || experimentalXmlEnabled,
+      detail: xmlFormatValidated
+        ? 'Formato oficial IESS validado.'
+        : `Pendiente de especificacion oficial; ${EXPERIMENTAL_IESS_XML_FLAG}=${experimentalXmlEnabled ? 'true' : 'false'}.`,
     },
   ];
 
@@ -170,6 +179,7 @@ async function precheckSAE(tenantId, anio, mes) {
   const manifest = readSaeManifest();
   const { tenant, nominas, employerIessRate } = await loadSaeData(tenantId, year, month);
   const checks = buildSaeChecks({ tenant, nominas, employerIessRate, manifest, anio: year, mes: month });
+  const dataChecks = checks.filter((check) => check.code !== 'formato_carga_iess');
   const totalSalarios = nominas.reduce((sum, row) => sum + numberValue(row.total_ingresos), 0);
   const totalAportePersonal = nominas.reduce((sum, row) => sum + numberValue(row.aporte_iess_personal), 0);
   const totalAportePatronal = nominas.reduce(
@@ -179,6 +189,7 @@ async function precheckSAE(tenantId, anio, mes) {
 
   return {
     ready: checks.every((check) => check.passed),
+    dataReady: dataChecks.every((check) => check.passed),
     anio: year,
     mes: month,
     totalEmpleados: nominas.length,
@@ -194,6 +205,8 @@ async function precheckSAE(tenantId, anio, mes) {
       observedAt: manifest.observedAt,
       officialSourceReconciliation: manifest.validationPolicy?.officialSourceReconciliation || '',
       schemaPolicy: manifest.validationPolicy?.schemaPolicy || '',
+      xmlFormatStatus: manifest.validationPolicy?.xmlFormatStatus || '',
+      experimentalXmlEnabled: isExperimentalIessXmlEnabled(),
     },
   };
 }
@@ -252,11 +265,17 @@ function buildSaeXml({ tenant, nominas, employerIessRate, anio, mes }) {
 async function generarXML_SAE(tenantId, anio, mes) {
   const precheck = await precheckSAE(tenantId, anio, mes);
   if (!precheck.ready) {
-    throw new AppError('SAE IESS requiere datos validados antes de generar el XML.', {
-      code: 'SAE_PRECHECK_FAILED',
-      statusCode: 423,
-      details: { checks: precheck.checks },
-    });
+    const formatPending = precheck.checks.some((check) => check.code === 'formato_carga_iess' && !check.passed);
+    throw new AppError(
+      formatPending
+        ? 'IESS no tiene un formato XML oficial validado en SKNOMINA. Usa la prevalidacion y habilita XML solo como experimental con aprobacion tecnica.'
+        : 'IESS requiere datos validados antes de generar el XML experimental.',
+      {
+        code: formatPending ? 'IESS_XML_FORMAT_NOT_VALIDATED' : 'SAE_PRECHECK_FAILED',
+        statusCode: 423,
+        details: { checks: precheck.checks },
+      }
+    );
   }
 
   const { tenant, nominas, employerIessRate } = await loadSaeData(tenantId, Number(anio), Number(mes));
@@ -267,13 +286,13 @@ async function generarXML_SAE(tenantId, anio, mes) {
   const url = await s3Upload(Buffer.from(xmlString, 'utf8'), key, 'application/xml');
 
   logger.info({
-    code: 'SAE_XML_GENERATED',
+    code: 'IESS_XML_EXPERIMENTAL_GENERATED',
     correlationId: process.env.CORRELATION_ID || 'sae-generator',
     tenantId,
     anio,
     mes,
     totalEmpleados: nominas.length,
-  }, 'XML SAE generado');
+  }, 'XML IESS experimental generado');
 
   return {
     url,
@@ -284,7 +303,7 @@ async function generarXML_SAE(tenantId, anio, mes) {
     sha256,
     validation: {
       valid: true,
-      mode: 'versioned_structural_contract',
+      mode: 'experimental_versioned_structural_contract',
       contractVersion: SAE_CONTRACT_VERSION,
       checkedAt: new Date().toISOString(),
     },

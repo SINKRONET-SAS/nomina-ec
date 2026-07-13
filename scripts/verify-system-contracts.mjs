@@ -144,6 +144,7 @@ const periodosNomina = read('frontend-web/src/pages/Nomina/PeriodosNomina.jsx');
 const rolesPagos = read('frontend-web/src/pages/Nomina/RolesPagos.jsx');
 const beneficios = read('frontend-web/src/pages/Nomina/Beneficios.jsx');
 const descargarReportes = read('frontend-web/src/pages/Nomina/DescargarReportes.jsx');
+const landing = read('frontend-web/src/pages/Landing.jsx');
 const dateFormatWeb = read('frontend-web/src/utils/dateFormat.js');
 const monthlyPeriodService = read('backend/src/services/monthlyPeriodService.js');
 const payrollAccountingController = read('backend/src/controllers/payrollAccountingController.js');
@@ -213,6 +214,10 @@ for (const reportCode of frontendReportCodes) {
 }
 assert(!descargarReportes.includes('PAYROLL_ACCOUNTING_ENTRIES'), 'La PWA no debe mostrar el reporte contable legacy.');
 assert(descargarReportes.includes('PAYROLL_ACCOUNTING_REPORT'), 'La PWA debe mostrar el reporte contable gobernado.');
+assert(!descargarReportes.includes('Generar XML SAE'), 'IESS no debe exponerse como XML oficial en la pantalla de reportes.');
+assert(descargarReportes.includes('Prevalidar datos IESS'), 'La pantalla de reportes debe exponer IESS como prevalidacion.');
+assert(!landing.includes('XML SAE IESS'), 'La landing no debe prometer XML SAE IESS como reporte oficial.');
+assert(landing.includes('prevalidación IESS'), 'La landing debe comunicar IESS como prevalidacion.');
 assert(app.includes("'/api/reportes/nomina/exportar'"), 'Backend debe exponer /api/reportes/nomina/exportar.');
 
 for (const [screenName, screenText] of [

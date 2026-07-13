@@ -1,5 +1,5 @@
 {
-  "name": "SAE IESS payroll export contract",
+  "name": "IESS payroll preparation contract",
   "country": "EC",
   "year": 2026,
   "observedAt": "2026-07-03",
@@ -14,7 +14,7 @@
     },
     {
       "kind": "internal_structural_contract",
-      "name": "SKNOMINA SAE monthly payroll export",
+      "name": "SKNOMINA IESS monthly data preparation",
       "sha256": "runtime-generated",
       "status": "versioned_contract",
       "observedAt": "2026-07-03"
@@ -22,8 +22,10 @@
   ],
   "validationPolicy": {
     "officialSourceReconciliation": "checked_2026_07_03",
-    "schemaPolicy": "No public XSD is bundled for SAE. SKNOMINA gates generation with employer data, closed payroll, IESS rates and a versioned XML contract before download.",
-    "runtimeGate": "fail_closed_when_manifest_or_closed_payroll_missing"
+    "schemaPolicy": "No public XML/XSD specification is bundled for IESS SAE. SKNOMINA treats this flow as data prevalidation and blocks XML download unless an experimental flag is enabled by a technical owner.",
+    "xmlFormatStatus": "pending_official_iess_format",
+    "runtimeGate": "fail_closed_when_manifest_or_closed_payroll_missing_or_xml_format_pending",
+    "experimentalXmlFlag": "ALLOW_EXPERIMENTAL_IESS_XML"
   },
   "requiredFields": [
     "empleador.ruc",

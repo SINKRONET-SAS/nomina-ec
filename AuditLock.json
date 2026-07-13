@@ -1,49 +1,56 @@
 {
-  "plan": "HAIKY-ASSETS-COMERCIAL-UIUX-2026",
-  "phaseCompleted": "HAIKY-ASSETS-COMERCIAL-2026-05-qa-release",
+  "plan": "HAIKY-REPORTES-ENTIDADES-PUBLICAS-EC-2026",
+  "phaseCompleted": "RPE26-04-qa-release",
   "summary": [
-    "Regresion de logo Nomina-Ec / datos ficticios corregida con fuente SKNOMINA entregada por usuario.",
-    "Assets PWA, Open Graph, screenshots de manifest, Expo launcher, notification y splash generados por script JS.",
-    "Favicon de pestana corregido con PNG oficiales 32/48/64 desde SKNOMINA.",
-    "Landing, login, BrandLogo y contratos apuntan a assets comerciales reales.",
-    "Banner de cookies y header mobile ajustados; QA visual PASS en landing/login desktop/mobile."
+    "RDEP y Formulario 107 quedan como reportes SRI validados por fuentes versionadas.",
+    "IESS queda degradado a preparacion y prevalidacion operativa hasta contar con formato oficial validado.",
+    "El endpoint legado de XML IESS falla cerrado con IESS_XML_FORMAT_NOT_VALIDATED salvo flag experimental explicito.",
+    "La PWA separa reportes SRI, preparacion IESS y reportes internos; Formulario 107 agrega busqueda de empleados.",
+    "Los reportes internos priorizan estructuras verticales y marcan la matriz dinamica como uso puntual."
   ],
   "filesModified": [
-    "assets/brand/manifest.json",
-    "assets/brand/source/SINKRONET.png",
-    "assets/brand/source/SINKRONET-LOGO.jpg",
-    "assets/brand/source/SKNOMINA_LOGO.png",
-    "app-movil/assets/adaptive-icon.png",
-    "app-movil/assets/icon.png",
-    "app-movil/assets/notification-icon.png",
-    "app-movil/assets/splash.png",
-    "docs2/PLAN_HAIKY_ASSETS_COMERCIAL_UIUX_2026.md",
-    "docs2/auditoria-assets-comercial-haiky-2026/DIAGNOSTICO_AUTOMATIZADO.md",
-    "docs2/auditoria-assets-comercial-haiky-2026/DIAGNOSTICO_JSON.json",
-    "docs2/auditoria-assets-comercial-haiky-2026/INFORME_DIAGNOSTICO.md",
-    "docs2/auditoria-assets-comercial-haiky-2026/VISUAL_QA.md",
-    "docs2/auditoria-assets-comercial-haiky-2026/VISUAL_QA_JSON.json",
-    "frontend-web/public/favicon-32.png",
-    "frontend-web/public/favicon-48.png",
-    "frontend-web/public/favicon-64.png",
-    "frontend-web/index.html",
-    "frontend-web/pwa.config.js",
-    "frontend-web/scripts/smoke-pwa-lpa26.mjs",
-    "frontend-web/src/components/Brand/BrandLogo.jsx",
-    "frontend-web/src/components/Privacy/CookieConsent.jsx",
+    ".github/CODEX_CONTEXT.md",
+    ".github/prompts/RPE26-00-baseline-gobierno.md",
+    ".github/prompts/RPE26-01-fuentes-sri-iess.md",
+    ".github/prompts/RPE26-02-runtime-pwa-backend.md",
+    ".github/prompts/RPE26-03-reportes-escala.md",
+    ".github/prompts/RPE26-04-qa-release.md",
+    ".vscode/AudiLock.json",
+    ".vscode/AuditLock.json",
+    "AuditLock.json",
+    "README.md",
+    "backend/src/app.routes.test.js",
+    "backend/src/config/iess/sae-source-manifest.json",
+    "backend/src/config/modules.js",
+    "backend/src/services/iessSaeGenerator.js",
+    "backend/src/services/iessSaeGenerator.test.js",
+    "docs/CUMPLIMIENTO_LEGAL.md",
+    "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_DIAGNOSTICO_PRELIMINAR_SKNOMINA_2026.md",
+    "docs2/PLAN_HAIKY_REPORTES_ENTIDADES_PUBLICAS_EC_2026.md",
+    "docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/CONTRATO_DPS26_CIERRE_DEFINITIVO.md",
+    "docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/MATRIZ_DPS26_HALLAZGOS.md",
+    "docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/REPORTE_DPS26_00_BASELINE.md",
+    "docs2/reportes-entidades-publicas-ec-2026/REPORTE_RPE26_00_04_EJECUCION.md",
+    "frontend-web/src/components/ModulePermissionMatrix.jsx",
     "frontend-web/src/pages/Landing.jsx",
-    "frontend-web/vite.config.js",
-    "scripts/haiky-brand-assets-auditlock.mjs",
-    "scripts/haiky-brand-assets-diagnostic.mjs",
-    "scripts/haiky-brand-assets-solution.mjs",
-    "scripts/haiky-visual-regression-capture.mjs",
+    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
     "scripts/verify-system-contracts.mjs"
   ],
   "validationChecks": [
     {
-      "name": "brand_assets_diagnostic",
+      "name": "node_check_iess_generator",
       "ok": true,
-      "output": "{\n  \"ok\": true,\n  \"outDir\": \"docs2/auditoria-assets-comercial-haiky-2026\",\n  \"findingSummary\": {}\n}"
+      "output": "node --check backend/src/services/iessSaeGenerator.js"
+    },
+    {
+      "name": "node_check_contracts_script",
+      "ok": true,
+      "output": "node --check scripts/verify-system-contracts.mjs"
+    },
+    {
+      "name": "backend_targeted_tests",
+      "ok": true,
+      "output": "npm.cmd --workspace=backend test -- iessSaeGenerator.test.js app.routes.test.js --runInBand: PASS, 2 suites, 29 tests"
     },
     {
       "name": "contracts_system",
@@ -51,16 +58,21 @@
       "output": "[CONTRACTS] OK: frontend, backend, Prisma y reportes mantienen contrato de sistema unico."
     },
     {
-      "name": "mobile_store_readiness",
+      "name": "frontend_build",
       "ok": true,
-      "output": "> sknomina-system@1.0.0 check:mobile\n> npm --workspace=app-movil run check:stores\n\n\n> sknomina-app@1.0.0 check:stores\n> node scripts/check-store-readiness.mjs\n\n[LPA26-STORES] Configuracion, identificadores, URLs y assets de tienda verificados."
+      "output": "npm.cmd --workspace=frontend-web run build: PASS; PWA files generated"
     },
     {
-      "name": "visual_qa_artifact",
+      "name": "git_diff_check",
       "ok": true,
-      "output": "docs2/auditoria-assets-comercial-haiky-2026/VISUAL_QA_JSON.json: PASS 4 escenarios"
+      "output": "git diff --check: PASS con avisos LF/CRLF esperados en Windows"
+    },
+    {
+      "name": "utf8_no_bom",
+      "ok": true,
+      "output": "UTF8 sin BOM OK 17 archivos"
     }
   ],
-  "timestamp": "2026-07-12T19:23:43.690Z",
-  "signature": "7ed584bec64ece1564fe0d943dfa012b9da5edd06dcc622633d4e6daac9c3feb"
+  "timestamp": "2026-07-13T00:28:32.566Z",
+  "signature": "ea3aed5f1b3dbc7e644d07895073617ae5f05e534348c1d989ba5bcea805edd3"
 }

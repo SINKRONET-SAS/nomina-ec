@@ -72,8 +72,8 @@ const flow = [
   },
   {
     icon: FileSpreadsheet,
-    title: 'Entrega reportes oficiales',
-    text: 'RDEP, Formulario 107, SAE IESS y reportes internos con datos trazables.',
+    title: 'Reportes SRI e internos',
+    text: 'RDEP, Formulario 107, prevalidación IESS y reportes internos con datos trazables.',
   },
 ];
 
@@ -82,13 +82,13 @@ const modules = [
   ['Operación móvil', 'Marcación móvil, permisos con o sin sueldo, rutas de campo y evidencias del periodo.'],
   ['Bancos y pagos', 'Perfiles bancarios, homologación y archivo de pago por periodo.'],
   ['Documentos', 'Contratos, actas, roles PDF, finiquitos y soportes por trabajador.'],
-  ['Legal y SRI', 'Parámetros por año, RDEP, Formulario 107 e informes auditables.'],
+  ['Legal, SRI e IESS', 'Parámetros por año, RDEP, Formulario 107, prevalidaciones e informes auditables.'],
   ['Privacidad', 'Consentimientos, minimización de datos y bitácora por usuario.'],
 ];
 
 const metrics = [
   ['21+', 'controles de cierre'],
-  ['3', 'entidades cubiertas'],
+  ['3', 'flujos externos'],
   ['100%', 'trazabilidad'],
   ['EC', 'reglas locales'],
 ];
@@ -152,9 +152,9 @@ function ProductScene() {
 
         <div className="mt-4 grid grid-cols-[1fr_0.82fr] gap-4">
           <div className="rounded-lg border border-slate-200 bg-white/95 p-4 shadow-lg shadow-slate-200/60">
-            <p className="text-xs font-semibold uppercase text-slate-500">Reportes oficiales</p>
+            <p className="text-xs font-semibold uppercase text-slate-500">Reportes y prevalidaciones</p>
             <div className="mt-4 space-y-2">
-              {['XML RDEP', 'PDF Formulario 107', 'XML SAE IESS'].map((item, index) => (
+              {['XML RDEP', 'PDF Formulario 107', 'Prevalidación IESS'].map((item, index) => (
                 <div className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-2 text-sm" key={item}>
                   <span className="text-slate-700">{item}</span>
                   <CheckCircle2 className={index === 1 ? 'h-4 w-4 text-sky-700' : 'h-4 w-4 text-teal-700'} />
@@ -227,7 +227,7 @@ function Landing() {
             <p className="mt-5 max-w-lg text-base leading-8 text-slate-700">
               Una plataforma para RRHH y administración: fichas laborales completas, roles de pago,
               permisos con o sin sueldo, archivo bancario por banco, rutas de campo, RDEP,
-              Formulario 107, SAE IESS y auditoría por usuario.
+              Formulario 107, prevalidación IESS y auditoría por usuario.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link className="primary-button" to="/registro">Empezar prueba <ArrowRight size={18} /></Link>

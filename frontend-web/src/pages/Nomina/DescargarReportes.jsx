@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle2, Download, FileSpreadsheet, FileText, Landmark, ShieldCheck } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Download, FileSpreadsheet, FileText, Landmark, Search, ShieldCheck } from 'lucide-react';
 import CompactNotice from '../../components/UI/CompactNotice';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { downloadUrl } from '../../utils/downloadUrl';
@@ -13,6 +13,8 @@ const institutionalReports = [
     description: 'Anexo anual de relación de dependencia para retenciones de empleados.',
     button: 'Generar XML RDEP',
     accent: 'blue',
+    status: 'Oficial SRI validado',
+    statusTone: 'emerald',
   },
   {
     type: 'form107',
@@ -21,16 +23,19 @@ const institutionalReports = [
     description: 'PDF anual por trabajador con ingresos y retenciones.',
     button: 'Generar PDF 107',
     accent: 'blue',
-  },
-  {
-    type: 'sae',
-    title: 'SAE - IESS',
-    entity: 'Instituto Ecuatoriano de Seguridad Social',
-    description: 'Avisos y aportes de trabajadores para IESS.',
-    button: 'Generar XML SAE',
-    accent: 'green',
+    status: 'Oficial SRI validado',
+    statusTone: 'emerald',
   },
 ];
+
+const iessPreparationReport = {
+  type: 'sae',
+  title: 'Preparación IESS',
+  entity: 'Instituto Ecuatoriano de Seguridad Social',
+  description: 'Prevalida datos de empleador, trabajadores, sueldos y aportes. La descarga XML queda bloqueada hasta contar con formato oficial IESS validado.',
+  status: 'Formato oficial pendiente',
+  statusTone: 'amber',
+};
 
 const pendingRequirements = [
   'Ministerio del Trabajo: reportes laborales según la obligación aplicable.',
@@ -49,6 +54,20 @@ const accentClasses = {
   },
 };
 
+const statusClasses = {
+  amber: 'border-amber-200 bg-amber-50 text-amber-800',
+  emerald: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  slate: 'border-slate-200 bg-slate-50 text-slate-700',
+};
+
+function StatusBadge({ children, tone = 'slate' }) {
+  return (
+    <span className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold ${statusClasses[tone] || statusClasses.slate}`}>
+      {children}
+    </span>
+  );
+}
+
 function DescargarReportes() {
   const initialPeriod = currentPeriodEC();
   const [anio, setAnio] = useState(initialPeriod.anio);
@@ -63,6 +82,7 @@ function DescargarReportes() {
   });
   const [empleados, setEmpleados] = useState([]);
   const [form107EmpleadoId, setForm107EmpleadoId] = useState('');
+  const [form107Search, setForm107Search] = useState('');
   const [cargando, setCargando] = useState('');
   const [rdepPrecheck, setRdepPrecheck] = useState(null);
   const [form107Precheck, setForm107Precheck] = useState(null);
@@ -139,12 +159,12 @@ function DescargarReportes() {
     try {
       const response = await authenticatedApi.post('/reportes/sae/precheck', { anio, mes });
       setSaePrecheck(response.data.precheck);
-      setMessage(response.data.precheck.ready
-        ? 'SAE IESS listo para generar con periodo cerrado y contrato vigente.'
-        : 'SAE IESS requiere acciones antes de generar el XML.');
+      setMessage(response.data.precheck.dataReady
+        ? 'Datos IESS completos para revisión operativa. La descarga XML sigue bloqueada hasta validar formato oficial.'
+        : 'IESS requiere acciones antes de completar la prevalidación.');
       return response.data.precheck;
     } catch (err) {
-      const nextError = err.response?.data?.message || err.response?.data?.error || 'No pudimos validar SAE IESS.';
+      const nextError = err.response?.data?.message || err.response?.data?.error || 'No pudimos prevalidar datos IESS.';
       setError(nextError);
       setSaePrecheck(null);
       return null;
@@ -259,14 +279,32 @@ function DescargarReportes() {
     setFilters((current) => ({ ...current, [key]: value }));
   };
 
+  const normalizedForm107Search = form107Search.trim().toLowerCase();
+  const filteredEmpleados = empleados
+    .filter((empleado) => {
+      if (!normalizedForm107Search) return true;
+      const haystack = [
+        empleado.cedula,
+        empleado.nombres,
+        empleado.apellidos,
+        empleado.id,
+      ].filter(Boolean).join(' ').toLowerCase();
+      return haystack.includes(normalizedForm107Search);
+    })
+    .slice(0, 50);
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-950">Reportes para entidades públicas</h1>
         <p className="mt-2 max-w-4xl text-sm text-slate-600">
-          Genera archivos internos y reportes oficiales aplicables a nómina Ecuador.
+          Genera reportes SRI validados, prevalidaciones IESS y archivos internos aplicables a nómina Ecuador.
         </p>
       </div>
+
+      <CompactNotice tone="amber" title="Gobierno de formatos">
+        RDEP y Formulario 107 se tratan como reportes SRI validados contra fuentes versionadas. IESS se mantiene como prevalidación operativa hasta contar con formato oficial de carga o guía técnica aprobada.
+      </CompactNotice>
 
       {message && <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{message}</div>}
       {error && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{error}</div>}
@@ -310,8 +348,17 @@ function DescargarReportes() {
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
           <label className="block text-sm font-medium text-slate-700">
             Empleado para Formulario 107
+            <div className="mt-1 flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2">
+              <Search className="h-4 w-4 shrink-0 text-slate-400" />
+              <input
+                className="w-full border-0 p-0 text-sm outline-none"
+                placeholder="Buscar por cédula, apellido, nombre o ID"
+                value={form107Search}
+                onChange={(event) => setForm107Search(event.target.value)}
+              />
+            </div>
             <select
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2"
               value={form107EmpleadoId}
               onChange={(event) => {
                 setForm107EmpleadoId(event.target.value);
@@ -319,12 +366,15 @@ function DescargarReportes() {
               }}
             >
               <option value="">Seleccionar empleado...</option>
-              {empleados.map((empleado) => (
+              {filteredEmpleados.map((empleado) => (
                 <option key={empleado.id} value={empleado.id}>
                   {empleado.apellidos || ''} {empleado.nombres || ''} - {empleado.cedula || ''}
                 </option>
               ))}
             </select>
+            <span className="mt-1 block text-xs font-normal text-slate-500">
+              Mostrando {filteredEmpleados.length} de {empleados.length} trabajadores cargados.
+            </span>
           </label>
           <button
             className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-teal-200 px-4 text-sm font-semibold text-teal-700 hover:border-teal-400 disabled:opacity-60"
@@ -354,13 +404,16 @@ function DescargarReportes() {
         )}
       </section>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {institutionalReports.map((report) => {
           const classes = accentClasses[report.accent];
           return (
             <article className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm" key={report.type}>
               <FileText className={`mb-4 ${classes.icon}`} size={40} />
-              <h3 className="text-lg font-semibold text-slate-950">{report.title}</h3>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <h3 className="text-lg font-semibold text-slate-950">{report.title}</h3>
+                <StatusBadge tone={report.statusTone}>{report.status}</StatusBadge>
+              </div>
               <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{report.entity}</p>
               <p className="mt-3 min-h-16 text-sm leading-6 text-slate-600">{report.description}</p>
               <button
@@ -371,21 +424,35 @@ function DescargarReportes() {
                 <Download size={20} className="mr-2" />
                 {cargando === report.type ? 'Generando...' : report.button}
               </button>
-              {report.type === 'sae' && (
-                <button
-                  onClick={validarSae}
-                  disabled={cargando === 'sae-precheck'}
-                  className="mt-3 flex w-full items-center justify-center rounded-lg border border-teal-200 px-4 py-2 text-sm font-semibold text-teal-700 hover:border-teal-400 disabled:opacity-50"
-                  type="button"
-                >
-                  <ShieldCheck size={18} className="mr-2" />
-                  {cargando === 'sae-precheck' ? 'Validando...' : 'Validar SAE IESS'}
-                </button>
-              )}
             </article>
           );
         })}
       </div>
+
+      <section className="rounded-lg border border-amber-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex items-start gap-3">
+            <Landmark className="mt-1 h-5 w-5 text-amber-700" />
+            <div>
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-lg font-semibold text-slate-950">{iessPreparationReport.title}</h2>
+                <StatusBadge tone={iessPreparationReport.statusTone}>{iessPreparationReport.status}</StatusBadge>
+              </div>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{iessPreparationReport.entity}</p>
+              <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-600">{iessPreparationReport.description}</p>
+            </div>
+          </div>
+          <button
+            onClick={validarSae}
+            disabled={cargando === 'sae-precheck'}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-amber-300 px-4 text-sm font-semibold text-amber-800 hover:border-amber-500 disabled:opacity-50"
+            type="button"
+          >
+            <ShieldCheck size={18} />
+            {cargando === 'sae-precheck' ? 'Validando...' : 'Prevalidar datos IESS'}
+          </button>
+        </div>
+      </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -393,7 +460,7 @@ function DescargarReportes() {
             <FileSpreadsheet className="mt-1 h-5 w-5 text-teal-700" />
             <div>
               <h2 className="text-lg font-semibold text-slate-950">Reportes internos de nómina</h2>
-              <p className="mt-1 text-sm leading-6 text-slate-600">Exporta detalle, resumen, matrices y reportes contables con filtros.</p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">Exporta formatos verticales, resumen, ledger y reportes contables con filtros.</p>
             </div>
           </div>
           <button
@@ -428,10 +495,10 @@ function DescargarReportes() {
               }}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
             >
-              <option value="PAYROLL_DETAIL_TABULAR">Detalle tabular</option>
-              <option value="PAYROLL_EMPLOYEE_DETAIL">Detalle por empleado</option>
-              <option value="PAYROLL_BENEFITS_MATRIX">Matriz empleados x beneficios</option>
-              <option value="PAYROLL_BENEFIT_MOVEMENT_BALANCE">Ledger beneficios y saldos</option>
+              <option value="PAYROLL_DETAIL_TABULAR">Detalle tabular (1 fila por empleado)</option>
+              <option value="PAYROLL_EMPLOYEE_DETAIL">Detalle por concepto (vertical)</option>
+              <option value="PAYROLL_BENEFIT_MOVEMENT_BALANCE">Ledger beneficios y saldos (recomendado 1000+ empleados)</option>
+              <option value="PAYROLL_BENEFITS_MATRIX">Matriz de conceptos (uso puntual)</option>
               <option value="PAYROLL_SUMMARY">Resumen de nómina</option>
               <option value="PAYROLL_ACCOUNTING_REPORT">Reporte contable</option>
             </select>
@@ -485,6 +552,11 @@ function DescargarReportes() {
             />
           </div>
         </div>
+        {reportCode === 'PAYROLL_BENEFITS_MATRIX' && (
+          <CompactNotice className="mt-4" tone="amber" title="Uso puntual">
+            La matriz agrega columnas dinámicas por concepto. Para nóminas grandes usa el ledger o el detalle por concepto, que mantienen una estructura vertical auditable.
+          </CompactNotice>
+        )}
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -542,7 +614,7 @@ function DescargarReportes() {
               </div>
             ))}
             <div className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-700 lg:col-span-2">
-              SAE IESS: <span className="font-mono text-xs">{saePrecheck.manifest?.version}</span>
+              Prevalidación IESS: <span className="font-mono text-xs">{saePrecheck.manifest?.version}</span>
               <span className="ml-2 text-xs text-slate-500">
                 {saePrecheck.totalEmpleados || 0} trabajadores, periodo {String(saePrecheck.mes).padStart(2, '0')}/{saePrecheck.anio}.
               </span>

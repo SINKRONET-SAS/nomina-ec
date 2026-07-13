@@ -64,7 +64,7 @@ npm start
 - Cálculo mensual asociado a lote auditable.
 - Matriz contable única por tenant para conceptos de nómina.
 - Reportes internos: detalle tabular, detalle por empleado, matriz empleados x conceptos y reporte contable balanceado.
-- Reportes externos de nómina: RDEP, SAE y archivo bancario según configuración disponible.
+- Reportes externos de nómina: RDEP, Formulario 107, prevalidacion IESS y archivo bancario segun configuracion disponible.
 - App móvil para marcación y consulta operativa.
 
 ## Bloqueos antes de producción

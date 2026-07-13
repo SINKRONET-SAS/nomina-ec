@@ -5,7 +5,7 @@
 | Requisito Legal | Articulo | Implementacion en el SaaS | Documento/Reporte |
 |----------------|----------|---------------------------|-------------------|
 | Registro de jornada | Art. 71 Codigo Trabajo | App movil con foto+GPS, almacenamiento 2 anos | Reporte de asistencia |
-| Pago aportes IESS | Art. 205 Codigo Trabajo | Motor de nomina calcula automaticamente | XML SAE |
+| Pago aportes IESS | Art. 205 Codigo Trabajo | Motor de nomina calcula automaticamente | Prevalidacion IESS; XML bloqueado hasta formato oficial validado |
 | Decimo tercero | Art. 111 Codigo Trabajo | Provisionado mensual, pago en diciembre | Rol de pagos |
 | Decimo cuarto | Art. 113 Codigo Trabajo | Provisionado mensual, pago segun region | Rol de pagos |
 | Retencion IR | Art. 36 LRTI | Calculo progresivo anual/mensual | XML ATS |

@@ -1,6 +1,38 @@
 
 ---
 
+## Open Haiky Plan - HAIKY-REPORTES-ENTIDADES-PUBLICAS-EC-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-REPORTES-ENTIDADES-PUBLICAS-EC-2026 |
+| Codigo | RPE26 |
+| Estado | completed-pass |
+| Fecha | 2026-07-12 |
+| Requerimiento fuente | Revisar Reportes Entidades: confirmar si IESS usa XML, evitar reportes ineficientes para nominas grandes y proponer mejoras ejecutables. |
+| Plan doc | `docs2/PLAN_HAIKY_REPORTES_ENTIDADES_PUBLICAS_EC_2026.md` |
+| Reporte | `docs2/reportes-entidades-publicas-ec-2026/REPORTE_RPE26_00_04_EJECUCION.md` |
+| Prompts | `.github/prompts/RPE26-{00..04}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` y `.vscode/AudiLock.json` |
+
+### Decision RPE26
+
+- RDEP queda como XML oficial SRI porque el repo conserva XSD, manifest y validacion estructural.
+- Formulario 107 queda como PDF anual por trabajador basado en roles cerrados y referencia SRI/RDEP.
+- IESS no se expone como XML oficial: la PWA muestra `Preparacion IESS` y `Prevalidar datos IESS`.
+- El endpoint legado `/api/reportes/sae` se conserva por compatibilidad, pero falla cerrado con `IESS_XML_FORMAT_NOT_VALIDATED` salvo `ALLOW_EXPERIMENTAL_IESS_XML=true`.
+- La landing deja de prometer `XML SAE IESS`; comunica `prevalidacion IESS`.
+- Para nominas grandes, los reportes recomendados son verticales: detalle tabular, detalle por concepto y ledger de beneficios. La matriz dinamica queda como uso puntual.
+
+### Gates RPE26
+
+- `node --check backend/src/services/iessSaeGenerator.js`
+- `node --check scripts/verify-system-contracts.mjs`
+- `npm.cmd --workspace=backend test -- iessSaeGenerator.test.js app.routes.test.js --runInBand`
+- `npm.cmd run contracts`
+- `npm.cmd --workspace=frontend-web run build`
+- `git diff --check`
+
 ## Closed Haiky Plan - HAIKY-PAYPHONE-CANAL-PRINCIPAL-2026
 
 | Campo | Valor |
@@ -386,7 +418,7 @@ DPS26 transforma el diagnostico preliminar en un cierre por fases del producto c
 
 ### Promesa P0 de reportes oficiales
 
-La promesa visible "Entrega reportes oficiales: RDEP, Formulario 107, SAE IESS y reportes internos con datos trazables" queda clasificada como obligacion P0 de producto. RDEP, Formulario 107 PDF individual anual, SAE IESS y reportes internos deben validarse contra formatos vigentes 2026, reconciliar totales y bloquear descarga productiva si falta fuente tecnica, catalogo, estructura o evidencia.
+La promesa visible de reportes queda corregida por RPE26: RDEP y Formulario 107 son reportes SRI con fuente versionada; IESS se comunica como prevalidacion operativa hasta contar con formato oficial de carga o guia tecnica aprobada. Los reportes internos deben mantenerse trazables y en formato vertical para nominas grandes.
 
 ### Reglas operativas DPS26
 
@@ -422,7 +454,7 @@ DPS26-05, DPS26-06, DPS26-07 y DPS26-10 reforzaron estos cambios con pruebas ant
 | DPS26-06 | P1 | completed_local | Paridad comercial, landing, planes, PWA y app. |
 | DPS26-07 | P1 | completed_local | Flujos PWA criticos. |
 | DPS26-08 | P1 | completed_local | App movil GPS/foto, privacidad y stores. |
-| DPS26-09 | P0 | completed_local | RDEP, Formulario 107 PDF, SAE IESS y reportes internos trazables. |
+| DPS26-09 | P0 | superseded_by_RPE26 | RDEP, Formulario 107 PDF, prevalidacion IESS y reportes internos trazables. |
 | DPS26-10 | P0 | completed_local | QA final, dependencias, observabilidad, docs, AuditLock y release. |
 
 ---
@@ -2292,7 +2324,7 @@ Artefactos:
 
 Runtime cerrado:
 
-- Reportes oficiales 2026 reforzados: RDEP mantiene XSD/manifiesto y precheck anual; Formulario 107 PDF usa roles cerrados del ejercicio fiscal y base consistente con RDEP; SAE IESS agrega precheck mensual, manifiesto versionado, bloqueo fail-closed, hash SHA-256, archivo nombrado y panel visible en PWA.
+- Reportes oficiales 2026 reforzados: RDEP mantiene XSD/manifiesto y precheck anual; Formulario 107 PDF usa roles cerrados del ejercicio fiscal y base consistente con RDEP; IESS queda degradado a prevalidacion operativa con XML bloqueado hasta formato oficial validado.
 - Reportes internos se conservan como exportaciones trazables por codigo de reporte, filtros, usuario y capability comercial.
 - Landing y planes quedan con una sola fuente de verdad de catalogo: `frontend-web/src/components/PublicPlansCatalog.jsx`, usado por landing; `/precios` redirige al ancla publica sin duplicar logica ni checkout.
 - Superadmin/fundador conserva tenant operativo, seed, RBAC y acceso a gestion de planes; owners conservan operacion tenant.
@@ -2312,8 +2344,8 @@ Gates DPS26 ejecutados:
 
 Riesgo residual DPS26:
 
-- RDEP, Formulario 107 y SAE IESS deben validarse por profesional tributario/laboral antes de presentacion oficial real.
-- SAE IESS queda protegido por contrato versionado y precheck, pero no sustituye validacion en portal/proceso IESS aplicable.
+- RDEP y Formulario 107 deben validarse por profesional tributario/laboral antes de presentacion oficial real.
+- IESS requiere validacion en portal/proceso aplicable y fuente tecnica oficial antes de permitir descargas de carga o XML productivo.
 
 ---
 
