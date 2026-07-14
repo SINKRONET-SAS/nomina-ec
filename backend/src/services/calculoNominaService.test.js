@@ -8,6 +8,8 @@ const {
   calcularValorHora,
   assertWeeklyOvertimeLimit,
   assertEmployeeMeetsUnifiedBaseSalary,
+  assertPayrollTotalsIntegrity,
+  buildPayrollTotalsIntegrity,
   normalizeIessRelationType,
   resolveOvertimeParameters,
   resolveFourteenthSalaryPeriod,
@@ -260,5 +262,29 @@ describe('calculoNominaService', () => {
       anio: 2026,
       mes: 6,
     })).toThrow('menor al SBU vigente');
+  });
+
+  test('expone integridad de totales de nomina balanceada', () => {
+    expect(buildPayrollTotalsIntegrity({
+      totalIngresos: 1000,
+      totalDeducciones: 125.25,
+      netoRecibir: 874.75,
+    })).toMatchObject({
+      netoEsperado: 874.75,
+      diferencia: 0,
+      balanced: true,
+    });
+  });
+
+  test('bloquea nomina si el neto no coincide con ingresos menos deducciones', () => {
+    expect(() => assertPayrollTotalsIntegrity({
+      totalIngresos: 1000,
+      totalDeducciones: 100,
+      netoRecibir: 850,
+    }, {
+      empleadoId: 'emp-1',
+      anio: 2026,
+      mes: 7,
+    })).toThrow('no coincide');
   });
 });

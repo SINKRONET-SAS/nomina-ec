@@ -16,6 +16,8 @@
     "check:mobile": "npm --workspace=app-movil run check:stores",
     "audit:integral": "node scripts/haiky-integral-diagnostic.mjs",
     "haiky:solution": "node scripts/haiky-integral-solution.mjs",
+    "audit:integral:v2": "node scripts/haiky-integral-v2-diagnostic.mjs",
+    "haiky:solution:v2": "node scripts/haiky-integral-v2-solution.mjs",
     "audit:brand-assets": "node scripts/haiky-brand-assets-diagnostic.mjs",
     "audit:brand-visual": "node scripts/haiky-visual-regression-capture.mjs",
     "brand:assets:solution": "node scripts/haiky-brand-assets-solution.mjs && node scripts/haiky-brand-assets-diagnostic.mjs",

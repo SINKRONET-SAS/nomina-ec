@@ -1,0 +1,225 @@
+{
+  "generatedAt": "2026-07-14T12:43:54.516Z",
+  "plan": "HAIKY-AUDITORIA-INTEGRAL-V2-NOMINA-EC-2026",
+  "rulesSource": "RULES.md",
+  "repository": "SINKRONET-SAS/nomina-ec",
+  "scope": [
+    "LANDING",
+    "PWA",
+    "BACKEND",
+    "MOBILE"
+  ],
+  "legalScope": {
+    "country": "Ecuador",
+    "year": 2026,
+    "excludedCountries": [
+      "Colombia"
+    ]
+  },
+  "filesScanned": 281,
+  "legalSources2026": [
+    {
+      "domain": "SRI facturacion electronica",
+      "source": "https://www.sri.gob.ec/facturacion-electronica",
+      "checkedAt": "2026-07-14",
+      "summary": "SRI publica documentos electronicos, ambientes pruebas/produccion y ficha tecnica off-line version 2.33 actualizada a julio 2026."
+    },
+    {
+      "domain": "Proteccion de datos personales Ecuador",
+      "source": "https://www.telecomunicaciones.gob.ec/wp-content/uploads/2021/06/Ley-Organica-de-Datos-Personales.pdf",
+      "checkedAt": "2026-07-14",
+      "summary": "Ley Organica de Proteccion de Datos Personales publicada en Registro Oficial No. 459 del 26 de mayo de 2021."
+    },
+    {
+      "domain": "Ministerio del Trabajo Ecuador",
+      "source": "https://salarios.trabajo.gob.ec/",
+      "checkedAt": "2026-07-14",
+      "summary": "Portal oficial de salarios y base legal del Ministerio del Trabajo; parametros SBU 2026 permanecen en configuracion legal del repo."
+    }
+  ],
+  "capabilityChecks": {
+    "landing": {
+      "status": "confirmado",
+      "evidence": [
+        "frontend-web/src/pages/Landing.jsx",
+        "frontend-web/src/App.jsx"
+      ],
+      "notes": [
+        "La landing existe y las rutas estan diferidas para reducir bundle inicial."
+      ]
+    },
+    "pwa": {
+      "status": "confirmado",
+      "evidence": [
+        "frontend-web/src/components/PublicPlansCatalog.jsx",
+        "frontend-web/src/config/publicPlanPresentation.js"
+      ],
+      "notes": [
+        "Planes publicos separan mensualidad, contado anual e IVA; establecimientos IESS son capacidad de plan."
+      ]
+    },
+    "backend": {
+      "status": "confirmado",
+      "evidence": [
+        "backend/src/services/calculoNominaService.js",
+        "backend/src/controllers/paymentController.js"
+      ],
+      "notes": [
+        "Motor de nomina registra integridad de totales; planes exponen establecimientos IESS parametrizables."
+      ]
+    },
+    "mobile": {
+      "status": "confirmado",
+      "evidence": [
+        "app-movil/src/App.js",
+        "app-movil/src/services/api.js"
+      ],
+      "notes": [
+        "Revision estatica: mobile mantiene cliente API y rutas principales."
+      ]
+    },
+    "facturacionElectronica": {
+      "status": "confirmado",
+      "evidence": [
+        "backend/src/services/facturadorClient.js",
+        "backend/src/services/fiscalInvoiceService.js"
+      ],
+      "notes": [
+        "Nombre comercial: SINKRONET FACTURADOR. Arquitectura: consumo API del backend SINKRONIQ-MOBILE, sin clonar XML/firma en SKNOMINA."
+      ]
+    },
+    "proteccionDatos": {
+      "status": "confirmado",
+      "evidence": [
+        "backend/src/services/privacyConsentService.js",
+        "backend/src/services/userDataExportService.js",
+        "frontend-web/src/components/Privacy/CookieConsent.jsx"
+      ],
+      "notes": [
+        "Existen consentimiento, exportacion y aviso de cookies; requiere revision legal final de textos publicos y retencion."
+      ]
+    }
+  },
+  "visualEvidence": {
+    "status": "pendiente",
+    "files": [],
+    "limitation": "Playwright no esta instalado en el workspace ni en runtime bundled; se deja como gate manual para no usar screenshots antiguos como evidencia actual."
+  },
+  "controlledSignals": [
+    {
+      "type": "senal_simulada_runtime",
+      "severity": "media",
+      "file": "backend/src/config/s3.js",
+      "line": 30,
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "La señal esta aislada como modo pendiente, demo o texto legal; no concede funcionalidad productiva."
+    },
+    {
+      "type": "senal_simulada_runtime",
+      "severity": "media",
+      "file": "backend/src/controllers/paymentController.js",
+      "line": 713,
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "La señal esta aislada como modo pendiente, demo o texto legal; no concede funcionalidad productiva."
+    },
+    {
+      "type": "senal_simulada_runtime",
+      "severity": "media",
+      "file": "backend/src/controllers/paymentController.js",
+      "line": 841,
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "La señal esta aislada como modo pendiente, demo o texto legal; no concede funcionalidad productiva."
+    },
+    {
+      "type": "senal_simulada_runtime",
+      "severity": "media",
+      "file": "backend/src/controllers/paymentController.js",
+      "line": 841,
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "La señal esta aislada como modo pendiente, demo o texto legal; no concede funcionalidad productiva."
+    },
+    {
+      "type": "senal_simulada_runtime",
+      "severity": "media",
+      "file": "backend/src/controllers/paymentController.js",
+      "line": 844,
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "La señal esta aislada como modo pendiente, demo o texto legal; no concede funcionalidad productiva."
+    },
+    {
+      "type": "senal_simulada_runtime",
+      "severity": "media",
+      "file": "backend/src/controllers/paymentController.js",
+      "line": 845,
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "La señal esta aislada como modo pendiente, demo o texto legal; no concede funcionalidad productiva."
+    },
+    {
+      "type": "senal_simulada_runtime",
+      "severity": "media",
+      "file": "frontend-web/src/pages/PaymentResult.jsx",
+      "line": 9,
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "La señal esta aislada como modo pendiente, demo o texto legal; no concede funcionalidad productiva."
+    },
+    {
+      "type": "senal_simulada_runtime",
+      "severity": "media",
+      "file": "frontend-web/src/pages/PaymentResult.jsx",
+      "line": 9,
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "La señal esta aislada como modo pendiente, demo o texto legal; no concede funcionalidad productiva."
+    },
+    {
+      "type": "senal_simulada_runtime",
+      "severity": "media",
+      "file": "frontend-web/src/pages/PaymentResult.jsx",
+      "line": 19,
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "La señal esta aislada como modo pendiente, demo o texto legal; no concede funcionalidad productiva."
+    },
+    {
+      "type": "senal_simulada_runtime",
+      "severity": "media",
+      "file": "frontend-web/src/pages/PaymentResult.jsx",
+      "line": 26,
+      "evidence": "mock",
+      "status": "controlado",
+      "reason": "La señal esta aislada como modo pendiente, demo o texto legal; no concede funcionalidad productiva."
+    }
+  ],
+  "deletionCandidates": [
+    {
+      "item": "Prompts y reportes de auditorias antiguas",
+      "action": "archivar_no_eliminar",
+      "reason": "Son historial de cumplimiento Haiky/AuditLock; eliminar romperia trazabilidad."
+    },
+    {
+      "item": "Señales mock en tests",
+      "action": "conservar",
+      "reason": "Pertenecen a pruebas y no son deuda productiva."
+    },
+    {
+      "item": "PaymentResult mock/pending query",
+      "action": "revisar_renombrar",
+      "reason": "Esta controlado y no activa planes; conviene renombrar el query param en una fase futura para reducir ruido auditor."
+    },
+    {
+      "item": "Helpers inline de descarga Blob",
+      "action": "eliminado_en_v2",
+      "reason": "Se consolidaron en frontend-web/src/utils/downloadBlob.js."
+    }
+  ],
+  "findingSummary": {},
+  "findings": [],
+  "evidenceHash": "e6fa0d425d40b17c862e94360c2a3b8ea26db664e428fa288867201e10b2dddc"
+}

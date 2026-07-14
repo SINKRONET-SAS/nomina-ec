@@ -21,17 +21,7 @@ import {
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 import { formatDateTimeEC } from '../../utils/dateFormat';
-
-function downloadBlob(blob, filename) {
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(url);
-}
+import { downloadBlob } from '../../utils/downloadBlob';
 
 function ImportPanel({ onImported }) {
   const [rawText, setRawText] = useState('');

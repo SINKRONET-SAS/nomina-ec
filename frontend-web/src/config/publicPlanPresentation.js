@@ -20,7 +20,7 @@ export const FALLBACK_PUBLIC_PLANS = [
   {
     id: 'MICRO',
     nombre: 'Micro',
-    descripcion: 'Nomina mensual para negocios pequenos con una empresa activa.',
+    descripcion: 'Nómina mensual para negocios pequeños que quieren empezar ordenados.',
     precioMensualCentavos: 1900,
     precioAnualCentavos: 22800,
     pricingInputMode: 'MONTHLY_PAYMENT',
@@ -38,7 +38,7 @@ export const FALLBACK_PUBLIC_PLANS = [
   {
     id: 'PYME',
     nombre: 'Pyme',
-    descripcion: 'Para equipos que necesitan reportes, bancos y cierre trazable.',
+    descripcion: 'Para equipos que ya necesitan reportes, bancos y cierre trazable.',
     precioMensualCentavos: 4900,
     precioAnualCentavos: 58800,
     pricingInputMode: 'MONTHLY_PAYMENT',
@@ -56,7 +56,7 @@ export const FALLBACK_PUBLIC_PLANS = [
   {
     id: 'EMPRESA',
     nombre: 'Empresa',
-    descripcion: 'Operacion multiempresa con soporte y reportes avanzados.',
+    descripcion: 'Operación multiempresa con soporte y reportes avanzados.',
     precioMensualCentavos: 9900,
     precioAnualCentavos: 118800,
     pricingInputMode: 'MONTHLY_PAYMENT',
@@ -76,17 +76,17 @@ export const FALLBACK_PUBLIC_PLANS = [
 
 const PLAN_COMMERCIAL_PROMISE = {
   TRIAL: 'Prueba el cierre mensual con tu equipo antes de contratar.',
-  MICRO: 'Para negocios pequenos que quieren pagar nomina sin improvisar.',
+  MICRO: 'Para negocios pequeños que quieren pagar nómina con orden desde el primer mes.',
   PYME: 'Para equipos de RRHH con asistencia, bancos y reportes en cada periodo.',
   EMPRESA: 'Para grupos con varias empresas, mas usuarios y soporte ampliado.',
-  CORPORATIVO: 'Operacion a medida con acompanamiento y capacidad pactada.',
+  CORPORATIVO: 'Operación a medida con acompañamiento y capacidad pactada.',
 };
 
 const PLAN_HIGHLIGHTS = {
-  TRIAL: ['Flujo completo de prueba', 'App de asistencia', 'Reportes de validacion'],
+  TRIAL: ['Flujo completo de prueba', 'App de asistencia', 'Reportes de validación'],
   MICRO: ['Una empresa activa', 'App de asistencia', 'Archivo bancario incluido'],
   PYME: ['Hasta 3 empresas', 'App de asistencia', 'Rutas de campo'],
-  EMPRESA: ['Operacion multiempresa', 'Rutas de campo', 'Reportes avanzados'],
+  EMPRESA: ['Operación multiempresa', 'Rutas de campo', 'Reportes avanzados'],
   CORPORATIVO: ['Capacidad pactada', 'App y rutas por contrato', 'Integraciones a medida'],
 };
 

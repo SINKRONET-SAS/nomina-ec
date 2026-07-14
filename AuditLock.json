@@ -1,102 +1,82 @@
 {
-  "plan": "HAIKY-REPORTES-ENTIDADES-PUBLICAS-EC-2026",
-  "phaseCompleted": "RPE26-05-iess-batch-establecimientos-pricing",
-  "summary": [
-    "IESS queda como batch ASCII TXT/DAT MSU, no como XML SAE productivo.",
-    "El establecimiento IESS se parametriza en Datos de empresa > IESS y no tiene fallback hardcodeado.",
-    "Los planes monetizan establecimientos IESS con iess_establecimientos_max y bloquean excesos por plan.",
-    "El sitio publico muestra precio base + IVA 15%, total, contado anual, mensualidades y tasa nominal anual.",
-    "El catalogo publico de planes rankea por raiz comercial y publica solo la ultima version vigente."
+  "plan": "HAIKY-AUDITORIA-INTEGRAL-V2-NOMINA-EC-2026",
+  "phaseCompleted": "HAIKY-AUDITORIA-INTEGRAL-V2-2026-06-qa-release",
+  "status": "completed-pass",
+  "timestamp": "2026-07-14T12:44:16.847Z",
+  "evidenceHash": "e6fa0d425d40b17c862e94360c2a3b8ea26db664e428fa288867201e10b2dddc",
+  "commercialDecisions": [
+    "Facturacion electronica se presenta comercialmente como SINKRONET FACTURADOR.",
+    "La implementacion tecnica debe consumir la API provista por SINKRONIQ-MOBILE y no duplicar XML/firma SRI en SKNOMINA.",
+    "Establecimientos IESS se parametrizan por empresa y se monetizan por plan con iess_establecimientos_max.",
+    "El precio publico debe mostrar base, IVA 15%, mensualidad y contado anual; la tasa nominal anual solo explica el calculo cuando aplica."
   ],
-  "filesModified": [
-    ".github/CODEX_CONTEXT.md",
-    ".github/prompts/RPE26-02-runtime-pwa-backend.md",
-    ".github/prompts/RPE26-05-iess-batch-establecimientos.md",
-    ".vscode/AudiLock.json",
-    ".vscode/AuditLock.json",
-    "AuditLock.json",
-    "README.md",
-    "backend/prisma/migrations/20260712193000_rpe26_iess_establishments_limit/migration.sql",
-    "backend/prisma/schema.prisma",
-    "backend/src/app.routes.test.js",
-    "backend/src/config/iess/sae-source-manifest.json",
-    "backend/src/config/modules.js",
-    "backend/src/controllers/paymentController.js",
-    "backend/src/controllers/paymentController.test.js",
-    "backend/src/services/configurationService.js",
-    "backend/src/services/configurationService.test.js",
-    "backend/src/services/iessSaeGenerator.js",
-    "backend/src/services/iessSaeGenerator.test.js",
-    "backend/src/services/planCapabilityService.js",
-    "docs2/PLAN_HAIKY_CIERRE_DEFINITIVO_DIAGNOSTICO_PRELIMINAR_SKNOMINA_2026.md",
-    "docs2/PLAN_HAIKY_REPORTES_ENTIDADES_PUBLICAS_EC_2026.md",
-    "docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/MATRIZ_DPS26_HALLAZGOS.md",
-    "docs2/cierre-definitivo-diagnostico-preliminar-sknomina-2026/REPORTE_DPS26_00_BASELINE.md",
-    "docs2/reportes-entidades-publicas-ec-2026/REPORTE_RPE26_00_04_EJECUCION.md",
-    "docs2/reportes-entidades-publicas-ec-2026/REPORTE_RPE26_05_IESS_BATCH_ESTABLECIMIENTOS.md",
-    "frontend-web/src/components/ModulePermissionMatrix.jsx",
-    "frontend-web/src/components/PublicPlansCatalog.jsx",
-    "frontend-web/src/config/publicPlanPresentation.js",
-    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-    "frontend-web/src/pages/Configuracion/parametrizacion/parametrizacionModel.jsx",
-    "frontend-web/src/pages/Landing.jsx",
-    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
-    "frontend-web/src/pages/PlanesGestion.jsx",
-    "frontend-web/src/pages/Register.jsx",
-    "scripts/verify-system-contracts.mjs"
+  "runtimeChanges": [
+    "Lazy routes en frontend-web/src/App.jsx para reducir chunk inicial.",
+    "Helper unico de descarga Blob en frontend-web/src/utils/downloadBlob.js.",
+    "Integridad de totales en backend/src/services/calculoNominaService.js.",
+    "Tarjetas publicas de planes humanizadas con mensualidad/contado anual con IVA."
   ],
   "validationChecks": [
     {
-      "name": "node_check_iess_generator",
+      "name": "diagnostico_integral_v2_js",
       "ok": true,
-      "output": "node --check backend/src/services/iessSaeGenerator.js"
+      "output": "{\n  \"ok\": true,\n  \"outDir\": \"docs2/auditoria-integral-v2-haiky-2026\",\n  \"filesScanned\": 281,\n  \"findingSummary\": {},\n  \"evidenceHash\": \"e6fa0d425d40b17c862e94360c2a3b8ea26db664e428fa288867201e10b2dddc\"\n}"
     },
     {
-      "name": "node_check_configuration_service",
-      "ok": true,
-      "output": "node --check backend/src/services/configurationService.js"
-    },
-    {
-      "name": "node_check_payment_controller",
-      "ok": true,
-      "output": "node --check backend/src/controllers/paymentController.js"
-    },
-    {
-      "name": "node_check_contracts_script",
-      "ok": true,
-      "output": "node --check scripts/verify-system-contracts.mjs"
-    },
-    {
-      "name": "backend_targeted_tests",
-      "ok": true,
-      "output": "npm.cmd --workspace=backend test -- iessSaeGenerator.test.js app.routes.test.js configurationService.test.js paymentController.test.js --runInBand: PASS, 4 suites, 53 tests"
-    },
-    {
-      "name": "prisma_validate",
-      "ok": true,
-      "output": "npm.cmd --workspace=backend run prisma:validate: schema valid"
-    },
-    {
-      "name": "contracts_system",
+      "name": "contratos_sistema",
       "ok": true,
       "output": "[CONTRACTS] OK: frontend, backend, Prisma y reportes mantienen contrato de sistema unico."
     },
     {
-      "name": "frontend_build",
+      "name": "backend_tests_focalizados",
       "ok": true,
-      "output": "npm.cmd --workspace=frontend-web run build: PASS; PWA files generated; chunk warning known"
+      "output": "> sknomina-backend@1.0.0 test\n> jest calculoNominaService.test.js paymentController.test.js fiscalInvoiceService.test.js employeeImportService.test.js --runInBand"
+    },
+    {
+      "name": "prisma_validate",
+      "ok": true,
+      "output": "> sknomina-system@1.0.0 prisma:validate\n> npm --workspace=backend run prisma:validate\n\n\n> sknomina-backend@1.0.0 prisma:validate\n> prisma validate\n\nPrisma schema loaded from prisma\\schema.prisma\nThe schema at prisma\\schema.prisma is valid 🚀"
+    },
+    {
+      "name": "mobile_check_stores",
+      "ok": true,
+      "output": "> sknomina-system@1.0.0 check:mobile\n> npm --workspace=app-movil run check:stores\n\n\n> sknomina-app@1.0.0 check:stores\n> node scripts/check-store-readiness.mjs\n\n[LPA26-STORES] Configuracion, identificadores, URLs y assets de tienda verificados."
+    },
+    {
+      "name": "frontend_build_direct_vite",
+      "ok": true,
+      "output": "vite v7.3.5 building client environment for production...\ntransforming...\n✓ 1533 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/manifest.webmanifest                         1.87 kB\ndist/index.html                                   2.14 kB │ gzip:  0.70 kB\ndist/assets/index-_Gyhx9zw.css                   50.78 kB │ gzip:  8.45 kB\ndist/assets/money-C-BjPene.js                     0.16 kB │ gzip:  0.15 kB\ndist/assets/Planes-C4hNwsF7.js                    0.16 kB │ gzip:  0.15 kB\ndist/assets/fileToBase64-CtaayJOI.js              0.18 kB │ gzip:  0.17 kB\ndist/assets/downloadBlob-CUQnvZjX.js              0.20 kB │ gzip:  0.17 kB\ndist/assets/downloadUrl-BrXet0zh.js               0.51 kB │ gzip:  0.35 kB\ndist/assets/BrandLogo-B5KPJ77u.js                 0.58 kB │ gzip:  0.40 kB\ndist/assets/configurationApi-BsqkN0gE.js          0.63 kB │ gzip:  0.27 kB\ndist/assets/beneficiosApi-CvdKtlYY.js             0.69 kB │ gzip:  0.31 kB\ndist/assets/CompactNotice-B0YTZdoW.js             0.77 kB │ gzip:  0.42 kB\ndist/assets/authenticatedApi-B5EMMUH1.js          0.86 kB │ gzip:  0.51 kB\ndist/assets/dateFormat-CJHiqmZe.js                1.04 kB │ gzip:  0.49 kB\ndist/assets/NotFound-Dw3Wol3v.js                  1.05 kB │ gzip:  0.56 kB\ndist/assets/contractTemplates-B1YOS-NM.js         1.39 kB │ gzip:  0.59 kB\ndist/assets/publicApi-uvkDNb2P.js                 1.52 kB │ gzip:  0.76 kB\ndist/assets/PaymentResult-3Pd2e2uX.js             1.63 kB │ gzip:  0.77 kB\ndist/assets/noveltyTypes-dDN7PMb8.js              1.93 kB │ gzip:  0.85 kB\ndist/assets/ReporteAsistencia-CBth7-pN.js         2.88 kB │ gzip:  1.01 kB\ndist/assets/AyudaUsuario-BJUmrJx0.js              3.02 kB │ gzip:  1.35 kB\ndist/assets/ActasFiniquito-rLEWVsun.js            3.02 kB │ gzip:  1.20 kB\ndist/assets/ForgotPass"
     },
     {
       "name": "git_diff_check",
       "ok": true,
-      "output": "git diff --check: PASS con avisos LF/CRLF esperados en Windows"
-    },
-    {
-      "name": "utf8_no_bom",
-      "ok": true,
-      "output": "UTF8 BOM check OK 34 files"
+      "output": ""
     }
   ],
-  "timestamp": "2026-07-13T01:55:00.000Z",
-  "signature": "66034977cb9833f2725d1f1fb6027313c0b75423c29b006a7e2cabdd1e500807"
+  "changedFiles": [
+    "M .github/CODEX_CONTEXT.md",
+    "M .vscode/AudiLock.json",
+    "M .vscode/AuditLock.json",
+    "M AuditLock.json",
+    "M backend/src/services/calculoNominaService.js",
+    "M backend/src/services/calculoNominaService.test.js",
+    "M frontend-web/src/App.jsx",
+    "M frontend-web/src/components/PublicPlansCatalog.jsx",
+    "M frontend-web/src/config/publicPlanPresentation.js",
+    "M frontend-web/src/pages/Asistencia/RutasCampo.jsx",
+    "M frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
+    "M frontend-web/src/pages/Onboarding/SaldosIniciales.jsx",
+    "M package.json",
+    "?? .github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-00-baseline.md",
+    "?? .github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-01-diagnostico-js.md",
+    "?? .github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-02-motor-nomina.md",
+    "?? .github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-03-uiux-precios.md",
+    "?? .github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-04-backend-api-legal.md",
+    "?? .github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-05-mobile-pwa-paridad.md",
+    "?? .github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-06-qa-release.md",
+    "?? frontend-web/src/utils/downloadBlob.js",
+    "?? scripts/haiky-integral-v2-diagnostic.mjs",
+    "?? scripts/haiky-integral-v2-solution.mjs"
+  ],
+  "signature": "4de11ba36e1b0cffe2f63c341d62120a6c8d581a89510fc7a9b72b0cabb8f6a2"
 }

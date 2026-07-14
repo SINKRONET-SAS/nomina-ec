@@ -4,6 +4,7 @@ import { Download, Edit3, FileSpreadsheet, FileText, LockKeyhole, MapPin, Plus, 
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { fetchPlanCapabilities } from '../../services/beneficiosApi';
 import { extractApiError } from '../../services/publicApi';
+import { downloadBlob } from '../../utils/downloadBlob';
 import {
   createRouteDay,
   deleteRouteSite,
@@ -170,15 +171,6 @@ function RutasCampo() {
     if (draftStops.some((stop) => stop.siteId === selectedSiteId)) return;
     setDraftStops((current) => [...current, { siteId: selectedSiteId, sequenceOrder: current.length + 1 }]);
     setSelectedSiteId('');
-  };
-
-  const downloadBlob = (blob, fileName) => {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    link.click();
-    URL.revokeObjectURL(url);
   };
 
   const exportReport = async (format) => {

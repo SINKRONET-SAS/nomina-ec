@@ -2,56 +2,56 @@
 // SKNOMINA - Frontend web
 // App.jsx - Componente Principal
 // ============================================================
-import React, { useEffect } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Páginas
-import Login from './pages/Login';
-import Landing from './pages/Landing';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import Planes from './pages/Planes';
-import PlanesGestion from './pages/PlanesGestion';
-import Superadmin from './pages/Superadmin';
-import PrivacidadCuenta from './pages/PrivacidadCuenta';
-import PaymentResult from './pages/PaymentResult';
-import LegalText from './pages/LegalText';
-import NotFound from './pages/NotFound';
+const Login = lazy(() => import('./pages/Login'));
+const Landing = lazy(() => import('./pages/Landing'));
+const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const Planes = lazy(() => import('./pages/Planes'));
+const PlanesGestion = lazy(() => import('./pages/PlanesGestion'));
+const Superadmin = lazy(() => import('./pages/Superadmin'));
+const PrivacidadCuenta = lazy(() => import('./pages/PrivacidadCuenta'));
+const PaymentResult = lazy(() => import('./pages/PaymentResult'));
+const LegalText = lazy(() => import('./pages/LegalText'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 import CookieConsent from './components/Privacy/CookieConsent';
 import ErrorBoundary from './components/ErrorBoundary';
 import { hasRoleAccess } from './utils/access';
-import Parametrizacion from './pages/Configuracion/Parametrizacion';
-import Comunicaciones from './pages/Configuracion/Comunicaciones';
-import Auditoria from './pages/Auditoria';
-import AyudaUsuario from './pages/AyudaUsuario';
-import Dashboard from './pages/Dashboard';
-import LineaBaseOperativa from './pages/Operacion/LineaBaseOperativa';
-import OperacionIntegral from './pages/Operacion/OperacionIntegral';
-import MovilizacionAprobacion from './pages/Operacion/MovilizacionAprobacion';
-import PermisosOperacion from './pages/Operacion/PermisosOperacion';
-import SaldosIniciales from './pages/Onboarding/SaldosIniciales';
-import FacturacionFiscal from './pages/Facturacion/FacturacionFiscal';
-import ListaEmpleados from './pages/Empleados/ListaEmpleados';
-import HistorialEmpleado from './pages/Empleados/HistorialEmpleado';
-import NuevoEmpleado from './pages/Empleados/NuevoEmpleado';
-import TerminarEmpleado from './pages/Empleados/TerminarEmpleado';
-import NovedadesPendientes from './pages/Asistencia/NovedadesPendientes';
-import ReporteAsistencia from './pages/Asistencia/ReporteAsistencia';
-import RutasCampo from './pages/Asistencia/RutasCampo';
-import PeriodosNomina from './pages/Nomina/PeriodosNomina';
-import CerrarMes from './pages/Nomina/CerrarMes';
-import Beneficios from './pages/Nomina/Beneficios';
-import RolesPagos from './pages/Nomina/RolesPagos';
-import DescargarReportes from './pages/Nomina/DescargarReportes';
-import PagosBancarios from './pages/Nomina/PagosBancarios';
-import ContratosGenerados from './pages/Documentos/ContratosGenerados';
-import ActasFiniquito from './pages/Documentos/ActasFiniquito';
-import ActasEntregaDotacion from './pages/Documentos/ActasEntregaDotacion';
+const Parametrizacion = lazy(() => import('./pages/Configuracion/Parametrizacion'));
+const Comunicaciones = lazy(() => import('./pages/Configuracion/Comunicaciones'));
+const Auditoria = lazy(() => import('./pages/Auditoria'));
+const AyudaUsuario = lazy(() => import('./pages/AyudaUsuario'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const LineaBaseOperativa = lazy(() => import('./pages/Operacion/LineaBaseOperativa'));
+const OperacionIntegral = lazy(() => import('./pages/Operacion/OperacionIntegral'));
+const MovilizacionAprobacion = lazy(() => import('./pages/Operacion/MovilizacionAprobacion'));
+const PermisosOperacion = lazy(() => import('./pages/Operacion/PermisosOperacion'));
+const SaldosIniciales = lazy(() => import('./pages/Onboarding/SaldosIniciales'));
+const FacturacionFiscal = lazy(() => import('./pages/Facturacion/FacturacionFiscal'));
+const ListaEmpleados = lazy(() => import('./pages/Empleados/ListaEmpleados'));
+const HistorialEmpleado = lazy(() => import('./pages/Empleados/HistorialEmpleado'));
+const NuevoEmpleado = lazy(() => import('./pages/Empleados/NuevoEmpleado'));
+const TerminarEmpleado = lazy(() => import('./pages/Empleados/TerminarEmpleado'));
+const NovedadesPendientes = lazy(() => import('./pages/Asistencia/NovedadesPendientes'));
+const ReporteAsistencia = lazy(() => import('./pages/Asistencia/ReporteAsistencia'));
+const RutasCampo = lazy(() => import('./pages/Asistencia/RutasCampo'));
+const PeriodosNomina = lazy(() => import('./pages/Nomina/PeriodosNomina'));
+const CerrarMes = lazy(() => import('./pages/Nomina/CerrarMes'));
+const Beneficios = lazy(() => import('./pages/Nomina/Beneficios'));
+const RolesPagos = lazy(() => import('./pages/Nomina/RolesPagos'));
+const DescargarReportes = lazy(() => import('./pages/Nomina/DescargarReportes'));
+const PagosBancarios = lazy(() => import('./pages/Nomina/PagosBancarios'));
+const ContratosGenerados = lazy(() => import('./pages/Documentos/ContratosGenerados'));
+const ActasFiniquito = lazy(() => import('./pages/Documentos/ActasFiniquito'));
+const ActasEntregaDotacion = lazy(() => import('./pages/Documentos/ActasEntregaDotacion'));
 
 // Layout
-import Layout from './components/Layout/Layout';
+const Layout = lazy(() => import('./components/Layout/Layout'));
 
 const queryClient = new QueryClient();
 
@@ -72,6 +72,10 @@ function ProtectedRoute({ children, requiredRole }) {
   }
   
   return children;
+}
+
+function PageFallback() {
+  return <div className="flex min-h-screen items-center justify-center text-sm text-slate-600">Cargando...</div>;
 }
 
 function ScrollToHash() {
@@ -102,6 +106,7 @@ function App() {
       <AuthProvider>
         <Router>
           <ScrollToHash />
+          <Suspense fallback={<PageFallback />}>
           <Routes>
             {/* Rutas públicas */}
             <Route path="/" element={<Landing />} />
@@ -285,6 +290,7 @@ function App() {
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
           <CookieConsent />
         </Router>
       </AuthProvider>

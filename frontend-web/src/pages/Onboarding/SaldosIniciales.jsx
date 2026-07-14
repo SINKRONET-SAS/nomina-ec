@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, RefreshCcw, RotateCcw, Upload } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
+import { downloadBlob } from '../../utils/downloadBlob';
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -48,15 +49,6 @@ function parseCsv(text) {
       rowNumber: index + 1,
     }), {});
   });
-}
-
-function downloadBlob(blob, filename) {
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
-  window.URL.revokeObjectURL(url);
 }
 
 function buildErrorCsv(items = []) {

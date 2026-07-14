@@ -1,6 +1,50 @@
 
 ---
 
+## Current Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-V2-NOMINA-EC-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-AUDITORIA-INTEGRAL-V2-NOMINA-EC-2026 |
+| Codigo | AIV2 |
+| Estado | completed-pass |
+| Fecha | 2026-07-14 |
+| Requerimiento fuente | Auditoria integral nueva sobre LANDING, PWA, BACKEND y MOBILE; mejorar UI/UX, motor de nomina, UTF-8, duplicacion, legal Ecuador 2026, facturacion electronica via SINKRONIQ-MOBILE API, y cerrar con prompts, scripts, AuditLock, commit y push. |
+| Plan doc | `docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V2_NOMINA_EC_2026.md` |
+| Informe | `docs2/auditoria-integral-v2-haiky-2026/INFORME_DIAGNOSTICO.md` |
+| Diagnostico JSON | `docs2/auditoria-integral-v2-haiky-2026/DIAGNOSTICO_JSON.json` |
+| Prompts | `.github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-{00..06}-*.md` |
+| Scripts | `npm run audit:integral:v2`, `npm run haiky:solution:v2` |
+| AuditLock | `.vscode/AuditLock.json`, `.vscode/AudiLock.json`, `AuditLock.json` |
+
+### Decisiones AIV2
+
+- Facturacion electronica se presenta comercialmente como **SINKRONET FACTURADOR**.
+- La implementacion tecnica consume API provista por **SINKRONIQ-MOBILE**; SKNOMINA no clona XML, firma electronica, RIDE ni autorizacion SRI.
+- Establecimientos IESS quedan parametrizables y monetizables por plan mediante `iess_establecimientos_max`.
+- La tasa nominal anual es insumo de calculo entre contado anual y mensualidad; no se muestra como texto suelto.
+- Precios publicos deben mostrar mensualidad con IVA, contado anual con IVA y nota de calculo.
+- Reportes grandes deben priorizar estructura vertical y no empleados como columnas.
+
+### Cambios AIV2
+
+- `frontend-web/src/App.jsx`: rutas diferidas con `React.lazy` y `Suspense` para reducir chunk inicial.
+- `frontend-web/src/utils/downloadBlob.js`: helper unico de descarga Blob; se eliminan copias inline.
+- `backend/src/services/calculoNominaService.js`: guard `assertPayrollTotalsIntegrity` y evidencia en `detalle_calculo`.
+- `frontend-web/src/components/PublicPlansCatalog.jsx`: texto de precios humanizado con IVA y contado anual.
+- `scripts/haiky-integral-v2-diagnostic.mjs` y `scripts/haiky-integral-v2-solution.mjs`: diagnostico y solucion repetibles.
+
+### Gates AIV2
+
+- `npm run audit:integral:v2`
+- `npm run haiky:solution:v2`
+- `node scripts/verify-system-contracts.mjs`
+- `npm.cmd --workspace=backend test -- calculoNominaService.test.js paymentController.test.js fiscalInvoiceService.test.js employeeImportService.test.js --runInBand`
+- `npm run prisma:validate`
+- `npm run check:mobile`
+- `node node_modules/vite/bin/vite.js build` desde `frontend-web`
+- `git diff --check`
+
 ## Open Haiky Plan - HAIKY-REPORTES-ENTIDADES-PUBLICAS-EC-2026
 
 | Campo | Valor |

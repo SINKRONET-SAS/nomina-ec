@@ -344,6 +344,15 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     + prestamos
   );
   const netoRecibir = roundMoney(totalIngresos - totalDeducciones);
+  const integridadTotales = assertPayrollTotalsIntegrity({
+    totalIngresos,
+    totalDeducciones,
+    netoRecibir,
+  }, {
+    empleadoId: emp.id,
+    anio,
+    mes,
+  });
 
   if (netoRecibir < 0) {
     throw new AppError('El neto a recibir no puede ser negativo', {
@@ -417,6 +426,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     totalIngresos,
     totalDeducciones,
     netoRecibir,
+    integridadTotales,
   };
 
   const executor = options.dbClient || db;
@@ -659,6 +669,40 @@ function safeJson(value) {
   }
 }
 
+function buildPayrollTotalsIntegrity({ totalIngresos = 0, totalDeducciones = 0, netoRecibir = 0 } = {}) {
+  const ingresos = roundMoney(Number(totalIngresos || 0));
+  const deducciones = roundMoney(Number(totalDeducciones || 0));
+  const neto = roundMoney(Number(netoRecibir || 0));
+  const netoEsperado = roundMoney(ingresos - deducciones);
+  const diferencia = roundMoney(neto - netoEsperado);
+
+  return {
+    totalIngresos: ingresos,
+    totalDeducciones: deducciones,
+    netoRecibir: neto,
+    netoEsperado,
+    diferencia,
+    balanced: Math.abs(diferencia) <= 0.01,
+  };
+}
+
+function assertPayrollTotalsIntegrity(totals = {}, context = {}) {
+  const integrity = buildPayrollTotalsIntegrity(totals);
+  if (!integrity.balanced) {
+    throw new AppError('El neto calculado no coincide con ingresos menos deducciones.', {
+      code: 'NOMINA_TOTALES_DESCUADRADOS',
+      statusCode: 422,
+      details: {
+        ...integrity,
+        empleadoId: context.empleadoId || null,
+        anio: context.anio,
+        mes: context.mes,
+      },
+    });
+  }
+  return integrity;
+}
+
 function normalizeBenefitModality(value) {
   const mode = String(value || 'acumulado').trim().toLowerCase();
   return mode === 'mensual' ? 'mensual' : 'acumulado';
@@ -803,4 +847,6 @@ module.exports = {
   resolveFourteenthSalaryPeriod,
   assertWeeklyOvertimeLimit,
   assertEmployeeMeetsUnifiedBaseSalary,
+  buildPayrollTotalsIntegrity,
+  assertPayrollTotalsIntegrity,
 };

@@ -32,7 +32,7 @@ function PublicPlansCatalog() {
       .catch((err) => {
         if (!mounted) return;
         setPlans(normalizePublicPlans());
-        setError(extractApiError(err, 'No se pudieron cargar los planes. Mostramos el catalogo base mientras el servicio responde.'));
+        setError(extractApiError(err, 'No se pudieron cargar los planes. Mostramos el catálogo base mientras el servicio responde.'));
       });
     return () => {
       mounted = false;
@@ -99,22 +99,22 @@ function PublicPlansCatalog() {
               </div>
               <div className="mt-5 rounded-md border border-slate-200 bg-white/70 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {pricing.hasPrice ? 'Precio mensual' : 'Prueba'}
+                  {pricing.hasPrice ? 'Precio visible para contratar' : 'Prueba'}
                 </p>
                 <p className="mt-2 text-3xl font-semibold leading-tight text-slate-950">{formatPublicPlanPrice(plan)}</p>
                 {pricing.hasPrice && (
                   <div className="mt-3 space-y-2 text-sm leading-5 text-slate-600">
                     <div className="flex items-center justify-between gap-3">
-                      <span>Total mensual</span>
-                      <strong className="text-slate-950">{pricing.activeTotalDisplay}</strong>
+                      <span>Total mensual con IVA</span>
+                      <strong className="text-slate-950">{pricing.monthlyTotalDisplay}</strong>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <span>Contado anual</span>
+                      <span>Contado anual con IVA</span>
                       <strong className="text-slate-950">{pricing.annualTotalDisplay}</strong>
                     </div>
-                    {pricing.rateDisclosure && (
-                      <p className="rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">{pricing.calculationLabel}</p>
-                    )}
+                    <p className="rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                      {pricing.calculationLabel} IVA {pricing.ivaPercent}% incluido en los totales.
+                    </p>
                   </div>
                 )}
                 {!pricing.hasPrice && (
@@ -128,7 +128,7 @@ function PublicPlansCatalog() {
                 <div className="mt-5 rounded-md border border-teal-200 bg-white p-4 text-sm text-slate-700">
                   <p className="font-semibold text-slate-950">Resumen de checkout</p>
                   <p className="mt-1 leading-6">
-                    Confirma para continuar con {plan.nombre}. Antes de pagar veras el total con IVA.
+                    Confirma para continuar con {plan.nombre}. Antes de pagar verás el total final con IVA.
                   </p>
                 </div>
               )}
@@ -139,7 +139,7 @@ function PublicPlansCatalog() {
                   onClick={() => handleCheckout(plan.id)}
                   type="button"
                 >
-                  {checkoutBlocked ? (manualTransferOnly ? 'Solicitar activacion' : 'Checkout no disponible') : loadingPlan === plan.id ? 'Abriendo checkout...' : checkoutSelected ? 'Continuar a PayPhone' : publicPlanActionLabel(plan)}
+                  {checkoutBlocked ? (manualTransferOnly ? 'Solicitar activación' : 'Checkout no disponible') : loadingPlan === plan.id ? 'Abriendo checkout...' : checkoutSelected ? 'Continuar a PayPhone' : publicPlanActionLabel(plan)}
                   {loadingPlan !== plan.id && <ArrowRight size={18} />}
                 </button>
               </div>
