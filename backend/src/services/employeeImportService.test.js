@@ -12,6 +12,7 @@ jest.mock('./auditService', () => ({
 const db = require('../config/database');
 const { recordAudit } = require('./auditService');
 const {
+  buildEmployeeImportTemplateCsv,
   buildPreviewRows,
   commitEmployeeImport,
   listEmployeeImportBatches,
@@ -47,6 +48,30 @@ describe('employeeImportService', () => {
       firstName: 'Maria Fernanda',
       lastName: 'Demo Ruiz',
       salary: '850.00',
+    });
+  });
+
+  test('buildEmployeeImportTemplateCsv entrega columnas canonicas y comentarios ignorables', () => {
+    const csv = buildEmployeeImportTemplateCsv();
+    expect(csv).toContain('cedula');
+    expect(csv).toContain('cargo_codigo');
+    expect(parseEmployeeImport({ rawText: csv })).toHaveLength(0);
+
+    const rows = parseEmployeeImport({
+      rawText: [
+        csv,
+        'CLI-002;1710034065;Maria Fernanda;Demo Ruiz;ADM;ANALISTA;2026-01-15;850.00;240;0;PICHINCHA;2200123456;AHORROS;indefinido;SI;relacion_dependencia;mensual;acumulado;acumulado;maria.demo@example.com;0999999999;Av. Demo 123',
+      ].join('\n'),
+    });
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      externalId: 'CLI-002',
+      identification: '1710034065',
+      firstName: 'Maria Fernanda',
+      position: 'ANALISTA',
+      iessAffiliated: true,
+      reserveFundMode: 'mensual',
     });
   });
 

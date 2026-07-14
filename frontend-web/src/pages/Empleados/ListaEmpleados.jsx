@@ -5,8 +5,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   Copy,
+  Download,
   Edit,
-  FileSpreadsheet,
   History,
   Link as LinkIcon,
   Plus,
@@ -22,10 +22,16 @@ import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 import { formatDateTimeEC } from '../../utils/dateFormat';
 
-const TEMPLATE = [
-  'identification;firstName;lastName;departmentCode;position;hireDate;salary;monthlyHours;annualPersonalExpenses;bankCode;bankAccount;accountType;contractType;email;phone',
-  '1710034065;Maria Fernanda;Demo Ruiz;ADM;Analista de Talento;2026-01-15;850.00;240;0;PICHINCHA;2200123456;AHORROS;indefinido;maria.demo@example.com;0999999999',
-].join('\n');
+function downloadBlob(blob, filename) {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
 
 function ImportPanel({ onImported }) {
   const [rawText, setRawText] = useState('');
@@ -77,6 +83,18 @@ function ImportPanel({ onImported }) {
     },
   });
 
+  const templateMutation = useMutation({
+    mutationFn: async () => {
+      const response = await authenticatedApi.get('/empleados/importar/plantilla.csv', {
+        responseType: 'blob',
+      });
+      return response.data;
+    },
+    onSuccess: (blob) => {
+      downloadBlob(blob, 'plantilla_carga_masiva_empleados_sknomina.csv');
+    },
+  });
+
   const loadFile = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -99,21 +117,17 @@ function ImportPanel({ onImported }) {
             <h2 className="text-lg font-semibold text-slate-950">Carga masiva de empleados</h2>
           </div>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Importa empleados con prevalidación, errores por fila y lote auditable. No se aplican filas si existe algún error.
+            Descarga la plantilla CSV, completa una fila por trabajador y prevalidala antes de confirmar. No se aplican filas si existe algun error.
           </p>
         </div>
         <button
-          className="inline-flex min-h-10 w-fit items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700"
-          onClick={() => {
-            setSourceName('plantilla_empleados_demo.csv');
-            setRawText(TEMPLATE);
-            setPreview(null);
-            setResult(null);
-          }}
+          className="inline-flex min-h-10 w-fit items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={templateMutation.isPending}
+          onClick={() => templateMutation.mutate()}
           type="button"
         >
-          <FileSpreadsheet className="h-4 w-4" />
-          Usar plantilla
+          <Download className="h-4 w-4" />
+          {templateMutation.isPending ? 'Descargando' : 'Descargar plantilla CSV'}
         </button>
       </div>
 
@@ -196,9 +210,9 @@ function ImportPanel({ onImported }) {
             </div>
           )}
 
-          {(previewMutation.isError || commitMutation.isError || rollbackMutation.isError) && (
+          {(templateMutation.isError || previewMutation.isError || commitMutation.isError || rollbackMutation.isError) && (
             <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
-              {extractApiError(previewMutation.error || commitMutation.error || rollbackMutation.error, 'No pudimos procesar la acción. Revisa el lote e intenta nuevamente.')}
+              {extractApiError(templateMutation.error || previewMutation.error || commitMutation.error || rollbackMutation.error, 'No pudimos descargar o procesar la carga. Revisa el lote e intenta nuevamente.')}
             </div>
           )}
         </div>

@@ -138,6 +138,7 @@ const parametrizacion = read('frontend-web/src/pages/Configuracion/Parametrizaci
 const parametrizacionModel = read('frontend-web/src/pages/Configuracion/parametrizacion/parametrizacionModel.jsx');
 const appWeb = read('frontend-web/src/App.jsx');
 const layoutWeb = read('frontend-web/src/components/Layout/Layout.jsx');
+const empleadosWeb = read('frontend-web/src/pages/Empleados/ListaEmpleados.jsx');
 const comunicacionesWeb = read('frontend-web/src/pages/Configuracion/Comunicaciones.jsx');
 const actasEntregaDotacion = read('frontend-web/src/pages/Documentos/ActasEntregaDotacion.jsx');
 const contratosGenerados = read('frontend-web/src/pages/Documentos/ContratosGenerados.jsx');
@@ -151,6 +152,7 @@ const dateFormatWeb = read('frontend-web/src/utils/dateFormat.js');
 const monthlyPeriodService = read('backend/src/services/monthlyPeriodService.js');
 const payrollAccountingController = read('backend/src/controllers/payrollAccountingController.js');
 const configurationApi = read('frontend-web/src/services/configurationApi.js');
+const employeeImportService = read('backend/src/services/employeeImportService.js');
 const templateGenerator = read('backend/src/services/templateGenerator.js');
 const payrollRolePdfService = read('backend/src/services/payrollRolePdfService.js');
 const equipmentDeliveryActService = read('backend/src/services/equipmentDeliveryActService.js');
@@ -235,6 +237,11 @@ assert(publicPlansCatalog.includes('Total mensual') && publicPlansCatalog.includ
 assert(!landing.includes('XML SAE IESS'), 'La landing no debe prometer XML SAE IESS como reporte oficial.');
 assert(landing.includes('Batch IESS') || landing.includes('TXT IESS'), 'La landing debe comunicar IESS como batch TXT/DAT.');
 assert(app.includes("'/api/reportes/nomina/exportar'"), 'Backend debe exponer /api/reportes/nomina/exportar.');
+assert(app.includes("'/api/empleados/importar/plantilla.csv'"), 'Backend debe exponer plantilla CSV para carga masiva de empleados.');
+assert(employeeImportService.includes('buildEmployeeImportTemplateCsv'), 'Importacion de empleados debe generar plantilla CSV desde backend.');
+assert(employeeImportService.includes('isCommentLine'), 'Parser de carga de empleados debe ignorar comentarios de la plantilla.');
+assert(empleadosWeb.includes('/empleados/importar/plantilla.csv'), 'Pantalla de empleados debe descargar plantilla CSV desde backend.');
+assert(!empleadosWeb.includes('plantilla_empleados_demo.csv') && !empleadosWeb.includes('const TEMPLATE'), 'Plantilla de empleados no debe quedar como demo hardcodeado en la PWA.');
 
 for (const [screenName, screenText] of [
   ['CerrarMes.jsx', cerrarMes],

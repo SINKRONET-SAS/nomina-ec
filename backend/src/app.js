@@ -144,6 +144,7 @@ app.get('/api/empleados/app-invitaciones', requireRole('owner', 'admin_rrhh'), r
 app.post('/api/empleados/app-invitaciones/:id/reenviar', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), employeeAppInviteController.reenviar);
 app.post('/api/empleados/app-invitaciones/:id/revocar', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), employeeAppInviteController.revocar);
 app.get('/api/empleados/terminacion/causas', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), empleadoController.listarCausalesTerminacion);
+app.get('/api/empleados/importar/plantilla.csv', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), empleadoController.descargarPlantillaImportacion);
 app.get('/api/empleados/importar/lotes', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), empleadoController.listarLotesImportacion);
 app.post('/api/empleados/importar/preview', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), empleadoController.previewImportacion);
 app.post('/api/empleados/importar/confirmar', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), empleadoController.confirmarImportacion);

@@ -72,6 +72,56 @@ const HEADER_ALIASES = {
   direccion: 'address',
 };
 
+const EMPLOYEE_IMPORT_TEMPLATE_COLUMNS = [
+  'codigo',
+  'cedula',
+  'nombres',
+  'apellidos',
+  'unidad_organizativa_codigo',
+  'cargo_codigo',
+  'fecha_ingreso',
+  'sueldo_bruto_mensual',
+  'jornada_horas_mensuales',
+  'gastos_personales_anuales',
+  'banco',
+  'cuenta_bancaria',
+  'tipo_cuenta',
+  'tipo_contrato',
+  'iess_afiliado',
+  'iess_tipo_relacion',
+  'modalidad_fondo_reserva',
+  'modalidad_decimo_tercero',
+  'modalidad_decimo_cuarto',
+  'email',
+  'telefono',
+  'direccion',
+];
+
+const EMPLOYEE_IMPORT_TEMPLATE_EXAMPLE = [
+  'CLI-001',
+  '1710034065',
+  'Maria Fernanda',
+  'Demo Ruiz',
+  'ADM',
+  'ANALISTA',
+  '2026-01-15',
+  '850.00',
+  '240',
+  '0',
+  'PICHINCHA',
+  '2200123456',
+  'AHORROS',
+  'indefinido',
+  'SI',
+  'relacion_dependencia',
+  'mensual',
+  'acumulado',
+  'acumulado',
+  'maria.demo@example.com',
+  '0999999999',
+  'Av. Demo 123',
+];
+
 const REQUIRED_FIELDS = ['identification', 'firstName', 'lastName', 'position', 'hireDate', 'salary'];
 
 function normalizeReserveFundMode(value) {
@@ -112,6 +162,34 @@ function cleanHeader(value) {
 function canonicalHeader(value) {
   const clean = cleanHeader(value);
   return HEADER_ALIASES[clean] || clean;
+}
+
+function isCommentLine(line) {
+  return /^"?#/.test(String(line || '').replace(/^\uFEFF/, '').trim());
+}
+
+function csvCell(value) {
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
+}
+
+function buildEmployeeImportTemplateCsv() {
+  const rows = [
+    EMPLOYEE_IMPORT_TEMPLATE_COLUMNS,
+    [
+      '# CLI-001 (ejemplo no importado)',
+      ...EMPLOYEE_IMPORT_TEMPLATE_EXAMPLE.slice(1),
+    ],
+    [
+      '# Requeridos: cedula, nombres, apellidos, cargo_codigo, fecha_ingreso y sueldo_bruto_mensual.',
+    ],
+    [
+      '# Valores sugeridos: iess_afiliado SI/NO; fondo reserva mensual/iess_directo; decimos mensual/acumulado.',
+    ],
+  ];
+
+  return rows
+    .map((row) => row.map(csvCell).join(';'))
+    .join('\r\n');
 }
 
 function detectDelimiter(headerLine) {
@@ -158,7 +236,7 @@ function parseEmployeeImport({ rawText, rows }) {
   const lines = String(rawText || '')
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter(Boolean);
+    .filter((line) => line && !isCommentLine(line));
 
   if (lines.length < 2) {
     return [];
@@ -677,6 +755,7 @@ async function rollbackEmployeeImport({ tenantId, batchId, userId, correlationId
 }
 
 module.exports = {
+  buildEmployeeImportTemplateCsv,
   buildPreviewRows,
   commitEmployeeImport,
   listEmployeeImportBatches,

@@ -12,6 +12,7 @@ const { getEmployeeHistory } = require('../services/employeeHistoryService');
 const { listTerminationCauses } = require('../config/terminationCauses');
 const logger = require('../utils/logger');
 const {
+  buildEmployeeImportTemplateCsv,
   commitEmployeeImport,
   listEmployeeImportBatches,
   previewEmployeeImport,
@@ -822,6 +823,13 @@ async function previewImportacion(req, res) {
   }
 }
 
+async function descargarPlantillaImportacion(_req, res) {
+  const csv = buildEmployeeImportTemplateCsv();
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="plantilla_carga_masiva_empleados_sknomina.csv"');
+  return res.status(200).send(`\ufeff${csv}`);
+}
+
 async function confirmarImportacion(req, res) {
   try {
     const result = await commitEmployeeImport({
@@ -1242,6 +1250,7 @@ module.exports = {
   actualizar,
   terminar,
   listarCausalesTerminacion,
+  descargarPlantillaImportacion,
   previewImportacion,
   confirmarImportacion,
   listarLotesImportacion,
