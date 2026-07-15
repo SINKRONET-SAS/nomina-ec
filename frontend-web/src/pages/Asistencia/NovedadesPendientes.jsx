@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { authenticatedApi } from '../../services/authenticatedApi';
-import { CalendarCheck2, Check, Download, Pencil, Plus, Trash2, Upload, X } from 'lucide-react';
+import { Calculator, CalendarCheck2, Check, Download, Pencil, Plus, Trash2, Unlock, Upload, X } from 'lucide-react';
+import { extractApiError } from '../../services/publicApi';
 import { formatDateEC, todayISOEC } from '../../utils/dateFormat';
 import { downloadBlob } from '../../utils/downloadBlob';
 import EmployeeSearchSelect from '../../components/UI/EmployeeSearchSelect';
@@ -42,6 +43,18 @@ function monthBounds(month) {
   return {
     desde: `${month}-01`,
     hasta: month === today.slice(0, 7) ? today : monthEnd,
+  };
+}
+
+function employeeNameFromNovelty(nov = {}) {
+  return `${nov.nombres || ''} ${nov.apellidos || ''}`.trim() || 'empleado';
+}
+
+function periodFromNovelty(nov = {}) {
+  const date = String(nov.fecha || '').slice(0, 10);
+  return {
+    anio: Number(nov.period_anio || date.slice(0, 4)),
+    mes: Number(nov.period_mes || date.slice(5, 7)),
   };
 }
 
@@ -203,6 +216,50 @@ function NovedadesPendientes() {
     },
   });
 
+  const invalidarCalculoMutation = useMutation({
+    mutationFn: async ({ nov, motivo }) => {
+      const period = periodFromNovelty(nov);
+      return authenticatedApi.post(`/nomina/${period.anio}/${period.mes}/empleados/${nov.empleado_id}/invalidar-calculo`, {
+        novedadId: nov.id,
+        motivo,
+      });
+    },
+    onSuccess: (response, variables) => {
+      const employeeName = employeeNameFromNovelty(variables.nov);
+      const lines = response.data?.lineasInvalidas || 0;
+      setMessage(`Calculo liberado solo para ${employeeName}. Lineas invalidadas: ${lines}. Edita la novedad, apruebala y recalcula este empleado.`);
+      setError('');
+      queryClient.invalidateQueries({ queryKey: ['novedades-pendientes'] });
+      const period = periodFromNovelty(variables.nov);
+      queryClient.invalidateQueries({ queryKey: ['roles-pagos', period.anio, period.mes] });
+      queryClient.invalidateQueries({ queryKey: ['nomina-periodo', period.anio, period.mes] });
+    },
+    onError: (err) => {
+      setMessage('');
+      setError(extractApiError(err, 'No pudimos liberar el calculo del empleado.'));
+    },
+  });
+
+  const recalcularEmpleadoMutation = useMutation({
+    mutationFn: async (nov) => {
+      const period = periodFromNovelty(nov);
+      return authenticatedApi.post(`/nomina/${period.anio}/${period.mes}/empleados/${nov.empleado_id}/recalcular`);
+    },
+    onSuccess: (_response, nov) => {
+      const employeeName = employeeNameFromNovelty(nov);
+      const period = periodFromNovelty(nov);
+      setMessage(`Nomina recalculada solo para ${employeeName}. Revisa el rol antes del cierre.`);
+      setError('');
+      queryClient.invalidateQueries({ queryKey: ['novedades-pendientes'] });
+      queryClient.invalidateQueries({ queryKey: ['roles-pagos', period.anio, period.mes] });
+      queryClient.invalidateQueries({ queryKey: ['nomina-periodo', period.anio, period.mes] });
+    },
+    onError: (err) => {
+      setMessage('');
+      setError(extractApiError(err, 'No pudimos recalcular la nomina del empleado.'));
+    },
+  });
+
   const cargaMasivaMutation = useMutation({
     mutationFn: (rows) => authenticatedApi.post('/novedades/carga-masiva', { rows }),
     onSuccess: (response) => {
@@ -289,11 +346,35 @@ function NovedadesPendientes() {
   }
 
   function deleteNovelty(nov) {
-    const employeeName = `${nov.nombres || ''} ${nov.apellidos || ''}`.trim();
+    const employeeName = employeeNameFromNovelty(nov);
     const accepted = window.confirm(`Eliminar novedad de ${employeeName || 'empleado'} del ${String(nov.fecha || '').slice(0, 10)} antes de que sea consumida por rol.`);
     if (accepted) {
       eliminarMutation.mutate(nov.id);
     }
+  }
+
+  function invalidateEmployeeCalculation(nov) {
+    const employeeName = employeeNameFromNovelty(nov);
+    const period = periodFromNovelty(nov);
+    const motivo = window.prompt(
+      `Motivo para liberar solo el calculo de ${employeeName} en ${String(period.mes).padStart(2, '0')}/${period.anio}. No se tocaran otros empleados.`,
+      `Correccion de novedad de ${employeeName}`
+    );
+    if (motivo === null) return;
+    if (motivo.trim().length < 10) {
+      setError('La invalidacion individual requiere un motivo de al menos 10 caracteres.');
+      setMessage('');
+      return;
+    }
+    invalidarCalculoMutation.mutate({ nov, motivo: motivo.trim() });
+  }
+
+  function recalculateEmployee(nov) {
+    const employeeName = employeeNameFromNovelty(nov);
+    const period = periodFromNovelty(nov);
+    const accepted = window.confirm(`Recalcular solo a ${employeeName} en ${String(period.mes).padStart(2, '0')}/${period.anio}?`);
+    if (!accepted) return;
+    recalcularEmpleadoMutation.mutate(nov);
   }
 
   async function descargarPlantilla() {
@@ -853,6 +934,12 @@ function NovedadesPendientes() {
                       <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
                         {nov.estado || 'pendiente'}
                       </span>
+                      {nov.consumida_por_rol && (
+                        <p className="mt-1 text-xs font-semibold text-amber-700">Usada en rol</p>
+                      )}
+                      {nov.canRecalculateEmployee && (
+                        <p className="mt-1 text-xs font-semibold text-teal-700">Lista para recalculo individual</p>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex space-x-2">
@@ -896,6 +983,28 @@ function NovedadesPendientes() {
                               <Trash2 size={16} />
                             </button>
                           </>
+                        )}
+                        {nov.requiresEmployeePayrollInvalidation && (
+                          <button
+                            disabled={invalidarCalculoMutation.isPending}
+                            onClick={() => invalidateEmployeeCalculation(nov)}
+                            className="p-1 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 disabled:opacity-60"
+                            title="Liberar calculo solo de este empleado"
+                            type="button"
+                          >
+                            <Unlock size={16} />
+                          </button>
+                        )}
+                        {nov.canRecalculateEmployee && (
+                          <button
+                            disabled={recalcularEmpleadoMutation.isPending}
+                            onClick={() => recalculateEmployee(nov)}
+                            className="p-1 bg-teal-100 text-teal-700 rounded hover:bg-teal-200 disabled:opacity-60"
+                            title="Recalcular solo este empleado"
+                            type="button"
+                          >
+                            <Calculator size={16} />
+                          </button>
                         )}
                       </div>
                     </td>

@@ -2,12 +2,13 @@
 // SKNOMINA - Controlador de Nómina
 // ============================================================
 const db = require('../config/database');
-const { calcularNominaMensual } = require('../services/calculoNominaService');
+const { calcularNominaEmpleado, calcularNominaMensual } = require('../services/calculoNominaService');
 const { recordAudit } = require('../services/auditService');
 const { assertTenantPayrollReady } = require('../services/operationalReadinessService');
 const {
   discardPayrollDraft,
   discardPayrollPeriodCalculation,
+  invalidateEmployeePayrollForNovelty,
 } = require('../services/payrollLifecycleService');
 const { resolveStorageUrl } = require('../config/s3');
 const {
@@ -23,6 +24,7 @@ const {
   getPayrollPeriodState,
   listAnnualPayrollPeriods,
   openPayrollPeriod,
+  periodEndDate,
   updatePayrollPeriodDates,
 } = require('../services/monthlyPeriodService');
 const {
@@ -1018,6 +1020,204 @@ async function eliminarBorrador(req, res) {
   }
 }
 
+async function invalidarCalculoEmpleado(req, res) {
+  try {
+    const result = await invalidateEmployeePayrollForNovelty({
+      tenantId: req.tenantId,
+      employeeId: req.params.empleadoId,
+      anio: req.params.anio,
+      mes: req.params.mes,
+      noveltyId: req.body?.novedadId,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+      reason: req.body?.motivo,
+    });
+
+    return res.json({
+      success: true,
+      ...result,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[NOMINA] Error invalidando calculo individual por novedad', {
+      code: err.code || 'NOMINA_EMPLEADO_INVALIDACION_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      empleadoId: req.params?.empleadoId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'NOMINA_EMPLEADO_INVALIDACION_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function updatePeriodAfterEmployeeRecalculation(tx, {
+  tenantId,
+  anio,
+  mes,
+  empleadoId,
+  resultado,
+  correlationId,
+}) {
+  const coverage = await tx.query(`
+    WITH eligible AS (
+      SELECT id
+      FROM empleados
+      WHERE tenant_id = $1
+        AND activo = true
+        AND fecha_ingreso <= $4
+    )
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE n.id IS NULL)::int AS missing
+    FROM eligible e
+    LEFT JOIN nominas n
+      ON n.tenant_id = $1
+     AND n.empleado_id = e.id
+     AND n.anio = $2
+     AND n.mes = $3
+  `, [tenantId, anio, mes, periodEndDate(anio, mes)]);
+
+  const missing = Number(coverage.rows[0]?.missing || 0);
+  const total = Number(coverage.rows[0]?.total || 0);
+  const nextStatus = missing === 0 ? 'calculated' : 'reopened';
+  const summary = {
+    scope: 'employee',
+    empleadoId,
+    status: 'calculated',
+    totalEmpleadosEsperados: total,
+    empleadosPendientes: missing,
+    batchId: resultado.batch?.id || null,
+    correlationId: correlationId || '',
+    at: new Date().toISOString(),
+  };
+
+  const periodUpdate = await tx.query(`
+    UPDATE payroll_periods
+    SET status = CASE WHEN status = 'closed' THEN status ELSE $4 END,
+        calculated_at = CASE WHEN $4 = 'calculated' THEN NOW() ELSE calculated_at END,
+        summary = COALESCE(summary, '{}'::jsonb) || jsonb_build_object(
+          'lastEmployeePayrollRecalculation', $5::jsonb
+        ),
+        updated_at = NOW()
+    WHERE tenant_id = $1 AND anio = $2 AND mes = $3
+    RETURNING id, anio, mes, status, calculated_at
+  `, [tenantId, anio, mes, nextStatus, JSON.stringify(summary)]);
+
+  return {
+    period: periodUpdate.rows[0] || null,
+    coverage: { total, missing },
+  };
+}
+
+async function recalcularEmpleado(req, res) {
+  let tx = null;
+  try {
+    const { tenantId, usuarioId } = req;
+    const anioNumber = Number(req.params.anio);
+    const mesNumber = Number(req.params.mes);
+    const empleadoId = String(req.params.empleadoId || '').trim();
+
+    const readiness = await assertTenantPayrollReady({
+      tenantId,
+      anio: anioNumber,
+      mes: mesNumber,
+      mode: 'calculation',
+    });
+
+    tx = await db.getClient(tenantId, usuarioId);
+    const resultado = await calcularNominaEmpleado(tenantId, empleadoId, anioNumber, mesNumber, {
+      userId: usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+      dbClient: tx,
+    });
+
+    const erroresDetalle = Array.isArray(resultado.resultados)
+      ? resultado.resultados.filter((row) => row.error)
+      : [];
+
+    if (erroresDetalle.length > 0) {
+      await tx.query(`
+        UPDATE payroll_periods
+        SET status = 'calculation_failed',
+            calculated_at = NOW(),
+            summary = COALESCE(summary, '{}'::jsonb) || jsonb_build_object(
+              'lastEmployeePayrollRecalculation', jsonb_build_object(
+                'scope', 'employee',
+                'empleadoId', $4::text,
+                'status', 'failed',
+                'errores', $5::jsonb,
+                'correlationId', $6::text,
+                'at', NOW()
+              )
+            ),
+            updated_at = NOW()
+        WHERE tenant_id = $1 AND anio = $2 AND mes = $3
+      `, [tenantId, anioNumber, mesNumber, empleadoId, JSON.stringify(erroresDetalle), req.correlationId || null]);
+
+      await db.commit(tx);
+      tx = null;
+      return res.status(422).json({
+        success: false,
+        error: 'NOMINA_EMPLEADO_RECALCULATION_FAILED',
+        message: 'La nomina del empleado requiere correccion antes de cerrar.',
+        resultado,
+        readiness,
+        correlationId: req.correlationId,
+      });
+    }
+
+    const periodResult = await updatePeriodAfterEmployeeRecalculation(tx, {
+      tenantId,
+      anio: anioNumber,
+      mes: mesNumber,
+      empleadoId,
+      resultado,
+      correlationId: req.correlationId,
+    });
+
+    await recordAudit({
+      tenantId,
+      userId: usuarioId,
+      correlationId: req.correlationId,
+      action: 'nomina.empleado.recalcular',
+      entity: 'nominas',
+      entityId: resultado.resultados[0]?.empleadoId || empleadoId,
+      newData: {
+        empleadoId,
+        anio: anioNumber,
+        mes: mesNumber,
+        batchId: resultado.batch?.id || null,
+        coverage: periodResult.coverage,
+      },
+      ipAddress: req.ip,
+      dbClient: tx,
+    });
+
+    await db.commit(tx);
+    tx = null;
+
+    return res.json({
+      success: true,
+      resultado,
+      period: periodResult.period,
+      coverage: periodResult.coverage,
+      readiness,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    if (tx) await rollbackPayrollCalculation(tx, req, 'recalculo individual');
+    return sendPayrollCalculationError(req, res, err, 'recalculo individual de nomina');
+  }
+}
+
 module.exports = {
   precalcularMes,
   calcularMes,
@@ -1039,4 +1239,6 @@ module.exports = {
   reabrirMes,
   descartarCalculoPeriodo,
   eliminarBorrador,
+  invalidarCalculoEmpleado,
+  recalcularEmpleado,
 };

@@ -1,35 +1,62 @@
 {
-  "plan": "HAIKY-AUDITORIA-INTEGRAL-V28-NOMINA-EC-2026",
-  "phaseCompleted": "AIV28-08-novedades-contabilidad-idempotente",
+  "schemaVersion": 1,
+  "plan": "HAIKY-NOVEDADES-EMPLEADO-RECALCULO-SELECTIVO-2026",
+  "planCode": "NER26",
   "status": "completed-pass",
-  "timestamp": "2026-07-15T13:29:20.721Z",
-  "evidenceHash": "52e1486564cc84c410a9aa922d48513efe445e474cba5b7791e1d0f36617deff",
-  "decisions": [
-    "Los tipos de novedad parametrizados son la fuente de las opciones operativas, incluido el lote mensual.",
-    "Seleccionar un concepto con cuenta existente carga el registro en modo edicion y evita una segunda insercion.",
-    "Crear la misma clave contable concepto/asiento/vigencia actualiza el registro existente de forma idempotente.",
-    "Los conflictos contables remanentes se traducen a un mensaje funcional sin exponer detalles PostgreSQL."
+  "phaseCompleted": "NER26-03",
+  "currentPhase": "closed",
+  "updatedAt": "2026-07-15T23:50:00Z",
+  "rulesSource": "RULES.md",
+  "contextSource": ".github/CODEX_CONTEXT.md",
+  "previousAuditLockHash": "52e1486564cc84c410a9aa922d48513efe445e474cba5b7791e1d0f36617deff",
+  "summary": "NER26 corrige novedades de un empleado con invalidacion y recalculo selectivo, evitando descarte global del periodo cuando el alcance operativo es individual.",
+  "fases": [
+    {
+      "phase": "NER26-00",
+      "status": "completed-pass",
+      "detail": "Plan, prompts y gobierno base aplicados localmente."
+    },
+    {
+      "phase": "NER26-01",
+      "status": "completed-pass",
+      "detail": "Backend de invalidacion y recalculo selectivo por empleado implementado con auditoria."
+    },
+    {
+      "phase": "NER26-02",
+      "status": "completed-pass",
+      "detail": "PWA expone correccion individual desde novedades operativas y desambigua descarte global."
+    },
+    {
+      "phase": "NER26-03",
+      "status": "completed-pass",
+      "detail": "QA focal, contratos, Prisma, build PWA, reporte y cierre de gobierno."
+    }
   ],
   "runtimeChanges": [
-    "Backend: createResource reutiliza payroll_accounting_mappings por tenant, concepto, asiento y vigencia.",
-    "Backend: el error 23505 de cuentas contables se convierte en PAYROLL_ACCOUNTING_MAPPING_DUPLICATED.",
-    "PWA: Cerrar mes consulta /novedades/tipos y presenta etiquetas humanas en los lotes recientes.",
-    "PWA: Parametrizacion invalida el catalogo operativo y carga automaticamente la cuenta existente.",
-    "Smoke PWA: omite las URL publicas de precache al buscar indicios reales de datos personales."
+    "Backend: invalidateEmployeePayrollForNovelty elimina solo el rol borrador filtrado por tenant_id, anio, mes, empleado_id e id.",
+    "Backend: calcularNominaEmpleado crea lote scope employee y recalcula un unico trabajador.",
+    "Backend: novedades operativas incluyen registros consumidos por rol para habilitar la correccion individual.",
+    "PWA: Novedades manuales permite liberar y recalcular solo el empleado afectado.",
+    "PWA: Cierre mensual rotula el descarte como accion de periodo para evitar confundirlo con correccion individual."
   ],
   "validationChecks": [
     {
-      "name": "pruebas_focales_configuracion",
+      "name": "node_check_backend",
       "ok": true,
-      "output": "1 suite, 39 pruebas PASS."
+      "output": "payrollLifecycleService.js, calculoNominaService.js, nominaController.js y novedadController.js PASS."
     },
     {
-      "name": "backend_suite_completa",
+      "name": "backend_focal_tests",
       "ok": true,
-      "output": "57 suites, 381 pruebas PASS."
+      "output": "4 suites, 65 tests PASS."
     },
     {
-      "name": "contratos_sistema",
+      "name": "frontend_build_pwa",
+      "ok": true,
+      "output": "Vite build PASS: 1534 modules, 100 precache entries."
+    },
+    {
+      "name": "contracts",
       "ok": true,
       "output": "verify-system-contracts PASS."
     },
@@ -39,25 +66,50 @@
       "output": "Prisma schema valido."
     },
     {
-      "name": "frontend_build_pwa",
+      "name": "auditlock_json",
       "ok": true,
-      "output": "1534 modulos, 100 entradas precache, build y smoke PASS."
+      "output": "python -m json.tool .vscode/AuditLock.json PASS."
     },
     {
-      "name": "integridad_archivos",
+      "name": "integridad_archivos_ner26",
       "ok": true,
-      "output": "UTF-8 sin BOM y git diff --check PASS."
+      "output": "UTF-8 sin BOM PASS y git diff --check scoped NER26 PASS. El git diff --check global detecta conflictos locales previos en mobile/workflow no incluidos en NER26."
     }
   ],
   "filesModified": [
-    "M  .github/CODEX_CONTEXT.md",
-    "M  .vscode/AuditLock.json",
-    "M  backend/src/services/configurationService.js",
-    "M  backend/src/services/configurationService.test.js",
-    "M  frontend-web/scripts/smoke-pwa-lpa26.mjs",
-    "M  frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-    "M  frontend-web/src/pages/Nomina/CerrarMes.jsx",
-    "M  scripts/verify-system-contracts.mjs"
+    ".github/CODEX_CONTEXT.md",
+    ".github/prompts/NER26-00-baseline-gobierno.md",
+    ".github/prompts/NER26-01-backend-recalculo-selectivo.md",
+    ".github/prompts/NER26-02-frontend-correccion-individual.md",
+    ".github/prompts/NER26-03-qa-cierre.md",
+    ".vscode/AuditLock.json",
+    "backend/src/app.js",
+    "backend/src/app.routes.test.js",
+    "backend/src/controllers/nominaController.js",
+    "backend/src/controllers/nominaController.test.js",
+    "backend/src/controllers/novedadController.js",
+    "backend/src/controllers/novedadController.test.js",
+    "backend/src/services/calculoNominaService.js",
+    "backend/src/services/payrollLifecycleService.js",
+    "backend/src/services/payrollLifecycleService.test.js",
+    "docs/PLAN_HAIKY_NOVEDADES_EMPLEADO_RECALCULO_SELECTIVO_2026.md",
+    "docs/novedades-empleado-recalculo-selectivo-2026/REPORTE_NER26_00_03_EJECUCION.md",
+    "frontend-web/src/pages/Asistencia/NovedadesPendientes.jsx",
+    "frontend-web/src/pages/Nomina/CerrarMes.jsx"
   ],
-  "signature": "52e1486564cc84c410a9aa922d48513efe445e474cba5b7791e1d0f36617deff"
+  "unrelatedLocalChangesIgnored": [
+    ".github/workflows/eas-preview.yml",
+    "app-movil/package.json",
+    "app-movil/src/App.js",
+    "app-movil/src/screens/PermisosScreen.js"
+  ],
+  "riskControls": [
+    "No se elimina nomina por periodo completo desde el flujo individual.",
+    "La consulta destructiva individual exige empleado_id ademas de tenant_id, anio y mes.",
+    "Los roles cerrados y pagados siguen bloqueados.",
+    "Los errores devuelven code, statusCode funcional y correlationId.",
+    "La PWA muestra alcance individual antes de invalidar o recalcular."
+  ],
+  "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
+  "signature": "770DBD53197C8559A5B619DA6205A826963EB42A1C0F1E5980ED06708A3B64BF"
 }

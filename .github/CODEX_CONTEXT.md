@@ -1,6 +1,45 @@
 
 ---
 
+## Current Haiky Plan - HAIKY-NOVEDADES-EMPLEADO-RECALCULO-SELECTIVO-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-NOVEDADES-EMPLEADO-RECALCULO-SELECTIVO-2026 |
+| Codigo | NER26 |
+| Estado | completed-pass |
+| Fecha | 2026-07-15 |
+| Superficie | BACKEND, PWA, GOBIERNO |
+| Plan doc | `docs/PLAN_HAIKY_NOVEDADES_EMPLEADO_RECALCULO_SELECTIVO_2026.md` |
+| Reporte | `docs/novedades-empleado-recalculo-selectivo-2026/REPORTE_NER26_00_03_EJECUCION.md` |
+| Prompts | `.github/prompts/NER26-{00..03}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Decisiones NER26
+
+- Una novedad individual consumida por rol no debe empujar al descarte global del periodo.
+- La invalidacion individual exige `tenant_id`, `anio`, `mes` y `empleado_id` en la consulta destructiva.
+- Los roles cerrados o pagados siguen inmutables; si el periodo esta cerrado se retorna `NOMINA_CERRADA_REQUIERE_REAPERTURA`.
+- La PWA muestra novedades consumidas con accion para liberar solo el calculo del empleado y luego recalcular solo ese empleado.
+- La accion global de cierre mensual queda rotulada como descarte del periodo para distinguirla de la correccion individual.
+
+### Runtime NER26
+
+- `payrollLifecycleService.invalidateEmployeePayrollForNovelty()` invalida solo el rol borrador del empleado afectado y registra auditoria `novedades.empleado.invalidar_calculo`.
+- `calculoNominaService.calcularNominaEmpleado()` recalcula un solo trabajador con lote `scope = employee`.
+- `nominaController` expone `POST /api/nomina/:anio/:mes/empleados/:empleadoId/invalidar-calculo` y `POST /api/nomina/:anio/:mes/empleados/:empleadoId/recalcular`.
+- `novedadController.listarPendientes(scope=operativas)` ya no oculta novedades consumidas por rol.
+- `NovedadesPendientes.jsx` expone las acciones `Liberar calculo solo de este empleado` y `Recalcular solo este empleado`.
+
+### Gates NER26
+
+- `node --check` en servicios/controladores modificados: PASS.
+- Backend focal: 4 suites / 65 tests PASS.
+- PWA build: PASS, 1534 modules y 100 precache entries.
+- Contratos del sistema: PASS.
+- Prisma validate: PASS.
+- Integridad NER26: UTF-8 sin BOM y `git diff --check` scoped PASS; el diff global queda bloqueado por conflictos locales previos en mobile/workflow no incluidos en NER26.
+
 ## Current Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-V28-NOMINA-EC-2026
 
 | Campo | Valor |

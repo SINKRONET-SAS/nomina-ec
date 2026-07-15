@@ -12,6 +12,7 @@ const {
   actualizar,
   crear,
   eliminar,
+  listarPendientes,
   listarTipos,
   resolverPeriodo,
 } = require('./novedadController');
@@ -139,6 +140,52 @@ describe('novedadController listarTipos', () => {
       expect.stringContaining('FROM novelty_type_configs'),
       ['tenant-1', '2026-07-01']
     );
+  });
+});
+
+describe('novedadController listarPendientes operativas', () => {
+  beforeEach(() => {
+    db.query.mockReset();
+    recordAudit.mockReset();
+  });
+
+  test('incluye novedades consumidas para habilitar invalidacion individual', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'nov-1',
+        empleado_id: 'employee-1',
+        tenant_id: 'tenant-1',
+        fecha: '2026-06-15',
+        tipo_novedad: 'hora_extra_50',
+        minutos: 60,
+        monto: '0',
+        estado: 'aprobado',
+        nombres: 'Ana',
+        apellidos: 'Perez',
+        cedula: '0102030405',
+        period_status: 'calculated',
+        period_anio: 2026,
+        period_mes: 6,
+        consumida_por_rol: true,
+        has_employee_payroll_draft: true,
+      }],
+    });
+    const req = {
+      tenantId: 'tenant-1',
+      correlationId: 'corr-operativas',
+      query: { scope: 'operativas' },
+    };
+    const res = createResponse();
+
+    await listarPendientes(req, res);
+
+    expect(db.query.mock.calls[0][0]).not.toContain('NOT EXISTS');
+    expect(res.statusCode).toBe(200);
+    expect(res.body.novedades[0]).toMatchObject({
+      id: 'nov-1',
+      editable: false,
+      requiresEmployeePayrollInvalidation: true,
+    });
   });
 });
 

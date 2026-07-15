@@ -582,7 +582,7 @@ function CerrarMes() {
                 type="button"
               >
                 <Undo2 className="h-4 w-4" />
-                Descartar cálculo
+                Descartar cálculo del periodo
               </button>
             )}
             <button className="inline-flex min-h-10 items-center gap-2 rounded-md border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 hover:bg-teal-50 disabled:border-slate-200 disabled:text-slate-400" disabled={!canCalculatePeriod || calculationPending} onClick={() => precalculateMutation.mutate()} type="button">
@@ -601,9 +601,9 @@ function CerrarMes() {
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-700" />
               <div className="min-w-0 flex-1">
-                <p className="font-semibold text-slate-950">Volver a novedades antes del cierre</p>
+                <p className="font-semibold text-slate-950">Descartar calculo completo del periodo</p>
                 <p className="mt-1 text-sm leading-6 text-slate-600">
-                  Se eliminarán {draftPayrolls} roles en borrador y sus líneas calculadas. Las novedades y el historial del lote se conservan. Los roles cerrados nunca se modifican desde esta acción.
+                  Se eliminaran {draftPayrolls} roles en borrador y sus lineas calculadas. Para corregir una sola novedad, usa Novedades manuales y libera solo el calculo del empleado.
                 </p>
                 <label className="mt-3 block text-sm font-semibold text-slate-700">
                   Motivo de la corrección

@@ -174,6 +174,18 @@ describe('AISK26-01: cierre brechas RBAC', () => {
     );
   });
 
+  test('correccion individual de nomina requiere rol, usuario fresco y modulo nomina', () => {
+    expect(source).toContain(
+      "app.post('/api/nomina/:anio/:mes/empleados/:empleadoId/invalidar-calculo', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.invalidarCalculoEmpleado)"
+    );
+    expect(source).toContain(
+      "app.post('/api/nomina/:anio/:mes/empleados/:empleadoId/recalcular', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.recalcularEmpleado)"
+    );
+    expect(source.indexOf("app.post('/api/nomina/:anio/:mes/empleados/:empleadoId/invalidar-calculo'")).toBeLessThan(
+      source.indexOf("app.get('/api/nomina/:anio/:mes'"),
+    );
+  });
+
   test('GET /api/nomina/:anio/:mes requiere rol y modulo nomina', () => {
     expect(source).toContain(
       "app.get('/api/nomina/:anio/:mes', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), nominaController.listarPorPeriodo)"

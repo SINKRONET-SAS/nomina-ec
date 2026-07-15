@@ -318,6 +318,148 @@ async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
   }
 }
 
+async function calcularNominaEmpleado(tenantId, empleadoId, anio, mes, context = {}) {
+  validarPeriodoNomina(anio, mes);
+  const scopedEmployeeId = String(empleadoId || '').trim();
+  if (!scopedEmployeeId) {
+    throw new AppError('Selecciona el empleado para recalcular la nomina.', {
+      code: 'NOMINA_EMPLEADO_REQUERIDO',
+      statusCode: 400,
+    });
+  }
+
+  logger.info({
+    code: 'PAYROLL_EMPLOYEE_RECALCULATION_STARTED',
+    correlationId: context.correlationId || process.env.CORRELATION_ID || 'nomina-empleado',
+    userId: context.userId || null,
+    tenantId,
+    empleadoId: scopedEmployeeId,
+    anio,
+    mes,
+  }, 'Recalculo individual de nomina iniciado');
+
+  const executor = context.dbClient || db;
+  const batch = await createPayrollCalculationBatch({
+    tenantId,
+    anio,
+    mes,
+    userId: context.userId || null,
+    correlationId: context.correlationId || '',
+    metadata: {
+      source: 'calculo_nomina_empleado',
+      scope: 'employee',
+      empleadoId: scopedEmployeeId,
+    },
+    dbClient: executor,
+  });
+
+  if (!batch?.id) {
+    throw new AppError('No se pudo crear el lote de recalculo individual.', {
+      code: 'NOMINA_EMPLOYEE_CALCULATION_BATCH_CREATE_FAILED',
+      statusCode: 500,
+    });
+  }
+
+  try {
+    const legalParameters = await getLegalParametersForTenant(tenantId, anio);
+    assertLegalParametersReadyForProduction(legalParameters, {
+      year: anio,
+      tenantId,
+      operation: 'recalculo_nomina_empleado',
+    });
+    await ensureDefaultPayrollAccountingMappings(tenantId, {
+      userId: context.userId || null,
+      anio,
+      mes,
+      dbClient: executor,
+    });
+
+    const employeeResult = await executor.query(`
+      SELECT e.*, ws.weekly_hours AS jornada_weekly_hours
+      FROM empleados e
+      LEFT JOIN work_shifts ws
+        ON ws.tenant_id = e.tenant_id
+        AND ws.code = e.jornada_codigo
+        AND ws.status = 'activo'
+      WHERE e.tenant_id = $1
+        AND e.id = $2
+        AND e.activo = true
+        AND e.fecha_ingreso <= $3
+      LIMIT 1
+    `, [tenantId, scopedEmployeeId, periodEndDate(anio, mes)]);
+
+    if (employeeResult.rows.length === 0) {
+      throw new AppError('Empleado no encontrado o sin relacion laboral vigente en el periodo.', {
+        code: 'NOMINA_EMPLEADO_NO_ENCONTRADO',
+        statusCode: 404,
+        details: { empleadoId: scopedEmployeeId, anio, mes },
+      });
+    }
+
+    const resultado = await calcularEmpleado(employeeResult.rows[0], tenantId, anio, mes, legalParameters, {
+      calculationBatchId: batch.id,
+      dbClient: executor,
+    });
+
+    const completedBatch = await finishPayrollCalculationBatch({
+      tenantId,
+      batchId: batch.id,
+      status: 'completed',
+      totalEmpleados: 1,
+      totalCalculadas: 1,
+      totalErrores: 0,
+      errores: [],
+      dbClient: executor,
+    });
+
+    return { success: true, total: 1, batch: completedBatch, resultados: [resultado] };
+  } catch (err) {
+    const errorRow = {
+      empleadoId: scopedEmployeeId,
+      errorCode: err.code || 'NOMINA_EMPLEADO_RECALCULO_ERROR',
+      error: Number(err.statusCode || 500) < 500
+        ? err.message
+        : 'No pudimos recalcular la nomina del empleado. Revisa el codigo de seguimiento.',
+    };
+
+    try {
+      await finishPayrollCalculationBatch({
+        tenantId,
+        batchId: batch.id,
+        status: 'failed',
+        totalEmpleados: 1,
+        totalCalculadas: 0,
+        totalErrores: 1,
+        errores: [errorRow],
+        dbClient: executor,
+      });
+    } catch (batchError) {
+      console.error('[NOMINA] No se pudo registrar el fallo del recalculo individual', {
+        code: batchError.code || 'NOMINA_EMPLOYEE_CALCULATION_BATCH_FINISH_ERROR',
+        statusCode: 500,
+        correlationId: context.correlationId || process.env.CORRELATION_ID || 'nomina-empleado',
+        userId: context.userId || null,
+        batchId: batch.id,
+        originalCode: err.code || 'NOMINA_EMPLEADO_RECALCULO_ERROR',
+        message: batchError.message,
+      });
+    }
+
+    if (Number(err.statusCode || 500) >= 500) {
+      throw err;
+    }
+
+    return {
+      success: false,
+      total: 1,
+      batch: null,
+      resultados: [errorRow],
+      errores: 1,
+      exitosos: 0,
+    };
+  }
+}
+
 async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParameters = null, options = {}) {
   if (!options.calculationBatchId) {
     throw new AppError('Cada cálculo de nómina debe estar asociado a un lote.', {
@@ -593,7 +735,15 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   };
 }
 
-async function createPayrollCalculationBatch({ tenantId, anio, mes, userId = null, correlationId = '', dbClient = null }) {
+async function createPayrollCalculationBatch({
+  tenantId,
+  anio,
+  mes,
+  userId = null,
+  correlationId = '',
+  metadata = null,
+  dbClient = null,
+}) {
   const executor = dbClient || db;
   const period = await executor.query(`
     WITH inserted AS (
@@ -630,7 +780,7 @@ async function createPayrollCalculationBatch({ tenantId, anio, mes, userId = nul
     Number(mes),
     userId,
     correlationId || '',
-    JSON.stringify({ source: 'calculo_nomina_mensual' }),
+    JSON.stringify(metadata || { source: 'calculo_nomina_mensual' }),
   ]);
 
   if (!result.rows[0]?.id) {
@@ -917,6 +1067,7 @@ function calcularIR(baseMensual, legalParameters, gastosPersonalesAnuales = 0) {
 
 module.exports = {
   calcularNominaMensual,
+  calcularNominaEmpleado,
   calcularEmpleado,
   calcularDiasTrabajados,
   calcularProvisionFondosReserva,

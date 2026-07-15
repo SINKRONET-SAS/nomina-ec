@@ -5,6 +5,13 @@ const { formatPeriodMarker, validatePeriod } = require('./monthlyPeriodService')
 
 const FINAL_PAYROLL_STATES = new Set(['cerrada', 'pagada']);
 const DISCARD_INTENTS = new Set(['correction', 'delete', 'recalculate']);
+const EMPLOYEE_INVALIDATION_ALLOWED_PERIOD_STATUSES = new Set([
+  'open',
+  'novelties_loaded',
+  'calculated',
+  'reopened',
+  'calculation_failed',
+]);
 
 function normalizeReason(value) {
   const reason = String(value || '').trim();
@@ -385,9 +392,317 @@ async function discardPayrollPeriodCalculation({
   }
 }
 
+async function invalidateEmployeePayrollForNovelty({
+  tenantId,
+  employeeId,
+  anio,
+  mes,
+  noveltyId = null,
+  userId,
+  correlationId = '',
+  ipAddress = '',
+  reason,
+}) {
+  const normalizedReason = normalizeReason(reason);
+  const periodInput = validatePeriod(anio, mes);
+  const scopedEmployeeId = String(employeeId || '').trim();
+  const scopedNoveltyId = String(noveltyId || '').trim() || null;
+
+  if (!scopedEmployeeId) {
+    throw new AppError('Selecciona el empleado cuyo calculo debe invalidarse.', {
+      code: 'NOMINA_EMPLEADO_REQUERIDO',
+      statusCode: 400,
+    });
+  }
+
+  let client = null;
+  try {
+    client = await db.getClient(tenantId, userId);
+    const periodResult = await client.query(`
+      SELECT id, status
+      FROM payroll_periods
+      WHERE tenant_id = $1 AND anio = $2 AND mes = $3
+      FOR UPDATE
+    `, [tenantId, periodInput.anio, periodInput.mes]);
+
+    if (periodResult.rows.length === 0) {
+      throw new AppError('El periodo de nomina no existe.', {
+        code: 'NOMINA_PERIODO_NO_ENCONTRADO',
+        statusCode: 404,
+      });
+    }
+
+    const period = periodResult.rows[0];
+    if (period.status === 'closed') {
+      throw new AppError('El periodo esta cerrado. Requiere reapertura controlada antes de corregir novedades.', {
+        code: 'NOMINA_CERRADA_REQUIERE_REAPERTURA',
+        statusCode: 409,
+        details: { anio: periodInput.anio, mes: periodInput.mes },
+      });
+    }
+
+    if (!EMPLOYEE_INVALIDATION_ALLOWED_PERIOD_STATUSES.has(period.status)) {
+      throw new AppError('El periodo no admite invalidacion individual de calculo.', {
+        code: 'NOMINA_PERIODO_NO_ADMITE_INVALIDACION_EMPLEADO',
+        statusCode: 409,
+        details: {
+          status: period.status,
+          allowedStatuses: Array.from(EMPLOYEE_INVALIDATION_ALLOWED_PERIOD_STATUSES),
+        },
+      });
+    }
+
+    let novelty = null;
+    if (scopedNoveltyId) {
+      const noveltyResult = await client.query(`
+        SELECT id, empleado_id, tenant_id, periodo_nomina, fecha::text AS fecha, tipo_novedad, estado
+        FROM novedades_asistencia
+        WHERE id = $1
+          AND tenant_id = $2
+          AND empleado_id = $3
+          AND (
+            periodo_nomina = $4
+            OR (EXTRACT(YEAR FROM fecha) = $5 AND EXTRACT(MONTH FROM fecha) = $6)
+          )
+        FOR UPDATE
+      `, [
+        scopedNoveltyId,
+        tenantId,
+        scopedEmployeeId,
+        formatPeriodMarker(periodInput.anio, periodInput.mes),
+        periodInput.anio,
+        periodInput.mes,
+      ]);
+
+      if (noveltyResult.rows.length === 0) {
+        throw new AppError('La novedad no pertenece al empleado y periodo seleccionados.', {
+          code: 'NOVEDAD_SCOPE_NO_SELECTIVO',
+          statusCode: 409,
+          details: {
+            noveltyId: scopedNoveltyId,
+            empleadoId: scopedEmployeeId,
+            anio: periodInput.anio,
+            mes: periodInput.mes,
+          },
+        });
+      }
+      novelty = noveltyResult.rows[0];
+    }
+
+    const payrollResult = await client.query(`
+      SELECT
+        n.id,
+        n.empleado_id,
+        n.calculation_batch_id,
+        n.anio,
+        n.mes,
+        n.estado,
+        n.total_ingresos,
+        n.total_deducciones,
+        n.neto_recibir,
+        (
+          SELECT COUNT(*)::int
+          FROM payroll_calculation_lines pcl
+          WHERE pcl.tenant_id = n.tenant_id
+            AND pcl.payroll_id = n.id
+            AND pcl.empleado_id = n.empleado_id
+            AND pcl.anio = n.anio
+            AND pcl.mes = n.mes
+        ) AS calculation_lines
+      FROM nominas n
+      WHERE n.tenant_id = $1
+        AND n.anio = $2
+        AND n.mes = $3
+        AND n.empleado_id = $4
+      FOR UPDATE
+    `, [tenantId, periodInput.anio, periodInput.mes, scopedEmployeeId]);
+
+    if (payrollResult.rows.length === 0) {
+      throw new AppError('No existe calculo de nomina para el empleado seleccionado en este periodo.', {
+        code: 'NOMINA_EMPLEADO_SIN_CALCULO',
+        statusCode: 404,
+        details: { empleadoId: scopedEmployeeId, anio: periodInput.anio, mes: periodInput.mes },
+      });
+    }
+
+    if (payrollResult.rows.length > 1) {
+      throw new AppError('La correccion individual encontro mas de un rol para el empleado.', {
+        code: 'NOVEDAD_SCOPE_NO_SELECTIVO',
+        statusCode: 409,
+        details: { empleadoId: scopedEmployeeId, anio: periodInput.anio, mes: periodInput.mes },
+      });
+    }
+
+    const payroll = payrollResult.rows[0];
+    assertDraftEditable({ ...payroll, period_status: period.status });
+
+    const noveltyLineResult = scopedNoveltyId
+      ? await client.query(`
+        SELECT COUNT(*)::int AS total
+        FROM payroll_calculation_lines
+        WHERE tenant_id = $1
+          AND payroll_id = $2
+          AND empleado_id = $3
+          AND anio = $4
+          AND mes = $5
+          AND source = 'novedad'
+          AND source_id = $6
+      `, [tenantId, payroll.id, scopedEmployeeId, periodInput.anio, periodInput.mes, scopedNoveltyId])
+      : { rows: [{ total: 0 }] };
+
+    if (scopedNoveltyId && Number(noveltyLineResult.rows[0]?.total || 0) === 0) {
+      throw new AppError('La novedad no esta asociada al calculo del empleado seleccionado.', {
+        code: 'NOVEDAD_NO_CONSUMIDA_POR_CALCULO_EMPLEADO',
+        statusCode: 409,
+        details: { noveltyId: scopedNoveltyId, payrollId: payroll.id },
+      });
+    }
+
+    const deleted = await client.query(`
+      DELETE FROM nominas
+      WHERE id = $1
+        AND tenant_id = $2
+        AND empleado_id = $3
+        AND anio = $4
+        AND mes = $5
+        AND estado = 'borrador'
+      RETURNING id
+    `, [payroll.id, tenantId, scopedEmployeeId, periodInput.anio, periodInput.mes]);
+
+    if (deleted.rows.length !== 1) {
+      throw new AppError('El rol cambio de estado antes de completar la invalidacion individual.', {
+        code: 'NOMINA_ROL_CONFLICTO_ESTADO',
+        statusCode: 409,
+      });
+    }
+
+    let updatedNovelty = null;
+    if (scopedNoveltyId) {
+      const noveltyUpdate = await client.query(`
+        UPDATE novedades_asistencia
+        SET estado = 'pendiente',
+            aprobado_por = NULL,
+            aprobado_en = NULL,
+            updated_at = NOW()
+        WHERE id = $1
+          AND tenant_id = $2
+          AND empleado_id = $3
+        RETURNING id, estado
+      `, [scopedNoveltyId, tenantId, scopedEmployeeId]);
+      updatedNovelty = noveltyUpdate.rows[0] || null;
+    }
+
+    const invalidatedAt = new Date().toISOString();
+    const invalidationEvidence = {
+      scope: 'employee',
+      payrollId: payroll.id,
+      empleadoId: scopedEmployeeId,
+      noveltyId: scopedNoveltyId,
+      anio: periodInput.anio,
+      mes: periodInput.mes,
+      reason: normalizedReason,
+      userId: userId || null,
+      correlationId: correlationId || '',
+      invalidatedAt,
+    };
+
+    const batchesUpdated = await appendBatchDiscardMetadata(client, {
+      tenantId,
+      batchIds: [payroll.calculation_batch_id],
+      payload: invalidationEvidence,
+    });
+
+    const periodUpdate = await client.query(`
+      UPDATE payroll_periods
+      SET status = CASE
+            WHEN status IN ('calculated', 'calculation_failed') THEN 'reopened'
+            ELSE status
+          END,
+          calculated_at = CASE
+            WHEN status IN ('calculated', 'calculation_failed') THEN NULL
+            ELSE calculated_at
+          END,
+          summary = COALESCE(summary, '{}'::jsonb) || jsonb_build_object(
+            'lastEmployeePayrollInvalidation', $5::jsonb
+          ),
+          updated_at = NOW()
+      WHERE id = $1
+        AND tenant_id = $2
+        AND anio = $3
+        AND mes = $4
+      RETURNING id, anio, mes, status, calculated_at
+    `, [
+      period.id,
+      tenantId,
+      periodInput.anio,
+      periodInput.mes,
+      JSON.stringify({ ...invalidationEvidence, batchesUpdated }),
+    ]);
+
+    await recordAudit({
+      tenantId,
+      userId,
+      correlationId,
+      action: 'novedades.empleado.invalidar_calculo',
+      entity: 'nominas',
+      entityId: payroll.id,
+      previousData: {
+        empleadoId: scopedEmployeeId,
+        anio: payroll.anio,
+        mes: payroll.mes,
+        estado: payroll.estado,
+        totalIngresos: payroll.total_ingresos,
+        totalDeducciones: payroll.total_deducciones,
+        netoRecibir: payroll.neto_recibir,
+        calculationLines: payroll.calculation_lines,
+        novelty,
+      },
+      newData: {
+        ...invalidationEvidence,
+        lineasInvalidas: Number(payroll.calculation_lines || 0),
+        novedadEditable: Boolean(updatedNovelty),
+        nextStatus: periodUpdate.rows[0]?.status || null,
+      },
+      ipAddress,
+      dbClient: client,
+    });
+
+    await db.commit(client);
+    client = null;
+
+    return {
+      success: true,
+      scope: 'employee',
+      empleadoId: scopedEmployeeId,
+      anio: periodInput.anio,
+      mes: periodInput.mes,
+      payrollId: payroll.id,
+      nominasInvalidas: 1,
+      lineasInvalidas: Number(payroll.calculation_lines || 0),
+      novedadEditable: Boolean(updatedNovelty),
+      period: periodUpdate.rows[0] || null,
+      nextAction: 'edit_novelty_and_recalculate_employee',
+    };
+  } catch (err) {
+    if (client) {
+      await db.rollback(client).catch((rollbackErr) => {
+        console.error('[NOMINA] Error revirtiendo invalidacion individual de calculo', {
+          code: rollbackErr.code || 'NOMINA_EMPLEADO_INVALIDACION_ROLLBACK_ERROR',
+          statusCode: 500,
+          correlationId,
+          userId: userId || null,
+          message: rollbackErr.message,
+        });
+      });
+    }
+    throw err;
+  }
+}
+
 module.exports = {
   discardPayrollDraft,
   discardPayrollPeriodCalculation,
+  invalidateEmployeePayrollForNovelty,
   normalizeIntent,
   normalizeReason,
 };

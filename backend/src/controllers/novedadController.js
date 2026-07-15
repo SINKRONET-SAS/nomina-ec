@@ -25,6 +25,7 @@ const NOVELTY_BULK_TEMPLATE_COLUMNS = [
   'idempotencyKey',
 ];
 const NOVELTY_WRITABLE_PERIOD_STATUSES = new Set(['open', 'novelties_loaded', 'reopened', 'calculation_failed']);
+const NOVELTY_OPERATIVE_PERIOD_STATUSES = new Set([...NOVELTY_WRITABLE_PERIOD_STATUSES, 'calculated']);
 
 function resolveNoveltyMetadata(row = {}) {
   const metadata = row.metadata && typeof row.metadata === 'object' ? { ...row.metadata } : row.metadata;
@@ -88,17 +89,10 @@ async function listarPendientes(req, res) {
     let filter = "na.estado = 'pendiente'";
 
     if (scope === 'operativas') {
-      params.push(Array.from(NOVELTY_WRITABLE_PERIOD_STATUSES));
+      params.push(Array.from(NOVELTY_OPERATIVE_PERIOD_STATUSES));
       filter = `
         na.estado IN ('pendiente', 'aprobado', 'rechazado')
         AND pp.status = ANY($2::text[])
-        AND NOT EXISTS (
-          SELECT 1
-          FROM payroll_calculation_lines pcl
-          WHERE pcl.tenant_id = na.tenant_id
-            AND pcl.source = 'novedad'
-            AND pcl.source_id = na.id::text
-        )
       `;
     }
 
@@ -110,13 +104,24 @@ async function listarPendientes(req, res) {
         e.apellidos,
         e.cedula,
         pp.status AS period_status,
+        pp.anio AS period_anio,
+        pp.mes AS period_mes,
         EXISTS (
           SELECT 1
           FROM payroll_calculation_lines pcl
           WHERE pcl.tenant_id = na.tenant_id
             AND pcl.source = 'novedad'
             AND pcl.source_id = na.id::text
-        ) AS consumida_por_rol
+        ) AS consumida_por_rol,
+        EXISTS (
+          SELECT 1
+          FROM nominas n
+          WHERE n.tenant_id = na.tenant_id
+            AND n.empleado_id = na.empleado_id
+            AND n.anio = EXTRACT(YEAR FROM na.fecha)::int
+            AND n.mes = EXTRACT(MONTH FROM na.fecha)::int
+            AND n.estado = 'borrador'
+        ) AS has_employee_payroll_draft
       FROM novedades_asistencia na
       JOIN empleados e ON na.empleado_id = e.id
       LEFT JOIN payroll_periods pp
@@ -130,6 +135,12 @@ async function listarPendientes(req, res) {
     const novedades = result.rows.map((row) => ({
       ...resolveNoveltyMetadata(row),
       editable: NOVELTY_WRITABLE_PERIOD_STATUSES.has(row.period_status) && !row.consumida_por_rol,
+      requiresEmployeePayrollInvalidation: Boolean(row.consumida_por_rol && row.has_employee_payroll_draft && row.period_status !== 'closed'),
+      canRecalculateEmployee: Boolean(
+        !row.consumida_por_rol
+        && row.estado === 'aprobado'
+        && ['reopened', 'calculation_failed'].includes(row.period_status)
+      ),
     }));
 
     res.json({ success: true, novedades });
@@ -606,7 +617,7 @@ async function ensureNoveltyEditable({ tenantId, noveltyId }) {
   `, [tenantId, String(novelty.id)]);
 
   if (consumed.rows.length > 0) {
-    throw new AppError('La novedad ya fue consumida por un rol de pago. Reabre/recalcula el periodo con control antes de modificarla.', {
+    throw new AppError('La novedad ya fue consumida por un rol de pago. Libera primero el calculo de este empleado antes de modificarla.', {
       code: 'NOVEDAD_CONSUMIDA_POR_ROL',
       statusCode: 409,
       details: {

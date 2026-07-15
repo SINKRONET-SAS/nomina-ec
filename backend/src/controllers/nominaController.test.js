@@ -26,9 +26,11 @@ jest.mock('../services/payrollRolePdfService', () => ({
 jest.mock('../services/payrollLifecycleService', () => ({
   discardPayrollDraft: jest.fn(),
   discardPayrollPeriodCalculation: jest.fn(),
+  invalidateEmployeePayrollForNovelty: jest.fn(),
 }));
 
 jest.mock('../services/calculoNominaService', () => ({
+  calcularNominaEmpleado: jest.fn(),
   calcularNominaMensual: jest.fn(),
 }));
 
@@ -43,8 +45,9 @@ const {
 const {
   discardPayrollDraft,
   discardPayrollPeriodCalculation,
+  invalidateEmployeePayrollForNovelty,
 } = require('../services/payrollLifecycleService');
-const { calcularNominaMensual } = require('../services/calculoNominaService');
+const { calcularNominaEmpleado, calcularNominaMensual } = require('../services/calculoNominaService');
 const {
   precalcularMes,
   calcularMes,
@@ -52,6 +55,8 @@ const {
   descartarCalculoPeriodo,
   descargarRolPDF,
   eliminarBorrador,
+  invalidarCalculoEmpleado,
+  recalcularEmpleado,
   enviarRolPagoEmail,
   reabrirMes,
   descargarRolesTranspuestosPDF,
@@ -425,6 +430,7 @@ describe('nominaController descarte controlado', () => {
   beforeEach(() => {
     discardPayrollDraft.mockReset();
     discardPayrollPeriodCalculation.mockReset();
+    invalidateEmployeePayrollForNovelty.mockReset();
   });
 
   test('descarta el calculo completo y devuelve la siguiente accion', async () => {
@@ -509,6 +515,105 @@ describe('nominaController descarte controlado', () => {
     expect(res.body).toMatchObject({
       error: 'NOMINA_ROL_FINAL_INMUTABLE',
       correlationId: 'corr-final',
+    });
+  });
+});
+
+describe('nominaController correccion individual por empleado', () => {
+  beforeEach(() => {
+    db.getClient.mockReset();
+    db.commit.mockReset();
+    db.rollback.mockReset();
+    db.commit.mockResolvedValue(undefined);
+    recordAudit.mockReset();
+    invalidateEmployeePayrollForNovelty.mockReset();
+    calcularNominaEmpleado.mockReset();
+    assertTenantPayrollReady.mockReset();
+    assertTenantPayrollReady.mockResolvedValue({ ready: true });
+  });
+
+  test('invalida el calculo de un solo empleado desde una novedad', async () => {
+    invalidateEmployeePayrollForNovelty.mockResolvedValueOnce({
+      scope: 'employee',
+      empleadoId: 'employee-1',
+      anio: 2026,
+      mes: 6,
+      nominasInvalidas: 1,
+      lineasInvalidas: 4,
+      novedadEditable: true,
+    });
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-invalidate',
+      ip: '127.0.0.1',
+      params: { anio: '2026', mes: '6', empleadoId: 'employee-1' },
+      body: { novedadId: 'nov-1', motivo: 'Corregir novedad individual' },
+    };
+    const res = createResponse();
+
+    await invalidarCalculoEmpleado(req, res);
+
+    expect(invalidateEmployeePayrollForNovelty).toHaveBeenCalledWith(expect.objectContaining({
+      tenantId: 'tenant-1',
+      employeeId: 'employee-1',
+      anio: '2026',
+      mes: '6',
+      noveltyId: 'nov-1',
+      reason: 'Corregir novedad individual',
+    }));
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({
+      success: true,
+      scope: 'employee',
+      empleadoId: 'employee-1',
+      lineasInvalidas: 4,
+      correlationId: 'corr-invalidate',
+    });
+  });
+
+  test('recalcula un empleado y marca el periodo como calculado cuando no quedan pendientes', async () => {
+    const tx = {
+      query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ total: 2, missing: 0 }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'period-1', anio: 2026, mes: 6, status: 'calculated', calculated_at: 'now' }] }),
+    };
+    db.getClient.mockResolvedValueOnce(tx);
+    calcularNominaEmpleado.mockResolvedValueOnce({
+      success: true,
+      total: 1,
+      batch: { id: 'batch-employee' },
+      resultados: [
+        { empleadoId: 'employee-1', nombre: 'Ana Perez', cedula: '0102030405', netoRecibir: '900.00' },
+      ],
+    });
+    recordAudit.mockResolvedValueOnce(undefined);
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-recalc',
+      ip: '127.0.0.1',
+      params: { anio: '2026', mes: '6', empleadoId: 'employee-1' },
+    };
+    const res = createResponse();
+
+    await recalcularEmpleado(req, res);
+
+    expect(calcularNominaEmpleado).toHaveBeenCalledWith('tenant-1', 'employee-1', 2026, 6, expect.objectContaining({
+      dbClient: tx,
+      correlationId: 'corr-recalc',
+    }));
+    expect(tx.query.mock.calls[1][0]).toContain('lastEmployeePayrollRecalculation');
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'nomina.empleado.recalcular',
+      dbClient: tx,
+    }));
+    expect(db.commit).toHaveBeenCalledWith(tx);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({
+      success: true,
+      coverage: { total: 2, missing: 0 },
+      correlationId: 'corr-recalc',
     });
   });
 });
