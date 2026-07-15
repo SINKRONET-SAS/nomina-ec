@@ -49,6 +49,7 @@ cuando el flujo sea de correccion individual.
 | NER26-02 | P0 | completed_local | Frontend operativo para corregir novedad individual sin impacto global. |
 | NER26-03 | P0 | completed_local | QA, regresion multi-empleado, reporte final y AuditLock. |
 | NER26-04 | P0 | completed_local | Correccion de rol individual y transpuesto para novedades dinamicas. |
+| NER26-05 | P0 | completed_local | Rol individual/transpuesto consulta lineas persistidas para no omitir descuentos. |
 
 ## 5. Diseno backend propuesto
 
@@ -154,6 +155,7 @@ Agregar accion visible desde novedades operativas o detalle de nomina del emplea
 | NER26-02 | UI de correccion individual y estados de error. | Build frontend, pruebas manuales guiadas. |
 | NER26-03 | Reporte final, AuditLock firmado, matriz de riesgos residuales. | Suite minima completa y revision de diffs destructivos. |
 | NER26-04 | Rol PDF individual/transpuesto con conceptos dinamicos de novedades. | `node --check`, Jest focal de rol PDF, AuditLock JSON. |
+| NER26-05 | Rol PDF individual/transpuesto con `payroll_calculation_lines` persistidas. | `node --check`, Jest focal de rol PDF, AuditLock JSON. |
 
 ## 9. Riesgos y controles
 
@@ -189,6 +191,7 @@ Cambios ejecutados:
 - La PWA expone recalculo individual cuando la novedad corregida queda aprobada y el periodo esta reabierto o con fallo de calculo.
 - La accion global de cierre mensual queda rotulada como descarte del periodo para evitar confundirla con correccion individual.
 - El rol de pago individual y el consolidado transpuesto ya reflejan tipos nuevos de novedad desde las lineas normalizadas de calculo.
+- El PDF de rol consulta `payroll_calculation_lines` para mostrar todos los descuentos persistidos, incluso si el detalle JSON queda incompleto.
 
 Evidencia:
 

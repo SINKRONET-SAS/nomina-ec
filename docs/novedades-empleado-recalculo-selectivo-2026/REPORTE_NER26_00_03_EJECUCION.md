@@ -1,7 +1,7 @@
 # Reporte NER26 - Novedades de empleado y recalculo selectivo 2026
 
 Plan: `HAIKY-NOVEDADES-EMPLEADO-RECALCULO-SELECTIVO-2026`
-Fases: `NER26-00` a `NER26-04`
+Fases: `NER26-00` a `NER26-05`
 Estado: `completed-pass`
 Fecha: 2026-07-15
 
@@ -20,6 +20,8 @@ Despues de corregir y aprobar la novedad, la PWA permite recalcular solo ese emp
 
 Seguimiento NER26-04: el rol de pago individual y el consolidado transpuesto ya no dependen de una lista fija de novedades. Ambos leen las lineas normalizadas del calculo y reflejan conceptos nuevos como ingresos o deducciones del rol.
 
+Seguimiento NER26-05: el PDF bajo demanda ahora consulta `payroll_calculation_lines` para no omitir tipos de descuento persistidos cuando el detalle JSON del rol esta incompleto.
+
 ## Cambios backend
 
 - `payrollLifecycleService.invalidateEmployeePayrollForNovelty()` invalida calculo individual dentro de transaccion.
@@ -30,6 +32,7 @@ Seguimiento NER26-04: el rol de pago individual y el consolidado transpuesto ya 
 - `novedadController.listarPendientes(scope=operativas)` incluye novedades consumidas para que RRHH pueda corregirlas desde la pantalla operativa.
 - `app.routes.test.js` valida RBAC, usuario fresco y modulo `nomina` para las rutas nuevas.
 - `payrollRolePdfService` agrega conceptos dinamicos de novedades desde `payroll_calculation_lines` o `detalle_calculo.novedadesCalculadas` en el rol individual y en el rol consolidado transpuesto.
+- Las consultas de rol individual y rol transpuesto agregan `calculation_lines` desde `payroll_calculation_lines`, filtradas por `payroll_id` y `tenant_id`.
 
 ## Cambios frontend
 
@@ -56,7 +59,7 @@ Seguimiento NER26-04: el rol de pago individual y el consolidado transpuesto ya 
 - `npm.cmd run contracts`: PASS.
 - `npm.cmd run prisma:validate`: PASS.
 - `node --check backend/src/services/payrollRolePdfService.js`: PASS.
-- `npm.cmd --workspace=backend test -- payrollRolePdfService.test.js --runInBand`: PASS, 1 suite / 7 tests.
+- `npm.cmd --workspace=backend test -- payrollRolePdfService.test.js --runInBand`: PASS, 1 suite / 9 tests.
 - `python -m json.tool .vscode/AuditLock.json`: PASS.
 - UTF-8 sin BOM en archivos NER26: PASS.
 - `git diff --check` limitado a archivos NER26: PASS.

@@ -608,7 +608,27 @@ async function generatePayrollRolePdf({ tenantId, payrollId, userId = null, incl
       e.departamento,
       t.razon_social,
       t.ruc,
-      t.configuracion AS tenant_configuracion
+      t.configuracion AS tenant_configuracion,
+      COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+          'concept_code', pcl.concept_code,
+          'calculation_batch_id', pcl.calculation_batch_id,
+          'concept_label', pcl.concept_label,
+          'category', pcl.category,
+          'amount', pcl.amount,
+          'source', pcl.source,
+          'source_id', pcl.source_id,
+          'source_version', pcl.source_version,
+          'legal_parameter_key', pcl.legal_parameter_key,
+          'cost_center_code', pcl.cost_center_code,
+          'organization_unit_code', pcl.organization_unit_code,
+          'position_code', pcl.position_code,
+          'metadata', pcl.metadata
+        ) ORDER BY pcl.category, pcl.concept_code, pcl.source_id)
+        FROM payroll_calculation_lines pcl
+        WHERE pcl.payroll_id = n.id
+          AND pcl.tenant_id = n.tenant_id
+      ), '[]'::jsonb) AS calculation_lines
     FROM nominas n
     JOIN empleados e ON e.id = n.empleado_id AND e.tenant_id = n.tenant_id
     JOIN tenants t ON t.id = n.tenant_id
@@ -673,7 +693,27 @@ async function generatePayrollRolePeriodTransposedPdf({ tenantId, anio, mes, use
       e.departamento,
       t.razon_social,
       t.ruc,
-      t.configuracion AS tenant_configuracion
+      t.configuracion AS tenant_configuracion,
+      COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+          'concept_code', pcl.concept_code,
+          'calculation_batch_id', pcl.calculation_batch_id,
+          'concept_label', pcl.concept_label,
+          'category', pcl.category,
+          'amount', pcl.amount,
+          'source', pcl.source,
+          'source_id', pcl.source_id,
+          'source_version', pcl.source_version,
+          'legal_parameter_key', pcl.legal_parameter_key,
+          'cost_center_code', pcl.cost_center_code,
+          'organization_unit_code', pcl.organization_unit_code,
+          'position_code', pcl.position_code,
+          'metadata', pcl.metadata
+        ) ORDER BY pcl.category, pcl.concept_code, pcl.source_id)
+        FROM payroll_calculation_lines pcl
+        WHERE pcl.payroll_id = n.id
+          AND pcl.tenant_id = n.tenant_id
+      ), '[]'::jsonb) AS calculation_lines
     FROM nominas n
     JOIN empleados e ON e.id = n.empleado_id AND e.tenant_id = n.tenant_id
     JOIN tenants t ON t.id = n.tenant_id

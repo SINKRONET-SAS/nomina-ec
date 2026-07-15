@@ -3,13 +3,13 @@
   "plan": "HAIKY-NOVEDADES-EMPLEADO-RECALCULO-SELECTIVO-2026",
   "planCode": "NER26",
   "status": "completed-pass",
-  "phaseCompleted": "NER26-04",
+  "phaseCompleted": "NER26-05",
   "currentPhase": "closed",
-  "updatedAt": "2026-07-16T00:10:00Z",
+  "updatedAt": "2026-07-16T00:35:00Z",
   "rulesSource": "RULES.md",
   "contextSource": ".github/CODEX_CONTEXT.md",
-  "previousAuditLockHash": "3310a9a3606559d8f5cf3ad4e05a5a4719707cd214bc3bf6bc4c523e86adec6f",
-  "summary": "NER26 corrige novedades de un empleado con invalidacion y recalculo selectivo, evitando descarte global del periodo y reflejando novedades dinamicas en el rol de pago.",
+  "previousAuditLockHash": "af0860ddf2b98299e5b1d5c4334013f3c1775c847685c73907e7eb6929b98e06",
+  "summary": "NER26 corrige novedades de un empleado con invalidacion y recalculo selectivo, evitando descarte global y reflejando descuentos dinamicos persistidos en el rol de pago.",
   "fases": [
     {
       "phase": "NER26-00",
@@ -35,6 +35,11 @@
       "phase": "NER26-04",
       "status": "completed-pass",
       "detail": "Rol de pago individual y transpuesto incorporan tipos dinamicos de novedad desde lineas de calculo."
+    },
+    {
+      "phase": "NER26-05",
+      "status": "completed-pass",
+      "detail": "Rol de pago individual y transpuesto consultan payroll_calculation_lines para no omitir descuentos persistidos."
     }
   ],
   "runtimeChanges": [
@@ -42,6 +47,7 @@
     "Backend: calcularNominaEmpleado crea lote scope employee y recalcula un unico trabajador.",
     "Backend: novedades operativas incluyen registros consumidos por rol para habilitar la correccion individual.",
     "Backend: rol PDF individual y transpuesto reflejan novedades dinamicas desde payroll_calculation_lines o detalle_calculo.novedadesCalculadas.",
+    "Backend: consultas de rol PDF agregan calculation_lines desde payroll_calculation_lines por payroll_id y tenant_id.",
     "PWA: Novedades manuales permite liberar y recalcular solo el empleado afectado.",
     "PWA: Cierre mensual rotula el descarte como accion de periodo para evitar confundirlo con correccion individual."
   ],
@@ -64,7 +70,7 @@
     {
       "name": "backend_role_pdf_tests",
       "ok": true,
-      "output": "payrollRolePdfService.test.js PASS: 1 suite, 7 tests."
+      "output": "payrollRolePdfService.test.js PASS: 1 suite, 9 tests."
     },
     {
       "name": "frontend_build_pwa",
@@ -99,6 +105,7 @@
     ".github/prompts/NER26-02-frontend-correccion-individual.md",
     ".github/prompts/NER26-03-qa-cierre.md",
     ".github/prompts/NER26-04-rol-novedades-dinamicas.md",
+    ".github/prompts/NER26-05-rol-descuentos-persistidos.md",
     ".vscode/AuditLock.json",
     "backend/src/app.js",
     "backend/src/app.routes.test.js",
@@ -127,9 +134,10 @@
     "La consulta destructiva individual exige empleado_id ademas de tenant_id, anio y mes.",
     "Los roles cerrados y pagados siguen bloqueados.",
     "El rol de pago no mantiene una lista cerrada de novedades; toma conceptos dinamicos de las lineas normalizadas.",
+    "El rol PDF consulta payroll_calculation_lines para cubrir descuentos persistidos aunque falte detalle JSON.",
     "Los errores devuelven code, statusCode funcional y correlationId.",
     "La PWA muestra alcance individual antes de invalidar o recalcular."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "485C3A64DF610A622550F2427C016FA52FF4E24F1EECCFD7043CF14C45F5ACBB"
+  "signature": "2404D1E2BFBAAF00FFC69267915ED258E574837EE13B64664C864CAE6858405B"
 }

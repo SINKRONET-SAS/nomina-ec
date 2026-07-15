@@ -16,6 +16,7 @@ jest.mock('../config/s3', () => ({
 
 const db = require('../config/database');
 const { s3Upload } = require('../config/s3');
+const pdfmake = require('pdfmake/build/pdfmake');
 const {
   buildPayrollRoleDocDefinition,
   buildPayrollRoleTransposedDocDefinition,
@@ -57,6 +58,47 @@ function payrollRow(overrides = {}) {
     },
     ...overrides,
   };
+}
+
+function persistedDiscountLines() {
+  return [
+    {
+      concept_code: 'descuento_uniforme',
+      concept_label: 'Descuento uniforme',
+      category: 'deduccion',
+      amount: 12,
+      source: 'novedad',
+      source_id: 'nov-descuento-uniforme',
+      metadata: { tipoNovedad: 'descuento_uniforme' },
+    },
+    {
+      concept_code: 'novedad_atraso',
+      concept_label: 'Atraso',
+      category: 'deduccion',
+      amount: 4,
+      source: 'novedad',
+      source_id: 'nov-atraso',
+      metadata: { tipoNovedad: 'atraso' },
+    },
+    {
+      concept_code: 'descuento_permiso_sin_sueldo',
+      concept_label: 'Permiso sin sueldo',
+      category: 'deduccion',
+      amount: 8,
+      source: 'novedad',
+      source_id: 'nov-permiso-sin-sueldo',
+      metadata: { tipoNovedad: 'permiso_sin_sueldo' },
+    },
+    {
+      concept_code: 'novedad_salida_temprana',
+      concept_label: 'Salida temprana',
+      category: 'deduccion',
+      amount: 6,
+      source: 'novedad',
+      source_id: 'nov-salida-temprana',
+      metadata: { tipoNovedad: 'salida_temprana' },
+    },
+  ];
 }
 
 describe('payrollRolePdfService', () => {
@@ -160,6 +202,30 @@ describe('payrollRolePdfService', () => {
     expect(serialized).toContain('Descuento uniforme');
     expect(serialized).toContain('$45.00');
     expect(serialized).toContain('$12.00');
+  });
+
+  test('documento individual refleja todos los descuentos persistidos en lineas de calculo', () => {
+    const doc = buildPayrollRoleDocDefinition(payrollRow({
+      total_deducciones: 78.12,
+      neto_recibir: 536.88,
+      detalle_calculo: {
+        sueldoProporcional: 600,
+        aporteIess: 58.12,
+        netoRecibir: 536.88,
+        costoEmpleador: 710,
+      },
+      calculation_lines: persistedDiscountLines(),
+    }));
+
+    const serialized = JSON.stringify(doc);
+    expect(serialized).toContain('Atraso');
+    expect(serialized).toContain('Descuento uniforme');
+    expect(serialized).toContain('Permiso sin sueldo');
+    expect(serialized).toContain('Salida temprana');
+    expect(serialized).toContain('$4.00');
+    expect(serialized).toContain('$12.00');
+    expect(serialized).toContain('$8.00');
+    expect(serialized).toContain('$6.00');
   });
 
   test('rol cerrado no incluye aviso de borrador', () => {
@@ -322,10 +388,44 @@ describe('payrollRolePdfService', () => {
       2026,
       6,
     ]);
+    expect(db.query.mock.calls[0][0]).toContain('payroll_calculation_lines');
+    expect(db.query.mock.calls[0][0]).toContain('AS calculation_lines');
     expect(s3Upload).toHaveBeenCalledWith(
       Buffer.from('pdf-rol-demo'),
       expect.stringContaining('roles_pago_transpuesto_2026_06.pdf'),
       'application/pdf'
     );
+  });
+
+  test('genera rol PDF con lineas persistidas para descuentos dinamicos', async () => {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [payrollRow({
+          detalle_calculo: {
+            sueldoProporcional: 600,
+            aporteIess: 58.12,
+            netoRecibir: 536.88,
+            costoEmpleador: 710,
+          },
+          calculation_lines: persistedDiscountLines(),
+        })],
+      })
+      .mockResolvedValueOnce({ rows: [] });
+
+    await generatePayrollRolePdf({
+      tenantId: 'tenant-1',
+      payrollId: 'payroll-1',
+      userId: 'user-1',
+    });
+
+    const selectSql = db.query.mock.calls[0][0];
+    const docDefinition = pdfmake.createPdf.mock.calls[0][0];
+    const serialized = JSON.stringify(docDefinition);
+    expect(selectSql).toContain('payroll_calculation_lines');
+    expect(selectSql).toContain('AS calculation_lines');
+    expect(serialized).toContain('Atraso');
+    expect(serialized).toContain('Descuento uniforme');
+    expect(serialized).toContain('Permiso sin sueldo');
+    expect(serialized).toContain('Salida temprana');
   });
 });

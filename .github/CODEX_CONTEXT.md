@@ -12,7 +12,7 @@
 | Superficie | BACKEND, PWA, REPORTES, GOBIERNO |
 | Plan doc | `docs/PLAN_HAIKY_NOVEDADES_EMPLEADO_RECALCULO_SELECTIVO_2026.md` |
 | Reporte | `docs/novedades-empleado-recalculo-selectivo-2026/REPORTE_NER26_00_03_EJECUCION.md` |
-| Prompts | `.github/prompts/NER26-{00..04}-*.md` |
+| Prompts | `.github/prompts/NER26-{00..05}-*.md` |
 | AuditLock | `.vscode/AuditLock.json` |
 
 ### Decisiones NER26
@@ -23,6 +23,7 @@
 - La PWA muestra novedades consumidas con accion para liberar solo el calculo del empleado y luego recalcular solo ese empleado.
 - La accion global de cierre mensual queda rotulada como descarte del periodo para distinguirla de la correccion individual.
 - El rol individual y el rol consolidado transpuesto deben reflejar tipos nuevos de novedad desde las lineas normalizadas del calculo, no desde una lista fija.
+- El PDF de rol debe consultar `payroll_calculation_lines` para no omitir descuentos dinamicos persistidos.
 
 ### Runtime NER26
 
@@ -32,6 +33,7 @@
 - `novedadController.listarPendientes(scope=operativas)` ya no oculta novedades consumidas por rol.
 - `NovedadesPendientes.jsx` expone las acciones `Liberar calculo solo de este empleado` y `Recalcular solo este empleado`.
 - `payrollRolePdfService` arma novedades dinamicas desde `payroll_calculation_lines` o `detalle_calculo.novedadesCalculadas` para rol individual y transpuesto.
+- `generatePayrollRolePdf()` y `generatePayrollRolePeriodTransposedPdf()` agregan `calculation_lines` desde `payroll_calculation_lines` por `payroll_id` y `tenant_id`.
 
 ### Gates NER26
 
@@ -40,7 +42,7 @@
 - PWA build: PASS, 1534 modules y 100 precache entries.
 - Contratos del sistema: PASS.
 - Prisma validate: PASS.
-- Rol PDF dinamico: `node --check backend/src/services/payrollRolePdfService.js` PASS y `payrollRolePdfService.test.js` PASS, 7 tests.
+- Rol PDF dinamico: `node --check backend/src/services/payrollRolePdfService.js` PASS y `payrollRolePdfService.test.js` PASS, 9 tests.
 - Integridad NER26: UTF-8 sin BOM y `git diff --check` scoped PASS; el diff global queda bloqueado por conflictos locales previos en mobile/workflow no incluidos en NER26.
 
 ## Current Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-V28-NOMINA-EC-2026
