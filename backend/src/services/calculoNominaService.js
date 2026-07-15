@@ -212,7 +212,7 @@ async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
     const completedBatch = await finishPayrollCalculationBatch({
       tenantId,
       batchId: batch.id,
-      status: errores.length > 0 ? 'failed' : 'completed',
+      status: errores.length > 0 && errores.length === resultados.length ? 'failed' : errores.length > 0 ? 'partial_failed' : 'completed',
       totalEmpleados: empleados.rows.length,
       totalCalculadas: resultados.length - errores.length,
       totalErrores: errores.length,
@@ -257,6 +257,13 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   assertEmployeeMeetsUnifiedBaseSalary(emp, payrollParameters, { anio, mes });
 
   const diasTrabajados = calcularDiasTrabajados(emp.fecha_ingreso, anio, mes);
+  if (diasTrabajados <= 0) {
+    throw new AppError('Empleado sin relacion laboral vigente en el periodo de calculo.', {
+      code: 'NOMINA_EMPLOYEE_NOT_APPLICABLE',
+      statusCode: 422,
+      details: { empleadoId: emp.id, fechaIngreso: emp.fecha_ingreso, anio, mes },
+    });
+  }
   const sueldo = Number.parseFloat(emp.sueldo_bruto_mensual);
   const sueldoProporcional = roundMoney((sueldo * diasTrabajados) / 30);
   const valorHora = calcularValorHora(emp, payrollParameters);

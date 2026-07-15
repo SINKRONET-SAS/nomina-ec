@@ -149,6 +149,12 @@ export default function OperacionMovilScreen({ user }) {
       Alert.alert('Datos incompletos', 'Codigo, nombre, latitud y longitud son obligatorios.');
       return;
     }
+    const lat = Number(zoneForm.latitude);
+    const lng = Number(zoneForm.longitude);
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
+      Alert.alert('Coordenadas invalidas', 'Latitud debe estar entre -90 y 90, longitud entre -180 y 180.');
+      return;
+    }
     setSaving('zone');
     setMessage('');
     try {
@@ -173,6 +179,12 @@ export default function OperacionMovilScreen({ user }) {
   const createRouteSite = async () => {
     if (!siteForm.code || !siteForm.name || !siteForm.latitude || !siteForm.longitude) {
       Alert.alert('Datos incompletos', 'Codigo, nombre, latitud y longitud son obligatorios.');
+      return;
+    }
+    const lat = Number(siteForm.latitude);
+    const lng = Number(siteForm.longitude);
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
+      Alert.alert('Coordenadas invalidas', 'Latitud debe estar entre -90 y 90, longitud entre -180 y 180.');
       return;
     }
     setSaving('site');

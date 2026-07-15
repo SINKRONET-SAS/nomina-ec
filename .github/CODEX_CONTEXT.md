@@ -7,7 +7,7 @@
 |-------|-------|
 | Plan | HAIKY-AUDITORIA-INTEGRAL-V28-NOMINA-EC-2026 |
 | Codigo | AIV28 |
-| Estado | diagnostico-completado |
+| Estado | completed-pass |
 | Fecha | 2026-07-14 |
 | Superficie | LANDING, PWA, BACKEND, MOBILE |
 | Plan doc | `docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V28_NOMINA_EC_2026.md` |
@@ -26,11 +26,19 @@
 - 2 riesgos aceptados (tokens localStorage con mitigacion, console.error estructurado).
 - H-05 (rate limiting) y H-06 (validacion centralizada) diferidos a fase futura.
 
-### Gates AIV28-00
+### Cambios AIV28
 
-- Escaneo de 350+ archivos en 4 superficies.
-- Reconfirmacion de hallazgos contra codigo fuente.
-- Verificacion de 13 parametros legales contra fuentes oficiales.
+- `backend/src/services/calculoNominaService.js`: batch reporta `partial_failed` cuando hay errores parciales; valida `diasTrabajados > 0` antes de calcular.
+- `app-movil/src/screens/OperacionMovilScreen.js`: validacion de rango GPS lat [-90,90] lng [-180,180] en zonas y sitios.
+- `app-movil/src/screens/PermisosScreen.js`: upload de soporte medico migrado de base64-en-RAM a FormData multipart.
+- `backend/src/services/payrollRolePdfService.js`: rol de pago landscape, sin formula HE, sin provisiones, firma desde config empresa.
+- `backend/src/services/templateGenerator.js`, `equipmentDeliveryActService.js`: "Documento generado con SKNOMINA".
+
+### Gates AIV28
+
+- Backend: 57 suites / 375 pruebas PASS.
+- Prisma validate PASS.
+- PWA build PASS (1534 modules, 100 precache entries).
 - Evaluacion de migracion Python: NO RECOMENDADO.
 
 ---

@@ -70,18 +70,18 @@ export default function PermisosScreen() {
         mediaTypes: ['images'],
         allowsEditing: false,
         quality: 0.6,
-        base64: true,
+        base64: false,
       });
 
       if (result.canceled) return;
       const asset = result.assets?.[0];
-      if (!asset?.base64) {
+      if (!asset?.uri) {
         setError('No pudimos leer el soporte seleccionado.');
         return;
       }
 
       const contentType = asset.mimeType || (String(asset.fileName || '').toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
-      const sizeBytes = asset.fileSize || estimatedBase64Bytes(asset.base64);
+      const sizeBytes = asset.fileSize || 0;
       if (sizeBytes > SUPPORT_MAX_BYTES) {
         setError('El soporte debe pesar hasta 3 MB.');
         return;
@@ -90,7 +90,7 @@ export default function PermisosScreen() {
       updateField('soporteMedico', {
         fileName: asset.fileName || `soporte_permiso_${today}.jpg`,
         contentType,
-        base64: asset.base64,
+        uri: asset.uri,
         sizeBytes,
       });
     } catch (err) {
@@ -109,15 +109,22 @@ export default function PermisosScreen() {
     setError('');
     try {
       const horas = Math.max(0, Number(form.horasDia || 0));
-      const payload = {
-        fechaInicio: form.fechaInicio,
-        fechaFin: form.fechaFin,
-        remunerado: form.remunerado,
-        minutos: Math.round(horas * 60),
-        motivo: form.motivo,
-        ...(form.soporteMedico ? { soporteMedico: form.soporteMedico } : {}),
-      };
-      const response = await mobileAPI.requestPermission(payload);
+      const formData = new FormData();
+      formData.append('fechaInicio', form.fechaInicio);
+      formData.append('fechaFin', form.fechaFin);
+      formData.append('remunerado', String(form.remunerado));
+      formData.append('minutos', String(Math.round(horas * 60)));
+      formData.append('motivo', form.motivo);
+      if (form.soporteMedico?.uri) {
+        formData.append('soporteMedico', {
+          uri: form.soporteMedico.uri,
+          type: form.soporteMedico.contentType || 'image/jpeg',
+          name: form.soporteMedico.fileName || 'soporte.jpg',
+        });
+      }
+      const response = await mobileAPI.requestPermission(formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       setMessage(`Solicitud registrada: ${response.data?.permiso?.totalDias || 1} día(s) pendiente(s).`);
       setForm((current) => ({ ...current, motivo: '', soporteMedico: null }));
       await loadHistory();

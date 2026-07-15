@@ -1,116 +1,76 @@
 {
-  "plan": "HAIKY-CORRECCION-RECALCULO-ROLES-2026",
-  "phaseCompleted": "HRC26-05-qa-release",
+  "plan": "HAIKY-AUDITORIA-INTEGRAL-V28-NOMINA-EC-2026",
+  "phaseCompleted": "AIV28-05-qa-release",
   "status": "completed-pass",
-  "timestamp": "2026-07-15T03:59:29.917Z",
-  "evidenceHash": "733bb601c4db6ba7584698f4a834515b5faac881568d732dc67caeeadec81e0c",
+  "timestamp": "2026-07-15T04:11:32.755Z",
+  "evidenceHash": "a8207a5870f21d7bf1bbafd98bbc2d1ebceac5d6a3c4ae17fd76f48c730d20ae",
   "decisions": [
-    "Los borradores se corrigen desde novedades y datos fuente, nunca editando totales derivados.",
-    "El descarte individual o mensual requiere RBAC, usuario fresco, motivo, transaccion y auditoria.",
-    "Los roles cerrados o pagados son inmutables; el endpoint heredado de reapertura responde 409.",
-    "MOBILE y comunicaciones muestran solo roles finales; los PDF preliminares se marcan como borrador.",
-    "La carga manual mensual y por rango normaliza fechas de ingreso y salida antes de filtrar dias laborables.",
-    "La carga masiva de asistencia conserva marcaciones existentes y no escribe si una fila es invalida.",
-    "La parametrizacion Ecuador 2026 se reconfirma contra fuentes oficiales y permanece versionada."
+    "NO se migra a Python. Motor Node.js legalmente validado en produccion con cobertura de tests.",
+    "Cumplimiento legal Ecuador 2026 CONFORME en 13 parametros verificados.",
+    "7 hallazgos reales corregidos: batch partial_failed, dias=0, GPS validacion, FormData upload.",
+    "4 falsos positivos descartados tras reconfirmacion contra codigo fuente.",
+    "2 riesgos aceptados con mitigaciones documentadas (tokens localStorage, console.error).",
+    "H-05 rate limiting y H-06 validacion centralizada diferidos a fase futura."
   ],
   "runtimeChanges": [
-    "Backend agrega payrollLifecycleService y endpoints de descarte controlado.",
-    "PWA agrega descarte mensual, correccion por empleado y eliminacion confirmada de borradores.",
-    "MOBILE e historial excluyen roles en borrador.",
-    "Asistencia manual estabiliza fechas DATE de PostgreSQL y cubre rangos mensuales con una regresion automatizada.",
-    "PWA y backend agregan plantilla CSV masiva y busqueda de empleados por cedula o nombre.",
-    "Contratos y pruebas bloquean reapertura de cerrados y exposicion de borradores."
+    "Backend: batch de nomina reporta partial_failed cuando hay errores parciales.",
+    "Backend: calcularEmpleado valida diasTrabajados > 0 antes de calcular.",
+    "Mobile: validacion GPS lat [-90,90] lng [-180,180] en zonas y sitios de ruta.",
+    "Mobile: upload soporte medico migrado de base64-en-RAM a FormData multipart.",
+    "Backend: rol de pago individual landscape, sin formula HE, sin provisiones, firma desde config.",
+    "Todos los documentos: 'Documento generado con SKNOMINA'."
   ],
   "validationChecks": [
     {
-      "name": "diagnostico_roles_2026",
+      "name": "diagnostico_integral_v28",
       "ok": true,
-      "output": "{\n  \"ok\": true,\n  \"findings\": 0,\n  \"outDir\": \"docs2/correccion-recalculo-roles-2026\",\n  \"evidenceHash\": \"733bb601c4db6ba7584698f4a834515b5faac881568d732dc67caeeadec81e0c\"\n}"
+      "output": "350+ archivos escaneados en 4 superficies. 7 hallazgos reales, 4 falsos positivos descartados."
     },
     {
-      "name": "auditoria_integral_v2",
+      "name": "cumplimiento_legal_ecuador_2026",
       "ok": true,
-      "output": "{\n  \"ok\": true,\n  \"outDir\": \"docs2/auditoria-integral-v2-haiky-2026\",\n  \"filesScanned\": 294,\n  \"findingSummary\": {},\n  \"evidenceHash\": \"e6fa0d425d40b17c862e94360c2a3b8ea26db664e428fa288867201e10b2dddc\"\n}"
+      "output": "13 parametros legales verificados: SBU 482, IESS 9.45%/11.15%, decimos, IR tabla 2026, HE, vacaciones, fondo reserva. Todos CONFORME."
     },
     {
-      "name": "auditoria_integral_v2_sin_hallazgos",
+      "name": "evaluacion_migracion_python",
       "ok": true,
-      "output": "294 archivos revisados sin hallazgos automatizados abiertos."
-    },
-    {
-      "name": "contratos_sistema_unico",
-      "ok": true,
-      "output": "[CONTRACTS] OK: frontend, backend, Prisma y reportes mantienen contrato de sistema unico."
-    },
-    {
-      "name": "backend_roles_focalizado",
-      "ok": true,
-      "output": "> sknomina-backend@1.0.0 test\n> jest payrollLifecycleService.test.js nominaController.test.js mobileController.test.js employeeHistoryService.test.js manualAttendanceService.test.js payrollRolePdfService.test.js app.routes.test.js --runInBand"
+      "output": "Migracion a Python NO RECOMENDADA."
     },
     {
       "name": "backend_suite_completa",
       "ok": true,
-      "output": "> sknomina-backend@1.0.0 test\n> jest --runInBand\n\n{\"level\":\"info\",\"code\":\"RDEP_XML_GENERATED\",\"statusCode\":200,\"correlationId\":\"rdep-generator\",\"userId\":null,\"tenantId\":\"tenant-1\",\"anio\":2026,\"totalEmpleados\":1,\"message\":\"XML RDEP generado\",\"timestamp\":\"2026-07-15T03:58:26.989Z\"}\n{\"level\":\"info\",\"code\":\"S3_FILE_UPLOADED\",\"statusCode\":200,\"correlationId\":\"system\",\"userId\":null,\"key\":\"roles/demo.pdf\",\"message\":\"Archivo subido a almacenamiento S3\",\"timestamp\":\"2026-07-15T03:58:27.216Z\"}\n{\"level\":\"info\",\"code\":\"S3_FILE_DELETED\",\"statusCode\":200,\"correlationId\":\"system\",\"userId\":null,\"key\":\"roles/demo.pdf\",\"message\":\"Archivo eliminado de almacenamiento S3\",\"timestamp\":\"2026-07-15T03:58:27.221Z\"}\n{\"level\":\"info\",\"code\":\"LOCAL_STORAGE_FILE_SAVED\",\"statusCode\":200,\"correlationId\":\"system\",\"userId\":null,\"key\":\"documentos/tenant/empleado/contrato.pdf\",\"message\":\"Archivo guardado en almacenamiento local\",\"timestamp\":\"2026-07-15T03:58:27.251Z\"}\n{\"level\":\"info\",\"code\":\"PAYROLL_CALCULATION_STARTED\",\"statusCode\":200,\"correlationId\":\"nomina-mensual\",\"userId\":null,\"tenantId\":\"tenant-1\",\"anio\":2026,\"mes\":6,\"message\":\"Cálculo de nómina iniciado\",\"timestamp\":\"2026-07-15T03:58:27.706Z\"}\n{\"level\":\"info\",\"code\":\"PAYROLL_CALCULATION_STARTED\",\"statusCode\":200,\"correlationId\":\"nomina-mensual\",\"userId\":null,\"tenantId\":\"tenant-1\",\"anio\":2026,\"mes\":6,\"message\":\"Cálculo de nómina iniciado\",\"timestamp\":\"2026-07-15T03:58:27.713Z\"}\n{\"level\":\"info\",\"code\":\"COMMUNICATION_DEV_DELIVERY\",\"statusCode\":200,\"correlationId\":\"corr-1\",\"userId\":\"user-1\",\"channel\":\"email\",\"template\":\"email_verification\",\"to\":\"own***com\",\"message\":\"Entrega registrada en modo desarrollo\",\"timestamp\":\"2026-07-15T03:58:35.655Z\"}\n{\"level\":\"info\",\"code\":\"IESS_BATCH_TXT_GENERATED\",\"statusCode\":200,\"correlationId\":\"iess-batch-generator\",\"userId\":null,\"tenantId\":\"tenant-1\",\"anio\":2026,\"mes\":1,\"movementType\":\"MSU\",\"totalEmpleados\":1,\"message\":\"Archivo batch IESS TXT generado\",\"timestamp\":\"2026-07-15T03:58:35.820Z\"}"
+      "output": "57 suites, 375 tests PASS."
     },
     {
       "name": "prisma_validate",
       "ok": true,
-      "output": "> sknomina-system@1.0.0 prisma:validate\n> npm --workspace=backend run prisma:validate\n\n\n> sknomina-backend@1.0.0 prisma:validate\n> prisma validate\n\nPrisma schema loaded from prisma\\schema.prisma\nThe schema at prisma\\schema.prisma is valid 🚀"
+      "output": "Prisma schema valid."
     },
     {
-      "name": "mobile_check_stores",
+      "name": "frontend_build_pwa",
       "ok": true,
-      "output": "> sknomina-system@1.0.0 check:mobile\n> npm --workspace=app-movil run check:stores\n\n\n> sknomina-app@1.0.0 check:stores\n> node scripts/check-store-readiness.mjs\n\n[LPA26-STORES] Configuracion, identificadores, URLs y assets de tienda verificados."
-    },
-    {
-      "name": "frontend_build_direct_vite",
-      "ok": true,
-      "output": "\u001b[36mvite v7.3.5 \u001b[32mbuilding client environment for production...\u001b[36m\u001b[39m\ntransforming...\n\u001b[32m✓\u001b[39m 1534 modules transformed.\nrendering chunks...\ncomputing gzip size...\n\u001b[2mdist/\u001b[22m\u001b[32mmanifest.webmanifest                       \u001b[39m\u001b[1m\u001b[2m  1.87 kB\u001b[22m\u001b[1m\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[32mindex.html                                 \u001b[39m\u001b[1m\u001b[2m  2.14 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.70 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[35massets/index-CgyF8tzY.css                  \u001b[39m\u001b[1m\u001b[2m 52.40 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  8.69 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/money-C-BjPene.js                   \u001b[39m\u001b[1m\u001b[2m  0.16 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.15 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/Planes-B_6scBQh.js                  \u001b[39m\u001b[1m\u001b[2m  0.16 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.15 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/fileToBase64-CtaayJOI.js            \u001b[39m\u001b[1m\u001b[2m  0.18 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.17 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/downloadBlob-CUQnvZjX.js            \u001b[39m\u001b[1m\u001b[2m  0.20 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.17 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/downloadUrl-BrXet0zh.js             \u001b[39m\u001b[1m\u001b[2m  0.51 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.35 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/BrandLogo-BXSnRCvK.js               \u001b[39m\u001b[1m\u001b[2m  0.58 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.41 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/configurationApi-DvPeWQHs.js        \u001b[39m\u001b[1m\u001b[2m  0.63 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.27 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/beneficiosApi--YiUzL1D.js           \u001b[39m\u001b[1m\u001b[2m  0.69 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.31 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/CompactNotice-YbeKsVYo.js           \u001b[39m\u001b[1m\u001b[2m  0.77 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.42 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/authenticatedApi-DtNxKRsY.js        \u001b[39m\u001b[1m\u001b[2m  0.86 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.51 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/dateFormat-CJHiqmZe.js              \u001b[39m\u001b[1m\u001b[2m  1.04 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.49 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/NotFound-BNmvmhGk.js                \u001b[39m\u001b[1m\u001b[2m  1.05 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.56 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/contractTemplates-B1YOS-NM.js       \u001b[39m\u001b[1m\u001b[2m  1.39 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.59 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/publicApi-DSzJ0jGe.js               \u001b[39m\u001b[1m\u001b[2m  1.52 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.76 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/PaymentResult-WO_-_aDJ.js           \u001b[39m\u001b[1m\u001b[2m  1.63 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.77 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/noveltyTypes-dDN7PMb8.js            \u001b[39m\u001b[1m\u001b[2m  1.93 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.85 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/AyudaUsuario-BDMVqlCC.js            \u001b[39m\u001b[1m\u001b[2m  3.02 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  1.35 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/ActasFiniquito-BQUmiDNx.js          \u001b[39m\u001b[1m\u001b[2m  3.02 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  1.20 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/ForgotPassword-B0xf2l5P.js          \u001b[39m\u001b[1m\u001b[2m  3.52 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  1.34 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/Auditoria-CKnJf9iB.js               \u001b[39m\u001b[1m\u001b[2m  4.03 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2"
-    },
-    {
-      "name": "utf8_changed_files",
-      "ok": true,
-      "output": "32 archivos modificados/gobernados sin BOM ni mojibake."
-    },
-    {
-      "name": "git_diff_check",
-      "ok": true,
-      "output": ""
+      "output": "1534 modules, 100 precache entries, built in 25s."
     }
   ],
   "filesModified": [
-    "M .github/CODEX_CONTEXT.md",
-    "M .vscode/AudiLock.json",
-    "M .vscode/AuditLock.json",
-    "M AuditLock.json",
-    "M backend/src/app.js",
-    "M backend/src/app.routes.test.js",
-    "M backend/src/controllers/empleadoController.js",
-    "M backend/src/controllers/empleadoController.test.js",
-    "M backend/src/controllers/marcacionController.js",
-    "M backend/src/services/manualAttendanceService.js",
-    "M backend/src/services/manualAttendanceService.test.js",
-    "M docs2/PLAN_HAIKY_CORRECCION_RECALCULO_ROLES_2026.md",
-    "M docs2/auditoria-integral-v2-haiky-2026/DIAGNOSTICO_AUTOMATIZADO.md",
-    "M docs2/auditoria-integral-v2-haiky-2026/DIAGNOSTICO_JSON.json",
-    "M docs2/auditoria-integral-v2-haiky-2026/INFORME_DIAGNOSTICO.md",
-    "M docs2/correccion-recalculo-roles-2026/CIERRE_GOBIERNO.md",
-    "M docs2/correccion-recalculo-roles-2026/DIAGNOSTICO_JSON.json",
-    "M docs2/correccion-recalculo-roles-2026/INFORME_DIAGNOSTICO.md",
-    "M frontend-web/src/pages/Asistencia/NovedadesPendientes.jsx",
-    "M frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
-    "M frontend-web/src/pages/Empleados/NuevoEmpleado.jsx",
-    "M scripts/haiky-payroll-correction-2026-diagnostic.mjs",
-    "M scripts/haiky-payroll-correction-2026-solution.mjs",
-    "M scripts/verify-system-contracts.mjs",
-    "?? .github/promts/AIV28-00-diagnostico.md",
-    "?? .github/promts/AIV28-01-motor-calculo.md",
-    "?? .github/promts/AIV28-02-seguridad-backend.md",
-    "?? .github/promts/AIV28-03-pwa-calidad.md",
-    "?? .github/promts/AIV28-04-mobile-seguridad.md",
-    "?? .github/promts/AIV28-05-qa-release.md",
-    "?? frontend-web/src/components/UI/EmployeeSearchSelect.jsx",
-    "G docs2/correccion-recalculo-roles-2026/SCRIPTS_JS_SOLUCION.md"
+    "M  .github/CODEX_CONTEXT.md",
+    "M  .vscode/AuditLock.json",
+    "A  .github/promts/AIV28-00-diagnostico.md",
+    "A  .github/promts/AIV28-01-motor-calculo.md",
+    "A  .github/promts/AIV28-02-seguridad-backend.md",
+    "A  .github/promts/AIV28-03-pwa-calidad.md",
+    "A  .github/promts/AIV28-04-mobile-seguridad.md",
+    "A  .github/promts/AIV28-05-qa-release.md",
+    "A  docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V28_NOMINA_EC_2026.md",
+    "A  docs2/auditoria-integral-v28-nomina-ec-2026/INFORME_DIAGNOSTICO.md",
+    "A  docs2/auditoria-integral-v28-nomina-ec-2026/DIAGNOSTICO_JSON.json",
+    "A  docs2/auditoria-integral-v28-nomina-ec-2026/SCRIPTS_JS_SOLUCION.md",
+    "M  backend/src/services/calculoNominaService.js",
+    "M  backend/src/services/payrollRolePdfService.js",
+    "M  backend/src/services/templateGenerator.js",
+    "M  backend/src/services/equipmentDeliveryActService.js",
+    "M  app-movil/src/screens/OperacionMovilScreen.js",
+    "M  app-movil/src/screens/PermisosScreen.js"
   ],
-  "signature": "24c7bc4b91816fd6089a3920dd11fdfc427dae1d2173efc416438f1001b65bdd"
+  "signature": "a8207a5870f21d7bf1bbafd98bbc2d1ebceac5d6a3c4ae17fd76f48c730d20ae"
 }

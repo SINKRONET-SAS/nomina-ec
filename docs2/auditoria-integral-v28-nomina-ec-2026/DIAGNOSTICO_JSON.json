@@ -1,0 +1,152 @@
+{
+  "plan": "HAIKY-AUDITORIA-INTEGRAL-V28-NOMINA-EC-2026",
+  "code": "AIV28",
+  "generatedAt": "2026-07-14T23:00:00.000Z",
+  "surfaces": ["landing", "pwa", "backend", "mobile"],
+  "filesScanned": 350,
+  "findings": [
+    {
+      "id": "H-01",
+      "severity": "medium",
+      "surface": "backend",
+      "file": "backend/src/services/calculoNominaService.js",
+      "lines": "198-208",
+      "title": "Fallas silenciosas en procesamiento batch",
+      "falsePositive": false,
+      "fix": "Separar estado batch en completed/partial_failed/failed"
+    },
+    {
+      "id": "H-02",
+      "severity": "medium",
+      "surface": "backend",
+      "file": "backend/src/services/calculoNominaService.js",
+      "lines": "259",
+      "title": "Sin validacion para cero dias trabajados",
+      "falsePositive": false,
+      "fix": "Validar diasTrabajados > 0 antes del calculo"
+    },
+    {
+      "id": "H-03",
+      "severity": "none",
+      "surface": "backend",
+      "file": "backend/src/utils/money.js",
+      "title": "Precision monetaria",
+      "falsePositive": true,
+      "reason": "roundMoney con Number.EPSILON es correcto"
+    },
+    {
+      "id": "H-04",
+      "severity": "none",
+      "surface": "backend",
+      "file": "backend/src/services/calculoNominaService.js",
+      "lines": "688-703",
+      "title": "Integridad de totales",
+      "falsePositive": true,
+      "reason": "assertPayrollTotalsIntegrity ya valida balance"
+    },
+    {
+      "id": "H-05",
+      "severity": "medium",
+      "surface": "backend",
+      "file": "backend/src/middleware/rateLimit.js",
+      "title": "Rate limiting solo en memoria",
+      "falsePositive": false,
+      "fix": "Diferido: Redis store o WAF cuando se escale"
+    },
+    {
+      "id": "H-06",
+      "severity": "low",
+      "surface": "backend",
+      "title": "Sin libreria de validacion centralizada",
+      "falsePositive": false,
+      "fix": "Diferido: Adoptar Zod o Joi en fase futura"
+    },
+    {
+      "id": "H-07",
+      "severity": "none",
+      "surface": "backend",
+      "file": "backend/prisma/schema.prisma",
+      "lines": "142",
+      "title": "User.tenantId nullable",
+      "falsePositive": true,
+      "reason": "Intencional para superadmin sin tenant"
+    },
+    {
+      "id": "H-08",
+      "severity": "none",
+      "surface": "backend",
+      "title": "Webhook PayPhone sin firma",
+      "falsePositive": true,
+      "reason": "payphoneGatewayService ya verifica HMAC-SHA256"
+    },
+    {
+      "id": "H-09",
+      "severity": "accepted",
+      "surface": "pwa",
+      "file": "frontend-web/src/services/authStorage.js",
+      "lines": "9-10",
+      "title": "Tokens en localStorage",
+      "falsePositive": false,
+      "reason": "Patron estandar SPA. Mitigado con CSP y auto-logout"
+    },
+    {
+      "id": "H-10",
+      "severity": "accepted",
+      "surface": "pwa",
+      "title": "console.error en produccion",
+      "falsePositive": false,
+      "reason": "Logs de error estructurados, no debug"
+    },
+    {
+      "id": "H-11",
+      "severity": "high",
+      "surface": "mobile",
+      "file": "app-movil/src/db/offline-queue.js",
+      "title": "SQLite sin cifrado",
+      "falsePositive": false,
+      "fix": "Cifrar payloads JSON con expo-crypto antes de escribir"
+    },
+    {
+      "id": "H-12",
+      "severity": "medium",
+      "surface": "mobile",
+      "file": "app-movil/src/screens/PermisosScreen.js",
+      "lines": "90-95",
+      "title": "Upload de imagen en base64 en memoria",
+      "falsePositive": false,
+      "fix": "Migrar a FormData multipart/form-data"
+    },
+    {
+      "id": "H-13",
+      "severity": "low",
+      "surface": "mobile",
+      "file": "app-movil/src/screens/OperacionMovilScreen.js",
+      "lines": "264-275",
+      "title": "GPS sin validacion de rango",
+      "falsePositive": false,
+      "fix": "Validar lat [-90,90], lng [-180,180]"
+    }
+  ],
+  "findingSummary": {
+    "high": 1,
+    "medium": 3,
+    "low": 3,
+    "falsePositives": 4,
+    "accepted": 2,
+    "total": 13,
+    "realFindings": 7
+  },
+  "legalCompliance": {
+    "sbu2026": "CONFORME",
+    "iessPersonal": "CONFORME",
+    "iessPatronal": "CONFORME",
+    "decimoTercero": "CONFORME",
+    "decimoCuarto": "CONFORME",
+    "vacaciones": "CONFORME",
+    "fondoReserva": "CONFORME",
+    "horasExtra": "CONFORME",
+    "impuestoRenta": "CONFORME",
+    "baseMensual30dias": "CONFORME"
+  },
+  "pythonMigration": "NO_RECOMENDADO"
+}
