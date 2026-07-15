@@ -19,6 +19,7 @@
 - Los totales derivados, aportes y bases tributarias no se editan manualmente.
 - Los roles `cerrada` y `pagada` son inmutables. El endpoint heredado `/api/nomina/reabrir` conserva compatibilidad, responde `409` y orienta a registrar el ajuste en un periodo abierto.
 - MOBILE, historial y correo solo exponen roles finales; los PDF preliminares muestran una marca explicita de borrador.
+- La carga manual mensual normaliza fechas `DATE` de PostgreSQL antes de filtrar la vigencia laboral; una carga diaria y una mensual aplican la misma relacion laboral.
 - Ecuador 2026: SBU USD 482, IESS 9,45%/11,15%, base mensual 30 dias/240 horas y tabla IR 2026 permanecen versionados en `legal-ecuador.js`.
 
 ### Gates HRC26

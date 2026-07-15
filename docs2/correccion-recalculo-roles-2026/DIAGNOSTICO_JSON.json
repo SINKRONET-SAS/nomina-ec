@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-15T02:09:35.876Z",
+  "generatedAt": "2026-07-15T03:15:37.847Z",
   "plan": "HAIKY-CORRECCION-RECALCULO-ROLES-2026",
   "rulesSource": "RULES.md",
   "scope": [
@@ -80,6 +80,14 @@
       "recommendation": "Sin accion pendiente."
     },
     {
+      "code": "HRC26-ATT-001",
+      "area": "BACKEND",
+      "status": "confirmado",
+      "severity": "informativa",
+      "evidence": "La correccion de novedades por mes debe interpretar las fechas laborales con el mismo formato que PostgreSQL.",
+      "recommendation": "Sin accion pendiente."
+    },
+    {
       "code": "HRC26-MOB-001",
       "area": "MOBILE",
       "status": "confirmado",
@@ -113,5 +121,5 @@
     }
   ],
   "findings": [],
-  "evidenceHash": "b4e92de24ac80607b673d2c4326414f61ef274d8abcb0e7d95ae47d8f67d9c61"
+  "evidenceHash": "613ace3dca342be2401ff5cfb7475d73b49c3e49c23a3c6648c546c47352472a"
 }

@@ -39,6 +39,18 @@ function datesInRange(dateFrom, dateTo) {
   return dates;
 }
 
+function databaseDateOnly(value) {
+  if (!value) return '';
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? '' : value.toISOString().slice(0, 10);
+  }
+  const text = String(value).trim();
+  const isoDate = text.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+  if (isoDate) return isoDate;
+  const parsed = new Date(text);
+  return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
+}
+
 function normalizeManualAttendanceInput(payload = {}) {
   const scope = payload.scope === 'all' ? 'all' : 'employee';
   const employeeId = String(payload.empleadoId || payload.employeeId || '').trim();
@@ -104,12 +116,17 @@ function workDaysForEmployee(employee) {
     ? employee.calendar_rules
     : {};
   const workDays = Array.isArray(rules.workDays) ? rules.workDays : [];
-  return new Set(workDays.length > 0 ? workDays : DEFAULT_WORK_DAYS);
+  const normalizedWorkDays = workDays
+    .map((workDay) => String(workDay || '').trim().toLowerCase())
+    .filter((workDay) => WEEK_DAY_NAMES.includes(workDay));
+  return new Set(normalizedWorkDays.length > 0 ? normalizedWorkDays : DEFAULT_WORK_DAYS);
 }
 
 function employeeWorksOnDate(employee, date) {
-  if (String(employee.fecha_ingreso).slice(0, 10) > date) return false;
-  if (employee.fecha_salida && String(employee.fecha_salida).slice(0, 10) < date) return false;
+  const hireDate = databaseDateOnly(employee.fecha_ingreso);
+  const terminationDate = databaseDateOnly(employee.fecha_salida);
+  if (hireDate && hireDate > date) return false;
+  if (terminationDate && terminationDate < date) return false;
   const weekDay = WEEK_DAY_NAMES[new Date(`${date}T00:00:00.000Z`).getUTCDay()];
   return workDaysForEmployee(employee).has(weekDay);
 }
@@ -162,8 +179,8 @@ async function registerManualAttendance({
         e.cedula,
         e.nombres,
         e.apellidos,
-        e.fecha_ingreso,
-        e.fecha_salida,
+        e.fecha_ingreso::text AS fecha_ingreso,
+        e.fecha_salida::text AS fecha_salida,
         e.controla_asistencia,
         ws.start_time AS shift_start_time,
         ws.end_time AS shift_end_time,
@@ -203,7 +220,7 @@ async function registerManualAttendance({
 
     plannedRows = buildPlannedAttendanceRows(employees.rows, input, periodByMonth);
     if (plannedRows.length === 0) {
-      throw new AppError('El rango no contiene días laborables según las jornadas configuradas.', {
+      throw new AppError('No encontramos días laborables en el período. Revisa la fecha de ingreso y la jornada del empleado en Parametrización, o registra una jornada extraordinaria con la opción Un día.', {
         code: 'MANUAL_ATTENDANCE_NO_WORK_DAYS',
         statusCode: 409,
         details: { desde: input.dateFrom, hasta: input.dateTo },
@@ -315,6 +332,7 @@ async function registerManualAttendance({
 
 module.exports = {
   buildPlannedAttendanceRows,
+  databaseDateOnly,
   normalizeManualAttendanceInput,
   registerManualAttendance,
 };

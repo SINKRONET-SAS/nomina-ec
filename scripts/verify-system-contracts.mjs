@@ -134,6 +134,7 @@ const payrollAccountingService = read('backend/src/services/payrollAccountingSer
 const payrollNoveltyService = read('backend/src/services/payrollNoveltyService.js');
 const payrollCalculationService = read('backend/src/services/calculoNominaService.js');
 const payrollLifecycleService = read('backend/src/services/payrollLifecycleService.js');
+const manualAttendanceService = read('backend/src/services/manualAttendanceService.js');
 const nominaController = read('backend/src/controllers/nominaController.js');
 const schema = read('backend/prisma/schema.prisma');
 const parametrizacion = read('frontend-web/src/pages/Configuracion/Parametrizacion.jsx');
@@ -360,6 +361,8 @@ assert(app.includes("app.delete('/api/nomina/:id'"), 'Backend debe exponer elimi
 assert(payrollLifecycleService.includes('discardPayrollPeriodCalculation'), 'Backend debe descartar calculos por periodo dentro del ciclo gobernado.');
 assert(payrollLifecycleService.includes('discardPayrollDraft'), 'Backend debe descartar un rol borrador para corregir sus fuentes.');
 assert(payrollLifecycleService.includes("estado !== 'borrador'"), 'El ciclo debe bloquear descarte de roles que no sean borrador.');
+assert(manualAttendanceService.includes('function databaseDateOnly'), 'La asistencia mensual debe normalizar fechas DATE devueltas por PostgreSQL.');
+assert(manualAttendanceService.includes('e.fecha_ingreso::text AS fecha_ingreso'), 'La consulta de asistencia manual debe estabilizar la fecha de ingreso como YYYY-MM-DD.');
 assert(nominaController.includes("error: 'NOMINA_CERRADA_INMUTABLE'"), 'El endpoint heredado de reapertura debe proteger roles cerrados.');
 assert(!nominaController.includes("action: 'reabrir_nomina'"), 'Backend no debe convertir roles cerrados otra vez en borrador.');
 assert(cerrarMes.includes('Descartar cálculo'), 'Cierre mensual debe permitir volver a novedades antes del cierre.');

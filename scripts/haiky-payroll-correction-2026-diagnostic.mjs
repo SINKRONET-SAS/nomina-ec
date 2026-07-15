@@ -42,6 +42,7 @@ const noveltiesPage = read('frontend-web/src/pages/Asistencia/NovedadesPendiente
 const mobileController = read('backend/src/controllers/mobileController.js');
 const employeeHistory = read('backend/src/services/employeeHistoryService.js');
 const rolePdf = read('backend/src/services/payrollRolePdfService.js');
+const manualAttendance = read('backend/src/services/manualAttendanceService.js');
 const legal = read('backend/src/config/legal-ecuador.js');
 const contracts = read('scripts/verify-system-contracts.mjs');
 const landing = read('frontend-web/src/pages/Landing.jsx');
@@ -127,6 +128,15 @@ const checks = [
     'La etiqueta visual debe usar el campo persistido `estado`.',
     'Corregir la etiqueta que consulta un booleano inexistente.',
     'media',
+  ),
+  check(
+    'HRC26-ATT-001',
+    'BACKEND',
+    manualAttendance.includes('function databaseDateOnly')
+      && manualAttendance.includes('e.fecha_ingreso::text AS fecha_ingreso')
+      && manualAttendance.includes('databaseDateOnly(employee.fecha_ingreso)'),
+    'La correccion de novedades por mes debe interpretar las fechas laborales con el mismo formato que PostgreSQL.',
+    'Normalizar fecha de ingreso/salida antes de filtrar dias laborables y cubrir objetos Date en pruebas.',
   ),
   check(
     'HRC26-MOB-001',

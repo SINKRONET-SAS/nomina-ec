@@ -18,6 +18,8 @@ const db = require('../config/database');
 const { recordAudit } = require('./auditService');
 const { ensureWritablePayrollPeriodForDate } = require('./monthlyPeriodService');
 const {
+  buildPlannedAttendanceRows,
+  databaseDateOnly,
   normalizeManualAttendanceInput,
   registerManualAttendance,
 } = require('./manualAttendanceService');
@@ -68,6 +70,27 @@ describe('manualAttendanceService', () => {
     } catch (err) {
       expect(err.code).toBe('MANUAL_ATTENDANCE_EMPLOYEE_REQUIRED');
     }
+  });
+
+  test('normaliza fechas DATE devueltas por PostgreSQL antes de evaluar la relacion laboral', () => {
+    expect(databaseDateOnly(new Date('2026-06-01T05:00:00.000Z'))).toBe('2026-06-01');
+    const rows = buildPlannedAttendanceRows([
+      employee(employeeId, {
+        fecha_ingreso: new Date('2026-06-01T05:00:00.000Z'),
+        fecha_salida: new Date('2026-06-30T05:00:00.000Z'),
+      }),
+    ], {
+      dateFrom: '2026-06-08',
+      dateTo: '2026-06-12',
+      startTime: '08:00',
+      endTime: '17:00',
+    }, new Map([['2026-06', { id: 'period-1' }]]));
+
+    expect(rows).toHaveLength(5);
+    expect(rows[0]).toMatchObject({
+      empleado_id: employeeId,
+      operational_date: '2026-06-08',
+    });
   });
 
   test('registra inicio y fin faltantes para un empleado en una fecha', async () => {

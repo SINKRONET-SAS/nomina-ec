@@ -1,6 +1,6 @@
 # Cierre de gobierno HRC26
 
-Generado: 2026-07-15T02:10:28.053Z
+Generado: 2026-07-15T03:24:10.490Z
 Estado: completed-pass
 
 ## Decisiones ejecutadas
@@ -10,6 +10,7 @@ Estado: completed-pass
 - Los roles `cerrada` y `pagada` son inmutables; una correccion posterior se registra como ajuste en un periodo abierto.
 - MOBILE, correo y pagos bancarios consumen unicamente estados finales.
 - Los documentos preliminares muestran una marca explicita de borrador.
+- La asistencia manual mensual normaliza las fechas laborales devueltas por PostgreSQL.
 
 ## Gates
 
