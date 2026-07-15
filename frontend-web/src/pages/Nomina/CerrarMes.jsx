@@ -10,6 +10,7 @@ import {
   Lock,
   RefreshCw,
   Trash2,
+  Undo2,
   XCircle,
 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
@@ -68,6 +69,8 @@ function CerrarMes() {
   const [resultado, setResultado] = useState(null);
   const [message, setMessage] = useState(null);
   const [closeConfirmation, setCloseConfirmation] = useState(false);
+  const [showDiscardCalculation, setShowDiscardCalculation] = useState(false);
+  const [discardReason, setDiscardReason] = useState('');
   const [batchForm, setBatchForm] = useState({
     scopeType: 'company',
     scopeValue: '',
@@ -109,6 +112,8 @@ function CerrarMes() {
   const canCalculatePeriod = CALCULABLE_PERIOD_STATUSES.has(periodStatus);
   const canClosePayroll = isCalculatedPeriod;
   const payrollStatus = summarize(state.payrollByStatus);
+  const draftPayrolls = Number(payrollStatus.borrador || 0);
+  const canDiscardCalculation = !isClosedPeriod && draftPayrolls > 0;
   const noveltyStatus = summarize(state.noveltiesByStatus);
   const pendingNovelties = Number(noveltyStatus.pendiente || 0);
 
@@ -194,6 +199,27 @@ function CerrarMes() {
     },
   });
 
+  const discardCalculationMutation = useMutation({
+    mutationFn: async () => authenticatedApi.post('/nomina/descartar-calculo', {
+      anio,
+      mes,
+      motivo: discardReason.trim(),
+    }),
+    onSuccess: (response) => {
+      const deleted = response.data?.result?.deleted || 0;
+      setResultado(null);
+      setMessage({
+        type: 'success',
+        text: `${deleted} roles en borrador fueron descartados. Corrige las novedades necesarias y vuelve a calcular.`,
+      });
+      setShowDiscardCalculation(false);
+      setDiscardReason('');
+      queryClient.invalidateQueries({ queryKey: ['roles-pagos', anio, mes] });
+      queryClient.invalidateQueries({ queryKey: ['novedades-pendientes'] });
+      refreshPeriod();
+    },
+  });
+
   useEffect(() => {
     setMessage(null);
     setResultado(null);
@@ -205,6 +231,9 @@ function CerrarMes() {
     resolveNoveltiesMutation.reset();
     calculateMutation.reset();
     closeMutation.reset();
+    discardCalculationMutation.reset();
+    setShowDiscardCalculation(false);
+    setDiscardReason('');
   }, [anio, mes, periodStatus]);
 
   const updateBatch = (field, value) => {
@@ -214,7 +243,7 @@ function CerrarMes() {
   const scopeNeedsValue = batchForm.scopeType !== 'company';
   const requiresAmount = isAmountNoveltyType(batchForm.tipoNovedad);
   const canCreateBatch = isWritablePeriod && (!scopeNeedsValue || batchForm.scopeValue) && (!requiresAmount || Number(batchForm.monto) > 0);
-  const currentError = openMutation.error || batchMutation.error || deleteBatchMutation.error || resolveNoveltiesMutation.error || calculateMutation.error || closeMutation.error || periodQuery.error;
+  const currentError = openMutation.error || batchMutation.error || deleteBatchMutation.error || resolveNoveltiesMutation.error || calculateMutation.error || closeMutation.error || discardCalculationMutation.error || periodQuery.error;
   const currentPrecheck = precheckDetails(currentError);
   const alertIsError = Boolean(currentError || message?.type === 'error');
   const hasLegalParameterBlocker = hasBlocker(currentPrecheck, [
@@ -473,12 +502,79 @@ function CerrarMes() {
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-slate-950">Cálculo de nómina</h2>
-          <button className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={!canCalculatePeriod || calculateMutation.isPending} onClick={() => calculateMutation.mutate()} type="button">
-            <Calculator className="h-4 w-4" />
-            {calculateMutation.isPending ? 'Calculando' : 'Calcular nómina'}
-          </button>
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">Cálculo de nómina</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Los roles permanecen editables mientras sean borradores. Para corregirlos, descarta el cálculo y vuelve a generarlo desde sus novedades.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {canDiscardCalculation && (
+              <button
+                className="inline-flex min-h-10 items-center gap-2 rounded-md border border-red-200 bg-white px-4 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                disabled={discardCalculationMutation.isPending}
+                onClick={() => {
+                  setShowDiscardCalculation(true);
+                  setMessage(null);
+                }}
+                type="button"
+              >
+                <Undo2 className="h-4 w-4" />
+                Descartar cálculo
+              </button>
+            )}
+            <button className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={!canCalculatePeriod || calculateMutation.isPending} onClick={() => calculateMutation.mutate()} type="button">
+              <Calculator className="h-4 w-4" />
+              {calculateMutation.isPending ? 'Calculando' : 'Calcular nómina'}
+            </button>
+          </div>
         </div>
+
+        {showDiscardCalculation && canDiscardCalculation && (
+          <div className="mt-4 border-t border-red-100 pt-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-700" />
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-slate-950">Volver a novedades antes del cierre</p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Se eliminarán {draftPayrolls} roles en borrador y sus líneas calculadas. Las novedades y el historial del lote se conservan. Los roles cerrados nunca se modifican desde esta acción.
+                </p>
+                <label className="mt-3 block text-sm font-semibold text-slate-700">
+                  Motivo de la corrección
+                  <textarea
+                    className="mt-1 min-h-20 w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
+                    maxLength={500}
+                    onChange={(event) => setDiscardReason(event.target.value)}
+                    placeholder="Ejemplo: corregir horas extra aprobadas después de revisar el consolidado"
+                    value={discardReason}
+                  />
+                </label>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    className="inline-flex min-h-9 items-center gap-2 rounded-md bg-red-700 px-3 text-sm font-semibold text-white disabled:bg-slate-300"
+                    disabled={discardReason.trim().length < 10 || discardCalculationMutation.isPending}
+                    onClick={() => discardCalculationMutation.mutate()}
+                    type="button"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {discardCalculationMutation.isPending ? 'Descartando' : `Descartar ${draftPayrolls} borradores`}
+                  </button>
+                  <button
+                    className="inline-flex min-h-9 items-center rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700"
+                    disabled={discardCalculationMutation.isPending}
+                    onClick={() => {
+                      setShowDiscardCalculation(false);
+                      setDiscardReason('');
+                    }}
+                    type="button"
+                  >
+                    Conservar cálculo
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {!canCalculatePeriod && (
           <p className="mt-3 text-sm font-semibold text-slate-600">

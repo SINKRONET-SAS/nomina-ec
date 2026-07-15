@@ -150,6 +150,15 @@ describe('AISK26-01: cierre brechas RBAC', () => {
     );
   });
 
+  test('descarte de calculo y borrador requiere rol, usuario fresco y modulo nomina', () => {
+    expect(source).toContain(
+      "app.post('/api/nomina/descartar-calculo', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.descartarCalculoPeriodo)"
+    );
+    expect(source).toContain(
+      "app.delete('/api/nomina/:id', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.eliminarBorrador)"
+    );
+  });
+
   test('GET /api/nomina/:anio/:mes requiere rol y modulo nomina', () => {
     expect(source).toContain(
       "app.get('/api/nomina/:anio/:mes', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), nominaController.listarPorPeriodo)"

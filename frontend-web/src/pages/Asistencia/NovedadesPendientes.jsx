@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { CalendarCheck2, Check, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { formatDateEC, todayISOEC } from '../../utils/dateFormat';
@@ -11,16 +12,16 @@ import {
   minutesToHours,
 } from '../../config/noveltyTypes';
 
+const today = todayISOEC();
 const initialForm = {
   empleadoId: '',
-  fecha: new Date().toISOString().slice(0, 10),
+  fecha: today,
   tipoNovedad: 'hora_extra_50',
   minutos: '60',
   monto: '',
   justificacion: '',
 };
 
-const today = todayISOEC();
 const initialAttendanceForm = {
   empleadoId: '',
   fecha: today,
@@ -44,6 +45,7 @@ function monthBounds(month) {
 
 function NovedadesPendientes() {
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const [form, setForm] = useState(initialForm);
   const [bulkCsv, setBulkCsv] = useState('');
   const [bulkResult, setBulkResult] = useState(null);
@@ -53,6 +55,29 @@ function NovedadesPendientes() {
   const [attendanceScope, setAttendanceScope] = useState('employee');
   const [attendancePeriod, setAttendancePeriod] = useState('day');
   const [attendanceForm, setAttendanceForm] = useState(initialAttendanceForm);
+
+  useEffect(() => {
+    const empleadoId = String(searchParams.get('empleadoId') || '').trim();
+    const anio = Number(searchParams.get('anio'));
+    const mes = Number(searchParams.get('mes'));
+    if (!empleadoId || !Number.isInteger(anio) || !Number.isInteger(mes) || mes < 1 || mes > 12) return;
+
+    const month = `${anio}-${String(mes).padStart(2, '0')}`;
+    const fecha = `${month}-01`;
+    setForm((current) => ({ ...current, empleadoId, fecha }));
+    setAttendanceForm((current) => ({
+      ...current,
+      empleadoId,
+      fecha,
+      mes: month,
+      desde: fecha,
+      hasta: monthBounds(month).hasta,
+    }));
+    if (searchParams.get('origen') === 'rol-corregido') {
+      setMessage('El borrador fue descartado. Corrige o registra las novedades necesarias y luego vuelve a calcular el periodo.');
+      setError('');
+    }
+  }, [searchParams]);
   
   const { data: novedades, isLoading } = useQuery({
     queryKey: ['novedades-pendientes'],

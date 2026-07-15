@@ -138,6 +138,7 @@ function chunkRows(rows, size) {
 function buildPayrollRoleDocDefinition(row) {
   const detail = normalizeDetail(row.detalle_calculo);
   const representative = legalRepresentative(row);
+  const isFinalRole = ['cerrada', 'pagada'].includes(String(row.estado || '').toLowerCase());
   const generatedAt = new Date().toISOString();
   const ingresos = [];
   const deducciones = [];
@@ -192,6 +193,10 @@ function buildPayrollRoleDocDefinition(row) {
     pageMargins: [36, 42, 36, 42],
     content: [
       { text: 'ROL DE PAGO', style: 'title' },
+      ...(!isFinalRole ? [{
+        text: 'BORRADOR - NO CONSTITUYE COMPROBANTE DE PAGO',
+        style: 'draftWarning',
+      }] : []),
       { text: row.razon_social || 'Empresa', style: 'subtitle' },
       { text: `RUC: ${row.ruc || 'no registrado'} | Periodo: ${String(row.mes).padStart(2, '0')}/${row.anio}`, style: 'audit', alignment: 'center', margin: [0, 0, 0, 14] },
       {
@@ -291,6 +296,7 @@ function buildPayrollRoleDocDefinition(row) {
       boxTitle: { fontSize: 9, bold: true, color: '#0f766e', margin: [0, 0, 0, 3] },
       notice: { fontSize: 8, color: '#475569', italics: true },
       audit: { fontSize: 8, color: '#64748b' },
+      draftWarning: { fontSize: 10, bold: true, alignment: 'center', color: '#b91c1c', margin: [0, 0, 0, 6] },
     },
     defaultStyle: { fontSize: 9, lineHeight: 1.25 },
   };
@@ -379,9 +385,14 @@ function buildPayrollRoleTransposedDocDefinition({ rows, anio, mes } = {}) {
   const generatedAt = new Date().toISOString();
   const employeeBlocks = chunkRows(payrollRows, 5);
   const period = `${String(mes).padStart(2, '0')}/${anio}`;
+  const includesDrafts = payrollRows.some((row) => !['cerrada', 'pagada'].includes(String(row.estado || '').toLowerCase()));
 
   const content = [
     { text: 'ROL DE PAGO CONSOLIDADO TRANSPUESTO', style: 'title' },
+    ...(includesDrafts ? [{
+      text: 'BORRADOR - NO CONSTITUYE COMPROBANTE DE PAGO',
+      style: 'draftWarning',
+    }] : []),
     { text: first.razon_social || 'Empresa', style: 'subtitle' },
     {
       text: `RUC: ${first.ruc || 'no registrado'} | Periodo: ${period} | Empleados: ${payrollRows.length}`,
@@ -456,6 +467,7 @@ function buildPayrollRoleTransposedDocDefinition({ rows, anio, mes } = {}) {
       section: { fontSize: 9, bold: true, color: '#0f766e', margin: [0, 7, 0, 3] },
       notice: { fontSize: 7, color: '#475569', italics: true },
       audit: { fontSize: 7, color: '#64748b' },
+      draftWarning: { fontSize: 9, bold: true, alignment: 'center', color: '#b91c1c', margin: [0, 0, 0, 5] },
     },
     defaultStyle: { fontSize: 7, lineHeight: 1.15 },
   };

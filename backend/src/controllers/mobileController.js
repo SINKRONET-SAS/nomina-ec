@@ -528,6 +528,7 @@ async function rolPago(req, res) {
         total_deducciones, neto_recibir, estado, cerrado_en
       FROM nominas
       WHERE tenant_id = $1 AND empleado_id = $2 AND anio = $3 AND mes = $4
+        AND estado IN ('cerrada', 'pagada')
       LIMIT 1
     `, [req.tenantId, employee.id, Number(anio), Number(mes)]);
 
@@ -544,6 +545,7 @@ async function historial(req, res) {
       tenantId: req.tenantId,
       empleadoId: employee.id,
       limit: req.query.limit,
+      closedPayrollOnly: true,
     });
     return res.json({ success: true, employee, history, correlationId: req.correlationId });
   } catch (err) {

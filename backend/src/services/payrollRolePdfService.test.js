@@ -117,6 +117,13 @@ describe('payrollRolePdfService', () => {
     expect(JSON.stringify(doc)).toContain('Recepcion y conformidad');
     expect(JSON.stringify(doc)).toContain('Ana Representante');
     expect(JSON.stringify(doc)).toContain('Representante legal / delegado del empleador');
+    expect(JSON.stringify(doc)).toContain('BORRADOR - NO CONSTITUYE COMPROBANTE DE PAGO');
+  });
+
+  test('rol cerrado no incluye aviso de borrador', () => {
+    const doc = buildPayrollRoleDocDefinition(payrollRow({ estado: 'cerrada' }));
+
+    expect(JSON.stringify(doc)).not.toContain('BORRADOR - NO CONSTITUYE COMPROBANTE DE PAGO');
   });
 
   test('documento transpuesto incluye conceptos en filas y empleados en columnas', () => {
@@ -152,6 +159,7 @@ describe('payrollRolePdfService', () => {
     expect(serialized).toContain('Benitez Marco');
     expect(serialized).toContain('$1315.00');
     expect(serialized).toContain('rol_pago_transpuesto_sknomina');
+    expect(serialized).toContain('BORRADOR - NO CONSTITUYE COMPROBANTE DE PAGO');
   });
 
   test('genera rol transpuesto por periodo y sube un unico PDF consolidado', async () => {

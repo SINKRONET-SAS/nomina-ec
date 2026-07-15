@@ -50,6 +50,7 @@ const routeVisitService = require('../services/routeVisitService');
 const configurationService = require('../services/configurationService');
 const { s3Upload } = require('../config/s3');
 const { recordAudit } = require('../services/auditService');
+const { getEmployeeHistory } = require('../services/employeeHistoryService');
 const {
   resolveAttendanceReadiness,
   resolveLinkedEmployee,
@@ -60,8 +61,10 @@ const {
   adminRutasResumen,
   asignarRutaMovil,
   crearZonaMarcacionMovil,
+  historial,
   registrarMarcacionMovil,
   resolveEmployee,
+  rolPago,
   solicitarPermiso,
 } = require('./mobileController');
 
@@ -94,6 +97,7 @@ describe('mobileController', () => {
     resolveAttendanceReadiness.mockReset();
     resolveLinkedEmployee.mockReset();
     recordAudit.mockReset();
+    getEmployeeHistory.mockReset();
     ensurePayrollPeriodForDate.mockReset();
     ensureNoveltyTypeAllowed.mockReset();
   });
@@ -459,5 +463,54 @@ describe('mobileController', () => {
       newData: expect.objectContaining({ soporteMedico: true }),
     }));
     expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  test('rolPago solo consulta estados cerrados o pagados', async () => {
+    resolveLinkedEmployee.mockResolvedValueOnce({
+      employee: { id: 'emp-1', email_personal: 'empleado.demo@sknomina.local' },
+      linkSource: 'employee_app_link',
+    });
+    resolveAttendanceReadiness.mockResolvedValueOnce({
+      readiness: { ready: true, blockers: [] },
+    });
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const req = {
+      ...reqBase,
+      params: { anio: '2026', mes: '6' },
+    };
+    const res = mockResponse();
+
+    await rolPago(req, res);
+
+    expect(db.query.mock.calls[0][0]).toContain("estado IN ('cerrada', 'pagada')");
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      nomina: null,
+    }));
+  });
+
+  test('historial mobile solicita solo roles finales', async () => {
+    resolveLinkedEmployee.mockResolvedValueOnce({
+      employee: { id: 'emp-1', email_personal: 'empleado.demo@sknomina.local' },
+      linkSource: 'employee_app_link',
+    });
+    resolveAttendanceReadiness.mockResolvedValueOnce({
+      readiness: { ready: true, blockers: [] },
+    });
+    getEmployeeHistory.mockResolvedValueOnce({ roles: [], novedades: [], permisos: [], documentos: [] });
+    const req = {
+      ...reqBase,
+      query: { limit: '12' },
+    };
+    const res = mockResponse();
+
+    await historial(req, res);
+
+    expect(getEmployeeHistory).toHaveBeenCalledWith({
+      tenantId: 'tenant-1',
+      empleadoId: 'emp-1',
+      limit: '12',
+      closedPayrollOnly: true,
+    });
   });
 });

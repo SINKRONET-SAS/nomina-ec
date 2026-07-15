@@ -1,6 +1,33 @@
 
 ---
 
+## Incremento ejecutado - HRC26 correccion y recalculo de roles
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-CORRECCION-RECALCULO-ROLES-2026 |
+| Fase | HRC26-05 |
+| Estado | completed-pass |
+| Fecha | 2026-07-14 |
+| Plan doc | `docs2/PLAN_HAIKY_CORRECCION_RECALCULO_ROLES_2026.md` |
+| Prompts | `.github/promts/HRC26-{00..05}-*.md` |
+| Scripts | `npm run audit:roles:2026`, `npm run haiky:roles:2026` |
+
+### Decisiones HRC26
+
+- `owner` y `admin_rrhh` pueden descartar roles en borrador, corregir novedades o fichas fuente y recalcular con motivo y auditoria.
+- Los totales derivados, aportes y bases tributarias no se editan manualmente.
+- Los roles `cerrada` y `pagada` son inmutables. El endpoint heredado `/api/nomina/reabrir` conserva compatibilidad, responde `409` y orienta a registrar el ajuste en un periodo abierto.
+- MOBILE, historial y correo solo exponen roles finales; los PDF preliminares muestran una marca explicita de borrador.
+- Ecuador 2026: SBU USD 482, IESS 9,45%/11,15%, base mensual 30 dias/240 horas y tabla IR 2026 permanecen versionados en `legal-ecuador.js`.
+
+### Gates HRC26
+
+- Diagnostico HRC26 y auditoria integral V2.
+- Contratos de sistema y pruebas focalizadas del ciclo de roles.
+- Suite backend completa, Prisma validate y mobile store readiness.
+- Build PWA/LANDING, UTF-8 sin BOM/mojibake y `git diff --check`.
+
 ## Incremento ejecutado - AIV2-07 asistencia y nomina base 30
 
 | Campo | Valor |

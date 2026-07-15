@@ -18,8 +18,9 @@ function resolveNoveltyMetadata(row = {}) {
   };
 }
 
-async function getEmployeeHistory({ tenantId, empleadoId, limit = 24 }) {
+async function getEmployeeHistory({ tenantId, empleadoId, limit = 24, closedPayrollOnly = false }) {
   const safeLimit = Math.min(Math.max(Number(limit || 24), 1), 60);
+  const payrollStateFilter = closedPayrollOnly ? "AND estado IN ('cerrada', 'pagada')" : '';
 
   const [payrolls, novelties, documents] = await Promise.all([
     db.query(`
@@ -27,6 +28,7 @@ async function getEmployeeHistory({ tenantId, empleadoId, limit = 24 }) {
         total_deducciones, neto_recibir, estado, rol_pdf_url, cerrado_en, updated_at
       FROM nominas
       WHERE tenant_id = $1 AND empleado_id = $2
+        ${payrollStateFilter}
       ORDER BY anio DESC, mes DESC
       LIMIT $3
     `, [tenantId, empleadoId, safeLimit]),

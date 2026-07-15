@@ -20,6 +20,8 @@
     "haiky:solution:v2": "node scripts/haiky-integral-v2-solution.mjs",
     "audit:reportes:2026": "node scripts/haiky-reportes-disponibilidad-2026-diagnostic.mjs",
     "haiky:reportes:2026": "node scripts/haiky-reportes-disponibilidad-2026-solution.mjs",
+    "audit:roles:2026": "node scripts/haiky-payroll-correction-2026-diagnostic.mjs",
+    "haiky:roles:2026": "node scripts/haiky-payroll-correction-2026-solution.mjs",
     "audit:brand-assets": "node scripts/haiky-brand-assets-diagnostic.mjs",
     "audit:brand-visual": "node scripts/haiky-visual-regression-capture.mjs",
     "brand:assets:solution": "node scripts/haiky-brand-assets-solution.mjs && node scripts/haiky-brand-assets-diagnostic.mjs",

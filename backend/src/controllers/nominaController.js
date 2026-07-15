@@ -5,6 +5,10 @@ const db = require('../config/database');
 const { calcularNominaMensual } = require('../services/calculoNominaService');
 const { recordAudit } = require('../services/auditService');
 const { assertTenantPayrollReady } = require('../services/operationalReadinessService');
+const {
+  discardPayrollDraft,
+  discardPayrollPeriodCalculation,
+} = require('../services/payrollLifecycleService');
 const { resolveStorageUrl } = require('../config/s3');
 const {
   generatePayrollRolePdf,
@@ -842,90 +846,12 @@ async function cerrarMes(req, res) {
 }
 
 async function reabrirMes(req, res) {
-  try {
-    const { tenantId, usuarioId } = req;
-    const { anio, mes, motivo } = req.body;
-
-    if (!anio || !mes) {
-      return res.status(400).json({ error: 'Año y mes requeridos', correlationId: req.correlationId });
-    }
-
-    if (!motivo || String(motivo).trim().length < 10) {
-      return res.status(422).json({
-        error: 'Indica un motivo claro para reabrir la nómina.',
-        correlationId: req.correlationId,
-      });
-    }
-
-    const period = await db.query(`
-      SELECT status
-      FROM payroll_periods
-      WHERE tenant_id = $1 AND anio = $2 AND mes = $3
-      LIMIT 1
-    `, [tenantId, Number(anio), Number(mes)]);
-
-    if (period.rows[0]?.status !== 'closed') {
-      return res.status(409).json({
-        error: 'NOMINA_REAPERTURA_ESTADO_INVALIDO',
-        message: 'Solo una nómina cerrada puede entrar a reapertura controlada.',
-        correlationId: req.correlationId,
-      });
-    }
-
-    const result = await db.query(`
-      UPDATE nominas
-      SET estado = 'borrador', cerrado_en = NULL, updated_at = NOW()
-      WHERE tenant_id = $1 AND anio = $2 AND mes = $3 AND estado = 'cerrada'
-      RETURNING id
-    `, [tenantId, anio, mes]);
-
-    await db.query(`
-      UPDATE payroll_periods
-      SET status = 'reopened',
-          closed_at = NULL,
-          summary = COALESCE(summary, '{}'::jsonb) || jsonb_build_object(
-            'lastReopen', jsonb_build_object(
-              'motivo', $4::text,
-              'total', $5::int,
-              'correlationId', $6::text,
-              'at', NOW()
-            )
-          ),
-          updated_at = NOW()
-      WHERE tenant_id = $1 AND anio = $2 AND mes = $3
-    `, [tenantId, Number(anio), Number(mes), String(motivo).trim(), result.rows.length, req.correlationId || null]);
-
-    await recordAudit({
-      tenantId,
-      userId: usuarioId,
-      correlationId: req.correlationId,
-      action: 'reabrir_nomina',
-      entity: 'nominas',
-      newData: { anio, mes, total: result.rows.length, motivo: String(motivo).trim() },
-      ipAddress: req.ip,
-    });
-
-    res.json({
-      success: true,
-      mensaje: `${result.rows.length} nóminas en reapertura controlada`,
-      total: result.rows.length,
-      correlationId: req.correlationId,
-    });
-  } catch (err) {
-    console.error('[NOMINA] Error reabriendo mes', {
-      code: err.code || 'NOMINA_REAPERTURA_ERROR',
-      statusCode: err.statusCode || 500,
-      correlationId: req.correlationId,
-      userId: req.usuarioId || null,
-      message: err.message,
-    });
-    res.status(err.statusCode || 500).json({
-      error: err.code || 'NOMINA_REAPERTURA_ERROR',
-      message: err.message,
-      details: err.details,
-      correlationId: req.correlationId,
-    });
-  }
+  return res.status(409).json({
+    error: 'NOMINA_CERRADA_INMUTABLE',
+    message: 'La nómina cerrada conserva su respaldo original. Registra la corrección como ajuste en un período abierto.',
+    nextAction: 'registrar_ajuste_periodo_abierto',
+    correlationId: req.correlationId,
+  });
 }
 
 async function eliminarLoteNovedades(req, res) {
@@ -954,6 +880,76 @@ async function eliminarLoteNovedades(req, res) {
   }
 }
 
+async function descartarCalculoPeriodo(req, res) {
+  try {
+    const result = await discardPayrollPeriodCalculation({
+      tenantId: req.tenantId,
+      anio: req.body?.anio,
+      mes: req.body?.mes,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+      reason: req.body?.motivo,
+    });
+    return res.json({
+      success: true,
+      message: `${result.deleted} roles en borrador fueron descartados. Ya puedes corregir novedades y recalcular.`,
+      result,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[NOMINA] Error descartando calculo del periodo', {
+      code: err.code || 'NOMINA_PERIODO_DESCARTE_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'NOMINA_PERIODO_DESCARTE_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function eliminarBorrador(req, res) {
+  try {
+    const result = await discardPayrollDraft({
+      tenantId: req.tenantId,
+      payrollId: req.params.id,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+      reason: req.body?.motivo,
+      intent: req.body?.intencion,
+    });
+    return res.json({
+      success: true,
+      message: result.nextAction === 'correct_sources'
+        ? 'Borrador descartado. Corrige las novedades del empleado y vuelve a calcular.'
+        : 'Borrador eliminado. El periodo quedo disponible para recalculo.',
+      result,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[NOMINA] Error eliminando rol borrador', {
+      code: err.code || 'NOMINA_BORRADOR_DESCARTE_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'NOMINA_BORRADOR_DESCARTE_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
 module.exports = {
   calcularMes,
   obtenerEstadoPeriodo,
@@ -972,4 +968,6 @@ module.exports = {
   descargarRolesTranspuestosPDF,
   cerrarMes,
   reabrirMes,
+  descartarCalculoPeriodo,
+  eliminarBorrador,
 };

@@ -235,6 +235,7 @@ app.put('/api/nomina/contabilidad/mapeos/:id', requireRole('owner', 'admin_rrhh'
 
 const nominaController = require('./controllers/nominaController');
 app.post('/api/nomina/calcular', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.calcularMes);
+app.post('/api/nomina/descartar-calculo', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.descartarCalculoPeriodo);
 app.get('/api/nomina/periodos/:anio', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), nominaController.listarPeriodosAnuales);
 app.post('/api/nomina/periodos/generar-anual', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.generarPeriodosAnuales);
 app.post('/api/nomina/periodos/cerrar-anteriores-vacios', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.cerrarPeriodosAnterioresVacios);
@@ -246,6 +247,7 @@ app.post('/api/nomina/novedades/lote', requireRole('owner', 'admin_rrhh'), requi
 app.delete('/api/nomina/novedades/lote/:batchId', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), nominaController.eliminarLoteNovedades);
 app.get('/api/nomina/:id/rol-pdf', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), nominaController.descargarRolPDF);
 app.post('/api/nomina/:id/rol-email', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.enviarRolPagoEmail);
+app.delete('/api/nomina/:id', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.eliminarBorrador);
 app.get('/api/nomina/:anio/:mes/roles-pdf-transpuesto', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), nominaController.descargarRolesTranspuestosPDF);
 app.get('/api/nomina/:anio/:mes', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), nominaController.listarPorPeriodo);
 app.get('/api/nomina/empleado/:empleadoId/:anio/:mes', requireModule('nomina'), nominaController.obtenerPorEmpleado);

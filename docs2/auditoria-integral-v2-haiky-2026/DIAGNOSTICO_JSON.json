@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-15T01:33:52.818Z",
+  "generatedAt": "2026-07-15T02:09:36.399Z",
   "plan": "HAIKY-AUDITORIA-INTEGRAL-V2-NOMINA-EC-2026",
   "rulesSource": "RULES.md",
   "repository": "SINKRONET-SAS/nomina-ec",
@@ -16,7 +16,7 @@
       "Colombia"
     ]
   },
-  "filesScanned": 288,
+  "filesScanned": 293,
   "legalSources2026": [
     {
       "domain": "SRI facturacion electronica",

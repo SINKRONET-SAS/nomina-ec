@@ -23,6 +23,11 @@ jest.mock('../services/payrollRolePdfService', () => ({
   generatePayrollRolePeriodTransposedPdf: jest.fn(),
 }));
 
+jest.mock('../services/payrollLifecycleService', () => ({
+  discardPayrollDraft: jest.fn(),
+  discardPayrollPeriodCalculation: jest.fn(),
+}));
+
 const db = require('../config/database');
 const { recordAudit } = require('../services/auditService');
 const { sendRolPagoDisponible, sendRolPagoEmail } = require('../services/communicationService');
@@ -32,9 +37,16 @@ const {
   generatePayrollRolePeriodTransposedPdf,
 } = require('../services/payrollRolePdfService');
 const {
+  discardPayrollDraft,
+  discardPayrollPeriodCalculation,
+} = require('../services/payrollLifecycleService');
+const {
   cerrarMes,
+  descartarCalculoPeriodo,
   descargarRolPDF,
+  eliminarBorrador,
   enviarRolPagoEmail,
+  reabrirMes,
   descargarRolesTranspuestosPDF,
   listarPorPeriodo,
 } = require('./nominaController');
@@ -318,6 +330,126 @@ describe('nominaController enviarRolPagoEmail', () => {
     expect(sendRolPagoEmail).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(409);
     expect(res.body.error).toBe('NOMINA_ROL_NO_CERRADO');
+  });
+});
+
+describe('nominaController descarte controlado', () => {
+  beforeEach(() => {
+    discardPayrollDraft.mockReset();
+    discardPayrollPeriodCalculation.mockReset();
+  });
+
+  test('descarta el calculo completo y devuelve la siguiente accion', async () => {
+    discardPayrollPeriodCalculation.mockResolvedValueOnce({
+      deleted: 30,
+      anio: 2026,
+      mes: 6,
+      nextAction: 'correct_sources_and_recalculate',
+    });
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-discard',
+      ip: '127.0.0.1',
+      body: { anio: 2026, mes: 6, motivo: 'Correccion de novedades del periodo' },
+    };
+    const res = createResponse();
+
+    await descartarCalculoPeriodo(req, res);
+
+    expect(discardPayrollPeriodCalculation).toHaveBeenCalledWith(expect.objectContaining({
+      tenantId: 'tenant-1',
+      anio: 2026,
+      mes: 6,
+      reason: 'Correccion de novedades del periodo',
+      correlationId: 'corr-discard',
+    }));
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({
+      success: true,
+      result: expect.objectContaining({ deleted: 30 }),
+      correlationId: 'corr-discard',
+    });
+  });
+
+  test('elimina un borrador individual para corregir sus fuentes', async () => {
+    discardPayrollDraft.mockResolvedValueOnce({
+      deleted: 1,
+      payrollId: 'payroll-1',
+      empleadoId: 'employee-1',
+      nextAction: 'correct_sources',
+    });
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-role',
+      ip: '127.0.0.1',
+      params: { id: 'payroll-1' },
+      body: { motivo: 'Corregir horas extra del empleado', intencion: 'correction' },
+    };
+    const res = createResponse();
+
+    await eliminarBorrador(req, res);
+
+    expect(discardPayrollDraft).toHaveBeenCalledWith(expect.objectContaining({
+      payrollId: 'payroll-1',
+      reason: 'Corregir horas extra del empleado',
+      intent: 'correction',
+    }));
+    expect(res.statusCode).toBe(200);
+    expect(res.body.message).toContain('Corrige las novedades');
+  });
+
+  test('propaga bloqueo de un rol cerrado con codigo funcional', async () => {
+    discardPayrollDraft.mockRejectedValueOnce(Object.assign(
+      new Error('El rol esta cerrado y no puede eliminarse ni corregirse como borrador.'),
+      { code: 'NOMINA_ROL_FINAL_INMUTABLE', statusCode: 409 }
+    ));
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-final',
+      ip: '127.0.0.1',
+      params: { id: 'payroll-closed' },
+      body: { motivo: 'Intento de corregir un rol cerrado', intencion: 'correction' },
+    };
+    const res = createResponse();
+
+    await eliminarBorrador(req, res);
+
+    expect(res.statusCode).toBe(409);
+    expect(res.body).toMatchObject({
+      error: 'NOMINA_ROL_FINAL_INMUTABLE',
+      correlationId: 'corr-final',
+    });
+  });
+});
+
+describe('nominaController proteccion de nomina cerrada', () => {
+  beforeEach(() => {
+    db.query.mockReset();
+    recordAudit.mockReset();
+  });
+
+  test('mantiene el endpoint heredado sin reabrir ni mutar roles cerrados', async () => {
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-reopen-blocked',
+      body: { anio: 2026, mes: 6, motivo: 'Corregir una novedad detectada luego del cierre' },
+    };
+    const res = createResponse();
+
+    await reabrirMes(req, res);
+
+    expect(res.statusCode).toBe(409);
+    expect(res.body).toMatchObject({
+      error: 'NOMINA_CERRADA_INMUTABLE',
+      nextAction: 'registrar_ajuste_periodo_abierto',
+      correlationId: 'corr-reopen-blocked',
+    });
+    expect(db.query).not.toHaveBeenCalled();
+    expect(recordAudit).not.toHaveBeenCalled();
   });
 });
 
