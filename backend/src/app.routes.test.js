@@ -111,6 +111,18 @@ describe('AISK26-01: cierre brechas RBAC', () => {
     );
   });
 
+  test('POST /api/marcaciones/manual requiere administrador, usuario fresco y modulo asistencia', () => {
+    expect(source).toContain(
+      "app.post('/api/marcaciones/manual', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('asistencia'), marcacionController.registrarManual)"
+    );
+  });
+
+  test('GET /api/empleados/reporte.xlsx protege la exportacion laboral sensible', () => {
+    expect(source).toContain(
+      "app.get('/api/empleados/reporte.xlsx', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('empleados'), empleadoController.descargarReporteMaestro)"
+    );
+  });
+
   test('GET /api/novedades/tipos requiere rol y modulo asistencia', () => {
     expect(source).toContain(
       "app.get('/api/novedades/tipos', requireRole('owner', 'admin_rrhh', 'supervisor'), requireModule('asistencia'), novedadController.listarTipos)"

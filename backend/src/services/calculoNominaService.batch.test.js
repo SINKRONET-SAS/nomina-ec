@@ -55,8 +55,11 @@ function employee(id) {
 }
 
 describe('calculoNominaService lote AIV50', () => {
+  let employeeRows;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    employeeRows = [employee('emp-1'), employee('emp-2')];
     getLegalParametersForTenant.mockResolvedValue(legalParameters);
     db.query.mockImplementation(async (sql) => {
       if (String(sql).includes('INSERT INTO payroll_periods')) {
@@ -68,7 +71,7 @@ describe('calculoNominaService lote AIV50', () => {
       if (String(sql).includes('UPDATE payroll_calculation_batches')) {
         return { rows: [{ id: 'batch-1', status: 'completed', total_calculadas: 2, total_errores: 0 }] };
       }
-      if (String(sql).includes('FROM empleados')) return { rows: [employee('emp-1'), employee('emp-2')] };
+      if (String(sql).includes('FROM empleados')) return { rows: employeeRows };
       if (String(sql).includes('FROM novelty_type_configs')) return { rows: [] };
       if (String(sql).includes('FROM novedades_asistencia')) return { rows: [] };
       if (String(sql).includes('INSERT INTO nominas')) return { rows: [{ id: `payroll-${Date.now()}` }] };
@@ -82,5 +85,27 @@ describe('calculoNominaService lote AIV50', () => {
     expect(result.total).toBe(2);
     expect(getLegalParametersForTenant).toHaveBeenCalledTimes(1);
     expect(assertLegalParametersReadyForProduction).toHaveBeenCalledTimes(1);
+  });
+
+  test('genera rol proporcional para ingreso durante el mes sin novedad de falta', async () => {
+    employeeRows = [{
+      ...employee('emp-ingreso-junio'),
+      fecha_ingreso: '2026-06-16',
+    }];
+
+    const result = await calcularNominaMensual('tenant-1', 2026, 6);
+    const employeeQuery = db.query.mock.calls.find(([sql]) => String(sql).includes('FROM empleados'));
+
+    expect(employeeQuery[1]).toEqual(['tenant-1', '2026-06-30']);
+    expect(result).toMatchObject({
+      total: 1,
+      resultados: [{
+        empleadoId: 'emp-ingreso-junio',
+        detalleCalculo: {
+          diasTrabajados: 15,
+          descuentoFaltas: 0,
+        },
+      }],
+    });
   });
 });

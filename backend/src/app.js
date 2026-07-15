@@ -146,6 +146,7 @@ app.post('/api/empleados/app-invitaciones/:id/revocar', requireRole('owner', 'ad
 app.get('/api/empleados/terminacion/causas', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), empleadoController.listarCausalesTerminacion);
 app.get('/api/empleados/importar/plantilla.csv', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), empleadoController.descargarPlantillaImportacion);
 app.get('/api/empleados/importar/lotes', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), empleadoController.listarLotesImportacion);
+app.get('/api/empleados/reporte.xlsx', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('empleados'), empleadoController.descargarReporteMaestro);
 app.post('/api/empleados/importar/preview', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), empleadoController.previewImportacion);
 app.post('/api/empleados/importar/confirmar', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), empleadoController.confirmarImportacion);
 app.delete('/api/empleados/importar/lotes/:batchId', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), empleadoController.revertirImportacion);
@@ -167,6 +168,7 @@ app.post('/api/onboarding/saldos-iniciales/lotes/:batchId/revertir', requireRole
 
 const marcacionController = require('./controllers/marcacionController');
 app.post('/api/marcaciones', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireModule('asistencia'), marcacionController.registrar);
+app.post('/api/marcaciones/manual', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('asistencia'), marcacionController.registrarManual);
 app.get('/api/marcaciones/empleado/:empleadoId', requireModule('asistencia'), marcacionController.listarPorEmpleado);
 app.get('/api/marcaciones/hoy', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireModule('asistencia'), marcacionController.listarHoy);
 

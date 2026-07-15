@@ -308,7 +308,21 @@ function normalizeOptionalText(value, { uppercase = false, lowercase = false } =
 function normalizeOptionalDate(value) {
   if (typeof value === 'undefined') return undefined;
   if (value === null || value === '') return null;
-  return String(value).slice(0, 10);
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  const text = String(value).trim();
+  const isoMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+
+  const localMatch = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (localMatch) return `${localMatch[3]}-${localMatch[2]}-${localMatch[1]}`;
+
+  throw new AppError('La fecha debe tener formato DD/MM/AAAA o AAAA-MM-DD.', {
+    code: 'CONFIG_DATE_INVALID',
+    statusCode: 400,
+  });
 }
 
 function normalizeOptionalNumber(value) {
@@ -531,6 +545,13 @@ async function validateJobPositionPayload(values, tenantId, user, previous = {})
 }
 
 function handleConfigurationDbError(err, config, user) {
+  if (err.code === '22007') {
+    throw new AppError('La fecha ingresada no es válida. Usa el selector de fecha e intenta nuevamente.', {
+      code: 'CONFIG_DATE_INVALID',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
   if (config.table === 'novelty_type_configs' && err.code === '23505') {
     throw new AppError('Ya existe un tipo de novedad con ese codigo para esta empresa.', {
       code: 'NOVELTY_TYPE_CODE_DUPLICATED',
@@ -1486,6 +1507,15 @@ async function updateResource(resource, id, payload, user, context = {}) {
     );
   } catch (err) {
     handleConfigurationDbError(err, config, user);
+  }
+
+  if (!result.rows[0]) {
+    throw new AppError('No se pudo actualizar el registro. Recarga la parametrización e intenta nuevamente.', {
+      code: 'CONFIG_UPDATE_NOT_APPLIED',
+      statusCode: 409,
+      userId: user.id,
+      details: { resource, id },
+    });
   }
 
   await recordAudit({

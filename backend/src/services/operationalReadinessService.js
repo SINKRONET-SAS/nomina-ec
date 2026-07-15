@@ -28,6 +28,19 @@ function employeeLabel(row) {
   return [row.cedula, row.nombres, row.apellidos].filter(Boolean).join(' - ');
 }
 
+function buildEmployeeOperationalBlockers(row = {}) {
+  const attendanceControlled = row.controla_asistencia !== false;
+  const readiness = attendanceControlled ? buildReadiness(row, { requireEmail: false }) : null;
+  const blockers = readiness
+    ? readiness.blockers.filter((blocker) => blocker !== 'control_asistencia_desactivado')
+    : [];
+  if (!Number.isFinite(Number(row.sueldo_bruto_mensual)) || Number(row.sueldo_bruto_mensual) <= 0) {
+    blockers.push('sueldo_bruto_requerido');
+  }
+  if (!row.fecha_ingreso) blockers.push('fecha_ingreso_requerida');
+  return blockers;
+}
+
 async function getTenantPayrollReadiness({ tenantId, anio, mes, mode = 'diagnostic' }) {
   const periodInput = validatePeriod(anio, mes);
   const periodoNomina = formatPeriodMarker(periodInput.anio, periodInput.mes);
@@ -113,14 +126,7 @@ async function getTenantPayrollReadiness({ tenantId, anio, mes, mode = 'diagnost
 
   const employeesWithBlockers = [];
   for (const row of employeeResult.rows) {
-    const readiness = buildReadiness(row, { requireEmail: false });
-    const employeeBlockers = [...readiness.blockers];
-    if (!Number.isFinite(Number(row.sueldo_bruto_mensual)) || Number(row.sueldo_bruto_mensual) <= 0) {
-      employeeBlockers.push('sueldo_bruto_requerido');
-    }
-    if (!row.fecha_ingreso) {
-      employeeBlockers.push('fecha_ingreso_requerida');
-    }
+    const employeeBlockers = buildEmployeeOperationalBlockers(row);
     if (employeeBlockers.length > 0) {
       employeesWithBlockers.push({
         empleadoId: row.id,
@@ -268,6 +274,7 @@ async function assertTenantPayrollReady(options) {
 }
 
 module.exports = {
+  buildEmployeeOperationalBlockers,
   assertTenantPayrollReady,
   getTenantPayrollReadiness,
 };

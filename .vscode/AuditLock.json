@@ -1,82 +1,116 @@
 {
   "plan": "HAIKY-AUDITORIA-INTEGRAL-V2-NOMINA-EC-2026",
-  "phaseCompleted": "HAIKY-AUDITORIA-INTEGRAL-V2-2026-06-qa-release",
+  "phaseCompleted": "HAIKY-AUDITORIA-INTEGRAL-V2-2026-07-asistencia-nomina",
   "status": "completed-pass",
-  "timestamp": "2026-07-14T12:44:16.847Z",
+  "timestamp": "2026-07-14T19:49:50.4692557-05:00",
   "evidenceHash": "e6fa0d425d40b17c862e94360c2a3b8ea26db664e428fa288867201e10b2dddc",
-  "commercialDecisions": [
-    "Facturacion electronica se presenta comercialmente como SINKRONET FACTURADOR.",
-    "La implementacion tecnica debe consumir la API provista por SINKRONIQ-MOBILE y no duplicar XML/firma SRI en SKNOMINA.",
-    "Establecimientos IESS se parametrizan por empresa y se monetizan por plan con iess_establecimientos_max.",
-    "El precio publico debe mostrar base, IVA 15%, mensualidad y contado anual; la tasa nominal anual solo explica el calculo cuando aplica."
+  "decisions": [
+    "Las marcaciones usan fechas reales; sueldo y faltas aprobadas se prorratean sobre una base mensual de 30 dias.",
+    "La ausencia de marcaciones no crea una falta ni bloquea el rol.",
+    "controla_asistencia gobierna app, reportes y cargas globales por empleado sin bloquear nomina cuando esta desactivado.",
+    "La asistencia manual admite alcance individual o global y periodo diario, mensual o por rango.",
+    "El listado maestro XLSX usa una fila por empleado y no expone numeros de cuenta bancaria."
   ],
   "runtimeChanges": [
-    "Lazy routes en frontend-web/src/App.jsx para reducir chunk inicial.",
-    "Helper unico de descarga Blob en frontend-web/src/utils/downloadBlob.js.",
-    "Integridad de totales en backend/src/services/calculoNominaService.js.",
-    "Tarjetas publicas de planes humanizadas con mensualidad/contado anual con IVA."
+    "Migracion 20260714190000_employee_attendance_control aplicada localmente.",
+    "Endpoint POST /api/marcaciones/manual con periodo abierto, anti duplicado, transaccion y auditoria atomica.",
+    "Reporte mensual separa agregados de marcaciones y novedades.",
+    "Motor incluye ingresos durante el mes y normaliza dias de nomina a 30.",
+    "Endpoint GET /api/empleados/reporte.xlsx protegido por RBAC, usuario fresco y auditoria LOPDP.",
+    "PWA expone control por empleado, asistencia diaria/mensual individual/global y listado XLSX."
   ],
   "validationChecks": [
     {
-      "name": "diagnostico_integral_v2_js",
+      "name": "backend_full_suite",
       "ok": true,
-      "output": "{\n  \"ok\": true,\n  \"outDir\": \"docs2/auditoria-integral-v2-haiky-2026\",\n  \"filesScanned\": 281,\n  \"findingSummary\": {},\n  \"evidenceHash\": \"e6fa0d425d40b17c862e94360c2a3b8ea26db664e428fa288867201e10b2dddc\"\n}"
+      "output": "55 suites, 347 pruebas, 0 fallos"
     },
     {
-      "name": "contratos_sistema",
+      "name": "backend_final_focal",
       "ok": true,
-      "output": "[CONTRACTS] OK: frontend, backend, Prisma y reportes mantienen contrato de sistema unico."
+      "output": "4 suites, 40 pruebas, 0 fallos"
     },
     {
-      "name": "backend_tests_focalizados",
+      "name": "system_contracts",
       "ok": true,
-      "output": "> sknomina-backend@1.0.0 test\n> jest calculoNominaService.test.js paymentController.test.js fiscalInvoiceService.test.js employeeImportService.test.js --runInBand"
+      "output": "frontend, backend, Prisma y reportes mantienen contrato unico"
     },
     {
-      "name": "prisma_validate",
+      "name": "prisma",
       "ok": true,
-      "output": "> sknomina-system@1.0.0 prisma:validate\n> npm --workspace=backend run prisma:validate\n\n\n> sknomina-backend@1.0.0 prisma:validate\n> prisma validate\n\nPrisma schema loaded from prisma\\schema.prisma\nThe schema at prisma\\schema.prisma is valid 🚀"
+      "output": "validate, migrate deploy y generate completados"
     },
     {
-      "name": "mobile_check_stores",
+      "name": "mobile_readiness",
       "ok": true,
-      "output": "> sknomina-system@1.0.0 check:mobile\n> npm --workspace=app-movil run check:stores\n\n\n> sknomina-app@1.0.0 check:stores\n> node scripts/check-store-readiness.mjs\n\n[LPA26-STORES] Configuracion, identificadores, URLs y assets de tienda verificados."
+      "output": "configuracion, identificadores, URLs y assets verificados"
     },
     {
-      "name": "frontend_build_direct_vite",
+      "name": "frontend_build",
       "ok": true,
-      "output": "vite v7.3.5 building client environment for production...\ntransforming...\n✓ 1533 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/manifest.webmanifest                         1.87 kB\ndist/index.html                                   2.14 kB │ gzip:  0.70 kB\ndist/assets/index-_Gyhx9zw.css                   50.78 kB │ gzip:  8.45 kB\ndist/assets/money-C-BjPene.js                     0.16 kB │ gzip:  0.15 kB\ndist/assets/Planes-C4hNwsF7.js                    0.16 kB │ gzip:  0.15 kB\ndist/assets/fileToBase64-CtaayJOI.js              0.18 kB │ gzip:  0.17 kB\ndist/assets/downloadBlob-CUQnvZjX.js              0.20 kB │ gzip:  0.17 kB\ndist/assets/downloadUrl-BrXet0zh.js               0.51 kB │ gzip:  0.35 kB\ndist/assets/BrandLogo-B5KPJ77u.js                 0.58 kB │ gzip:  0.40 kB\ndist/assets/configurationApi-BsqkN0gE.js          0.63 kB │ gzip:  0.27 kB\ndist/assets/beneficiosApi-CvdKtlYY.js             0.69 kB │ gzip:  0.31 kB\ndist/assets/CompactNotice-B0YTZdoW.js             0.77 kB │ gzip:  0.42 kB\ndist/assets/authenticatedApi-B5EMMUH1.js          0.86 kB │ gzip:  0.51 kB\ndist/assets/dateFormat-CJHiqmZe.js                1.04 kB │ gzip:  0.49 kB\ndist/assets/NotFound-Dw3Wol3v.js                  1.05 kB │ gzip:  0.56 kB\ndist/assets/contractTemplates-B1YOS-NM.js         1.39 kB │ gzip:  0.59 kB\ndist/assets/publicApi-uvkDNb2P.js                 1.52 kB │ gzip:  0.76 kB\ndist/assets/PaymentResult-3Pd2e2uX.js             1.63 kB │ gzip:  0.77 kB\ndist/assets/noveltyTypes-dDN7PMb8.js              1.93 kB │ gzip:  0.85 kB\ndist/assets/ReporteAsistencia-CBth7-pN.js         2.88 kB │ gzip:  1.01 kB\ndist/assets/AyudaUsuario-BJUmrJx0.js              3.02 kB │ gzip:  1.35 kB\ndist/assets/ActasFiniquito-rLEWVsun.js            3.02 kB │ gzip:  1.20 kB\ndist/assets/ForgotPass"
+      "output": "Vite 1533 modulos; PWA generateSW 100 entradas"
+    },
+    {
+      "name": "employee_xlsx_smoke",
+      "ok": true,
+      "output": "PostgreSQL local: 30 empleados, XLSX 11544 bytes"
+    },
+    {
+      "name": "utf8_no_bom",
+      "ok": true,
+      "output": "41 archivos revisados; cero BOM, U+FFFD o mojibake"
     },
     {
       "name": "git_diff_check",
       "ok": true,
-      "output": ""
+      "output": "sin errores"
     }
   ],
-  "changedFiles": [
-    "M .github/CODEX_CONTEXT.md",
-    "M .vscode/AudiLock.json",
-    "M .vscode/AuditLock.json",
-    "M AuditLock.json",
-    "M backend/src/services/calculoNominaService.js",
-    "M backend/src/services/calculoNominaService.test.js",
-    "M frontend-web/src/App.jsx",
-    "M frontend-web/src/components/PublicPlansCatalog.jsx",
-    "M frontend-web/src/config/publicPlanPresentation.js",
-    "M frontend-web/src/pages/Asistencia/RutasCampo.jsx",
-    "M frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
-    "M frontend-web/src/pages/Onboarding/SaldosIniciales.jsx",
-    "M package.json",
-    "?? .github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-00-baseline.md",
-    "?? .github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-01-diagnostico-js.md",
-    "?? .github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-02-motor-nomina.md",
-    "?? .github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-03-uiux-precios.md",
-    "?? .github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-04-backend-api-legal.md",
-    "?? .github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-05-mobile-pwa-paridad.md",
-    "?? .github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-06-qa-release.md",
-    "?? frontend-web/src/utils/downloadBlob.js",
-    "?? scripts/haiky-integral-v2-diagnostic.mjs",
-    "?? scripts/haiky-integral-v2-solution.mjs"
+  "filesModified": [
+    ".github/CODEX_CONTEXT.md",
+    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-07-asistencia-nomina.md",
+    ".vscode/AudiLock.json",
+    ".vscode/AuditLock.json",
+    "AuditLock.json",
+    "backend/prisma/schema.prisma",
+    "backend/prisma/migrations/20260714190000_employee_attendance_control/migration.sql",
+    "backend/src/app.js",
+    "backend/src/app.routes.test.js",
+    "backend/src/controllers/empleadoController.js",
+    "backend/src/controllers/marcacionController.js",
+    "backend/src/controllers/reporteController.js",
+    "backend/src/controllers/reporteController.test.js",
+    "backend/src/services/auditService.js",
+    "backend/src/services/auditService.test.js",
+    "backend/src/services/calculoNominaService.batch.test.js",
+    "backend/src/services/calculoNominaService.js",
+    "backend/src/services/calculoNominaService.test.js",
+    "backend/src/services/configurationService.js",
+    "backend/src/services/configurationService.test.js",
+    "backend/src/services/employeeAppInviteService.js",
+    "backend/src/services/employeeAppInviteService.test.js",
+    "backend/src/services/employeeMasterReportService.js",
+    "backend/src/services/employeeMasterReportService.test.js",
+    "backend/src/services/equipmentDeliveryActService.js",
+    "backend/src/services/manualAttendanceService.js",
+    "backend/src/services/manualAttendanceService.test.js",
+    "backend/src/services/operationalReadinessService.js",
+    "backend/src/services/operationalReadinessService.test.js",
+    "backend/src/services/payrollRolePdfService.js",
+    "backend/src/services/templateGenerator.js",
+    "backend/src/services/templateGenerator.test.js",
+    "backend/src/templates/legal/contracts/contrato_obra_servicio_giro_negocio.json",
+    "docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V2_NOMINA_EC_2026.md",
+    "docs2/auditoria-integral-v2-haiky-2026/DIAGNOSTICO_AUTOMATIZADO.md",
+    "docs2/auditoria-integral-v2-haiky-2026/DIAGNOSTICO_JSON.json",
+    "docs2/auditoria-integral-v2-haiky-2026/INFORME_DIAGNOSTICO.md",
+    "frontend-web/src/pages/Asistencia/NovedadesPendientes.jsx",
+    "frontend-web/src/pages/Asistencia/ReporteAsistencia.jsx",
+    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
+    "frontend-web/src/pages/Configuracion/parametrizacion/parametrizacionModel.jsx",
+    "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
+    "frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
+    "frontend-web/src/pages/Empleados/NuevoEmpleado.jsx"
   ],
-  "signature": "4de11ba36e1b0cffe2f63c341d62120a6c8d581a89510fc7a9b72b0cabb8f6a2"
+  "signature": "c7afd976073bdd5803c63a33c8358828395f7ff3344791f5a7950d1b4f29eda4"
 }

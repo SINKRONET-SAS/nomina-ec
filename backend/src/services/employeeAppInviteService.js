@@ -90,6 +90,7 @@ function buildReadiness(row = {}, { requireEmail = false } = {}) {
   const employeeMonthlyHours = Number(row.jornada_horas_mensuales || 0);
   const shiftWeeklyHours = Number(row.work_shift_weekly_hours || row.jornada_weekly_hours || row.weekly_hours || 0);
 
+  if (row.controla_asistencia === false) blockers.push('control_asistencia_desactivado');
   if (requireEmail && !normalizeEmail(row.email_personal)) blockers.push('email_personal_requerido');
   if (!String(row.departamento || '').trim()) blockers.push('departamento_requerido');
   if (!row.organization_unit_id) blockers.push('unidad_organizativa_sin_match');
@@ -153,6 +154,7 @@ function employeeReadinessSelect(whereClause) {
       e.unidad_organizativa_codigo,
       e.jornada_codigo,
       e.zona_marcacion_codigo,
+      e.controla_asistencia,
       e.jornada_horas_mensuales,
       ou.id AS organization_unit_id,
       ou.code AS organization_unit_code,
@@ -419,6 +421,7 @@ async function listEmployeeAppInvitations({ tenantId }) {
       apellidos: row.apellidos,
       cargo: row.cargo,
       departamento: row.departamento,
+      controlaAsistencia: row.controla_asistencia !== false,
       emailPersonal: row.email_personal,
       telefono: row.telefono,
     },

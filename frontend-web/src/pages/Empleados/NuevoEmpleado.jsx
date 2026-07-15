@@ -18,6 +18,7 @@ const initialForm = {
   unidad_organizativa_codigo: '',
   jornada_codigo: '',
   zona_marcacion_codigo: '',
+  controla_asistencia: true,
   sueldo_bruto_mensual: '',
   jornada_horas_mensuales: '',
   gastos_personales_anuales: '',
@@ -96,6 +97,7 @@ function normalizeEmpleado(empleado) {
     unidad_organizativa_codigo: empleado.unidad_organizativa_codigo || '',
     jornada_codigo: empleado.jornada_codigo || '',
     zona_marcacion_codigo: empleado.zona_marcacion_codigo || '',
+    controla_asistencia: empleado.controla_asistencia !== false,
     sueldo_bruto_mensual: empleado.sueldo_bruto_mensual || '',
     jornada_horas_mensuales: empleado.jornada_horas_mensuales || '',
     gastos_personales_anuales: empleado.gastos_personales_anuales || '',
@@ -448,6 +450,7 @@ function NuevoEmpleado() {
     unidad_organizativa_codigo: formData.unidad_organizativa_codigo,
     jornada_codigo: formData.jornada_codigo,
     zona_marcacion_codigo: formData.zona_marcacion_codigo,
+    controla_asistencia: Boolean(formData.controla_asistencia),
     sueldo_bruto_mensual: formData.sueldo_bruto_mensual,
     gastos_personales_anuales: formData.gastos_personales_anuales,
     fecha_ingreso: formData.fecha_ingreso,
@@ -749,6 +752,18 @@ function NuevoEmpleado() {
               ))}
             </select>
           </Field>
+          <label className={`${FIELD_FULL} flex items-start gap-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700`}>
+            <input
+              checked={formData.controla_asistencia}
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+              onChange={(event) => setFormData((current) => ({ ...current, controla_asistencia: event.target.checked }))}
+              type="checkbox"
+            />
+            <span>
+              <span className="block font-semibold text-slate-900">Incluir en control de asistencia</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">Participará en reportes y registros globales. Las faltas solo afectan el rol cuando una novedad es aprobada.</span>
+            </span>
+          </label>
           <Field label="Sueldo bruto" name="sueldo_bruto_mensual" onChange={handleChange} required step="0.01" type="number" value={formData.sueldo_bruto_mensual} />
           {selectedJobPosition && (
             <div className={`${FIELD_FULL} rounded-md border ${salaryOutOfRange ? 'border-red-200 bg-red-50 text-red-800' : 'border-teal-100 bg-teal-50 text-teal-950'} px-4 py-3 text-sm`}>

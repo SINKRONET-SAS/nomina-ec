@@ -57,11 +57,13 @@ describe('reporteController reporteAsistencia', () => {
     db.query.mockReset();
   });
 
-  test('expone horas extra 50 y 100 redondeadas a dos decimales', async () => {
+  test('agrega marcaciones y novedades por separado sin multiplicar resultados', async () => {
     db.query.mockResolvedValueOnce({
       rows: [{
         empleado_id: 'emp-1',
         nombre: 'Ana Demo',
+        dias_con_marcacion: 20,
+        faltas_aprobadas: 0,
         minutos_extra_50: 90,
         minutos_extra_100: 135,
         horas_extra_50: '1.50',
@@ -80,8 +82,16 @@ describe('reporteController reporteAsistencia', () => {
 
     expect(db.query.mock.calls[0][0]).toContain('horas_extra_50');
     expect(db.query.mock.calls[0][0]).toContain('horas_extra_100');
+    expect(db.query.mock.calls[0][0]).toContain('WITH limites AS');
+    expect(db.query.mock.calls[0][0]).toContain('asistencia AS');
+    expect(db.query.mock.calls[0][0]).toContain('novedades AS');
+    expect(db.query.mock.calls[0][0]).toContain('dias_con_marcacion');
+    expect(db.query.mock.calls[0][0]).toContain('faltas_aprobadas');
+    expect(db.query).toHaveBeenCalledWith(expect.any(String), ['tenant-1', 2026, 6]);
     expect(res.statusCode).toBe(200);
     expect(res.body.reporte[0]).toMatchObject({
+      dias_con_marcacion: 20,
+      faltas_aprobadas: 0,
       horas_extra_50: '1.50',
       horas_extra_100: '2.25',
     });

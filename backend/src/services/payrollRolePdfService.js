@@ -49,6 +49,12 @@ function legalRepresentative(row = {}) {
         || row.representante_legal,
       'Representante legal/delegado autorizado'
     ),
+    title: cleanText(
+      config.representanteLegalCargo
+        || config.representante_legal_cargo
+        || config.legalRepresentativeTitle,
+      'Representante legal / delegado del empleador'
+    ),
     idNumber: cleanText(
       config.representanteLegalIdentificacion
         || config.representante_legal_identificacion
@@ -162,28 +168,27 @@ function buildPayrollRoleDocDefinition(row) {
   addAmountLine(provisiones, 'Provision vacaciones', detail.provisionVacaciones);
   addAmountLine(provisiones, 'Provision fondos de reserva', detail.provisionFondosReserva);
 
-  const table = (title, rows) => [
+  const columnTable = (title, rows) => [
     { text: title, style: 'section' },
     {
       table: {
-        widths: ['*', 90],
+        widths: ['*', 70],
         body: [
-          [{ text: 'Concepto', bold: true }, { text: 'Valor', bold: true, alignment: 'right' }],
+          [{ text: 'Concepto', bold: true, fontSize: 8 }, { text: 'Valor', bold: true, alignment: 'right', fontSize: 8 }],
           ...(rows.length > 0 ? rows : [['Sin valores', '$0.00']]).map(([label, amount]) => [
-            label,
-            { text: amount, alignment: 'right' },
+            { text: label, fontSize: 8 },
+            { text: amount, alignment: 'right', fontSize: 8 },
           ]),
         ],
       },
       layout: 'lightHorizontalLines',
-      margin: [0, 0, 0, 10],
+      margin: [0, 0, 0, 6],
     },
   ];
-  const overtimeParams = detail.horasExtraParametros || {};
-  const hasOvertimeFormula = Boolean(overtimeParams.supplementaryMultiplier || overtimeParams.extraordinaryMultiplier);
 
   return {
     pageSize: 'A4',
+    pageOrientation: 'landscape',
     pageMargins: [36, 42, 36, 42],
     content: [
       { text: 'ROL DE PAGO', style: 'title' },
@@ -215,25 +220,30 @@ function buildPayrollRoleDocDefinition(row) {
         columnGap: 18,
         margin: [0, 0, 0, 14],
       },
-      ...table('Ingresos', ingresos),
-      ...(hasOvertimeFormula ? [
-        { text: 'Formula horas extra', style: 'section' },
-        {
-          text: `Valor hora = sueldo / ${overtimeParams.jornadaHorasMensuales || overtimeParams.monthlyWorkHours || 'jornada mensual'} horas. HE50 = horas x valor hora x ${overtimeParams.supplementaryMultiplier || 1.5}. HE100 = horas x valor hora x ${overtimeParams.extraordinaryMultiplier || 2}. Limite semanal: ${overtimeParams.maxWeeklyOvertimeHours || detail.horasExtraLimiteSemanal || 12} horas. Base: ${overtimeParams.legalBasis || 'Codigo del Trabajo Art. 55'}.`,
-          style: 'notice',
-          margin: [0, 0, 0, 10],
-        },
-      ] : []),
-      ...table('Deducciones', deducciones),
-      ...table('Provisiones y costo empleador', provisiones),
+      {
+        columns: [
+          { width: '*', stack: [...columnTable('Ingresos', ingresos)] },
+          { width: '*', stack: [...columnTable('Deducciones', deducciones)] },
+        ],
+        columnGap: 18,
+        margin: [0, 0, 0, 6],
+      },
       {
         table: {
-          widths: ['*', 90],
+          widths: ['*', 120, '*', 120],
           body: [
-            ['Total ingresos', { text: money(row.total_ingresos), alignment: 'right', bold: true }],
-            ['Total deducciones', { text: money(row.total_deducciones), alignment: 'right', bold: true }],
-            ['Neto a recibir', { text: money(row.neto_recibir), alignment: 'right', bold: true }],
-            ['Costo empleador', { text: money(detail.costoEmpleador), alignment: 'right', bold: true }],
+            [
+              { text: 'Total ingresos', bold: true },
+              { text: money(row.total_ingresos), alignment: 'right', bold: true },
+              { text: 'Total deducciones', bold: true },
+              { text: money(row.total_deducciones), alignment: 'right', bold: true },
+            ],
+            [
+              { text: 'Neto a recibir', bold: true, color: '#0f766e' },
+              { text: money(row.neto_recibir), alignment: 'right', bold: true, color: '#0f766e' },
+              { text: '', border: [false, false, false, false] },
+              { text: '', border: [false, false, false, false] },
+            ],
           ],
         },
         layout: 'lightHorizontalLines',
@@ -241,7 +251,7 @@ function buildPayrollRoleDocDefinition(row) {
       },
       { text: 'Recepcion y conformidad', style: 'section' },
       {
-        text: 'El trabajador declara haber recibido el detalle de ingresos, deducciones, provisiones y neto del periodo indicado. La firma deja constancia de recepción del rol de pago y no reemplaza obligaciones de pago, registro o conservación de evidencias que correspondan al empleador.',
+        text: 'El trabajador declara haber recibido el detalle de ingresos, deducciones y neto del periodo indicado. La firma deja constancia de recepción del rol de pago y no reemplaza obligaciones de pago, registro o conservación de evidencias que correspondan al empleador.',
         style: 'notice',
         margin: [0, 0, 0, 18],
       },
@@ -252,7 +262,7 @@ function buildPayrollRoleDocDefinition(row) {
             stack: [
               { text: '\n\n____________________________', alignment: 'center' },
               { text: representative.name, alignment: 'center', bold: true },
-              { text: 'Representante legal / delegado del empleador', alignment: 'center' },
+              { text: representative.title, alignment: 'center' },
               { text: `Identificacion: ${representative.idNumber}`, alignment: 'center' },
             ],
           },
@@ -270,7 +280,7 @@ function buildPayrollRoleDocDefinition(row) {
         margin: [0, 0, 0, 16],
       },
       {
-        text: `Plantilla rol_pago_sknomina v2026.06. Documento generado por SKNOMINA. Fecha: ${generatedAt}.`,
+        text: `Plantilla rol_pago_sknomina v2026.07. Documento generado con SKNOMINA. Fecha: ${generatedAt}.`,
         style: 'audit',
       },
     ],
@@ -430,7 +440,7 @@ function buildPayrollRoleTransposedDocDefinition({ rows, anio, mes } = {}) {
       margin: [0, 0, 0, 14],
     },
     {
-      text: `Plantilla rol_pago_transpuesto_sknomina v2026.06. Documento generado por SKNOMINA. Fecha: ${generatedAt}.`,
+      text: `Plantilla rol_pago_transpuesto_sknomina v2026.06. Documento generado con SKNOMINA. Fecha: ${generatedAt}.`,
       style: 'audit',
     }
   );

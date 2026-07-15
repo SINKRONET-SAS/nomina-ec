@@ -330,6 +330,7 @@ model Employee {
   unidadOrganizativaCodigo String                @default("") @map("unidad_organizativa_codigo") @db.VarChar(80)
   jornadaCodigo           String                 @default("") @map("jornada_codigo") @db.VarChar(80)
   zonaMarcacionCodigo     String                 @default("") @map("zona_marcacion_codigo") @db.VarChar(80)
+  controlaAsistencia      Boolean                @default(true) @map("controla_asistencia")
   sueldoBrutoMensual      Decimal                @map("sueldo_bruto_mensual") @db.Decimal(12, 2)
   jornadaHorasMensuales   Decimal?               @map("jornada_horas_mensuales") @db.Decimal(6, 2)
   gastosPersonalesAnuales Decimal                @default(0) @map("gastos_personales_anuales") @db.Decimal(12, 2)

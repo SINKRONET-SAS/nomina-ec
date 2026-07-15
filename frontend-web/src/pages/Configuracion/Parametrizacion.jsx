@@ -390,15 +390,40 @@ function Parametrizacion() {
       const savedRecord = record
         ? await updateConfigurationResource(token, definition.resource, record.id, payload)
         : await createConfigurationResource(token, definition.resource, payload);
-      await completeOnboardingStep(token, definition.stepCode, {
-        notes: `${definition.title} ${record ? 'actualizado' : 'creado'} desde parametrizacion.`,
-        evidence: { recordId: savedRecord.id, resource: definition.resource },
-      });
-      return { record: savedRecord, definition, mode: record ? 'actualizado' : 'guardado' };
+      if (definition.key === 'contabilidad') {
+        const confirmedFields = ['concept_code', 'debit_account_code', 'debit_account_name', 'credit_account_code', 'credit_account_name'];
+        const serverConfirmed = confirmedFields.every(
+          (field) => String(savedRecord?.[field] || '').trim() === String(payload[field] || '').trim(),
+        );
+        if (!serverConfirmed) {
+          throw new Error('El servidor no confirmó las cuentas ingresadas. Recarga la parametrización antes de reintentar.');
+        }
+      }
+
+      let onboardingWarning = '';
+      try {
+        await completeOnboardingStep(token, definition.stepCode, {
+          notes: `${definition.title} ${record ? 'actualizado' : 'creado'} desde parametrizacion.`,
+          evidence: { recordId: savedRecord.id, resource: definition.resource },
+        });
+      } catch (_err) {
+        onboardingWarning = definition.key === 'contabilidad'
+          ? ' La cuenta fue guardada, aunque no se pudo actualizar el avance de configuración.'
+          : ' El registro fue guardado, aunque no se pudo actualizar el avance de configuración.';
+      }
+      return {
+        record: savedRecord,
+        definition,
+        mode: record ? 'actualizado' : 'guardado',
+        onboardingWarning,
+      };
     },
-    onSuccess: ({ definition, mode }) => {
+    onSuccess: ({ record, definition, mode, onboardingWarning }) => {
       setError('');
-      setMessage(`${definition.title} ${mode}.`);
+      const successMessage = definition.key === 'contabilidad'
+        ? `${record.concept_label || record.concept_code}: debe ${record.debit_account_code} / haber ${record.credit_account_code}. Cambio guardado.`
+        : `${definition.title} ${mode}.`;
+      setMessage(`${successMessage}${onboardingWarning}`);
       setForms((current) => ({ ...current, [definition.key]: cloneFormValues(definition.initial) }));
       setEditingRecord(null);
       setPendingDeleteId('');
@@ -723,8 +748,8 @@ function Parametrizacion() {
         </div>
       </div>
 
-      {message && <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{message}</div>}
-      {error && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{error}</div>}
+      {message && activeDefinition.key !== 'contabilidad' && <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{message}</div>}
+      {error && activeDefinition.key !== 'contabilidad' && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{error}</div>}
       {summaryHasError && (
         <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
           {configurationLoadMessage(summaryError)}
@@ -933,18 +958,30 @@ function Parametrizacion() {
             )}
 
             {activeDefinition.customType !== 'bankMappingStructure' && (
-              <button
-                className="mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60"
-                disabled={saveMutation.isPending || isLockedValidatedLegalRecord}
-                type="submit"
-              >
-                {isEditingActiveRecord ? <Edit3 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                {saveMutation.isPending
-                  ? 'Guardando...'
-                  : (isEditingActiveRecord
-                    ? activeDefinition.updateLabel || (activeDefinition.key === 'banco' ? 'Actualizar estructura bancaria' : 'Actualizar parámetro')
-                    : activeDefinition.saveLabel || (activeDefinition.key === 'banco' ? 'Guardar estructura bancaria' : 'Guardar parámetro'))}
-              </button>
+              <div className="mt-5">
+                {activeDefinition.key === 'contabilidad' && message && (
+                  <div aria-live="polite" className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                    {message}
+                  </div>
+                )}
+                {activeDefinition.key === 'contabilidad' && error && (
+                  <div aria-live="assertive" className="mb-3 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+                    {error}
+                  </div>
+                )}
+                <button
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60"
+                  disabled={saveMutation.isPending || isLockedValidatedLegalRecord}
+                  type="submit"
+                >
+                  {isEditingActiveRecord ? <Edit3 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                  {saveMutation.isPending
+                    ? 'Guardando...'
+                    : (isEditingActiveRecord
+                      ? activeDefinition.updateLabel || (activeDefinition.key === 'banco' ? 'Actualizar estructura bancaria' : 'Actualizar parámetro')
+                      : activeDefinition.saveLabel || (activeDefinition.key === 'banco' ? 'Guardar estructura bancaria' : 'Guardar parámetro'))}
+                </button>
+              </div>
             )}
           </form>
 

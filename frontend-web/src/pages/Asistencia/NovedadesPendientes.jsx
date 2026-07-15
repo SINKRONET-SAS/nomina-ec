@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authenticatedApi } from '../../services/authenticatedApi';
-import { Check, Pencil, Plus, Trash2, X } from 'lucide-react';
-import { formatDateEC } from '../../utils/dateFormat';
+import { CalendarCheck2, Check, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { formatDateEC, todayISOEC } from '../../utils/dateFormat';
 import {
   buildNoveltyTypeOptions,
   getNoveltyTypeLabel,
@@ -20,6 +20,28 @@ const initialForm = {
   justificacion: '',
 };
 
+const today = todayISOEC();
+const initialAttendanceForm = {
+  empleadoId: '',
+  fecha: today,
+  mes: today.slice(0, 7),
+  desde: today,
+  hasta: today,
+  horaInicio: '08:00',
+  horaFin: '17:00',
+  justificacion: '',
+};
+
+function monthBounds(month) {
+  const [year, monthNumber] = String(month || '').split('-').map(Number);
+  const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+  const monthEnd = `${month}-${String(lastDay).padStart(2, '0')}`;
+  return {
+    desde: `${month}-01`,
+    hasta: month === today.slice(0, 7) ? today : monthEnd,
+  };
+}
+
 function NovedadesPendientes() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState(initialForm);
@@ -28,6 +50,9 @@ function NovedadesPendientes() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [editingNovelty, setEditingNovelty] = useState(null);
+  const [attendanceScope, setAttendanceScope] = useState('employee');
+  const [attendancePeriod, setAttendancePeriod] = useState('day');
+  const [attendanceForm, setAttendanceForm] = useState(initialAttendanceForm);
   
   const { data: novedades, isLoading } = useQuery({
     queryKey: ['novedades-pendientes'],
@@ -57,6 +82,22 @@ function NovedadesPendientes() {
     onError: (err) => {
       setMessage('');
       setError(err.response?.data?.message || err.response?.data?.error || 'No pudimos registrar la novedad manual.');
+    },
+  });
+
+  const asistenciaMutation = useMutation({
+    mutationFn: (payload) => authenticatedApi.post('/marcaciones/manual', payload),
+    onSuccess: (response) => {
+      const result = response.data.asistencia;
+      setMessage(`Asistencia registrada: ${result.marcacionesCreadas} marcaciones nuevas y ${result.marcacionesExistentes} ya existentes.`);
+      setError('');
+      setAttendanceForm((current) => ({ ...current, justificacion: '' }));
+      queryClient.invalidateQueries({ queryKey: ['reporte-asistencia'] });
+      queryClient.invalidateQueries({ queryKey: ['marcaciones-hoy'] });
+    },
+    onError: (err) => {
+      setMessage('');
+      setError(err.response?.data?.message || err.response?.data?.error || 'No pudimos registrar la asistencia manual.');
     },
   });
 
@@ -233,6 +274,41 @@ function NovedadesPendientes() {
     }
   }
 
+  function updateAttendanceField(name, value) {
+    setMessage('');
+    setError('');
+    setAttendanceForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function submitManualAttendance(event) {
+    event.preventDefault();
+    let range;
+    if (attendancePeriod === 'month') {
+      range = monthBounds(attendanceForm.mes);
+    } else if (attendancePeriod === 'range') {
+      range = { desde: attendanceForm.desde, hasta: attendanceForm.hasta };
+    } else {
+      range = { desde: attendanceForm.fecha, hasta: attendanceForm.fecha };
+    }
+
+    const employee = (empleados || []).find((item) => item.id === attendanceForm.empleadoId);
+    const target = attendanceScope === 'all'
+      ? `todos los empleados vinculados entre ${range.desde} y ${range.hasta}`
+      : `${employee?.apellidos || ''} ${employee?.nombres || ''}`.trim();
+    const accepted = window.confirm(`Registrar asistencia manual para ${target || 'el empleado seleccionado'}? Las marcaciones existentes se conservarán.`);
+    if (!accepted) return;
+
+    asistenciaMutation.mutate({
+      scope: attendanceScope,
+      empleadoId: attendanceScope === 'employee' ? attendanceForm.empleadoId : undefined,
+      desde: range.desde,
+      hasta: range.hasta,
+      horaInicio: attendanceForm.horaInicio,
+      horaFin: attendanceForm.horaFin,
+      justificacion: attendanceForm.justificacion,
+    });
+  }
+
   const requiresAmount = isAmountNoveltyType(form.tipoNovedad, noveltyTypeOptions);
 
   return (
@@ -245,6 +321,182 @@ function NovedadesPendientes() {
       </div>
       {message && <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}
       {error && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
+
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-start gap-3">
+          <CalendarCheck2 className="mt-1 h-5 w-5 text-teal-700" />
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">Registrar jornada manual</h2>
+            <p className="mt-1 text-sm text-slate-600">Completa marcaciones faltantes sin reemplazar las que ya existen.</p>
+          </div>
+        </div>
+
+        <form className="mt-5 space-y-5" onSubmit={submitManualAttendance}>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <fieldset>
+              <legend className="text-sm font-semibold text-slate-800">Alcance</legend>
+              <div className="mt-2 inline-flex rounded-md border border-slate-300 p-1">
+                {[
+                  ['employee', 'Un empleado'],
+                  ['all', 'Todos'],
+                ].map(([value, label]) => (
+                  <button
+                    className={`min-h-9 rounded px-4 text-sm font-semibold ${attendanceScope === value ? 'bg-teal-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    key={value}
+                    onClick={() => setAttendanceScope(value)}
+                    type="button"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend className="text-sm font-semibold text-slate-800">Período</legend>
+              <div className="mt-2 inline-flex flex-wrap rounded-md border border-slate-300 p-1">
+                {[
+                  ['day', 'Un día'],
+                  ['month', 'Mes'],
+                  ['range', 'Rango'],
+                ].map(([value, label]) => (
+                  <button
+                    className={`min-h-9 rounded px-4 text-sm font-semibold ${attendancePeriod === value ? 'bg-teal-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    key={value}
+                    onClick={() => setAttendancePeriod(value)}
+                    type="button"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {attendanceScope === 'employee' && (
+              <label className="block text-sm font-medium text-slate-700 md:col-span-2">
+                Empleado
+                <select
+                  className="mt-1 min-h-10 w-full rounded-md border border-slate-300 px-3"
+                  onChange={(event) => updateAttendanceField('empleadoId', event.target.value)}
+                  required
+                  value={attendanceForm.empleadoId}
+                >
+                  <option value="">Seleccionar empleado...</option>
+                  {(empleados || []).map((empleado) => (
+                    <option disabled={empleado.controla_asistencia === false} key={empleado.id} value={empleado.id}>
+                      {empleado.apellidos || ''} {empleado.nombres || ''} - {empleado.cedula || ''}{empleado.controla_asistencia === false ? ' - control desactivado' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {attendancePeriod === 'day' && (
+              <label className="block text-sm font-medium text-slate-700">
+                Fecha
+                <input
+                  className="mt-1 min-h-10 w-full rounded-md border border-slate-300 px-3"
+                  max={today}
+                  onChange={(event) => updateAttendanceField('fecha', event.target.value)}
+                  required
+                  type="date"
+                  value={attendanceForm.fecha}
+                />
+              </label>
+            )}
+
+            {attendancePeriod === 'month' && (
+              <label className="block text-sm font-medium text-slate-700">
+                Mes
+                <input
+                  className="mt-1 min-h-10 w-full rounded-md border border-slate-300 px-3"
+                  max={today.slice(0, 7)}
+                  onChange={(event) => updateAttendanceField('mes', event.target.value)}
+                  required
+                  type="month"
+                  value={attendanceForm.mes}
+                />
+              </label>
+            )}
+
+            {attendancePeriod === 'range' && (
+              <>
+                <label className="block text-sm font-medium text-slate-700">
+                  Desde
+                  <input
+                    className="mt-1 min-h-10 w-full rounded-md border border-slate-300 px-3"
+                    max={today}
+                    onChange={(event) => updateAttendanceField('desde', event.target.value)}
+                    required
+                    type="date"
+                    value={attendanceForm.desde}
+                  />
+                </label>
+                <label className="block text-sm font-medium text-slate-700">
+                  Hasta
+                  <input
+                    className="mt-1 min-h-10 w-full rounded-md border border-slate-300 px-3"
+                    max={today}
+                    min={attendanceForm.desde}
+                    onChange={(event) => updateAttendanceField('hasta', event.target.value)}
+                    required
+                    type="date"
+                    value={attendanceForm.hasta}
+                  />
+                </label>
+              </>
+            )}
+
+            <label className="block text-sm font-medium text-slate-700">
+              Entrada
+              <input
+                className="mt-1 min-h-10 w-full rounded-md border border-slate-300 px-3"
+                onChange={(event) => updateAttendanceField('horaInicio', event.target.value)}
+                required
+                type="time"
+                value={attendanceForm.horaInicio}
+              />
+            </label>
+            <label className="block text-sm font-medium text-slate-700">
+              Salida
+              <input
+                className="mt-1 min-h-10 w-full rounded-md border border-slate-300 px-3"
+                onChange={(event) => updateAttendanceField('horaFin', event.target.value)}
+                required
+                type="time"
+                value={attendanceForm.horaFin}
+              />
+            </label>
+            <label className="block text-sm font-medium text-slate-700 md:col-span-2 xl:col-span-4">
+              Motivo del registro
+              <textarea
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+                minLength="5"
+                onChange={(event) => updateAttendanceField('justificacion', event.target.value)}
+                placeholder="Ej. regularización autorizada por RRHH"
+                required
+                rows="2"
+                value={attendanceForm.justificacion}
+              />
+            </label>
+          </div>
+
+          {attendancePeriod !== 'day' && (
+            <p className="text-xs text-slate-500">En mes o rango se aplican los días laborables y horarios de la jornada configurada. El mes actual se registra hasta hoy; el límite es de 31 días.</p>
+          )}
+
+          <button
+            className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={asistenciaMutation.isPending}
+            type="submit"
+          >
+            <CalendarCheck2 className="h-4 w-4" />
+            {asistenciaMutation.isPending ? 'Registrando...' : 'Registrar asistencia'}
+          </button>
+        </form>
+      </section>
 
       <form className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" onSubmit={submitManualNovelty}>
         <div className="flex items-start gap-3">

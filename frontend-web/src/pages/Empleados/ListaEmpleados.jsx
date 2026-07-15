@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
-import { formatDateTimeEC } from '../../utils/dateFormat';
+import { formatDateTimeEC, todayISOEC } from '../../utils/dateFormat';
 import { downloadBlob } from '../../utils/downloadBlob';
 
 function ImportPanel({ onImported }) {
@@ -293,6 +293,20 @@ function deliveryText(delivery) {
   return `${channel}: ${labels[delivery.status] || delivery.status}`;
 }
 
+const READINESS_BLOCKER_LABELS = {
+  control_asistencia_desactivado: 'No está incluido en control de asistencia',
+  email_personal_requerido: 'Falta el email personal',
+  departamento_requerido: 'Falta el departamento',
+  unidad_organizativa_sin_match: 'La unidad organizativa no coincide',
+  unidad_organizativa_sin_zona: 'La unidad no tiene zona de marcación',
+  jornada_base_no_configurada: 'Falta la jornada base',
+  jornada_mensual_empleado_requerida: 'Faltan las horas de jornada',
+};
+
+function readinessBlockerLabel(code) {
+  return READINESS_BLOCKER_LABELS[code] || code;
+}
+
 function ListaEmpleados() {
   const queryClient = useQueryClient();
   const [busqueda, setBusqueda] = useState('');
@@ -347,6 +361,16 @@ function ListaEmpleados() {
     },
   });
 
+  const masterReportMutation = useMutation({
+    mutationFn: async () => {
+      const response = await authenticatedApi.get('/empleados/reporte.xlsx', { responseType: 'blob' });
+      return response.data;
+    },
+    onSuccess: (blob) => {
+      downloadBlob(blob, `listado_maestro_empleados_${todayISOEC()}.xlsx`);
+    },
+  });
+
   const empleados = data || [];
   const activationRows = invitationsQuery.data || [];
   const activationByEmployee = useMemo(() => new Map(
@@ -361,7 +385,8 @@ function ListaEmpleados() {
       total: rows.length,
       ready: rows.filter((item) => item.readiness?.ready).length,
       active: rows.filter((item) => item.link?.status === 'ACTIVE').length,
-      blocked: rows.filter((item) => !item.readiness?.ready).length,
+      blocked: rows.filter((item) => !item.readiness?.ready && item.empleado?.controlaAsistencia !== false).length,
+      excluded: rows.filter((item) => item.empleado?.controlaAsistencia === false).length,
       pending: rows.filter((item) => item.invite?.status === 'PENDING_INVITE').length,
     };
   }, [activationRows]);
@@ -382,9 +407,19 @@ function ListaEmpleados() {
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-teal-800">Base laboral</p>
           <h1 className="text-2xl font-bold text-slate-950">Empleados</h1>
         </div>
-        <Link to="/dashboard/empleados/nuevo" className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white">
-          <Plus size={18} /> Nuevo empleado
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <button
+            className="inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            disabled={masterReportMutation.isPending}
+            onClick={() => masterReportMutation.mutate()}
+            type="button"
+          >
+            <Download size={18} /> {masterReportMutation.isPending ? 'Generando...' : 'Listado XLSX'}
+          </button>
+          <Link to="/dashboard/empleados/nuevo" className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white">
+            <Plus size={18} /> Nuevo empleado
+          </Link>
+        </div>
       </div>
 
       <ImportPanel onImported={() => queryClient.invalidateQueries({ queryKey: ['empleados'] })} />
@@ -400,13 +435,14 @@ function ListaEmpleados() {
               Invita empleados activos para que activen la app móvil y registren asistencia. La invitación se bloquea si falta email, unidad organizativa, zona de marcación o jornada.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-3 xl:grid-cols-6">
             {[
               ['Empleados', activationMetrics.total],
               ['Listos', activationMetrics.ready],
               ['Activos', activationMetrics.active],
               ['Pendientes', activationMetrics.pending],
               ['Bloqueados', activationMetrics.blocked],
+              ['No incluidos', activationMetrics.excluded],
             ].map(([label, value]) => (
               <div className="rounded-md bg-slate-50 px-3 py-2" key={label}>
                 <p className="text-xs text-slate-500">{label}</p>
@@ -467,6 +503,12 @@ function ListaEmpleados() {
         </div>
       )}
 
+      {masterReportMutation.isError && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+          {extractApiError(masterReportMutation.error, 'No pudimos generar el listado maestro de empleados.')}
+        </div>
+      )}
+
       <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 p-4">
           <div className="relative">
@@ -505,6 +547,7 @@ function ListaEmpleados() {
                   const activeLink = activation?.link?.status === 'ACTIVE';
                   const pendingInvite = activation?.invite?.status === 'PENDING_INVITE';
                   const blockers = activation?.readiness?.blockers || [];
+                  const attendanceEnabled = empleado.controla_asistencia !== false;
                   return (
                     <tr className="hover:bg-slate-50" key={empleado.id}>
                       <td className="px-6 py-4 text-sm">{empleado.cedula}</td>
@@ -513,7 +556,11 @@ function ListaEmpleados() {
                       <td className="px-6 py-4 text-sm">${Number(empleado.sueldo_bruto_mensual || 0).toFixed(2)}</td>
                       <td className="px-6 py-4 text-sm">
                         <div className="space-y-2">
-                          {activeLink ? (
+                          {!attendanceEnabled ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                              No incluido
+                            </span>
+                          ) : activeLink ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800">
                               <CheckCircle2 className="h-3.5 w-3.5" /> Activa
                             </span>
@@ -531,7 +578,7 @@ function ListaEmpleados() {
                             </span>
                           )}
                           {!ready && blockers.length > 0 && (
-                            <p className="max-w-[260px] text-xs text-red-700">{blockers.join(', ')}</p>
+                            <p className="max-w-[260px] text-xs text-red-700">{blockers.map(readinessBlockerLabel).join(', ')}</p>
                           )}
                         </div>
                       </td>
@@ -546,7 +593,7 @@ function ListaEmpleados() {
                           <Link className="text-red-600 hover:text-red-800" to={`/dashboard/empleados/${empleado.id}/terminar`} title="Terminar empleado">
                             <UserX size={16} />
                           </Link>
-                          {!activeLink && (
+                          {attendanceEnabled && !activeLink && (
                             <button
                               className="inline-flex items-center gap-1 rounded-md border border-teal-200 px-2 py-1 text-xs font-semibold text-teal-800 disabled:cursor-not-allowed disabled:opacity-40"
                               disabled={!ready || inviteMutation.isPending || resendMutation.isPending}

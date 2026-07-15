@@ -30,6 +30,7 @@ Ejecutar una auditoria integral sobre LANDING, PWA, BACKEND y MOBILE sin despleg
 | AIV2-04 | completed | Backend/API: SINKRONET FACTURADOR via SINKRONIQ-MOBILE, IESS parametrizable. | `.github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-04-backend-api-legal.md` |
 | AIV2-05 | completed | Mobile/PWA homologacion y plan de deuda. | `.github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-05-mobile-pwa-paridad.md` |
 | AIV2-06 | completed | QA, AuditLock, no regresion, commit y push. | `.github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-06-qa-release.md` |
+| AIV2-07 | completed | Asistencia parametrizable, operacion diaria/mensual, base 30 y listado maestro de empleados. | `.github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-07-asistencia-nomina.md` |
 
 ## Hallazgos y acciones V2
 
@@ -41,6 +42,11 @@ Ejecutar una auditoria integral sobre LANDING, PWA, BACKEND y MOBILE sin despleg
 | Precios publicos podian leerse como "precio + IVA" sin jerarquia clara entre mensualidad y contado. | Media | resuelto | Tarjeta muestra mensualidad con IVA, contado anual con IVA y nota de calculo. |
 | Evidencia visual automatizada no disponible en workspace. | Baja | pendiente-manual | Playwright no instalado; se documenta limitacion y no se usan screenshots antiguos como evidencia actual. |
 | Facturacion electronica puede confundirse con modulo local. | Alta | controlado | Nombre comercial SINKRONET FACTURADOR; arquitectura por API SINKRONIQ-MOBILE. |
+| Cero marcaciones se presentaba como cero dias trabajados. | Alta | resuelto | El reporte separa dias con marcacion y faltas aprobadas; la nomina solo descuenta novedades aprobadas. |
+| Empleados ingresados durante el mes quedaban fuera del calculo. | Alta | resuelto | La seleccion llega hasta el ultimo dia del periodo y prorratea sobre base mensual de 30 dias. |
+| Asistencia no distinguia empleados sujetos o no a control. | Alta | resuelto | `controla_asistencia` se configura en la ficha y gobierna reporte, app y cargas globales sin bloquear nomina al estar desactivado. |
+| No existia carga manual diaria/mensual con alcance individual/global. | Alta | resuelto | Operacion transaccional e idempotente para un dia, mes o rango de hasta 31 dias. |
+| No existia listado maestro descargable de empleados. | Media | resuelto | XLSX vertical, una fila por empleado, protegido por RBAC y auditoria LOPDP. |
 
 ## Candidatos a eliminacion
 
@@ -59,3 +65,13 @@ Ejecutar una auditoria integral sobre LANDING, PWA, BACKEND y MOBILE sin despleg
 - `npm run check:mobile`
 - `node node_modules/vite/bin/vite.js build` desde `frontend-web`
 - `git diff --check`
+
+## Cierre incremental AIV2-07
+
+- Migracion: `20260714190000_employee_attendance_control`.
+- Motor: meses y ausencias se prorratean sobre 30 dias; febrero completo equivale a 30 dias y el dia 31 se normaliza al dia 30.
+- Asistencia: alcance `Un empleado` o `Todos`; periodo `Un dia`, `Mes` o `Rango`.
+- Seguridad: roles `owner` y `admin_rrhh`, usuario fresco, modulo asistencia, periodo abierto, bloqueo transaccional por tenant, preservacion de marcaciones existentes y auditoria atomica.
+- Reporte: marcaciones y novedades se agregan en CTE separadas para evitar multiplicaciones.
+- Empleados: `Listado XLSX` vertical sin numero de cuenta bancaria.
+- Evidencia: backend 55 suites / 347 pruebas, contratos PASS, Prisma PASS, mobile PASS, build PWA PASS y smoke XLSX local con 30 filas.

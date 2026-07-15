@@ -80,6 +80,21 @@ describe('employeeAppInviteService', () => {
     ]));
   });
 
+  test('buildReadiness respeta el control de asistencia definido en la ficha', () => {
+    const readiness = buildReadiness({
+      controla_asistencia: false,
+      departamento: 'OPS',
+      email_personal: 'persona@empresa.com',
+      organization_unit_id: 'ou-1',
+      work_zone_id: 'zone-1',
+      work_shift_id: 'shift-1',
+      work_shift_weekly_hours: 40,
+    }, { requireEmail: true });
+
+    expect(readiness.ready).toBe(false);
+    expect(readiness.blockers).toContain('control_asistencia_desactivado');
+  });
+
   test('employeeReadinessSelect resuelve jornada por unidad y evita ambiguedad multi-jornada', () => {
     const sql = employeeReadinessSelect('WHERE e.id = $1');
 

@@ -18,6 +18,7 @@ const {
   syncLegalParametersFromGlobal,
   listResource,
 } = require('./configurationService');
+const { PAYROLL_CONCEPTS } = require('./payrollAccountingService');
 
 const ownerUser = {
   id: 'user-1',
@@ -83,6 +84,226 @@ describe('configurationService metadata', () => {
     expect(db.query.mock.calls[0][0]).toContain('DISTINCT ON (LOWER(BTRIM(code)))');
     expect(db.query.mock.calls[0][0]).toContain('CASE WHEN tenant_id = $1 THEN 0 ELSE 1 END');
     expect(db.query.mock.calls[0][1]).toEqual([ownerUser.tenantId]);
+  });
+
+  test.each(PAYROLL_CONCEPTS.map((concept, index) => ({ ...concept, testIndex: index })))(
+    'updateResource persiste cuentas personalizadas para $code',
+    async (concept) => {
+      const debitAccountCode = `6${String(concept.testIndex).padStart(5, '0')}`;
+      const creditAccountCode = `2${String(concept.testIndex).padStart(5, '0')}`;
+      const previous = {
+        id: `mapping-${concept.code}`,
+        tenant_id: ownerUser.tenantId,
+        concept_code: concept.code,
+        concept_label: concept.label,
+        category: concept.category,
+        entry_type: concept.entryType,
+        debit_account_code: concept.debitAccountCode,
+        debit_account_name: concept.debitAccountName,
+        credit_account_code: concept.creditAccountCode,
+        credit_account_name: concept.creditAccountName,
+        cost_center_mode: 'employee',
+        fixed_cost_center_code: '',
+        requires_employee_breakdown: true,
+        status: 'activo',
+        valid_from: '2026-01-01',
+        valid_to: null,
+      };
+      const updated = {
+        ...previous,
+        debit_account_code: debitAccountCode,
+        debit_account_name: `${concept.label} debe personalizado`,
+        credit_account_code: creditAccountCode,
+        credit_account_name: `${concept.label} haber personalizado`,
+      };
+      db.query
+        .mockResolvedValueOnce({ rows: [previous] })
+        .mockResolvedValueOnce({ rows: [updated] });
+      recordAudit.mockResolvedValueOnce();
+
+      const result = await updateResource('payrollAccountingMappings', previous.id, {
+        concept_code: concept.code,
+        concept_label: concept.label,
+        category: concept.category,
+        entry_type: concept.entryType,
+        debit_account_code: updated.debit_account_code,
+        debit_account_name: updated.debit_account_name,
+        credit_account_code: updated.credit_account_code,
+        credit_account_name: updated.credit_account_name,
+        cost_center_mode: 'employee',
+        fixed_cost_center_code: '',
+        requires_employee_breakdown: true,
+        status: 'activo',
+        valid_from: '2026-01-01',
+        valid_to: '',
+      }, ownerUser, { correlationId: `accounting-update-${concept.code}` });
+
+      expect(result).toMatchObject({
+        concept_code: concept.code,
+        debit_account_code: debitAccountCode,
+        credit_account_code: creditAccountCode,
+      });
+      expect(db.query.mock.calls[1][0]).toContain('UPDATE payroll_accounting_mappings');
+      expect(db.query.mock.calls[1][1]).toEqual(expect.arrayContaining([
+        concept.code,
+        concept.label,
+        concept.category,
+        debitAccountCode,
+        creditAccountCode,
+        previous.id,
+        ownerUser.tenantId,
+      ]));
+      expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+        action: 'configuracion.actualizar',
+        entity: 'payroll_accounting_mappings',
+        entityId: previous.id,
+      }));
+    }
+  );
+
+  test('updateResource persiste cuentas de conceptos dinamicos de novedades', async () => {
+    const previous = {
+      id: 'mapping-novedad-bono-cliente',
+      tenant_id: ownerUser.tenantId,
+      concept_code: 'novedad_bono_cliente',
+      concept_label: 'Bono especial de cliente',
+      category: 'ingreso',
+      entry_type: 'DEVENGAMIENTO',
+      debit_account_code: '510190',
+      debit_account_name: 'Bonos especiales',
+      credit_account_code: '210101',
+      credit_account_name: 'Nomina por pagar',
+      cost_center_mode: 'employee',
+      fixed_cost_center_code: '',
+      requires_employee_breakdown: true,
+      status: 'activo',
+      valid_from: '2026-01-01',
+      valid_to: null,
+    };
+    const updated = {
+      ...previous,
+      debit_account_code: '510191',
+      debit_account_name: 'Bonos especiales personalizados',
+      credit_account_code: '210191',
+      credit_account_name: 'Bonos especiales por pagar',
+    };
+    db.query
+      .mockResolvedValueOnce({ rows: [previous] })
+      .mockResolvedValueOnce({ rows: [updated] });
+    recordAudit.mockResolvedValueOnce();
+
+    const result = await updateResource('payrollAccountingMappings', previous.id, {
+      concept_code: previous.concept_code,
+      concept_label: previous.concept_label,
+      category: previous.category,
+      entry_type: previous.entry_type,
+      debit_account_code: updated.debit_account_code,
+      debit_account_name: updated.debit_account_name,
+      credit_account_code: updated.credit_account_code,
+      credit_account_name: updated.credit_account_name,
+      cost_center_mode: 'employee',
+      fixed_cost_center_code: '',
+      requires_employee_breakdown: true,
+      status: 'activo',
+      valid_from: '2026-01-01',
+      valid_to: '',
+    }, ownerUser, { correlationId: 'accounting-update-dynamic-novelty' });
+
+    expect(result).toMatchObject({
+      concept_code: 'novedad_bono_cliente',
+      concept_label: 'Bono especial de cliente',
+      category: 'ingreso',
+      debit_account_code: '510191',
+      credit_account_code: '210191',
+    });
+    expect(db.query.mock.calls[1][1]).toEqual(expect.arrayContaining([
+      'novedad_bono_cliente',
+      'Bono especial de cliente',
+      'ingreso',
+      '510191',
+      '210191',
+    ]));
+  });
+
+  test('updateResource persiste cuentas editadas para decimo tercero mensualizado', async () => {
+    const previous = {
+      id: 'mapping-decimo-tercero-mensual',
+      tenant_id: ownerUser.tenantId,
+      concept_code: 'decimo_tercero_mensual',
+      concept_label: 'Decimo tercero mensualizado',
+      category: 'ingreso',
+      entry_type: 'DEVENGAMIENTO',
+      debit_account_code: '510202',
+      debit_account_name: 'Gasto decimo tercero',
+      credit_account_code: '210101',
+      credit_account_name: 'Nomina por pagar',
+      cost_center_mode: 'employee',
+      fixed_cost_center_code: '',
+      requires_employee_breakdown: true,
+      status: 'activo',
+      valid_from: '2026-01-01',
+      valid_to: null,
+    };
+    const updated = {
+      ...previous,
+      debit_account_code: '510299',
+      debit_account_name: 'Gasto decimo tercero personalizado',
+      credit_account_code: '210199',
+      credit_account_name: 'Decimo tercero por pagar personalizado',
+    };
+    db.query
+      .mockResolvedValueOnce({ rows: [previous] })
+      .mockResolvedValueOnce({ rows: [updated] });
+    recordAudit.mockResolvedValueOnce();
+
+    const result = await updateResource('payrollAccountingMappings', previous.id, {
+      concept_code: previous.concept_code,
+      entry_type: previous.entry_type,
+      debit_account_code: updated.debit_account_code,
+      debit_account_name: updated.debit_account_name,
+      credit_account_code: updated.credit_account_code,
+      credit_account_name: updated.credit_account_name,
+      cost_center_mode: 'employee',
+      fixed_cost_center_code: '',
+      requires_employee_breakdown: true,
+      status: 'activo',
+      valid_from: '01/01/2026',
+      valid_to: '',
+    }, ownerUser, { correlationId: 'accounting-update' });
+
+    expect(result).toMatchObject({
+      debit_account_code: '510299',
+      credit_account_code: '210199',
+    });
+    expect(db.query.mock.calls[1][0]).toContain('UPDATE payroll_accounting_mappings');
+    expect(db.query.mock.calls[1][1]).toEqual(expect.arrayContaining([
+      '510299',
+      '210199',
+      '2026-01-01',
+      previous.id,
+      ownerUser.tenantId,
+    ]));
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'configuracion.actualizar',
+      entity: 'payroll_accounting_mappings',
+      entityId: previous.id,
+    }));
+  });
+
+  test('updateResource rechaza fecha contable ambigua antes de consultar la base', async () => {
+    await expect(updateResource('payrollAccountingMappings', 'mapping-1', {
+      concept_code: 'decimo_tercero_mensual',
+      entry_type: 'DEVENGAMIENTO',
+      debit_account_code: '510202',
+      debit_account_name: 'Gasto decimo tercero',
+      credit_account_code: '210101',
+      credit_account_name: 'Nomina por pagar',
+      valid_from: 'Thu Jan 01',
+    }, ownerUser)).rejects.toMatchObject({
+      code: 'CONFIG_DATE_INVALID',
+      statusCode: 400,
+    });
+    expect(db.query).not.toHaveBeenCalled();
   });
 
   test('createResource bloquea tipo de novedad duplicado con mensaje funcional', async () => {

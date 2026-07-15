@@ -24,6 +24,7 @@ const {
   interpolate,
   listContractTemplates,
   loadContractTemplate,
+  validateSignatureReadyContext,
 } = require('./templateGenerator');
 
 const tenant = {
@@ -132,6 +133,7 @@ describe('templateGenerator', () => {
     expect(template).toMatchObject({
       templateKey: 'contrato_obra_servicio_giro_negocio',
       legalReviewRequired: false,
+      documentPresentation: 'signature_ready',
       probation: expect.objectContaining({ enabled: true, days: 90 }),
     });
     expect(context).toMatchObject({
@@ -147,10 +149,93 @@ describe('templateGenerator', () => {
         legalReviewStatus: expect.stringContaining('modelo revisado'),
       },
     });
-    const rendered = JSON.stringify(buildContractDocDefinition({ template, context }));
+    const docDefinition = buildContractDocDefinition({ template, context });
+    const rendered = JSON.stringify(docDefinition);
+    expect(docDefinition.content[1]).toMatchObject({ text: 'COMPARECIENTES' });
+    expect(docDefinition.styles.sectionTitle.color).toBe('#000000');
     expect(rendered).toContain('campana de mercaderismo en puntos de venta');
     expect(rendered).toContain('carla@example.com');
+    expect(rendered).toContain('firman este contrato por triplicado');
+    expect(rendered).not.toContain('Base legal y controles de emision');
+    expect(rendered).not.toContain('Modelo implementado con base');
+    expect(rendered).not.toContain('Registro SUT/MDT');
+    expect(rendered).not.toContain('Estado SUT/MDT');
+    expect(rendered).not.toContain('Generado por SKNOMINA');
+    expect(rendered).not.toContain('dos ejemplares de igual tenor');
     expect(rendered).not.toContain('{{');
+  });
+
+  test('bloquea la emisión lista para firma cuando faltan datos impresos', () => {
+    const template = loadContractTemplate({ tipoContrato: 'obra_servicio_giro_negocio' });
+    const context = buildContractContext({
+      employee,
+      tenant: {
+        ...tenant,
+        configuracion: {
+          ...tenant.configuracion,
+          representanteLegalIdentificacion: '',
+        },
+      },
+      template,
+      legalParameters: { payroll: { unifiedBaseSalary: 470 } },
+      year: 2026,
+      generatedAt: new Date('2026-07-02T00:00:00Z'),
+    });
+
+    expect(() => validateSignatureReadyContext(template, context)).toThrow(
+      expect.objectContaining({
+        code: 'CONTRATO_DATOS_FIRMA_INCOMPLETOS',
+        statusCode: 422,
+      }),
+    );
+  });
+
+  test('genera el contrato listo para firma con los datos guardados en Datos de empresa', async () => {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [{
+          ...employee,
+          email_personal: 'carla@example.com',
+          telefono: '0999999999',
+          provincia_domicilio: 'Pichincha',
+        }],
+      })
+      .mockResolvedValueOnce({
+        rows: [{
+          payload: {
+            direccion: 'Av. República 123',
+            ciudad: 'Quito',
+            provincia: 'Pichincha',
+            representanteLegal: 'Ana Representante',
+            representanteLegalIdentificacion: '1700000001',
+            actividadEconomica: 'servicios de trade marketing',
+            contratoObraServicio: {
+              descripcionServicio: 'campaña de mercaderismo en puntos de venta',
+              duracionEstimada: '6 meses',
+              ciudadPrestacion: 'Quito',
+              provinciaPrestacion: 'Pichincha',
+              direccionPrestacion: 'Av. República 123',
+            },
+          },
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [{ id: 'doc-signature-ready', tipo_documento: 'contrato' }] });
+
+    const result = await generarContrato(
+      { id: employee.id, tenant_id: tenant.id },
+      tenant,
+      'obra_servicio_giro_negocio',
+      { generatedAt: new Date('2026-07-02T00:00:00Z'), year: 2026 },
+    );
+
+    const rendered = JSON.stringify(pdfmake.createPdf.mock.calls[0][0]);
+    expect(rendered).toContain('Av. República 123');
+    expect(rendered).toContain('campaña de mercaderismo en puntos de venta');
+    expect(rendered).not.toContain('Generado por SKNOMINA');
+    expect(result.template).toMatchObject({
+      templateKey: 'contrato_obra_servicio_giro_negocio',
+      version: '2026.07.03',
+    });
   });
 
   test('interpela variables sin ejecutar codigo externo', () => {

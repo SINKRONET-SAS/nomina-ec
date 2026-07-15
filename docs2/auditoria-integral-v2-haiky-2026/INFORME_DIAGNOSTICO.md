@@ -1,6 +1,6 @@
 # Informe diagnostico integral V2 - SKNOMINA Ecuador 2026
 
-Generado: 2026-07-14T12:43:54.516Z
+Generado: 2026-07-15T00:34:39.317Z
 Hash evidencia: e6fa0d425d40b17c862e94360c2a3b8ea26db664e428fa288867201e10b2dddc
 
 ## Resumen ejecutivo
@@ -48,3 +48,13 @@ Hash evidencia: e6fa0d425d40b17c862e94360c2a3b8ea26db664e428fa288867201e10b2dddc
 - No se elimina historial Haiky ni prompts anteriores; se versiona la auditoria V2.
 - Los cambios runtime son acotados: descarga Blob compartida, lazy routes, textos de precios y guard de integridad de nomina.
 
+## Seguimiento AIV2-07 - asistencia y nomina
+
+- Hallazgo reconfirmado: el reporte llamaba `dias_trabajados` al conteo de fechas con marcacion y unia marcaciones con novedades antes de agregarlas, con riesgo de multiplicar minutos y conteos.
+- Correccion: el reporte expone `dias_con_marcacion` y `faltas_aprobadas`, agregados por separado. Cero marcaciones no crea una falta ni bloquea el rol.
+- Hallazgo reconfirmado: la consulta del motor solo incluia empleados ingresados hasta el primer dia del mes, aunque el calculo admitia prorrateo.
+- Correccion: seleccion hasta fin de mes y prorrateo 30/30 para todos los meses; una falta aprobada conserva valor diario `sueldo / 30`.
+- Parametrizacion: la ficha incorpora `controla_asistencia`; desactivarlo excluye app y cargas globales, sin convertir configuracion GPS/jornada en bloqueo de nomina.
+- Operacion: asistencia manual diaria, mensual o por rango, para un empleado o todos, con periodo abierto, anti duplicado, transaccion, auditoria y zona horaria Ecuador.
+- Reporte laboral: XLSX maestro vertical, una fila por empleado, sin cuenta bancaria y con auditoria de finalidad LOPDP.
+- Validacion: 55 suites y 347 pruebas backend, contrato unico, Prisma, mobile y build PWA sin regresiones.

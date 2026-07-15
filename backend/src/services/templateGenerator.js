@@ -239,6 +239,29 @@ async function enrichEmployee(employee, tenant) {
   return result.rows[0];
 }
 
+async function enrichTenantForContract(tenant, template) {
+  if (template.documentPresentation !== 'signature_ready') return tenant;
+
+  const result = await db.query(`
+    SELECT payload
+    FROM configuration_catalogs
+    WHERE tenant_id = $1
+      AND catalog_type = 'empresa_operativa'
+      AND status = 'activo'
+    ORDER BY updated_at DESC, created_at DESC
+    LIMIT 1
+  `, [tenant.id]);
+  const companyConfiguration = safeJson(result.rows[0]?.payload);
+
+  return {
+    ...tenant,
+    configuracion: {
+      ...safeJson(tenant.configuracion),
+      ...companyConfiguration,
+    },
+  };
+}
+
 function validateSalaryAgainstSbu(employee, legalParameters, year) {
   const salary = Number(employee.sueldo_bruto_mensual || 0);
   const sbu = Number(legalParameters.payroll?.unifiedBaseSalary || 0);
@@ -439,6 +462,45 @@ function buildContractContext({ employee, tenant, template, legalParameters, yea
   };
 }
 
+function isIncompleteSignatureValue(value) {
+  const normalized = cleanText(value).toLowerCase();
+  if (!normalized) return true;
+  if (normalized.includes('no registrad')) return true;
+  if (normalized === 'el giro de negocio y actividades economicas registradas por la empleadora') return true;
+  if (/^servicios de .+ dentro del giro del negocio de la empleadora$/.test(normalized)) return true;
+  return [
+    'empleador',
+    'trabajador',
+    'representante autorizado',
+    'ciudad no registrada',
+    'provincia no registrada',
+    'zona no registrada',
+    'unidad no registrada',
+  ].includes(normalized);
+}
+
+function validateSignatureReadyContext(template, context) {
+  if (template.documentPresentation !== 'signature_ready') return;
+
+  const requiredFields = Array.isArray(template.requiredSignatureFields)
+    ? template.requiredSignatureFields
+    : [];
+  const missingFields = requiredFields
+    .filter((field) => isIncompleteSignatureValue(getPathValue(context, field.path)))
+    .map((field) => ({ path: field.path, label: field.label || field.path }));
+
+  if (missingFields.length > 0) {
+    throw new AppError(
+      `No se puede emitir el contrato listo para firma. Completa: ${missingFields.map((field) => field.label).join(', ')}.`,
+      {
+        code: 'CONTRATO_DATOS_FIRMA_INCOMPLETOS',
+        statusCode: 422,
+        details: { missingFields },
+      },
+    );
+  }
+}
+
 function paragraphNode(text, context) {
   return {
     text: interpolate(text, context),
@@ -448,15 +510,19 @@ function paragraphNode(text, context) {
 }
 
 function buildContractDocDefinition({ template, context }) {
+  const signatureReady = template.documentPresentation === 'signature_ready';
   const content = [
     { text: template.documentTitle || template.displayName || 'CONTRATO DE TRABAJO', style: 'title' },
-    {
+  ];
+
+  if (!signatureReady) {
+    content.push({
       text: `Plantilla ${template.templateKey} v${template.version || '1'} | Generado por ${context.system.product}`,
       style: 'audit',
       alignment: 'center',
       margin: [0, 0, 0, 14],
-    },
-    {
+    });
+    content.push({
       columns: [
         {
           width: '*',
@@ -482,10 +548,10 @@ function buildContractDocDefinition({ template, context }) {
       ],
       columnGap: 18,
       margin: [0, 0, 0, 14],
-    },
-  ];
+    });
+  }
 
-  if (Array.isArray(template.legalBasis) && template.legalBasis.length > 0) {
+  if (!signatureReady && Array.isArray(template.legalBasis) && template.legalBasis.length > 0) {
     content.push(
       { text: 'Base legal y controles de emision', style: 'sectionTitle' },
       {
@@ -496,7 +562,7 @@ function buildContractDocDefinition({ template, context }) {
     );
   }
 
-  if (Array.isArray(template.notices)) {
+  if (!signatureReady && Array.isArray(template.notices)) {
     for (const notice of template.notices) {
       content.push({
         text: interpolate(notice, context),
@@ -513,11 +579,13 @@ function buildContractDocDefinition({ template, context }) {
     }
   }
 
-  content.push({
-    text: 'Para constancia, las partes suscriben el presente documento en dos ejemplares de igual tenor.',
-    style: 'paragraph',
-    margin: [0, 10, 0, 18],
-  });
+  if (!signatureReady) {
+    content.push({
+      text: 'Para constancia, las partes suscriben el presente documento en dos ejemplares de igual tenor.',
+      style: 'paragraph',
+      margin: [0, 10, 0, 18],
+    });
+  }
 
   content.push({
     columns: [
@@ -526,7 +594,7 @@ function buildContractDocDefinition({ template, context }) {
         stack: [
           { text: '\n\n____________________________', alignment: 'center' },
           { text: context.company.legalRepresentative, alignment: 'center', bold: true },
-          { text: `Identificacion: ${context.company.legalRepresentativeId}`, alignment: 'center' },
+          { text: `Identificación: ${context.company.legalRepresentativeId}`, alignment: 'center' },
           { text: context.company.legalName, alignment: 'center' },
           { text: `RUC: ${context.company.ruc}`, alignment: 'center' },
         ],
@@ -544,11 +612,13 @@ function buildContractDocDefinition({ template, context }) {
     columnGap: 26,
   });
 
-  content.push({
-    text: `Estado SUT/MDT: ${context.contract.sutRegistrationStatus}. Revisión legal: ${context.contract.legalReviewStatus}. Fecha de generación: ${context.contract.generatedAtIso}.`,
-    style: 'audit',
-    margin: [0, 22, 0, 0],
-  });
+  if (!signatureReady) {
+    content.push({
+      text: `Estado SUT/MDT: ${context.contract.sutRegistrationStatus}. Revisión legal: ${context.contract.legalReviewStatus}. Fecha de generación: ${context.contract.generatedAtIso}.`,
+      style: 'audit',
+      margin: [0, 22, 0, 0],
+    });
+  }
 
   return {
     pageSize: 'A4',
@@ -557,7 +627,12 @@ function buildContractDocDefinition({ template, context }) {
     defaultStyle: { fontSize: 9, lineHeight: 1.25 },
     styles: {
       title: { fontSize: 15, bold: true, alignment: 'center', margin: [0, 0, 0, 4] },
-      sectionTitle: { fontSize: 10, bold: true, color: '#0f766e', margin: [0, 9, 0, 4] },
+      sectionTitle: {
+        fontSize: 10,
+        bold: true,
+        color: signatureReady ? '#000000' : '#0f766e',
+        margin: [0, 9, 0, 4],
+      },
       paragraph: { alignment: 'justify' },
       boxTitle: { fontSize: 9, bold: true, color: '#0f766e', margin: [0, 0, 0, 3] },
       notice: { fontSize: 8, color: '#475569', italics: true },
@@ -600,14 +675,16 @@ async function generarContrato(empleado, tenant, tipoContrato = null, options = 
   validateSalaryAgainstSbu(employee, legalParameters, year);
 
   const generatedAt = options.generatedAt || new Date();
+  const contractTenant = await enrichTenantForContract(tenant, template);
   const context = buildContractContext({
     employee,
-    tenant,
+    tenant: contractTenant,
     template,
     legalParameters,
     year,
     generatedAt,
   });
+  validateSignatureReadyContext(template, context);
   const docDefinition = buildContractDocDefinition({ template, context });
   const pdfBuffer = await pdfBufferFromDefinition(docDefinition);
   const key = `documentos/${tenant.id}/${employee.id}/contratos/${template.templateKey}_${Date.now()}.pdf`;
@@ -739,7 +816,7 @@ function buildFiniquitoDocDefinition({ empleado, tenant, cause, liquidacion, gen
         columnGap: 26,
       },
       {
-        text: 'Plantilla acta_finiquito_sknomina v2026.07. Documento generado por SKNOMINA.',
+        text: 'Plantilla acta_finiquito_sknomina v2026.07. Documento generado con SKNOMINA.',
         style: 'audit',
         margin: [0, 18, 0, 0],
       },
@@ -858,6 +935,7 @@ module.exports = {
   listContractTemplates,
   loadContractTemplate,
   buildContractContext,
+  validateSignatureReadyContext,
   buildContractDocDefinition,
   buildFiniquitoDocDefinition,
   interpolate,

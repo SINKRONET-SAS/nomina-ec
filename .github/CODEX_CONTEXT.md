@@ -1,6 +1,36 @@
 
 ---
 
+## Incremento ejecutado - AIV2-07 asistencia y nomina base 30
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-AUDITORIA-INTEGRAL-V2-NOMINA-EC-2026 |
+| Fase | AIV2-07 |
+| Estado | completed-pass |
+| Fecha | 2026-07-14 |
+| Prompt | `.github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-07-asistencia-nomina.md` |
+| Migracion | `backend/prisma/migrations/20260714190000_employee_attendance_control/migration.sql` |
+
+### Decisiones AIV2-07
+
+- Marcacion real y base salarial son conceptos distintos: el reporte cuenta dias con marcacion; nomina prorratea sueldo y faltas aprobadas sobre 30 dias.
+- La falta de marcaciones no crea ausencia, descuento ni bloqueo automatico.
+- `controla_asistencia` define participacion en app, reportes y cargas globales por empleado; desactivarlo no bloquea el rol.
+- Asistencia manual admite alcance individual/global y periodo diario/mensual/rango, hasta 31 dias, sin reemplazar marcas existentes.
+- El listado maestro de empleados es vertical XLSX y no expone numeros de cuenta bancaria.
+
+### Gates AIV2-07
+
+- Backend: 55 suites / 347 pruebas PASS.
+- Contratos de sistema PASS.
+- Prisma validate, migrate deploy y generate PASS.
+- Mobile store readiness PASS.
+- PWA build PASS.
+- Diagnostico integral V2: 286 archivos, cero hallazgos automatizados abiertos.
+
+---
+
 ## Current Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-V2-NOMINA-EC-2026
 
 | Campo | Valor |

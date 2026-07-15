@@ -28,6 +28,18 @@ describe('calculoNominaService', () => {
     expect(calcularDiasTrabajados('2026-06-16', 2026, 6)).toBe(15);
   });
 
+  test('normaliza febrero completo a 30 dias de nomina', () => {
+    expect(calcularDiasTrabajados('2025-01-15', 2026, 2)).toBe(30);
+  });
+
+  test('normaliza a 15 dias un ingreso el dia 16 de un mes de 31 dias', () => {
+    expect(calcularDiasTrabajados('2026-07-16', 2026, 7)).toBe(15);
+  });
+
+  test('trata el dia 31 como el dia 30 para prorrateo mensual', () => {
+    expect(calcularDiasTrabajados('2026-07-31', 2026, 7)).toBe(1);
+  });
+
   test('calcula IR mensual en cero para base anual exenta', () => {
     const legal = getLegalParameters(2026);
     expect(calcularIR(900, legal)).toBe(0);

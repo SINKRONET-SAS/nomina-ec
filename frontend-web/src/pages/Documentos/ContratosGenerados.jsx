@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, FileText } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Download, FileText, Settings2 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import CompactNotice from '../../components/UI/CompactNotice';
 import { normalizeContractTemplateKey } from '../../utils/contractTemplates';
@@ -83,7 +84,7 @@ function ContratosGenerados() {
     },
     onSuccess: (documento) => {
       queryClient.invalidateQueries({ queryKey: ['contratos'] });
-      setMessage(`Contrato generado con plantilla ${documento?.template?.displayName || selectedTemplate?.displayName || effectiveTemplateKey}.`);
+      setMessage(`Contrato listo para revisar y firmar: ${documento?.template?.displayName || selectedTemplate?.displayName || effectiveTemplateKey}.`);
       setError('');
     },
     onError: (err) => {
@@ -111,14 +112,23 @@ function ContratosGenerados() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">Contratos Generados</h1>
+      <h1 className="mb-6 text-2xl font-bold">Contratos</h1>
 
       <CompactNotice className="mb-4" tone="amber" title="Antes de registrar">
         Revisa el contrato y, si aplica, gestiona su registro en SUT/MDT. SKNOMINA conserva la evidencia, no confirma trámites externos.
       </CompactNotice>
 
       <CompactNotice className="mb-4" tone="emerald" title="Firmas">
-        El PDF incluye representante y trabajador. Completa los datos de empresa si falta la firma del representante.
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span>El PDF se genera únicamente cuando los datos necesarios para firmar están completos.</span>
+          <Link
+            className="inline-flex min-h-9 items-center gap-2 rounded-md border border-emerald-300 bg-white px-3 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
+            to="/dashboard/configuracion/parametrizacion?seccion=empresa"
+          >
+            <Settings2 className="h-4 w-4" />
+            Completar datos de empresa
+          </Link>
+        </div>
       </CompactNotice>
 
       <section className="mb-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm">
@@ -178,11 +188,10 @@ function ContratosGenerados() {
 
         {selectedTemplate && (
           <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
-            <span className="font-semibold text-slate-800">{selectedTemplate.templateKey}</span>
-            {' | '}
-            {selectedTemplate.sourcePath}
-            {selectedTemplate.probation?.enabled ? ` | período de prueba ${selectedTemplate.probation.days} días` : ''}
-            {employeeTemplateKey && !form.templateKey ? ' | definida en ficha del empleado' : ''}
+            <span className="font-semibold text-slate-800">{selectedTemplate.displayName}</span>
+            {selectedTemplate.version ? ` · Versión ${selectedTemplate.version}` : ''}
+            {selectedTemplate.probation?.enabled ? ` · Período de prueba: ${selectedTemplate.probation.days} días` : ''}
+            {employeeTemplateKey && !form.templateKey ? ' · Seleccionada desde la ficha del empleado' : ''}
           </div>
         )}
       </section>

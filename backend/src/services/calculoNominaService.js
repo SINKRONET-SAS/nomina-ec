@@ -186,7 +186,7 @@ async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
       WHERE e.tenant_id = $1
         AND e.activo = true
         AND e.fecha_ingreso <= $2
-    `, [tenantId, `${anio}-${String(mes).padStart(2, '0')}-01`]);
+    `, [tenantId, periodEndDate(anio, mes)]);
 
     for (const emp of empleados.rows) {
       try {
@@ -588,17 +588,16 @@ async function finishPayrollCalculationBatch({
 }
 
 function calcularDiasTrabajados(fechaIngreso, anio, mes) {
-  const inicioMes = new Date(anio, mes - 1, 1);
-  const finMes = new Date(anio, mes, 0);
+  const inicioMes = new Date(Date.UTC(anio, mes - 1, 1));
+  const finMes = new Date(Date.UTC(anio, mes, 0));
   const ingreso = new Date(fechaIngreso);
 
-  if (ingreso > finMes) {
-    return 0;
-  }
+  if (Number.isNaN(ingreso.getTime()) || ingreso > finMes) return 0;
+  if (ingreso <= inicioMes) return 30;
 
-  const inicioCalculo = ingreso > inicioMes ? ingreso : inicioMes;
-  const dias = Math.floor((finMes - inicioCalculo) / 86400000) + 1;
-  return Math.max(0, Math.min(30, dias));
+  // Nómina ecuatoriana mensual: todos los meses se prorratean sobre una base de 30 días.
+  const diaNormalizado = Math.min(30, ingreso.getUTCDate());
+  return Math.max(0, 30 - diaNormalizado + 1);
 }
 
 function validarPeriodoNomina(anio, mes) {

@@ -3,6 +3,7 @@
 // ============================================================
 const db = require('../config/database');
 const { validarMarcacion } = require('../services/marcacionValidator');
+const { registerManualAttendance } = require('../services/manualAttendanceService');
 
 async function registrar(req, res) {
   try {
@@ -143,4 +144,35 @@ async function listarHoy(req, res) {
   }
 }
 
-module.exports = { registrar, listarPorEmpleado, listarHoy };
+async function registrarManual(req, res) {
+  try {
+    const result = await registerManualAttendance({
+      tenantId: req.tenantId,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip || req.connection?.remoteAddress || null,
+      payload: req.body,
+    });
+    return res.status(201).json({
+      success: true,
+      asistencia: result,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[MARCACIONES] Error registrando asistencia manual', {
+      code: err.code || 'MANUAL_ATTENDANCE_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'MANUAL_ATTENDANCE_ERROR',
+      message: err.message || 'No pudimos registrar la asistencia manual.',
+      details: err.details || null,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+module.exports = { registrar, registrarManual, listarPorEmpleado, listarHoy };

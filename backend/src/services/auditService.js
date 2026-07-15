@@ -72,6 +72,7 @@ async function recordAudit({
   newData = {},
   ipAddress = null,
   metadata = {},
+  dbClient = null,
 }) {
   if (!correlationId) {
     throw new Error('correlationId requerido para auditoria');
@@ -81,7 +82,8 @@ async function recordAudit({
   }
 
   try {
-    await db.query(`
+    const executor = dbClient || db;
+    await executor.query(`
       INSERT INTO audit_logs (
         tenant_id, user_id, correlation_id, accion, entidad, entidad_id,
         datos_anteriores, datos_nuevos, ip_address, metadata

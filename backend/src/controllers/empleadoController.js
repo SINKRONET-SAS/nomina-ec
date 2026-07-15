@@ -9,6 +9,7 @@ const { getBankProfileForTenant } = require('../services/bancoAebGenerator');
 const { s3Upload } = require('../config/s3');
 const { generarContrato } = require('../services/templateGenerator');
 const { getEmployeeHistory } = require('../services/employeeHistoryService');
+const { buildEmployeeMasterReport } = require('../services/employeeMasterReportService');
 const { listTerminationCauses } = require('../config/terminationCauses');
 const logger = require('../utils/logger');
 const {
@@ -515,6 +516,7 @@ async function listar(req, res) {
         e.tipo_contrato,
         e.iess_afiliado,
         e.iess_tipo_relacion,
+        e.controla_asistencia,
         e.activo
       FROM empleados e
       LEFT JOIN job_positions jp
@@ -626,7 +628,7 @@ async function crear(req, res) {
       jornada_horas_mensuales, gastos_personales_anuales,
       cuenta_bancaria, banco, tipo_cuenta, forma_pago, region_decimo_cuarto, modalidad_fondo_reserva,
       modalidad_decimo_tercero, modalidad_decimo_cuarto,
-      jornada_codigo, unidad_organizativa_codigo, zona_marcacion_codigo,
+      jornada_codigo, unidad_organizativa_codigo, zona_marcacion_codigo, controla_asistencia,
       direccion, ciudad_codigo, provincia_codigo, estado_civil, cargas_familiares, dependientes, telefono, email,
       whatsapp_consent
     } = profileData;
@@ -682,6 +684,7 @@ async function crear(req, res) {
       });
     }
     const normalizedIessAffiliated = normalizeIessAffiliated(iess_afiliado);
+    const normalizedAttendanceControl = normalizeIessAffiliated(controla_asistencia);
     normalizeHomeReference(profileData);
     normalizeHomeCoordinates(profileData);
 
@@ -717,7 +720,7 @@ async function crear(req, res) {
     const result = await db.query(`
       INSERT INTO empleados (
         tenant_id, cedula, nombres, apellidos, fecha_nacimiento, position_id, cargo, departamento,
-        unidad_organizativa_codigo, jornada_codigo, zona_marcacion_codigo,
+        unidad_organizativa_codigo, jornada_codigo, zona_marcacion_codigo, controla_asistencia,
         sueldo_bruto_mensual, jornada_horas_mensuales, gastos_personales_anuales,
         fecha_ingreso, tipo_contrato, iess_afiliado, iess_tipo_relacion,
         cuenta_bancaria_cifrada, banco, tipo_cuenta, forma_pago,
@@ -726,18 +729,18 @@ async function crear(req, res) {
         direccion_domicilio, provincia_codigo, ciudad_codigo, ciudad_domicilio, provincia_domicilio,
         referencia_no_convive_nombres, referencia_no_convive_email, referencia_no_convive_telefono,
         domicilio_lat, domicilio_lng, estado_civil, cargas_familiares, telefono, email_personal
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41)
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42)
       RETURNING id, cedula, nombres, apellidos, fecha_nacimiento, position_id, cargo, sueldo_bruto_mensual,
         jornada_horas_mensuales, gastos_personales_anuales, fecha_ingreso, tipo_contrato, iess_afiliado, iess_tipo_relacion,
         banco, tipo_cuenta, forma_pago, region_decimo_cuarto, modalidad_fondo_reserva,
         modalidad_decimo_tercero, modalidad_decimo_cuarto, whatsapp_consent_at,
-        unidad_organizativa_codigo, jornada_codigo, zona_marcacion_codigo,
+        unidad_organizativa_codigo, jornada_codigo, zona_marcacion_codigo, controla_asistencia,
         direccion_domicilio, provincia_codigo, ciudad_codigo, ciudad_domicilio, provincia_domicilio,
         referencia_no_convive_nombres, referencia_no_convive_email, referencia_no_convive_telefono,
         domicilio_lat, domicilio_lng, croquis_domicilio_url
     `, [
       tenantId, cedula, nombres, apellidos, fecha_nacimiento, positionAssignment.positionId, positionAssignment.cargo, departamento || positionAssignment.unidadOrganizativaNombre || '',
-      positionAssignment.unidadOrganizativaCodigo, normalizedWorkShiftCode, normalizedWorkZoneCode,
+      positionAssignment.unidadOrganizativaCodigo, normalizedWorkShiftCode, normalizedWorkZoneCode, normalizedAttendanceControl,
       sueldo_bruto_mensual,
       jornada_horas_mensuales || null,
       gastos_personales_anuales || 0,
@@ -818,6 +821,38 @@ async function previewImportacion(req, res) {
     return res.status(500).json({
       error: 'EMPLOYEE_IMPORT_PREVIEW_ERROR',
       message: 'No pudimos prevalidar la carga. Revisa el archivo e intenta nuevamente.',
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function descargarReporteMaestro(req, res) {
+  try {
+    const activeOnly = String(req.query.incluirDesvinculados || '').toLowerCase() !== 'true';
+    const report = await buildEmployeeMasterReport({ tenantId: req.tenantId, activeOnly });
+    await recordAudit({
+      tenantId: req.tenantId,
+      userId: req.usuarioId || req.usuario?.id || null,
+      correlationId: req.correlationId,
+      action: 'empleado.reporte_maestro.exportado',
+      entity: 'empleados',
+      newData: { total: report.total, activeOnly },
+      metadata: { role: req.usuario?.rol || '', lopdpPurpose: 'gestion_laboral_nomina' },
+      ipAddress: req.ip,
+    });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${report.fileName}"`);
+    return res.send(report.buffer);
+  } catch (err) {
+    console.error('[EMPLEADOS] Error exportando listado maestro', {
+      code: err.code || 'EMPLOYEE_MASTER_REPORT_ERROR',
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'EMPLOYEE_MASTER_REPORT_ERROR',
+      message: err.message || 'No pudimos generar el listado de empleados.',
       correlationId: req.correlationId,
     });
   }
@@ -954,6 +989,7 @@ async function actualizar(req, res) {
       unidad_organizativa_codigo: 'unidad_organizativa_codigo',
       jornada_codigo: 'jornada_codigo',
       zona_marcacion_codigo: 'zona_marcacion_codigo',
+      controla_asistencia: 'controla_asistencia',
       sueldo_bruto_mensual: 'sueldo_bruto_mensual',
       jornada_horas_mensuales: 'jornada_horas_mensuales',
       gastos_personales_anuales: 'gastos_personales_anuales',
@@ -1035,6 +1071,9 @@ async function actualizar(req, res) {
     }
     if (Object.prototype.hasOwnProperty.call(body, 'iess_afiliado')) {
       body.iess_afiliado = normalizeIessAffiliated(body.iess_afiliado);
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'controla_asistencia')) {
+      body.controla_asistencia = normalizeIessAffiliated(body.controla_asistencia);
     }
     if (Object.prototype.hasOwnProperty.call(body, 'iess_tipo_relacion')) {
       body.iess_tipo_relacion = normalizeIessRelationType(body.iess_tipo_relacion);
@@ -1244,6 +1283,7 @@ async function listarCausalesTerminacion(req, res) {
 
 module.exports = {
   listar,
+  descargarReporteMaestro,
   obtener,
   historial,
   crear,

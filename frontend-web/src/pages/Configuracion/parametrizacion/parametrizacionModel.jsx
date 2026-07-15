@@ -180,21 +180,37 @@ const formDefinitions = [
       { name: 'ruc', label: 'RUC', placeholder: '1790012345001', required: true },
       { name: 'razon_social', label: 'Razon social', placeholder: 'EMPRESA S.A.', required: true },
       { name: 'nombre_comercial', label: 'Nombre comercial' },
-      { name: 'representante_legal', label: 'Representante legal' },
+      { name: 'representante_legal', label: 'Representante legal', required: true },
+      { name: 'representante_legal_identificacion', label: 'Cédula del representante', required: true },
       { name: 'email', label: 'Correo administrativo', type: 'email' },
       { name: 'telefono', label: 'Teléfono' },
       { name: 'ciudad', label: 'Ciudad' },
+      { name: 'provincia', label: 'Provincia' },
       { name: 'direccion', label: 'Dirección matriz', type: 'textarea', wide: true },
+      { name: 'actividad_economica', label: 'Actividad económica', type: 'textarea', wide: true },
+      { name: 'contrato_descripcion_servicio', label: 'Obra o servicio contratado', type: 'textarea', wide: true },
+      { name: 'contrato_duracion_estimada', label: 'Duración estimada', placeholder: '6 meses' },
+      { name: 'contrato_ciudad', label: 'Ciudad de trabajo' },
+      { name: 'contrato_provincia', label: 'Provincia de trabajo' },
+      { name: 'contrato_direccion', label: 'Dirección de trabajo', type: 'textarea', wide: true },
     ],
     initial: {
       ruc: '',
       razon_social: '',
       nombre_comercial: '',
       representante_legal: '',
+      representante_legal_identificacion: '',
       email: '',
       telefono: '',
       ciudad: '',
+      provincia: '',
       direccion: '',
+      actividad_economica: '',
+      contrato_descripcion_servicio: '',
+      contrato_duracion_estimada: '',
+      contrato_ciudad: '',
+      contrato_provincia: '',
+      contrato_direccion: '',
     },
     buildPayload: (values) => ({
       catalog_type: 'empresa_operativa',
@@ -207,10 +223,20 @@ const formDefinitions = [
         razonSocial: values.razon_social.trim(),
         nombreComercial: values.nombre_comercial.trim(),
         representanteLegal: values.representante_legal.trim(),
+        representanteLegalIdentificacion: values.representante_legal_identificacion.trim(),
         email: values.email.trim(),
         telefono: values.telefono.trim(),
         ciudad: values.ciudad.trim(),
+        provincia: values.provincia.trim(),
         direccion: values.direccion.trim(),
+        actividadEconomica: values.actividad_economica.trim(),
+        contratoObraServicio: {
+          descripcionServicio: values.contrato_descripcion_servicio.trim(),
+          duracionEstimada: values.contrato_duracion_estimada.trim(),
+          ciudadPrestacion: values.contrato_ciudad.trim(),
+          provinciaPrestacion: values.contrato_provincia.trim(),
+          direccionPrestacion: values.contrato_direccion.trim(),
+        },
       },
     }),
     recordLabel: (record) => record.name,
@@ -437,8 +463,8 @@ const formDefinitions = [
       requires_evidence: Boolean(values.requires_evidence),
       approval_flow: { requiredRoles: ['admin_rrhh', 'owner'] },
       status: values.status,
-      valid_from: values.valid_from || null,
-      valid_to: values.valid_to || null,
+      valid_from: dateInputValue(values.valid_from) || null,
+      valid_to: dateInputValue(values.valid_to) || null,
     }),
     recordLabel: (record) => record.name,
     recordMeta: (record) => `${record.code} - ${record.payroll_impact}`,
@@ -657,6 +683,8 @@ const formDefinitions = [
     },
     buildPayload: (values) => ({
       concept_code: values.concept_code.trim().toLowerCase(),
+      concept_label: String(values.concept_label || '').trim(),
+      category: values.category || 'ingreso',
       entry_type: values.entry_type,
       debit_account_code: values.debit_account_code.trim(),
       debit_account_name: values.debit_account_name.trim(),
@@ -666,8 +694,8 @@ const formDefinitions = [
       fixed_cost_center_code: values.fixed_cost_center_code.trim(),
       requires_employee_breakdown: Boolean(values.requires_employee_breakdown),
       status: values.status,
-      valid_from: values.valid_from || null,
-      valid_to: values.valid_to || null,
+      valid_from: dateInputValue(values.valid_from) || null,
+      valid_to: dateInputValue(values.valid_to) || null,
       metadata: { source: 'parametrizacion_contable_crn26' },
     }),
     recordLabel: (record, summary) => payrollConceptByCode(summary, record.concept_code)?.label || record.concept_label || record.concept_code,
@@ -1089,7 +1117,17 @@ function cloneFormValues(values) {
 
 function dateInputValue(value) {
   if (!value) return '';
-  return String(value).slice(0, 10);
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  const text = String(value).trim();
+  const isoMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+
+  const localMatch = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (localMatch) return `${localMatch[3]}-${localMatch[2]}-${localMatch[1]}`;
+  return '';
 }
 
 function jsonText(value) {
@@ -1104,17 +1142,27 @@ function formValuesFromRecord(definition, record) {
   const value = record.value || {};
 
   switch (definition.key) {
-    case 'empresa':
+    case 'empresa': {
+      const contract = payload.contratoObraServicio || payload.contrato_obra_servicio || {};
       return {
         ruc: payload.ruc || record.code || '',
         razon_social: payload.razonSocial || record.name || '',
         nombre_comercial: payload.nombreComercial || record.description || '',
         representante_legal: payload.representanteLegal || '',
+        representante_legal_identificacion: payload.representanteLegalIdentificacion || '',
         email: payload.email || '',
         telefono: payload.telefono || '',
         ciudad: payload.ciudad || '',
+        provincia: payload.provincia || '',
         direccion: payload.direccion || '',
+        actividad_economica: payload.actividadEconomica || '',
+        contrato_descripcion_servicio: contract.descripcionServicio || '',
+        contrato_duracion_estimada: contract.duracionEstimada || '',
+        contrato_ciudad: contract.ciudadPrestacion || '',
+        contrato_provincia: contract.provinciaPrestacion || '',
+        contrato_direccion: contract.direccionPrestacion || '',
       };
+    }
     case 'empresa_iess':
       return {
         codigo_establecimiento_iess: payload.codigoEstablecimiento || record.code || '',

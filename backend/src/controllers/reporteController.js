@@ -309,32 +309,74 @@ async function validarArchivoBanco(req, res) {
 
 async function reporteAsistencia(req, res) {
   try {
-    const { anio, mes } = req.params;
+    const anio = Number(req.params.anio);
+    const mes = Number(req.params.mes);
     const { tenantId } = req;
+    if (!Number.isInteger(anio) || anio < 2020 || anio > 2100 || !Number.isInteger(mes) || mes < 1 || mes > 12) {
+      return res.status(400).json({
+        error: 'PERIODO_INVALIDO',
+        message: 'Selecciona un mes y año válidos para consultar la asistencia.',
+        correlationId: req.correlationId,
+      });
+    }
     const result = await db.query(`
+      WITH limites AS (
+        SELECT
+          make_date($2::int, $3::int, 1) AS fecha_desde,
+          (make_date($2::int, $3::int, 1) + INTERVAL '1 month')::date AS fecha_hasta
+      ), asistencia AS (
+        SELECT
+          m.empleado_id,
+          COUNT(DISTINCT COALESCE(
+            m.operational_date,
+            DATE(m.timestamp AT TIME ZONE 'America/Guayaquil')
+          ))::int AS dias_con_marcacion,
+          COUNT(*) FILTER (WHERE m.tipo_marcacion = 'inicio_jornada')::int AS marcaciones_inicio,
+          COUNT(*) FILTER (WHERE m.tipo_marcacion = 'fin_jornada')::int AS marcaciones_fin
+        FROM marcaciones m
+        CROSS JOIN limites l
+        WHERE m.tenant_id = $1
+          AND COALESCE(m.operational_date, DATE(m.timestamp AT TIME ZONE 'America/Guayaquil')) >= l.fecha_desde
+          AND COALESCE(m.operational_date, DATE(m.timestamp AT TIME ZONE 'America/Guayaquil')) < l.fecha_hasta
+        GROUP BY m.empleado_id
+      ), novedades AS (
+        SELECT
+          n.empleado_id,
+          COUNT(*)::int AS novedades,
+          COUNT(*) FILTER (WHERE n.tipo_novedad = 'falta')::int AS faltas_aprobadas,
+          COALESCE(SUM(n.minutos) FILTER (WHERE n.tipo_novedad = 'atraso'), 0)::int AS minutos_tardia,
+          COALESCE(SUM(n.minutos) FILTER (WHERE n.tipo_novedad = 'hora_extra_50'), 0)::int AS minutos_extra_50,
+          COALESCE(SUM(n.minutos) FILTER (WHERE n.tipo_novedad = 'hora_extra_100'), 0)::int AS minutos_extra_100
+        FROM novedades_asistencia n
+        CROSS JOIN limites l
+        WHERE n.tenant_id = $1
+          AND n.fecha >= l.fecha_desde
+          AND n.fecha < l.fecha_hasta
+          AND n.estado = 'aprobado'
+        GROUP BY n.empleado_id
+      )
       SELECT
-        e.id as empleado_id,
+        e.id AS empleado_id,
         e.cedula,
-        e.nombres || ' ' || e.apellidos as nombre,
-        COUNT(DISTINCT DATE(m.timestamp)) as dias_trabajados,
-        SUM(CASE WHEN m.tipo_marcacion = 'inicio_jornada' THEN 1 ELSE 0 END) as marcaciones_inicio,
-        SUM(CASE WHEN m.tipo_marcacion = 'fin_jornada' THEN 1 ELSE 0 END) as marcaciones_fin,
-        COUNT(n.id) as novedades,
-        COALESCE(SUM(CASE WHEN n.tipo_novedad = 'atraso' THEN n.minutos ELSE 0 END), 0) as minutos_atraso,
-        COALESCE(SUM(CASE WHEN n.tipo_novedad = 'hora_extra_50' THEN n.minutos ELSE 0 END), 0) as minutos_extra_50,
-        COALESCE(SUM(CASE WHEN n.tipo_novedad = 'hora_extra_100' THEN n.minutos ELSE 0 END), 0) as minutos_extra_100,
-        ROUND((COALESCE(SUM(CASE WHEN n.tipo_novedad = 'hora_extra_50' THEN n.minutos ELSE 0 END), 0)::numeric / 60), 2) as horas_extra_50,
-        ROUND((COALESCE(SUM(CASE WHEN n.tipo_novedad = 'hora_extra_100' THEN n.minutos ELSE 0 END), 0)::numeric / 60), 2) as horas_extra_100
+        e.apellidos || ' ' || e.nombres AS nombre,
+        e.controla_asistencia,
+        COALESCE(a.dias_con_marcacion, 0) AS dias_con_marcacion,
+        COALESCE(a.marcaciones_inicio, 0) AS marcaciones_inicio,
+        COALESCE(a.marcaciones_fin, 0) AS marcaciones_fin,
+        COALESCE(n.novedades, 0) AS novedades,
+        COALESCE(n.faltas_aprobadas, 0) AS faltas_aprobadas,
+        COALESCE(n.minutos_tardia, 0) AS minutos_tardia,
+        COALESCE(n.minutos_extra_50, 0) AS minutos_extra_50,
+        COALESCE(n.minutos_extra_100, 0) AS minutos_extra_100,
+        ROUND(COALESCE(n.minutos_extra_50, 0)::numeric / 60, 2) AS horas_extra_50,
+        ROUND(COALESCE(n.minutos_extra_100, 0)::numeric / 60, 2) AS horas_extra_100
       FROM empleados e
-      LEFT JOIN marcaciones m ON e.id = m.empleado_id
-        AND EXTRACT(YEAR FROM m.timestamp) = $2
-        AND EXTRACT(MONTH FROM m.timestamp) = $3
-      LEFT JOIN novedades_asistencia n ON e.id = n.empleado_id
-        AND EXTRACT(YEAR FROM n.fecha) = $2
-        AND EXTRACT(MONTH FROM n.fecha) = $3
-        AND n.estado = 'aprobado'
-      WHERE e.tenant_id = $1 AND e.activo = true
-      GROUP BY e.id, e.cedula, e.nombres, e.apellidos
+      CROSS JOIN limites l
+      LEFT JOIN asistencia a ON a.empleado_id = e.id
+      LEFT JOIN novedades n ON n.empleado_id = e.id
+      WHERE e.tenant_id = $1
+        AND e.fecha_ingreso < l.fecha_hasta
+        AND (e.fecha_salida IS NULL OR e.fecha_salida >= l.fecha_desde)
       ORDER BY e.apellidos, e.nombres
     `, [tenantId, anio, mes]);
 
