@@ -1,7 +1,7 @@
 # Reporte NER26 - Novedades de empleado y recalculo selectivo 2026
 
 Plan: `HAIKY-NOVEDADES-EMPLEADO-RECALCULO-SELECTIVO-2026`
-Fases: `NER26-00` a `NER26-03`
+Fases: `NER26-00` a `NER26-04`
 Estado: `completed-pass`
 Fecha: 2026-07-15
 
@@ -18,6 +18,8 @@ Cuando una novedad ya fue usada por un rol de pago, la PWA muestra la accion par
 
 Despues de corregir y aprobar la novedad, la PWA permite recalcular solo ese empleado mediante un lote de calculo con `scope = employee`.
 
+Seguimiento NER26-04: el rol de pago individual y el consolidado transpuesto ya no dependen de una lista fija de novedades. Ambos leen las lineas normalizadas del calculo y reflejan conceptos nuevos como ingresos o deducciones del rol.
+
 ## Cambios backend
 
 - `payrollLifecycleService.invalidateEmployeePayrollForNovelty()` invalida calculo individual dentro de transaccion.
@@ -27,6 +29,7 @@ Despues de corregir y aprobar la novedad, la PWA permite recalcular solo ese emp
   - `POST /api/nomina/:anio/:mes/empleados/:empleadoId/recalcular`
 - `novedadController.listarPendientes(scope=operativas)` incluye novedades consumidas para que RRHH pueda corregirlas desde la pantalla operativa.
 - `app.routes.test.js` valida RBAC, usuario fresco y modulo `nomina` para las rutas nuevas.
+- `payrollRolePdfService` agrega conceptos dinamicos de novedades desde `payroll_calculation_lines` o `detalle_calculo.novedadesCalculadas` en el rol individual y en el rol consolidado transpuesto.
 
 ## Cambios frontend
 
@@ -52,6 +55,8 @@ Despues de corregir y aprobar la novedad, la PWA permite recalcular solo ese emp
 - `npm.cmd --workspace=frontend-web run build`: PASS, 1534 modules, 100 precache entries.
 - `npm.cmd run contracts`: PASS.
 - `npm.cmd run prisma:validate`: PASS.
+- `node --check backend/src/services/payrollRolePdfService.js`: PASS.
+- `npm.cmd --workspace=backend test -- payrollRolePdfService.test.js --runInBand`: PASS, 1 suite / 7 tests.
 - `python -m json.tool .vscode/AuditLock.json`: PASS.
 - UTF-8 sin BOM en archivos NER26: PASS.
 - `git diff --check` limitado a archivos NER26: PASS.

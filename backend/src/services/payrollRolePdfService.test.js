@@ -120,6 +120,48 @@ describe('payrollRolePdfService', () => {
     expect(JSON.stringify(doc)).toContain('BORRADOR - NO CONSTITUYE COMPROBANTE DE PAGO');
   });
 
+  test('documento individual refleja tipos dinamicos de novedad', () => {
+    const doc = buildPayrollRoleDocDefinition(payrollRow({
+      total_ingresos: 645,
+      total_deducciones: 70.12,
+      neto_recibir: 574.88,
+      detalle_calculo: {
+        sueldoProporcional: 600,
+        aporteIess: 58.12,
+        netoRecibir: 574.88,
+        costoEmpleador: 740,
+        novedadesCalculadas: [
+          {
+            noveltyId: 'nov-bono-transporte',
+            code: 'bono_transporte',
+            conceptCode: 'bono_transporte',
+            label: 'Bono transporte',
+            category: 'ingreso',
+            payrollImpact: 'ingreso',
+            amount: 45,
+            sourceId: 'nov-bono-transporte',
+          },
+          {
+            noveltyId: 'nov-descuento-uniforme',
+            code: 'descuento_uniforme',
+            conceptCode: 'descuento_uniforme',
+            label: 'Descuento uniforme',
+            category: 'deduccion',
+            payrollImpact: 'descuento',
+            amount: 12,
+            sourceId: 'nov-descuento-uniforme',
+          },
+        ],
+      },
+    }));
+
+    const serialized = JSON.stringify(doc);
+    expect(serialized).toContain('Bono transporte');
+    expect(serialized).toContain('Descuento uniforme');
+    expect(serialized).toContain('$45.00');
+    expect(serialized).toContain('$12.00');
+  });
+
   test('rol cerrado no incluye aviso de borrador', () => {
     const doc = buildPayrollRoleDocDefinition(payrollRow({ estado: 'cerrada' }));
 
@@ -160,6 +202,92 @@ describe('payrollRolePdfService', () => {
     expect(serialized).toContain('$1315.00');
     expect(serialized).toContain('rol_pago_transpuesto_sknomina');
     expect(serialized).toContain('BORRADOR - NO CONSTITUYE COMPROBANTE DE PAGO');
+  });
+
+  test('documento transpuesto refleja tipos dinamicos de novedad por empleado', () => {
+    const doc = buildPayrollRoleTransposedDocDefinition({
+      anio: 2026,
+      mes: 6,
+      rows: [
+        payrollRow({
+          total_ingresos: 645,
+          total_deducciones: 70.12,
+          neto_recibir: 574.88,
+          detalle_calculo: {
+            sueldoProporcional: 600,
+            aporteIess: 58.12,
+            netoRecibir: 574.88,
+            costoEmpleador: 740,
+            novedadesCalculadas: [
+              {
+                noveltyId: 'nov-bono-transporte-1',
+                code: 'bono_transporte',
+                conceptCode: 'bono_transporte',
+                label: 'Bono transporte',
+                category: 'ingreso',
+                payrollImpact: 'ingreso',
+                amount: 45,
+                sourceId: 'nov-bono-transporte-1',
+              },
+              {
+                noveltyId: 'nov-descuento-uniforme-1',
+                code: 'descuento_uniforme',
+                conceptCode: 'descuento_uniforme',
+                label: 'Descuento uniforme',
+                category: 'deduccion',
+                payrollImpact: 'descuento',
+                amount: 12,
+                sourceId: 'nov-descuento-uniforme-1',
+              },
+            ],
+          },
+        }),
+        payrollRow({
+          id: 'payroll-2',
+          empleado_id: 'employee-2',
+          nombres: 'Marco',
+          apellidos: 'Benitez',
+          cedula: '1707300009',
+          total_ingresos: 705,
+          total_deducciones: 69.15,
+          neto_recibir: 635.85,
+          detalle_calculo: {
+            sueldoProporcional: 700,
+            aporteIess: 66.15,
+            netoRecibir: 635.85,
+            costoEmpleador: 828.05,
+            novedadesCalculadas: [
+              {
+                noveltyId: 'nov-bono-transporte-2',
+                code: 'bono_transporte',
+                conceptCode: 'bono_transporte',
+                label: 'Bono transporte',
+                category: 'ingreso',
+                payrollImpact: 'ingreso',
+                amount: 5,
+                sourceId: 'nov-bono-transporte-2',
+              },
+              {
+                noveltyId: 'nov-descuento-uniforme-2',
+                code: 'descuento_uniforme',
+                conceptCode: 'descuento_uniforme',
+                label: 'Descuento uniforme',
+                category: 'deduccion',
+                payrollImpact: 'descuento',
+                amount: 3,
+                sourceId: 'nov-descuento-uniforme-2',
+              },
+            ],
+          },
+        }),
+      ],
+    });
+
+    const serialized = JSON.stringify(doc);
+    expect(serialized).toContain('Bono transporte');
+    expect(serialized).toContain('Descuento uniforme');
+    expect(serialized).toContain('$50.00');
+    expect(serialized).toContain('$15.00');
   });
 
   test('genera rol transpuesto por periodo y sube un unico PDF consolidado', async () => {

@@ -3,13 +3,13 @@
   "plan": "HAIKY-NOVEDADES-EMPLEADO-RECALCULO-SELECTIVO-2026",
   "planCode": "NER26",
   "status": "completed-pass",
-  "phaseCompleted": "NER26-03",
+  "phaseCompleted": "NER26-04",
   "currentPhase": "closed",
-  "updatedAt": "2026-07-15T23:50:00Z",
+  "updatedAt": "2026-07-16T00:10:00Z",
   "rulesSource": "RULES.md",
   "contextSource": ".github/CODEX_CONTEXT.md",
-  "previousAuditLockHash": "52e1486564cc84c410a9aa922d48513efe445e474cba5b7791e1d0f36617deff",
-  "summary": "NER26 corrige novedades de un empleado con invalidacion y recalculo selectivo, evitando descarte global del periodo cuando el alcance operativo es individual.",
+  "previousAuditLockHash": "3310a9a3606559d8f5cf3ad4e05a5a4719707cd214bc3bf6bc4c523e86adec6f",
+  "summary": "NER26 corrige novedades de un empleado con invalidacion y recalculo selectivo, evitando descarte global del periodo y reflejando novedades dinamicas en el rol de pago.",
   "fases": [
     {
       "phase": "NER26-00",
@@ -30,12 +30,18 @@
       "phase": "NER26-03",
       "status": "completed-pass",
       "detail": "QA focal, contratos, Prisma, build PWA, reporte y cierre de gobierno."
+    },
+    {
+      "phase": "NER26-04",
+      "status": "completed-pass",
+      "detail": "Rol de pago individual y transpuesto incorporan tipos dinamicos de novedad desde lineas de calculo."
     }
   ],
   "runtimeChanges": [
     "Backend: invalidateEmployeePayrollForNovelty elimina solo el rol borrador filtrado por tenant_id, anio, mes, empleado_id e id.",
     "Backend: calcularNominaEmpleado crea lote scope employee y recalcula un unico trabajador.",
     "Backend: novedades operativas incluyen registros consumidos por rol para habilitar la correccion individual.",
+    "Backend: rol PDF individual y transpuesto reflejan novedades dinamicas desde payroll_calculation_lines o detalle_calculo.novedadesCalculadas.",
     "PWA: Novedades manuales permite liberar y recalcular solo el empleado afectado.",
     "PWA: Cierre mensual rotula el descarte como accion de periodo para evitar confundirlo con correccion individual."
   ],
@@ -49,6 +55,16 @@
       "name": "backend_focal_tests",
       "ok": true,
       "output": "4 suites, 65 tests PASS."
+    },
+    {
+      "name": "node_check_payroll_role_pdf",
+      "ok": true,
+      "output": "backend/src/services/payrollRolePdfService.js PASS."
+    },
+    {
+      "name": "backend_role_pdf_tests",
+      "ok": true,
+      "output": "payrollRolePdfService.test.js PASS: 1 suite, 7 tests."
     },
     {
       "name": "frontend_build_pwa",
@@ -82,6 +98,7 @@
     ".github/prompts/NER26-01-backend-recalculo-selectivo.md",
     ".github/prompts/NER26-02-frontend-correccion-individual.md",
     ".github/prompts/NER26-03-qa-cierre.md",
+    ".github/prompts/NER26-04-rol-novedades-dinamicas.md",
     ".vscode/AuditLock.json",
     "backend/src/app.js",
     "backend/src/app.routes.test.js",
@@ -92,6 +109,8 @@
     "backend/src/services/calculoNominaService.js",
     "backend/src/services/payrollLifecycleService.js",
     "backend/src/services/payrollLifecycleService.test.js",
+    "backend/src/services/payrollRolePdfService.js",
+    "backend/src/services/payrollRolePdfService.test.js",
     "docs/PLAN_HAIKY_NOVEDADES_EMPLEADO_RECALCULO_SELECTIVO_2026.md",
     "docs/novedades-empleado-recalculo-selectivo-2026/REPORTE_NER26_00_03_EJECUCION.md",
     "frontend-web/src/pages/Asistencia/NovedadesPendientes.jsx",
@@ -107,9 +126,10 @@
     "No se elimina nomina por periodo completo desde el flujo individual.",
     "La consulta destructiva individual exige empleado_id ademas de tenant_id, anio y mes.",
     "Los roles cerrados y pagados siguen bloqueados.",
+    "El rol de pago no mantiene una lista cerrada de novedades; toma conceptos dinamicos de las lineas normalizadas.",
     "Los errores devuelven code, statusCode funcional y correlationId.",
     "La PWA muestra alcance individual antes de invalidar o recalcular."
   ],
   "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "770DBD53197C8559A5B619DA6205A826963EB42A1C0F1E5980ED06708A3B64BF"
+  "signature": "485C3A64DF610A622550F2427C016FA52FF4E24F1EECCFD7043CF14C45F5ACBB"
 }

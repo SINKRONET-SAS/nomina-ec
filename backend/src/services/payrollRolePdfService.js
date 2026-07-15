@@ -5,6 +5,7 @@ const db = require('../config/database');
 const { s3Upload } = require('../config/s3');
 const AppError = require('../utils/AppError');
 const { toMoneyString } = require('../utils/money');
+const { linesForPayrollRow } = require('./payrollAccountingService');
 
 function normalizeDetail(value) {
   if (!value) return {};
@@ -76,18 +77,89 @@ function amountValue(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
+function normalizeConceptKey(value, fallback = 'concepto') {
+  const normalized = String(value || fallback)
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return normalized || fallback;
+}
+
+function roleLineCategory(line = {}) {
+  const category = String(line.category || '').trim().toLowerCase();
+  if (category === 'descuento') return 'deduccion';
+  return category;
+}
+
+const ROLE_NOVELTY_LABELS = {
+  horas_extra_50: 'Horas extra 50%',
+  horas_extra_100: 'Horas extra 100%',
+  bono_desempeno: 'Bono de desempeno',
+  comision: 'Comisiones',
+  descuento_faltas: 'Descuento por faltas',
+};
+
+function isRoleNoveltyLine(line = {}) {
+  const source = String(line.source || '').trim().toLowerCase();
+  const metadata = normalizeDetail(line.metadata);
+  return source === 'novedad'
+    || Boolean(metadata.tipoNovedad)
+    || Boolean(metadata.calculationMode && source !== 'legal');
+}
+
+function aggregateRoleLines(lines = []) {
+  const aggregate = new Map();
+
+  lines.forEach((line, index) => {
+    const category = roleLineCategory(line);
+    if (!['ingreso', 'deduccion'].includes(category)) return;
+
+    const amount = amountValue(line.amount);
+    if (amount <= 0) return;
+
+    const rawCode = line.concept_code || line.conceptCode || line.code || line.source_id || line.sourceId;
+    const rawLabel = line.concept_label || line.conceptLabel || line.label || rawCode;
+    const normalizedCode = normalizeConceptKey(rawCode || rawLabel, `concepto_${index + 1}`);
+    const label = ROLE_NOVELTY_LABELS[normalizedCode]
+      || cleanText(rawLabel, cleanText(rawCode, `Concepto ${index + 1}`));
+    const key = `novedad_${category}_${normalizedCode}`;
+
+    if (!aggregate.has(key)) {
+      aggregate.set(key, {
+        key,
+        label,
+        category,
+        amount: 0,
+      });
+    }
+    aggregate.get(key).amount += amount;
+  });
+
+  return Array.from(aggregate.values());
+}
+
+function roleNoveltyConcepts(row = {}) {
+  return aggregateRoleLines(linesForPayrollRow(row).filter(isRoleNoveltyLine));
+}
+
+function addRoleConceptLines(lines, concepts, category) {
+  concepts
+    .filter((concept) => concept.category === category)
+    .forEach((concept) => addAmountLine(lines, concept.label, concept.amount));
+}
+
 function payrollConceptValues(row = {}) {
   const detail = normalizeDetail(row.detalle_calculo);
-  return {
+  const values = {
     sueldoProporcional: amountValue(detail.sueldoProporcional ?? row.sueldo_bruto),
-    montoExtras50: amountValue(detail.montoExtras50 ?? row.horas_extras_50),
-    montoExtras100: amountValue(detail.montoExtras100 ?? row.horas_extras_100),
-    bonosDesempeno: amountValue(detail.bonosDesempeno),
-    comisiones: amountValue(detail.comisiones),
     fondoReservaPagadoEmpleado: amountValue(detail.fondoReservaPagadoEmpleado),
+    decimoTerceroMensualizado: amountValue(detail.decimoTerceroModalidad === 'mensual' ? detail.decimoTerceroMensualizado : 0),
+    decimoCuartoMensualizado: amountValue(detail.decimoCuartoModalidad === 'mensual' ? detail.decimoCuartoMensualizado : 0),
     aporteIess: amountValue(detail.aporteIess ?? row.aporte_iess_personal),
     impuestoRenta: amountValue(detail.impuestoRenta ?? row.impuesto_renta),
-    descuentoFaltas: amountValue(detail.descuentoFaltas),
     anticipos: amountValue(detail.anticipos ?? row.anticipos),
     prestamos: amountValue(detail.prestamos ?? row.prestamos),
     aportePatronal: amountValue(detail.aportePatronal),
@@ -100,32 +172,80 @@ function payrollConceptValues(row = {}) {
     netoRecibir: amountValue(row.neto_recibir),
     costoEmpleador: amountValue(detail.costoEmpleador),
   };
+
+  roleNoveltyConcepts(row).forEach((concept) => {
+    values[concept.key] = amountValue(concept.amount);
+  });
+
+  return values;
 }
 
-const TRANSPOSED_ROLE_CONCEPTS = [
-  { group: 'Ingresos', key: 'sueldoProporcional', label: 'Sueldo proporcional' },
-  { group: 'Ingresos', key: 'montoExtras50', label: 'Horas extra 50%' },
-  { group: 'Ingresos', key: 'montoExtras100', label: 'Horas extra 100%' },
-  { group: 'Ingresos', key: 'bonosDesempeno', label: 'Bonos de desempeno' },
-  { group: 'Ingresos', key: 'comisiones', label: 'Comisiones' },
-  { group: 'Ingresos', key: 'fondoReservaPagadoEmpleado', label: 'Fondo de reserva pagado' },
-  { group: 'Ingresos', key: 'decimoTerceroMensualizado', label: 'Decimo tercero mensualizado' },
-  { group: 'Ingresos', key: 'decimoCuartoMensualizado', label: 'Decimo cuarto mensualizado' },
-  { group: 'Deducciones', key: 'aporteIess', label: 'Aporte IESS personal' },
-  { group: 'Deducciones', key: 'impuestoRenta', label: 'Impuesto a la renta' },
-  { group: 'Deducciones', key: 'descuentoFaltas', label: 'Descuento por faltas' },
-  { group: 'Deducciones', key: 'anticipos', label: 'Anticipos' },
-  { group: 'Deducciones', key: 'prestamos', label: 'Prestamos' },
-  { group: 'Provisiones', key: 'aportePatronal', label: 'Aporte IESS patronal' },
-  { group: 'Provisiones', key: 'provisionDecimoTercero', label: 'Provision decimo tercero' },
-  { group: 'Provisiones', key: 'provisionDecimoCuarto', label: 'Provision decimo cuarto' },
-  { group: 'Provisiones', key: 'provisionVacaciones', label: 'Provision vacaciones' },
-  { group: 'Provisiones', key: 'provisionFondosReserva', label: 'Provision fondos de reserva' },
-  { group: 'Totales', key: 'totalIngresos', label: 'Total ingresos', bold: true },
-  { group: 'Totales', key: 'totalDeducciones', label: 'Total deducciones', bold: true },
-  { group: 'Totales', key: 'netoRecibir', label: 'Neto a recibir', bold: true },
-  { group: 'Totales', key: 'costoEmpleador', label: 'Costo empleador', bold: true },
-];
+const TRANSPOSED_ROLE_CONCEPTS_BY_GROUP = {
+  IngresosInicio: [
+    { group: 'Ingresos', key: 'sueldoProporcional', label: 'Sueldo proporcional' },
+  ],
+  IngresosFin: [
+    { group: 'Ingresos', key: 'fondoReservaPagadoEmpleado', label: 'Fondo de reserva pagado' },
+    { group: 'Ingresos', key: 'decimoTerceroMensualizado', label: 'Decimo tercero mensualizado' },
+    { group: 'Ingresos', key: 'decimoCuartoMensualizado', label: 'Decimo cuarto mensualizado' },
+  ],
+  DeduccionesInicio: [
+    { group: 'Deducciones', key: 'aporteIess', label: 'Aporte IESS personal' },
+    { group: 'Deducciones', key: 'impuestoRenta', label: 'Impuesto a la renta' },
+  ],
+  DeduccionesFin: [
+    { group: 'Deducciones', key: 'anticipos', label: 'Anticipos' },
+    { group: 'Deducciones', key: 'prestamos', label: 'Prestamos' },
+  ],
+  Provisiones: [
+    { group: 'Provisiones', key: 'aportePatronal', label: 'Aporte IESS patronal' },
+    { group: 'Provisiones', key: 'provisionDecimoTercero', label: 'Provision decimo tercero' },
+    { group: 'Provisiones', key: 'provisionDecimoCuarto', label: 'Provision decimo cuarto' },
+    { group: 'Provisiones', key: 'provisionVacaciones', label: 'Provision vacaciones' },
+    { group: 'Provisiones', key: 'provisionFondosReserva', label: 'Provision fondos de reserva' },
+  ],
+  Totales: [
+    { group: 'Totales', key: 'totalIngresos', label: 'Total ingresos', bold: true },
+    { group: 'Totales', key: 'totalDeducciones', label: 'Total deducciones', bold: true },
+    { group: 'Totales', key: 'netoRecibir', label: 'Neto a recibir', bold: true },
+    { group: 'Totales', key: 'costoEmpleador', label: 'Costo empleador', bold: true },
+  ],
+};
+
+function noveltyConceptsForRows(rows = []) {
+  const conceptsByKey = new Map();
+
+  rows.forEach((row) => {
+    roleNoveltyConcepts(row).forEach((concept) => {
+      if (!conceptsByKey.has(concept.key)) {
+        conceptsByKey.set(concept.key, {
+          group: concept.category === 'deduccion' ? 'Deducciones' : 'Ingresos',
+          key: concept.key,
+          label: concept.label,
+        });
+      }
+    });
+  });
+
+  return Array.from(conceptsByKey.values());
+}
+
+function transposedRoleConcepts(rows = []) {
+  const noveltyConcepts = noveltyConceptsForRows(rows);
+  const noveltyIncome = noveltyConcepts.filter((concept) => concept.group === 'Ingresos');
+  const noveltyDeductions = noveltyConcepts.filter((concept) => concept.group === 'Deducciones');
+
+  return [
+    ...TRANSPOSED_ROLE_CONCEPTS_BY_GROUP.IngresosInicio,
+    ...noveltyIncome,
+    ...TRANSPOSED_ROLE_CONCEPTS_BY_GROUP.IngresosFin,
+    ...TRANSPOSED_ROLE_CONCEPTS_BY_GROUP.DeduccionesInicio,
+    ...noveltyDeductions,
+    ...TRANSPOSED_ROLE_CONCEPTS_BY_GROUP.DeduccionesFin,
+    ...TRANSPOSED_ROLE_CONCEPTS_BY_GROUP.Provisiones,
+    ...TRANSPOSED_ROLE_CONCEPTS_BY_GROUP.Totales,
+  ];
+}
 
 function chunkRows(rows, size) {
   const chunks = [];
@@ -143,12 +263,10 @@ function buildPayrollRoleDocDefinition(row) {
   const ingresos = [];
   const deducciones = [];
   const provisiones = [];
+  const noveltyConcepts = roleNoveltyConcepts(row);
 
   addAmountLine(ingresos, 'Sueldo proporcional', detail.sueldoProporcional ?? row.sueldo_bruto);
-  addAmountLine(ingresos, 'Horas extra 50%', detail.montoExtras50 ?? row.horas_extras_50);
-  addAmountLine(ingresos, 'Horas extra 100%', detail.montoExtras100 ?? row.horas_extras_100);
-  addAmountLine(ingresos, 'Bonos de desempeno', detail.bonosDesempeno);
-  addAmountLine(ingresos, 'Comisiones', detail.comisiones);
+  addRoleConceptLines(ingresos, noveltyConcepts, 'ingreso');
   addAmountLine(ingresos, 'Fondo de reserva pagado', detail.fondoReservaPagadoEmpleado);
   if (detail.decimoTerceroModalidad === 'mensual') {
     addAmountLine(ingresos, 'Decimo tercero mensualizado', detail.decimoTerceroMensualizado);
@@ -159,7 +277,7 @@ function buildPayrollRoleDocDefinition(row) {
 
   addAmountLine(deducciones, 'Aporte IESS personal', detail.aporteIess ?? row.aporte_iess_personal);
   addAmountLine(deducciones, 'Impuesto a la renta', detail.impuestoRenta ?? row.impuesto_renta);
-  addAmountLine(deducciones, 'Descuento por faltas', detail.descuentoFaltas);
+  addRoleConceptLines(deducciones, noveltyConcepts, 'deduccion');
   addAmountLine(deducciones, 'Anticipos', detail.anticipos ?? row.anticipos);
   addAmountLine(deducciones, 'Prestamos', detail.prestamos ?? row.prestamos);
 
@@ -313,7 +431,7 @@ function buildTransposedConceptTable(rows) {
   ];
 
   let currentGroup = null;
-  TRANSPOSED_ROLE_CONCEPTS.forEach((concept) => {
+  transposedRoleConcepts(rows).forEach((concept) => {
     if (concept.group !== currentGroup) {
       currentGroup = concept.group;
       body.push([
