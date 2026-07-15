@@ -176,6 +176,11 @@ function CerrarMes() {
       setMessage({ type: 'success', text: 'Nómina calculada. Revisa el detalle antes de cerrar el periodo.' });
       refreshPeriod();
     },
+    onError: (error) => {
+      const calculationResult = error.response?.data?.resultado;
+      if (calculationResult) setResultado(calculationResult);
+      refreshPeriod();
+    },
   });
 
   const closeMutation = useMutation({
@@ -234,7 +239,7 @@ function CerrarMes() {
     discardCalculationMutation.reset();
     setShowDiscardCalculation(false);
     setDiscardReason('');
-  }, [anio, mes, periodStatus]);
+  }, [anio, mes]);
 
   const updateBatch = (field, value) => {
     setBatchForm((current) => ({ ...current, [field]: value }));
@@ -609,6 +614,26 @@ function CerrarMes() {
                 <p className="text-2xl font-bold text-red-900">{resultado.errores || resultado.resultados?.filter((row) => row.error).length || 0}</p>
               </div>
             </div>
+
+            {resultado.resultados?.some((row) => row.error) && (
+              <div className="mt-4 overflow-hidden rounded-md border border-red-200">
+                <div className="bg-red-50 px-4 py-3">
+                  <p className="font-semibold text-red-900">Empleados que requieren revisión</p>
+                  <p className="mt-1 text-xs text-red-700">Corrige la ficha o parametrización indicada y vuelve a calcular.</p>
+                </div>
+                <div className="divide-y divide-red-100">
+                  {resultado.resultados.filter((row) => row.error).map((row) => (
+                    <div className="grid gap-1 px-4 py-3 text-sm md:grid-cols-[minmax(180px,0.6fr)_minmax(0,1.4fr)]" key={`${row.empleadoId}-${row.errorCode || 'error'}`}>
+                      <div>
+                        <p className="font-semibold text-slate-900">{row.nombre || row.empleadoId}</p>
+                        {row.errorCode && <p className="mt-1 text-xs font-medium text-slate-500">{row.errorCode}</p>}
+                      </div>
+                      <p className="leading-6 text-red-800">{row.error}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {resultado.resultados?.length > 0 && (
               <div className="mt-5 overflow-x-auto rounded-md border border-slate-200">

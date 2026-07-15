@@ -19,6 +19,7 @@
 
 ### Decisiones AIV28
 
+- Hotfix AIV28-06 (2026-07-15): el calculo parcial usa savepoints por empleado y la migracion `20260715121500_payroll_batch_partial_failed` habilita el estado `partial_failed`; los errores SQL internos se registran en backend y la PWA presenta una orientacion segura por empleado.
 - NO se migra a Python. El motor Node.js esta legalmente validado, en produccion y con cobertura de tests. Reescribir introduce riesgo de regresion legal inaceptable.
 - Cumplimiento legal Ecuador 2026 CONFORME en los 13 parametros verificados (SBU, IESS, decimos, IR, HE, vacaciones, fondo reserva).
 - 7 hallazgos reales: 1 alto (SQLite mobile sin cifrado), 3 medios (batch silencioso, dias=0, base64 upload), 3 bajos (rate limit, validacion, GPS).

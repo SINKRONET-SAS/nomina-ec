@@ -108,4 +108,61 @@ describe('calculoNominaService lote AIV50', () => {
       }],
     });
   });
+
+  test('recupera la transaccion por empleado y conserva el primer error SQL', async () => {
+    let transactionAborted = false;
+    const transactionClient = {
+      query: jest.fn(async (sql, params = []) => {
+        const text = String(sql).trim();
+        if (text.startsWith('ROLLBACK TO SAVEPOINT')) {
+          transactionAborted = false;
+          return { rows: [] };
+        }
+        if (transactionAborted) {
+          const abortedError = new Error('current transaction is aborted, commands ignored until end of transaction block');
+          abortedError.code = '25P02';
+          throw abortedError;
+        }
+        if (text.startsWith('SAVEPOINT') || text.startsWith('RELEASE SAVEPOINT')) return { rows: [] };
+        if (text.includes('INSERT INTO payroll_periods')) {
+          return { rows: [{ id: 'period-1', status: 'open' }] };
+        }
+        if (text.includes('INSERT INTO payroll_calculation_batches')) {
+          return { rows: [{ id: 'batch-1', status: 'processing' }] };
+        }
+        if (text.includes('UPDATE payroll_calculation_batches')) {
+          return { rows: [{ id: 'batch-1', status: params[2], total_calculadas: params[4], total_errores: params[5] }] };
+        }
+        if (text.includes('FROM empleados')) return { rows: employeeRows };
+        if (text.includes('INSERT INTO nominas') && params[1] === 'emp-1') {
+          transactionAborted = true;
+          const originalError = new Error('column accounting_code does not exist');
+          originalError.code = '42703';
+          throw originalError;
+        }
+        if (text.includes('INSERT INTO nominas')) return { rows: [{ id: 'payroll-2' }] };
+        return { rows: [] };
+      }),
+    };
+
+    const result = await calcularNominaMensual('tenant-1', 2026, 6, {
+      userId: 'user-1',
+      correlationId: 'corr-savepoint',
+      dbClient: transactionClient,
+    });
+
+    expect(result.resultados).toHaveLength(2);
+    expect(result.resultados[0]).toMatchObject({
+      empleadoId: 'emp-1',
+      nombre: 'Empleado emp-1',
+      errorCode: 'NOMINA_EMPLEADO_PERSISTENCIA_ERROR',
+    });
+    expect(result.resultados[0].error).not.toContain('transaction is aborted');
+    expect(result.resultados[1]).toMatchObject({ empleadoId: 'emp-2' });
+    expect(transactionClient.query).toHaveBeenCalledWith('ROLLBACK TO SAVEPOINT payroll_employee_work');
+    const finishCall = transactionClient.query.mock.calls.find(([sql]) => String(sql).includes('UPDATE payroll_calculation_batches'));
+    expect(finishCall[1][2]).toBe('partial_failed');
+    expect(finishCall[1][4]).toBe(1);
+    expect(finishCall[1][5]).toBe(1);
+  });
 });

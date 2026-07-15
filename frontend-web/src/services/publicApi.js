@@ -13,6 +13,10 @@ export function sanitizeApiErrorMessage(message, fallback = 'No se pudo completa
     return 'El almacenamiento documental no está configurado. Solicita revisar las credenciales S3 antes de generar documentos.';
   }
 
+  if (normalized.includes('current transaction is aborted') || normalized.includes('25p02')) {
+    return 'No pudimos completar la operación de nómina. Intenta nuevamente; si persiste, reporta el código de seguimiento.';
+  }
+
   if (normalized === 'ruta no encontrada' || normalized === 'not_found') {
     return 'No pudimos cargar esta sección. Actualiza la página y verifica que el servicio esté activo.';
   }

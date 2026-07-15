@@ -34,6 +34,40 @@ const IESS_APPLICABLE_RELATION_TYPES = new Set([
   'relacion_dependencia',
   'jornada_parcial_permanente',
 ]);
+const CALCULATION_SAVEPOINT = 'payroll_calculation_work';
+const EMPLOYEE_SAVEPOINT = 'payroll_employee_work';
+
+function employeeCalculationError(emp, err) {
+  const statusCode = Number(err?.statusCode || 500);
+  const userCorrectable = statusCode >= 400 && statusCode < 500;
+  return {
+    empleadoId: emp.id,
+    nombre: `${emp.nombres || ''} ${emp.apellidos || ''}`.trim(),
+    errorCode: userCorrectable ? (err.code || 'NOMINA_EMPLEADO_ERROR') : 'NOMINA_EMPLEADO_PERSISTENCIA_ERROR',
+    error: userCorrectable
+      ? err.message
+      : 'No pudimos registrar el calculo de este empleado. Revisa su ficha y configuracion contable; si persiste, reporta el codigo de seguimiento.',
+  };
+}
+
+async function rollbackAndReleaseSavepoint(executor, savepoint, context = {}, originalError = null) {
+  try {
+    await executor.query(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+    await executor.query(`RELEASE SAVEPOINT ${savepoint}`);
+    return true;
+  } catch (recoveryError) {
+    console.error('[NOMINA] No se pudo recuperar el punto transaccional', {
+      code: recoveryError.code || 'NOMINA_SAVEPOINT_RECOVERY_ERROR',
+      statusCode: 500,
+      correlationId: context.correlationId || process.env.CORRELATION_ID || 'nomina-mensual',
+      userId: context.userId || null,
+      savepoint,
+      originalCode: originalError?.code || 'NOMINA_CALCULO_ERROR',
+      message: recoveryError.message,
+    });
+    return false;
+  }
+}
 
 function resolveFourteenthSalaryRegion(value) {
   const regionCode = String(value || 'sierra_amazonia').trim().toLowerCase();
@@ -161,6 +195,11 @@ async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
 
   let empleados = { rows: [] };
   const resultados = [];
+  const usesTransactionSavepoints = Boolean(context.dbClient);
+
+  if (usesTransactionSavepoints) {
+    await executor.query(`SAVEPOINT ${CALCULATION_SAVEPOINT}`);
+  }
 
   try {
     const legalParameters = await getLegalParametersForTenant(tenantId, anio);
@@ -189,11 +228,17 @@ async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
     `, [tenantId, periodEndDate(anio, mes)]);
 
     for (const emp of empleados.rows) {
+      if (usesTransactionSavepoints) {
+        await executor.query(`SAVEPOINT ${EMPLOYEE_SAVEPOINT}`);
+      }
       try {
         const resultado = await calcularEmpleado(emp, tenantId, anio, mes, legalParameters, {
           calculationBatchId: batch.id,
           dbClient: executor,
         });
+        if (usesTransactionSavepoints) {
+          await executor.query(`RELEASE SAVEPOINT ${EMPLOYEE_SAVEPOINT}`);
+        }
         resultados.push(resultado);
       } catch (err) {
         console.error('[NOMINA] Error calculando empleado', {
@@ -204,7 +249,17 @@ async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
           empleadoId: emp.id,
           message: err.message,
         });
-        resultados.push({ empleadoId: emp.id, error: err.message });
+        if (usesTransactionSavepoints) {
+          const recovered = await rollbackAndReleaseSavepoint(executor, EMPLOYEE_SAVEPOINT, context, err);
+          if (!recovered) {
+            throw new AppError('No pudimos recuperar el calculo despues del error de un empleado.', {
+              code: 'NOMINA_EMPLOYEE_SAVEPOINT_RECOVERY_FAILED',
+              statusCode: 500,
+              details: { empleadoId: emp.id, originalCode: err.code || 'NOMINA_EMPLEADO_ERROR' },
+            });
+          }
+        }
+        resultados.push(employeeCalculationError(emp, err));
       }
     }
 
@@ -220,18 +275,44 @@ async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
       dbClient: executor,
     });
 
+    if (usesTransactionSavepoints) {
+      await executor.query(`RELEASE SAVEPOINT ${CALCULATION_SAVEPOINT}`);
+    }
+
     return { success: true, total: empleados.rows.length, batch: completedBatch, resultados };
   } catch (err) {
-    await finishPayrollCalculationBatch({
-      tenantId,
-      batchId: batch.id,
-      status: 'failed',
-      totalEmpleados: empleados.rows.length,
-      totalCalculadas: 0,
-      totalErrores: 1,
-      errores: [{ error: err.message }],
-      dbClient: executor,
-    });
+    const recovered = !usesTransactionSavepoints
+      || await rollbackAndReleaseSavepoint(executor, CALCULATION_SAVEPOINT, context, err);
+
+    if (recovered) {
+      try {
+        await finishPayrollCalculationBatch({
+          tenantId,
+          batchId: batch.id,
+          status: 'failed',
+          totalEmpleados: empleados.rows.length,
+          totalCalculadas: 0,
+          totalErrores: 1,
+          errores: [{
+            errorCode: err.code || 'NOMINA_CALCULO_ERROR',
+            error: Number(err.statusCode || 500) < 500
+              ? err.message
+              : 'El lote no pudo completarse. Revisa el codigo de seguimiento en el registro de auditoria.',
+          }],
+          dbClient: executor,
+        });
+      } catch (batchError) {
+        console.error('[NOMINA] No se pudo registrar el fallo del lote de calculo', {
+          code: batchError.code || 'NOMINA_CALCULATION_BATCH_FINISH_ERROR',
+          statusCode: 500,
+          correlationId: context.correlationId || process.env.CORRELATION_ID || 'nomina-mensual',
+          userId: context.userId || null,
+          batchId: batch.id,
+          originalCode: err.code || 'NOMINA_CALCULO_ERROR',
+          message: batchError.message,
+        });
+      }
+    }
     throw err;
   }
 }

@@ -124,6 +124,7 @@ assert(storageConfig.includes('storageOperationError'), 'Storage S3 debe envolve
 assert(!storageConfig.includes('Error al subir archivo a S3: ${err.message}'), 'Storage no debe exponer errores crudos de AWS al usuario.');
 assert(publicApiService.includes('sanitizeApiErrorMessage'), 'Frontend debe centralizar sanitizacion de errores API.');
 assert(publicApiService.includes('could not load credentials'), 'Frontend debe traducir errores heredados de credenciales S3.');
+assert(publicApiService.includes('current transaction is aborted'), 'Frontend debe ocultar mensajes internos de transacciones PostgreSQL abortadas.');
 assert(authenticatedApiService.includes('sanitizeApiErrorMessage'), 'Cliente autenticado debe sanitizar mensajes crudos antes de que lleguen a pantallas.');
 
 const app = read('backend/src/app.js');
@@ -138,6 +139,7 @@ const payrollLifecycleService = read('backend/src/services/payrollLifecycleServi
 const manualAttendanceService = read('backend/src/services/manualAttendanceService.js');
 const nominaController = read('backend/src/controllers/nominaController.js');
 const schema = read('backend/prisma/schema.prisma');
+const payrollBatchPartialFailureMigration = read('backend/prisma/migrations/20260715121500_payroll_batch_partial_failed/migration.sql');
 const parametrizacion = read('frontend-web/src/pages/Configuracion/Parametrizacion.jsx');
 const parametrizacionModel = read('frontend-web/src/pages/Configuracion/parametrizacion/parametrizacionModel.jsx');
 const appWeb = read('frontend-web/src/App.jsx');
@@ -297,6 +299,15 @@ assert(
 assert(
   exists('backend/prisma/migrations/20260624224500_crn26_payroll_calculation_batches/migration.sql'),
   'Debe existir migracion CRN26 de lotes de calculo.'
+);
+assert(
+  payrollBatchPartialFailureMigration.includes("'partial_failed'"),
+  'La restriccion de lotes debe admitir el estado partial_failed usado por el motor.'
+);
+assert(
+  payrollCalculationService.includes("const EMPLOYEE_SAVEPOINT = 'payroll_employee_work'")
+    && payrollCalculationService.includes('rollbackAndReleaseSavepoint'),
+  'El calculo mensual debe recuperar errores SQL por empleado sin abortar todo el lote.'
 );
 assert(payrollCalculationService.includes('NOMINA_CALCULATION_BATCH_REQUIRED'), 'El motor debe bloquear calculos sin lote.');
 assert(payrollAccountingService.includes('PAYROLL_CALCULATION_LINE_BATCH_REQUIRED'), 'Las lineas de calculo deben bloquear persistencia sin lote.');

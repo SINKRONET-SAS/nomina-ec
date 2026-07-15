@@ -28,6 +28,10 @@ jest.mock('../services/payrollLifecycleService', () => ({
   discardPayrollPeriodCalculation: jest.fn(),
 }));
 
+jest.mock('../services/calculoNominaService', () => ({
+  calcularNominaMensual: jest.fn(),
+}));
+
 const db = require('../config/database');
 const { recordAudit } = require('../services/auditService');
 const { sendRolPagoDisponible, sendRolPagoEmail } = require('../services/communicationService');
@@ -40,7 +44,9 @@ const {
   discardPayrollDraft,
   discardPayrollPeriodCalculation,
 } = require('../services/payrollLifecycleService');
+const { calcularNominaMensual } = require('../services/calculoNominaService');
 const {
+  calcularMes,
   cerrarMes,
   descartarCalculoPeriodo,
   descargarRolPDF,
@@ -231,6 +237,44 @@ describe('nominaController descargarRolPDF', () => {
     });
     expect(res.body.url).toContain('/api/storage/local/');
     expect(res.body.url).toContain('token=');
+  });
+});
+
+describe('nominaController calcularMes', () => {
+  beforeEach(() => {
+    db.getClient.mockReset();
+    db.rollback.mockReset();
+    calcularNominaMensual.mockReset();
+    assertTenantPayrollReady.mockReset();
+    assertTenantPayrollReady.mockResolvedValue({ ready: true });
+    db.rollback.mockResolvedValue();
+  });
+
+  test('oculta el mensaje interno de una transaccion PostgreSQL abortada', async () => {
+    const tx = { query: jest.fn() };
+    const databaseError = new Error('current transaction is aborted, commands ignored until end of transaction block');
+    databaseError.code = '25P02';
+    db.getClient.mockResolvedValue(tx);
+    calcularNominaMensual.mockRejectedValue(databaseError);
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-calculo-error',
+      ip: '127.0.0.1',
+      body: { anio: 2026, mes: 6 },
+    };
+    const res = createResponse();
+
+    await calcularMes(req, res);
+
+    expect(db.rollback).toHaveBeenCalledWith(tx);
+    expect(res.statusCode).toBe(500);
+    expect(res.body).toMatchObject({
+      error: 'NOMINA_CALCULO_ERROR',
+      correlationId: 'corr-calculo-error',
+    });
+    expect(res.body.message).not.toContain('transaction is aborted');
+    expect(res.body.message).toContain('codigo de seguimiento');
   });
 });
 

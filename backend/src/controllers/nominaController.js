@@ -134,10 +134,14 @@ async function calcularMes(req, res) {
       userId: req.usuarioId || null,
       message: err.message,
     });
-    res.status(err.statusCode || 500).json({
-      error: err.code || 'NOMINA_CALCULO_ERROR',
-      message: err.message,
-      details: err.details,
+    const statusCode = Number(err.statusCode || 500);
+    const publicError = statusCode >= 400 && statusCode < 500;
+    res.status(statusCode).json({
+      error: publicError ? (err.code || 'NOMINA_CALCULO_ERROR') : 'NOMINA_CALCULO_ERROR',
+      message: publicError
+        ? err.message
+        : 'No pudimos completar el calculo de nomina. Intenta nuevamente; si persiste, reporta el codigo de seguimiento.',
+      details: publicError ? err.details : undefined,
       correlationId: req.correlationId,
     });
   }

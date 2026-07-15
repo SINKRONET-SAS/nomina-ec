@@ -1,76 +1,64 @@
 {
   "plan": "HAIKY-AUDITORIA-INTEGRAL-V28-NOMINA-EC-2026",
-  "phaseCompleted": "AIV28-05-qa-release",
+  "phaseCompleted": "AIV28-06-hotfix-calculo",
   "status": "completed-pass",
-  "timestamp": "2026-07-15T04:11:32.755Z",
-  "evidenceHash": "a8207a5870f21d7bf1bbafd98bbc2d1ebceac5d6a3c4ae17fd76f48c730d20ae",
+  "timestamp": "2026-07-15T12:21:23.6652675Z",
+  "evidenceHash": "c55724adda5caa2fb9947161fff9031455e2e97f02066f466ad01367193ada2b",
   "decisions": [
-    "NO se migra a Python. Motor Node.js legalmente validado en produccion con cobertura de tests.",
-    "Cumplimiento legal Ecuador 2026 CONFORME en 13 parametros verificados.",
-    "7 hallazgos reales corregidos: batch partial_failed, dias=0, GPS validacion, FormData upload.",
-    "4 falsos positivos descartados tras reconfirmacion contra codigo fuente.",
-    "2 riesgos aceptados con mitigaciones documentadas (tokens localStorage, console.error).",
-    "H-05 rate limiting y H-06 validacion centralizada diferidos a fase futura."
+    "La causa raiz fue la ausencia de partial_failed en la restriccion SQL de payroll_calculation_batches.",
+    "Cada empleado se calcula dentro de un savepoint para recuperar la transaccion y continuar el lote ante un error aislado.",
+    "Los errores internos de PostgreSQL no se muestran al usuario; la PWA identifica empleados que requieren revision.",
+    "La migracion se ejecuta automaticamente antes de iniciar el backend en Render."
   ],
   "runtimeChanges": [
-    "Backend: batch de nomina reporta partial_failed cuando hay errores parciales.",
-    "Backend: calcularEmpleado valida diasTrabajados > 0 antes de calcular.",
-    "Mobile: validacion GPS lat [-90,90] lng [-180,180] en zonas y sitios de ruta.",
-    "Mobile: upload soporte medico migrado de base64-en-RAM a FormData multipart.",
-    "Backend: rol de pago individual landscape, sin formula HE, sin provisiones, firma desde config.",
-    "Todos los documentos: 'Documento generado con SKNOMINA'."
+    "Prisma: la restriccion de estado admite processing, completed, failed y partial_failed.",
+    "Backend: rollback por empleado, preservacion del primer error y respuesta HTTP segura.",
+    "PWA: conserva y presenta el resultado parcial con orientacion correctiva por empleado.",
+    "Contratos: verifican migracion, savepoints y sanitizacion del error 25P02."
   ],
   "validationChecks": [
     {
-      "name": "diagnostico_integral_v28",
+      "name": "pruebas_focales_calculo",
       "ok": true,
-      "output": "350+ archivos escaneados en 4 superficies. 7 hallazgos reales, 4 falsos positivos descartados."
-    },
-    {
-      "name": "cumplimiento_legal_ecuador_2026",
-      "ok": true,
-      "output": "13 parametros legales verificados: SBU 482, IESS 9.45%/11.15%, decimos, IR tabla 2026, HE, vacaciones, fondo reserva. Todos CONFORME."
-    },
-    {
-      "name": "evaluacion_migracion_python",
-      "ok": true,
-      "output": "Migracion a Python NO RECOMENDADA."
+      "output": "2 suites, 16 pruebas PASS."
     },
     {
       "name": "backend_suite_completa",
       "ok": true,
-      "output": "57 suites, 375 tests PASS."
+      "output": "57 suites, 377 pruebas PASS."
     },
     {
-      "name": "prisma_validate",
+      "name": "contratos_sistema",
       "ok": true,
-      "output": "Prisma schema valid."
+      "output": "npm run contracts PASS."
+    },
+    {
+      "name": "prisma_y_migracion_local",
+      "ok": true,
+      "output": "Schema valido; migracion aplicada; restriccion verificada en PostgreSQL local."
     },
     {
       "name": "frontend_build_pwa",
       "ok": true,
-      "output": "1534 modules, 100 precache entries, built in 25s."
+      "output": "1534 modulos, 100 entradas precache, build PASS."
+    },
+    {
+      "name": "integridad_archivos",
+      "ok": true,
+      "output": "UTF-8 y git diff --check PASS."
     }
   ],
   "filesModified": [
     "M  .github/CODEX_CONTEXT.md",
     "M  .vscode/AuditLock.json",
-    "A  .github/promts/AIV28-00-diagnostico.md",
-    "A  .github/promts/AIV28-01-motor-calculo.md",
-    "A  .github/promts/AIV28-02-seguridad-backend.md",
-    "A  .github/promts/AIV28-03-pwa-calidad.md",
-    "A  .github/promts/AIV28-04-mobile-seguridad.md",
-    "A  .github/promts/AIV28-05-qa-release.md",
-    "A  docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V28_NOMINA_EC_2026.md",
-    "A  docs2/auditoria-integral-v28-nomina-ec-2026/INFORME_DIAGNOSTICO.md",
-    "A  docs2/auditoria-integral-v28-nomina-ec-2026/DIAGNOSTICO_JSON.json",
-    "A  docs2/auditoria-integral-v28-nomina-ec-2026/SCRIPTS_JS_SOLUCION.md",
+    "A  backend/prisma/migrations/20260715121500_payroll_batch_partial_failed/migration.sql",
+    "M  backend/src/controllers/nominaController.js",
+    "M  backend/src/controllers/nominaController.test.js",
     "M  backend/src/services/calculoNominaService.js",
-    "M  backend/src/services/payrollRolePdfService.js",
-    "M  backend/src/services/templateGenerator.js",
-    "M  backend/src/services/equipmentDeliveryActService.js",
-    "M  app-movil/src/screens/OperacionMovilScreen.js",
-    "M  app-movil/src/screens/PermisosScreen.js"
+    "M  backend/src/services/calculoNominaService.batch.test.js",
+    "M  frontend-web/src/pages/Nomina/CerrarMes.jsx",
+    "M  frontend-web/src/services/publicApi.js",
+    "M  scripts/verify-system-contracts.mjs"
   ],
-  "signature": "a8207a5870f21d7bf1bbafd98bbc2d1ebceac5d6a3c4ae17fd76f48c730d20ae"
+  "signature": "c55724adda5caa2fb9947161fff9031455e2e97f02066f466ad01367193ada2b"
 }
