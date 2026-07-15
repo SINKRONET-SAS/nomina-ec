@@ -36,6 +36,25 @@ function readUtf8(relativePath) {
   return readFileSync(path.join(ROOT, relativePath), 'utf8');
 }
 
+function trimTrailingBlankLines(lines) {
+  const normalizedLines = [...lines];
+  while (normalizedLines[normalizedLines.length - 1] === '') normalizedLines.pop();
+  return normalizedLines;
+}
+
+function writeMarkdownFile(absolutePath, lines) {
+  writeFileSync(absolutePath, `${trimTrailingBlankLines(lines).join('\n')}\n`, 'utf8');
+}
+
+function existingMarkdownSection(relativePath, heading) {
+  const absolutePath = path.join(ROOT, relativePath);
+  if (!existsSync(absolutePath)) return [];
+  const text = readFileSync(absolutePath, 'utf8');
+  const index = text.indexOf(heading);
+  if (index === -1) return [];
+  return trimTrailingBlankLines(text.slice(index).split(/\r?\n/));
+}
+
 function lineNumber(text, index) {
   return text.slice(0, index).split(/\r?\n/).length;
 }
@@ -326,11 +345,18 @@ const lines = [
   '- No se duplican capacidades fiscales de SINKRONET FACTURADOR dentro de SKNOMINA.',
   '- No se elimina historial Haiky ni prompts anteriores; se versiona la auditoria V2.',
   '- Los cambios runtime son acotados: descarga Blob compartida, lazy routes, textos de precios y guard de integridad de nomina.',
-  '',
 ];
 
-writeFileSync(path.join(OUT_DIR, 'INFORME_DIAGNOSTICO.md'), `${lines.join('\n')}\n`, 'utf8');
-writeFileSync(path.join(OUT_DIR, 'DIAGNOSTICO_AUTOMATIZADO.md'), `${[
+const followUpSection = existingMarkdownSection(
+  'docs2/auditoria-integral-v2-haiky-2026/INFORME_DIAGNOSTICO.md',
+  '## Seguimiento AIV2-07 - asistencia y nomina',
+);
+if (followUpSection.length) {
+  lines.push('', ...followUpSection);
+}
+
+writeMarkdownFile(path.join(OUT_DIR, 'INFORME_DIAGNOSTICO.md'), lines);
+writeMarkdownFile(path.join(OUT_DIR, 'DIAGNOSTICO_AUTOMATIZADO.md'), [
   '# Diagnostico automatizado V2',
   '',
   `Archivos revisados: ${report.filesScanned}`,
@@ -343,8 +369,7 @@ writeFileSync(path.join(OUT_DIR, 'DIAGNOSTICO_AUTOMATIZADO.md'), `${[
   findings.length
     ? findings.map((finding) => `- ${finding.severity} ${finding.type}: ${finding.file}:${finding.line} ${finding.evidence}`).join('\n')
     : 'Sin hallazgos automatizados abiertos.',
-  '',
-].join('\n')}\n`, 'utf8');
+]);
 
 console.log(JSON.stringify({
   ok: true,

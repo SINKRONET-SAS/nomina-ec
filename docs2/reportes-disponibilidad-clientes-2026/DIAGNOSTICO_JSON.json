@@ -1,0 +1,100 @@
+{
+  "generatedAt": "2026-07-15T01:34:11.667Z",
+  "plan": "HAIKY-REPORTES-DISPONIBILIDAD-CLIENTES-2026",
+  "rulesSource": "RULES.md",
+  "scope": [
+    "LANDING",
+    "PWA",
+    "BACKEND",
+    "MOBILE"
+  ],
+  "requestedFocus": [
+    "Reportes individuales y globales",
+    "Reportes por mes y acumulativos",
+    "Filas por empleado y columnas por novedades del rol",
+    "Cumplimiento legal Ecuador 2026 laboral y tributario",
+    "Scripts JS de solucion y diagnostico"
+  ],
+  "legalSources2026": [
+    {
+      "domain": "SRI impuesto a la renta personas naturales",
+      "source": "https://www.sri.gob.ec/impuesto-renta",
+      "officialEvidence": "El SRI publica la base imponible de relacion de dependencia como ingreso gravado menos aporte personal IESS, y enlaza tablas de cada ejercicio fiscal."
+    },
+    {
+      "domain": "SRI tablas IR 2026",
+      "source": "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/58a7f4f6-ab51-48b6-b9ff-a8e97e1a28ef/Tablas%20de%20c%C3%A1lculo%20de%20Impuesto%20a%20la%20Renta.pdf",
+      "officialEvidence": "Resolucion NAC-DGERCGC25-00000043: tabla 2026 inicia con fraccion basica USD 12.208 y tarifa 0%."
+    },
+    {
+      "domain": "Ministerio del Trabajo - sistema salarial",
+      "source": "https://salarios.trabajo.gob.ec/",
+      "officialEvidence": "Portal oficial usado como fuente operativa de salarios; el repo mantiene SBU 2026 USD 482 con sourceStatus validado."
+    },
+    {
+      "domain": "IESS empleador",
+      "source": "https://www.iess.gob.ec/es/web/empleador/avisos-de-entrada-y-salida",
+      "officialEvidence": "Portal oficial IESS de empleador para avisos y novedades; el repo mantiene aportes 9.45% personal y 11.15% patronal con sourceStatus validado."
+    }
+  ],
+  "checks": [
+    {
+      "code": "HRD26-BE-001",
+      "area": "BACKEND",
+      "status": "confirmado",
+      "severity": "informativa",
+      "evidence": "payrollReportService expone PAYROLL_NOVELTY_MATRIX y arma columnas dinamicas desde lineas de calculo de novedades.",
+      "recommendation": "Sin accion correctiva pendiente."
+    },
+    {
+      "code": "HRD26-PWA-001",
+      "area": "PWA",
+      "status": "confirmado",
+      "severity": "informativa",
+      "evidence": "DescargarReportes expone matriz de novedades, alcance global/individual, busqueda de empleado y acumulado anual.",
+      "recommendation": "Sin accion correctiva pendiente."
+    },
+    {
+      "code": "HRD26-BE-002",
+      "area": "BACKEND",
+      "status": "confirmado",
+      "severity": "informativa",
+      "evidence": "Backend mantiene exporte mensual y consolidado anual por tipo de reporte.",
+      "recommendation": "Sin accion correctiva pendiente."
+    },
+    {
+      "code": "HRD26-MOB-001",
+      "area": "MOBILE",
+      "status": "confirmado",
+      "severity": "informativa",
+      "evidence": "Mobile consume rol de pago mensual y PDF desde API gobernada por plan mobile.",
+      "recommendation": "Sin accion correctiva pendiente."
+    },
+    {
+      "code": "HRD26-LAND-001",
+      "area": "LANDING",
+      "status": "confirmado",
+      "severity": "informativa",
+      "evidence": "Landing comunica reportes internos, Batch IESS TXT y entrada a planes.",
+      "recommendation": "Sin accion correctiva pendiente."
+    },
+    {
+      "code": "HRD26-LEGAL-001",
+      "area": "LEGAL_EC_2026",
+      "status": "confirmado",
+      "severity": "informativa",
+      "evidence": "Parametros Ecuador 2026 estan versionados como validado: SBU 482, IESS 9.45/11.15 y tabla IR 2026 SRI.",
+      "recommendation": "Sin accion correctiva pendiente."
+    },
+    {
+      "code": "HRD26-NOREG-001",
+      "area": "NO_REGRESION",
+      "status": "confirmado",
+      "severity": "informativa",
+      "evidence": "Contratos y prueba backend focalizada cubren la nueva matriz para reducir regresiones.",
+      "recommendation": "Sin accion correctiva pendiente."
+    }
+  ],
+  "findings": [],
+  "evidenceHash": "11ffe403d1129514566c3976053258f4d5ff0bc02f32e31091a2a1b24fabd708"
+}

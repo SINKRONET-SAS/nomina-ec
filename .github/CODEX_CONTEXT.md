@@ -2722,3 +2722,54 @@ Reglas HU26:
 - No duplicar bloques de aviso por pantalla; usar componente compartido.
 - No renombrar roles tecnicos en codigo persistente; solo humanizar etiquetas visibles.
 - No presentar plantillas o calculos SaaS como asesoria legal, laboral, tributaria o contable.
+
+---
+
+## HRD26 - Reportes y disponibilidad para clientes 2026
+
+Plan: `HAIKY-REPORTES-DISPONIBILIDAD-CLIENTES-2026`.
+
+Estado: HRD26-00 a HRD26-05 ejecutadas localmente; gobierno cerrado localmente, commit y push pendientes.
+
+Fuente:
+
+- Solicitud del usuario: auditoria integral LANDING, PWA, BACKEND y MOBILE con mejora de reportes, disponibilidad para clientes, salidas individuales/globales, mensuales/acumulativas y matriz con empleados en filas y novedades del rol en columnas.
+- Requisito adicional: reconfirmar cumplimiento legal Ecuador 2026, evitar falsos positivos, emitir scripts JS de solucion e informe de diagnostico, y dejar plan/prompts/AuditLock.
+
+Artefactos:
+
+- `docs2/PLAN_HAIKY_REPORTES_DISPONIBILIDAD_CLIENTES_2026.md`
+- `docs2/reportes-disponibilidad-clientes-2026/DIAGNOSTICO_JSON.json`
+- `docs2/reportes-disponibilidad-clientes-2026/INFORME_DIAGNOSTICO.md`
+- `docs2/reportes-disponibilidad-clientes-2026/SCRIPTS_JS_SOLUCION.md`
+- `docs2/reportes-disponibilidad-clientes-2026/CIERRE_GOBIERNO.md`
+- `.github/promts/HRD26-00-baseline.md`
+- `.github/promts/HRD26-01-backend-reportes.md`
+- `.github/promts/HRD26-02-pwa-disponibilidad.md`
+- `.github/promts/HRD26-03-legal-ecuador-2026.md`
+- `.github/promts/HRD26-04-scripts-contratos.md`
+- `.github/promts/HRD26-05-qa-release.md`
+
+Runtime HRD26:
+
+- `payrollReportService` agrega `PAYROLL_NOVELTY_MATRIX`, `buildPayrollNoveltyMatrixRows` y columnas dinamicas desde lineas de calculo de origen novedad.
+- `DescargarReportes.jsx` expone `Matriz de novedades del rol`, alcance `Global` / `Individual`, busqueda de empleado, `Exportar mes` y `Acumulado anual`.
+- `verify-system-contracts.mjs` bloquea regresion si desaparece el reporte, el alcance o el acumulado anual.
+- `scripts/haiky-reportes-disponibilidad-2026-diagnostic.mjs` genera diagnostico JSON/Markdown.
+- `scripts/haiky-reportes-disponibilidad-2026-solution.mjs` ejecuta gates y firma AuditLock.
+- `docs2/` esta ignorado globalmente; los artefactos HRD26 se deben agregar con `git add -f`.
+
+Fuentes legales HRD26:
+
+- SRI Impuesto a la Renta: `https://www.sri.gob.ec/impuesto-renta`
+- SRI tablas IR 2026 PDF: `https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/58a7f4f6-ab51-48b6-b9ff-a8e97e1a28ef/Tablas%20de%20c%C3%A1lculo%20de%20Impuesto%20a%20la%20Renta.pdf`
+- Ministerio del Trabajo sistema salarial: `https://salarios.trabajo.gob.ec/`
+- IESS empleador: `https://www.iess.gob.ec/es/web/empleador/avisos-de-entrada-y-salida`
+
+Reglas HRD26:
+
+- No eliminar reportes verticales existentes.
+- No cambiar payload publico de `/api/reportes/nomina/exportar` ni `/api/reportes/nomina/:anio/consolidado`.
+- No prometer XML IESS oficial; mantener Batch IESS TXT/DAT.
+- No modificar parametros legales 2026 sin fuente y AuditLock.
+- No exponer datos sensibles adicionales en reportes de disponibilidad sin RBAC y justificacion.

@@ -112,6 +112,57 @@ describe('payrollReportService accounting entries', () => {
     expect(rows[0].concept_aporte_iess_personal).toBe(94.5);
   });
 
+  test('genera matriz de novedades del rol con empleados en filas', () => {
+    const rows = rowsForReport([
+      payrollRow({
+        total_ingresos: 1075,
+        total_deducciones: 170,
+        neto_recibir: 905,
+        detalle_calculo: {
+          totalIngresos: 1075,
+          totalDeducciones: 170,
+          netoRecibir: 905,
+          novedadesCalculadas: [
+            {
+              noveltyId: 'nov-1',
+              code: 'hora_extra_50',
+              conceptCode: 'horas_extra_50',
+              label: 'Hora extra 50%',
+              category: 'ingreso',
+              payrollImpact: 'ingreso',
+              amount: 75,
+              sourceId: 'nov-1',
+            },
+            {
+              noveltyId: 'nov-2',
+              code: 'falta',
+              conceptCode: 'descuento_faltas',
+              label: 'Falta injustificada',
+              category: 'deduccion',
+              payrollImpact: 'descuento',
+              amount: 20,
+              sourceId: 'nov-2',
+            },
+          ],
+        },
+      }),
+    ], 'PAYROLL_NOVELTY_MATRIX', 2026, 6);
+
+    expect(rows[0]).toMatchObject({
+      empleado: 'Demo Ana',
+      cantidadNovedades: 2,
+      totalNovedadesIngreso: 75,
+      totalNovedadesDeduccion: 20,
+      netoNovedades: 55,
+      totalIngresosNomina: 1075,
+      totalDeduccionesNomina: 170,
+      netoRecibir: 905,
+    });
+    expect(rows[0].novelty_horas_extra_50).toBe(75);
+    expect(rows[0].novelty_descuento_faltas).toBe(20);
+    expect(rows[0].concept_sueldo_base).toBeUndefined();
+  });
+
   test('reconstruye ledger individual de beneficios por periodo anual', () => {
     const rows = buildBenefitLedgerRows([
       {

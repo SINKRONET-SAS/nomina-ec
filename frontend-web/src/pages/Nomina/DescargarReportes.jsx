@@ -75,6 +75,8 @@ function DescargarReportes() {
   const [mes, setMes] = useState(initialPeriod.mes);
   const [reportCode, setReportCode] = useState('PAYROLL_DETAIL_TABULAR');
   const [format, setFormat] = useState('xlsx');
+  const [reportScope, setReportScope] = useState('global');
+  const [reportEmployeeSearch, setReportEmployeeSearch] = useState('');
   const [filters, setFilters] = useState({
     employeeId: '',
     department: '',
@@ -232,12 +234,14 @@ function DescargarReportes() {
     setMessage('');
     setError('');
     try {
+      const reportFilters = buildReportFilters();
+      if (!reportFilters) return;
       const response = await authenticatedApi.post('/reportes/nomina/exportar', {
         anio,
         mes,
         reportCode,
         format,
-        filters,
+        filters: reportFilters,
       });
       const url = response.data.reporte?.url;
 
@@ -257,10 +261,12 @@ function DescargarReportes() {
     setMessage('');
     setError('');
     try {
+      const reportFilters = buildReportFilters();
+      if (!reportFilters) return;
       const response = await authenticatedApi.get(`/reportes/nomina/${anio}/consolidado`, {
         params: {
           reportCode,
-          filters: JSON.stringify(filters),
+          filters: JSON.stringify(reportFilters),
         },
       });
       const url = response.data.reporte?.url;
@@ -280,6 +286,27 @@ function DescargarReportes() {
     setFilters((current) => ({ ...current, [key]: value }));
   };
 
+  const updateReportScope = (value) => {
+    setReportScope(value);
+    if (value === 'global') {
+      updateFilter('employeeId', '');
+      setReportEmployeeSearch('');
+    }
+  };
+
+  const buildReportFilters = () => {
+    if (reportScope === 'individual' && !filters.employeeId) {
+      setError('Selecciona un empleado para generar el reporte individual.');
+      setCargando('');
+      return null;
+    }
+
+    return {
+      ...filters,
+      employeeId: reportScope === 'individual' ? filters.employeeId : '',
+    };
+  };
+
   const normalizedForm107Search = form107Search.trim().toLowerCase();
   const filteredEmpleados = empleados
     .filter((empleado) => {
@@ -293,6 +320,20 @@ function DescargarReportes() {
       return haystack.includes(normalizedForm107Search);
     })
     .slice(0, 50);
+
+  const normalizedReportEmployeeSearch = reportEmployeeSearch.trim().toLowerCase();
+  const filteredReportEmployees = empleados
+    .filter((empleado) => {
+      if (!normalizedReportEmployeeSearch) return true;
+      const haystack = [
+        empleado.cedula,
+        empleado.nombres,
+        empleado.apellidos,
+        empleado.id,
+      ].filter(Boolean).join(' ').toLowerCase();
+      return haystack.includes(normalizedReportEmployeeSearch);
+    })
+    .slice(0, 80);
 
   return (
     <div className="space-y-6">
@@ -483,7 +524,7 @@ function DescargarReportes() {
             onClick={exportarReporteNomina}
           >
             <Download className="h-4 w-4" />
-            {cargando === 'nomina-export' ? 'Exportando...' : 'Exportar'}
+            {cargando === 'nomina-export' ? 'Exportando...' : 'Exportar mes'}
           </button>
           <button
             className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-teal-200 px-4 text-sm font-semibold text-teal-700 hover:border-teal-400 disabled:opacity-60"
@@ -492,7 +533,7 @@ function DescargarReportes() {
             onClick={exportarConsolidadoAnual}
           >
             <FileSpreadsheet className="h-4 w-4" />
-            {cargando === 'nomina-anual' ? 'Generando...' : 'Consolidado anual'}
+            {cargando === 'nomina-anual' ? 'Generando...' : 'Acumulado anual'}
           </button>
         </div>
 
@@ -509,6 +550,7 @@ function DescargarReportes() {
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
             >
               <option value="PAYROLL_DETAIL_TABULAR">Detalle tabular (1 fila por empleado)</option>
+              <option value="PAYROLL_NOVELTY_MATRIX">Matriz de novedades del rol</option>
               <option value="PAYROLL_EMPLOYEE_DETAIL">Detalle por concepto (vertical)</option>
               <option value="PAYROLL_BENEFIT_MOVEMENT_BALANCE">Ledger beneficios y saldos (recomendado 1000+ empleados)</option>
               <option value="PAYROLL_BENEFITS_MATRIX">Matriz de conceptos (uso puntual)</option>
@@ -529,14 +571,45 @@ function DescargarReportes() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700">Empleado ID</label>
-            <input
-              value={filters.employeeId}
-              onChange={(event) => updateFilter('employeeId', event.target.value)}
+            <label className="block text-sm font-medium text-slate-700">Alcance</label>
+            <select
+              value={reportScope}
+              onChange={(event) => updateReportScope(event.target.value)}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              placeholder="Opcional"
-            />
+            >
+              <option value="global">Global</option>
+              <option value="individual">Individual</option>
+            </select>
           </div>
+          {reportScope === 'individual' && (
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-700">Empleado</label>
+              <div className="mt-1 flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2">
+                <Search className="h-4 w-4 shrink-0 text-slate-400" />
+                <input
+                  className="w-full border-0 p-0 text-sm outline-none"
+                  placeholder="Buscar por cedula, apellido, nombre o ID"
+                  value={reportEmployeeSearch}
+                  onChange={(event) => setReportEmployeeSearch(event.target.value)}
+                />
+              </div>
+              <select
+                value={filters.employeeId}
+                onChange={(event) => updateFilter('employeeId', event.target.value)}
+                className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2"
+              >
+                <option value="">Seleccionar empleado...</option>
+                {filteredReportEmployees.map((empleado) => (
+                  <option key={empleado.id} value={empleado.id}>
+                    {empleado.apellidos || ''} {empleado.nombres || ''} - {empleado.cedula || ''}
+                  </option>
+                ))}
+              </select>
+              <span className="mt-1 block text-xs text-slate-500">
+                Mostrando {filteredReportEmployees.length} de {empleados.length} trabajadores cargados.
+              </span>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-slate-700">Departamento</label>
             <input
@@ -565,6 +638,11 @@ function DescargarReportes() {
             />
           </div>
         </div>
+        {reportCode === 'PAYROLL_NOVELTY_MATRIX' && (
+          <CompactNotice className="mt-4" tone="teal" title="Matriz de novedades">
+            Exporta empleados en filas y novedades del rol en columnas, con totales de ingreso, deduccion y neto por novedad.
+          </CompactNotice>
+        )}
         {reportCode === 'PAYROLL_BENEFITS_MATRIX' && (
           <CompactNotice className="mt-4" tone="amber" title="Uso puntual">
             La matriz agrega columnas dinámicas por concepto. Para nóminas grandes usa el ledger o el detalle por concepto, que mantienen una estructura vertical auditable.

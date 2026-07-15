@@ -1,116 +1,86 @@
 {
-  "plan": "HAIKY-AUDITORIA-INTEGRAL-V2-NOMINA-EC-2026",
-  "phaseCompleted": "HAIKY-AUDITORIA-INTEGRAL-V2-2026-07-asistencia-nomina",
+  "plan": "HAIKY-REPORTES-DISPONIBILIDAD-CLIENTES-2026",
+  "phaseCompleted": "HRD26-05-qa-release",
   "status": "completed-pass",
-  "timestamp": "2026-07-14T19:49:50.4692557-05:00",
-  "evidenceHash": "e6fa0d425d40b17c862e94360c2a3b8ea26db664e428fa288867201e10b2dddc",
+  "timestamp": "2026-07-15T01:34:44.305Z",
+  "evidenceHash": "11ffe403d1129514566c3976053258f4d5ff0bc02f32e31091a2a1b24fabd708",
   "decisions": [
-    "Las marcaciones usan fechas reales; sueldo y faltas aprobadas se prorratean sobre una base mensual de 30 dias.",
-    "La ausencia de marcaciones no crea una falta ni bloquea el rol.",
-    "controla_asistencia gobierna app, reportes y cargas globales por empleado sin bloquear nomina cuando esta desactivado.",
-    "La asistencia manual admite alcance individual o global y periodo diario, mensual o por rango.",
-    "El listado maestro XLSX usa una fila por empleado y no expone numeros de cuenta bancaria."
+    "Los reportes internos soportan alcance global e individual sin escritura manual de IDs.",
+    "La matriz de novedades del rol usa una fila por empleado y columnas dinamicas solo para novedades calculadas.",
+    "El acumulado anual mantiene el mismo contrato de filtros que el exporte mensual.",
+    "La disponibilidad para clientes se valida en LANDING, PWA, BACKEND y MOBILE sin prometer XML IESS oficial.",
+    "La parametrizacion legal Ecuador 2026 queda versionada y auditada; los cambios legales futuros deben pasar por parametros legales."
   ],
   "runtimeChanges": [
-    "Migracion 20260714190000_employee_attendance_control aplicada localmente.",
-    "Endpoint POST /api/marcaciones/manual con periodo abierto, anti duplicado, transaccion y auditoria atomica.",
-    "Reporte mensual separa agregados de marcaciones y novedades.",
-    "Motor incluye ingresos durante el mes y normaliza dias de nomina a 30.",
-    "Endpoint GET /api/empleados/reporte.xlsx protegido por RBAC, usuario fresco y auditoria LOPDP.",
-    "PWA expone control por empleado, asistencia diaria/mensual individual/global y listado XLSX."
+    "Backend agrega PAYROLL_NOVELTY_MATRIX y buildPayrollNoveltyMatrixRows.",
+    "PWA agrega selector Matriz de novedades del rol, alcance Global/Individual y busqueda de empleado.",
+    "Contratos del sistema bloquean regresion de reporte, alcance y acumulado anual.",
+    "Scripts HRD26 generan diagnostico, informe y firma AuditLock."
   ],
   "validationChecks": [
     {
-      "name": "backend_full_suite",
+      "name": "diagnostico_reportes_disponibilidad_2026",
       "ok": true,
-      "output": "55 suites, 347 pruebas, 0 fallos"
+      "output": "{\n  \"ok\": true,\n  \"outDir\": \"docs2/reportes-disponibilidad-clientes-2026\",\n  \"evidenceHash\": \"11ffe403d1129514566c3976053258f4d5ff0bc02f32e31091a2a1b24fabd708\",\n  \"findings\": 0\n}"
     },
     {
-      "name": "backend_final_focal",
+      "name": "contratos_sistema_unico",
       "ok": true,
-      "output": "4 suites, 40 pruebas, 0 fallos"
+      "output": "[CONTRACTS] OK: frontend, backend, Prisma y reportes mantienen contrato de sistema unico."
     },
     {
-      "name": "system_contracts",
+      "name": "backend_reportes_focalizados",
       "ok": true,
-      "output": "frontend, backend, Prisma y reportes mantienen contrato unico"
+      "output": "> sknomina-backend@1.0.0 test\n> jest payrollReportService.test.js reporteController.test.js --runInBand"
     },
     {
-      "name": "prisma",
+      "name": "prisma_validate",
       "ok": true,
-      "output": "validate, migrate deploy y generate completados"
+      "output": "> sknomina-system@1.0.0 prisma:validate\n> npm --workspace=backend run prisma:validate\n\n\n> sknomina-backend@1.0.0 prisma:validate\n> prisma validate\n\nPrisma schema loaded from prisma\\schema.prisma\nThe schema at prisma\\schema.prisma is valid 🚀"
     },
     {
-      "name": "mobile_readiness",
+      "name": "mobile_check_stores",
       "ok": true,
-      "output": "configuracion, identificadores, URLs y assets verificados"
+      "output": "> sknomina-system@1.0.0 check:mobile\n> npm --workspace=app-movil run check:stores\n\n\n> sknomina-app@1.0.0 check:stores\n> node scripts/check-store-readiness.mjs\n\n[LPA26-STORES] Configuracion, identificadores, URLs y assets de tienda verificados."
     },
     {
-      "name": "frontend_build",
+      "name": "frontend_build_direct_vite",
       "ok": true,
-      "output": "Vite 1533 modulos; PWA generateSW 100 entradas"
-    },
-    {
-      "name": "employee_xlsx_smoke",
-      "ok": true,
-      "output": "PostgreSQL local: 30 empleados, XLSX 11544 bytes"
-    },
-    {
-      "name": "utf8_no_bom",
-      "ok": true,
-      "output": "41 archivos revisados; cero BOM, U+FFFD o mojibake"
+      "output": "\u001b[36mvite v7.3.5 \u001b[32mbuilding client environment for production...\u001b[36m\u001b[39m\ntransforming...\n\u001b[32m✓\u001b[39m 1533 modules transformed.\nrendering chunks...\ncomputing gzip size...\n\u001b[2mdist/\u001b[22m\u001b[32mmanifest.webmanifest                       \u001b[39m\u001b[1m\u001b[2m  1.87 kB\u001b[22m\u001b[1m\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[32mindex.html                                 \u001b[39m\u001b[1m\u001b[2m  2.14 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.70 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[35massets/index-C2bxGpbY.css                  \u001b[39m\u001b[1m\u001b[2m 51.06 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  8.49 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/money-C-BjPene.js                   \u001b[39m\u001b[1m\u001b[2m  0.16 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.15 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/Planes-HIpLWp0w.js                  \u001b[39m\u001b[1m\u001b[2m  0.16 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.16 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/fileToBase64-CtaayJOI.js            \u001b[39m\u001b[1m\u001b[2m  0.18 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.17 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/downloadBlob-CUQnvZjX.js            \u001b[39m\u001b[1m\u001b[2m  0.20 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.17 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/downloadUrl-BrXet0zh.js             \u001b[39m\u001b[1m\u001b[2m  0.51 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.35 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/BrandLogo-DBpdd9er.js               \u001b[39m\u001b[1m\u001b[2m  0.58 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.41 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/configurationApi-IX0nzdzK.js        \u001b[39m\u001b[1m\u001b[2m  0.63 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.27 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/beneficiosApi-D4cYIcuS.js           \u001b[39m\u001b[1m\u001b[2m  0.69 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.31 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/CompactNotice-BM4oUBtA.js           \u001b[39m\u001b[1m\u001b[2m  0.77 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.42 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/authenticatedApi-kxMRWKd_.js        \u001b[39m\u001b[1m\u001b[2m  0.86 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.51 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/dateFormat-CJHiqmZe.js              \u001b[39m\u001b[1m\u001b[2m  1.04 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.49 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/NotFound-Dao_2X4T.js                \u001b[39m\u001b[1m\u001b[2m  1.05 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.56 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/contractTemplates-B1YOS-NM.js       \u001b[39m\u001b[1m\u001b[2m  1.39 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.59 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/publicApi-Do1qU_ZS.js               \u001b[39m\u001b[1m\u001b[2m  1.52 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.76 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/PaymentResult-CsESi9u1.js           \u001b[39m\u001b[1m\u001b[2m  1.63 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.77 kB\u001b[22m\n\u001b"
     },
     {
       "name": "git_diff_check",
       "ok": true,
-      "output": "sin errores"
+      "output": ""
     }
   ],
   "filesModified": [
-    ".github/CODEX_CONTEXT.md",
-    ".github/prompts/HAIKY-AUDITORIA-INTEGRAL-V2-2026-07-asistencia-nomina.md",
-    ".vscode/AudiLock.json",
-    ".vscode/AuditLock.json",
-    "AuditLock.json",
-    "backend/prisma/schema.prisma",
-    "backend/prisma/migrations/20260714190000_employee_attendance_control/migration.sql",
-    "backend/src/app.js",
-    "backend/src/app.routes.test.js",
-    "backend/src/controllers/empleadoController.js",
-    "backend/src/controllers/marcacionController.js",
-    "backend/src/controllers/reporteController.js",
-    "backend/src/controllers/reporteController.test.js",
-    "backend/src/services/auditService.js",
-    "backend/src/services/auditService.test.js",
-    "backend/src/services/calculoNominaService.batch.test.js",
-    "backend/src/services/calculoNominaService.js",
-    "backend/src/services/calculoNominaService.test.js",
-    "backend/src/services/configurationService.js",
-    "backend/src/services/configurationService.test.js",
-    "backend/src/services/employeeAppInviteService.js",
-    "backend/src/services/employeeAppInviteService.test.js",
-    "backend/src/services/employeeMasterReportService.js",
-    "backend/src/services/employeeMasterReportService.test.js",
-    "backend/src/services/equipmentDeliveryActService.js",
-    "backend/src/services/manualAttendanceService.js",
-    "backend/src/services/manualAttendanceService.test.js",
-    "backend/src/services/operationalReadinessService.js",
-    "backend/src/services/operationalReadinessService.test.js",
-    "backend/src/services/payrollRolePdfService.js",
-    "backend/src/services/templateGenerator.js",
-    "backend/src/services/templateGenerator.test.js",
-    "backend/src/templates/legal/contracts/contrato_obra_servicio_giro_negocio.json",
-    "docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V2_NOMINA_EC_2026.md",
-    "docs2/auditoria-integral-v2-haiky-2026/DIAGNOSTICO_AUTOMATIZADO.md",
-    "docs2/auditoria-integral-v2-haiky-2026/DIAGNOSTICO_JSON.json",
-    "docs2/auditoria-integral-v2-haiky-2026/INFORME_DIAGNOSTICO.md",
-    "frontend-web/src/pages/Asistencia/NovedadesPendientes.jsx",
-    "frontend-web/src/pages/Asistencia/ReporteAsistencia.jsx",
-    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
-    "frontend-web/src/pages/Configuracion/parametrizacion/parametrizacionModel.jsx",
-    "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
-    "frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
-    "frontend-web/src/pages/Empleados/NuevoEmpleado.jsx"
+    "M  .github/CODEX_CONTEXT.md",
+    "A  .github/promts/HRD26-00-baseline.md",
+    "A  .github/promts/HRD26-01-backend-reportes.md",
+    "A  .github/promts/HRD26-02-pwa-disponibilidad.md",
+    "A  .github/promts/HRD26-03-legal-ecuador-2026.md",
+    "A  .github/promts/HRD26-04-scripts-contratos.md",
+    "A  .github/promts/HRD26-05-qa-release.md",
+    "MM .vscode/AudiLock.json",
+    "MM .vscode/AuditLock.json",
+    "MM AuditLock.json",
+    "M  backend/src/services/payrollReportService.js",
+    "M  backend/src/services/payrollReportService.test.js",
+    "A  docs2/PLAN_HAIKY_REPORTES_DISPONIBILIDAD_CLIENTES_2026.md",
+    "M docs2/auditoria-integral-v2-haiky-2026/DIAGNOSTICO_AUTOMATIZADO.md",
+    "M docs2/auditoria-integral-v2-haiky-2026/DIAGNOSTICO_JSON.json",
+    "M docs2/auditoria-integral-v2-haiky-2026/INFORME_DIAGNOSTICO.md",
+    "A  docs2/reportes-disponibilidad-clientes-2026/CIERRE_GOBIERNO.md",
+    "AM docs2/reportes-disponibilidad-clientes-2026/DIAGNOSTICO_JSON.json",
+    "AM docs2/reportes-disponibilidad-clientes-2026/INFORME_DIAGNOSTICO.md",
+    "AM docs2/reportes-disponibilidad-clientes-2026/SCRIPTS_JS_SOLUCION.md",
+    "M  frontend-web/src/pages/Nomina/DescargarReportes.jsx",
+    "M  package.json",
+    "M scripts/haiky-integral-v2-diagnostic.mjs",
+    "AM scripts/haiky-reportes-disponibilidad-2026-diagnostic.mjs",
+    "A  scripts/haiky-reportes-disponibilidad-2026-solution.mjs",
+    "M  scripts/verify-system-contracts.mjs"
   ],
-  "signature": "c7afd976073bdd5803c63a33c8358828395f7ff3344791f5a7950d1b4f29eda4"
+  "signature": "27060a98452614aba46cabca978e5db5ca56cbca9fedfe4c3cc901adcc007586"
 }

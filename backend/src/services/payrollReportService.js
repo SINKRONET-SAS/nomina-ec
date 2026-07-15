@@ -13,6 +13,7 @@ const {
   buildBenefitsMatrixRows,
   buildEmployeeDetailRows,
   getAccountingMappings,
+  linesForPayrollRow,
 } = require('./payrollAccountingService');
 
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -24,6 +25,7 @@ const REPORT_TYPES = {
   PAYROLL_DETAIL_TABULAR: 'detail',
   PAYROLL_ACCOUNTING_ENTRIES: 'accounting',
   PAYROLL_EMPLOYEE_DETAIL: 'employee_detail',
+  PAYROLL_NOVELTY_MATRIX: 'novelty_matrix',
   PAYROLL_BENEFITS_MATRIX: 'benefits_matrix',
   PAYROLL_BENEFIT_MOVEMENT_BALANCE: 'benefit_movement_balance',
   PAYROLL_ACCOUNTING_REPORT: 'accounting_report',
@@ -559,6 +561,8 @@ async function buildWorkbook({ tenant, anio, mes, exportRows, reportCode, filter
     ? 'Resumen'
     : reportCode === 'PAYROLL_BENEFIT_MOVEMENT_BALANCE'
       ? 'Ledger beneficios'
+      : reportCode === 'PAYROLL_NOVELTY_MATRIX'
+        ? 'Novedades rol'
       : 'Detalle';
   const sheet = workbook.addWorksheet(sheetName);
   sheet.columns = getWorkbookColumns(reportCode, exportRows);
@@ -613,6 +617,9 @@ function rowsForReport(rows, reportCode, anio, mes, options = {}) {
   if (reportCode === 'PAYROLL_EMPLOYEE_DETAIL') {
     return buildEmployeeDetailRows(rows, anio, mes);
   }
+  if (reportCode === 'PAYROLL_NOVELTY_MATRIX') {
+    return buildPayrollNoveltyMatrixRows(rows, anio, mes);
+  }
   if (reportCode === 'PAYROLL_BENEFITS_MATRIX') {
     return buildBenefitsMatrixRows(rows, anio, mes);
   }
@@ -663,6 +670,63 @@ function mapRowForExport(row, anio, mes) {
     costoEmpleador: numberValue(detail.costoEmpleador),
     fuenteLegal: detail.fuenteLegal || '',
   };
+}
+
+function noveltyMatrixKey(code) {
+  return `novelty_${String(code || 'sin_codigo').replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '')}`;
+}
+
+function isRoleNoveltyLine(line = {}) {
+  const source = String(line.source || '').trim().toLowerCase();
+  const metadata = normalizeDetail(line.metadata);
+  return source === 'novedad'
+    || Boolean(metadata.tipoNovedad)
+    || Boolean(metadata.calculationMode && source !== 'legal');
+}
+
+function buildPayrollNoveltyMatrixRows(rows, anio, mes) {
+  const periodo = `${String(mes).padStart(2, '0')}/${anio}`;
+
+  return rows.map((row) => {
+    const exportRow = {
+      periodo,
+      cedula: row.cedula || '',
+      empleado: `${row.apellidos || ''} ${row.nombres || ''}`.trim(),
+      departamento: row.departamento || '',
+      cargo: row.cargo || '',
+      cargoCodigo: row.cargo_codigo || '',
+      unidad: row.unidad_nombre || '',
+      centroCosto: row.centro_costo || '',
+      loteCalculo: row.calculation_batch_id || '',
+      cantidadNovedades: 0,
+      totalNovedadesIngreso: 0,
+      totalNovedadesDeduccion: 0,
+      netoNovedades: 0,
+      totalIngresosNomina: numberValue(row.total_ingresos),
+      totalDeduccionesNomina: numberValue(row.total_deducciones),
+      netoRecibir: numberValue(row.neto_recibir),
+      _conceptLabels: {},
+    };
+
+    for (const line of linesForPayrollRow(row).filter(isRoleNoveltyLine)) {
+      const amount = roundCurrency(line.amount);
+      if (amount <= 0) continue;
+      const key = noveltyMatrixKey(line.concept_code);
+      exportRow[key] = roundCurrency(numberValue(exportRow[key]) + amount);
+      exportRow._conceptLabels[key] = line.concept_label || line.concept_code;
+      exportRow.cantidadNovedades += 1;
+
+      if (line.category === 'ingreso') {
+        exportRow.totalNovedadesIngreso = roundCurrency(exportRow.totalNovedadesIngreso + amount);
+      }
+      if (line.category === 'deduccion') {
+        exportRow.totalNovedadesDeduccion = roundCurrency(exportRow.totalNovedadesDeduccion + amount);
+      }
+    }
+
+    exportRow.netoNovedades = roundCurrency(exportRow.totalNovedadesIngreso - exportRow.totalNovedadesDeduccion);
+    return exportRow;
+  });
 }
 
 function mapAccountingEntries(row, anio, mes) {
@@ -793,6 +857,28 @@ function getWorkbookColumns(reportCode, exportRows = []) {
       { header: 'Primer movimiento', key: 'primerMovimiento', width: 18 },
       { header: 'Ultimo movimiento', key: 'ultimoMovimiento', width: 18 },
       { header: 'Observacion', key: 'observacion', width: 36 },
+    ];
+  }
+
+  if (reportCode === 'PAYROLL_NOVELTY_MATRIX') {
+    return [
+      { header: 'Periodo', key: 'periodo', width: 12 },
+      { header: 'Cedula', key: 'cedula', width: 14 },
+      { header: 'Empleado', key: 'empleado', width: 36 },
+      { header: 'Departamento', key: 'departamento', width: 20 },
+      { header: 'Codigo cargo', key: 'cargoCodigo', width: 16 },
+      { header: 'Cargo', key: 'cargo', width: 24 },
+      { header: 'Unidad organizativa', key: 'unidad', width: 26 },
+      { header: 'Centro costo', key: 'centroCosto', width: 16 },
+      { header: 'Lote calculo', key: 'loteCalculo', width: 38 },
+      ...getMatrixConceptColumns(exportRows),
+      { header: 'Cantidad novedades', key: 'cantidadNovedades', width: 18 },
+      { header: 'Total novedades ingreso', key: 'totalNovedadesIngreso', width: 24, style: { numFmt: '$#,##0.00' } },
+      { header: 'Total novedades deduccion', key: 'totalNovedadesDeduccion', width: 26, style: { numFmt: '$#,##0.00' } },
+      { header: 'Neto novedades', key: 'netoNovedades', width: 18, style: { numFmt: '$#,##0.00' } },
+      { header: 'Total ingresos nomina', key: 'totalIngresosNomina', width: 22, style: { numFmt: '$#,##0.00' } },
+      { header: 'Total deducciones nomina', key: 'totalDeduccionesNomina', width: 26, style: { numFmt: '$#,##0.00' } },
+      { header: 'Neto recibir', key: 'netoRecibir', width: 16, style: { numFmt: '$#,##0.00' } },
     ];
   }
 
@@ -1067,4 +1153,5 @@ module.exports = {
   REPORT_TYPES,
   rowsForReport,
   buildBenefitLedgerRows,
+  buildPayrollNoveltyMatrixRows,
 };

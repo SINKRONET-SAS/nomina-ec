@@ -218,6 +218,9 @@ for (const reportCode of frontendReportCodes) {
 }
 assert(!descargarReportes.includes('PAYROLL_ACCOUNTING_ENTRIES'), 'La PWA no debe mostrar el reporte contable legacy.');
 assert(descargarReportes.includes('PAYROLL_ACCOUNTING_REPORT'), 'La PWA debe mostrar el reporte contable gobernado.');
+assert(reportService.includes('PAYROLL_NOVELTY_MATRIX'), 'Backend debe soportar matriz de novedades del rol.');
+assert(descargarReportes.includes('PAYROLL_NOVELTY_MATRIX'), 'La PWA debe exponer matriz de novedades del rol.');
+assert(descargarReportes.includes('reportScope') && descargarReportes.includes('Acumulado anual'), 'Reportes internos deben permitir alcance global/individual y acumulado anual.');
 assert(!descargarReportes.includes('Generar XML SAE'), 'IESS no debe exponerse como XML oficial en la pantalla de reportes.');
 assert(descargarReportes.includes('Generar TXT IESS'), 'La pantalla de reportes debe exponer batch IESS como TXT.');
 assert(iessSaeGenerator.includes("catalog_type = 'iess_establecimiento'"), 'Batch IESS debe resolver establecimiento desde catalogo parametrizable.');
