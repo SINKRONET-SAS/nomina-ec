@@ -2,14 +2,15 @@
   "plan": "HAIKY-CORRECCION-RECALCULO-ROLES-2026",
   "phaseCompleted": "HRC26-05-qa-release",
   "status": "completed-pass",
-  "timestamp": "2026-07-15T03:24:10.490Z",
-  "evidenceHash": "613ace3dca342be2401ff5cfb7475d73b49c3e49c23a3c6648c546c47352472a",
+  "timestamp": "2026-07-15T03:59:29.917Z",
+  "evidenceHash": "733bb601c4db6ba7584698f4a834515b5faac881568d732dc67caeeadec81e0c",
   "decisions": [
     "Los borradores se corrigen desde novedades y datos fuente, nunca editando totales derivados.",
     "El descarte individual o mensual requiere RBAC, usuario fresco, motivo, transaccion y auditoria.",
     "Los roles cerrados o pagados son inmutables; el endpoint heredado de reapertura responde 409.",
     "MOBILE y comunicaciones muestran solo roles finales; los PDF preliminares se marcan como borrador.",
     "La carga manual mensual y por rango normaliza fechas de ingreso y salida antes de filtrar dias laborables.",
+    "La carga masiva de asistencia conserva marcaciones existentes y no escribe si una fila es invalida.",
     "La parametrizacion Ecuador 2026 se reconfirma contra fuentes oficiales y permanece versionada."
   ],
   "runtimeChanges": [
@@ -17,23 +18,24 @@
     "PWA agrega descarte mensual, correccion por empleado y eliminacion confirmada de borradores.",
     "MOBILE e historial excluyen roles en borrador.",
     "Asistencia manual estabiliza fechas DATE de PostgreSQL y cubre rangos mensuales con una regresion automatizada.",
+    "PWA y backend agregan plantilla CSV masiva y busqueda de empleados por cedula o nombre.",
     "Contratos y pruebas bloquean reapertura de cerrados y exposicion de borradores."
   ],
   "validationChecks": [
     {
       "name": "diagnostico_roles_2026",
       "ok": true,
-      "output": "{\n  \"ok\": true,\n  \"findings\": 0,\n  \"outDir\": \"docs2/correccion-recalculo-roles-2026\",\n  \"evidenceHash\": \"613ace3dca342be2401ff5cfb7475d73b49c3e49c23a3c6648c546c47352472a\"\n}"
+      "output": "{\n  \"ok\": true,\n  \"findings\": 0,\n  \"outDir\": \"docs2/correccion-recalculo-roles-2026\",\n  \"evidenceHash\": \"733bb601c4db6ba7584698f4a834515b5faac881568d732dc67caeeadec81e0c\"\n}"
     },
     {
       "name": "auditoria_integral_v2",
       "ok": true,
-      "output": "{\n  \"ok\": true,\n  \"outDir\": \"docs2/auditoria-integral-v2-haiky-2026\",\n  \"filesScanned\": 293,\n  \"findingSummary\": {},\n  \"evidenceHash\": \"e6fa0d425d40b17c862e94360c2a3b8ea26db664e428fa288867201e10b2dddc\"\n}"
+      "output": "{\n  \"ok\": true,\n  \"outDir\": \"docs2/auditoria-integral-v2-haiky-2026\",\n  \"filesScanned\": 294,\n  \"findingSummary\": {},\n  \"evidenceHash\": \"e6fa0d425d40b17c862e94360c2a3b8ea26db664e428fa288867201e10b2dddc\"\n}"
     },
     {
       "name": "auditoria_integral_v2_sin_hallazgos",
       "ok": true,
-      "output": "293 archivos revisados sin hallazgos automatizados abiertos."
+      "output": "294 archivos revisados sin hallazgos automatizados abiertos."
     },
     {
       "name": "contratos_sistema_unico",
@@ -48,7 +50,7 @@
     {
       "name": "backend_suite_completa",
       "ok": true,
-      "output": "> sknomina-backend@1.0.0 test\n> jest --runInBand\n\n{\"level\":\"info\",\"code\":\"PAYROLL_CALCULATION_STARTED\",\"statusCode\":200,\"correlationId\":\"nomina-mensual\",\"userId\":null,\"tenantId\":\"tenant-1\",\"anio\":2026,\"mes\":6,\"message\":\"Cálculo de nómina iniciado\",\"timestamp\":\"2026-07-15T03:16:25.303Z\"}\n{\"level\":\"info\",\"code\":\"PAYROLL_CALCULATION_STARTED\",\"statusCode\":200,\"correlationId\":\"nomina-mensual\",\"userId\":null,\"tenantId\":\"tenant-1\",\"anio\":2026,\"mes\":6,\"message\":\"Cálculo de nómina iniciado\",\"timestamp\":\"2026-07-15T03:16:25.311Z\"}\n{\"level\":\"info\",\"code\":\"RDEP_XML_GENERATED\",\"statusCode\":200,\"correlationId\":\"rdep-generator\",\"userId\":null,\"tenantId\":\"tenant-1\",\"anio\":2026,\"totalEmpleados\":1,\"message\":\"XML RDEP generado\",\"timestamp\":\"2026-07-15T03:16:34.464Z\"}\n{\"level\":\"info\",\"code\":\"S3_FILE_UPLOADED\",\"statusCode\":200,\"correlationId\":\"system\",\"userId\":null,\"key\":\"roles/demo.pdf\",\"message\":\"Archivo subido a almacenamiento S3\",\"timestamp\":\"2026-07-15T03:16:41.285Z\"}\n{\"level\":\"info\",\"code\":\"S3_FILE_DELETED\",\"statusCode\":200,\"correlationId\":\"system\",\"userId\":null,\"key\":\"roles/demo.pdf\",\"message\":\"Archivo eliminado de almacenamiento S3\",\"timestamp\":\"2026-07-15T03:16:41.289Z\"}\n{\"level\":\"info\",\"code\":\"LOCAL_STORAGE_FILE_SAVED\",\"statusCode\":200,\"correlationId\":\"system\",\"userId\":null,\"key\":\"documentos/tenant/empleado/contrato.pdf\",\"message\":\"Archivo guardado en almacenamiento local\",\"timestamp\":\"2026-07-15T03:16:41.456Z\"}\n{\"level\":\"info\",\"code\":\"COMMUNICATION_DEV_DELIVERY\",\"statusCode\":200,\"correlationId\":\"corr-1\",\"userId\":\"user-1\",\"channel\":\"email\",\"template\":\"email_verification\",\"to\":\"own***com\",\"message\":\"Entrega registrada en modo desarrollo\",\"timestamp\":\"2026-07-15T03:16:43.093Z\"}\n{\"level\":\"info\",\"code\":\"IESS_BATCH_TXT_GENERATED\",\"statusCode\":200,\"correlationId\":\"iess-batch-generator\",\"userId\":null,\"tenantId\":\"tenant-1\",\"anio\":2026,\"mes\":1,\"movementType\":\"MSU\",\"totalEmpleados\":1,\"message\":\"Archivo batch IESS TXT generado\",\"timestamp\":\"2026-07-15T03:16:51.393Z\"}"
+      "output": "> sknomina-backend@1.0.0 test\n> jest --runInBand\n\n{\"level\":\"info\",\"code\":\"RDEP_XML_GENERATED\",\"statusCode\":200,\"correlationId\":\"rdep-generator\",\"userId\":null,\"tenantId\":\"tenant-1\",\"anio\":2026,\"totalEmpleados\":1,\"message\":\"XML RDEP generado\",\"timestamp\":\"2026-07-15T03:58:26.989Z\"}\n{\"level\":\"info\",\"code\":\"S3_FILE_UPLOADED\",\"statusCode\":200,\"correlationId\":\"system\",\"userId\":null,\"key\":\"roles/demo.pdf\",\"message\":\"Archivo subido a almacenamiento S3\",\"timestamp\":\"2026-07-15T03:58:27.216Z\"}\n{\"level\":\"info\",\"code\":\"S3_FILE_DELETED\",\"statusCode\":200,\"correlationId\":\"system\",\"userId\":null,\"key\":\"roles/demo.pdf\",\"message\":\"Archivo eliminado de almacenamiento S3\",\"timestamp\":\"2026-07-15T03:58:27.221Z\"}\n{\"level\":\"info\",\"code\":\"LOCAL_STORAGE_FILE_SAVED\",\"statusCode\":200,\"correlationId\":\"system\",\"userId\":null,\"key\":\"documentos/tenant/empleado/contrato.pdf\",\"message\":\"Archivo guardado en almacenamiento local\",\"timestamp\":\"2026-07-15T03:58:27.251Z\"}\n{\"level\":\"info\",\"code\":\"PAYROLL_CALCULATION_STARTED\",\"statusCode\":200,\"correlationId\":\"nomina-mensual\",\"userId\":null,\"tenantId\":\"tenant-1\",\"anio\":2026,\"mes\":6,\"message\":\"Cálculo de nómina iniciado\",\"timestamp\":\"2026-07-15T03:58:27.706Z\"}\n{\"level\":\"info\",\"code\":\"PAYROLL_CALCULATION_STARTED\",\"statusCode\":200,\"correlationId\":\"nomina-mensual\",\"userId\":null,\"tenantId\":\"tenant-1\",\"anio\":2026,\"mes\":6,\"message\":\"Cálculo de nómina iniciado\",\"timestamp\":\"2026-07-15T03:58:27.713Z\"}\n{\"level\":\"info\",\"code\":\"COMMUNICATION_DEV_DELIVERY\",\"statusCode\":200,\"correlationId\":\"corr-1\",\"userId\":\"user-1\",\"channel\":\"email\",\"template\":\"email_verification\",\"to\":\"own***com\",\"message\":\"Entrega registrada en modo desarrollo\",\"timestamp\":\"2026-07-15T03:58:35.655Z\"}\n{\"level\":\"info\",\"code\":\"IESS_BATCH_TXT_GENERATED\",\"statusCode\":200,\"correlationId\":\"iess-batch-generator\",\"userId\":null,\"tenantId\":\"tenant-1\",\"anio\":2026,\"mes\":1,\"movementType\":\"MSU\",\"totalEmpleados\":1,\"message\":\"Archivo batch IESS TXT generado\",\"timestamp\":\"2026-07-15T03:58:35.820Z\"}"
     },
     {
       "name": "prisma_validate",
@@ -63,12 +65,12 @@
     {
       "name": "frontend_build_direct_vite",
       "ok": true,
-      "output": "vite v7.3.5 building client environment for production...\ntransforming...\n✓ 1533 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/manifest.webmanifest                         1.87 kB\ndist/index.html                                   2.14 kB │ gzip:  0.70 kB\ndist/assets/index-C-bbP1Qw.css                   51.31 kB │ gzip:  8.53 kB\ndist/assets/money-C-BjPene.js                     0.16 kB │ gzip:  0.15 kB\ndist/assets/Planes-B_6scBQh.js                    0.16 kB │ gzip:  0.15 kB\ndist/assets/fileToBase64-CtaayJOI.js              0.18 kB │ gzip:  0.17 kB\ndist/assets/downloadBlob-CUQnvZjX.js              0.20 kB │ gzip:  0.17 kB\ndist/assets/downloadUrl-BrXet0zh.js               0.51 kB │ gzip:  0.35 kB\ndist/assets/BrandLogo-BXSnRCvK.js                 0.58 kB │ gzip:  0.41 kB\ndist/assets/configurationApi-C-aiUNXp.js          0.63 kB │ gzip:  0.26 kB\ndist/assets/beneficiosApi-CIU_Zz3y.js             0.69 kB │ gzip:  0.31 kB\ndist/assets/CompactNotice-YbeKsVYo.js             0.77 kB │ gzip:  0.42 kB\ndist/assets/authenticatedApi--uzdvvUl.js          0.86 kB │ gzip:  0.51 kB\ndist/assets/dateFormat-CJHiqmZe.js                1.04 kB │ gzip:  0.49 kB\ndist/assets/NotFound-BNmvmhGk.js                  1.05 kB │ gzip:  0.56 kB\ndist/assets/contractTemplates-B1YOS-NM.js         1.39 kB │ gzip:  0.59 kB\ndist/assets/publicApi-DaI5_vkv.js                 1.52 kB │ gzip:  0.76 kB\ndist/assets/PaymentResult-WO_-_aDJ.js             1.63 kB │ gzip:  0.77 kB\ndist/assets/noveltyTypes-dDN7PMb8.js              1.93 kB │ gzip:  0.85 kB\ndist/assets/AyudaUsuario-BDMVqlCC.js              3.02 kB │ gzip:  1.35 kB\ndist/assets/ActasFiniquito-C2ZqJhNA.js            3.02 kB │ gzip:  1.20 kB\ndist/assets/ForgotPassword-JPUZP-WS.js            3.52 kB │ gzip:  1.35 kB\ndist/assets/Auditoria-DZi9RJvZ.js                 4.03 kB │ gzip:  1.32 kB\ndist/assets/ReporteAsistencia-Dwihm1LP.js         5.15 kB │ gzip:  1.71 kB\ndist/assets/MovilizacionAprobacion-D6iB8u11.js    5.27 kB │ gzip:  1.69 kB\ndist/assets/TerminarEmpleado-BJqBS5hv.js          5.59 kB │ gzip:  1.91 kB\ndist/assets/vendor-pwa-BBnX5xw4.js                5.75 kB │ gzip:  2.36 kB\ndist/assets/Login-DJlp9D9o.js                     5.84 kB │ gzip:  2.11 kB\ndist/assets/LegalText-C9ec-I-S.js                 6.23 kB │ gzip:  2.50 kB\ndist/assets/FacturacionFiscal-JdfHixLI.js         7.18 kB │ gzip:  2.26 kB\ndist/assets/PrivacidadCuenta-CpEtBhiI.js          7.25 kB │ gzip:  2.16 kB\ndist/assets/PermisosOperacion-CeSJzVng.js         7.27 kB │ gzip:  2.24 kB\ndist/assets/HistorialEmpleado-Cwbe63q4.js         7.84 kB │ gzip:  2.55 kB\ndist/assets/PlanFunctionalityList-C3jyPsLv.js     7.94 kB │ gzip:  2.85 kB\ndist/assets/Layout-KicvgJoK.js                    8.00 kB │ gzip:  2.65 kB\ndist/assets/LineaBaseOperativa-BUQkRvTi.js        8.05 kB │ gzip:  2.27 kB\ndist/assets/ContratosGenerados-D6WSirYz.js        8.24 kB │ gzip:  2.74 kB\ndist/assets/PagosBancarios-Ch2hBwOp.js            8.34 kB │ gzip:  2.65 kB\ndist/assets/Beneficios"
+      "output": "\u001b[36mvite v7.3.5 \u001b[32mbuilding client environment for production...\u001b[36m\u001b[39m\ntransforming...\n\u001b[32m✓\u001b[39m 1534 modules transformed.\nrendering chunks...\ncomputing gzip size...\n\u001b[2mdist/\u001b[22m\u001b[32mmanifest.webmanifest                       \u001b[39m\u001b[1m\u001b[2m  1.87 kB\u001b[22m\u001b[1m\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[32mindex.html                                 \u001b[39m\u001b[1m\u001b[2m  2.14 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.70 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[35massets/index-CgyF8tzY.css                  \u001b[39m\u001b[1m\u001b[2m 52.40 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  8.69 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/money-C-BjPene.js                   \u001b[39m\u001b[1m\u001b[2m  0.16 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.15 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/Planes-B_6scBQh.js                  \u001b[39m\u001b[1m\u001b[2m  0.16 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.15 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/fileToBase64-CtaayJOI.js            \u001b[39m\u001b[1m\u001b[2m  0.18 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.17 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/downloadBlob-CUQnvZjX.js            \u001b[39m\u001b[1m\u001b[2m  0.20 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.17 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/downloadUrl-BrXet0zh.js             \u001b[39m\u001b[1m\u001b[2m  0.51 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.35 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/BrandLogo-BXSnRCvK.js               \u001b[39m\u001b[1m\u001b[2m  0.58 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.41 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/configurationApi-DvPeWQHs.js        \u001b[39m\u001b[1m\u001b[2m  0.63 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.27 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/beneficiosApi--YiUzL1D.js           \u001b[39m\u001b[1m\u001b[2m  0.69 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.31 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/CompactNotice-YbeKsVYo.js           \u001b[39m\u001b[1m\u001b[2m  0.77 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.42 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/authenticatedApi-DtNxKRsY.js        \u001b[39m\u001b[1m\u001b[2m  0.86 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.51 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/dateFormat-CJHiqmZe.js              \u001b[39m\u001b[1m\u001b[2m  1.04 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.49 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/NotFound-BNmvmhGk.js                \u001b[39m\u001b[1m\u001b[2m  1.05 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.56 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/contractTemplates-B1YOS-NM.js       \u001b[39m\u001b[1m\u001b[2m  1.39 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.59 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/publicApi-DSzJ0jGe.js               \u001b[39m\u001b[1m\u001b[2m  1.52 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.76 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/PaymentResult-WO_-_aDJ.js           \u001b[39m\u001b[1m\u001b[2m  1.63 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.77 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/noveltyTypes-dDN7PMb8.js            \u001b[39m\u001b[1m\u001b[2m  1.93 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  0.85 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/AyudaUsuario-BDMVqlCC.js            \u001b[39m\u001b[1m\u001b[2m  3.02 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  1.35 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/ActasFiniquito-BQUmiDNx.js          \u001b[39m\u001b[1m\u001b[2m  3.02 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  1.20 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/ForgotPassword-B0xf2l5P.js          \u001b[39m\u001b[1m\u001b[2m  3.52 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  1.34 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/Auditoria-CKnJf9iB.js               \u001b[39m\u001b[1m\u001b[2m  4.03 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2"
     },
     {
       "name": "utf8_changed_files",
       "ok": true,
-      "output": "13 archivos modificados/gobernados sin BOM ni mojibake."
+      "output": "32 archivos modificados/gobernados sin BOM ni mojibake."
     },
     {
       "name": "git_diff_check",
@@ -78,18 +80,37 @@
   ],
   "filesModified": [
     "M .github/CODEX_CONTEXT.md",
+    "M .vscode/AudiLock.json",
+    "M .vscode/AuditLock.json",
+    "M AuditLock.json",
+    "M backend/src/app.js",
+    "M backend/src/app.routes.test.js",
+    "M backend/src/controllers/empleadoController.js",
+    "M backend/src/controllers/empleadoController.test.js",
+    "M backend/src/controllers/marcacionController.js",
     "M backend/src/services/manualAttendanceService.js",
     "M backend/src/services/manualAttendanceService.test.js",
     "M docs2/PLAN_HAIKY_CORRECCION_RECALCULO_ROLES_2026.md",
+    "M docs2/auditoria-integral-v2-haiky-2026/DIAGNOSTICO_AUTOMATIZADO.md",
     "M docs2/auditoria-integral-v2-haiky-2026/DIAGNOSTICO_JSON.json",
     "M docs2/auditoria-integral-v2-haiky-2026/INFORME_DIAGNOSTICO.md",
+    "M docs2/correccion-recalculo-roles-2026/CIERRE_GOBIERNO.md",
     "M docs2/correccion-recalculo-roles-2026/DIAGNOSTICO_JSON.json",
     "M docs2/correccion-recalculo-roles-2026/INFORME_DIAGNOSTICO.md",
+    "M frontend-web/src/pages/Asistencia/NovedadesPendientes.jsx",
+    "M frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
+    "M frontend-web/src/pages/Empleados/NuevoEmpleado.jsx",
     "M scripts/haiky-payroll-correction-2026-diagnostic.mjs",
     "M scripts/haiky-payroll-correction-2026-solution.mjs",
     "M scripts/verify-system-contracts.mjs",
-    "G docs2/correccion-recalculo-roles-2026/SCRIPTS_JS_SOLUCION.md",
-    "G docs2/correccion-recalculo-roles-2026/CIERRE_GOBIERNO.md"
+    "?? .github/promts/AIV28-00-diagnostico.md",
+    "?? .github/promts/AIV28-01-motor-calculo.md",
+    "?? .github/promts/AIV28-02-seguridad-backend.md",
+    "?? .github/promts/AIV28-03-pwa-calidad.md",
+    "?? .github/promts/AIV28-04-mobile-seguridad.md",
+    "?? .github/promts/AIV28-05-qa-release.md",
+    "?? frontend-web/src/components/UI/EmployeeSearchSelect.jsx",
+    "G docs2/correccion-recalculo-roles-2026/SCRIPTS_JS_SOLUCION.md"
   ],
-  "signature": "da2c229bf5d570739fb031e7f6cc0e3235a381574e9cd0769ddb336871bfbac4"
+  "signature": "24c7bc4b91816fd6089a3920dd11fdfc427dae1d2173efc416438f1001b65bdd"
 }

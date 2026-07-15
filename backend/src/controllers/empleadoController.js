@@ -1281,6 +1281,96 @@ async function listarCausalesTerminacion(req, res) {
   }
 }
 
+async function eliminar(req, res) {
+  try {
+    const { id } = req.params;
+    const { tenantId } = req;
+
+    const finalPayroll = await db.query(`
+      SELECT
+        COUNT(*)::int AS total,
+        MIN(anio * 100 + mes)::int AS primer_periodo,
+        MAX(anio * 100 + mes)::int AS ultimo_periodo
+      FROM nominas
+      WHERE tenant_id = $1
+        AND empleado_id = $2
+        AND estado IN ('cerrada', 'pagada')
+    `, [tenantId, id]);
+
+    const finalPayrollCount = Number(finalPayroll.rows[0]?.total || 0);
+    if (finalPayrollCount > 0) {
+      return res.status(409).json({
+        error: 'EMPLEADO_ELIMINACION_BLOQUEADA_NOMINA_CERRADA',
+        message: 'No se puede eliminar la ficha porque el trabajador ya tiene roles de nomina cerrados o pagados.',
+        details: {
+          totalRolesFinales: finalPayrollCount,
+          primerPeriodo: finalPayroll.rows[0]?.primer_periodo || null,
+          ultimoPeriodo: finalPayroll.rows[0]?.ultimo_periodo || null,
+        },
+        correlationId: req.correlationId,
+      });
+    }
+
+    const result = await db.query(`
+      UPDATE empleados
+      SET activo = false, updated_at = NOW()
+      WHERE tenant_id = $1
+        AND id = $2
+        AND activo = true
+      RETURNING id, cedula, nombres, apellidos, activo
+    `, [tenantId, id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: 'EMPLEADO_NO_ENCONTRADO',
+        message: 'Empleado no encontrado o ya eliminado.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    await recordAudit({
+      tenantId,
+      userId: req.usuarioId || req.usuario?.id || null,
+      correlationId: req.correlationId || 'empleado-delete',
+      action: 'empleado.eliminado',
+      entity: 'empleados',
+      entityId: id,
+      newData: {
+        activo: false,
+        deletionMode: 'logical',
+        reason: 'sin_nomina_cerrada',
+      },
+      metadata: {
+        role: req.usuario?.rol || '',
+        finalPayrollCount,
+        lopdpPurpose: 'gestion_laboral_nomina',
+      },
+      ipAddress: req.ip,
+    });
+
+    return res.json({
+      success: true,
+      empleado: result.rows[0],
+      message: 'Ficha eliminada de la base activa.',
+      deletionMode: 'logical',
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[EMPLEADOS] Error eliminando ficha laboral', {
+      code: err.code || 'EMPLEADO_DELETE_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'EMPLEADO_DELETE_ERROR',
+      message: err.message || 'No pudimos eliminar la ficha laboral.',
+      correlationId: req.correlationId,
+    });
+  }
+}
+
 module.exports = {
   listar,
   descargarReporteMaestro,
@@ -1288,6 +1378,7 @@ module.exports = {
   historial,
   crear,
   actualizar,
+  eliminar,
   terminar,
   listarCausalesTerminacion,
   descargarPlantillaImportacion,

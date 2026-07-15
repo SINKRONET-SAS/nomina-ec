@@ -20,8 +20,10 @@ const { ensureWritablePayrollPeriodForDate } = require('./monthlyPeriodService')
 const {
   buildPlannedAttendanceRows,
   databaseDateOnly,
+  normalizeManualAttendanceBulkRows,
   normalizeManualAttendanceInput,
   registerManualAttendance,
+  registerManualAttendanceBulk,
 } = require('./manualAttendanceService');
 
 const employeeId = '11111111-1111-4111-8111-111111111111';
@@ -46,6 +48,7 @@ function employee(id = employeeId, overrides = {}) {
 describe('manualAttendanceService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    client.query.mockReset();
     db.getClient.mockResolvedValue(client);
     db.commit.mockResolvedValue();
     db.rollback.mockResolvedValue();
@@ -91,6 +94,132 @@ describe('manualAttendanceService', () => {
       empleado_id: employeeId,
       operational_date: '2026-06-08',
     });
+  });
+
+  test('prevalida identificador y campos requeridos de la carga masiva', () => {
+    expect(() => normalizeManualAttendanceBulkRows([{
+      cedula: '',
+      desde: '2026-06-08',
+      hasta: '2026-06-12',
+      horaInicio: '08:00',
+      horaFin: '17:00',
+      justificacion: 'Regularizacion autorizada',
+    }])).toThrow(expect.objectContaining({ code: 'MANUAL_ATTENDANCE_BULK_VALIDATION_FAILED' }));
+  });
+
+  test('rechaza un identificador informado con formato invalido aunque la cedula sea valida', () => {
+    try {
+      normalizeManualAttendanceBulkRows([{
+        empleadoId: 'id-invalido',
+        cedula: '0102030405',
+        desde: '2026-06-08',
+        hasta: '2026-06-12',
+        horaInicio: '08:00',
+        horaFin: '17:00',
+        justificacion: 'Regularizacion autorizada',
+      }]);
+      throw new Error('La validacion debia rechazar el empleadoId invalido.');
+    } catch (err) {
+      expect(err.code).toBe('MANUAL_ATTENDANCE_BULK_VALIDATION_FAILED');
+      expect(err.details.results[0].error).toBe('MANUAL_ATTENDANCE_BULK_EMPLOYEE_ID_INVALID');
+    }
+  });
+
+  test('registra un lote mensual en una sola transaccion y conserva marcas existentes', async () => {
+    client.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [employee()] })
+      .mockResolvedValueOnce({
+        rows: Array.from({ length: 9 }, (_, index) => ({
+          id: `mark-${index + 1}`,
+          metadata: { rowNumber: 2 },
+        })),
+      });
+
+    const result = await registerManualAttendanceBulk({
+      tenantId: 'tenant-1',
+      userId: 'user-1',
+      correlationId: 'corr-bulk',
+      ipAddress: '127.0.0.1',
+      rows: [{
+        cedula: '0102030405',
+        desde: '2026-06-08',
+        hasta: '2026-06-12',
+        horaInicio: '08:00',
+        horaFin: '17:00',
+        justificacion: 'Regularizacion autorizada por RRHH',
+      }],
+    });
+
+    expect(client.query).toHaveBeenCalledTimes(3);
+    expect(client.query.mock.calls[2][0]).toContain('jsonb_to_recordset');
+    expect(result).toMatchObject({
+      totalFilas: 1,
+      jornadasPlanificadas: 5,
+      marcacionesEsperadas: 10,
+      marcacionesCreadas: 9,
+      marcacionesExistentes: 1,
+    });
+    expect(result.results[0]).toMatchObject({ rowNumber: 2, status: 'processed' });
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'asistencia.manual.carga_masiva',
+      dbClient: client,
+    }));
+    expect(db.commit).toHaveBeenCalledWith(client);
+  });
+
+  test('no escribe ninguna marcacion si una fila no encuentra al empleado', async () => {
+    client.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    await expect(registerManualAttendanceBulk({
+      tenantId: 'tenant-1',
+      userId: 'user-1',
+      correlationId: 'corr-bulk-error',
+      rows: [{
+        cedula: '0102030405',
+        desde: '2026-06-08',
+        hasta: '2026-06-12',
+        horaInicio: '08:00',
+        horaFin: '17:00',
+        justificacion: 'Regularizacion autorizada por RRHH',
+      }],
+    })).rejects.toMatchObject({ code: 'MANUAL_ATTENDANCE_BULK_VALIDATION_FAILED' });
+
+    expect(client.query).toHaveBeenCalledTimes(2);
+    expect(db.rollback).toHaveBeenCalledWith(client);
+    expect(recordAudit).not.toHaveBeenCalled();
+  });
+
+  test('rechaza el lote si empleadoId y cedula no resuelven al mismo empleado', async () => {
+    client.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [employee()] });
+
+    await expect(registerManualAttendanceBulk({
+      tenantId: 'tenant-1',
+      userId: 'user-1',
+      correlationId: 'corr-bulk-mismatch',
+      rows: [{
+        empleadoId: employeeId,
+        cedula: '0999999999',
+        desde: '2026-06-08',
+        hasta: '2026-06-12',
+        horaInicio: '08:00',
+        horaFin: '17:00',
+        justificacion: 'Regularizacion autorizada por RRHH',
+      }],
+    })).rejects.toMatchObject({
+      code: 'MANUAL_ATTENDANCE_BULK_VALIDATION_FAILED',
+      details: {
+        results: [expect.objectContaining({ error: 'MANUAL_ATTENDANCE_BULK_EMPLOYEE_MISMATCH' })],
+      },
+    });
+
+    expect(client.query).toHaveBeenCalledTimes(2);
+    expect(db.rollback).toHaveBeenCalledWith(client);
+    expect(recordAudit).not.toHaveBeenCalled();
   });
 
   test('registra inicio y fin faltantes para un empleado en una fecha', async () => {

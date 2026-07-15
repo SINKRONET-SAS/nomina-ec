@@ -1,6 +1,6 @@
 # Cierre de gobierno HRC26
 
-Generado: 2026-07-15T03:24:10.490Z
+Generado: 2026-07-15T03:59:29.917Z
 Estado: completed-pass
 
 ## Decisiones ejecutadas
@@ -11,6 +11,7 @@ Estado: completed-pass
 - MOBILE, correo y pagos bancarios consumen unicamente estados finales.
 - Los documentos preliminares muestran una marca explicita de borrador.
 - La asistencia manual mensual normaliza las fechas laborales devueltas por PostgreSQL.
+- La asistencia manual masiva valida el lote completo y la PWA permite buscar empleados.
 
 ## Gates
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, FileUp, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, FileUp, ShieldCheck, Trash2 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { fetchPlanCapabilities } from '../../services/beneficiosApi';
 import { contractTemplateOptionLabel, DEFAULT_CONTRACT_TEMPLATE_KEY, normalizeContractTemplateKey } from '../../utils/contractTemplates';
@@ -539,6 +539,25 @@ function NuevoEmpleado() {
     }
   };
 
+  const handleDeleteEmployee = async () => {
+    if (!id) return;
+    setError('');
+    setMessage('');
+    const fullName = `${formData.nombres || ''} ${formData.apellidos || ''}`.trim() || formData.cedula;
+    const confirmed = window.confirm(`Eliminar la ficha de ${fullName} de la base activa? Solo se permite si no tiene roles de nomina cerrados o pagados.`);
+    if (!confirmed) return;
+
+    setCargando(true);
+    try {
+      await authenticatedApi.delete('/empleados/' + id);
+      navigate('/dashboard/empleados');
+    } catch (err) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'No pudimos eliminar la ficha. Verifica si tiene roles cerrados o pagados.');
+    } finally {
+      setCargando(false);
+    }
+  };
+
   const handleSignedContract = async (event) => {
     const file = event.target.files?.[0];
     if (!file || !id) return;
@@ -575,11 +594,24 @@ function NuevoEmpleado() {
         <ArrowLeft size={20} className="mr-2" /> Volver
       </button>
 
-      <div>
-        <h1 className="text-2xl font-bold text-slate-950">{isEdit ? 'Editar ficha del trabajador' : 'Nuevo trabajador'}</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Completa la ficha laboral. La cuenta del trabajador se guarda cifrada.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-950">{isEdit ? 'Editar ficha del trabajador' : 'Nuevo trabajador'}</h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Completa la ficha laboral. La cuenta del trabajador se guarda cifrada.
+          </p>
+        </div>
+        {isEdit && (
+          <button
+            className="inline-flex min-h-10 w-fit items-center gap-2 rounded-md border border-red-200 px-4 text-sm font-semibold text-red-700 hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={cargando}
+            onClick={handleDeleteEmployee}
+            type="button"
+          >
+            <Trash2 className="h-4 w-4" />
+            Eliminar ficha
+          </button>
+        )}
       </div>
 
       {message && <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}

@@ -154,6 +154,7 @@ app.get('/api/empleados/:id', requireRole('owner', 'admin_rrhh', 'supervisor'), 
 app.get('/api/empleados/:id/historial', requireRole('owner', 'admin_rrhh', 'supervisor'), requireModule('empleados'), empleadoController.historial);
 app.post('/api/empleados', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), empleadoController.crear);
 app.put('/api/empleados/:id', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), empleadoController.actualizar);
+app.delete('/api/empleados/:id', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('empleados'), empleadoController.eliminar);
 app.post('/api/empleados/:id/app-invitacion', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), employeeAppInviteController.crear);
 app.post('/api/empleados/:id/terminar', requireRole('owner', 'admin_rrhh'), requireModule('empleados'), empleadoController.terminar);
 
@@ -168,6 +169,8 @@ app.post('/api/onboarding/saldos-iniciales/lotes/:batchId/revertir', requireRole
 
 const marcacionController = require('./controllers/marcacionController');
 app.post('/api/marcaciones', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireModule('asistencia'), marcacionController.registrar);
+app.get('/api/marcaciones/manual/plantilla-carga-masiva', requireRole('owner', 'admin_rrhh'), requireModule('asistencia'), marcacionController.descargarPlantillaManual);
+app.post('/api/marcaciones/manual/carga-masiva', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('asistencia'), marcacionController.registrarManualMasiva);
 app.post('/api/marcaciones/manual', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('asistencia'), marcacionController.registrarManual);
 app.get('/api/marcaciones/empleado/:empleadoId', requireModule('asistencia'), marcacionController.listarPorEmpleado);
 app.get('/api/marcaciones/hoy', requireRole('empleado', 'owner', 'admin_rrhh', 'supervisor'), requireModule('asistencia'), marcacionController.listarHoy);

@@ -175,6 +175,7 @@ writeUtf8(path.join(OUTPUT_DIR, 'CIERRE_GOBIERNO.md'), `${[
   '- MOBILE, correo y pagos bancarios consumen unicamente estados finales.',
   '- Los documentos preliminares muestran una marca explicita de borrador.',
   '- La asistencia manual mensual normaliza las fechas laborales devueltas por PostgreSQL.',
+  '- La asistencia manual masiva valida el lote completo y la PWA permite buscar empleados.',
   '',
   '## Gates',
   '',
@@ -199,6 +200,7 @@ const lock = {
     'Los roles cerrados o pagados son inmutables; el endpoint heredado de reapertura responde 409.',
     'MOBILE y comunicaciones muestran solo roles finales; los PDF preliminares se marcan como borrador.',
     'La carga manual mensual y por rango normaliza fechas de ingreso y salida antes de filtrar dias laborables.',
+    'La carga masiva de asistencia conserva marcaciones existentes y no escribe si una fila es invalida.',
     'La parametrizacion Ecuador 2026 se reconfirma contra fuentes oficiales y permanece versionada.',
   ],
   runtimeChanges: [
@@ -206,6 +208,7 @@ const lock = {
     'PWA agrega descarte mensual, correccion por empleado y eliminacion confirmada de borradores.',
     'MOBILE e historial excluyen roles en borrador.',
     'Asistencia manual estabiliza fechas DATE de PostgreSQL y cubre rangos mensuales con una regresion automatizada.',
+    'PWA y backend agregan plantilla CSV masiva y busqueda de empleados por cedula o nombre.',
     'Contratos y pruebas bloquean reapertura de cerrados y exposicion de borradores.',
   ],
   validationChecks: checks,

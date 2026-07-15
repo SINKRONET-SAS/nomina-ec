@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-15T03:15:37.847Z",
+  "generatedAt": "2026-07-15T03:58:00.499Z",
   "plan": "HAIKY-CORRECCION-RECALCULO-ROLES-2026",
   "rulesSource": "RULES.md",
   "scope": [
@@ -88,6 +88,14 @@
       "recommendation": "Sin accion pendiente."
     },
     {
+      "code": "HRC26-ATT-002",
+      "area": "PWA_BACKEND",
+      "status": "confirmado",
+      "severity": "informativa",
+      "evidence": "La asistencia manual debe soportar lote CSV y busqueda eficiente de empleados.",
+      "recommendation": "Sin accion pendiente."
+    },
+    {
       "code": "HRC26-MOB-001",
       "area": "MOBILE",
       "status": "confirmado",
@@ -121,5 +129,5 @@
     }
   ],
   "findings": [],
-  "evidenceHash": "613ace3dca342be2401ff5cfb7475d73b49c3e49c23a3c6648c546c47352472a"
+  "evidenceHash": "733bb601c4db6ba7584698f4a834515b5faac881568d732dc67caeeadec81e0c"
 }

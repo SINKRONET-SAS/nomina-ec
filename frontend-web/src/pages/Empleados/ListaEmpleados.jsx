@@ -14,6 +14,7 @@ import {
   Search,
   Send,
   Smartphone,
+  Trash2,
   Upload,
   UserX,
   XCircle,
@@ -311,6 +312,8 @@ function ListaEmpleados() {
   const queryClient = useQueryClient();
   const [busqueda, setBusqueda] = useState('');
   const [lastInvite, setLastInvite] = useState(null);
+  const [message, setMessage] = useState('');
+  const [deleteTargetId, setDeleteTargetId] = useState('');
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['empleados'],
@@ -371,6 +374,22 @@ function ListaEmpleados() {
     },
   });
 
+  const deleteEmployeeMutation = useMutation({
+    mutationFn: async (employeeId) => {
+      const response = await authenticatedApi.delete(`/empleados/${employeeId}`);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setMessage(data.message || 'Ficha eliminada de la base activa.');
+      setLastInvite(null);
+      queryClient.invalidateQueries({ queryKey: ['empleados'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-app-invitations'] });
+    },
+    onSettled: () => {
+      setDeleteTargetId('');
+    },
+  });
+
   const empleados = data || [];
   const activationRows = invitationsQuery.data || [];
   const activationByEmployee = useMemo(() => new Map(
@@ -398,6 +417,15 @@ function ListaEmpleados() {
     } catch (err) {
       setLastInvite((current) => current ? { ...current, copied: false, copyError: 'No pudimos copiar automaticamente. Selecciona el codigo manualmente.' } : current);
     }
+  };
+
+  const requestDeleteEmployee = (empleado) => {
+    setMessage('');
+    const fullName = `${empleado.nombres || ''} ${empleado.apellidos || ''}`.trim() || empleado.cedula;
+    const confirmed = window.confirm(`Eliminar la ficha de ${fullName} de la base activa? Solo se permite si no tiene roles de nomina cerrados o pagados.`);
+    if (!confirmed) return;
+    setDeleteTargetId(empleado.id);
+    deleteEmployeeMutation.mutate(empleado.id);
   };
 
   return (
@@ -509,6 +537,18 @@ function ListaEmpleados() {
         </div>
       )}
 
+      {message && (
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
+          {message}
+        </div>
+      )}
+
+      {deleteEmployeeMutation.isError && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+          {extractApiError(deleteEmployeeMutation.error, 'No pudimos eliminar la ficha. Verifica si tiene roles cerrados o pagados.')}
+        </div>
+      )}
+
       <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 p-4">
           <div className="relative">
@@ -593,6 +633,16 @@ function ListaEmpleados() {
                           <Link className="text-red-600 hover:text-red-800" to={`/dashboard/empleados/${empleado.id}/terminar`} title="Terminar empleado">
                             <UserX size={16} />
                           </Link>
+                          <button
+                            className="text-red-700 hover:text-red-900 disabled:cursor-not-allowed disabled:opacity-40"
+                            disabled={deleteEmployeeMutation.isPending && deleteTargetId === empleado.id}
+                            onClick={() => requestDeleteEmployee(empleado)}
+                            title="Eliminar ficha"
+                            type="button"
+                          >
+                            <Trash2 size={16} />
+                            <span className="sr-only">Eliminar ficha</span>
+                          </button>
                           {attendanceEnabled && !activeLink && (
                             <button
                               className="inline-flex items-center gap-1 rounded-md border border-teal-200 px-2 py-1 text-xs font-semibold text-teal-800 disabled:cursor-not-allowed disabled:opacity-40"

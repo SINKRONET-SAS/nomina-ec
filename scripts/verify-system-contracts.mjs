@@ -127,6 +127,7 @@ assert(publicApiService.includes('could not load credentials'), 'Frontend debe t
 assert(authenticatedApiService.includes('sanitizeApiErrorMessage'), 'Cliente autenticado debe sanitizar mensajes crudos antes de que lleguen a pantallas.');
 
 const app = read('backend/src/app.js');
+const empleadoController = read('backend/src/controllers/empleadoController.js');
 const configurationService = read('backend/src/services/configurationService.js');
 const iessSaeGenerator = read('backend/src/services/iessSaeGenerator.js');
 const reportService = read('backend/src/services/payrollReportService.js');
@@ -142,6 +143,7 @@ const parametrizacionModel = read('frontend-web/src/pages/Configuracion/parametr
 const appWeb = read('frontend-web/src/App.jsx');
 const layoutWeb = read('frontend-web/src/components/Layout/Layout.jsx');
 const empleadosWeb = read('frontend-web/src/pages/Empleados/ListaEmpleados.jsx');
+const empleadoFormWeb = read('frontend-web/src/pages/Empleados/NuevoEmpleado.jsx');
 const comunicacionesWeb = read('frontend-web/src/pages/Configuracion/Comunicaciones.jsx');
 const actasEntregaDotacion = read('frontend-web/src/pages/Documentos/ActasEntregaDotacion.jsx');
 const contratosGenerados = read('frontend-web/src/pages/Documentos/ContratosGenerados.jsx');
@@ -161,6 +163,7 @@ const payrollRolePdfService = read('backend/src/services/payrollRolePdfService.j
 const mobileController = read('backend/src/controllers/mobileController.js');
 const employeeHistoryService = read('backend/src/services/employeeHistoryService.js');
 const novedadesPendientes = read('frontend-web/src/pages/Asistencia/NovedadesPendientes.jsx');
+const employeeSearchSelect = read('frontend-web/src/components/UI/EmployeeSearchSelect.jsx');
 const equipmentDeliveryActService = read('backend/src/services/equipmentDeliveryActService.js');
 const paymentController = read('backend/src/controllers/paymentController.js');
 const planesGestion = read('frontend-web/src/pages/PlanesGestion.jsx');
@@ -246,10 +249,13 @@ assert(publicPlansCatalog.includes('Total mensual') && publicPlansCatalog.includ
 assert(!landing.includes('XML SAE IESS'), 'La landing no debe prometer XML SAE IESS como reporte oficial.');
 assert(landing.includes('Batch IESS') || landing.includes('TXT IESS'), 'La landing debe comunicar IESS como batch TXT/DAT.');
 assert(app.includes("'/api/reportes/nomina/exportar'"), 'Backend debe exponer /api/reportes/nomina/exportar.');
+assert(app.includes("app.delete('/api/empleados/:id', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('empleados'), empleadoController.eliminar)"), 'Backend debe exponer eliminacion de ficha laboral con rol, usuario fresco y modulo empleados.');
+assert(empleadoController.includes("estado IN ('cerrada', 'pagada')") && empleadoController.includes('EMPLEADO_ELIMINACION_BLOQUEADA_NOMINA_CERRADA'), 'Eliminacion de empleado debe bloquearse si existen roles cerrados o pagados.');
 assert(app.includes("'/api/empleados/importar/plantilla.csv'"), 'Backend debe exponer plantilla CSV para carga masiva de empleados.');
 assert(employeeImportService.includes('buildEmployeeImportTemplateCsv'), 'Importacion de empleados debe generar plantilla CSV desde backend.');
 assert(employeeImportService.includes('isCommentLine'), 'Parser de carga de empleados debe ignorar comentarios de la plantilla.');
 assert(empleadosWeb.includes('/empleados/importar/plantilla.csv'), 'Pantalla de empleados debe descargar plantilla CSV desde backend.');
+assert(empleadosWeb.includes('/empleados/${employeeId}') && empleadosWeb.includes('Eliminar ficha') && empleadoFormWeb.includes("authenticatedApi.delete('/empleados/' + id)") && empleadoFormWeb.includes('Eliminar ficha'), 'PWA debe exponer accion de eliminar ficha de empleado en lista y edicion.');
 assert(!empleadosWeb.includes('plantilla_empleados_demo.csv') && !empleadosWeb.includes('const TEMPLATE'), 'Plantilla de empleados no debe quedar como demo hardcodeado en la PWA.');
 
 for (const [screenName, screenText] of [
@@ -363,6 +369,11 @@ assert(payrollLifecycleService.includes('discardPayrollDraft'), 'Backend debe de
 assert(payrollLifecycleService.includes("estado !== 'borrador'"), 'El ciclo debe bloquear descarte de roles que no sean borrador.');
 assert(manualAttendanceService.includes('function databaseDateOnly'), 'La asistencia mensual debe normalizar fechas DATE devueltas por PostgreSQL.');
 assert(manualAttendanceService.includes('e.fecha_ingreso::text AS fecha_ingreso'), 'La consulta de asistencia manual debe estabilizar la fecha de ingreso como YYYY-MM-DD.');
+assert(manualAttendanceService.includes('registerManualAttendanceBulk'), 'Backend debe procesar asistencia manual masiva en un lote validado.');
+assert(app.includes("'/api/marcaciones/manual/carga-masiva'"), 'Backend debe exponer carga masiva de asistencia con RBAC y usuario fresco.');
+assert(novedadesPendientes.includes('/marcaciones/manual/plantilla-carga-masiva'), 'PWA debe descargar la plantilla de asistencia manual.');
+assert(novedadesPendientes.includes('EmployeeSearchSelect'), 'La asistencia manual debe permitir buscar empleados sin recorrer un select completo.');
+assert(employeeSearchSelect.includes('role="combobox"'), 'El selector de empleados debe exponer semantica de combobox accesible.');
 assert(nominaController.includes("error: 'NOMINA_CERRADA_INMUTABLE'"), 'El endpoint heredado de reapertura debe proteger roles cerrados.');
 assert(!nominaController.includes("action: 'reabrir_nomina'"), 'Backend no debe convertir roles cerrados otra vez en borrador.');
 assert(cerrarMes.includes('Descartar cálculo'), 'Cierre mensual debe permitir volver a novedades antes del cierre.');

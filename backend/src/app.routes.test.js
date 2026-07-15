@@ -117,9 +117,24 @@ describe('AISK26-01: cierre brechas RBAC', () => {
     );
   });
 
+  test('plantilla y carga masiva de asistencia requieren administracion y usuario fresco al escribir', () => {
+    expect(source).toContain(
+      "app.get('/api/marcaciones/manual/plantilla-carga-masiva', requireRole('owner', 'admin_rrhh'), requireModule('asistencia'), marcacionController.descargarPlantillaManual)"
+    );
+    expect(source).toContain(
+      "app.post('/api/marcaciones/manual/carga-masiva', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('asistencia'), marcacionController.registrarManualMasiva)"
+    );
+  });
+
   test('GET /api/empleados/reporte.xlsx protege la exportacion laboral sensible', () => {
     expect(source).toContain(
       "app.get('/api/empleados/reporte.xlsx', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('empleados'), empleadoController.descargarReporteMaestro)"
+    );
+  });
+
+  test('DELETE /api/empleados/:id requiere rol, usuario fresco y modulo empleados', () => {
+    expect(source).toContain(
+      "app.delete('/api/empleados/:id', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('empleados'), empleadoController.eliminar)"
     );
   });
 
@@ -229,6 +244,7 @@ describe('AISK26-01: cierre brechas RBAC', () => {
     expect(source).not.toContain("app.get('/api/documentos', documentoLegalController.listar)");
     expect(source).not.toContain("app.get('/api/documentos/:id/download', documentoLegalController.descargar)");
     expect(source).not.toContain("app.get('/api/empleados/terminacion/causas', empleadoController.listarCausalesTerminacion)");
+    expect(source).not.toContain("app.delete('/api/empleados/:id', empleadoController.eliminar)");
     expect(source).not.toContain("app.get('/api/reportes/asistencia/:anio/:mes', reporteController.reporteAsistencia)");
   });
 });

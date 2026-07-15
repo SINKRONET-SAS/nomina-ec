@@ -272,3 +272,73 @@ describe('empleadoController.actualizar', () => {
     });
   });
 });
+
+describe('empleadoController.eliminar', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    recordAudit.mockResolvedValue(undefined);
+  });
+
+  test('bloquea eliminacion cuando existen roles cerrados o pagados', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{ total: 2, primer_periodo: 202606, ultimo_periodo: 202607 }],
+    });
+    const req = {
+      tenantId: 'tenant-1',
+      params: { id: 'emp-1' },
+      usuario: { rol: 'owner' },
+      usuarioId: 'user-1',
+      correlationId: 'corr-delete-block',
+    };
+    const res = mockResponse();
+
+    await empleadoController.eliminar(req, res);
+
+    expect(db.query).toHaveBeenCalledTimes(1);
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      error: 'EMPLEADO_ELIMINACION_BLOQUEADA_NOMINA_CERRADA',
+      details: expect.objectContaining({ totalRolesFinales: 2 }),
+    }));
+    expect(recordAudit).not.toHaveBeenCalled();
+  });
+
+  test('elimina logicamente si no existen roles cerrados o pagados', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ total: 0, primer_periodo: null, ultimo_periodo: null }] })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'emp-1',
+          cedula: '0912345678',
+          nombres: 'Ana',
+          apellidos: 'Perez',
+          activo: false,
+        }],
+      });
+    const req = {
+      tenantId: 'tenant-1',
+      params: { id: 'emp-1' },
+      usuario: { rol: 'owner' },
+      usuarioId: 'user-1',
+      correlationId: 'corr-delete-ok',
+      ip: '127.0.0.1',
+    };
+    const res = mockResponse();
+
+    await empleadoController.eliminar(req, res);
+
+    expect(db.query.mock.calls[0][0]).toContain("estado IN ('cerrada', 'pagada')");
+    expect(db.query.mock.calls[1][0]).toContain('SET activo = false');
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'empleado.eliminado',
+      entity: 'empleados',
+      entityId: 'emp-1',
+      tenantId: 'tenant-1',
+    }));
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      message: 'Ficha eliminada de la base activa.',
+      deletionMode: 'logical',
+    }));
+  });
+});

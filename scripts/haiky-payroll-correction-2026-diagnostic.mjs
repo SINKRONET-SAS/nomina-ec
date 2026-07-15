@@ -43,6 +43,7 @@ const mobileController = read('backend/src/controllers/mobileController.js');
 const employeeHistory = read('backend/src/services/employeeHistoryService.js');
 const rolePdf = read('backend/src/services/payrollRolePdfService.js');
 const manualAttendance = read('backend/src/services/manualAttendanceService.js');
+const employeeSearchSelect = read('frontend-web/src/components/UI/EmployeeSearchSelect.jsx');
 const legal = read('backend/src/config/legal-ecuador.js');
 const contracts = read('scripts/verify-system-contracts.mjs');
 const landing = read('frontend-web/src/pages/Landing.jsx');
@@ -137,6 +138,17 @@ const checks = [
       && manualAttendance.includes('databaseDateOnly(employee.fecha_ingreso)'),
     'La correccion de novedades por mes debe interpretar las fechas laborales con el mismo formato que PostgreSQL.',
     'Normalizar fecha de ingreso/salida antes de filtrar dias laborables y cubrir objetos Date en pruebas.',
+  ),
+  check(
+    'HRC26-ATT-002',
+    'PWA_BACKEND',
+    manualAttendance.includes('registerManualAttendanceBulk')
+      && app.includes("'/api/marcaciones/manual/carga-masiva'")
+      && noveltiesPage.includes('/marcaciones/manual/plantilla-carga-masiva')
+      && noveltiesPage.includes('EmployeeSearchSelect')
+      && employeeSearchSelect.includes('role="combobox"'),
+    'La asistencia manual debe soportar lote CSV y busqueda eficiente de empleados.',
+    'Agregar plantilla, prevalidacion atomica, conservacion de duplicados y combobox por cedula o nombre.',
   ),
   check(
     'HRC26-MOB-001',

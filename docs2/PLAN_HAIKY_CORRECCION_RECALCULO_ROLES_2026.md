@@ -15,6 +15,7 @@ Eliminar el flujo de una sola via en el calculo mensual sin permitir alteracione
 7. Los parametros 2026 del repositorio coinciden con las fuentes oficiales revisadas: SBU USD 482, IESS 9,45% personal y 11,15% patronal, jornada mensual de 30 dias/240 horas y tabla IR 2026.
 8. El endpoint heredado `/api/nomina/reabrir` convertia roles cerrados nuevamente en borrador sin revertir en la misma transaccion los efectos del cierre; no tiene consumidores en PWA ni MOBILE.
 9. La carga manual mensual podia devolver cero dias porque PostgreSQL entrega columnas `DATE` como objetos `Date` y el filtro laboral usaba `String(fecha).slice(0, 10)`.
+10. La jornada manual solo permitia un empleado o un global uniforme; no existia plantilla para horarios distintos por fila y el selector simple no escalaba para nominas grandes.
 
 ## Decisiones de diseno
 
@@ -26,6 +27,8 @@ Eliminar el flujo de una sola via en el calculo mensual sin permitir alteracione
 - El endpoint heredado de reapertura se conserva para compatibilidad, responde `409 NOMINA_CERRADA_INMUTABLE` y orienta a registrar el ajuste en un periodo abierto.
 - Mobile y correo solo presentan roles cerrados o pagados. Un PDF de borrador se identifica como vista preliminar.
 - Las fechas de ingreso y salida se normalizan como `YYYY-MM-DD` antes de construir jornadas manuales mensuales o por rango.
+- La asistencia masiva usa CSV, valida el lote completo antes de escribir, conserva marcaciones existentes y admite hasta 1.000 filas.
+- La seleccion individual usa busqueda por cedula, nombre, apellido o ID en lugar de un select completo.
 
 ## Fases
 

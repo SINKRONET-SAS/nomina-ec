@@ -1,7 +1,7 @@
 # Informe diagnostico HRC26 - correccion y recalculo de roles
 
-Generado: 2026-07-15T03:15:37.847Z
-Hash de evidencia: 613ace3dca342be2401ff5cfb7475d73b49c3e49c23a3c6648c546c47352472a
+Generado: 2026-07-15T03:58:00.499Z
+Hash de evidencia: 733bb601c4db6ba7584698f4a834515b5faac881568d732dc67caeeadec81e0c
 
 ## Resultado por superficie
 
@@ -12,6 +12,7 @@ Hash de evidencia: 613ace3dca342be2401ff5cfb7475d73b49c3e49c23a3c6648c546c473524
 - HRC26-PWA-001 [PWA]: confirmado. La PWA debe ofrecer una salida visible desde el calculo y cada rol borrador.
 - HRC26-PWA-002 [PWA]: confirmado. La etiqueta visual debe usar el campo persistido `estado`.
 - HRC26-ATT-001 [BACKEND]: confirmado. La correccion de novedades por mes debe interpretar las fechas laborales con el mismo formato que PostgreSQL.
+- HRC26-ATT-002 [PWA_BACKEND]: confirmado. La asistencia manual debe soportar lote CSV y busqueda eficiente de empleados.
 - HRC26-MOB-001 [MOBILE]: confirmado. Autoservicio debe ocultar resultados que RRHH aun puede corregir.
 - HRC26-DOC-001 [DOCUMENTOS]: confirmado. Un PDF preliminar debe diferenciarse del rol cerrado.
 - HRC26-LEGAL-001 [LEGAL_EC_2026]: confirmado. Parametros laborales y tributarios 2026 versionados en el repositorio.

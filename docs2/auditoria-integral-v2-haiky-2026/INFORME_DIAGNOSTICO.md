@@ -1,6 +1,6 @@
 # Informe diagnostico integral V2 - SKNOMINA Ecuador 2026
 
-Generado: 2026-07-15T03:15:41.298Z
+Generado: 2026-07-15T03:58:00.637Z
 Hash evidencia: e6fa0d425d40b17c862e94360c2a3b8ea26db664e428fa288867201e10b2dddc
 
 ## Resumen ejecutivo

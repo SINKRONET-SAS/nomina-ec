@@ -1,6 +1,40 @@
 
 ---
 
+## Current Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-V28-NOMINA-EC-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-AUDITORIA-INTEGRAL-V28-NOMINA-EC-2026 |
+| Codigo | AIV28 |
+| Estado | diagnostico-completado |
+| Fecha | 2026-07-14 |
+| Superficie | LANDING, PWA, BACKEND, MOBILE |
+| Plan doc | `docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V28_NOMINA_EC_2026.md` |
+| Informe | `docs2/auditoria-integral-v28-nomina-ec-2026/INFORME_DIAGNOSTICO.md` |
+| Diagnostico JSON | `docs2/auditoria-integral-v28-nomina-ec-2026/DIAGNOSTICO_JSON.json` |
+| Scripts | `docs2/auditoria-integral-v28-nomina-ec-2026/SCRIPTS_JS_SOLUCION.md` |
+| Prompts | `.github/promts/AIV28-{00..05}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Decisiones AIV28
+
+- NO se migra a Python. El motor Node.js esta legalmente validado, en produccion y con cobertura de tests. Reescribir introduce riesgo de regresion legal inaceptable.
+- Cumplimiento legal Ecuador 2026 CONFORME en los 13 parametros verificados (SBU, IESS, decimos, IR, HE, vacaciones, fondo reserva).
+- 7 hallazgos reales: 1 alto (SQLite mobile sin cifrado), 3 medios (batch silencioso, dias=0, base64 upload), 3 bajos (rate limit, validacion, GPS).
+- 4 falsos positivos descartados (precision monetaria, integridad totales, tenantId nullable, webhook firma).
+- 2 riesgos aceptados (tokens localStorage con mitigacion, console.error estructurado).
+- H-05 (rate limiting) y H-06 (validacion centralizada) diferidos a fase futura.
+
+### Gates AIV28-00
+
+- Escaneo de 350+ archivos en 4 superficies.
+- Reconfirmacion de hallazgos contra codigo fuente.
+- Verificacion de 13 parametros legales contra fuentes oficiales.
+- Evaluacion de migracion Python: NO RECOMENDADO.
+
+---
+
 ## Incremento ejecutado - HRC26 correccion y recalculo de roles
 
 | Campo | Valor |
@@ -20,6 +54,7 @@
 - Los roles `cerrada` y `pagada` son inmutables. El endpoint heredado `/api/nomina/reabrir` conserva compatibilidad, responde `409` y orienta a registrar el ajuste en un periodo abierto.
 - MOBILE, historial y correo solo exponen roles finales; los PDF preliminares muestran una marca explicita de borrador.
 - La carga manual mensual normaliza fechas `DATE` de PostgreSQL antes de filtrar la vigencia laboral; una carga diaria y una mensual aplican la misma relacion laboral.
+- La asistencia manual dispone de plantilla CSV masiva con validacion atomica y combobox de empleados por cedula, nombre, apellido o ID.
 - Ecuador 2026: SBU USD 482, IESS 9,45%/11,15%, base mensual 30 dias/240 horas y tabla IR 2026 permanecen versionados en `legal-ecuador.js`.
 
 ### Gates HRC26

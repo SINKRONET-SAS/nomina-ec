@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { authenticatedApi } from '../../services/authenticatedApi';
-import { CalendarCheck2, Check, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { CalendarCheck2, Check, Download, Pencil, Plus, Trash2, Upload, X } from 'lucide-react';
 import { formatDateEC, todayISOEC } from '../../utils/dateFormat';
+import { downloadBlob } from '../../utils/downloadBlob';
+import EmployeeSearchSelect from '../../components/UI/EmployeeSearchSelect';
 import {
   buildNoveltyTypeOptions,
   getNoveltyTypeLabel,
@@ -55,6 +57,8 @@ function NovedadesPendientes() {
   const [attendanceScope, setAttendanceScope] = useState('employee');
   const [attendancePeriod, setAttendancePeriod] = useState('day');
   const [attendanceForm, setAttendanceForm] = useState(initialAttendanceForm);
+  const [attendanceBulkCsv, setAttendanceBulkCsv] = useState('');
+  const [attendanceBulkResult, setAttendanceBulkResult] = useState(null);
 
   useEffect(() => {
     const empleadoId = String(searchParams.get('empleadoId') || '').trim();
@@ -123,6 +127,23 @@ function NovedadesPendientes() {
     onError: (err) => {
       setMessage('');
       setError(err.response?.data?.message || err.response?.data?.error || 'No pudimos registrar la asistencia manual.');
+    },
+  });
+
+  const asistenciaMasivaMutation = useMutation({
+    mutationFn: (rows) => authenticatedApi.post('/marcaciones/manual/carga-masiva', { rows }),
+    onSuccess: (response) => {
+      const result = response.data.asistencia;
+      setAttendanceBulkResult(result);
+      setMessage(`Carga de asistencia procesada: ${result.marcacionesCreadas} marcaciones nuevas y ${result.marcacionesExistentes} ya existentes.`);
+      setError('');
+      queryClient.invalidateQueries({ queryKey: ['reporte-asistencia'] });
+      queryClient.invalidateQueries({ queryKey: ['marcaciones-hoy'] });
+    },
+    onError: (err) => {
+      setAttendanceBulkResult({ results: err.response?.data?.details?.results || [] });
+      setMessage('');
+      setError(err.response?.data?.message || err.response?.data?.error || 'No pudimos procesar la carga masiva de asistencia.');
     },
   });
 
@@ -225,6 +246,11 @@ function NovedadesPendientes() {
 
   function submitManualNovelty(event) {
     event.preventDefault();
+    if (!form.empleadoId) {
+      setError('Busca y selecciona un empleado antes de registrar la novedad.');
+      setMessage('');
+      return;
+    }
     const payload = {
       empleadoId: form.empleadoId,
       fecha: form.fecha,
@@ -275,14 +301,7 @@ function NovedadesPendientes() {
       const response = await authenticatedApi.get('/novedades/plantilla-carga-masiva', {
         responseType: 'blob',
       });
-      const blobUrl = URL.createObjectURL(response.data);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = 'plantilla_carga_masiva_novedades.csv';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(blobUrl);
+      downloadBlob(response.data, 'plantilla_carga_masiva_novedades.csv');
     } catch (err) {
       setError(err.response?.data?.message || 'No pudimos descargar la plantilla de novedades.');
     }
@@ -299,6 +318,42 @@ function NovedadesPendientes() {
     }
   }
 
+  async function descargarPlantillaAsistencia() {
+    try {
+      const response = await authenticatedApi.get('/marcaciones/manual/plantilla-carga-masiva', {
+        responseType: 'blob',
+      });
+      downloadBlob(response.data, 'plantilla_carga_masiva_asistencia.csv');
+    } catch (err) {
+      setError(err.response?.data?.message || 'No pudimos descargar la plantilla de asistencia.');
+    }
+  }
+
+  async function cargarArchivoAsistencia(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      setAttendanceBulkCsv(await file.text());
+      setAttendanceBulkResult(null);
+      setMessage(`Archivo listo: ${file.name}. Revisa las filas y procesa la carga.`);
+      setError('');
+    } catch {
+      setError('No pudimos leer el archivo CSV seleccionado.');
+    }
+  }
+
+  function submitBulkAttendance(event) {
+    event.preventDefault();
+    try {
+      const rows = parseCsvRows(attendanceBulkCsv);
+      asistenciaMasivaMutation.mutate(rows);
+    } catch (err) {
+      setAttendanceBulkResult(null);
+      setError(err.message);
+      setMessage('');
+    }
+  }
+
   function updateAttendanceField(name, value) {
     setMessage('');
     setError('');
@@ -307,6 +362,11 @@ function NovedadesPendientes() {
 
   function submitManualAttendance(event) {
     event.preventDefault();
+    if (attendanceScope === 'employee' && !attendanceForm.empleadoId) {
+      setError('Busca y selecciona un empleado antes de registrar la jornada.');
+      setMessage('');
+      return;
+    }
     let range;
     if (attendancePeriod === 'month') {
       range = monthBounds(attendanceForm.mes);
@@ -400,22 +460,17 @@ function NovedadesPendientes() {
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {attendanceScope === 'employee' && (
-              <label className="block text-sm font-medium text-slate-700 md:col-span-2">
-                Empleado
-                <select
-                  className="mt-1 min-h-10 w-full rounded-md border border-slate-300 px-3"
-                  onChange={(event) => updateAttendanceField('empleadoId', event.target.value)}
-                  required
+              <div className="block text-sm font-medium text-slate-700 md:col-span-2">
+                <span>Empleado</span>
+                <EmployeeSearchSelect
+                  disabledPredicate={(empleado) => empleado.controla_asistencia === false}
+                  disabledSuffix="Control de asistencia desactivado"
+                  employees={empleados || []}
+                  id="attendance-employee-search"
+                  onChange={(employeeId) => updateAttendanceField('empleadoId', employeeId)}
                   value={attendanceForm.empleadoId}
-                >
-                  <option value="">Seleccionar empleado...</option>
-                  {(empleados || []).map((empleado) => (
-                    <option disabled={empleado.controla_asistencia === false} key={empleado.id} value={empleado.id}>
-                      {empleado.apellidos || ''} {empleado.nombres || ''} - {empleado.cedula || ''}{empleado.controla_asistencia === false ? ' - control desactivado' : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                />
+              </div>
             )}
 
             {attendancePeriod === 'day' && (
@@ -523,6 +578,90 @@ function NovedadesPendientes() {
         </form>
       </section>
 
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex items-start gap-3">
+            <Upload className="mt-1 h-5 w-5 text-teal-700" />
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950">Carga masiva de asistencia</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Registra empleados, fechas y horarios distintos por fila. El lote se valida completo antes de crear marcaciones.
+              </p>
+            </div>
+          </div>
+          <button
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-teal-200 px-4 text-sm font-semibold text-teal-700 hover:border-teal-400"
+            onClick={descargarPlantillaAsistencia}
+            type="button"
+          >
+            <Download className="h-4 w-4" />
+            Descargar plantilla
+          </button>
+        </div>
+
+        <form className="mt-4 space-y-4" onSubmit={submitBulkAttendance}>
+          <label className="block text-sm font-semibold text-slate-700">
+            Archivo CSV
+            <input
+              accept=".csv,text/csv"
+              className="mt-1 block min-h-10 w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
+              onChange={cargarArchivoAsistencia}
+              type="file"
+            />
+          </label>
+          <label className="block text-sm font-semibold text-slate-700">
+            Filas a validar
+            <textarea
+              className="mt-1 min-h-40 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-xs font-normal"
+              onChange={(event) => {
+                setAttendanceBulkCsv(event.target.value);
+                setAttendanceBulkResult(null);
+              }}
+              placeholder="empleadoId,cedula,desde,hasta,horaInicio,horaFin,justificacion"
+              value={attendanceBulkCsv}
+            />
+          </label>
+          <p className="text-xs leading-5 text-slate-500">
+            Usa cédula o empleadoId. Para un solo día repite la fecha en desde y hasta. Máximo 1.000 filas; las marcaciones existentes se conservan.
+          </p>
+          <button
+            className="inline-flex min-h-10 items-center gap-2 rounded-md bg-slate-800 px-4 text-sm font-semibold text-white hover:bg-slate-900 disabled:opacity-60"
+            disabled={asistenciaMasivaMutation.isPending || !attendanceBulkCsv.trim()}
+            type="submit"
+          >
+            <Upload className="h-4 w-4" />
+            {asistenciaMasivaMutation.isPending ? 'Validando y registrando...' : 'Procesar carga de asistencia'}
+          </button>
+        </form>
+
+        {attendanceBulkResult?.results?.length > 0 && (
+          <div className="mt-4 max-h-64 overflow-auto rounded-md border border-slate-200">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                <tr>
+                  <th className="px-3 py-2">Fila</th>
+                  <th className="px-3 py-2">Estado</th>
+                  <th className="px-3 py-2">Jornadas</th>
+                  <th className="px-3 py-2">Detalle</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {attendanceBulkResult.results.map((row) => (
+                  <tr key={`${row.rowNumber}-${row.error || row.status}`}>
+                    <td className="px-3 py-2">{row.rowNumber}</td>
+                    <td className="px-3 py-2">{row.status}</td>
+                    <td className="px-3 py-2">{row.jornadasPlanificadas ?? '-'}</td>
+                    <td className="px-3 py-2">
+                      {row.message || `${row.marcacionesCreadas || 0} nuevas, ${row.marcacionesExistentes || 0} existentes`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
       <form className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" onSubmit={submitManualNovelty}>
         <div className="flex items-start gap-3">
           <Plus className="mt-1 h-5 w-5 text-teal-700" />
@@ -532,22 +671,15 @@ function NovedadesPendientes() {
           </div>
         </div>
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <label className="block text-sm font-medium text-slate-700">
-            Empleado
-            <select
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              required
+          <div className="block text-sm font-medium text-slate-700">
+            <span>Empleado</span>
+            <EmployeeSearchSelect
+              employees={empleados || []}
+              id="novelty-employee-search"
+              onChange={(employeeId) => updateField('empleadoId', employeeId)}
               value={form.empleadoId}
-              onChange={(event) => updateField('empleadoId', event.target.value)}
-            >
-              <option value="">Seleccionar empleado...</option>
-              {(empleados || []).map((empleado) => (
-                <option key={empleado.id} value={empleado.id}>
-                  {empleado.apellidos || ''} {empleado.nombres || ''} - {empleado.cedula || ''}
-                </option>
-              ))}
-            </select>
-          </label>
+            />
+          </div>
           <label className="block text-sm font-medium text-slate-700">
             Fecha
             <input
@@ -783,7 +915,7 @@ function parseCsvRows(text) {
   if (lines.length < 2) {
     throw new Error('Pega el encabezado y al menos una fila de la plantilla.');
   }
-  const headers = splitCsvLine(lines[0]).map((header) => header.trim());
+  const headers = splitCsvLine(lines[0].replace(/^\uFEFF/, '')).map((header) => header.trim());
   return lines.slice(1).map((line) => {
     const cells = splitCsvLine(line);
     return headers.reduce((row, header, index) => ({

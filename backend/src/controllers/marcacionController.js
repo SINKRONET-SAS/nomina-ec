@@ -3,7 +3,11 @@
 // ============================================================
 const db = require('../config/database');
 const { validarMarcacion } = require('../services/marcacionValidator');
-const { registerManualAttendance } = require('../services/manualAttendanceService');
+const {
+  MANUAL_ATTENDANCE_BULK_TEMPLATE_COLUMNS,
+  registerManualAttendance,
+  registerManualAttendanceBulk,
+} = require('../services/manualAttendanceService');
 
 async function registrar(req, res) {
   try {
@@ -175,4 +179,66 @@ async function registrarManual(req, res) {
   }
 }
 
-module.exports = { registrar, registrarManual, listarPorEmpleado, listarHoy };
+function csvCell(value) {
+  const text = String(value ?? '');
+  return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+async function descargarPlantillaManual(_req, res) {
+  const example = [
+    '',
+    '0102030405',
+    '2026-06-01',
+    '2026-06-30',
+    '08:00',
+    '17:00',
+    'Regularizacion mensual autorizada por RRHH',
+  ];
+  const csv = [
+    MANUAL_ATTENDANCE_BULK_TEMPLATE_COLUMNS.join(','),
+    example.map(csvCell).join(','),
+  ].join('\r\n');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="plantilla_carga_masiva_asistencia.csv"');
+  return res.status(200).send(`\ufeff${csv}`);
+}
+
+async function registrarManualMasiva(req, res) {
+  try {
+    const result = await registerManualAttendanceBulk({
+      tenantId: req.tenantId,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip || req.connection?.remoteAddress || null,
+      rows: req.body?.rows,
+    });
+    return res.status(201).json({
+      success: true,
+      asistencia: result,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[MARCACIONES] Error en carga masiva de asistencia manual', {
+      code: err.code || 'MANUAL_ATTENDANCE_BULK_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'MANUAL_ATTENDANCE_BULK_ERROR',
+      message: err.message || 'No pudimos procesar la carga masiva de asistencia.',
+      details: err.details || null,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+module.exports = {
+  descargarPlantillaManual,
+  listarHoy,
+  listarPorEmpleado,
+  registrar,
+  registrarManual,
+  registrarManualMasiva,
+};
