@@ -21,6 +21,7 @@ const {
   extractPeriodFromDate,
   formatPeriodMarker,
   generateAnnualPayrollPeriods,
+  getPayrollPeriodState,
   openPayrollPeriod,
   periodEndDate,
   periodStartDate,
@@ -67,6 +68,27 @@ describe('monthlyPeriodService', () => {
     expect(formatPeriodMarker(2026, 6)).toBe('2026-06');
     expect(periodStartDate(2026, 2)).toBe('2026-02-01');
     expect(periodEndDate(2026, 2)).toBe('2026-02-28');
+  });
+
+  test('getPayrollPeriodState resuelve el nombre y cedula del alcance individual', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'open' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{
+        id: 'batch-1',
+        scope_type: 'employee',
+        scope_value: 'emp-1',
+        scope_label: 'Perez Ana - 0102030405',
+      }] });
+
+    const result = await getPayrollPeriodState({ tenantId: 'tenant-1', anio: 2026, mes: 6 });
+
+    expect(db.query.mock.calls[3][0]).toContain('LEFT JOIN empleados');
+    expect(result.batches[0]).toMatchObject({
+      scope_value: 'emp-1',
+      scope_label: 'Perez Ana - 0102030405',
+    });
   });
 
   test('ensurePayrollPeriodForDate crea o reutiliza periodo de la novedad', async () => {

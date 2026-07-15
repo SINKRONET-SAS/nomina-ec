@@ -1,41 +1,36 @@
 {
   "plan": "HAIKY-AUDITORIA-INTEGRAL-V28-NOMINA-EC-2026",
-  "phaseCompleted": "AIV28-06-hotfix-calculo",
+  "phaseCompleted": "AIV28-07-precalculo-identidad",
   "status": "completed-pass",
-  "timestamp": "2026-07-15T12:21:23.6652675Z",
-  "evidenceHash": "c55724adda5caa2fb9947161fff9031455e2e97f02066f466ad01367193ada2b",
+  "timestamp": "2026-07-15T12:58:31.4576110Z",
+  "evidenceHash": "9bd01faaf8abdb800ab53aca9844c92876e05ec9478eb93ea70c7ceb53c81249",
   "decisions": [
-    "La causa raiz fue la ausencia de partial_failed en la restriccion SQL de payroll_calculation_batches.",
-    "Cada empleado se calcula dentro de un savepoint para recuperar la transaccion y continuar el lote ante un error aislado.",
-    "Los errores internos de PostgreSQL no se muestran al usuario; la PWA identifica empleados que requieren revision.",
-    "La migracion se ejecuta automaticamente antes de iniciar el backend en Render."
+    "El precalculo reutiliza el motor real dentro de una transaccion que siempre se revierte.",
+    "La simulacion devuelve resultados y errores por empleado sin crear lotes ni roles persistentes.",
+    "Los resultados incluyen nombre y cedula; los lotes individuales resuelven una etiqueta humana sin exponer UUID como dato principal.",
+    "Calcular nomina conserva su semantica existente y permanece separado del precalculo."
   ],
   "runtimeChanges": [
-    "Prisma: la restriccion de estado admite processing, completed, failed y partial_failed.",
-    "Backend: rollback por empleado, preservacion del primer error y respuesta HTTP segura.",
-    "PWA: conserva y presenta el resultado parcial con orientacion correctiva por empleado.",
-    "Contratos: verifican migracion, savepoints y sanitizacion del error 25P02."
+    "Backend: nuevo endpoint POST /api/nomina/precalcular protegido por rol, sesion reciente y modulo nomina.",
+    "Backend: resultados de calculo incluyen cedula y el estado mensual resuelve scope_label para lotes.",
+    "PWA: acciones separadas Precalcular y Calcular nomina, aviso de vista previa e identidad completa del empleado.",
+    "PWA: selector individual de lotes reemplazado por busqueda por cedula, apellido o nombre."
   ],
   "validationChecks": [
     {
-      "name": "pruebas_focales_calculo",
+      "name": "pruebas_focales_precalculo",
       "ok": true,
-      "output": "2 suites, 16 pruebas PASS."
+      "output": "3 suites, 37 pruebas PASS."
     },
     {
       "name": "backend_suite_completa",
       "ok": true,
-      "output": "57 suites, 377 pruebas PASS."
+      "output": "57 suites, 379 pruebas PASS."
     },
     {
       "name": "contratos_sistema",
       "ok": true,
       "output": "npm run contracts PASS."
-    },
-    {
-      "name": "prisma_y_migracion_local",
-      "ok": true,
-      "output": "Schema valido; migracion aplicada; restriccion verificada en PostgreSQL local."
     },
     {
       "name": "frontend_build_pwa",
@@ -45,20 +40,20 @@
     {
       "name": "integridad_archivos",
       "ok": true,
-      "output": "UTF-8 y git diff --check PASS."
+      "output": "UTF-8 sin BOM y git diff --check PASS."
     }
   ],
   "filesModified": [
     "M  .github/CODEX_CONTEXT.md",
     "M  .vscode/AuditLock.json",
-    "A  backend/prisma/migrations/20260715121500_payroll_batch_partial_failed/migration.sql",
+    "M  backend/src/app.js",
     "M  backend/src/controllers/nominaController.js",
     "M  backend/src/controllers/nominaController.test.js",
     "M  backend/src/services/calculoNominaService.js",
-    "M  backend/src/services/calculoNominaService.batch.test.js",
+    "M  backend/src/services/monthlyPeriodService.js",
+    "M  backend/src/services/monthlyPeriodService.test.js",
     "M  frontend-web/src/pages/Nomina/CerrarMes.jsx",
-    "M  frontend-web/src/services/publicApi.js",
     "M  scripts/verify-system-contracts.mjs"
   ],
-  "signature": "c55724adda5caa2fb9947161fff9031455e2e97f02066f466ad01367193ada2b"
+  "signature": "9bd01faaf8abdb800ab53aca9844c92876e05ec9478eb93ea70c7ceb53c81249"
 }

@@ -590,12 +590,25 @@ async function getPayrollPeriodState({ tenantId, anio, mes }) {
   `, [tenantId, periodInput.anio, periodInput.mes]);
 
   const batches = await db.query(`
-    SELECT id, scope_type, scope_value, tipo_novedad, fecha, minutos, monto, status,
-      total_empleados, total_creadas, created_at
-    FROM novelty_batches
-    WHERE tenant_id = $1
-      AND period_id = COALESCE($2::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-    ORDER BY created_at DESC
+    SELECT nb.id, nb.scope_type, nb.scope_value, nb.tipo_novedad, nb.fecha, nb.minutos,
+      nb.monto, nb.status, nb.total_empleados, nb.total_creadas, nb.created_at,
+      CASE
+        WHEN nb.scope_type = 'company' THEN 'Toda la empresa'
+        WHEN nb.scope_type = 'employee' AND e.id IS NOT NULL THEN
+          CONCAT_WS(' - ', NULLIF(TRIM(CONCAT_WS(' ', e.apellidos, e.nombres)), ''), NULLIF(e.cedula, ''))
+        WHEN nb.scope_type = 'employee' THEN 'Empleado no disponible'
+        WHEN nb.scope_type = 'department' THEN CONCAT('Departamento: ', nb.scope_value)
+        WHEN nb.scope_type = 'position' THEN CONCAT('Cargo: ', nb.scope_value)
+        ELSE nb.scope_value
+      END AS scope_label
+    FROM novelty_batches nb
+    LEFT JOIN empleados e
+      ON nb.scope_type = 'employee'
+      AND e.tenant_id = nb.tenant_id
+      AND e.id::text = nb.scope_value
+    WHERE nb.tenant_id = $1
+      AND nb.period_id = COALESCE($2::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
+    ORDER BY nb.created_at DESC
     LIMIT 10
   `, [tenantId, periodResult.rows[0]?.id || null]);
 

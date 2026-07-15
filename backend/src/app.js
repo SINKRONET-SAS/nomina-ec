@@ -237,6 +237,7 @@ app.post('/api/nomina/contabilidad/mapeos', requireRole('owner', 'admin_rrhh'), 
 app.put('/api/nomina/contabilidad/mapeos/:id', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), payrollAccountingController.updateMapping);
 
 const nominaController = require('./controllers/nominaController');
+app.post('/api/nomina/precalcular', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.precalcularMes);
 app.post('/api/nomina/calcular', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.calcularMes);
 app.post('/api/nomina/descartar-calculo', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.descartarCalculoPeriodo);
 app.get('/api/nomina/periodos/:anio', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), nominaController.listarPeriodosAnuales);

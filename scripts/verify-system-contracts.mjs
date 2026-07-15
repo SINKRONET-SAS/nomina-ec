@@ -309,6 +309,15 @@ assert(
     && payrollCalculationService.includes('rollbackAndReleaseSavepoint'),
   'El calculo mensual debe recuperar errores SQL por empleado sin abortar todo el lote.'
 );
+assert(app.includes("'/api/nomina/precalcular'"), 'La PWA debe disponer de un endpoint de precalculo sin persistencia.');
+assert(
+  nominaController.includes('preview: true') && nominaController.includes('await db.rollback(tx)'),
+  'El precalculo debe devolver resultados y revertir la transaccion completa.'
+);
+assert(
+  monthlyPeriodService.includes('END AS scope_label') && monthlyPeriodService.includes('LEFT JOIN empleados e'),
+  'Los lotes individuales deben resolver la identidad visible del empleado.'
+);
 assert(payrollCalculationService.includes('NOMINA_CALCULATION_BATCH_REQUIRED'), 'El motor debe bloquear calculos sin lote.');
 assert(payrollAccountingService.includes('PAYROLL_CALCULATION_LINE_BATCH_REQUIRED'), 'Las lineas de calculo deben bloquear persistencia sin lote.');
 assert(reportService.includes('loteCalculo'), 'Los reportes de nomina deben exponer loteCalculo.');

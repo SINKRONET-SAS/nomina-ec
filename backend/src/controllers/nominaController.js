@@ -30,6 +30,96 @@ const {
   sendRolPagoEmail,
 } = require('../services/communicationService');
 
+async function rollbackPayrollCalculation(tx, req, operation) {
+  try {
+    await db.rollback(tx);
+  } catch (rollbackErr) {
+    console.error(`[NOMINA] Error revirtiendo transacción de ${operation}`, {
+      code: rollbackErr.code || 'NOMINA_CALCULO_ROLLBACK_ERROR',
+      statusCode: 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: rollbackErr.message,
+    });
+  }
+}
+
+function sendPayrollCalculationError(req, res, err, operation) {
+  console.error(`[NOMINA] Error en ${operation}`, {
+    code: err.code || 'NOMINA_CALCULO_ERROR',
+    statusCode: err.statusCode || 500,
+    correlationId: req.correlationId,
+    userId: req.usuarioId || null,
+    message: err.message,
+  });
+  const statusCode = Number(err.statusCode || 500);
+  const publicError = statusCode >= 400 && statusCode < 500;
+  return res.status(statusCode).json({
+    error: publicError ? (err.code || 'NOMINA_CALCULO_ERROR') : 'NOMINA_CALCULO_ERROR',
+    message: publicError
+      ? err.message
+      : 'No pudimos completar el cálculo de nómina. Intenta nuevamente; si persiste, reporta el código de seguimiento.',
+    details: publicError ? err.details : undefined,
+    correlationId: req.correlationId,
+  });
+}
+
+async function precalcularMes(req, res) {
+  let tx = null;
+  try {
+    const { tenantId } = req;
+    const { anio, mes } = req.body;
+
+    if (!anio || !mes) {
+      return res.status(400).json({ error: 'Año y mes requeridos', correlationId: req.correlationId });
+    }
+
+    const anioNumber = Number(anio);
+    const mesNumber = Number(mes);
+    const readiness = await assertTenantPayrollReady({
+      tenantId,
+      anio: anioNumber,
+      mes: mesNumber,
+      mode: 'calculation',
+    });
+
+    tx = await db.getClient(tenantId, req.usuarioId);
+    const resultado = await calcularNominaMensual(tenantId, anioNumber, mesNumber, {
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+      dbClient: tx,
+    });
+    const erroresDetalle = Array.isArray(resultado.resultados)
+      ? resultado.resultados.filter((row) => row.error)
+      : [];
+
+    await db.rollback(tx);
+    tx = null;
+
+    return res.json({
+      success: true,
+      message: erroresDetalle.length > 0
+        ? 'El precálculo encontró empleados que requieren corrección. No se creó ningún rol.'
+        : 'El precálculo terminó sin errores. No se creó ningún rol.',
+      resultado: {
+        ...resultado,
+        batch: null,
+        preview: true,
+        persisted: false,
+        exitosos: resultado.resultados.length - erroresDetalle.length,
+        errores: erroresDetalle.length,
+        erroresDetalle,
+      },
+      readiness,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    if (tx) await rollbackPayrollCalculation(tx, req, 'precálculo');
+    return sendPayrollCalculationError(req, res, err, 'precálculo de nómina');
+  }
+}
+
 async function calcularMes(req, res) {
   let tx = null;
   try {
@@ -116,34 +206,8 @@ async function calcularMes(req, res) {
     tx = null;
     res.json({ success: true, resultado, readiness, correlationId: req.correlationId });
   } catch (err) {
-    if (tx) {
-      await db.rollback(tx).catch((rollbackErr) => {
-        console.error('[NOMINA] Error revirtiendo transacción de cálculo', {
-          code: rollbackErr.code || 'NOMINA_CALCULO_ROLLBACK_ERROR',
-          statusCode: 500,
-          correlationId: req.correlationId,
-          userId: req.usuarioId || null,
-          message: rollbackErr.message,
-        });
-      });
-    }
-    console.error('[NOMINA] Error calculando mes', {
-      code: err.code || 'NOMINA_CALCULO_ERROR',
-      statusCode: err.statusCode || 500,
-      correlationId: req.correlationId,
-      userId: req.usuarioId || null,
-      message: err.message,
-    });
-    const statusCode = Number(err.statusCode || 500);
-    const publicError = statusCode >= 400 && statusCode < 500;
-    res.status(statusCode).json({
-      error: publicError ? (err.code || 'NOMINA_CALCULO_ERROR') : 'NOMINA_CALCULO_ERROR',
-      message: publicError
-        ? err.message
-        : 'No pudimos completar el calculo de nomina. Intenta nuevamente; si persiste, reporta el codigo de seguimiento.',
-      details: publicError ? err.details : undefined,
-      correlationId: req.correlationId,
-    });
+    if (tx) await rollbackPayrollCalculation(tx, req, 'cálculo');
+    return sendPayrollCalculationError(req, res, err, 'cálculo de nómina');
   }
 }
 
@@ -955,6 +1019,7 @@ async function eliminarBorrador(req, res) {
 }
 
 module.exports = {
+  precalcularMes,
   calcularMes,
   obtenerEstadoPeriodo,
   abrirPeriodo,

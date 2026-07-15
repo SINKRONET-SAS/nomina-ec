@@ -6,6 +6,7 @@ import {
   CalendarClock,
   Calculator,
   CheckCircle,
+  ClipboardCheck,
   Layers,
   Lock,
   RefreshCw,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
+import EmployeeSearchSelect from '../../components/UI/EmployeeSearchSelect';
 import { ECUADOR_TIME_ZONE, currentPeriodEC, firstDayOfPeriodEC } from '../../utils/dateFormat';
 import {
   hoursToMinutes,
@@ -56,6 +58,16 @@ function percentLabel(value) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   })}%`;
+}
+
+function batchScopeLabel(batch = {}) {
+  const resolvedLabel = String(batch.scope_label || '').trim();
+  if (resolvedLabel) return resolvedLabel;
+  if (batch.scope_type === 'company') return 'Toda la empresa';
+  if (batch.scope_type === 'employee') return 'Empleado no disponible';
+  if (batch.scope_type === 'department') return `Departamento: ${batch.scope_value || 'sin dato'}`;
+  if (batch.scope_type === 'position') return `Cargo: ${batch.scope_value || 'sin dato'}`;
+  return batch.scope_value || 'Alcance no disponible';
 }
 
 function CerrarMes() {
@@ -183,6 +195,18 @@ function CerrarMes() {
     },
   });
 
+  const precalculateMutation = useMutation({
+    mutationFn: async () => authenticatedApi.post('/nomina/precalcular', { anio, mes }),
+    onSuccess: (response) => {
+      const previewResult = response.data.resultado;
+      setResultado(previewResult);
+      setMessage({
+        type: Number(previewResult?.errores || 0) > 0 ? 'error' : 'success',
+        text: response.data.message,
+      });
+    },
+  });
+
   const closeMutation = useMutation({
     mutationFn: async () => authenticatedApi.post('/nomina/cerrar', { anio, mes }),
     onSuccess: () => {
@@ -234,6 +258,7 @@ function CerrarMes() {
     batchMutation.reset();
     deleteBatchMutation.reset();
     resolveNoveltiesMutation.reset();
+    precalculateMutation.reset();
     calculateMutation.reset();
     closeMutation.reset();
     discardCalculationMutation.reset();
@@ -248,7 +273,7 @@ function CerrarMes() {
   const scopeNeedsValue = batchForm.scopeType !== 'company';
   const requiresAmount = isAmountNoveltyType(batchForm.tipoNovedad);
   const canCreateBatch = isWritablePeriod && (!scopeNeedsValue || batchForm.scopeValue) && (!requiresAmount || Number(batchForm.monto) > 0);
-  const currentError = openMutation.error || batchMutation.error || deleteBatchMutation.error || resolveNoveltiesMutation.error || calculateMutation.error || closeMutation.error || discardCalculationMutation.error || periodQuery.error;
+  const currentError = openMutation.error || batchMutation.error || deleteBatchMutation.error || resolveNoveltiesMutation.error || precalculateMutation.error || calculateMutation.error || closeMutation.error || discardCalculationMutation.error || periodQuery.error;
   const currentPrecheck = precheckDetails(currentError);
   const alertIsError = Boolean(currentError || message?.type === 'error');
   const hasLegalParameterBlocker = hasBlocker(currentPrecheck, [
@@ -256,6 +281,7 @@ function CerrarMes() {
     'LEGAL_PARAMETERS_DIVERGENCE',
   ]);
   const overtimeParameters = firstOvertimeParameters(resultado);
+  const calculationPending = precalculateMutation.isPending || calculateMutation.isPending;
 
   const resolvePendingNovelties = (decision) => {
     if (decision === 'aprobar') {
@@ -434,12 +460,13 @@ function CerrarMes() {
           <label className="text-sm font-semibold text-slate-700">
             Valor
             {batchForm.scopeType === 'employee' ? (
-              <select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" disabled={!scopeNeedsValue} onChange={(event) => updateBatch('scopeValue', event.target.value)} value={batchForm.scopeValue}>
-                <option value="">Seleccionar</option>
-                {employees.map((employee) => (
-                  <option key={employee.id} value={employee.id}>{employee.apellidos} {employee.nombres}</option>
-                ))}
-              </select>
+              <EmployeeSearchSelect
+                employees={employees}
+                id="novelty-batch-employee"
+                onChange={(employeeId) => updateBatch('scopeValue', employeeId)}
+                placeholder="Buscar por cédula, apellido o nombre"
+                value={batchForm.scopeValue}
+              />
             ) : (
               <input
                 className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
@@ -510,7 +537,7 @@ function CerrarMes() {
           <div>
             <h2 className="text-lg font-semibold text-slate-950">Cálculo de nómina</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Los roles permanecen editables mientras sean borradores. Para corregirlos, descarta el cálculo y vuelve a generarlo desde sus novedades.
+              Precalcula para revisar valores y bloqueos sin crear roles. Cuando el resultado esté listo, calcula la nómina para guardar los borradores.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -528,7 +555,11 @@ function CerrarMes() {
                 Descartar cálculo
               </button>
             )}
-            <button className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={!canCalculatePeriod || calculateMutation.isPending} onClick={() => calculateMutation.mutate()} type="button">
+            <button className="inline-flex min-h-10 items-center gap-2 rounded-md border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 hover:bg-teal-50 disabled:border-slate-200 disabled:text-slate-400" disabled={!canCalculatePeriod || calculationPending} onClick={() => precalculateMutation.mutate()} type="button">
+              <ClipboardCheck className="h-4 w-4" />
+              {precalculateMutation.isPending ? 'Precalculando' : 'Precalcular'}
+            </button>
+            <button className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={!canCalculatePeriod || calculationPending} onClick={() => calculateMutation.mutate()} type="button">
               <Calculator className="h-4 w-4" />
               {calculateMutation.isPending ? 'Calculando' : 'Calcular nómina'}
             </button>
@@ -589,6 +620,15 @@ function CerrarMes() {
 
         {resultado && (
           <div className="mt-5">
+            {resultado.preview && (
+              <div className="mb-4 flex items-start gap-3 rounded-md border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+                <ClipboardCheck className="mt-0.5 h-5 w-5 shrink-0" />
+                <div>
+                  <p className="font-semibold">Vista previa sin guardar</p>
+                  <p className="mt-1 text-xs leading-5">Este resultado no creó ni modificó roles. Corrige los bloqueos y vuelve a precalcular antes de guardar la nómina.</p>
+                </div>
+              </div>
+            )}
             {overtimeParameters && (
               <div className="mb-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
                 <p className="font-semibold text-slate-950">Formula visible de horas extra</p>
@@ -619,13 +659,14 @@ function CerrarMes() {
               <div className="mt-4 overflow-hidden rounded-md border border-red-200">
                 <div className="bg-red-50 px-4 py-3">
                   <p className="font-semibold text-red-900">Empleados que requieren revisión</p>
-                  <p className="mt-1 text-xs text-red-700">Corrige la ficha o parametrización indicada y vuelve a calcular.</p>
+                  <p className="mt-1 text-xs text-red-700">Corrige la ficha o parametrización indicada y vuelve a {resultado.preview ? 'precalcular' : 'calcular'}.</p>
                 </div>
                 <div className="divide-y divide-red-100">
                   {resultado.resultados.filter((row) => row.error).map((row) => (
                     <div className="grid gap-1 px-4 py-3 text-sm md:grid-cols-[minmax(180px,0.6fr)_minmax(0,1.4fr)]" key={`${row.empleadoId}-${row.errorCode || 'error'}`}>
                       <div>
                         <p className="font-semibold text-slate-900">{row.nombre || row.empleadoId}</p>
+                        {row.cedula && <p className="mt-1 text-xs text-slate-600">Cédula: {row.cedula}</p>}
                         {row.errorCode && <p className="mt-1 text-xs font-medium text-slate-500">{row.errorCode}</p>}
                       </div>
                       <p className="leading-6 text-red-800">{row.error}</p>
@@ -652,7 +693,10 @@ function CerrarMes() {
                   <tbody className="divide-y divide-slate-100">
                     {resultado.resultados.filter((row) => !row.error).map((row, index) => (
                       <tr key={`${row.empleadoId || row.nombre}-${index}`}>
-                        <td className="px-4 py-3">{row.nombre}</td>
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-slate-900">{row.nombre}</p>
+                          {row.cedula && <p className="mt-1 text-xs text-slate-500">{row.cedula}</p>}
+                        </td>
                         <td className="px-4 py-3 text-right">${Number(row.totalIngresos || 0).toFixed(2)}</td>
                         <td className="px-4 py-3 text-right">{row.detalleCalculo?.decimoTerceroModalidad === 'mensual' ? `$${Number(row.detalleCalculo?.decimoTerceroMensualizado || 0).toFixed(2)}` : '-'}</td>
                         <td className="px-4 py-3 text-right">{row.detalleCalculo?.decimoCuartoModalidad === 'mensual' ? `$${Number(row.detalleCalculo?.decimoCuartoMensualizado || 0).toFixed(2)}` : '-'}</td>
@@ -688,7 +732,7 @@ function CerrarMes() {
               <tbody className="divide-y divide-slate-100">
                 {state.batches.map((batch) => (
                   <tr key={batch.id}>
-                    <td className="px-4 py-3">{batch.scope_type} {batch.scope_value}</td>
+                    <td className="px-4 py-3 font-medium text-slate-800">{batchScopeLabel(batch)}</td>
                     <td className="px-4 py-3">{batch.tipo_novedad}</td>
                     <td className="px-4 py-3">{String(batch.fecha).slice(0, 10)}</td>
                     <td className="px-4 py-3 text-right">${Number(batch.monto || 0).toFixed(2)}</td>

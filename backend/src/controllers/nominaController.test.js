@@ -46,6 +46,7 @@ const {
 } = require('../services/payrollLifecycleService');
 const { calcularNominaMensual } = require('../services/calculoNominaService');
 const {
+  precalcularMes,
   calcularMes,
   cerrarMes,
   descartarCalculoPeriodo,
@@ -243,6 +244,7 @@ describe('nominaController descargarRolPDF', () => {
 describe('nominaController calcularMes', () => {
   beforeEach(() => {
     db.getClient.mockReset();
+    db.commit.mockReset();
     db.rollback.mockReset();
     calcularNominaMensual.mockReset();
     assertTenantPayrollReady.mockReset();
@@ -274,7 +276,49 @@ describe('nominaController calcularMes', () => {
       correlationId: 'corr-calculo-error',
     });
     expect(res.body.message).not.toContain('transaction is aborted');
-    expect(res.body.message).toContain('codigo de seguimiento');
+    expect(res.body.message).toContain('código de seguimiento');
+  });
+
+  test('precalcula todos los empleados y revierte sin crear roles', async () => {
+    const tx = { query: jest.fn() };
+    db.getClient.mockResolvedValue(tx);
+    calcularNominaMensual.mockResolvedValue({
+      success: true,
+      total: 2,
+      batch: { id: 'batch-preview' },
+      resultados: [
+        { empleadoId: 'emp-1', nombre: 'Ana Perez', cedula: '0102030405', netoRecibir: '500.00' },
+        { empleadoId: 'emp-2', nombre: 'Luis Ruiz', cedula: '1710034065', error: 'Revisa horas extra.' },
+      ],
+    });
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-preview',
+      ip: '127.0.0.1',
+      body: { anio: 2026, mes: 6 },
+    };
+    const res = createResponse();
+
+    await precalcularMes(req, res);
+
+    expect(db.rollback).toHaveBeenCalledWith(tx);
+    expect(db.commit).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({
+      success: true,
+      resultado: {
+        preview: true,
+        persisted: false,
+        batch: null,
+        exitosos: 1,
+        errores: 1,
+        resultados: [
+          expect.objectContaining({ nombre: 'Ana Perez', cedula: '0102030405' }),
+          expect.objectContaining({ nombre: 'Luis Ruiz', cedula: '1710034065' }),
+        ],
+      },
+    });
   });
 });
 

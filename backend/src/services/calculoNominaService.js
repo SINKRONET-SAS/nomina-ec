@@ -43,6 +43,7 @@ function employeeCalculationError(emp, err) {
   return {
     empleadoId: emp.id,
     nombre: `${emp.nombres || ''} ${emp.apellidos || ''}`.trim(),
+    cedula: emp.cedula || '',
     errorCode: userCorrectable ? (err.code || 'NOMINA_EMPLEADO_ERROR') : 'NOMINA_EMPLEADO_PERSISTENCIA_ERROR',
     error: userCorrectable
       ? err.message
@@ -585,6 +586,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   return {
     empleadoId: emp.id,
     nombre: `${emp.nombres} ${emp.apellidos}`,
+    cedula: emp.cedula || '',
     totalIngresos: toMoneyString(totalIngresos),
     netoRecibir: toMoneyString(netoRecibir),
     detalleCalculo,

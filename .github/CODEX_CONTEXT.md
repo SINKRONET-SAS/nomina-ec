@@ -19,6 +19,7 @@
 
 ### Decisiones AIV28
 
+- Incremento AIV28-07 (2026-07-15): `POST /api/nomina/precalcular` ejecuta el motor real y revierte la transaccion completa; la PWA separa vista previa y calculo, conserva nombre y cedula en errores/resultados y resuelve etiquetas humanas en los lotes individuales.
 - Hotfix AIV28-06 (2026-07-15): el calculo parcial usa savepoints por empleado y la migracion `20260715121500_payroll_batch_partial_failed` habilita el estado `partial_failed`; los errores SQL internos se registran en backend y la PWA presenta una orientacion segura por empleado.
 - NO se migra a Python. El motor Node.js esta legalmente validado, en produccion y con cobertura de tests. Reescribir introduce riesgo de regresion legal inaceptable.
 - Cumplimiento legal Ecuador 2026 CONFORME en los 13 parametros verificados (SBU, IESS, decimos, IR, HE, vacaciones, fondo reserva).
