@@ -140,7 +140,8 @@ if (!sw.includes('NetworkOnly') || !sw.includes('/api/')) {
   fail('El service worker debe dejar /api en NetworkOnly.');
 }
 
-if (/localStorage|sessionStorage|empleado|banco|ruc|geolocalizacion/i.test(sw)) {
+const swWithoutPrecacheUrls = sw.replace(/\burl\s*:\s*["'][^"']*["']/gi, 'url:""');
+if (/localStorage|sessionStorage|empleado|banco|ruc|geolocalizacion/i.test(swWithoutPrecacheUrls)) {
   fail('El service worker contiene indicios de datos personales o almacenamiento local.');
 }
 

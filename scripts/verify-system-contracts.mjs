@@ -336,6 +336,12 @@ assert(
 );
 assert(configurationService.includes('DISTINCT ON (LOWER(BTRIM(code)))'), 'Backend debe deduplicar tipos de novedad por codigo normalizado.');
 assert(parametrizacion.includes('dedupeNoveltyRecords'), 'La PWA debe defender la lista de tipos de novedad contra duplicados.');
+assert(parametrizacion.includes("invalidateQueries({ queryKey: ['novedades-tipos'] })"), 'Crear un tipo de novedad debe invalidar el catalogo operativo de la PWA.');
+assert(parametrizacion.includes('accountingMappingByConcept(summary, value)'), 'La cuenta contable debe cargar el mapeo existente al seleccionar un concepto.');
+assert(cerrarMes.includes("authenticatedApi.get('/novedades/tipos'"), 'El lote mensual debe consultar los tipos de novedad parametrizados.');
+assert(cerrarMes.includes('buildNoveltyTypeOptions'), 'El lote mensual debe construir sus opciones desde el catalogo parametrizado.');
+assert(configurationService.includes('PAYROLL_ACCOUNTING_MAPPING_DUPLICATED'), 'Backend debe humanizar conflictos de clave contable.');
+assert(configurationService.includes("return updateResource(resource, existing.rows[0].id, values, user, context)"), 'Crear una cuenta ya existente debe reutilizar su registro de forma idempotente.');
 assert(parametrizacion.includes('Valores legales'), 'La PWA debe separar valores legales de cuentas contables.');
 assert(parametrizacion.includes('Cuentas contables de nómina'), 'La PWA debe exponer cuentas contables de nómina sin duplicar parámetros legales.');
 

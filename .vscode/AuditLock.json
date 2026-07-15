@@ -1,41 +1,47 @@
 {
   "plan": "HAIKY-AUDITORIA-INTEGRAL-V28-NOMINA-EC-2026",
-  "phaseCompleted": "AIV28-07-precalculo-identidad",
+  "phaseCompleted": "AIV28-08-novedades-contabilidad-idempotente",
   "status": "completed-pass",
-  "timestamp": "2026-07-15T12:58:31.4576110Z",
-  "evidenceHash": "9bd01faaf8abdb800ab53aca9844c92876e05ec9478eb93ea70c7ceb53c81249",
+  "timestamp": "2026-07-15T13:29:20.721Z",
+  "evidenceHash": "52e1486564cc84c410a9aa922d48513efe445e474cba5b7791e1d0f36617deff",
   "decisions": [
-    "El precalculo reutiliza el motor real dentro de una transaccion que siempre se revierte.",
-    "La simulacion devuelve resultados y errores por empleado sin crear lotes ni roles persistentes.",
-    "Los resultados incluyen nombre y cedula; los lotes individuales resuelven una etiqueta humana sin exponer UUID como dato principal.",
-    "Calcular nomina conserva su semantica existente y permanece separado del precalculo."
+    "Los tipos de novedad parametrizados son la fuente de las opciones operativas, incluido el lote mensual.",
+    "Seleccionar un concepto con cuenta existente carga el registro en modo edicion y evita una segunda insercion.",
+    "Crear la misma clave contable concepto/asiento/vigencia actualiza el registro existente de forma idempotente.",
+    "Los conflictos contables remanentes se traducen a un mensaje funcional sin exponer detalles PostgreSQL."
   ],
   "runtimeChanges": [
-    "Backend: nuevo endpoint POST /api/nomina/precalcular protegido por rol, sesion reciente y modulo nomina.",
-    "Backend: resultados de calculo incluyen cedula y el estado mensual resuelve scope_label para lotes.",
-    "PWA: acciones separadas Precalcular y Calcular nomina, aviso de vista previa e identidad completa del empleado.",
-    "PWA: selector individual de lotes reemplazado por busqueda por cedula, apellido o nombre."
+    "Backend: createResource reutiliza payroll_accounting_mappings por tenant, concepto, asiento y vigencia.",
+    "Backend: el error 23505 de cuentas contables se convierte en PAYROLL_ACCOUNTING_MAPPING_DUPLICATED.",
+    "PWA: Cerrar mes consulta /novedades/tipos y presenta etiquetas humanas en los lotes recientes.",
+    "PWA: Parametrizacion invalida el catalogo operativo y carga automaticamente la cuenta existente.",
+    "Smoke PWA: omite las URL publicas de precache al buscar indicios reales de datos personales."
   ],
   "validationChecks": [
     {
-      "name": "pruebas_focales_precalculo",
+      "name": "pruebas_focales_configuracion",
       "ok": true,
-      "output": "3 suites, 37 pruebas PASS."
+      "output": "1 suite, 39 pruebas PASS."
     },
     {
       "name": "backend_suite_completa",
       "ok": true,
-      "output": "57 suites, 379 pruebas PASS."
+      "output": "57 suites, 381 pruebas PASS."
     },
     {
       "name": "contratos_sistema",
       "ok": true,
-      "output": "npm run contracts PASS."
+      "output": "verify-system-contracts PASS."
+    },
+    {
+      "name": "prisma_validate",
+      "ok": true,
+      "output": "Prisma schema valido."
     },
     {
       "name": "frontend_build_pwa",
       "ok": true,
-      "output": "1534 modulos, 100 entradas precache, build PASS."
+      "output": "1534 modulos, 100 entradas precache, build y smoke PASS."
     },
     {
       "name": "integridad_archivos",
@@ -46,14 +52,12 @@
   "filesModified": [
     "M  .github/CODEX_CONTEXT.md",
     "M  .vscode/AuditLock.json",
-    "M  backend/src/app.js",
-    "M  backend/src/controllers/nominaController.js",
-    "M  backend/src/controllers/nominaController.test.js",
-    "M  backend/src/services/calculoNominaService.js",
-    "M  backend/src/services/monthlyPeriodService.js",
-    "M  backend/src/services/monthlyPeriodService.test.js",
+    "M  backend/src/services/configurationService.js",
+    "M  backend/src/services/configurationService.test.js",
+    "M  frontend-web/scripts/smoke-pwa-lpa26.mjs",
+    "M  frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
     "M  frontend-web/src/pages/Nomina/CerrarMes.jsx",
     "M  scripts/verify-system-contracts.mjs"
   ],
-  "signature": "9bd01faaf8abdb800ab53aca9844c92876e05ec9478eb93ea70c7ceb53c81249"
+  "signature": "52e1486564cc84c410a9aa922d48513efe445e474cba5b7791e1d0f36617deff"
 }

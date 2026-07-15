@@ -559,6 +559,13 @@ function handleConfigurationDbError(err, config, user) {
       userId: user.id,
     });
   }
+  if (config.table === 'payroll_accounting_mappings' && err.code === '23505') {
+    throw new AppError('La cuenta contable de este concepto ya existe. Recarga la parametrización para editarla.', {
+      code: 'PAYROLL_ACCOUNTING_MAPPING_DUPLICATED',
+      statusCode: 409,
+      userId: user.id,
+    });
+  }
   if (config.table === 'job_positions' && err.code === '23505') {
     throw new AppError('Ya existe un cargo con ese codigo en esta empresa.', {
       code: 'JOB_POSITION_CODE_DUPLICATED',
@@ -1395,6 +1402,22 @@ async function createResource(resource, payload, user, context = {}) {
       });
 
       return result.rows[0];
+    }
+  }
+
+  if (config.table === 'payroll_accounting_mappings') {
+    const existing = await db.query(
+      `SELECT id
+       FROM payroll_accounting_mappings
+       WHERE tenant_id = $1
+         AND concept_code = $2
+         AND entry_type = $3
+         AND valid_from = $4::date
+       LIMIT 1`,
+      [tenantId, values.concept_code, values.entry_type, values.valid_from]
+    );
+    if (existing.rows[0]) {
+      return updateResource(resource, existing.rows[0].id, values, user, context);
     }
   }
 

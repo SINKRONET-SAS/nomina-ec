@@ -326,6 +326,96 @@ describe('configurationService metadata', () => {
     expect(recordAudit).not.toHaveBeenCalled();
   });
 
+  test('createResource actualiza una cuenta contable existente con la misma clave operativa', async () => {
+    const previous = {
+      id: 'mapping-novedad-pasajes',
+      tenant_id: ownerUser.tenantId,
+      concept_code: 'novedad_pasajes',
+      concept_label: 'Pasajes',
+      category: 'ingreso',
+      entry_type: 'DEVENGAMIENTO',
+      debit_account_code: '510101',
+      debit_account_name: 'Sueldos y salarios',
+      credit_account_code: '210101',
+      credit_account_name: 'Sueldos por pagar',
+      cost_center_mode: 'employee',
+      fixed_cost_center_code: '',
+      requires_employee_breakdown: true,
+      status: 'activo',
+      valid_from: '2026-01-01',
+      valid_to: null,
+      metadata: {},
+    };
+    const updated = {
+      ...previous,
+      debit_account_code: '510190',
+      debit_account_name: 'Pasajes al personal',
+    };
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: previous.id }] })
+      .mockResolvedValueOnce({ rows: [previous] })
+      .mockResolvedValueOnce({ rows: [updated] });
+    recordAudit.mockResolvedValueOnce();
+
+    const result = await createResource('payrollAccountingMappings', {
+      concept_code: previous.concept_code,
+      concept_label: previous.concept_label,
+      category: previous.category,
+      entry_type: previous.entry_type,
+      debit_account_code: updated.debit_account_code,
+      debit_account_name: updated.debit_account_name,
+      credit_account_code: updated.credit_account_code,
+      credit_account_name: updated.credit_account_name,
+      cost_center_mode: previous.cost_center_mode,
+      requires_employee_breakdown: true,
+      status: 'activo',
+      valid_from: previous.valid_from,
+    }, ownerUser, { correlationId: 'accounting-create-idempotent' });
+
+    expect(result).toMatchObject(updated);
+    expect(db.query.mock.calls[0][0]).toContain('FROM payroll_accounting_mappings');
+    expect(db.query.mock.calls[0][1]).toEqual([
+      ownerUser.tenantId,
+      previous.concept_code,
+      previous.entry_type,
+      previous.valid_from,
+    ]);
+    expect(db.query.mock.calls[2][0]).toContain('UPDATE payroll_accounting_mappings');
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'configuracion.actualizar',
+      entity: 'payroll_accounting_mappings',
+      entityId: previous.id,
+    }));
+  });
+
+  test('createResource oculta el detalle PostgreSQL si una cuenta contable entra en conflicto', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockRejectedValueOnce({
+        code: '23505',
+        constraint: 'payroll_accounting_mappings_tenant_concept_entry_valid_key',
+      });
+
+    await expect(createResource('payrollAccountingMappings', {
+      concept_code: 'novedad_pasajes',
+      concept_label: 'Pasajes',
+      category: 'ingreso',
+      entry_type: 'DEVENGAMIENTO',
+      debit_account_code: '510190',
+      debit_account_name: 'Pasajes al personal',
+      credit_account_code: '210101',
+      credit_account_name: 'Sueldos por pagar',
+      cost_center_mode: 'employee',
+      requires_employee_breakdown: true,
+      status: 'activo',
+      valid_from: '2026-01-01',
+    }, ownerUser)).rejects.toMatchObject({
+      code: 'PAYROLL_ACCOUNTING_MAPPING_DUPLICATED',
+      statusCode: 409,
+    });
+    expect(recordAudit).not.toHaveBeenCalled();
+  });
+
   test('deleteResource elimina parametros legales sin consumo operativo', async () => {
     db.query
       .mockResolvedValueOnce({

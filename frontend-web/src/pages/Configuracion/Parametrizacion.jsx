@@ -387,8 +387,16 @@ function Parametrizacion() {
       if (definition.resource === 'legalParameters' && payload.validation_status === 'validado_oficial' && !canValidateLegalParameters) {
         throw new Error('Solo el administrador principal puede marcar parámetros legales como validados.');
       }
-      const savedRecord = record
-        ? await updateConfigurationResource(token, definition.resource, record.id, payload)
+      const existingAccountingRecord = !record && definition.key === 'contabilidad'
+        ? (summary?.resources?.payrollAccountingMappings || []).find((mapping) => (
+            mapping.concept_code === payload.concept_code
+            && mapping.entry_type === payload.entry_type
+            && String(mapping.valid_from || '').slice(0, 10) === String(payload.valid_from || '').slice(0, 10)
+          ))
+        : null;
+      const targetRecord = record || existingAccountingRecord;
+      const savedRecord = targetRecord
+        ? await updateConfigurationResource(token, definition.resource, targetRecord.id, payload)
         : await createConfigurationResource(token, definition.resource, payload);
       if (definition.key === 'contabilidad') {
         const confirmedFields = ['concept_code', 'debit_account_code', 'debit_account_name', 'credit_account_code', 'credit_account_name'];
@@ -403,7 +411,7 @@ function Parametrizacion() {
       let onboardingWarning = '';
       try {
         await completeOnboardingStep(token, definition.stepCode, {
-          notes: `${definition.title} ${record ? 'actualizado' : 'creado'} desde parametrizacion.`,
+          notes: `${definition.title} ${targetRecord ? 'actualizado' : 'creado'} desde parametrizacion.`,
           evidence: { recordId: savedRecord.id, resource: definition.resource },
         });
       } catch (_err) {
@@ -414,7 +422,7 @@ function Parametrizacion() {
       return {
         record: savedRecord,
         definition,
-        mode: record ? 'actualizado' : 'guardado',
+        mode: targetRecord ? 'actualizado' : 'guardado',
         onboardingWarning,
       };
     },
@@ -428,6 +436,9 @@ function Parametrizacion() {
       setEditingRecord(null);
       setPendingDeleteId('');
       queryClient.invalidateQueries({ queryKey: ['configuration-summary'] });
+      if (definition.resource === 'noveltyTypes') {
+        queryClient.invalidateQueries({ queryKey: ['novedades-tipos'] });
+      }
     },
     onError: (err) => {
       setMessage('');
@@ -550,6 +561,24 @@ function Parametrizacion() {
   }, [requestedSection]);
 
   function updateField(name, value) {
+    if (activeDefinition.key === 'contabilidad' && name === 'concept_code') {
+      const existingMapping = accountingMappingByConcept(summary, value);
+      if (existingMapping) {
+        setEditingRecord({ ...existingMapping, definitionKey: activeDefinition.key });
+        setPendingDeleteId('');
+        setError('');
+        setMessage('');
+        setForms((current) => ({
+          ...current,
+          [activeDefinition.key]: formValuesFromRecord(activeDefinition, existingMapping),
+        }));
+        return;
+      }
+      if (isEditingActiveRecord) {
+        setEditingRecord(null);
+      }
+    }
+
     setForms((current) => {
       const nextValues = {
         ...current[activeDefinition.key],

@@ -19,10 +19,11 @@ import { extractApiError } from '../../services/publicApi';
 import EmployeeSearchSelect from '../../components/UI/EmployeeSearchSelect';
 import { ECUADOR_TIME_ZONE, currentPeriodEC, firstDayOfPeriodEC } from '../../utils/dateFormat';
 import {
+  buildNoveltyTypeOptions,
+  getNoveltyTypeLabel,
   hoursToMinutes,
   isAmountNoveltyType,
   minutesToHours,
-  NOVELTY_TYPES,
 } from '../../config/noveltyTypes';
 
 const SCOPE_TYPES = [
@@ -111,7 +112,23 @@ function CerrarMes() {
     retry: false,
   });
 
+  const noveltyTypesQuery = useQuery({
+    queryKey: ['novedades-tipos', batchForm.fecha],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/novedades/tipos', {
+        params: { fecha: batchForm.fecha },
+      });
+      return response.data;
+    },
+    enabled: Boolean(batchForm.fecha),
+    retry: false,
+  });
+
   const employees = employeesQuery.data || [];
+  const noveltyTypeOptions = useMemo(
+    () => buildNoveltyTypeOptions(noveltyTypesQuery.data?.tipos || []),
+    [noveltyTypesQuery.data]
+  );
   const departments = useMemo(() => [...new Set(employees.map((item) => item.departamento).filter(Boolean))], [employees]);
   const positions = useMemo(() => [...new Set(employees.map((item) => item.cargo).filter(Boolean))], [employees]);
   const state = periodQuery.data || {};
@@ -135,6 +152,18 @@ function CerrarMes() {
       fecha: firstDayOfPeriodEC(anio, mes),
     }));
   }, [anio, mes]);
+
+  useEffect(() => {
+    if (noveltyTypeOptions.length === 0) return;
+    if (!noveltyTypeOptions.some((type) => type.value === batchForm.tipoNovedad)) {
+      const nextType = noveltyTypeOptions[0];
+      setBatchForm((current) => ({
+        ...current,
+        tipoNovedad: nextType.value,
+        minutos: isAmountNoveltyType(nextType.value, noveltyTypeOptions) ? 0 : current.minutos || 60,
+      }));
+    }
+  }, [batchForm.tipoNovedad, noveltyTypeOptions]);
 
   const refreshPeriod = () => queryClient.invalidateQueries({ queryKey: ['nomina-periodo', anio, mes] });
 
@@ -271,9 +300,9 @@ function CerrarMes() {
   };
 
   const scopeNeedsValue = batchForm.scopeType !== 'company';
-  const requiresAmount = isAmountNoveltyType(batchForm.tipoNovedad);
+  const requiresAmount = isAmountNoveltyType(batchForm.tipoNovedad, noveltyTypeOptions);
   const canCreateBatch = isWritablePeriod && (!scopeNeedsValue || batchForm.scopeValue) && (!requiresAmount || Number(batchForm.monto) > 0);
-  const currentError = openMutation.error || batchMutation.error || deleteBatchMutation.error || resolveNoveltiesMutation.error || precalculateMutation.error || calculateMutation.error || closeMutation.error || discardCalculationMutation.error || periodQuery.error;
+  const currentError = openMutation.error || batchMutation.error || deleteBatchMutation.error || resolveNoveltiesMutation.error || precalculateMutation.error || calculateMutation.error || closeMutation.error || discardCalculationMutation.error || periodQuery.error || noveltyTypesQuery.error;
   const currentPrecheck = precheckDetails(currentError);
   const alertIsError = Boolean(currentError || message?.type === 'error');
   const hasLegalParameterBlocker = hasBlocker(currentPrecheck, [
@@ -489,12 +518,13 @@ function CerrarMes() {
                 setBatchForm((current) => ({
                   ...current,
                   tipoNovedad: nextType,
-                  minutos: isAmountNoveltyType(nextType) ? 0 : current.minutos || 60,
+                  minutos: isAmountNoveltyType(nextType, noveltyTypeOptions) ? 0 : current.minutos || 60,
                 }));
               }}
+              disabled={noveltyTypesQuery.isLoading || noveltyTypeOptions.length === 0}
               value={batchForm.tipoNovedad}
             >
-              {NOVELTY_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
+              {noveltyTypeOptions.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
             </select>
           </label>
           <label className="text-sm font-semibold text-slate-700">
@@ -733,7 +763,7 @@ function CerrarMes() {
                 {state.batches.map((batch) => (
                   <tr key={batch.id}>
                     <td className="px-4 py-3 font-medium text-slate-800">{batchScopeLabel(batch)}</td>
-                    <td className="px-4 py-3">{batch.tipo_novedad}</td>
+                    <td className="px-4 py-3">{getNoveltyTypeLabel(batch.tipo_novedad, noveltyTypeOptions)}</td>
                     <td className="px-4 py-3">{String(batch.fecha).slice(0, 10)}</td>
                     <td className="px-4 py-3 text-right">${Number(batch.monto || 0).toFixed(2)}</td>
                     <td className="px-4 py-3 text-right">{batch.total_empleados}</td>
