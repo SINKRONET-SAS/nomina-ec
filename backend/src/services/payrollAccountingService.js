@@ -44,6 +44,16 @@ const PAYROLL_CONCEPTS = [
     creditAccountName: 'Nómina por pagar',
   },
   {
+    code: 'horas_extra_nocturna',
+    label: 'Horas extra nocturna',
+    category: 'ingreso',
+    entryType: 'DEVENGAMIENTO',
+    debitAccountCode: '510103',
+    debitAccountName: 'Horas extraordinarias',
+    creditAccountCode: '210101',
+    creditAccountName: 'NÃ³mina por pagar',
+  },
+  {
     code: 'bono_desempeno',
     label: 'Bono de desempeño',
     category: 'ingreso',
@@ -361,6 +371,15 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
       source: 'novedad',
       sourceId: 'hora_extra_100',
       metadata: { horas: numberValue(detail.extras100) },
+    });
+    addLine(lines, {
+      code: 'horas_extra_nocturna',
+      label: 'Horas extra nocturna',
+      category: 'ingreso',
+      amount: detail.montoExtrasNocturnas,
+      source: 'novedad',
+      sourceId: 'hora_extra_nocturna',
+      metadata: { horas: numberValue(detail.extrasNocturnas) },
     });
     addLine(lines, {
       code: 'bono_desempeno',

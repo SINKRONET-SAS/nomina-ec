@@ -97,13 +97,14 @@ function ReporteAsistencia() {
                 <th className="px-5 py-3 text-right text-xs font-medium uppercase text-slate-500">Atrasos (min)</th>
                 <th className="px-5 py-3 text-right text-xs font-medium uppercase text-slate-500">Extras 50% (h)</th>
                 <th className="px-5 py-3 text-right text-xs font-medium uppercase text-slate-500">Extras 100% (h)</th>
+                <th className="px-5 py-3 text-right text-xs font-medium uppercase text-slate-500">Extras nocturnas (h)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {reporteQuery.isLoading ? (
-                <tr><td className="px-5 py-6 text-center text-sm text-slate-600" colSpan="7">Cargando reporte...</td></tr>
+                <tr><td className="px-5 py-6 text-center text-sm text-slate-600" colSpan="8">Cargando reporte...</td></tr>
               ) : reporte.length === 0 ? (
-                <tr><td className="px-5 py-6 text-center text-sm text-slate-600" colSpan="7">No hay empleados vinculados a este período.</td></tr>
+                <tr><td className="px-5 py-6 text-center text-sm text-slate-600" colSpan="8">No hay empleados vinculados a este período.</td></tr>
               ) : (
                 reporte.map((row) => (
                   <tr className="hover:bg-slate-50" key={row.empleado_id}>
@@ -118,6 +119,7 @@ function ReporteAsistencia() {
                     <td className="px-5 py-3 text-right text-sm">{row.minutos_tardia || 0}</td>
                     <td className="px-5 py-3 text-right text-sm">{formatHours(row.horas_extra_50)}</td>
                     <td className="px-5 py-3 text-right text-sm">{formatHours(row.horas_extra_100)}</td>
+                    <td className="px-5 py-3 text-right text-sm">{formatHours(row.horas_extra_nocturna)}</td>
                   </tr>
                 ))
               )}

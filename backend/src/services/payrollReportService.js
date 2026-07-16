@@ -636,6 +636,7 @@ function mapRowForExport(row, anio, mes) {
   const detail = normalizeDetail(row.detalle_calculo);
   const extras50Value = numberValue(detail.montoExtras50 ?? row.horas_extras_50);
   const extras100Value = numberValue(detail.montoExtras100 ?? row.horas_extras_100);
+  const extrasNocturnasValue = numberValue(detail.montoExtrasNocturnas);
   return {
     periodo: `${String(mes).padStart(2, '0')}/${anio}`,
     cedula: row.cedula,
@@ -655,6 +656,9 @@ function mapRowForExport(row, anio, mes) {
     extras100Horas: numberValue(detail.extras100),
     extras100: extras100Value,
     extras100Valor: extras100Value,
+    extrasNocturnasHoras: numberValue(detail.extrasNocturnas),
+    extrasNocturnas: extrasNocturnasValue,
+    extrasNocturnasValor: extrasNocturnasValue,
     bonosDesempeno: numberValue(detail.bonosDesempeno),
     totalIngresos: numberValue(row.total_ingresos),
     aporteIess: numberValue(row.aporte_iess_personal),
@@ -684,7 +688,9 @@ function noveltyMatrixKey(code) {
 
 function isOvertimeConcept(code) {
   const normalized = String(code || '').trim().toLowerCase();
-  return normalized === 'horas_extra_50' || normalized === 'horas_extra_100';
+  return normalized === 'horas_extra_50'
+    || normalized === 'horas_extra_100'
+    || normalized === 'horas_extra_nocturna';
 }
 
 function isRoleNoveltyLine(line = {}) {
@@ -951,6 +957,8 @@ function getWorkbookColumns(reportCode, exportRows = []) {
     { header: 'Valor horas extra 50%', key: 'extras50', width: 22, style: { numFmt: '$#,##0.00' } },
     { header: 'Horas extra 100% (h)', key: 'extras100Horas', width: 19, style: { numFmt: '0.00' } },
     { header: 'Valor horas extra 100%', key: 'extras100', width: 23, style: { numFmt: '$#,##0.00' } },
+    { header: 'Horas extra nocturna (h)', key: 'extrasNocturnasHoras', width: 23, style: { numFmt: '0.00' } },
+    { header: 'Valor horas extra nocturna', key: 'extrasNocturnas', width: 27, style: { numFmt: '$#,##0.00' } },
     { header: 'Bonos desempeno', key: 'bonosDesempeno', width: 17, style: { numFmt: '$#,##0.00' } },
     base[11],
     { header: 'IESS personal', key: 'aporteIess', width: 16, style: { numFmt: '$#,##0.00' } },

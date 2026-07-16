@@ -93,6 +93,8 @@ describe('payrollReportService accounting entries', () => {
           montoExtras50: 75,
           extras100: 1,
           montoExtras100: 25,
+          extrasNocturnas: 1.5,
+          montoExtrasNocturnas: 30,
           totalIngresos: 1100,
         },
       }),
@@ -105,6 +107,9 @@ describe('payrollReportService accounting entries', () => {
       extras100Horas: 1,
       extras100: 25,
       extras100Valor: 25,
+      extrasNocturnasHoras: 1.5,
+      extrasNocturnas: 30,
+      extrasNocturnasValor: 30,
     });
   });
 

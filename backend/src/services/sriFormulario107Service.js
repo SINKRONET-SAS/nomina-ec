@@ -190,12 +190,13 @@ function buildSummary(rows = []) {
     const sueldo = numberValue(row.sueldo_bruto || detail.sueldoProporcional);
     const extras50 = numberValue(detail.montoExtras50 ?? row.horas_extras_50);
     const extras100 = numberValue(detail.montoExtras100 ?? row.horas_extras_100);
+    const extrasNocturnas = numberValue(detail.montoExtrasNocturnas);
     const totalIngresos = numberValue(row.total_ingresos);
 
     summary.sueldosSalarios += sueldo;
     summary.horasSuplementarias += extras50;
-    summary.horasExtraordinarias += extras100;
-    summary.otrosIngresosGravados += Math.max(0, totalIngresos - sueldo - extras50 - extras100);
+    summary.horasExtraordinarias += extras100 + extrasNocturnas;
+    summary.otrosIngresosGravados += Math.max(0, totalIngresos - sueldo - extras50 - extras100 - extrasNocturnas);
     summary.totalIngresos += totalIngresos;
     summary.aporteIessPersonal += numberValue(row.aporte_iess_personal);
     summary.impuestoRentaRetenido += numberValue(row.impuesto_renta);

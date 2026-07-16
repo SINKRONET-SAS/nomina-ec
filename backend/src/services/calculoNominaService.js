@@ -170,7 +170,7 @@ function resolveOvertimeParameters(payrollParameters = {}) {
     supplementarySurchargeRate: roundMoney(supplementaryMultiplier - 1),
     extraordinarySurchargeRate: roundMoney(extraordinaryMultiplier - 1),
     legalBasis: 'Codigo del Trabajo Art. 55',
-    formula: 'valorHora = sueldo / jornadaHorasMensuales; HE50 = horas * valorHora * multiplicadorSuplementario; HE100 = horas * valorHora * multiplicadorExtraordinario',
+    formula: 'valorHora = sueldo / jornadaHorasMensualesParametro; HE50 = horas * valorHora * multiplicadorSuplementario; HE100/HEN = horas * valorHora * multiplicadorExtraordinario',
   };
 }
 
@@ -516,8 +516,10 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
   );
   const extras50 = roundMoney((noveltyImpact.minutesByConcept.horas_extra_50 || 0) / 60);
   const extras100 = roundMoney((noveltyImpact.minutesByConcept.horas_extra_100 || 0) / 60);
+  const extrasNocturnas = roundMoney((noveltyImpact.minutesByConcept.horas_extra_nocturna || 0) / 60);
   const montoExtras50 = roundMoney(noveltyImpact.amountByConcept.horas_extra_50 || 0);
   const montoExtras100 = roundMoney(noveltyImpact.amountByConcept.horas_extra_100 || 0);
+  const montoExtrasNocturnas = roundMoney(noveltyImpact.amountByConcept.horas_extra_nocturna || 0);
   const bonosDesempeno = roundMoney(noveltyImpact.amountByConcept.bono_desempeno || 0);
   const comisiones = roundMoney(noveltyImpact.amountByConcept.comision || 0);
   const descuentoFaltas = roundMoney(noveltyImpact.amountByConcept.descuento_faltas || 0);
@@ -609,16 +611,21 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     sueldoProporcional,
     valorHora: roundMoney(valorHora),
     jornadaHorasMensuales: getEmployeeMonthlyHours(emp, payrollParameters),
+    jornadaHorasMensualesParametro: Number.parseFloat(payrollParameters.monthlyWorkHours || 0) || null,
+    jornadaHorasMensualesEmpleado: Number.parseFloat(emp.jornada_horas_mensuales || 0) || null,
+    jornadaHorasSemanalesTurno: Number.parseFloat(emp.jornada_weekly_hours || emp.weekly_hours || 0) || null,
     jornadaCodigo: emp.jornada_codigo || '',
     unidadOrganizativaCodigo: emp.unidad_organizativa_codigo || '',
     zonaMarcacionCodigo: emp.zona_marcacion_codigo || '',
     gastosPersonalesAnuales: roundMoney(Number.parseFloat(emp.gastos_personales_anuales || 0)),
     extras50,
     extras100,
+    extrasNocturnas,
     ingresosBase,
     ingresosRenta,
     montoExtras50,
     montoExtras100,
+    montoExtrasNocturnas,
     horasExtraPorSemana: noveltyImpact.weeklyOvertimeMinutes || {},
     horasExtraPorSemanaHoras: Object.fromEntries(Object.entries(noveltyImpact.weeklyOvertimeMinutes || {}).map(([week, minutes]) => [
       week,
@@ -634,6 +641,9 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
       ...overtimeParameters,
       valorHora: roundMoney(valorHora),
       jornadaHorasMensuales: getEmployeeMonthlyHours(emp, payrollParameters),
+      jornadaHorasMensualesParametro: Number.parseFloat(payrollParameters.monthlyWorkHours || 0) || null,
+      jornadaHorasMensualesEmpleado: Number.parseFloat(emp.jornada_horas_mensuales || 0) || null,
+      jornadaHorasSemanalesTurno: Number.parseFloat(emp.jornada_weekly_hours || emp.weekly_hours || 0) || null,
     },
     bonosDesempeno,
     comisiones,
@@ -1041,9 +1051,9 @@ function getEmployeeMonthlyHours(emp = {}, payrollParameters = {}) {
   const weeklyHours = Number.parseFloat(emp.jornada_weekly_hours || emp.weekly_hours || 0);
   const employeeHours = Number.parseFloat(emp.jornada_horas_mensuales || 0);
   const configuredHours = Number.parseFloat(payrollParameters.monthlyWorkHours || 0);
-  const monthlyHours = weeklyHours > 0
-    ? roundMoney((weeklyHours * 52) / 12)
-    : (employeeHours > 0 ? employeeHours : configuredHours);
+  const monthlyHours = configuredHours > 0
+    ? configuredHours
+    : (employeeHours > 0 ? employeeHours : roundMoney((weeklyHours * 52) / 12));
 
   if (!Number.isFinite(monthlyHours) || monthlyHours <= 0) {
     throw new AppError('La jornada mensual debe ser mayor a cero para calcular valor hora', {

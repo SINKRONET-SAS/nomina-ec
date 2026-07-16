@@ -1,6 +1,7 @@
 export const NOVELTY_TYPES = [
   { value: 'hora_extra_50', label: 'Hora extra 50%' },
   { value: 'hora_extra_100', label: 'Hora extra 100%' },
+  { value: 'hora_extra_nocturna', label: 'Hora extra nocturna' },
   { value: 'atraso', label: 'Atraso' },
   { value: 'salida_temprana', label: 'Salida temprana' },
   { value: 'falta', label: 'Falta injustificada' },
@@ -85,6 +86,18 @@ export function minutesToHours(value) {
   }
   const minutes = Number(value);
   return Number.isFinite(minutes) ? (Math.round((minutes / 60) * 100) / 100).toFixed(2) : '';
+}
+
+export function normalizeHoursDraft(value) {
+  const normalized = String(value ?? '').trim().replace(',', '.');
+  if (normalized === '') return '';
+  return /^\d{0,5}(\.\d{0,2})?$/.test(normalized) ? normalized : null;
+}
+
+export function hoursDraftToNumber(value) {
+  const normalized = String(value ?? '').trim().replace(',', '.');
+  const hours = Number(normalized);
+  return Number.isFinite(hours) && hours >= 0 ? hours : 0;
 }
 
 export function hoursToMinutes(value) {

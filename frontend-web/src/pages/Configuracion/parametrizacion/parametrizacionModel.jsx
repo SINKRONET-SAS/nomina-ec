@@ -1034,6 +1034,7 @@ function payrollConceptByCode(summary, code) {
 const defaultNoveltyConceptCodes = {
   hora_extra_50: 'horas_extra_50',
   hora_extra_100: 'horas_extra_100',
+  hora_extra_nocturna: 'horas_extra_nocturna',
   bono_desempeno: 'bono_desempeno',
   comision: 'comision',
   falta: 'descuento_faltas',

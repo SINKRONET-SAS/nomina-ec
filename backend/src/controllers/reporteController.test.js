@@ -66,8 +66,10 @@ describe('reporteController reporteAsistencia', () => {
         faltas_aprobadas: 0,
         minutos_extra_50: 90,
         minutos_extra_100: 135,
+        minutos_extra_nocturna: 60,
         horas_extra_50: '1.50',
         horas_extra_100: '2.25',
+        horas_extra_nocturna: '1.00',
       }],
     });
     const req = {
@@ -82,6 +84,7 @@ describe('reporteController reporteAsistencia', () => {
 
     expect(db.query.mock.calls[0][0]).toContain('horas_extra_50');
     expect(db.query.mock.calls[0][0]).toContain('horas_extra_100');
+    expect(db.query.mock.calls[0][0]).toContain('horas_extra_nocturna');
     expect(db.query.mock.calls[0][0]).toContain('WITH limites AS');
     expect(db.query.mock.calls[0][0]).toContain('asistencia AS');
     expect(db.query.mock.calls[0][0]).toContain('novedades AS');
@@ -94,6 +97,7 @@ describe('reporteController reporteAsistencia', () => {
       faltas_aprobadas: 0,
       horas_extra_50: '1.50',
       horas_extra_100: '2.25',
+      horas_extra_nocturna: '1.00',
     });
   });
 });

@@ -411,7 +411,7 @@ describe('monthlyPeriodService', () => {
     }));
   });
 
-  test('createNoveltyBatch acepta horas y persiste minutos normalizados', async () => {
+  test('createNoveltyBatch acepta horas con dos decimales y persiste minutos normalizados', async () => {
     db.query.mockResolvedValueOnce({ rows: [] });
     const client = {
       query: jest.fn()
@@ -435,7 +435,7 @@ describe('monthlyPeriodService', () => {
         scopeType: 'company',
         tipoNovedad: 'hora_extra_50',
         fecha: '2026-06-15',
-        horas: 1.5,
+        horas: 1.25,
       },
     });
 
@@ -443,12 +443,12 @@ describe('monthlyPeriodService', () => {
     expect(client.query).toHaveBeenNthCalledWith(
       3,
       expect.stringContaining('INSERT INTO novelty_batches'),
-      expect.arrayContaining([90])
+      expect.arrayContaining([75])
     );
     expect(client.query).toHaveBeenNthCalledWith(
       4,
       expect.stringContaining('INSERT INTO novedades_asistencia'),
-      expect.arrayContaining([90])
+      expect.arrayContaining([75])
     );
   });
 

@@ -21,9 +21,9 @@ import { ECUADOR_TIME_ZONE, currentPeriodEC, firstDayOfPeriodEC } from '../../ut
 import {
   buildNoveltyTypeOptions,
   getNoveltyTypeLabel,
-  hoursToMinutes,
+  hoursDraftToNumber,
   isAmountNoveltyType,
-  minutesToHours,
+  normalizeHoursDraft,
 } from '../../config/noveltyTypes';
 
 const SCOPE_TYPES = [
@@ -119,7 +119,7 @@ function CerrarMes() {
     scopeValue: '',
     tipoNovedad: 'hora_extra_50',
     fecha: firstDayOfPeriodEC(initialPeriod.anio, initialPeriod.mes),
-    minutos: 60,
+    horas: '1.00',
     monto: '',
     justificacion: 'Lote mensual de novedades',
   });
@@ -210,7 +210,7 @@ function CerrarMes() {
       setBatchForm((current) => ({
         ...current,
         tipoNovedad: nextType.value,
-        minutos: isAmountNoveltyType(nextType.value, noveltyTypeOptions) ? 0 : current.minutos || 60,
+        horas: isAmountNoveltyType(nextType.value, noveltyTypeOptions) ? '0' : current.horas || '1.00',
       }));
     }
   }, [batchForm.tipoNovedad, noveltyTypeOptions]);
@@ -233,7 +233,7 @@ function CerrarMes() {
       scopeValue: batchForm.scopeValue,
       tipoNovedad: batchForm.tipoNovedad,
       fecha: batchForm.fecha,
-      horas: Number(minutesToHours(batchForm.minutos) || 0),
+      horas: hoursDraftToNumber(batchForm.horas),
       monto: batchForm.monto,
       justificacion: batchForm.justificacion,
     }),
@@ -407,9 +407,17 @@ function CerrarMes() {
     setBatchForm((current) => ({ ...current, [field]: value }));
   };
 
+  const updateBatchHours = (value) => {
+    const nextValue = normalizeHoursDraft(value);
+    if (nextValue === null) return;
+    updateBatch('horas', nextValue);
+  };
+
   const scopeNeedsValue = batchForm.scopeType !== 'company';
   const requiresAmount = isAmountNoveltyType(batchForm.tipoNovedad, noveltyTypeOptions);
-  const canCreateBatch = isWritablePeriod && (!scopeNeedsValue || batchForm.scopeValue) && (!requiresAmount || Number(batchForm.monto) > 0);
+  const canCreateBatch = isWritablePeriod
+    && (!scopeNeedsValue || batchForm.scopeValue)
+    && (requiresAmount ? Number(batchForm.monto) > 0 : hoursDraftToNumber(batchForm.horas) > 0);
   const currentError = openMutation.error || batchMutation.error || deleteBatchMutation.error || resolveNoveltiesMutation.error || precalculateMutation.error || calculateMutation.error || closeMutation.error || discardCalculationMutation.error || periodQuery.error || noveltyTypesQuery.error;
   const currentPrecheck = precheckDetails(currentError);
   const alertIsError = Boolean(currentError || message?.type === 'error');
@@ -626,7 +634,7 @@ function CerrarMes() {
                 setBatchForm((current) => ({
                   ...current,
                   tipoNovedad: nextType,
-                  minutos: isAmountNoveltyType(nextType, noveltyTypeOptions) ? 0 : current.minutos || 60,
+                  horas: isAmountNoveltyType(nextType, noveltyTypeOptions) ? '0' : current.horas || '1.00',
                 }));
               }}
               disabled={noveltyTypesQuery.isLoading || noveltyTypeOptions.length === 0}
@@ -641,7 +649,15 @@ function CerrarMes() {
           </label>
           <label className="text-sm font-semibold text-slate-700">
             Horas
-            <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" disabled={requiresAmount} min="0" onChange={(event) => updateBatch('minutos', Number(hoursToMinutes(event.target.value) || 0))} step="0.01" type="number" value={minutesToHours(batchForm.minutos)} />
+            <input
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+              disabled={requiresAmount}
+              inputMode="decimal"
+              onChange={(event) => updateBatchHours(event.target.value)}
+              pattern="[0-9]+([.,][0-9]{0,2})?"
+              type="text"
+              value={batchForm.horas}
+            />
           </label>
           <label className="text-sm font-semibold text-slate-700">
             Monto USD
@@ -773,7 +789,7 @@ function CerrarMes() {
                 <p>
                   Valor hora = sueldo / {Number(overtimeParameters.jornadaHorasMensuales || overtimeParameters.monthlyWorkHours || 0).toLocaleString('es-EC')} horas.
                   HE 50% usa multiplicador {Number(overtimeParameters.supplementaryMultiplier || 0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({percentLabel(overtimeParameters.supplementarySurchargeRate)} de recargo).
-                  HE 100% usa multiplicador {Number(overtimeParameters.extraordinaryMultiplier || 0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({percentLabel(overtimeParameters.extraordinarySurchargeRate)} de recargo).
+                  HE 100% y nocturna usan multiplicador {Number(overtimeParameters.extraordinaryMultiplier || 0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({percentLabel(overtimeParameters.extraordinarySurchargeRate)} de recargo).
                   Limite semanal: {Number(overtimeParameters.maxWeeklyOvertimeHours || 0).toLocaleString('es-EC')} horas.
                 </p>
               </div>

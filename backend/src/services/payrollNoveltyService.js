@@ -28,6 +28,17 @@ const DEFAULT_NOVELTY_RULES = {
     affectsVacation: true,
     affectsBankFile: true,
   },
+  hora_extra_nocturna: {
+    name: 'Hora extra nocturna',
+    payrollImpact: 'ingreso',
+    calculationMode: 'minutes_hourly_2',
+    conceptCode: 'horas_extra_nocturna',
+    affectsIess: true,
+    affectsIncomeTax: true,
+    affectsDecimos: true,
+    affectsVacation: true,
+    affectsBankFile: true,
+  },
   bono_desempeno: {
     name: 'Bono de desempeno',
     payrollImpact: 'ingreso',
@@ -347,8 +358,10 @@ function calculateNoveltyImpacts(rows = [], configs = [], context = {}) {
   return { lines, totals, amountByConcept, minutesByConcept, weeklyOvertimeMinutes, weeklyOvertimeExceptionMinutes };
 }
 
+const OVERTIME_CONCEPT_CODES = new Set(['horas_extra_50', 'horas_extra_100', 'horas_extra_nocturna']);
+
 function isOvertimeConcept(conceptCode) {
-  return conceptCode === 'horas_extra_50' || conceptCode === 'horas_extra_100';
+  return OVERTIME_CONCEPT_CODES.has(String(conceptCode || '').trim().toLowerCase());
 }
 
 function weekKeyFromDate(value) {

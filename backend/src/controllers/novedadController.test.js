@@ -351,7 +351,7 @@ describe('novedadController crear', () => {
     );
   });
 
-  test('acepta horas y registra minutos normalizados', async () => {
+  test('acepta horas con dos decimales y registra minutos normalizados', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [{ id: 'emp-1' }] })
       .mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'open' }] })
@@ -362,7 +362,7 @@ describe('novedadController crear', () => {
           empleado_id: 'emp-1',
           fecha: '2026-06-01',
           tipo_novedad: 'hora_extra_50',
-          minutos: 90,
+          minutos: 75,
           monto: 0,
           estado: 'pendiente',
         }],
@@ -376,7 +376,7 @@ describe('novedadController crear', () => {
         empleadoId: 'emp-1',
         fecha: '2026-06-01',
         tipoNovedad: 'hora_extra_50',
-        horas: 1.5,
+        horas: 1.25,
       },
     };
     const res = createResponse();
@@ -387,11 +387,11 @@ describe('novedadController crear', () => {
     expect(db.query).toHaveBeenNthCalledWith(
       4,
       expect.stringContaining('INSERT INTO novedades_asistencia'),
-      expect.arrayContaining([90])
+      expect.arrayContaining([75])
     );
     expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
       action: 'novedades.manual.crear',
-      newData: expect.objectContaining({ minutos: 90 }),
+      newData: expect.objectContaining({ minutos: 75 }),
     }));
   });
 

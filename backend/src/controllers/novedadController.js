@@ -29,7 +29,7 @@ const NOVELTY_BULK_TEMPLATE_COLUMNS = [
 ];
 const NOVELTY_WRITABLE_PERIOD_STATUSES = new Set(['open', 'novelties_loaded', 'reopened', 'calculation_failed']);
 const NOVELTY_OPERATIVE_PERIOD_STATUSES = new Set([...NOVELTY_WRITABLE_PERIOD_STATUSES, 'calculated']);
-const DEFAULT_OVERTIME_NOVELTY_CODES = new Set(['hora_extra_50', 'hora_extra_100']);
+const DEFAULT_OVERTIME_NOVELTY_CODES = new Set(['hora_extra_50', 'hora_extra_100', 'hora_extra_nocturna']);
 const OVERTIME_LIMIT_APPROVAL_REASON_MIN_LENGTH = 10;
 
 function resolveNoveltyMetadata(row = {}) {

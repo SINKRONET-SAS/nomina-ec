@@ -10,9 +10,10 @@ import EmployeeSearchSelect from '../../components/UI/EmployeeSearchSelect';
 import {
   buildNoveltyTypeOptions,
   getNoveltyTypeLabel,
-  hoursToMinutes,
+  hoursDraftToNumber,
   isAmountNoveltyType,
   minutesToHours,
+  normalizeHoursDraft,
 } from '../../config/noveltyTypes';
 
 const today = todayISOEC();
@@ -21,6 +22,7 @@ const initialForm = {
   fecha: today,
   tipoNovedad: 'hora_extra_50',
   minutos: '60',
+  horas: '1.00',
   monto: '',
   justificacion: '',
 };
@@ -181,7 +183,7 @@ function NovedadesPendientes() {
       setForm((current) => ({
         ...current,
         tipoNovedad: noveltyTypeOptions[0].value,
-        minutos: isAmountNoveltyType(noveltyTypeOptions[0].value, noveltyTypeOptions) ? '0' : current.minutos || '60',
+        horas: isAmountNoveltyType(noveltyTypeOptions[0].value, noveltyTypeOptions) ? '0' : current.horas || minutesToHours(current.minutos || '60'),
       }));
     }
   }, [form.tipoNovedad, noveltyTypeOptions]);
@@ -317,13 +319,19 @@ function NovedadesPendientes() {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
+  function updateHoursField(value) {
+    const nextValue = normalizeHoursDraft(value);
+    if (nextValue === null) return;
+    updateField('horas', nextValue);
+  }
+
   function updateNoveltyType(value) {
     setMessage('');
     setError('');
     setForm((current) => ({
       ...current,
       tipoNovedad: value,
-      minutos: isAmountNoveltyType(value, noveltyTypeOptions) ? '0' : current.minutos || '60',
+      horas: isAmountNoveltyType(value, noveltyTypeOptions) ? '0' : current.horas || minutesToHours(current.minutos || '60'),
     }));
   }
 
@@ -338,7 +346,7 @@ function NovedadesPendientes() {
       empleadoId: form.empleadoId,
       fecha: form.fecha,
       tipoNovedad: form.tipoNovedad,
-      horas: Number(minutesToHours(form.minutos) || 0),
+      horas: hoursDraftToNumber(form.horas),
       monto: Number(form.monto || 0),
       justificacion: form.justificacion,
     };
@@ -358,6 +366,7 @@ function NovedadesPendientes() {
       fecha: String(nov.fecha || '').slice(0, 10),
       tipoNovedad: nov.tipo_novedad || 'hora_extra_50',
       minutos: String(nov.minutos || 0),
+      horas: minutesToHours(nov.minutos),
       monto: String(nov.monto || ''),
       justificacion: nov.justificacion || '',
     });
@@ -814,11 +823,11 @@ function NovedadesPendientes() {
             <input
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
               disabled={requiresAmount}
-              min="0"
-              step="0.01"
-              type="number"
-              value={minutesToHours(form.minutos)}
-              onChange={(event) => updateField('minutos', hoursToMinutes(event.target.value))}
+              inputMode="decimal"
+              pattern="[0-9]+([.,][0-9]{0,2})?"
+              type="text"
+              value={form.horas}
+              onChange={(event) => updateHoursField(event.target.value)}
             />
           </label>
           <label className="block text-sm font-medium text-slate-700">
@@ -950,6 +959,7 @@ function NovedadesPendientes() {
                         nov.tipo_novedad === 'tardia' ? 'bg-yellow-100 text-yellow-800' :
                         nov.tipo_novedad === 'hora_extra_50' ? 'bg-blue-100 text-blue-800' :
                         nov.tipo_novedad === 'hora_extra_100' ? 'bg-purple-100 text-purple-800' :
+                        nov.tipo_novedad === 'hora_extra_nocturna' ? 'bg-indigo-100 text-indigo-800' :
                         'bg-red-100 text-red-800'
                       }`}>
                         {getNoveltyTypeLabel(nov.tipo_novedad, noveltyTypeOptions)}

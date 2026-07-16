@@ -159,7 +159,7 @@ function mergeVersionedParameters(baseParameters, versionedParameters) {
   if (sbu) payroll.unifiedBaseSalary = Number(sbu.amount ?? payroll.unifiedBaseSalary);
   if (personalIess) payroll.personalIessRate = Number(personalIess.amount ?? payroll.personalIessRate);
   if (employerIess) payroll.employerIessRate = Number(employerIess.amount ?? payroll.employerIessRate);
-  if (monthlyHours) payroll.monthlyWorkHours = Number(monthlyHours.amount ?? payroll.monthlyWorkHours);
+  if (monthlyHours) payroll.monthlyWorkHours = monthlyWorkHoursParameter(monthlyHours, payroll.monthlyWorkHours);
   if (weeklyHours) payroll.weeklyMaxHours = Number(weeklyHours.amount ?? payroll.weeklyMaxHours);
   if (overtimeLimit) payroll.maxWeeklyOvertimeHours = Number(overtimeLimit.amount ?? payroll.maxWeeklyOvertimeHours);
   if (overtimeSupplement) payroll.overtimeSupplementMultiplier = overtimeMultiplier(overtimeSupplement, payroll.overtimeSupplementMultiplier);
@@ -222,6 +222,17 @@ function overtimeMultiplier(value = {}, fallback) {
   if (Number.isFinite(rate) && rate >= 0) return 1 + rate;
 
   return fallback;
+}
+
+function monthlyWorkHoursParameter(value = {}, fallback) {
+  const amount = Number(value.amount ?? value.monthlyWorkHours);
+  if (!Number.isFinite(amount) || amount <= 0) return fallback;
+
+  // 40 horas semanales anualizadas dan 173.33, pero el parametro legal usado
+  // por el motor ecuatoriano es la base mensual 30 dias x 8 horas = 240.
+  if (amount > 160 && amount < 190 && Number(fallback) === 240) return fallback;
+
+  return amount;
 }
 
 function withLegalSourceMetadata(parameters, versionedParameters, legacyRow, year, tenantId) {

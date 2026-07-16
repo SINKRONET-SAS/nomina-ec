@@ -346,7 +346,8 @@ async function reporteAsistencia(req, res) {
           COUNT(*) FILTER (WHERE n.tipo_novedad = 'falta')::int AS faltas_aprobadas,
           COALESCE(SUM(n.minutos) FILTER (WHERE n.tipo_novedad = 'atraso'), 0)::int AS minutos_tardia,
           COALESCE(SUM(n.minutos) FILTER (WHERE n.tipo_novedad = 'hora_extra_50'), 0)::int AS minutos_extra_50,
-          COALESCE(SUM(n.minutos) FILTER (WHERE n.tipo_novedad = 'hora_extra_100'), 0)::int AS minutos_extra_100
+          COALESCE(SUM(n.minutos) FILTER (WHERE n.tipo_novedad = 'hora_extra_100'), 0)::int AS minutos_extra_100,
+          COALESCE(SUM(n.minutos) FILTER (WHERE n.tipo_novedad = 'hora_extra_nocturna'), 0)::int AS minutos_extra_nocturna
         FROM novedades_asistencia n
         CROSS JOIN limites l
         WHERE n.tenant_id = $1
@@ -368,8 +369,10 @@ async function reporteAsistencia(req, res) {
         COALESCE(n.minutos_tardia, 0) AS minutos_tardia,
         COALESCE(n.minutos_extra_50, 0) AS minutos_extra_50,
         COALESCE(n.minutos_extra_100, 0) AS minutos_extra_100,
+        COALESCE(n.minutos_extra_nocturna, 0) AS minutos_extra_nocturna,
         ROUND(COALESCE(n.minutos_extra_50, 0)::numeric / 60, 2) AS horas_extra_50,
-        ROUND(COALESCE(n.minutos_extra_100, 0)::numeric / 60, 2) AS horas_extra_100
+        ROUND(COALESCE(n.minutos_extra_100, 0)::numeric / 60, 2) AS horas_extra_100,
+        ROUND(COALESCE(n.minutos_extra_nocturna, 0)::numeric / 60, 2) AS horas_extra_nocturna
       FROM empleados e
       CROSS JOIN limites l
       LEFT JOIN asistencia a ON a.empleado_id = e.id

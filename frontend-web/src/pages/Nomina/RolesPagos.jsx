@@ -43,6 +43,11 @@ function overtimeLines(nomina = {}) {
       hours: numberValue(detail.extras100),
       amount: numberValue(detail.montoExtras100 ?? nomina.horas_extras_100),
     },
+    {
+      label: 'Nocturna',
+      hours: numberValue(detail.extrasNocturnas),
+      amount: numberValue(detail.montoExtrasNocturnas),
+    },
   ].filter((line) => line.hours > 0 || line.amount > 0);
 }
 

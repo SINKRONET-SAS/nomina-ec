@@ -33,4 +33,17 @@ describe('parametros legales Ecuador AIV50', () => {
       expect.objectContaining({ key: 'iess_aporte_patronal' }),
     ]));
   });
+
+  test('corrige jornada mensual versionada desde promedio semanal anualizado', () => {
+    const base = getLegalParameters(2026);
+    const merged = mergeVersionedParameters(base, {
+      jornada_horas_mensuales: {
+        parameter_key: 'jornada_horas_mensuales',
+        value: { amount: 173.33 },
+        validation_status: 'validado_oficial',
+      },
+    });
+
+    expect(merged.payroll.monthlyWorkHours).toBe(240);
+  });
 });

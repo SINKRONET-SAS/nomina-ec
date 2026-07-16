@@ -58,22 +58,41 @@ describe('calculoNominaService', () => {
     expect(withExpenses).toBeLessThan(withoutExpenses);
   });
 
-  test('calcula valor hora segun jornada mensual del empleado', () => {
+  test('usa jornada mensual del empleado solo como respaldo si no hay parametro legal', () => {
     expect(calcularValorHora({
       sueldo_bruto_mensual: 900,
       jornada_horas_mensuales: 180,
       tipo_contrato: 'indefinido',
-    }, { monthlyWorkHours: 240 })).toBe(5);
+    }, {})).toBe(5);
   });
 
-  test('calcula valor hora desde jornada parametrizada cuando existe codigo de jornada', () => {
+  test('calcula valor hora desde jornada mensual legal aunque exista codigo de jornada semanal', () => {
     expect(calcularValorHora({
-      sueldo_bruto_mensual: 866.67,
+      sueldo_bruto_mensual: 480,
       jornada_codigo: 'ORDINARIA_40',
       jornada_weekly_hours: 40,
       jornada_horas_mensuales: 240,
       tipo_contrato: 'indefinido',
-    }, { monthlyWorkHours: 240 })).toBeCloseTo(5, 2);
+    }, { monthlyWorkHours: 240 })).toBeCloseTo(2, 2);
+  });
+
+  test('prioriza jornada mensual legal sobre ficha importada con divisor semanal mensualizado', () => {
+    expect(calcularValorHora({
+      sueldo_bruto_mensual: 480,
+      jornada_codigo: 'ORDINARIA_40',
+      jornada_weekly_hours: 40,
+      jornada_horas_mensuales: 173.33,
+      tipo_contrato: 'indefinido',
+    }, { monthlyWorkHours: 240 })).toBeCloseTo(2, 2);
+  });
+
+  test('usa jornada mensual legal cuando el turno solo informa horas semanales', () => {
+    expect(calcularValorHora({
+      sueldo_bruto_mensual: 480,
+      jornada_codigo: 'ORDINARIA_40',
+      jornada_weekly_hours: 40,
+      tipo_contrato: 'indefinido',
+    }, { monthlyWorkHours: 240 })).toBeCloseTo(2, 2);
   });
 
   test('contrato por hora usa sueldo como valor hora', () => {

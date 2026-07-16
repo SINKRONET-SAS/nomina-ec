@@ -109,12 +109,13 @@ function roleLineCategory(line = {}) {
 const ROLE_NOVELTY_LABELS = {
   horas_extra_50: 'Horas extra 50%',
   horas_extra_100: 'Horas extra 100%',
+  horas_extra_nocturna: 'Horas extra nocturna',
   bono_desempeno: 'Bono de desempeno',
   comision: 'Comisiones',
   descuento_faltas: 'Descuento por faltas',
 };
 
-const OVERTIME_CONCEPTS = new Set(['horas_extra_50', 'horas_extra_100']);
+const OVERTIME_CONCEPTS = new Set(['horas_extra_50', 'horas_extra_100', 'horas_extra_nocturna']);
 
 function isOvertimeConcept(normalizedCode) {
   return OVERTIME_CONCEPTS.has(String(normalizedCode || '').trim().toLowerCase());
@@ -182,6 +183,9 @@ function roleNoveltyConcepts(row = {}) {
       }
       if (concept.normalizedCode === 'horas_extra_100') {
         return { ...concept, hours: amountValue(detail.extras100) };
+      }
+      if (concept.normalizedCode === 'horas_extra_nocturna') {
+        return { ...concept, hours: amountValue(detail.extrasNocturnas) };
       }
       return concept;
     });

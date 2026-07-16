@@ -1,5 +1,6 @@
 const {
   calculateNoveltyImpacts,
+  defaultConfigForCode,
   normalizeConfig,
   weekKeyFromDate,
 } = require('./payrollNoveltyService');
@@ -56,6 +57,25 @@ describe('payrollNoveltyService', () => {
       approved: true,
       approvedBy: 'user-1',
       approvedVia: 'novedad.individual',
+    });
+  });
+
+  test('calcula hora extra nocturna como extraordinaria y la agrupa para limite semanal', () => {
+    const result = calculateNoveltyImpacts([
+      { id: 'n4', tipo_novedad: 'hora_extra_nocturna', fecha: '2026-06-22', minutos: 120 },
+    ], [defaultConfigForCode('hora_extra_nocturna')], {
+      valorHora: 2,
+      dailyMaxHours: 8,
+      overtimeExtraordinaryMultiplier: 2,
+    });
+
+    expect(result.amountByConcept.horas_extra_nocturna).toBe(8);
+    expect(result.minutesByConcept.horas_extra_nocturna).toBe(120);
+    expect(result.weeklyOvertimeMinutes).toEqual({ '2026-06-22': 120 });
+    expect(result.lines[0]).toMatchObject({
+      code: 'hora_extra_nocturna',
+      conceptCode: 'horas_extra_nocturna',
+      hours: 2,
     });
   });
 });
