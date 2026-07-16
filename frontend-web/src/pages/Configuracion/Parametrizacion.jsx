@@ -24,6 +24,8 @@ import {
   fetchConfigurationSummary,
   loadMandatoryLegalParameters,
   updateConfigurationResource,
+  uploadTenantLogo,
+  removeTenantLogo,
 } from '../../services/configurationApi';
 import { extractApiError } from '../../services/publicApi';
 
@@ -756,6 +758,94 @@ function Parametrizacion() {
     );
   }
 
+  function LogoUploadSection() {
+    const [logoUploading, setLogoUploading] = useState(false);
+    const [logoPreview, setLogoPreview] = useState(null);
+    const currentLogo = summary?.tenantLogo || null;
+
+    function handleLogoSelect(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        setError('El logo no debe exceder 2MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const dataUrl = reader.result;
+        setLogoPreview(dataUrl);
+        setLogoUploading(true);
+        setError('');
+        try {
+          await uploadTenantLogo(dataUrl);
+          setMessage('Logo actualizado.');
+          queryClient.invalidateQueries({ queryKey: ['configSummary'] });
+        } catch (err) {
+          setError(extractApiError(err, 'No se pudo subir el logo.'));
+          setLogoPreview(null);
+        } finally {
+          setLogoUploading(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function handleLogoRemove() {
+      setLogoUploading(true);
+      setError('');
+      try {
+        await removeTenantLogo();
+        setLogoPreview(null);
+        setMessage('Logo eliminado.');
+        queryClient.invalidateQueries({ queryKey: ['configSummary'] });
+      } catch (err) {
+        setError(extractApiError(err, 'No se pudo eliminar el logo.'));
+      } finally {
+        setLogoUploading(false);
+      }
+    }
+
+    const displayLogo = logoPreview || currentLogo;
+
+    return (
+      <div className="mt-5 rounded-md border border-teal-100 bg-teal-50/70 p-4">
+        <p className="text-sm font-semibold text-teal-950">Logo de la empresa</p>
+        <p className="mt-1 text-xs leading-5 text-slate-600">
+          Se mostrara en roles de pago, contratos y demas reportes PDF. Formato PNG o JPEG, max 2MB.
+        </p>
+        <div className="mt-3 flex items-center gap-4">
+          {displayLogo ? (
+            <img
+              className="h-16 w-16 rounded-md border border-slate-200 bg-white object-contain p-1"
+              src={displayLogo}
+              alt="Logo empresa"
+            />
+          ) : (
+            <div className="flex h-16 w-16 items-center justify-center rounded-md border border-dashed border-slate-300 bg-white text-xs text-slate-400">
+              Sin logo
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <label className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:border-teal-300 disabled:opacity-60">
+              {logoUploading ? 'Subiendo...' : displayLogo ? 'Cambiar logo' : 'Subir logo'}
+              <input className="hidden" type="file" accept="image/png,image/jpeg" onChange={handleLogoSelect} disabled={logoUploading} />
+            </label>
+            {displayLogo && (
+              <button
+                className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                type="button"
+                disabled={logoUploading}
+                onClick={handleLogoRemove}
+              >
+                Eliminar
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -983,6 +1073,7 @@ function Parametrizacion() {
                     mappings={mappingsForBank(summary, activeValues.banco_codigo)}
                   />
                 )}
+                {activeDefinition.key === 'empresa' && <LogoUploadSection />}
               </>
             )}
 

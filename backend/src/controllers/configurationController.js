@@ -1,4 +1,5 @@
 const configurationService = require('../services/configurationService');
+const tenantLogoService = require('../services/tenantLogoService');
 const { yearInEcuador } = require('../utils/dateEcuador');
 
 function requestContext(req) {
@@ -122,6 +123,27 @@ async function syncLegalParametersFromGlobal(req, res, next) {
   }
 }
 
+async function uploadLogo(req, res, next) {
+  try {
+    const data = await tenantLogoService.uploadTenantLogo(
+      req.usuario.tenantId,
+      req.body?.logoBase64 || ''
+    );
+    return res.json({ data, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function removeLogo(req, res, next) {
+  try {
+    const data = await tenantLogoService.removeTenantLogo(req.usuario.tenantId);
+    return res.json({ data, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   summary,
   list,
@@ -132,4 +154,6 @@ module.exports = {
   completeOnboardingStep,
   loadMandatoryLegalParameters,
   syncLegalParametersFromGlobal,
+  uploadLogo,
+  removeLogo,
 };

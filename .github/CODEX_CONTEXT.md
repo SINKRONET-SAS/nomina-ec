@@ -1,7 +1,52 @@
 
 ---
 
-## Current Haiky Plan - HAIKY-NOVEDADES-EMPLEADO-RECALCULO-SELECTIVO-2026
+## Current Haiky Plan - HAIKY-LOGO-REPORTES-FIRMA-EMPRESA-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | HAIKY-LOGO-REPORTES-FIRMA-EMPRESA-2026 |
+| Codigo | LRP26 |
+| Estado | completed-pass |
+| Fecha | 2026-07-15 |
+| Superficie | BACKEND, PWA, REPORTES PDF |
+| Plan doc | `docs2/PLAN_HAIKY_LOGO_REPORTES_FIRMA_EMPRESA_2026.md` |
+| Prompts | `.github/prompts/LRP26-{00..04}-*.md` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Decisiones LRP26
+
+- El logo se almacena como data URL base64 en `tenant.configuracion.logoBase64`. Evita migraciones de esquema y roundtrips a S3 durante generacion PDF.
+- Validacion binaria: magic bytes PNG (89 50 4E 47) o JPEG (FF D8), max 2MB.
+- Todos los footers de PDF usan "Documento generado con SKNOMINA." sin plantilla, version ni metadata de proceso.
+- La firma del representante legal se resuelve desde `configuracion.representanteLegal`, `representanteLegalCargo`, `representanteLegalIdentificacion` con fallbacks snake_case e ingles.
+- Referencia de patron de logo desde sinkroniq-mobile `profileLogoService.js`.
+
+### Runtime LRP26
+
+- `tenantLogoService.js`: NUEVO. Valida, almacena y elimina logo base64 en tenant.configuracion.
+- `pdfBrandHeader.js`: NUEVO. `resolveCompanyData()`, `buildPdfHeader()`, `buildSignatureBlock()` compartidos por todos los PDFs.
+- `payrollRolePdfService.js`: cabecera con logo via `buildPdfHeader()`, firma via `buildSignatureBlock()`.
+- `templateGenerator.js`: contratos y finiquito con logo en cabecera, firma con representante legal desde config.
+- `equipmentDeliveryActService.js`: acta de dotacion con logo en cabecera.
+- `payrollReportService.js`: resumen PDF con logo, `getTenant()` incluye `configuracion`.
+- `configurationService.js`: `getConfigurationSummary()` retorna `tenantLogo`.
+- `configurationController.js`: handlers `uploadLogo` y `removeLogo`.
+- `app.js`: rutas `PUT /api/configuracion/logo` y `DELETE /api/configuracion/logo`.
+- `Parametrizacion.jsx`: componente `LogoUploadSection` en Datos de empresa.
+- `configurationApi.js`: `uploadTenantLogo()` y `removeTenantLogo()`.
+
+### Gates LRP26
+
+- node --check: PASS (9 archivos backend verificados).
+- Backend tests: PASS (57 suites, 403 tests).
+- Prisma validate: PASS (schema valido).
+- PWA build: PASS (100 precache entries).
+- Footers PDF: ningun footer contiene "Plantilla" ni version interna.
+
+---
+
+## Closed Haiky Plan - HAIKY-NOVEDADES-EMPLEADO-RECALCULO-SELECTIVO-2026
 
 | Campo | Valor |
 |-------|-------|

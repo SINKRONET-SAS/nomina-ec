@@ -390,6 +390,7 @@ function buildContractContext({ employee, tenant, template, legalParameters, yea
       legalName: cleanText(tenant.razon_social || tenant.razonSocial, 'Empleador'),
       commercialName: cleanText(tenant.nombre_comercial || tenant.nombreComercial),
       ruc: cleanText(tenant.ruc, 'no registrado'),
+      logoBase64: tenantConfig.logoBase64 || null,
       address: companyAddress,
       city: companyCity,
       province: companyProvince || 'provincia no registrada',
@@ -511,13 +512,30 @@ function paragraphNode(text, context) {
 
 function buildContractDocDefinition({ template, context }) {
   const signatureReady = template.documentPresentation === 'signature_ready';
-  const content = [
-    { text: template.documentTitle || template.displayName || 'CONTRATO DE TRABAJO', style: 'title' },
-  ];
+  const content = [];
+
+  if (context.company.logoBase64) {
+    content.push({
+      columns: [
+        { image: context.company.logoBase64, width: 70, margin: [0, 0, 0, 6] },
+        {
+          stack: [
+            { text: template.documentTitle || template.displayName || 'CONTRATO DE TRABAJO', style: 'title' },
+          ],
+          alignment: 'center',
+          width: '*',
+        },
+      ],
+      columnGap: 12,
+      margin: [0, 0, 0, 8],
+    });
+  } else {
+    content.push({ text: template.documentTitle || template.displayName || 'CONTRATO DE TRABAJO', style: 'title' });
+  }
 
   if (!signatureReady) {
     content.push({
-      text: `Plantilla ${template.templateKey} v${template.version || '1'} | Generado por ${context.system.product}`,
+      text: `Documento generado con ${context.system.product}`,
       style: 'audit',
       alignment: 'center',
       margin: [0, 0, 0, 14],
@@ -614,7 +632,7 @@ function buildContractDocDefinition({ template, context }) {
 
   if (!signatureReady) {
     content.push({
-      text: `Estado SUT/MDT: ${context.contract.sutRegistrationStatus}. Revisión legal: ${context.contract.legalReviewStatus}. Fecha de generación: ${context.contract.generatedAtIso}.`,
+      text: `Documento generado con SKNOMINA. Fecha: ${context.contract.generatedAtIso}.`,
       style: 'audit',
       margin: [0, 22, 0, 0],
     });
@@ -730,6 +748,10 @@ async function generarContrato(empleado, tenant, tipoContrato = null, options = 
 
 function buildFiniquitoDocDefinition({ empleado, tenant, cause, liquidacion, generatedAt }) {
   const detail = liquidacion.detalle || {};
+  const tenantConfig = safeJson(tenant.configuracion);
+  const logoBase64 = tenantConfig.logoBase64 || null;
+  const razonSocial = cleanText(tenant.razon_social || tenant.razonSocial || tenant.nombre, 'Empleador');
+  const ruc = cleanText(tenant.ruc, 'no registrado');
   const rows = [
     ['Sueldo pendiente', `$${toMoney(liquidacion.sueldoPendiente)}`],
     ['Decimo tercero proporcional', `$${toMoney(liquidacion.decimoTercero)}`],
@@ -741,13 +763,37 @@ function buildFiniquitoDocDefinition({ empleado, tenant, cause, liquidacion, gen
     [{ text: 'Total liquidacion', bold: true }, { text: `$${toMoney(liquidacion.total)}`, bold: true, alignment: 'right' }],
   ];
 
+  const headerContent = [];
+  if (logoBase64) {
+    headerContent.push({
+      columns: [
+        { image: logoBase64, width: 70, margin: [0, 0, 0, 6] },
+        {
+          stack: [
+            { text: 'ACTA DE FINIQUITO LABORAL', style: 'title' },
+            { text: razonSocial, style: 'subtitle' },
+            { text: `RUC: ${ruc}`, style: 'audit', alignment: 'center', margin: [0, 0, 0, 14] },
+          ],
+          alignment: 'center',
+          width: '*',
+        },
+      ],
+      columnGap: 12,
+      margin: [0, 0, 0, 8],
+    });
+  } else {
+    headerContent.push(
+      { text: 'ACTA DE FINIQUITO LABORAL', style: 'title' },
+      { text: razonSocial, style: 'subtitle' },
+      { text: `RUC: ${ruc}`, style: 'audit', alignment: 'center', margin: [0, 0, 0, 14] },
+    );
+  }
+
   return {
     pageSize: 'A4',
     pageMargins: [38, 42, 38, 42],
     content: [
-      { text: 'ACTA DE FINIQUITO LABORAL', style: 'title' },
-      { text: tenant.razon_social || tenant.nombre || 'Empleador', style: 'subtitle' },
-      { text: `RUC: ${tenant.ruc || 'no registrado'} | Generado: ${generatedAt.toISOString()}`, style: 'audit', alignment: 'center', margin: [0, 0, 0, 14] },
+      ...headerContent,
       {
         columns: [
           {
@@ -800,8 +846,9 @@ function buildFiniquitoDocDefinition({ empleado, tenant, cause, liquidacion, gen
             width: '*',
             stack: [
               { text: '\n\n____________________________', alignment: 'center' },
-              { text: 'Representante legal / delegado', alignment: 'center', bold: true },
-              { text: tenant.razon_social || 'Empleador', alignment: 'center' },
+              { text: cleanText(tenantConfig.representanteLegal || tenantConfig.representante_legal, 'Representante legal / delegado'), alignment: 'center', bold: true },
+              { text: cleanText(tenantConfig.representanteLegalCargo || tenantConfig.representante_legal_cargo, 'Representante legal / delegado del empleador'), alignment: 'center' },
+              { text: `Identificacion: ${cleanText(tenantConfig.representanteLegalIdentificacion || tenantConfig.representante_legal_identificacion, 'no registrada')}`, alignment: 'center' },
             ],
           },
           {
@@ -809,6 +856,7 @@ function buildFiniquitoDocDefinition({ empleado, tenant, cause, liquidacion, gen
             stack: [
               { text: '\n\n____________________________', alignment: 'center' },
               { text: cleanText(`${empleado.nombres || ''} ${empleado.apellidos || ''}`, 'Trabajador'), alignment: 'center', bold: true },
+              { text: 'Trabajador', alignment: 'center' },
               { text: `C.C.: ${cleanText(empleado.cedula, 'no registrada')}`, alignment: 'center' },
             ],
           },
@@ -816,7 +864,7 @@ function buildFiniquitoDocDefinition({ empleado, tenant, cause, liquidacion, gen
         columnGap: 26,
       },
       {
-        text: 'Plantilla acta_finiquito_sknomina v2026.07. Documento generado con SKNOMINA.',
+        text: 'Documento generado con SKNOMINA.',
         style: 'audit',
         margin: [0, 18, 0, 0],
       },

@@ -6,6 +6,7 @@ const { s3Upload } = require('../config/s3');
 const AppError = require('../utils/AppError');
 const { toMoneyString } = require('../utils/money');
 const { linesForPayrollRow } = require('./payrollAccountingService');
+const { resolveCompanyData, buildPdfHeader, buildSignatureBlock } = require('./pdfBrandHeader');
 
 function normalizeDetail(value) {
   if (!value) return {};
@@ -329,12 +330,12 @@ function transposedConceptValue(concept = {}, value) {
 
 function buildPayrollRoleDocDefinition(row) {
   const detail = normalizeDetail(row.detalle_calculo);
-  const representative = legalRepresentative(row);
+  const company = resolveCompanyData(row);
   const isFinalRole = ['cerrada', 'pagada'].includes(String(row.estado || '').toLowerCase());
   const generatedAt = new Date().toISOString();
+  const period = `${String(row.mes).padStart(2, '0')}/${row.anio}`;
   const ingresos = [];
   const deducciones = [];
-  const provisiones = [];
   const noveltyConcepts = roleNoveltyConcepts(row);
 
   addAmountLine(ingresos, 'Sueldo proporcional', detail.sueldoProporcional ?? row.sueldo_bruto);
@@ -352,12 +353,6 @@ function buildPayrollRoleDocDefinition(row) {
   addRoleConceptLines(deducciones, noveltyConcepts, 'deduccion');
   addAmountLine(deducciones, 'Anticipos', detail.anticipos ?? row.anticipos);
   addAmountLine(deducciones, 'Prestamos', detail.prestamos ?? row.prestamos);
-
-  addAmountLine(provisiones, 'Aporte IESS patronal', detail.aportePatronal);
-  addAmountLine(provisiones, 'Provision decimo tercero', detail.provisionDecimoTercero);
-  addAmountLine(provisiones, 'Provision decimo cuarto', detail.provisionDecimoCuarto);
-  addAmountLine(provisiones, 'Provision vacaciones', detail.provisionVacaciones);
-  addAmountLine(provisiones, 'Provision fondos de reserva', detail.provisionFondosReserva);
 
   const columnTable = (title, rows) => [
     { text: title, style: 'section' },
@@ -382,13 +377,7 @@ function buildPayrollRoleDocDefinition(row) {
     pageOrientation: 'landscape',
     pageMargins: [36, 42, 36, 42],
     content: [
-      { text: 'ROL DE PAGO', style: 'title' },
-      ...(!isFinalRole ? [{
-        text: 'BORRADOR - NO CONSTITUYE COMPROBANTE DE PAGO',
-        style: 'draftWarning',
-      }] : []),
-      { text: row.razon_social || 'Empresa', style: 'subtitle' },
-      { text: `RUC: ${row.ruc || 'no registrado'} | Periodo: ${String(row.mes).padStart(2, '0')}/${row.anio}`, style: 'audit', alignment: 'center', margin: [0, 0, 0, 14] },
+      ...buildPdfHeader({ title: 'ROL DE PAGO', company, period, isDraft: !isFinalRole }),
       {
         columns: [
           {
@@ -450,32 +439,9 @@ function buildPayrollRoleDocDefinition(row) {
         style: 'notice',
         margin: [0, 0, 0, 18],
       },
+      buildSignatureBlock({ company, employeeName: employeeName(row), employeeCedula: row.cedula }),
       {
-        columns: [
-          {
-            width: '*',
-            stack: [
-              { text: '\n\n____________________________', alignment: 'center' },
-              { text: representative.name, alignment: 'center', bold: true },
-              { text: representative.title, alignment: 'center' },
-              { text: `Identificacion: ${representative.idNumber}`, alignment: 'center' },
-            ],
-          },
-          {
-            width: '*',
-            stack: [
-              { text: '\n\n____________________________', alignment: 'center' },
-              { text: employeeName(row), alignment: 'center', bold: true },
-              { text: 'Trabajador', alignment: 'center' },
-              { text: `C.C.: ${row.cedula || 'no registrada'}`, alignment: 'center' },
-            ],
-          },
-        ],
-        columnGap: 26,
-        margin: [0, 0, 0, 16],
-      },
-      {
-        text: `Plantilla rol_pago_sknomina v2026.07. Documento generado con SKNOMINA. Fecha: ${generatedAt}.`,
+        text: `Documento generado con SKNOMINA. Fecha: ${generatedAt}.`,
         style: 'audit',
       },
     ],
@@ -571,25 +537,20 @@ function buildTransposedSummaryTable(rows) {
 function buildPayrollRoleTransposedDocDefinition({ rows, anio, mes } = {}) {
   const payrollRows = Array.isArray(rows) ? rows : [];
   const first = payrollRows[0] || {};
-  const representative = legalRepresentative(first);
+  const company = resolveCompanyData(first);
   const generatedAt = new Date().toISOString();
   const employeeBlocks = chunkRows(payrollRows, 5);
   const period = `${String(mes).padStart(2, '0')}/${anio}`;
   const includesDrafts = payrollRows.some((row) => !['cerrada', 'pagada'].includes(String(row.estado || '').toLowerCase()));
 
   const content = [
-    { text: 'ROL DE PAGO CONSOLIDADO TRANSPUESTO', style: 'title' },
-    ...(includesDrafts ? [{
-      text: 'BORRADOR - NO CONSTITUYE COMPROBANTE DE PAGO',
-      style: 'draftWarning',
-    }] : []),
-    { text: first.razon_social || 'Empresa', style: 'subtitle' },
-    {
-      text: `RUC: ${first.ruc || 'no registrado'} | Periodo: ${period} | Empleados: ${payrollRows.length}`,
-      style: 'audit',
-      alignment: 'center',
-      margin: [0, 0, 0, 10],
-    },
+    ...buildPdfHeader({
+      title: 'ROL DE PAGO CONSOLIDADO TRANSPUESTO',
+      company,
+      period,
+      isDraft: includesDrafts,
+      extraSubtitle: `Empleados: ${payrollRows.length}`,
+    }),
     {
       text: 'Matriz consolidada con conceptos en filas y empleados en columnas. Este reporte permite revisar el periodo completo sin reemplazar el rol individual entregado a cada trabajador.',
       style: 'notice',
@@ -617,31 +578,9 @@ function buildPayrollRoleTransposedDocDefinition({ rows, anio, mes } = {}) {
       style: 'notice',
       margin: [0, 0, 0, 14],
     },
+    buildSignatureBlock({ company, employeeName: 'Responsable de RRHH / Nomina', employeeCedula: '' }),
     {
-      columns: [
-        {
-          width: '*',
-          stack: [
-            { text: '\n\n____________________________', alignment: 'center' },
-            { text: representative.name, alignment: 'center', bold: true },
-            { text: 'Representante legal / delegado del empleador', alignment: 'center' },
-            { text: `Identificacion: ${representative.idNumber}`, alignment: 'center' },
-          ],
-        },
-        {
-          width: '*',
-          stack: [
-            { text: '\n\n____________________________', alignment: 'center' },
-            { text: 'Responsable de RRHH / Nómina', alignment: 'center', bold: true },
-            { text: 'Revisión del consolidado del periodo', alignment: 'center' },
-          ],
-        },
-      ],
-      columnGap: 28,
-      margin: [0, 0, 0, 14],
-    },
-    {
-      text: `Plantilla rol_pago_transpuesto_sknomina v2026.06. Documento generado con SKNOMINA. Fecha: ${generatedAt}.`,
+      text: `Documento generado con SKNOMINA. Fecha: ${generatedAt}.`,
       style: 'audit',
     }
   );

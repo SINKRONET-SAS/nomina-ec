@@ -282,7 +282,7 @@ describe('payrollRolePdfService', () => {
     expect(serialized).toContain('Horas extra 50% (valor)');
     expect(serialized).toContain('2.50 h');
     expect(serialized).toContain('$15.00');
-    expect(serialized).toContain('rol_pago_transpuesto_sknomina');
+    expect(serialized).toContain('Documento generado con SKNOMINA');
     expect(serialized).toContain('BORRADOR - NO CONSTITUYE COMPROBANTE DE PAGO');
   });
 

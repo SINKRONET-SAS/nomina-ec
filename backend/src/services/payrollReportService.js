@@ -289,7 +289,7 @@ async function generarConsolidadoAnualNomina({
 }
 
 async function getTenant(tenantId) {
-  const result = await db.query('SELECT id, ruc, razon_social, nombre_comercial FROM tenants WHERE id = $1', [tenantId]);
+  const result = await db.query('SELECT id, ruc, razon_social, nombre_comercial, configuracion FROM tenants WHERE id = $1', [tenantId]);
   if (result.rows.length === 0) {
     throw new Error('Tenant no encontrado');
   }
@@ -1010,6 +1010,8 @@ function getMatrixConceptColumns(exportRows = []) {
 async function buildSummaryPdf({ tenant, anio, mes, rows, filters, context }) {
   const summary = summarizeRows(rows);
   const grouped = groupByStructure(rows);
+  const config = typeof tenant.configuracion === 'object' ? tenant.configuracion : {};
+  const logoBase64 = config.logoBase64 || null;
 
   const body = [
     ['Estructura', 'Empleados', 'Ingresos', 'Deducciones', 'Neto', 'Costo empleador'],
@@ -1023,13 +1025,37 @@ async function buildSummaryPdf({ tenant, anio, mes, rows, filters, context }) {
     ]),
   ];
 
+  const headerContent = [];
+  if (logoBase64) {
+    headerContent.push({
+      columns: [
+        { image: logoBase64, width: 70, margin: [0, 0, 0, 6] },
+        {
+          stack: [
+            { text: 'Resumen de nomina', style: 'title' },
+            { text: `${tenant.razon_social}${tenant.ruc ? ` - RUC ${tenant.ruc}` : ''}`, style: 'subtitle' },
+            { text: `Periodo ${String(mes).padStart(2, '0')}/${anio}`, margin: [0, 0, 0, 4] },
+          ],
+          alignment: 'left',
+          width: '*',
+        },
+      ],
+      columnGap: 12,
+      margin: [0, 0, 0, 10],
+    });
+  } else {
+    headerContent.push(
+      { text: 'Resumen de nomina', style: 'title' },
+      { text: `${tenant.razon_social}${tenant.ruc ? ` - RUC ${tenant.ruc}` : ''}`, style: 'subtitle' },
+      { text: `Periodo ${String(mes).padStart(2, '0')}/${anio}`, margin: [0, 0, 0, 10] },
+    );
+  }
+
   const docDefinition = {
     pageSize: 'A4',
     pageMargins: [32, 36, 32, 36],
     content: [
-      { text: 'Resumen de nómina', style: 'title' },
-      { text: `${tenant.razon_social}${tenant.ruc ? ` - RUC ${tenant.ruc}` : ''}`, style: 'subtitle' },
-      { text: `Periodo ${String(mes).padStart(2, '0')}/${anio}`, margin: [0, 0, 0, 10] },
+      ...headerContent,
       {
         columns: [
           metric('Empleados', summary.totalEmpleados),
@@ -1044,7 +1070,7 @@ async function buildSummaryPdf({ tenant, anio, mes, rows, filters, context }) {
       { text: 'Agrupado por estructura organizativa', style: 'section' },
       { table: { headerRows: 1, widths: ['*', 54, 70, 76, 70, 76], body }, layout: 'lightHorizontalLines' },
       {
-        text: `Filtros: ${JSON.stringify(sanitizeFilters(filters))}\nGenerado: ${new Date().toISOString()}\nCorrelation ID: ${context.correlationId || ''}`,
+        text: `Documento generado con SKNOMINA. Fecha: ${new Date().toISOString()}.`,
         style: 'audit',
         margin: [0, 16, 0, 0],
       },

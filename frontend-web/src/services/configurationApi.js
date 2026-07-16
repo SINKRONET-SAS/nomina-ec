@@ -34,3 +34,13 @@ export async function generateBankPaymentFile(_token, payload) {
   const response = await authenticatedApi.post('/reportes/banco', payload);
   return response.data?.reporte;
 }
+
+export async function uploadTenantLogo(logoBase64) {
+  const response = await authenticatedApi.put('/configuracion/logo', { logoBase64 });
+  return response.data?.data;
+}
+
+export async function removeTenantLogo() {
+  const response = await authenticatedApi.delete('/configuracion/logo');
+  return response.data?.data;
+}

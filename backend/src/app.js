@@ -97,6 +97,8 @@ app.post('/api/privacidad/anonimizar/:userId', requireRole('superadmin'), requir
 app.post('/api/configuracion/onboarding/:stepCode', requireRole('owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.completeOnboardingStep);
 app.post('/api/configuracion/parametros-legales/obligatorios', requireRole('superadmin', 'owner'), requireFreshUser, requireModule('parametrizacion'), configurationController.loadMandatoryLegalParameters);
 app.post('/api/configuracion/parametros-legales/sincronizar-globales', requireRole('superadmin', 'owner'), requireFreshUser, requireModule('parametrizacion'), configurationController.syncLegalParametersFromGlobal);
+app.put('/api/configuracion/logo', requireRole('owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.uploadLogo);
+app.delete('/api/configuracion/logo', requireRole('owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.removeLogo);
 app.get('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.list);
 app.post('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.create);
 app.put('/api/configuracion/:resource/:id', requireRole('superadmin', 'owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.update);

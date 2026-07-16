@@ -1919,9 +1919,19 @@ async function getConfigurationSummary(user) {
   resources.payrollConcepts = buildPayrollConceptCatalog(resources.noveltyTypes);
   const onboarding = await getOnboardingStatus(user);
 
+  let tenantLogo = null;
+  if (user.tenantId) {
+    const logoResult = await db.query(
+      `SELECT configuracion->>'logoBase64' AS logo FROM tenants WHERE id = $1`,
+      [user.tenantId]
+    );
+    tenantLogo = logoResult.rows[0]?.logo || null;
+  }
+
   return {
     resources,
     onboarding,
+    tenantLogo,
     qaChecklist: [
       { code: 'registro_empresa', label: 'Registro de empresa', passed: Boolean(user.tenantId) },
       { code: 'legal', label: 'Parámetros legales configurados', passed: resources.legalParameters.length > 0 },

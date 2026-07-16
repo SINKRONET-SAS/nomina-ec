@@ -148,12 +148,38 @@ async function buildActPdf({ employee, tenant, items, fechaEntrega, observacione
   const employeeName = employeeFullName(employee);
   const signer = employerSigner({ tenant, entregadoPor });
   const generatedAt = new Date().toISOString();
+  const config = typeof employee.configuracion === 'object' ? employee.configuracion : {};
+  const logoBase64 = config.logoBase64 || tenant.logoBase64 || null;
+
+  const headerContent = [];
+  if (logoBase64) {
+    headerContent.push({
+      columns: [
+        { image: logoBase64, width: 70, margin: [0, 0, 0, 6] },
+        {
+          stack: [
+            { text: 'ACTA DE ENTREGA DE DOTACION Y EQUIPOS', style: 'title' },
+            { text: 'Documento generado con SKNOMINA', style: 'audit', alignment: 'center', margin: [0, 0, 0, 8] },
+          ],
+          alignment: 'center',
+          width: '*',
+        },
+      ],
+      columnGap: 12,
+      margin: [0, 0, 0, 8],
+    });
+  } else {
+    headerContent.push(
+      { text: 'ACTA DE ENTREGA DE DOTACION Y EQUIPOS', style: 'title' },
+      { text: 'Documento generado con SKNOMINA', style: 'audit', alignment: 'center', margin: [0, 0, 0, 16] },
+    );
+  }
+
   const docDefinition = {
     pageSize: 'A4',
     pageMargins: [36, 42, 36, 42],
     content: [
-      { text: 'ACTA DE ENTREGA DE DOTACION Y EQUIPOS', style: 'title' },
-      { text: 'Documento generado con SKNOMINA', style: 'audit', alignment: 'center', margin: [0, 0, 0, 16] },
+      ...headerContent,
       {
         columns: [
           {
@@ -224,7 +250,7 @@ async function buildActPdf({ employee, tenant, items, fechaEntrega, observacione
         columnGap: 26,
       },
       {
-        text: `Generado: ${generatedAt}\nCorrelation ID: ${correlationId || ''}`,
+        text: `Documento generado con SKNOMINA. Fecha: ${generatedAt}.`,
         style: 'audit',
         margin: [0, 20, 0, 0],
       },
@@ -287,15 +313,17 @@ async function generateEquipmentDeliveryAct({
   }
 
   const employee = employeeResult.rows[0];
+  const parsedConfig = typeof employee.configuracion === 'object' ? employee.configuracion : {};
   const tenant = {
     id: tenantId,
     razon_social: employee.razon_social,
     ruc: employee.ruc,
-    direccion: employee.configuracion?.direccion || employee.configuracion?.direccionMatriz || '',
-    representante_legal: employee.configuracion?.representanteLegal || '',
-    representante_legal_identificacion: employee.configuracion?.representanteLegalIdentificacion
-      || employee.configuracion?.representante_legal_identificacion
-      || employee.configuracion?.legalRepresentativeId
+    logoBase64: parsedConfig.logoBase64 || null,
+    direccion: parsedConfig.direccion || parsedConfig.direccionMatriz || '',
+    representante_legal: parsedConfig.representanteLegal || parsedConfig.representante_legal || '',
+    representante_legal_identificacion: parsedConfig.representanteLegalIdentificacion
+      || parsedConfig.representante_legal_identificacion
+      || parsedConfig.legalRepresentativeId
       || '',
   };
   const pdfBuffer = await buildActPdf({

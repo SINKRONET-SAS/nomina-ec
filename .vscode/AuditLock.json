@@ -1,86 +1,66 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-NOVEDADES-EMPLEADO-RECALCULO-SELECTIVO-2026",
-  "planCode": "NER26",
+  "plan": "HAIKY-LOGO-REPORTES-FIRMA-EMPRESA-2026",
+  "planCode": "LRP26",
   "status": "completed-pass",
-  "phaseCompleted": "NER26-05",
+  "phaseCompleted": "LRP26-04",
   "currentPhase": "closed",
-  "updatedAt": "2026-07-16T00:35:00Z",
+  "updatedAt": "2026-07-15T22:00:00Z",
   "rulesSource": "RULES.md",
   "contextSource": ".github/CODEX_CONTEXT.md",
-  "previousAuditLockHash": "af0860ddf2b98299e5b1d5c4334013f3c1775c847685c73907e7eb6929b98e06",
-  "summary": "NER26 corrige novedades de un empleado con invalidacion y recalculo selectivo, evitando descarte global y reflejando descuentos dinamicos persistidos en el rol de pago.",
+  "previousAuditLockHash": "2404D1E2BFBAAF00FFC69267915ED258E574837EE13B64664C864CAE6858405B",
+  "summary": "LRP26 integra logo de empresa en todos los reportes PDF, corrige firmas usando datos de empresa desde configuracion y elimina metadata de proceso de los footers.",
   "fases": [
     {
-      "phase": "NER26-00",
+      "phase": "LRP26-00",
       "status": "completed-pass",
-      "detail": "Plan, prompts y gobierno base aplicados localmente."
+      "detail": "Plan Haiky, prompts por fase y gobierno base aplicados localmente."
     },
     {
-      "phase": "NER26-01",
+      "phase": "LRP26-01",
       "status": "completed-pass",
-      "detail": "Backend de invalidacion y recalculo selectivo por empleado implementado con auditoria."
+      "detail": "tenantLogoService y pdfBrandHeader creados. Rutas logo en app.js y configurationController."
     },
     {
-      "phase": "NER26-02",
+      "phase": "LRP26-02",
       "status": "completed-pass",
-      "detail": "PWA expone correccion individual desde novedades operativas y desambigua descarte global."
+      "detail": "Logo y firma integrados en payrollRolePdfService, templateGenerator, equipmentDeliveryActService y payrollReportService. Footers limpios."
     },
     {
-      "phase": "NER26-03",
+      "phase": "LRP26-03",
       "status": "completed-pass",
-      "detail": "QA focal, contratos, Prisma, build PWA, reporte y cierre de gobierno."
+      "detail": "LogoUploadSection en Parametrizacion.jsx. configurationApi con uploadTenantLogo y removeTenantLogo. configurationSummary retorna tenantLogo."
     },
     {
-      "phase": "NER26-04",
+      "phase": "LRP26-04",
       "status": "completed-pass",
-      "detail": "Rol de pago individual y transpuesto incorporan tipos dinamicos de novedad desde lineas de calculo."
-    },
-    {
-      "phase": "NER26-05",
-      "status": "completed-pass",
-      "detail": "Rol de pago individual y transpuesto consultan payroll_calculation_lines para no omitir descuentos persistidos."
+      "detail": "QA completo: node --check PASS, 57 suites / 403 tests PASS, Prisma PASS, PWA build PASS. Gobierno cerrado."
     }
   ],
   "runtimeChanges": [
-    "Backend: invalidateEmployeePayrollForNovelty elimina solo el rol borrador filtrado por tenant_id, anio, mes, empleado_id e id.",
-    "Backend: calcularNominaEmpleado crea lote scope employee y recalcula un unico trabajador.",
-    "Backend: novedades operativas incluyen registros consumidos por rol para habilitar la correccion individual.",
-    "Backend: rol PDF individual y transpuesto reflejan novedades dinamicas desde payroll_calculation_lines o detalle_calculo.novedadesCalculadas.",
-    "Backend: consultas de rol PDF agregan calculation_lines desde payroll_calculation_lines por payroll_id y tenant_id.",
-    "PWA: Novedades manuales permite liberar y recalcular solo el empleado afectado.",
-    "PWA: Cierre mensual rotula el descarte como accion de periodo para evitar confundirlo con correccion individual."
+    "Backend: tenantLogoService valida PNG/JPEG via magic bytes, max 2MB, almacena base64 en tenant.configuracion.logoBase64.",
+    "Backend: pdfBrandHeader.js con resolveCompanyData(), buildPdfHeader() y buildSignatureBlock() compartidos por todos los PDFs.",
+    "Backend: payrollRolePdfService usa buildPdfHeader y buildSignatureBlock desde pdfBrandHeader.",
+    "Backend: templateGenerator usa logo en contratos y finiquito, firma con representante legal desde config.",
+    "Backend: equipmentDeliveryActService incluye logo en cabecera del acta de dotacion.",
+    "Backend: payrollReportService incluye logo en resumen PDF, getTenant() incluye configuracion.",
+    "Backend: configurationController expone uploadLogo y removeLogo.",
+    "Backend: app.js registra PUT y DELETE /api/configuracion/logo antes de rutas genericas.",
+    "Backend: configurationService.getConfigurationSummary() retorna tenantLogo.",
+    "PWA: Parametrizacion.jsx incluye LogoUploadSection en Datos de empresa.",
+    "PWA: configurationApi expone uploadTenantLogo() y removeTenantLogo().",
+    "Todos los footers PDF usan 'Documento generado con SKNOMINA' sin plantilla ni version."
   ],
   "validationChecks": [
     {
       "name": "node_check_backend",
       "ok": true,
-      "output": "payrollLifecycleService.js, calculoNominaService.js, nominaController.js y novedadController.js PASS."
+      "output": "9 archivos backend modificados PASS: tenantLogoService, pdfBrandHeader, payrollRolePdfService, templateGenerator, equipmentDeliveryActService, payrollReportService, configurationService, configurationController, app.js."
     },
     {
-      "name": "backend_focal_tests",
+      "name": "backend_tests",
       "ok": true,
-      "output": "4 suites, 65 tests PASS."
-    },
-    {
-      "name": "node_check_payroll_role_pdf",
-      "ok": true,
-      "output": "backend/src/services/payrollRolePdfService.js PASS."
-    },
-    {
-      "name": "backend_role_pdf_tests",
-      "ok": true,
-      "output": "payrollRolePdfService.test.js PASS: 1 suite, 9 tests."
-    },
-    {
-      "name": "frontend_build_pwa",
-      "ok": true,
-      "output": "Vite build PASS: 1534 modules, 100 precache entries."
-    },
-    {
-      "name": "contracts",
-      "ok": true,
-      "output": "verify-system-contracts PASS."
+      "output": "57 suites, 403 tests PASS."
     },
     {
       "name": "prisma_validate",
@@ -88,56 +68,44 @@
       "output": "Prisma schema valido."
     },
     {
-      "name": "auditlock_json",
+      "name": "frontend_build_pwa",
       "ok": true,
-      "output": "python -m json.tool .vscode/AuditLock.json PASS."
+      "output": "Vite build PASS: 100 precache entries."
     },
     {
-      "name": "integridad_archivos_ner26",
+      "name": "footer_audit",
       "ok": true,
-      "output": "UTF-8 sin BOM PASS y git diff --check scoped NER26 PASS. El git diff --check global detecta conflictos locales previos en mobile/workflow no incluidos en NER26."
+      "output": "Ningun footer contiene 'Plantilla' ni version interna en los 4 servicios PDF."
     }
   ],
   "filesModified": [
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/NER26-00-baseline-gobierno.md",
-    ".github/prompts/NER26-01-backend-recalculo-selectivo.md",
-    ".github/prompts/NER26-02-frontend-correccion-individual.md",
-    ".github/prompts/NER26-03-qa-cierre.md",
-    ".github/prompts/NER26-04-rol-novedades-dinamicas.md",
-    ".github/prompts/NER26-05-rol-descuentos-persistidos.md",
+    ".github/prompts/LRP26-00-preparacion-gobierno.md",
+    ".github/prompts/LRP26-01-backend-logo-servicio.md",
+    ".github/prompts/LRP26-02-backend-pdf-integration.md",
+    ".github/prompts/LRP26-03-frontend-logo-ui.md",
+    ".github/prompts/LRP26-04-qa-cierre.md",
     ".vscode/AuditLock.json",
     "backend/src/app.js",
-    "backend/src/app.routes.test.js",
-    "backend/src/controllers/nominaController.js",
-    "backend/src/controllers/nominaController.test.js",
-    "backend/src/controllers/novedadController.js",
-    "backend/src/controllers/novedadController.test.js",
-    "backend/src/services/calculoNominaService.js",
-    "backend/src/services/payrollLifecycleService.js",
-    "backend/src/services/payrollLifecycleService.test.js",
+    "backend/src/controllers/configurationController.js",
+    "backend/src/services/configurationService.js",
+    "backend/src/services/equipmentDeliveryActService.js",
+    "backend/src/services/payrollReportService.js",
     "backend/src/services/payrollRolePdfService.js",
     "backend/src/services/payrollRolePdfService.test.js",
-    "docs/PLAN_HAIKY_NOVEDADES_EMPLEADO_RECALCULO_SELECTIVO_2026.md",
-    "docs/novedades-empleado-recalculo-selectivo-2026/REPORTE_NER26_00_03_EJECUCION.md",
-    "frontend-web/src/pages/Asistencia/NovedadesPendientes.jsx",
-    "frontend-web/src/pages/Nomina/CerrarMes.jsx"
-  ],
-  "unrelatedLocalChangesIgnored": [
-    ".github/workflows/eas-preview.yml",
-    "app-movil/package.json",
-    "app-movil/src/App.js",
-    "app-movil/src/screens/PermisosScreen.js"
+    "backend/src/services/pdfBrandHeader.js",
+    "backend/src/services/templateGenerator.js",
+    "backend/src/services/tenantLogoService.js",
+    "docs2/PLAN_HAIKY_LOGO_REPORTES_FIRMA_EMPRESA_2026.md",
+    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
+    "frontend-web/src/services/configurationApi.js"
   ],
   "riskControls": [
-    "No se elimina nomina por periodo completo desde el flujo individual.",
-    "La consulta destructiva individual exige empleado_id ademas de tenant_id, anio y mes.",
-    "Los roles cerrados y pagados siguen bloqueados.",
-    "El rol de pago no mantiene una lista cerrada de novedades; toma conceptos dinamicos de las lineas normalizadas.",
-    "El rol PDF consulta payroll_calculation_lines para cubrir descuentos persistidos aunque falte detalle JSON.",
-    "Los errores devuelven code, statusCode funcional y correlationId.",
-    "La PWA muestra alcance individual antes de invalidar o recalcular."
+    "Logo validado con magic bytes binarios, no solo extension o MIME type.",
+    "Limite 2MB previene almacenar imagenes excesivas en configuracion JSON.",
+    "Las rutas de logo requieren rol owner o admin_rrhh y modulo parametrizacion.",
+    "resolveCompanyData usa fallbacks multiples para compatibilidad con distintos formatos de configuracion.",
+    "Los footers no exponen metadata interna que invalide documentos oficiales."
   ],
-  "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "2404D1E2BFBAAF00FFC69267915ED258E574837EE13B64664C864CAE6858405B"
+  "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)"
 }
