@@ -634,6 +634,8 @@ function rowsForReport(rows, reportCode, anio, mes, options = {}) {
 
 function mapRowForExport(row, anio, mes) {
   const detail = normalizeDetail(row.detalle_calculo);
+  const extras50Value = numberValue(detail.montoExtras50 ?? row.horas_extras_50);
+  const extras100Value = numberValue(detail.montoExtras100 ?? row.horas_extras_100);
   return {
     periodo: `${String(mes).padStart(2, '0')}/${anio}`,
     cedula: row.cedula,
@@ -647,8 +649,12 @@ function mapRowForExport(row, anio, mes) {
     estado: row.estado,
     diasTrabajados: Number(row.dias_trabajados || 0),
     sueldoBruto: numberValue(row.sueldo_bruto),
-    extras50: numberValue(row.horas_extras_50),
-    extras100: numberValue(row.horas_extras_100),
+    extras50Horas: numberValue(detail.extras50),
+    extras50: extras50Value,
+    extras50Valor: extras50Value,
+    extras100Horas: numberValue(detail.extras100),
+    extras100: extras100Value,
+    extras100Valor: extras100Value,
     bonosDesempeno: numberValue(detail.bonosDesempeno),
     totalIngresos: numberValue(row.total_ingresos),
     aporteIess: numberValue(row.aporte_iess_personal),
@@ -674,6 +680,11 @@ function mapRowForExport(row, anio, mes) {
 
 function noveltyMatrixKey(code) {
   return `novelty_${String(code || 'sin_codigo').replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '')}`;
+}
+
+function isOvertimeConcept(code) {
+  const normalized = String(code || '').trim().toLowerCase();
+  return normalized === 'horas_extra_50' || normalized === 'horas_extra_100';
 }
 
 function isRoleNoveltyLine(line = {}) {
@@ -706,14 +717,23 @@ function buildPayrollNoveltyMatrixRows(rows, anio, mes) {
       totalDeduccionesNomina: numberValue(row.total_deducciones),
       netoRecibir: numberValue(row.neto_recibir),
       _conceptLabels: {},
+      _conceptValueTypes: {},
     };
 
     for (const line of linesForPayrollRow(row).filter(isRoleNoveltyLine)) {
       const amount = roundCurrency(line.amount);
       if (amount <= 0) continue;
       const key = noveltyMatrixKey(line.concept_code);
+      const label = line.concept_label || line.concept_code;
+      if (isOvertimeConcept(line.concept_code)) {
+        const hoursKey = `${key}_horas`;
+        exportRow[hoursKey] = roundCurrency(numberValue(exportRow[hoursKey]) + lineHours(line));
+        exportRow._conceptLabels[hoursKey] = `${label} (horas)`;
+        exportRow._conceptValueTypes[hoursKey] = 'hours';
+      }
       exportRow[key] = roundCurrency(numberValue(exportRow[key]) + amount);
-      exportRow._conceptLabels[key] = line.concept_label || line.concept_code;
+      exportRow._conceptLabels[key] = isOvertimeConcept(line.concept_code) ? `${label} (valor)` : label;
+      exportRow._conceptValueTypes[key] = 'money';
       exportRow.cantidadNovedades += 1;
 
       if (line.category === 'ingreso') {
@@ -825,6 +845,7 @@ function getWorkbookColumns(reportCode, exportRows = []) {
       { header: 'Categoria', key: 'categoria', width: 16 },
       { header: 'Origen', key: 'origen', width: 16 },
       { header: 'Referencia origen', key: 'referenciaOrigen', width: 22 },
+      { header: 'Horas/cantidad', key: 'cantidadHoras', width: 16, style: { numFmt: '0.00' } },
       { header: 'Valor', key: 'valor', width: 14, style: { numFmt: '$#,##0.00' } },
       { header: 'Total ingresos nómina', key: 'totalIngresos', width: 20, style: { numFmt: '$#,##0.00' } },
       { header: 'Total deducciones nómina', key: 'totalDeducciones', width: 24, style: { numFmt: '$#,##0.00' } },
@@ -926,8 +947,10 @@ function getWorkbookColumns(reportCode, exportRows = []) {
   return [
     ...base.slice(0, 11),
     { header: 'Sueldo bruto/proporcional', key: 'sueldoBruto', width: 22, style: { numFmt: '$#,##0.00' } },
-    { header: 'Horas extra 50%', key: 'extras50', width: 16, style: { numFmt: '$#,##0.00' } },
-    { header: 'Horas extra 100%', key: 'extras100', width: 17, style: { numFmt: '$#,##0.00' } },
+    { header: 'Horas extra 50% (h)', key: 'extras50Horas', width: 18, style: { numFmt: '0.00' } },
+    { header: 'Valor horas extra 50%', key: 'extras50', width: 22, style: { numFmt: '$#,##0.00' } },
+    { header: 'Horas extra 100% (h)', key: 'extras100Horas', width: 19, style: { numFmt: '0.00' } },
+    { header: 'Valor horas extra 100%', key: 'extras100', width: 23, style: { numFmt: '$#,##0.00' } },
     { header: 'Bonos desempeno', key: 'bonosDesempeno', width: 17, style: { numFmt: '$#,##0.00' } },
     base[11],
     { header: 'IESS personal', key: 'aporteIess', width: 16, style: { numFmt: '$#,##0.00' } },
@@ -953,20 +976,27 @@ function getWorkbookColumns(reportCode, exportRows = []) {
 
 function getMatrixConceptColumns(exportRows = []) {
   const labels = new Map();
+  const valueTypes = new Map();
   for (const row of exportRows) {
     for (const [key, label] of Object.entries(row._conceptLabels || {})) {
       if (!labels.has(key)) {
         labels.set(key, label);
       }
+      if (!valueTypes.has(key)) {
+        valueTypes.set(key, row._conceptValueTypes?.[key] || 'money');
+      }
     }
   }
 
-  return [...labels.entries()].map(([key, label]) => ({
-    header: label,
-    key,
-    width: Math.max(14, Math.min(30, String(label).length + 2)),
-    style: { numFmt: '$#,##0.00' },
-  }));
+  return [...labels.entries()].map(([key, label]) => {
+    const valueType = valueTypes.get(key) || 'money';
+    return {
+      header: label,
+      key,
+      width: Math.max(14, Math.min(30, String(label).length + 2)),
+      style: { numFmt: valueType === 'hours' ? '0.00' : '$#,##0.00' },
+    };
+  });
 }
 
 async function buildSummaryPdf({ tenant, anio, mes, rows, filters, context }) {
@@ -1121,6 +1151,14 @@ function normalizeDetail(value) {
 function numberValue(value) {
   const parsed = Number.parseFloat(value || 0);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function lineHours(line = {}) {
+  const metadata = normalizeDetail(line.metadata);
+  const directHours = numberValue(line.hours ?? line.horas ?? metadata.hours ?? metadata.horas);
+  if (directHours > 0) return directHours;
+  const minutes = numberValue(line.minutes ?? line.minutos ?? metadata.minutes ?? metadata.minutos);
+  return minutes > 0 ? minutes / 60 : 0;
 }
 
 function money(value) {

@@ -48,6 +48,7 @@ function employeeCalculationError(emp, err) {
     error: userCorrectable
       ? err.message
       : 'No pudimos registrar el calculo de este empleado. Revisa su ficha y configuracion contable; si persiste, reporta el codigo de seguimiento.',
+    details: userCorrectable ? err.details : undefined,
   };
 }
 
@@ -128,16 +129,22 @@ function resolveAnnualPeriod({ anio, mes, startMonth, endMonth }) {
   };
 }
 
-function assertWeeklyOvertimeLimit(weeklyOvertimeMinutes = {}, payrollParameters = {}) {
+function assertWeeklyOvertimeLimit(weeklyOvertimeMinutes = {}, payrollParameters = {}, weeklyOvertimeExceptionMinutes = {}) {
   const maxWeeklyOvertimeHours = Number(payrollParameters.maxWeeklyOvertimeHours ?? 12);
   const maxWeeklyMinutes = maxWeeklyOvertimeHours * 60;
   const violations = Object.entries(weeklyOvertimeMinutes)
-    .filter(([, minutes]) => Number(minutes || 0) > maxWeeklyMinutes)
+    .filter(([weekStartDate, minutes]) => {
+      const approvedExceptionMinutes = Number(weeklyOvertimeExceptionMinutes[weekStartDate] || 0);
+      const excessMinutes = Math.max(0, Number(minutes || 0) - maxWeeklyMinutes);
+      return excessMinutes > approvedExceptionMinutes;
+    })
     .map(([weekStartDate, minutes]) => ({
       weekStartDate,
       minutes: Number(minutes || 0),
       hours: roundMoney(Number(minutes || 0) / 60),
       maxHours: maxWeeklyOvertimeHours,
+      excessHours: roundMoney(Math.max(0, Number(minutes || 0) - maxWeeklyMinutes) / 60),
+      approvedExceptionHours: roundMoney(Number(weeklyOvertimeExceptionMinutes[weekStartDate] || 0) / 60),
     }));
 
   if (violations.length > 0) {
@@ -502,7 +509,11 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     overtimeExtraordinaryMultiplier: overtimeParameters.extraordinaryMultiplier,
     dbClient: options.dbClient || null,
   });
-  assertWeeklyOvertimeLimit(noveltyImpact.weeklyOvertimeMinutes, payrollParameters);
+  assertWeeklyOvertimeLimit(
+    noveltyImpact.weeklyOvertimeMinutes,
+    payrollParameters,
+    noveltyImpact.weeklyOvertimeExceptionMinutes
+  );
   const extras50 = roundMoney((noveltyImpact.minutesByConcept.horas_extra_50 || 0) / 60);
   const extras100 = roundMoney((noveltyImpact.minutesByConcept.horas_extra_100 || 0) / 60);
   const montoExtras50 = roundMoney(noveltyImpact.amountByConcept.horas_extra_50 || 0);
@@ -610,6 +621,11 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     montoExtras100,
     horasExtraPorSemana: noveltyImpact.weeklyOvertimeMinutes || {},
     horasExtraPorSemanaHoras: Object.fromEntries(Object.entries(noveltyImpact.weeklyOvertimeMinutes || {}).map(([week, minutes]) => [
+      week,
+      roundMoney(Number(minutes || 0) / 60),
+    ])),
+    horasExtraExcepcionPorSemana: noveltyImpact.weeklyOvertimeExceptionMinutes || {},
+    horasExtraExcepcionPorSemanaHoras: Object.fromEntries(Object.entries(noveltyImpact.weeklyOvertimeExceptionMinutes || {}).map(([week, minutes]) => [
       week,
       roundMoney(Number(minutes || 0) / 60),
     ])),

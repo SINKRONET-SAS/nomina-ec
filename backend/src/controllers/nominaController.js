@@ -31,6 +31,7 @@ const {
   sendRolPagoDisponible,
   sendRolPagoEmail,
 } = require('../services/communicationService');
+const { approvePayrollOvertimeLimitExceptions } = require('../services/overtimeLimitApprovalService');
 
 async function rollbackPayrollCalculation(tx, req, operation) {
   try {
@@ -64,6 +65,66 @@ function sendPayrollCalculationError(req, res, err, operation) {
     details: publicError ? err.details : undefined,
     correlationId: req.correlationId,
   });
+}
+
+function overtimeLimitApprovalRequest(body = {}) {
+  return {
+    approve: body?.approveOvertimeLimitExceptions === true
+      || body?.approveOvertimeLimitException === true
+      || body?.aprobarExcesosHorasExtra === true
+      || body?.aprobarExcesoHorasExtra === true,
+    reason: body?.overtimeLimitApprovalReason
+      || body?.motivoExcesoHorasExtra
+      || body?.motivo
+      || '',
+  };
+}
+
+async function approveOvertimeLimitIfRequested({
+  req,
+  tx,
+  anio,
+  mes,
+  empleadoId = null,
+  approvedVia,
+}) {
+  const approval = overtimeLimitApprovalRequest(req.body);
+  if (!approval.approve) return null;
+
+  const result = await approvePayrollOvertimeLimitExceptions({
+    tenantId: req.tenantId,
+    anio,
+    mes,
+    empleadoId,
+    userId: req.usuarioId,
+    reason: approval.reason,
+    approvedVia,
+    dbClient: tx,
+  });
+
+  if (result.updated > 0) {
+    await recordAudit({
+      tenantId: req.tenantId,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      action: 'nomina.horas_extra.exceso.aprobar',
+      entity: 'novedades_asistencia',
+      entityId: result.exceptionIds[0] || null,
+      newData: {
+        anio,
+        mes,
+        empleadoId,
+        updated: result.updated,
+        exceptionIds: result.exceptionIds,
+        maxWeeklyOvertimeHours: result.maxWeeklyOvertimeHours,
+        approvedVia,
+      },
+      ipAddress: req.ip,
+      dbClient: tx,
+    });
+  }
+
+  return result;
 }
 
 async function precalcularMes(req, res) {
@@ -142,6 +203,13 @@ async function calcularMes(req, res) {
     });
 
     tx = await db.getClient(tenantId, req.usuarioId);
+    const overtimeLimitApproval = await approveOvertimeLimitIfRequested({
+      req,
+      tx,
+      anio: anioNumber,
+      mes: mesNumber,
+      approvedVia: 'nomina.calcular',
+    });
     const resultado = await calcularNominaMensual(tenantId, anioNumber, mesNumber, {
       userId: req.usuarioId,
       correlationId: req.correlationId,
@@ -183,6 +251,7 @@ async function calcularMes(req, res) {
           errores: erroresDetalle.length,
           erroresDetalle,
         },
+        overtimeLimitApproval,
         readiness,
         correlationId: req.correlationId,
       });
@@ -206,7 +275,7 @@ async function calcularMes(req, res) {
     `, [tenantId, anioNumber, mesNumber, resultado.total || 0, req.correlationId || null, resultado.batch?.id || null]);
     await db.commit(tx);
     tx = null;
-    res.json({ success: true, resultado, readiness, correlationId: req.correlationId });
+    res.json({ success: true, resultado, overtimeLimitApproval, readiness, correlationId: req.correlationId });
   } catch (err) {
     if (tx) await rollbackPayrollCalculation(tx, req, 'cálculo');
     return sendPayrollCalculationError(req, res, err, 'cálculo de nómina');
@@ -1132,6 +1201,14 @@ async function recalcularEmpleado(req, res) {
     });
 
     tx = await db.getClient(tenantId, usuarioId);
+    const overtimeLimitApproval = await approveOvertimeLimitIfRequested({
+      req,
+      tx,
+      anio: anioNumber,
+      mes: mesNumber,
+      empleadoId,
+      approvedVia: 'nomina.empleado.recalcular',
+    });
     const resultado = await calcularNominaEmpleado(tenantId, empleadoId, anioNumber, mesNumber, {
       userId: usuarioId,
       correlationId: req.correlationId,
@@ -1169,6 +1246,7 @@ async function recalcularEmpleado(req, res) {
         error: 'NOMINA_EMPLEADO_RECALCULATION_FAILED',
         message: 'La nomina del empleado requiere correccion antes de cerrar.',
         resultado,
+        overtimeLimitApproval,
         readiness,
         correlationId: req.correlationId,
       });
@@ -1207,6 +1285,7 @@ async function recalcularEmpleado(req, res) {
     return res.json({
       success: true,
       resultado,
+      overtimeLimitApproval,
       period: periodResult.period,
       coverage: periodResult.coverage,
       readiness,

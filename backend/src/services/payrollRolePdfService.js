@@ -77,6 +77,18 @@ function amountValue(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
+function positiveNumber(...values) {
+  for (const value of values) {
+    const number = Number(value || 0);
+    if (Number.isFinite(number) && number > 0) return number;
+  }
+  return 0;
+}
+
+function formatHours(value) {
+  return amountValue(value).toFixed(2);
+}
+
 function normalizeConceptKey(value, fallback = 'concepto') {
   const normalized = String(value || fallback)
     .trim()
@@ -102,12 +114,27 @@ const ROLE_NOVELTY_LABELS = {
   descuento_faltas: 'Descuento por faltas',
 };
 
+const OVERTIME_CONCEPTS = new Set(['horas_extra_50', 'horas_extra_100']);
+
+function isOvertimeConcept(normalizedCode) {
+  return OVERTIME_CONCEPTS.has(String(normalizedCode || '').trim().toLowerCase());
+}
+
 function isRoleNoveltyLine(line = {}) {
   const source = String(line.source || '').trim().toLowerCase();
   const metadata = normalizeDetail(line.metadata);
   return source === 'novedad'
     || Boolean(metadata.tipoNovedad)
     || Boolean(metadata.calculationMode && source !== 'legal');
+}
+
+function lineHours(line = {}) {
+  const metadata = normalizeDetail(line.metadata);
+  const directHours = positiveNumber(line.hours, line.horas, metadata.hours, metadata.horas);
+  if (directHours > 0) return directHours;
+
+  const minutes = positiveNumber(line.minutes, line.minutos, metadata.minutes, metadata.minutos);
+  return minutes > 0 ? minutes / 60 : 0;
 }
 
 function aggregateRoleLines(lines = []) {
@@ -126,29 +153,51 @@ function aggregateRoleLines(lines = []) {
     const label = ROLE_NOVELTY_LABELS[normalizedCode]
       || cleanText(rawLabel, cleanText(rawCode, `Concepto ${index + 1}`));
     const key = `novedad_${category}_${normalizedCode}`;
+    const hours = lineHours(line);
 
     if (!aggregate.has(key)) {
       aggregate.set(key, {
         key,
         label,
         category,
+        normalizedCode,
         amount: 0,
+        hours: 0,
       });
     }
     aggregate.get(key).amount += amount;
+    aggregate.get(key).hours += hours;
   });
 
   return Array.from(aggregate.values());
 }
 
 function roleNoveltyConcepts(row = {}) {
-  return aggregateRoleLines(linesForPayrollRow(row).filter(isRoleNoveltyLine));
+  const detail = normalizeDetail(row.detalle_calculo);
+  return aggregateRoleLines(linesForPayrollRow(row).filter(isRoleNoveltyLine))
+    .map((concept) => {
+      if (!isOvertimeConcept(concept.normalizedCode) || concept.hours > 0) return concept;
+      if (concept.normalizedCode === 'horas_extra_50') {
+        return { ...concept, hours: amountValue(detail.extras50) };
+      }
+      if (concept.normalizedCode === 'horas_extra_100') {
+        return { ...concept, hours: amountValue(detail.extras100) };
+      }
+      return concept;
+    });
+}
+
+function roleConceptLabel(concept = {}) {
+  if (!isOvertimeConcept(concept.normalizedCode) || amountValue(concept.hours) <= 0) {
+    return concept.label;
+  }
+  return `${concept.label} (${formatHours(concept.hours)} h)`;
 }
 
 function addRoleConceptLines(lines, concepts, category) {
   concepts
     .filter((concept) => concept.category === category)
-    .forEach((concept) => addAmountLine(lines, concept.label, concept.amount));
+    .forEach((concept) => addAmountLine(lines, roleConceptLabel(concept), concept.amount));
 }
 
 function payrollConceptValues(row = {}) {
@@ -175,6 +224,9 @@ function payrollConceptValues(row = {}) {
 
   roleNoveltyConcepts(row).forEach((concept) => {
     values[concept.key] = amountValue(concept.amount);
+    if (isOvertimeConcept(concept.normalizedCode)) {
+      values[`${concept.key}_hours`] = amountValue(concept.hours);
+    }
   });
 
   return values;
@@ -218,10 +270,19 @@ function noveltyConceptsForRows(rows = []) {
   rows.forEach((row) => {
     roleNoveltyConcepts(row).forEach((concept) => {
       if (!conceptsByKey.has(concept.key)) {
+        if (isOvertimeConcept(concept.normalizedCode)) {
+          conceptsByKey.set(`${concept.key}_hours`, {
+            group: concept.category === 'deduccion' ? 'Deducciones' : 'Ingresos',
+            key: `${concept.key}_hours`,
+            label: `${concept.label} (horas)`,
+            valueType: 'hours',
+          });
+        }
         conceptsByKey.set(concept.key, {
           group: concept.category === 'deduccion' ? 'Deducciones' : 'Ingresos',
           key: concept.key,
-          label: concept.label,
+          label: isOvertimeConcept(concept.normalizedCode) ? `${concept.label} (valor)` : concept.label,
+          valueType: 'money',
         });
       }
     });
@@ -253,6 +314,13 @@ function chunkRows(rows, size) {
     chunks.push(rows.slice(index, index + size));
   }
   return chunks;
+}
+
+function transposedConceptValue(concept = {}, value) {
+  if (concept.valueType === 'hours') {
+    return `${formatHours(value)} h`;
+  }
+  return money(value);
 }
 
 function buildPayrollRoleDocDefinition(row) {
@@ -446,11 +514,11 @@ function buildTransposedConceptTable(rows) {
     body.push([
       { text: concept.label, bold: Boolean(concept.bold) },
       ...values.map((value) => ({
-        text: money(value),
+        text: transposedConceptValue(concept, value),
         alignment: 'right',
         bold: Boolean(concept.bold),
       })),
-      { text: money(total), alignment: 'right', bold: Boolean(concept.bold) },
+      { text: transposedConceptValue(concept, total), alignment: 'right', bold: Boolean(concept.bold) },
     ]);
   });
 

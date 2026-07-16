@@ -85,6 +85,7 @@ describe('monthlyPeriodService', () => {
     const result = await getPayrollPeriodState({ tenantId: 'tenant-1', anio: 2026, mes: 6 });
 
     expect(db.query.mock.calls[3][0]).toContain('LEFT JOIN empleados');
+    expect(db.query.mock.calls[3][0]).not.toContain('LIMIT 10');
     expect(result.batches[0]).toMatchObject({
       scope_value: 'emp-1',
       scope_label: 'Perez Ana - 0102030405',

@@ -34,6 +34,10 @@ jest.mock('../services/calculoNominaService', () => ({
   calcularNominaMensual: jest.fn(),
 }));
 
+jest.mock('../services/overtimeLimitApprovalService', () => ({
+  approvePayrollOvertimeLimitExceptions: jest.fn(),
+}));
+
 const db = require('../config/database');
 const { recordAudit } = require('../services/auditService');
 const { sendRolPagoDisponible, sendRolPagoEmail } = require('../services/communicationService');
@@ -48,6 +52,7 @@ const {
   invalidateEmployeePayrollForNovelty,
 } = require('../services/payrollLifecycleService');
 const { calcularNominaEmpleado, calcularNominaMensual } = require('../services/calculoNominaService');
+const { approvePayrollOvertimeLimitExceptions } = require('../services/overtimeLimitApprovalService');
 const {
   precalcularMes,
   calcularMes,
@@ -252,6 +257,8 @@ describe('nominaController calcularMes', () => {
     db.commit.mockReset();
     db.rollback.mockReset();
     calcularNominaMensual.mockReset();
+    approvePayrollOvertimeLimitExceptions.mockReset();
+    recordAudit.mockReset();
     assertTenantPayrollReady.mockReset();
     assertTenantPayrollReady.mockResolvedValue({ ready: true });
     db.rollback.mockResolvedValue();
@@ -282,6 +289,57 @@ describe('nominaController calcularMes', () => {
     });
     expect(res.body.message).not.toContain('transaction is aborted');
     expect(res.body.message).toContain('código de seguimiento');
+  });
+
+  test('aprueba excepcion de horas extra antes de calcular el periodo', async () => {
+    const tx = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+    db.getClient.mockResolvedValue(tx);
+    approvePayrollOvertimeLimitExceptions.mockResolvedValue({
+      updated: 2,
+      exceptionIds: ['nov-1', 'nov-2'],
+      maxWeeklyOvertimeHours: 12,
+    });
+    calcularNominaMensual.mockResolvedValue({
+      success: true,
+      total: 1,
+      batch: { id: 'batch-1' },
+      resultados: [
+        { empleadoId: 'emp-1', nombre: 'Ana Perez', cedula: '0102030405', netoRecibir: '500.00' },
+      ],
+    });
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-calculo-he',
+      ip: '127.0.0.1',
+      body: {
+        anio: 2026,
+        mes: 6,
+        approveOvertimeLimitExceptions: true,
+        overtimeLimitApprovalReason: 'Carga mensual acumulada validada por RRHH',
+      },
+    };
+    const res = createResponse();
+
+    await calcularMes(req, res);
+
+    expect(approvePayrollOvertimeLimitExceptions).toHaveBeenCalledWith(expect.objectContaining({
+      tenantId: 'tenant-1',
+      anio: 2026,
+      mes: 6,
+      userId: 'user-1',
+      reason: 'Carga mensual acumulada validada por RRHH',
+      approvedVia: 'nomina.calcular',
+      dbClient: tx,
+    }));
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'nomina.horas_extra.exceso.aprobar',
+      newData: expect.objectContaining({ updated: 2 }),
+    }));
+    expect(calcularNominaMensual).toHaveBeenCalledWith('tenant-1', 2026, 6, expect.objectContaining({ dbClient: tx }));
+    expect(db.commit).toHaveBeenCalledWith(tx);
+    expect(res.statusCode).toBe(200);
+    expect(res.body.overtimeLimitApproval).toMatchObject({ updated: 2 });
   });
 
   test('precalcula todos los empleados y revierte sin crear roles', async () => {

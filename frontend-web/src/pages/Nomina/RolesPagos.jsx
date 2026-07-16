@@ -7,6 +7,45 @@ import { extractApiError } from '../../services/publicApi';
 import { downloadUrl } from '../../utils/downloadUrl';
 import { currentPeriodEC } from '../../utils/dateFormat';
 
+function normalizeDetail(value) {
+  if (!value) return {};
+  if (typeof value === 'object') return value;
+  try {
+    return JSON.parse(value);
+  } catch (err) {
+    return {};
+  }
+}
+
+function numberValue(value) {
+  const parsed = Number.parseFloat(value || 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatMoney(value) {
+  return `$${numberValue(value).toFixed(2)}`;
+}
+
+function formatHours(value) {
+  return numberValue(value).toFixed(2);
+}
+
+function overtimeLines(nomina = {}) {
+  const detail = normalizeDetail(nomina.detalle_calculo);
+  return [
+    {
+      label: '50%',
+      hours: numberValue(detail.extras50),
+      amount: numberValue(detail.montoExtras50 ?? nomina.horas_extras_50),
+    },
+    {
+      label: '100%',
+      hours: numberValue(detail.extras100),
+      amount: numberValue(detail.montoExtras100 ?? nomina.horas_extras_100),
+    },
+  ].filter((line) => line.hours > 0 || line.amount > 0);
+}
+
 function RolesPagos() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -180,6 +219,7 @@ function RolesPagos() {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Empleado</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Ingresos</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Horas extra</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Deducciones</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Neto</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Estado</th>
@@ -188,12 +228,13 @@ function RolesPagos() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {isLoading ? (
-                <tr><td colSpan="6" className="px-6 py-4 text-center">Cargando...</td></tr>
+                <tr><td colSpan="7" className="px-6 py-4 text-center">Cargando...</td></tr>
               ) : !nominas || nominas.length === 0 ? (
-                <tr><td colSpan="6" className="px-6 py-4 text-center">No hay nóminas para este período</td></tr>
+                <tr><td colSpan="7" className="px-6 py-4 text-center">No hay nóminas para este período</td></tr>
               ) : (
                 nominas.map((nomina) => {
                   const employeeName = `${nomina.nombres || ''} ${nomina.apellidos || ''}`.trim() || 'empleado';
+                  const overtime = overtimeLines(nomina);
                   const roleClosed = nomina.estado === 'cerrada' || nomina.estado === 'pagada';
                   const roleDraft = nomina.estado === 'borrador';
                   const statusLabel = nomina.estado === 'pagada'
@@ -204,9 +245,22 @@ function RolesPagos() {
                   return (
                   <tr key={nomina.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm">{employeeName}</td>
-                    <td className="px-6 py-4 text-sm">${parseFloat(nomina.total_ingresos).toFixed(2)}</td>
-                    <td className="px-6 py-4 text-sm">${parseFloat(nomina.total_deducciones).toFixed(2)}</td>
-                    <td className="px-6 py-4 text-sm font-semibold">${parseFloat(nomina.neto_recibir).toFixed(2)}</td>
+                    <td className="px-6 py-4 text-sm">{formatMoney(nomina.total_ingresos)}</td>
+                    <td className="px-6 py-4 text-sm">
+                      {overtime.length > 0 ? (
+                        <div className="space-y-1 whitespace-nowrap text-xs text-slate-700">
+                          {overtime.map((line) => (
+                            <div key={line.label}>
+                              <span className="font-semibold">{line.label}:</span> {formatHours(line.hours)} h - {formatMoney(line.amount)}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm">{formatMoney(nomina.total_deducciones)}</td>
+                    <td className="px-6 py-4 text-sm font-semibold">{formatMoney(nomina.neto_recibir)}</td>
                     <td className="px-6 py-4">
                       <span className={`rounded-full px-2 py-1 text-xs font-semibold ${roleClosed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                         {statusLabel}

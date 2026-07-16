@@ -609,7 +609,6 @@ async function getPayrollPeriodState({ tenantId, anio, mes }) {
     WHERE nb.tenant_id = $1
       AND nb.period_id = COALESCE($2::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
     ORDER BY nb.created_at DESC
-    LIMIT 10
   `, [tenantId, periodResult.rows[0]?.id || null]);
 
   return {

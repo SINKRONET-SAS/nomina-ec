@@ -41,6 +41,10 @@ function payrollRow(overrides = {}) {
     estado: 'borrador',
     detalle_calculo: {
       sueldoProporcional: 600,
+      extras50: 2.5,
+      montoExtras50: 15,
+      extras100: 0,
+      montoExtras100: 0,
       aporteIess: 58.12,
       netoRecibir: 556.88,
       costoEmpleador: 710,
@@ -204,6 +208,14 @@ describe('payrollRolePdfService', () => {
     expect(serialized).toContain('$12.00');
   });
 
+  test('documento individual muestra cantidad y valor de horas extra', () => {
+    const doc = buildPayrollRoleDocDefinition(payrollRow());
+
+    const serialized = JSON.stringify(doc);
+    expect(serialized).toContain('Horas extra 50% (2.50 h)');
+    expect(serialized).toContain('$15.00');
+  });
+
   test('documento individual refleja todos los descuentos persistidos en lineas de calculo', () => {
     const doc = buildPayrollRoleDocDefinition(payrollRow({
       total_deducciones: 78.12,
@@ -266,6 +278,10 @@ describe('payrollRolePdfService', () => {
     expect(serialized).toContain('Almeida Carla');
     expect(serialized).toContain('Benitez Marco');
     expect(serialized).toContain('$1315.00');
+    expect(serialized).toContain('Horas extra 50% (horas)');
+    expect(serialized).toContain('Horas extra 50% (valor)');
+    expect(serialized).toContain('2.50 h');
+    expect(serialized).toContain('$15.00');
     expect(serialized).toContain('rol_pago_transpuesto_sknomina');
     expect(serialized).toContain('BORRADOR - NO CONSTITUYE COMPROBANTE DE PAGO');
   });

@@ -319,6 +319,8 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
   });
   if (normalizedNoveltyLines.length > 0) {
     for (const noveltyLine of normalizedNoveltyLines) {
+      const minutes = numberValue(noveltyLine.minutes ?? noveltyLine.minutos);
+      const hours = numberValue(noveltyLine.hours ?? noveltyLine.horas ?? (minutes > 0 ? minutes / 60 : 0));
       addLine(lines, {
         code: noveltyLine.conceptCode || noveltyLine.concept_code || conceptCodeForNovelty(noveltyLine.code),
         label: noveltyLine.label || noveltyLine.concept_label || noveltyLine.code,
@@ -329,6 +331,10 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
         legalParameterKey: noveltyLine.legalParameterKey || '',
         metadata: {
           ...(noveltyLine.metadata || {}),
+          minutes,
+          hours,
+          minutos: minutes,
+          horas: hours,
           calculationMode: noveltyLine.calculationMode || '',
           affectsIess: Boolean(noveltyLine.affectsIess),
           affectsIncomeTax: Boolean(noveltyLine.affectsIncomeTax),
@@ -896,26 +902,33 @@ function validateAccountingBalance(entries) {
 
 function buildEmployeeDetailRows(rows, anio, mes) {
   const periodo = `${String(mes).padStart(2, '0')}/${anio}`;
-  return rows.flatMap((row) => linesForPayrollRow(row).map((line) => ({
-    periodo,
-    cedula: row.cedula || '',
-    empleado: employeeFullName(row),
-    departamento: row.departamento || '',
-    cargo: row.cargo || '',
-    cargoCodigo: row.cargo_codigo || '',
-    unidad: row.unidad_nombre || '',
-    centroCosto: line.cost_center_code || row.centro_costo || '',
-    loteCalculo: row.calculation_batch_id || '',
-    conceptoCodigo: line.concept_code,
-    concepto: line.concept_label,
-    categoria: line.category,
-    origen: line.source,
-    referenciaOrigen: line.source_id,
-    valor: moneyValue(line.amount),
-    totalIngresos: numberValue(row.total_ingresos),
-    totalDeducciones: numberValue(row.total_deducciones),
-    netoRecibir: numberValue(row.neto_recibir),
-  })));
+  return rows.flatMap((row) => linesForPayrollRow(row).map((line) => {
+    const metadata = normalizeDetail(line.metadata);
+    const directHours = numberValue(line.hours ?? line.horas ?? metadata.hours ?? metadata.horas);
+    const minutes = numberValue(line.minutes ?? line.minutos ?? metadata.minutes ?? metadata.minutos);
+    const hours = directHours > 0 ? directHours : (minutes > 0 ? minutes / 60 : 0);
+    return {
+      periodo,
+      cedula: row.cedula || '',
+      empleado: employeeFullName(row),
+      departamento: row.departamento || '',
+      cargo: row.cargo || '',
+      cargoCodigo: row.cargo_codigo || '',
+      unidad: row.unidad_nombre || '',
+      centroCosto: line.cost_center_code || row.centro_costo || '',
+      loteCalculo: row.calculation_batch_id || '',
+      conceptoCodigo: line.concept_code,
+      concepto: line.concept_label,
+      categoria: line.category,
+      origen: line.source,
+      referenciaOrigen: line.source_id,
+      cantidadHoras: hours > 0 ? roundMoney(hours) : null,
+      valor: moneyValue(line.amount),
+      totalIngresos: numberValue(row.total_ingresos),
+      totalDeducciones: numberValue(row.total_deducciones),
+      netoRecibir: numberValue(row.neto_recibir),
+    };
+  }));
 }
 
 function dynamicConceptKey(code) {

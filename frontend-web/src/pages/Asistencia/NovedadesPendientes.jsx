@@ -276,8 +276,34 @@ function NovedadesPendientes() {
   });
 
   const aprobarMutation = useMutation({
-    mutationFn: (id) => authenticatedApi.put(`/novedades/${id}/aprobar`),
-    onSuccess: () => queryClient.invalidateQueries(['novedades-pendientes'])
+    mutationFn: ({ id, payload = {} }) => authenticatedApi.put(`/novedades/${id}/aprobar`, payload),
+    onSuccess: () => {
+      setMessage('Novedad aprobada.');
+      setError('');
+      queryClient.invalidateQueries({ queryKey: ['novedades-pendientes'] });
+    },
+    onError: (err, variables) => {
+      const code = err.response?.data?.error;
+      if (code === 'NOVEDAD_HORAS_EXTRA_LIMITE_APROBACION_REQUERIDA' && !variables?.payload?.approveOvertimeLimitException) {
+        const reason = window.prompt('Las horas extra exceden el limite semanal. Registra el motivo de aprobacion para continuar:');
+        if (reason === null) return;
+        if (reason.trim().length < 10) {
+          setMessage('');
+          setError('La aprobacion del exceso requiere un motivo de al menos 10 caracteres.');
+          return;
+        }
+        aprobarMutation.mutate({
+          id: variables.id,
+          payload: {
+            approveOvertimeLimitException: true,
+            overtimeLimitApprovalReason: reason.trim(),
+          },
+        });
+        return;
+      }
+      setMessage('');
+      setError(err.response?.data?.message || err.response?.data?.error || 'No pudimos aprobar la novedad.');
+    },
   });
 
   const rechazarMutation = useMutation({
@@ -946,7 +972,7 @@ function NovedadesPendientes() {
                         {nov.estado === 'pendiente' && (
                           <>
                             <button
-                              onClick={() => aprobarMutation.mutate(nov.id)}
+                              onClick={() => aprobarMutation.mutate({ id: nov.id })}
                               className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200"
                               title="Aprobar"
                               type="button"

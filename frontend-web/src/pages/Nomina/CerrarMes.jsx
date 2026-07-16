@@ -54,6 +54,13 @@ function firstOvertimeParameters(resultado) {
     .find(Boolean) || null;
 }
 
+function hasOvertimeLimitCalculationError(resultado) {
+  return (resultado?.resultados || []).some((row) => (
+    row?.errorCode === 'NOMINA_HORAS_EXTRA_LIMITE_SEMANAL'
+    || row?.details?.violations?.length > 0
+  ));
+}
+
 function percentLabel(value) {
   return `${(Number(value || 0) * 100).toLocaleString('es-EC', {
     minimumFractionDigits: 0,
@@ -71,6 +78,26 @@ function batchScopeLabel(batch = {}) {
   return batch.scope_value || 'Alcance no disponible';
 }
 
+function normalizeSearchText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function batchSearchText(batch = {}, noveltyTypeOptions = []) {
+  return normalizeSearchText([
+    batchScopeLabel(batch),
+    batch.scope_value,
+    batch.tipo_novedad,
+    getNoveltyTypeLabel(batch.tipo_novedad, noveltyTypeOptions),
+    batch.fecha,
+    batch.monto,
+    batch.total_empleados,
+    batch.total_creadas,
+  ].join(' '));
+}
+
 function CerrarMes() {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -84,6 +111,9 @@ function CerrarMes() {
   const [closeConfirmation, setCloseConfirmation] = useState(false);
   const [showDiscardCalculation, setShowDiscardCalculation] = useState(false);
   const [discardReason, setDiscardReason] = useState('');
+  const [batchSearch, setBatchSearch] = useState('');
+  const [batchNoveltyFilter, setBatchNoveltyFilter] = useState('all');
+  const [batchScopeFilter, setBatchScopeFilter] = useState('all');
   const [batchForm, setBatchForm] = useState({
     scopeType: 'company',
     scopeValue: '',
@@ -145,6 +175,26 @@ function CerrarMes() {
   const canDiscardCalculation = !isClosedPeriod && draftPayrolls > 0;
   const noveltyStatus = summarize(state.noveltiesByStatus);
   const pendingNovelties = Number(noveltyStatus.pendiente || 0);
+  const batches = state.batches || [];
+  const batchNoveltyOptions = useMemo(() => {
+    const options = new Map();
+    for (const batch of batches) {
+      const value = String(batch.tipo_novedad || '').trim();
+      if (value) options.set(value, getNoveltyTypeLabel(value, noveltyTypeOptions));
+    }
+    return Array.from(options, ([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'es'));
+  }, [batches, noveltyTypeOptions]);
+  const filteredBatches = useMemo(() => {
+    const search = normalizeSearchText(batchSearch);
+    return batches.filter((batch) => {
+      if (batchScopeFilter !== 'all' && batch.scope_type !== batchScopeFilter) return false;
+      if (batchNoveltyFilter !== 'all' && batch.tipo_novedad !== batchNoveltyFilter) return false;
+      if (!search) return true;
+      return batchSearchText(batch, noveltyTypeOptions).includes(search);
+    });
+  }, [batches, batchSearch, batchNoveltyFilter, batchScopeFilter, noveltyTypeOptions]);
+  const hasBatchFilters = Boolean(batchSearch.trim() || batchNoveltyFilter !== 'all' || batchScopeFilter !== 'all');
 
   useEffect(() => {
     setBatchForm((current) => ({
@@ -195,11 +245,18 @@ function CerrarMes() {
   });
 
   const resolveNoveltiesMutation = useMutation({
-    mutationFn: async ({ decision, motivo }) => authenticatedApi.put('/novedades/periodo/resolver', {
+    mutationFn: async ({
+      decision,
+      motivo,
+      approveOvertimeLimitExceptions = false,
+      overtimeLimitApprovalReason = '',
+    }) => authenticatedApi.put('/novedades/periodo/resolver', {
       anio,
       mes,
       decision,
       motivo,
+      approveOvertimeLimitExceptions,
+      overtimeLimitApprovalReason,
     }),
     onSuccess: (response) => {
       const total = response.data?.total || 0;
@@ -208,18 +265,66 @@ function CerrarMes() {
       queryClient.invalidateQueries({ queryKey: ['novedades-pendientes'] });
       refreshPeriod();
     },
+    onError: (error, variables) => {
+      const code = error.response?.data?.error;
+      if (code === 'NOVEDAD_HORAS_EXTRA_LIMITE_APROBACION_REQUERIDA' && !variables?.approveOvertimeLimitExceptions) {
+        const reason = window.prompt('Hay horas extra que exceden el limite semanal. Registra el motivo de aprobacion para aprobar el periodo:');
+        if (reason === null) return;
+        if (reason.trim().length < 10) {
+          setMessage({ type: 'error', text: 'La aprobacion del exceso requiere un motivo de al menos 10 caracteres.' });
+          return;
+        }
+        resolveNoveltiesMutation.mutate({
+          decision: variables.decision,
+          motivo: variables.motivo || '',
+          approveOvertimeLimitExceptions: true,
+          overtimeLimitApprovalReason: reason.trim(),
+        });
+      }
+    },
   });
 
   const calculateMutation = useMutation({
-    mutationFn: async () => authenticatedApi.post('/nomina/calcular', { anio, mes }),
+    mutationFn: async ({
+      approveOvertimeLimitExceptions = false,
+      overtimeLimitApprovalReason = '',
+    } = {}) => authenticatedApi.post('/nomina/calcular', {
+      anio,
+      mes,
+      approveOvertimeLimitExceptions,
+      overtimeLimitApprovalReason,
+    }),
     onSuccess: (response) => {
       setResultado(response.data.resultado);
+      const approved = Number(response.data?.overtimeLimitApproval?.updated || 0);
+      if (approved > 0) {
+        setMessage({ type: 'success', text: `Aprobacion registrada para ${approved} novedades de horas extra. Nomina calculada.` });
+        refreshPeriod();
+        return;
+      }
       setMessage({ type: 'success', text: 'Nómina calculada. Revisa el detalle antes de cerrar el periodo.' });
       refreshPeriod();
     },
-    onError: (error) => {
+    onError: (error, variables = {}) => {
       const calculationResult = error.response?.data?.resultado;
       if (calculationResult) setResultado(calculationResult);
+      if (hasOvertimeLimitCalculationError(calculationResult) && !variables?.approveOvertimeLimitExceptions) {
+        const reason = window.prompt('Las horas extra fueron cargadas de forma acumulada y exceden el limite semanal. Registra el motivo de aprobacion para continuar:');
+        if (reason === null) {
+          refreshPeriod();
+          return;
+        }
+        if (reason.trim().length < 10) {
+          setMessage({ type: 'error', text: 'La aprobacion del exceso requiere un motivo de al menos 10 caracteres.' });
+          refreshPeriod();
+          return;
+        }
+        calculateMutation.mutate({
+          approveOvertimeLimitExceptions: true,
+          overtimeLimitApprovalReason: reason.trim(),
+        });
+        return;
+      }
       refreshPeriod();
     },
   });
@@ -293,6 +398,9 @@ function CerrarMes() {
     discardCalculationMutation.reset();
     setShowDiscardCalculation(false);
     setDiscardReason('');
+    setBatchSearch('');
+    setBatchNoveltyFilter('all');
+    setBatchScopeFilter('all');
   }, [anio, mes]);
 
   const updateBatch = (field, value) => {
@@ -670,6 +778,35 @@ function CerrarMes() {
                 </p>
               </div>
             )}
+            {hasOvertimeLimitCalculationError(resultado) && (
+              <div className="mb-4 flex flex-col gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="font-semibold">Horas extra acumuladas requieren aprobacion</p>
+                  <p className="mt-1 text-xs leading-5">
+                    El lote acumulado se valida contra el limite semanal. Aprueba la excepcion para registrar el motivo y recalcular.
+                  </p>
+                </div>
+                <button
+                  className="inline-flex min-h-9 items-center justify-center rounded-md bg-amber-700 px-3 text-sm font-semibold text-white hover:bg-amber-800 disabled:bg-slate-300"
+                  disabled={calculateMutation.isPending}
+                  onClick={() => {
+                    const reason = window.prompt('Motivo de aprobacion para exceder el limite semanal de horas extra:');
+                    if (reason === null) return;
+                    if (reason.trim().length < 10) {
+                      setMessage({ type: 'error', text: 'La aprobacion del exceso requiere un motivo de al menos 10 caracteres.' });
+                      return;
+                    }
+                    calculateMutation.mutate({
+                      approveOvertimeLimitExceptions: true,
+                      overtimeLimitApprovalReason: reason.trim(),
+                    });
+                  }}
+                  type="button"
+                >
+                  Aprobar exceso y recalcular
+                </button>
+              </div>
+            )}
             <div className="grid gap-3 md:grid-cols-3">
               <div className="rounded-md bg-slate-50 p-4">
                 <p className="text-sm text-slate-600">Total empleados</p>
@@ -743,14 +880,74 @@ function CerrarMes() {
         )}
       </section>
 
-      {state.batches?.length > 0 && (
+      {batches.length > 0 && (
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-950">Lotes recientes</h2>
-          <div className="mt-3 overflow-x-auto">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950">Lotes de novedades</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                {filteredBatches.length} de {batches.length} lotes visibles.
+              </p>
+            </div>
+            {hasBatchFilters && (
+              <button
+                className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:border-slate-300"
+                onClick={() => {
+                  setBatchSearch('');
+                  setBatchNoveltyFilter('all');
+                  setBatchScopeFilter('all');
+                }}
+                type="button"
+              >
+                <XCircle className="h-4 w-4" />
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(240px,1fr)_220px_180px]">
+            <label className="text-sm font-semibold text-slate-700">
+              Empleado, cédula o alcance
+              <input
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
+                onChange={(event) => setBatchSearch(event.target.value)}
+                placeholder="Buscar por nombre, cédula, cargo o departamento"
+                value={batchSearch}
+              />
+            </label>
+            <label className="text-sm font-semibold text-slate-700">
+              Novedad
+              <select
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
+                onChange={(event) => setBatchNoveltyFilter(event.target.value)}
+                value={batchNoveltyFilter}
+              >
+                <option value="all">Todas</option>
+                {batchNoveltyOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm font-semibold text-slate-700">
+              Alcance
+              <select
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
+                onChange={(event) => setBatchScopeFilter(event.target.value)}
+                value={batchScopeFilter}
+              >
+                <option value="all">Todos</option>
+                {SCOPE_TYPES.map((scope) => (
+                  <option key={scope.value} value={scope.value}>{scope.label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-4 max-h-[28rem] overflow-auto rounded-md border border-slate-200">
             <table className="w-full min-w-[760px] text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+              <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase text-slate-500">
                 <tr>
-                  <th className="px-4 py-3 text-left">Alcance</th>
+                  <th className="min-w-[18rem] px-4 py-3 text-left">Alcance</th>
                   <th className="px-4 py-3 text-left">Novedad</th>
                   <th className="px-4 py-3 text-left">Fecha</th>
                   <th className="px-4 py-3 text-right">Monto</th>
@@ -760,9 +957,16 @@ function CerrarMes() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {state.batches.map((batch) => (
+                {filteredBatches.length === 0 && (
+                  <tr>
+                    <td className="px-4 py-6 text-center text-sm font-semibold text-slate-500" colSpan={7}>
+                      No hay lotes que coincidan con los filtros.
+                    </td>
+                  </tr>
+                )}
+                {filteredBatches.map((batch) => (
                   <tr key={batch.id}>
-                    <td className="px-4 py-3 font-medium text-slate-800">{batchScopeLabel(batch)}</td>
+                    <td className="max-w-[28rem] whitespace-normal break-words px-4 py-3 font-medium text-slate-800">{batchScopeLabel(batch)}</td>
                     <td className="px-4 py-3">{getNoveltyTypeLabel(batch.tipo_novedad, noveltyTypeOptions)}</td>
                     <td className="px-4 py-3">{String(batch.fecha).slice(0, 10)}</td>
                     <td className="px-4 py-3 text-right">${Number(batch.monto || 0).toFixed(2)}</td>

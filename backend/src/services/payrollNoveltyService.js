@@ -240,7 +240,7 @@ async function getApprovedPayrollNoveltyImpacts({
   const executor = dbClient || db;
   const configs = await getActiveNoveltyTypeConfigsWithExecutor(executor, tenantId, anio, mes);
   const result = await executor.query(`
-    SELECT id, tipo_novedad, fecha, minutos, monto, justificacion
+    SELECT id, tipo_novedad, fecha, minutos, monto, justificacion, metadata
     FROM novedades_asistencia
     WHERE empleado_id = $1
       AND tenant_id = $2
@@ -268,6 +268,7 @@ function calculateNoveltyImpacts(rows = [], configs = [], context = {}) {
   const amountByConcept = {};
   const minutesByConcept = {};
   const weeklyOvertimeMinutes = {};
+  const weeklyOvertimeExceptionMinutes = {};
 
   for (const row of rows) {
     const code = normalizeNoveltyCode(row.tipo_novedad || row.tipoNovedad);
@@ -287,6 +288,7 @@ function calculateNoveltyImpacts(rows = [], configs = [], context = {}) {
 
     const category = config.payrollImpact === 'ingreso' ? 'ingreso' : 'deduccion';
     const overtimeWeekKey = isOvertimeConcept(config.conceptCode) ? weekKeyFromDate(row.fecha) : '';
+    const rowMetadata = normalizeJson(row.metadata);
     const line = {
       noveltyId: row.id || '',
       code,
@@ -312,6 +314,7 @@ function calculateNoveltyImpacts(rows = [], configs = [], context = {}) {
         tipoNovedad: code,
         configId: config.id,
         overtimeWeekKey,
+        overtimeLimitException: normalizeOvertimeLimitException(rowMetadata.overtimeLimitException),
       },
     };
     lines.push(line);
@@ -320,6 +323,9 @@ function calculateNoveltyImpacts(rows = [], configs = [], context = {}) {
     minutesByConcept[line.conceptCode] = (minutesByConcept[line.conceptCode] || 0) + Number(row.minutos || 0);
     if (overtimeWeekKey) {
       weeklyOvertimeMinutes[overtimeWeekKey] = (weeklyOvertimeMinutes[overtimeWeekKey] || 0) + Number(row.minutos || 0);
+      if (hasApprovedOvertimeLimitException(rowMetadata)) {
+        weeklyOvertimeExceptionMinutes[overtimeWeekKey] = (weeklyOvertimeExceptionMinutes[overtimeWeekKey] || 0) + Number(row.minutos || 0);
+      }
     }
 
     if (category === 'ingreso') {
@@ -338,7 +344,7 @@ function calculateNoveltyImpacts(rows = [], configs = [], context = {}) {
     totals[key] = roundMoney(totals[key]);
   }
 
-  return { lines, totals, amountByConcept, minutesByConcept, weeklyOvertimeMinutes };
+  return { lines, totals, amountByConcept, minutesByConcept, weeklyOvertimeMinutes, weeklyOvertimeExceptionMinutes };
 }
 
 function isOvertimeConcept(conceptCode) {
@@ -352,6 +358,23 @@ function weekKeyFromDate(value) {
   const day = date.getUTCDay() || 7;
   date.setUTCDate(date.getUTCDate() - day + 1);
   return date.toISOString().slice(0, 10);
+}
+
+function normalizeOvertimeLimitException(value = {}) {
+  const metadata = normalizeJson(value);
+  if (metadata.approved !== true) return null;
+  return {
+    approved: true,
+    approvedBy: metadata.approvedBy || null,
+    approvedAt: metadata.approvedAt || null,
+    reason: String(metadata.reason || '').trim(),
+    limitHours: metadata.limitHours ?? null,
+    approvedVia: metadata.approvedVia || '',
+  };
+}
+
+function hasApprovedOvertimeLimitException(metadata = {}) {
+  return normalizeOvertimeLimitException(normalizeJson(metadata).overtimeLimitException)?.approved === true;
 }
 
 function calculateNoveltyAmount(row, config, context = {}) {
@@ -391,7 +414,9 @@ module.exports = {
   getActiveNoveltyTypeConfigs,
   getActiveNoveltyTypeConfigsWithExecutor,
   getApprovedPayrollNoveltyImpacts,
+  hasApprovedOvertimeLimitException,
   isOvertimeConcept,
+  normalizeOvertimeLimitException,
   normalizeConfig,
   normalizeNoveltyCode,
   weekKeyFromDate,

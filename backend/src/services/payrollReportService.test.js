@@ -81,6 +81,33 @@ describe('payrollReportService accounting entries', () => {
     });
   });
 
+  test('separa horas extra por cantidad y valor en reporte tabular', () => {
+    const rows = rowsForReport([
+      payrollRow({
+        horas_extras_50: 75,
+        horas_extras_100: 25,
+        total_ingresos: 1100,
+        detalle_calculo: {
+          ...payrollRow().detalle_calculo,
+          extras50: 4,
+          montoExtras50: 75,
+          extras100: 1,
+          montoExtras100: 25,
+          totalIngresos: 1100,
+        },
+      }),
+    ], 'PAYROLL_DETAIL_TABULAR', 2026, 6);
+
+    expect(rows[0]).toMatchObject({
+      extras50Horas: 4,
+      extras50: 75,
+      extras50Valor: 75,
+      extras100Horas: 1,
+      extras100: 25,
+      extras100Valor: 25,
+    });
+  });
+
   test('genera detalle por empleado desde lineas de calculo normalizadas', () => {
     const rows = rowsForReport([payrollRow()], 'PAYROLL_EMPLOYEE_DETAIL', 2026, 6);
 
@@ -94,6 +121,29 @@ describe('payrollReportService accounting entries', () => {
         conceptoCodigo: 'neto_banco',
         categoria: 'pago',
         valor: 850,
+      }),
+    ]));
+  });
+
+  test('genera detalle por empleado con cantidad de horas extra', () => {
+    const rows = rowsForReport([
+      payrollRow({
+        horas_extras_50: 75,
+        total_ingresos: 1075,
+        detalle_calculo: {
+          ...payrollRow().detalle_calculo,
+          extras50: 2,
+          montoExtras50: 75,
+          totalIngresos: 1075,
+        },
+      }),
+    ], 'PAYROLL_EMPLOYEE_DETAIL', 2026, 6);
+
+    expect(rows).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        conceptoCodigo: 'horas_extra_50',
+        cantidadHoras: 2,
+        valor: 75,
       }),
     ]));
   });
@@ -131,6 +181,8 @@ describe('payrollReportService accounting entries', () => {
               category: 'ingreso',
               payrollImpact: 'ingreso',
               amount: 75,
+              minutes: 120,
+              hours: 2,
               sourceId: 'nov-1',
             },
             {
@@ -159,6 +211,7 @@ describe('payrollReportService accounting entries', () => {
       netoRecibir: 905,
     });
     expect(rows[0].novelty_horas_extra_50).toBe(75);
+    expect(rows[0].novelty_horas_extra_50_horas).toBe(2);
     expect(rows[0].novelty_descuento_faltas).toBe(20);
     expect(rows[0].concept_sueldo_base).toBeUndefined();
   });

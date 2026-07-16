@@ -194,6 +194,20 @@ describe('calculoNominaService', () => {
     }, { maxWeeklyOvertimeHours: 12 })).not.toThrow();
   });
 
+  test('permite exceder horas extra si el excedente tiene aprobacion explicita', () => {
+    expect(() => assertWeeklyOvertimeLimit({
+      '2026-06-22': 780,
+    }, { maxWeeklyOvertimeHours: 12 }, {
+      '2026-06-22': 60,
+    })).not.toThrow();
+
+    expect(() => assertWeeklyOvertimeLimit({
+      '2026-06-22': 780,
+    }, { maxWeeklyOvertimeHours: 12 }, {
+      '2026-06-22': 30,
+    })).toThrow('Las horas extra aprobadas exceden');
+  });
+
   test('resuelve parametros visibles de horas extra', () => {
     expect(resolveOvertimeParameters({
       monthlyWorkHours: 200,

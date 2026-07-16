@@ -9,8 +9,11 @@ const { ensureWritablePayrollPeriodForDate, formatPeriodMarker, validatePeriod }
 const {
   ensureNoveltyTypeAllowed,
   getActiveNoveltyTypeConfigs,
+  isOvertimeConcept,
   normalizeNoveltyCode,
+  weekKeyFromDate,
 } = require('../services/payrollNoveltyService');
+const { getLegalParametersForTenant } = require('../services/legalParameterService');
 const { monthInEcuador, yearInEcuador } = require('../utils/dateEcuador');
 const { sendNotificacionPermisoResuelto } = require('../services/communicationService');
 
@@ -26,6 +29,8 @@ const NOVELTY_BULK_TEMPLATE_COLUMNS = [
 ];
 const NOVELTY_WRITABLE_PERIOD_STATUSES = new Set(['open', 'novelties_loaded', 'reopened', 'calculation_failed']);
 const NOVELTY_OPERATIVE_PERIOD_STATUSES = new Set([...NOVELTY_WRITABLE_PERIOD_STATUSES, 'calculated']);
+const DEFAULT_OVERTIME_NOVELTY_CODES = new Set(['hora_extra_50', 'hora_extra_100']);
+const OVERTIME_LIMIT_APPROVAL_REASON_MIN_LENGTH = 10;
 
 function resolveNoveltyMetadata(row = {}) {
   const metadata = row.metadata && typeof row.metadata === 'object' ? { ...row.metadata } : row.metadata;
@@ -677,17 +682,231 @@ function normalizePayloadMinutes(payload = {}) {
     : normalizeHoursToMinutes(payload.horas ?? payload.hours);
 }
 
+function normalizeMetadata(value) {
+  if (!value) return {};
+  if (typeof value === 'object') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return {};
+  }
+}
+
+function dateFromWeekStart(weekStartDate, offsetDays) {
+  const date = new Date(`${weekStartDate}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
+}
+
+function periodFromDate(value) {
+  const date = String(value || '').slice(0, 10);
+  return {
+    anio: Number(date.slice(0, 4)),
+    mes: Number(date.slice(5, 7)),
+  };
+}
+
+async function getOvertimeCodesForPeriod(tenantId, anio, mes) {
+  const configs = await getActiveNoveltyTypeConfigs(tenantId, anio, mes);
+  const codes = new Set(DEFAULT_OVERTIME_NOVELTY_CODES);
+  for (const config of configs) {
+    if (isOvertimeConcept(config.conceptCode)) codes.add(config.code);
+  }
+  return codes;
+}
+
+function approvedOvertimeExceptionMinutes(row, assumeApprovedException) {
+  if (assumeApprovedException) return Number(row.minutos || 0);
+  const metadata = normalizeMetadata(row.metadata);
+  return metadata.overtimeLimitException?.approved === true ? Number(row.minutos || 0) : 0;
+}
+
+function buildOvertimeExceptionPayload({ usuarioId, reason, maxWeeklyOvertimeHours, approvedVia }) {
+  return {
+    approved: true,
+    approvedBy: usuarioId || null,
+    approvedAt: new Date().toISOString(),
+    reason,
+    limitHours: maxWeeklyOvertimeHours,
+    approvedVia,
+  };
+}
+
+async function validateOvertimeLimitApproval({
+  tenantId,
+  usuarioId,
+  rowsToApprove,
+  anio,
+  mes,
+  approveException = false,
+  exceptionReason = '',
+  approvedVia = 'novedad.aprobar',
+}) {
+  const rows = Array.isArray(rowsToApprove) ? rowsToApprove : [];
+  if (rows.length === 0) {
+    return { exceptionIds: [], exceptionPayload: null, violations: [] };
+  }
+
+  const overtimeCodes = await getOvertimeCodesForPeriod(tenantId, anio, mes);
+  const overtimeRows = rows.filter((row) => overtimeCodes.has(normalizeNoveltyCode(row.tipo_novedad || row.tipoNovedad)));
+  if (overtimeRows.length === 0) {
+    return { exceptionIds: [], exceptionPayload: null, violations: [] };
+  }
+
+  const legalParameters = await getLegalParametersForTenant(tenantId, anio);
+  const maxWeeklyOvertimeHours = Number(legalParameters.payroll?.maxWeeklyOvertimeHours ?? 12);
+  const maxWeeklyMinutes = maxWeeklyOvertimeHours * 60;
+  if (!Number.isFinite(maxWeeklyMinutes) || maxWeeklyMinutes <= 0) {
+    return { exceptionIds: [], exceptionPayload: null, violations: [] };
+  }
+
+  const weekStarts = [...new Set(overtimeRows.map((row) => weekKeyFromDate(row.fecha)))].filter(Boolean);
+  const minDate = weekStarts.reduce((min, value) => (value < min ? value : min), weekStarts[0]);
+  const maxDate = weekStarts.reduce((max, value) => {
+    const endDate = dateFromWeekStart(value, 6);
+    return endDate > max ? endDate : max;
+  }, dateFromWeekStart(weekStarts[0], 6));
+  const employeeIds = [...new Set(overtimeRows.map((row) => row.empleado_id || row.empleadoId).filter(Boolean))];
+  const targetIds = overtimeRows.map((row) => String(row.id)).filter(Boolean);
+
+  const approvedRows = await db.query(`
+    SELECT id, empleado_id, fecha::text AS fecha, tipo_novedad, minutos, metadata
+    FROM novedades_asistencia
+    WHERE tenant_id = $1
+      AND empleado_id = ANY($2::uuid[])
+      AND estado = 'aprobado'
+      AND fecha >= $3::date
+      AND fecha <= $4::date
+      AND tipo_novedad = ANY($5::text[])
+      AND NOT (id = ANY($6::uuid[]))
+  `, [tenantId, employeeIds, minDate, maxDate, Array.from(overtimeCodes), targetIds]);
+
+  const groups = new Map();
+  const allRows = [
+    ...approvedRows.rows.map((row) => ({ ...row, __target: false, __exceptionCandidate: false })),
+    ...overtimeRows.map((row) => ({ ...row, __target: true, __exceptionCandidate: Boolean(approveException) })),
+  ];
+
+  for (const row of allRows) {
+    const employeeId = row.empleado_id || row.empleadoId;
+    const weekStartDate = weekKeyFromDate(row.fecha);
+    const key = `${employeeId}|${weekStartDate}`;
+    const current = groups.get(key) || {
+      employeeId,
+      weekStartDate,
+      minutes: 0,
+      exceptionMinutes: 0,
+      targetIds: [],
+    };
+    const minutes = Number(row.minutos || 0);
+    current.minutes += minutes;
+    current.exceptionMinutes += approvedOvertimeExceptionMinutes(row, row.__exceptionCandidate);
+    if (row.__target && row.id) current.targetIds.push(String(row.id));
+    groups.set(key, current);
+  }
+
+  const violations = [];
+  const exceptionIds = new Set();
+  for (const group of groups.values()) {
+    const excessMinutes = Math.max(0, group.minutes - maxWeeklyMinutes);
+    if (excessMinutes <= 0) continue;
+    if (group.exceptionMinutes >= excessMinutes) {
+      group.targetIds.forEach((id) => exceptionIds.add(id));
+      continue;
+    }
+    violations.push({
+      empleadoId: group.employeeId,
+      weekStartDate: group.weekStartDate,
+      hours: Math.round((group.minutes / 60) * 100) / 100,
+      maxHours: maxWeeklyOvertimeHours,
+      excessHours: Math.round((excessMinutes / 60) * 100) / 100,
+      approvedExceptionHours: Math.round((group.exceptionMinutes / 60) * 100) / 100,
+    });
+  }
+
+  if (violations.length > 0) {
+    throw new AppError('Las horas extra exceden el limite semanal y requieren aprobacion explicita.', {
+      code: 'NOVEDAD_HORAS_EXTRA_LIMITE_APROBACION_REQUERIDA',
+      statusCode: 422,
+      details: {
+        violations,
+        maxWeeklyOvertimeHours,
+      },
+    });
+  }
+
+  if (exceptionIds.size > 0) {
+    const reason = String(exceptionReason || '').trim();
+    if (reason.length < OVERTIME_LIMIT_APPROVAL_REASON_MIN_LENGTH) {
+      throw new AppError('La aprobacion para exceder el limite de horas extra requiere un motivo de al menos 10 caracteres.', {
+        code: 'NOVEDAD_HORAS_EXTRA_EXCESO_MOTIVO_REQUERIDO',
+        statusCode: 422,
+        details: {
+          minLength: OVERTIME_LIMIT_APPROVAL_REASON_MIN_LENGTH,
+        },
+      });
+    }
+    return {
+      exceptionIds: Array.from(exceptionIds),
+      exceptionPayload: buildOvertimeExceptionPayload({
+        usuarioId,
+        reason,
+        maxWeeklyOvertimeHours,
+        approvedVia,
+      }),
+      violations: [],
+    };
+  }
+
+  return { exceptionIds: [], exceptionPayload: null, violations: [] };
+}
+
 async function aprobar(req, res) {
   try {
     const { id } = req.params;
     const { tenantId, usuarioId } = req;
+    const approveException = req.body?.approveOvertimeLimitException === true || req.body?.aprobarExcesoHorasExtra === true;
+    const exceptionReason = req.body?.overtimeLimitApprovalReason || req.body?.motivoExcesoHorasExtra || req.body?.motivo || '';
+
+    const current = await db.query(`
+      SELECT id, empleado_id, tenant_id, fecha::text AS fecha, tipo_novedad, minutos, metadata
+      FROM novedades_asistencia
+      WHERE id = $1 AND tenant_id = $2
+      LIMIT 1
+    `, [id, tenantId]);
+
+    if (current.rows.length === 0) {
+      return res.status(404).json({ error: 'Novedad no encontrada' });
+    }
+
+    const period = periodFromDate(current.rows[0].fecha);
+    const overtimeApproval = await validateOvertimeLimitApproval({
+      tenantId,
+      usuarioId,
+      rowsToApprove: current.rows,
+      anio: period.anio,
+      mes: period.mes,
+      approveException,
+      exceptionReason,
+      approvedVia: 'novedad.individual',
+    });
+    const exceptionPayload = overtimeApproval.exceptionIds.includes(String(id))
+      ? JSON.stringify(overtimeApproval.exceptionPayload)
+      : null;
 
     const result = await db.query(`
       UPDATE novedades_asistencia
-      SET estado = 'aprobado', aprobado_por = $1, updated_at = NOW()
+      SET estado = 'aprobado',
+          aprobado_por = $1,
+          aprobado_en = NOW(),
+          metadata = CASE
+            WHEN $4::jsonb IS NULL THEN COALESCE(metadata, '{}'::jsonb)
+            ELSE COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('overtimeLimitException', $4::jsonb)
+          END,
+          updated_at = NOW()
       WHERE id = $2 AND tenant_id = $3
-      RETURNING id, estado, aprobado_por, empleado_id, tipo_novedad, fecha
-    `, [usuarioId, id, tenantId]);
+      RETURNING id, estado, aprobado_por, empleado_id, tipo_novedad, fecha, metadata
+    `, [usuarioId, id, tenantId, exceptionPayload]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Novedad no encontrada' });
@@ -701,8 +920,19 @@ async function aprobar(req, res) {
 
     res.json({ success: true, novedad });
   } catch (err) {
-    console.error('[NOVEDADES] Error:', err);
-    res.status(500).json({ error: 'Error interno' });
+    console.error('[NOVEDADES] Error aprobando novedad', {
+      code: err.code || 'NOVEDAD_APROBAR_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    res.status(err.statusCode || 500).json({
+      error: err.code || 'NOVEDAD_APROBAR_ERROR',
+      message: err.message || 'Error interno',
+      details: err.details,
+      correlationId: req.correlationId,
+    });
   }
 }
 
@@ -786,11 +1016,41 @@ async function resolverPeriodo(req, res) {
       });
     }
 
+    let overtimeApproval = { exceptionIds: [], exceptionPayload: null };
+    if (estado === 'aprobado') {
+      const pending = await db.query(`
+        SELECT id, empleado_id, tenant_id, fecha::text AS fecha, tipo_novedad, minutos, metadata
+        FROM novedades_asistencia
+        WHERE tenant_id = $1
+          AND estado = 'pendiente'
+          AND (
+            periodo_nomina = $2
+            OR (EXTRACT(YEAR FROM fecha) = $3 AND EXTRACT(MONTH FROM fecha) = $4)
+          )
+      `, [tenantId, periodoNomina, anio, mes]);
+
+      overtimeApproval = await validateOvertimeLimitApproval({
+        tenantId,
+        usuarioId,
+        rowsToApprove: pending.rows,
+        anio,
+        mes,
+        approveException: req.body?.approveOvertimeLimitExceptions === true || req.body?.aprobarExcesosHorasExtra === true,
+        exceptionReason: req.body?.overtimeLimitApprovalReason || req.body?.motivoExcesoHorasExtra || motivo,
+        approvedVia: 'novedad.periodo',
+      });
+    }
+
     const result = await db.query(`
       UPDATE novedades_asistencia
       SET estado = ${estadoSql},
           aprobado_por = $1,
+          aprobado_en = CASE WHEN ${estadoSql} = 'aprobado' THEN NOW() ELSE aprobado_en END,
           justificacion = COALESCE($4::text, justificacion),
+          metadata = CASE
+            WHEN id = ANY($7::uuid[]) THEN COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('overtimeLimitException', $8::jsonb)
+            ELSE COALESCE(metadata, '{}'::jsonb)
+          END,
           updated_at = NOW()
       WHERE tenant_id = $2
         AND estado = 'pendiente'
@@ -799,7 +1059,16 @@ async function resolverPeriodo(req, res) {
           OR (EXTRACT(YEAR FROM fecha) = $5 AND EXTRACT(MONTH FROM fecha) = $6)
         )
       RETURNING id, empleado_id, tipo_novedad, fecha, estado
-    `, [usuarioId || null, tenantId, periodoNomina, justificacion, anio, mes]);
+    `, [
+      usuarioId || null,
+      tenantId,
+      periodoNomina,
+      justificacion,
+      anio,
+      mes,
+      overtimeApproval.exceptionIds,
+      overtimeApproval.exceptionPayload ? JSON.stringify(overtimeApproval.exceptionPayload) : '{}',
+    ]);
 
     await recordAudit({
       tenantId,
@@ -813,6 +1082,7 @@ async function resolverPeriodo(req, res) {
         periodoNomina,
         decision,
         total: result.rows.length,
+        overtimeLimitExceptions: overtimeApproval.exceptionIds.length,
       },
       ipAddress: req.ip,
     });

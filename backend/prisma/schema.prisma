@@ -709,6 +709,7 @@ model AttendanceNovelty {
   estado         ApprovalStatus        @default(pendiente)
   aprobadoPor    String?               @map("aprobado_por") @db.Uuid
   aprobadoEn     DateTime?             @map("aprobado_en") @db.Timestamptz(6)
+  metadata       Json                  @default("{}")
   createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   empleado       Employee              @relation(fields: [empleadoId], references: [id])

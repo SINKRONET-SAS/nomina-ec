@@ -9,6 +9,7 @@ jest.mock('../services/auditService', () => ({
 const db = require('../config/database');
 const { recordAudit } = require('../services/auditService');
 const {
+  aprobar,
   actualizar,
   crear,
   eliminar,
@@ -41,8 +42,15 @@ describe('novedadController resolverPeriodo', () => {
   test('aprueba novedades pendientes del periodo seleccionado', async () => {
     db.query.mockResolvedValueOnce({
       rows: [
-        { id: 'nov-1', empleado_id: 'emp-1', tipo_novedad: 'hora_extra_50', fecha: '2026-06-01', estado: 'aprobado' },
-        { id: 'nov-2', empleado_id: 'emp-2', tipo_novedad: 'hora_extra_50', fecha: '2026-06-01', estado: 'aprobado' },
+        { id: 'nov-1', empleado_id: 'emp-1', tipo_novedad: 'bono_desempeno', fecha: '2026-06-01', estado: 'pendiente' },
+        { id: 'nov-2', empleado_id: 'emp-2', tipo_novedad: 'bono_desempeno', fecha: '2026-06-01', estado: 'pendiente' },
+      ],
+    }).mockResolvedValueOnce({
+      rows: [],
+    }).mockResolvedValueOnce({
+      rows: [
+        { id: 'nov-1', empleado_id: 'emp-1', tipo_novedad: 'bono_desempeno', fecha: '2026-06-01', estado: 'aprobado' },
+        { id: 'nov-2', empleado_id: 'emp-2', tipo_novedad: 'bono_desempeno', fecha: '2026-06-01', estado: 'aprobado' },
       ],
     });
     const req = {
@@ -64,7 +72,7 @@ describe('novedadController resolverPeriodo', () => {
       estado: 'aprobado',
       total: 2,
     });
-    expect(db.query).toHaveBeenCalledWith(expect.stringContaining("estado = 'pendiente'"), expect.arrayContaining([
+    expect(db.query).toHaveBeenLastCalledWith(expect.stringContaining("estado = 'pendiente'"), expect.arrayContaining([
       'user-1',
       'tenant-1',
       '2026-06',
@@ -185,6 +193,125 @@ describe('novedadController listarPendientes operativas', () => {
       id: 'nov-1',
       editable: false,
       requiresEmployeePayrollInvalidation: true,
+    });
+  });
+});
+
+describe('novedadController aprobar horas extra', () => {
+  beforeEach(() => {
+    db.query.mockReset();
+    recordAudit.mockReset();
+  });
+
+  function mockOvertimeApprovalPrecheck({ approvedRows = [] } = {}) {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [{
+          id: '11111111-1111-1111-1111-111111111111',
+          empleado_id: '22222222-2222-2222-2222-222222222222',
+          tenant_id: 'tenant-1',
+          fecha: '2026-06-03',
+          tipo_novedad: 'hora_extra_50',
+          minutos: 120,
+          metadata: {},
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [{
+          parameter_key: 'horas_extra_limite_semanal',
+          value: { amount: 2 },
+          validation_status: 'validado_oficial',
+          source_name: 'Parametro de prueba',
+          source_url: '',
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: approvedRows });
+  }
+
+  test('requiere aprobacion explicita para exceder limite semanal', async () => {
+    mockOvertimeApprovalPrecheck({
+      approvedRows: [{
+        id: '33333333-3333-3333-3333-333333333333',
+        empleado_id: '22222222-2222-2222-2222-222222222222',
+        fecha: '2026-06-01',
+        tipo_novedad: 'hora_extra_50',
+        minutos: 60,
+        metadata: {},
+      }],
+    });
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-approve-limit',
+      params: { id: '11111111-1111-1111-1111-111111111111' },
+      body: {},
+    };
+    const res = createResponse();
+
+    await aprobar(req, res);
+
+    expect(res.statusCode).toBe(422);
+    expect(res.body).toMatchObject({
+      error: 'NOVEDAD_HORAS_EXTRA_LIMITE_APROBACION_REQUERIDA',
+      correlationId: 'corr-approve-limit',
+    });
+    expect(db.query).toHaveBeenCalledTimes(5);
+  });
+
+  test('marca excepcion aprobada cuando el motivo cubre el exceso', async () => {
+    mockOvertimeApprovalPrecheck({
+      approvedRows: [{
+        id: '33333333-3333-3333-3333-333333333333',
+        empleado_id: '22222222-2222-2222-2222-222222222222',
+        fecha: '2026-06-01',
+        tipo_novedad: 'hora_extra_50',
+        minutos: 60,
+        metadata: {},
+      }],
+    });
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: '11111111-1111-1111-1111-111111111111',
+        estado: 'aprobado',
+        aprobado_por: 'user-1',
+        empleado_id: '22222222-2222-2222-2222-222222222222',
+        tipo_novedad: 'hora_extra_50',
+        fecha: '2026-06-03',
+        metadata: {
+          overtimeLimitException: {
+            approved: true,
+            reason: 'Cierre extraordinario autorizado',
+          },
+        },
+      }],
+    });
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-approve-exception',
+      params: { id: '11111111-1111-1111-1111-111111111111' },
+      body: {
+        approveOvertimeLimitException: true,
+        overtimeLimitApprovalReason: 'Cierre extraordinario autorizado',
+      },
+    };
+    const res = createResponse();
+
+    await aprobar(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(db.query).toHaveBeenLastCalledWith(
+      expect.stringContaining('overtimeLimitException'),
+      expect.arrayContaining(['user-1', '11111111-1111-1111-1111-111111111111', 'tenant-1'])
+    );
+    expect(JSON.parse(db.query.mock.calls[5][1][3])).toMatchObject({
+      approved: true,
+      approvedBy: 'user-1',
+      reason: 'Cierre extraordinario autorizado',
+      limitHours: 2,
+      approvedVia: 'novedad.individual',
     });
   });
 });
