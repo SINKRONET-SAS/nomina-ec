@@ -664,7 +664,7 @@ async function generatePayrollRolePdf({ tenantId, payrollId, userId = null, incl
   const key = `roles/${tenantId}/${row.anio}-${String(row.mes).padStart(2, '0')}/${safeFilePart(row.empleado_id)}/${Date.now()}_${fileName}`;
   const url = await s3Upload(buffer, key, 'application/pdf');
 
-  if (row.estado !== 'cerrada') {
+  if (!['cerrada', 'pagada'].includes(String(row.estado || '').toLowerCase())) {
     await db.query(`
       UPDATE nominas
       SET rol_pdf_url = $3,

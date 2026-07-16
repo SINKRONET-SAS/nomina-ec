@@ -560,7 +560,7 @@ async function descargarRolPDF(req, res) {
     const { id } = req.params;
     const { tenantId } = req;
     const result = await db.query(`
-      SELECT n.rol_pdf_url, n.anio, n.mes, e.nombres, e.apellidos, e.cedula
+      SELECT n.rol_pdf_url, n.estado, n.anio, n.mes, e.nombres, e.apellidos, e.cedula
       FROM nominas n
       JOIN empleados e ON e.id = n.empleado_id
       WHERE n.id = $1 AND n.tenant_id = $2
@@ -577,7 +577,8 @@ async function descargarRolPDF(req, res) {
     const row = result.rows[0];
     let url = row.rol_pdf_url;
     let generatedRole = null;
-    if (!url || String(url).startsWith('demo://')) {
+    const isFinalRole = ['cerrada', 'pagada'].includes(String(row.estado || '').toLowerCase());
+    if (isFinalRole || !url || String(url).startsWith('demo://')) {
       generatedRole = await generatePayrollRolePdf({
         tenantId,
         payrollId: id,
@@ -795,7 +796,10 @@ async function cerrarMes(req, res) {
 
     const result = await tx.query(`
       UPDATE nominas
-      SET estado = 'cerrada', cerrado_en = NOW(), updated_at = NOW()
+      SET estado = 'cerrada',
+          rol_pdf_url = NULL,
+          cerrado_en = NOW(),
+          updated_at = NOW()
       WHERE tenant_id = $1 AND anio = $2 AND mes = $3 AND estado = 'borrador'
       RETURNING id, empleado_id, tenant_id, anio, mes, detalle_calculo
     `, [tenantId, anioNumber, mesNumber]);

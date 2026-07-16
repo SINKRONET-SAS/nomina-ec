@@ -163,6 +163,7 @@ describe('nominaController cerrarMes', () => {
     expect(db.getClient).toHaveBeenCalledWith('tenant-1', 'user-1');
     expect(tx.query.mock.calls[0][0]).toContain('FOR UPDATE');
     expect(tx.query.mock.calls[1][0]).toContain("SET estado = 'cerrada'");
+    expect(tx.query.mock.calls[1][0]).toContain('rol_pdf_url = NULL');
     expect(tx.query.mock.calls[2][0]).toContain("SET status = 'closed'");
     expect(db.commit).toHaveBeenCalledWith(tx);
     expect(db.rollback).not.toHaveBeenCalled();
@@ -248,6 +249,43 @@ describe('nominaController descargarRolPDF', () => {
     });
     expect(res.body.url).toContain('/api/storage/local/');
     expect(res.body.url).toContain('token=');
+  });
+
+  test('regenera PDF definitivo aunque exista una URL de borrador previa al cierre', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        rol_pdf_url: 'http://localhost:3000/api/storage/local/rol-borrador',
+        estado: 'cerrada',
+        anio: 2026,
+        mes: 6,
+        cedula: '0102030405',
+      }],
+    });
+    generatePayrollRolePdf.mockResolvedValueOnce({
+      url: 'http://localhost:3000/api/storage/local/rol-definitivo',
+      fileName: 'rol_pago_0102030405_2026_06.pdf',
+      contentType: 'application/pdf',
+    });
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-final-role',
+      params: { id: 'nomina-1' },
+    };
+    const res = createResponse();
+
+    await descargarRolPDF(req, res);
+
+    expect(generatePayrollRolePdf).toHaveBeenCalledWith({
+      tenantId: 'tenant-1',
+      payrollId: 'nomina-1',
+      userId: 'user-1',
+    });
+    expect(res.body).toMatchObject({
+      success: true,
+      generated: true,
+      url: expect.stringContaining('/api/storage/local/'),
+    });
   });
 });
 
