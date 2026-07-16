@@ -3,6 +3,10 @@
 // ============================================================
 const db = require('../config/database');
 const { generarContrato, listContractTemplates } = require('../services/templateGenerator');
+const {
+  listTenantContractTemplates,
+  updateTenantContractTemplate,
+} = require('../services/contractTemplateCatalogService');
 const { listEcuadorContractTypes } = require('../config/ecuadorContractTypes');
 const { calcularLiquidacion } = require('../services/liquidacionService');
 const { generateEquipmentDeliveryAct } = require('../services/equipmentDeliveryActService');
@@ -74,7 +78,18 @@ async function generarContratoCtrl(req, res) {
       return res.status(404).json({ error: 'Tenant no encontrado', correlationId: req.correlationId });
     }
     
-    const resultado = await generarContrato(empResult.rows[0], tenantResult.rows[0], tipoContrato || templateKey, { templateKey });
+    const resultado = await generarContrato(
+      empResult.rows[0],
+      tenantResult.rows[0],
+      tipoContrato || templateKey,
+      {
+        templateKey,
+        resolveTenantCatalog: true,
+        parameters: req.body?.parameterValues || req.body?.parameters || {},
+        correlationId: req.correlationId,
+        userId: req.usuarioId || req.usuario?.id || null,
+      },
+    );
     
     res.status(201).json({ success: true, documento: resultado, correlationId: req.correlationId });
   } catch (err) {
@@ -180,7 +195,9 @@ async function adjuntarDocumento(req, res) {
 
 async function listarPlantillasContrato(req, res) {
   try {
-    const templates = listContractTemplates();
+    const templates = req.tenantId
+      ? await listTenantContractTemplates(req.tenantId)
+      : listContractTemplates();
     return res.json({ success: true, templates, correlationId: req.correlationId });
   } catch (err) {
     console.error('[DOCUMENTOS] Error listando plantillas de contrato', {
@@ -192,6 +209,55 @@ async function listarPlantillasContrato(req, res) {
     });
     return res.status(err.statusCode || 500).json({
       error: err.code || 'DOCUMENTO_CONTRATO_TEMPLATES_ERROR',
+      message: err.message,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function configurarPlantillasContrato(req, res) {
+  try {
+    const templates = await listTenantContractTemplates(req.tenantId, { includeInactive: true });
+    return res.json({ success: true, templates, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[DOCUMENTOS] Error consultando configuración de plantillas', {
+      code: err.code || 'DOCUMENTO_CONTRATO_CONFIG_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'DOCUMENTO_CONTRATO_CONFIG_ERROR',
+      message: err.message,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function actualizarPlantillaContrato(req, res) {
+  try {
+    const template = await updateTenantContractTemplate(
+      req.tenantId,
+      req.params.templateKey,
+      req.body || {},
+      req.usuario,
+      {
+        correlationId: req.correlationId,
+        ipAddress: req.ip,
+      },
+    );
+    return res.json({ success: true, template, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[DOCUMENTOS] Error actualizando plantilla de contrato', {
+      code: err.code || 'DOCUMENTO_CONTRATO_UPDATE_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'DOCUMENTO_CONTRATO_UPDATE_ERROR',
       message: err.message,
       correlationId: req.correlationId,
     });
@@ -349,6 +415,8 @@ async function descargar(req, res) {
 module.exports = {
   generarContrato: generarContratoCtrl,
   listarPlantillasContrato,
+  configurarPlantillasContrato,
+  actualizarPlantillaContrato,
   listarTiposContratoEcuador,
   generarFiniquito,
   generarActaEntregaDotacion,

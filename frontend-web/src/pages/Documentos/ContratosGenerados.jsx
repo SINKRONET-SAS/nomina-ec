@@ -112,7 +112,12 @@ function ContratosGenerados() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">Contratos</h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">Contratos</h1>
+        <Link className="inline-flex min-h-9 items-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:border-teal-300" to="/dashboard/configuracion/plantillas-contrato">
+          <Settings2 className="h-4 w-4" /> Configurar plantillas
+        </Link>
+      </div>
 
       <CompactNotice className="mb-4" tone="amber" title="Antes de registrar">
         Revisa el contrato y, si aplica, gestiona su registro en SUT/MDT. SKNOMINA conserva la evidencia, no confirma trámites externos.
@@ -209,6 +214,12 @@ function ContratosGenerados() {
             ))}
           </div>
         </section>
+      )}
+
+      {!loadingTemplates && templates.length === 0 && (
+        <CompactNotice className="mb-4" tone="red" title="No hay plantillas activas">
+          Activa al menos una plantilla en configuración antes de generar nuevos contratos.
+        </CompactNotice>
       )}
 
       {message && <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}

@@ -264,8 +264,10 @@ app.post('/api/nomina/reabrir', requireRole('owner', 'admin_rrhh'), requireFresh
 
 const documentoLegalController = require('./controllers/documentoLegalController');
 app.get('/api/documentos/contrato/tipos-ecuador', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.listarTiposContratoEcuador);
+app.get('/api/documentos/contrato/plantillas/configuracion', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.configurarPlantillasContrato);
 app.get('/api/documentos/contrato/plantillas', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.listarPlantillasContrato);
 app.post('/api/documentos/contrato', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.generarContrato);
+app.put('/api/documentos/contrato/plantillas/:templateKey', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.actualizarPlantillaContrato);
 app.post('/api/documentos/finiquito', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.generarFiniquito);
 app.post('/api/documentos/acta-entrega-dotacion', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.generarActaEntregaDotacion);
 app.post('/api/documentos/adjuntar', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.adjuntarDocumento);

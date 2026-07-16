@@ -117,6 +117,7 @@ function Layout() {
       ]
     },
     { path: '/dashboard/configuracion/parametrizacion', icon: Settings2, label: 'Parametrización', roles: ['superadmin', 'owner', 'admin_rrhh'], module: 'parametrizacion' },
+    { path: '/dashboard/configuracion/plantillas-contrato', icon: FileText, label: 'Plantillas de contrato', roles: ['superadmin', 'owner', 'admin_rrhh'], module: 'parametrizacion' },
     { path: '/dashboard/configuracion/comunicaciones', icon: Mail, label: 'Comunicaciones', roles: ['superadmin', 'owner', 'admin_rrhh'], module: 'comunicaciones' },
     { path: '/dashboard/ayuda', icon: HelpCircle, label: 'Ayuda', roles: ['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado'] },
     { path: '/dashboard/facturacion', icon: CreditCard, label: 'Facturador interno', roles: ['superadmin'] },

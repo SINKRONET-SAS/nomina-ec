@@ -174,6 +174,24 @@ function resolveTemplateKey({ templateKey, tipoContrato }) {
   return CONTRACT_TYPE_ALIASES.get(requested) || requested || DEFAULT_TEMPLATE_KEY;
 }
 
+function setPathValue(source, pathValue, value) {
+  const parts = String(pathValue || '').split('.').filter(Boolean);
+  if (parts.length < 2 || parts[0] !== 'contract') return;
+  let current = source;
+  for (const part of parts.slice(0, -1)) {
+    if (!current[part] || typeof current[part] !== 'object' || Array.isArray(current[part])) current[part] = {};
+    current = current[part];
+  }
+  current[parts[parts.length - 1]] = value;
+}
+
+function applyContractParameters(context, parameterValues = {}) {
+  for (const [pathValue, value] of Object.entries(parameterValues || {})) {
+    setPathValue(context, pathValue, value);
+  }
+  return context;
+}
+
 function loadContractTemplate({ templateKey, tipoContrato } = {}) {
   const resolvedKey = resolveTemplateKey({ templateKey, tipoContrato });
   const filePath = path.join(CONTRACT_TEMPLATE_DIR, `${resolvedKey}.json`);
@@ -315,7 +333,7 @@ function buildWorkShift(employee) {
   return 'jornada ordinaria parametrizada por el empleador';
 }
 
-function buildContractContext({ employee, tenant, template, legalParameters, year, generatedAt }) {
+function buildContractContext({ employee, tenant, template, legalParameters, year, generatedAt, correlationId = null }) {
   const tenantConfig = safeJson(tenant.configuracion);
   const probationDays = Number(template.probation?.days || 0);
   const startDate = employee.fecha_ingreso || generatedAt;
@@ -459,6 +477,7 @@ function buildContractContext({ employee, tenant, template, legalParameters, yea
     },
     system: {
       product: 'SKNOMINA',
+      correlationId,
     },
   };
 }
@@ -668,14 +687,28 @@ function pdfBufferFromDefinition(docDefinition) {
 
 async function generarContrato(empleado, tenant, tipoContrato = null, options = {}) {
   const employee = await enrichEmployee(empleado, tenant);
-  const resolvedTemplateKey = options.templateKey
+  const requestedTemplateKey = options.useTenantDefault && (!tipoContrato || tipoContrato === 'indefinido')
+    ? null
+    : options.templateKey
     || tipoContrato
-    || employee.tipo_contrato
-    || DEFAULT_TEMPLATE_KEY;
-  const template = loadContractTemplate({
-    templateKey: resolvedTemplateKey,
-    tipoContrato: resolvedTemplateKey,
+    || employee.tipo_contrato;
+  let template = loadContractTemplate({
+    templateKey: requestedTemplateKey,
+    tipoContrato: requestedTemplateKey,
   });
+  let catalogConfiguration = null;
+  if (options.resolveTenantCatalog === true) {
+    const { resolveTenantContractTemplate } = require('./contractTemplateCatalogService');
+    const resolved = await resolveTenantContractTemplate({
+      tenantId: tenant.id,
+      templateKey: requestedTemplateKey,
+      tipoContrato: requestedTemplateKey,
+      userId: options.userId || null,
+      correlationId: options.correlationId || null,
+    });
+    template = resolved.template;
+    catalogConfiguration = resolved.configuration;
+  }
   if (!isAcceptedEcuadorContractType(template.contractType || 'indefinido')) {
     throw new AppError(`El tipo de contrato '${template.contractType}' no esta homologado para Ecuador en SKNOMINA.`, {
       code: 'CONTRATO_TIPO_NO_HOMOLOGADO_ECUADOR',
@@ -701,7 +734,19 @@ async function generarContrato(empleado, tenant, tipoContrato = null, options = 
     legalParameters,
     year,
     generatedAt,
+    correlationId: options.correlationId || null,
   });
+  let normalizedParameters = {};
+  if (options.resolveTenantCatalog === true) {
+    const { normalizeParameterValues } = require('./contractTemplateCatalogService');
+    const defaultParameters = catalogConfiguration?.parameterValues || {};
+    const explicitParameters = options.parameters || {};
+    normalizedParameters = normalizeParameterValues(template, {
+      ...defaultParameters,
+      ...explicitParameters,
+    });
+    applyContractParameters(context, normalizedParameters);
+  }
   validateSignatureReadyContext(template, context);
   const docDefinition = buildContractDocDefinition({ template, context });
   const pdfBuffer = await pdfBufferFromDefinition(docDefinition);
@@ -709,6 +754,7 @@ async function generarContrato(empleado, tenant, tipoContrato = null, options = 
   const url = await s3Upload(pdfBuffer, key, 'application/pdf');
   const metadata = {
     source: 'sistema_sknomina',
+    correlationId: options.correlationId || null,
     documentKind: 'contrato',
     templateKey: template.templateKey,
     templateDisplayName: template.displayName,
@@ -718,6 +764,7 @@ async function generarContrato(empleado, tenant, tipoContrato = null, options = 
     legalReviewStatus: context.contract.legalReviewStatus,
     sutRegistrationStatus: context.contract.sutRegistrationStatus,
     probation: template.probation || { enabled: false },
+    parameters: normalizedParameters,
     storageKey: key,
     snapshot: context,
   };
@@ -982,6 +1029,8 @@ module.exports = {
   generarActaFiniquito,
   listContractTemplates,
   loadContractTemplate,
+  resolveTemplateKey,
+  applyContractParameters,
   buildContractContext,
   validateSignatureReadyContext,
   buildContractDocDefinition,

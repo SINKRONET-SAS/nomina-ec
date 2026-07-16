@@ -378,6 +378,12 @@ function buildPayrollRoleDocDefinition(row) {
     pageMargins: [36, 42, 36, 42],
     content: [
       ...buildPdfHeader({ title: 'ROL DE PAGO', company, period, isDraft: !isFinalRole }),
+      ...(isFinalRole ? [] : [{
+        text: 'BORRADOR - NO CONSTITUYE COMPROBANTE DE PAGO',
+        style: 'draftWarning',
+        alignment: 'center',
+        margin: [0, 0, 0, 10],
+      }]),
       {
         columns: [
           {

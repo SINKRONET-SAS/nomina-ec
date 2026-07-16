@@ -291,9 +291,7 @@ function NuevoEmpleado() {
   const activeOrganizationUnits = (organizationUnitsQuery.data || []).filter((item) => item.status !== 'inactivo');
   const activeJobPositions = (jobPositionsQuery.data || []).filter((item) => item.status === 'activo');
   const activeWorkZones = (workZonesQuery.data || []).filter((item) => item.status !== 'inactivo');
-  const contractTemplateOptions = contractTemplatesQuery.data?.length
-    ? contractTemplatesQuery.data
-    : [{ templateKey: DEFAULT_CONTRACT_TEMPLATE_KEY, displayName: 'Contrato indefinido general' }];
+  const contractTemplateOptions = contractTemplatesQuery.data || [];
   const currentContractTemplateVisible = contractTemplateOptions.some(
     (template) => template.templateKey === formData.tipo_contrato,
   );
@@ -826,6 +824,12 @@ function NuevoEmpleado() {
               ))}
             </select>
           </Field>
+          {!contractTemplatesQuery.isLoading && contractTemplateOptions.length === 0 && (
+            <div className={`${FIELD_FULL} rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900`}>
+              No hay plantillas activas para esta empresa. Configura al menos una antes de guardar el trabajador.{' '}
+              <Link className="font-semibold underline" to="/dashboard/configuracion/plantillas-contrato">Configurar plantillas</Link>
+            </div>
+          )}
           <div className={`${FIELD_FULL} rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700`}>
             Este modelo se usará al generar el contrato PDF. Elige la modalidad real del expediente.
           </div>
@@ -961,7 +965,7 @@ function NuevoEmpleado() {
 
         <div className="flex justify-end gap-4 pt-2">
           <button className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => navigate(-1)} type="button">Cancelar</button>
-          <button className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50" disabled={cargando || isMinor || salaryOutOfRange || activeJobPositions.length === 0} type="submit">
+          <button className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50" disabled={cargando || isMinor || salaryOutOfRange || activeJobPositions.length === 0 || contractTemplateOptions.length === 0} type="submit">
             {cargando ? 'Guardando...' : isEdit ? 'Actualizar ficha' : 'Guardar trabajador'}
           </button>
         </div>

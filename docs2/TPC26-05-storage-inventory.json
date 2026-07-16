@@ -1,0 +1,279 @@
+{
+  "generatedAt": "2026-07-16T20:40:38.080Z",
+  "root": "C:\\proyectos web\\nuevo_nomina\\backend\\storage\\local-files",
+  "access": "local_disponible",
+  "files": 36,
+  "bytes": 624999,
+  "byCategory": {
+    "evidencia_legal": {
+      "files": 8,
+      "bytes": 121451
+    },
+    "metadata_companion": {
+      "files": 14,
+      "bytes": 3064
+    },
+    "operativo_no_legal": {
+      "files": 14,
+      "bytes": 500484
+    }
+  },
+  "duplicateGroups": [],
+  "legalEvidenceExcluded": 8,
+  "externalDatabase": "no_disponible_en_entorno",
+  "externalObjectStorage": "no_disponible_en_entorno",
+  "filesDetail": [
+    {
+      "relativePath": "documentos/9b230e04-e55d-4a74-b2bd-b685c7888594/eadee2fe-b43f-4a2e-92c9-ba2574259142/actas-dotacion/acta_entrega_dotacion_1782563561475.pdf",
+      "bytes": 30390,
+      "extension": ".pdf",
+      "category": "evidencia_legal",
+      "sha256": "45c7f190415107be623193f8fcaf5cb906d6531b529c104d6ff36d9e55aa81bc"
+    },
+    {
+      "relativePath": "documentos/9b230e04-e55d-4a74-b2bd-b685c7888594/eadee2fe-b43f-4a2e-92c9-ba2574259142/actas-dotacion/acta_entrega_dotacion_1782563561475.pdf.metadata.json",
+      "bytes": 250,
+      "extension": ".json",
+      "category": "evidencia_legal",
+      "sha256": "258d9b06ae35355e806fdb6669e58e1a7f00b1be9b85be543db184c3f67b9359"
+    },
+    {
+      "relativePath": "documentos/9b230e04-e55d-4a74-b2bd-b685c7888594/eadee2fe-b43f-4a2e-92c9-ba2574259142/contratos/contrato_indefinido_mercaderista_prueba_1782393602309.pdf",
+      "bytes": 47649,
+      "extension": ".pdf",
+      "category": "evidencia_legal",
+      "sha256": "03fd59701a81bb3ae1a6ea6294e7fa94412c4edd13a9de1916d21a3361906a9f"
+    },
+    {
+      "relativePath": "documentos/9b230e04-e55d-4a74-b2bd-b685c7888594/eadee2fe-b43f-4a2e-92c9-ba2574259142/contratos/contrato_indefinido_mercaderista_prueba_1782393602309.pdf.metadata.json",
+      "bytes": 263,
+      "extension": ".json",
+      "category": "evidencia_legal",
+      "sha256": "2910dc0302193eb3a9c9075eb27a89c3586928685ad6596864b5b29d1cbf9fc3"
+    },
+    {
+      "relativePath": "documentos/e51d1dc7-6859-4fa3-ba67-f2edf5e95ce7/6b236c0f-5cfc-40c4-9a10-cc8f67d619d4/contratos/contrato_indefinido_general_1782579680834.pdf",
+      "bytes": 42485,
+      "extension": ".pdf",
+      "category": "evidencia_legal",
+      "sha256": "21b2796fc656a32ba03cd0f4ea15a3ff32257af792d4ee63af292e0dd9e4ba64"
+    },
+    {
+      "relativePath": "documentos/e51d1dc7-6859-4fa3-ba67-f2edf5e95ce7/6b236c0f-5cfc-40c4-9a10-cc8f67d619d4/contratos/contrato_indefinido_general_1782579680834.pdf.metadata.json",
+      "bytes": 251,
+      "extension": ".json",
+      "category": "evidencia_legal",
+      "sha256": "9daa30c9e248e1607e9cb78f942a438f305181f9ecc7c72d11ad027a9aece4f9"
+    },
+    {
+      "relativePath": "documentos/local-smoke/contrato.pdf",
+      "bytes": 20,
+      "extension": ".pdf",
+      "category": "evidencia_legal",
+      "sha256": "07540dea5e58fc4960a5a5e95ffd6c0c4564b86f64863005b55c634461ce4dc4"
+    },
+    {
+      "relativePath": "documentos/local-smoke/contrato.pdf.metadata.json",
+      "bytes": 143,
+      "extension": ".json",
+      "category": "evidencia_legal",
+      "sha256": "213d6eac15cf9eeea9fb26adf244723a3336c5fd028d62f7980c203d450d0e35"
+    },
+    {
+      "relativePath": "pagos/9b230e04-e55d-4a74-b2bd-b685c7888594/banco/PAGO_NOMINA_202605_PRODUBANCO.csv",
+      "bytes": 3295,
+      "extension": ".csv",
+      "category": "operativo_no_legal",
+      "sha256": "491d39e9087905543b9e45ae23976a8719ce810f5a7862b77b36783940347836"
+    },
+    {
+      "relativePath": "pagos/9b230e04-e55d-4a74-b2bd-b685c7888594/banco/PAGO_NOMINA_202605_PRODUBANCO.csv.metadata.json",
+      "bytes": 185,
+      "extension": ".json",
+      "category": "metadata_companion",
+      "sha256": "2113332c69d3970648e5818de95f1151ec05a6d4826efa8e142a2e2ed01bac9f"
+    },
+    {
+      "relativePath": "pagos/9b230e04-e55d-4a74-b2bd-b685c7888594/banco/PAGO_NOMINA_202605.xlsx",
+      "bytes": 8200,
+      "extension": ".xlsx",
+      "category": "operativo_no_legal",
+      "sha256": "0d7a9538e5015dde63f0bb497d4162eb5f66b29161682caf4f1de82989df6fae"
+    },
+    {
+      "relativePath": "pagos/9b230e04-e55d-4a74-b2bd-b685c7888594/banco/PAGO_NOMINA_202605.xlsx.metadata.json",
+      "bytes": 232,
+      "extension": ".json",
+      "category": "metadata_companion",
+      "sha256": "d58df9d4d88de5bdaa1ff32a71b5b1a4312010886f72117037efbc0deb54c9e0"
+    },
+    {
+      "relativePath": "reportes/9b230e04-e55d-4a74-b2bd-b685c7888594/iess/SAE_202606.xml",
+      "bytes": 13506,
+      "extension": ".xml",
+      "category": "operativo_no_legal",
+      "sha256": "1c229c5cc3583a12cd8a40d721c70e7cf10606b6520609327227a5abf667c19f"
+    },
+    {
+      "relativePath": "reportes/9b230e04-e55d-4a74-b2bd-b685c7888594/iess/SAE_202606.xml.metadata.json",
+      "bytes": 176,
+      "extension": ".json",
+      "category": "metadata_companion",
+      "sha256": "2dcc8188ad95bd5d0988c5a9be9d1230c57883ac9878f051f564a9286ac44242"
+    },
+    {
+      "relativePath": "reportes/9b230e04-e55d-4a74-b2bd-b685c7888594/nomina/PAYROLL_EMPLOYEE_DETAIL_202606.xlsx",
+      "bytes": 42181,
+      "extension": ".xlsx",
+      "category": "operativo_no_legal",
+      "sha256": "726be7fc54320e83fd0b7cb35df8174c91386f033601dd26f73b7bfa230662f3"
+    },
+    {
+      "relativePath": "reportes/9b230e04-e55d-4a74-b2bd-b685c7888594/nomina/PAYROLL_EMPLOYEE_DETAIL_202606.xlsx.metadata.json",
+      "bytes": 249,
+      "extension": ".json",
+      "category": "metadata_companion",
+      "sha256": "8781ffe2bd97dc988d401d29f24be24ad20548ea38673b7ae8ed25be9b82fdd0"
+    },
+    {
+      "relativePath": "reportes/9b230e04-e55d-4a74-b2bd-b685c7888594/sri/formulario-107/FORM107_0907300156_2026.pdf",
+      "bytes": 23275,
+      "extension": ".pdf",
+      "category": "operativo_no_legal",
+      "sha256": "c92c85538d0cfe3f8397644e450d5b621bfb10a68ddb1d5177b3b79787a14682"
+    },
+    {
+      "relativePath": "reportes/9b230e04-e55d-4a74-b2bd-b685c7888594/sri/formulario-107/FORM107_0907300156_2026.pdf.metadata.json",
+      "bytes": 203,
+      "extension": ".json",
+      "category": "metadata_companion",
+      "sha256": "31a21617930a2f0c11d18377c96ab4b2c3938b3eb36280ccc93bea977ef57192"
+    },
+    {
+      "relativePath": "reportes/e51d1dc7-6859-4fa3-ba67-f2edf5e95ce7/sri/formulario-107/FORM107_0907300156_2026.pdf",
+      "bytes": 23174,
+      "extension": ".pdf",
+      "category": "operativo_no_legal",
+      "sha256": "a67f2c1f57a51630664735795501352173415ab2d10f013898561071058ad53b"
+    },
+    {
+      "relativePath": "reportes/e51d1dc7-6859-4fa3-ba67-f2edf5e95ce7/sri/formulario-107/FORM107_0907300156_2026.pdf.metadata.json",
+      "bytes": 203,
+      "extension": ".json",
+      "category": "metadata_companion",
+      "sha256": "74f7e7811c57c81e30fca002d04cb2b51f8d522ee10c9ee794034b5a529361ee"
+    },
+    {
+      "relativePath": "reportes/e51d1dc7-6859-4fa3-ba67-f2edf5e95ce7/sri/RDEP_2026.xml",
+      "bytes": 58086,
+      "extension": ".xml",
+      "category": "operativo_no_legal",
+      "sha256": "d30a3c0a638d854fac271b6d8c28e66727292f81bc55749031891a3ee7033040"
+    },
+    {
+      "relativePath": "reportes/e51d1dc7-6859-4fa3-ba67-f2edf5e95ce7/sri/RDEP_2026.xml.metadata.json",
+      "bytes": 174,
+      "extension": ".json",
+      "category": "metadata_companion",
+      "sha256": "27816e6bee3bfe7dbadc6c0ccfe5293593aed58565c5d7a8a9d62ef26c89401a"
+    },
+    {
+      "relativePath": "roles/9b230e04-e55d-4a74-b2bd-b685c7888594/2026-06/1b1c18b8-126d-43f5-9a51-412990929076/1782418039094_rol_pago_1707300016_2026_06.pdf",
+      "bytes": 23591,
+      "extension": ".pdf",
+      "category": "operativo_no_legal",
+      "sha256": "9be4cbec18bd8c640e4530b51f453945ec383227ac4be04e8278381620d0ae12"
+    },
+    {
+      "relativePath": "roles/9b230e04-e55d-4a74-b2bd-b685c7888594/2026-06/1b1c18b8-126d-43f5-9a51-412990929076/1782418039094_rol_pago_1707300016_2026_06.pdf.metadata.json",
+      "bytes": 244,
+      "extension": ".json",
+      "category": "metadata_companion",
+      "sha256": "1ea4b6a1157259e46fd3b3f8a84746f5897baf2f338cb8bfac4bc93492edac46"
+    },
+    {
+      "relativePath": "roles/9b230e04-e55d-4a74-b2bd-b685c7888594/2026-06/consolidado/1782501841984_roles_pago_transpuesto_2026_06.pdf",
+      "bytes": 72096,
+      "extension": ".pdf",
+      "category": "operativo_no_legal",
+      "sha256": "42f1568f741be81d86ffdb8e19cb3496911fa825dd35a43248f5f117c562865b"
+    },
+    {
+      "relativePath": "roles/9b230e04-e55d-4a74-b2bd-b685c7888594/2026-06/consolidado/1782501841984_roles_pago_transpuesto_2026_06.pdf.metadata.json",
+      "bytes": 222,
+      "extension": ".json",
+      "category": "metadata_companion",
+      "sha256": "49dd3a0f70af67aa796c575f548e50917fda46cfa7d97a8d29168a31b7d45583"
+    },
+    {
+      "relativePath": "roles/9b230e04-e55d-4a74-b2bd-b685c7888594/2026-06/consolidado/1782563600902_roles_pago_transpuesto_2026_06.pdf",
+      "bytes": 72096,
+      "extension": ".pdf",
+      "category": "operativo_no_legal",
+      "sha256": "25da7502be8597ffb7dff429dfb3e4661f4097d90e12bcc3207c86598f84c498"
+    },
+    {
+      "relativePath": "roles/9b230e04-e55d-4a74-b2bd-b685c7888594/2026-06/consolidado/1782563600902_roles_pago_transpuesto_2026_06.pdf.metadata.json",
+      "bytes": 222,
+      "extension": ".json",
+      "category": "metadata_companion",
+      "sha256": "34b3042f6a14bfe2fb9725fa6c11f4931ed534caae90ee7376b6db017bd92cda"
+    },
+    {
+      "relativePath": "roles/9b230e04-e55d-4a74-b2bd-b685c7888594/2026-06/eadee2fe-b43f-4a2e-92c9-ba2574259142/1782417442807_rol_pago_0907300156_2026_06.pdf",
+      "bytes": 23411,
+      "extension": ".pdf",
+      "category": "operativo_no_legal",
+      "sha256": "b04473404fee1bd5c630f7419054ea99694e73a4f8d97ae386e809c8eb2cd548"
+    },
+    {
+      "relativePath": "roles/9b230e04-e55d-4a74-b2bd-b685c7888594/2026-06/eadee2fe-b43f-4a2e-92c9-ba2574259142/1782417442807_rol_pago_0907300156_2026_06.pdf.metadata.json",
+      "bytes": 244,
+      "extension": ".json",
+      "category": "metadata_companion",
+      "sha256": "7291cc3598634e1855d3b4191690473d1e6fb41c48e9972608cc4cd5737d4b2e"
+    },
+    {
+      "relativePath": "roles/9cc3172c-8e3b-49df-83c3-321bd5731127/2026-04/64852c7a-e1c0-4391-9dce-d0d081d69624/1783264441143_rol_pago_1707300032_2026_04.pdf",
+      "bytes": 32681,
+      "extension": ".pdf",
+      "category": "operativo_no_legal",
+      "sha256": "613ecb2a9f2e619689a4b2089b8e0655b8bf11985283b08c67777d0b12d6a4d5"
+    },
+    {
+      "relativePath": "roles/9cc3172c-8e3b-49df-83c3-321bd5731127/2026-04/64852c7a-e1c0-4391-9dce-d0d081d69624/1783264441143_rol_pago_1707300032_2026_04.pdf.metadata.json",
+      "bytes": 244,
+      "extension": ".json",
+      "category": "metadata_companion",
+      "sha256": "3172a73945e61254df8a8d3d86f05de9566a50cdd0a7ddf460154ea28b7ac050"
+    },
+    {
+      "relativePath": "roles/e51d1dc7-6859-4fa3-ba67-f2edf5e95ce7/2026-05/39058d7d-d08c-458b-a35f-7eabbc8c5ae5/1782572512869_rol_pago_0907300156_2026_05.pdf",
+      "bytes": 33102,
+      "extension": ".pdf",
+      "category": "operativo_no_legal",
+      "sha256": "6382f17d20dacbb4f6da4b533f5a8040566c6a02adf179cd692b5b66158085dc"
+    },
+    {
+      "relativePath": "roles/e51d1dc7-6859-4fa3-ba67-f2edf5e95ce7/2026-05/39058d7d-d08c-458b-a35f-7eabbc8c5ae5/1782572512869_rol_pago_0907300156_2026_05.pdf.metadata.json",
+      "bytes": 244,
+      "extension": ".json",
+      "category": "metadata_companion",
+      "sha256": "c6460b5b1c624e89612446bafe16cdaaac3195de25c15b2a5c6b4a50ad13ad19"
+    },
+    {
+      "relativePath": "roles/e51d1dc7-6859-4fa3-ba67-f2edf5e95ce7/2026-05/consolidado/1782572466285_roles_pago_transpuesto_2026_05.pdf",
+      "bytes": 71790,
+      "extension": ".pdf",
+      "category": "operativo_no_legal",
+      "sha256": "163afe2271d24dc7390046dd06922a58c0f553b67d9e3e9e996a9229f4fa24bf"
+    },
+    {
+      "relativePath": "roles/e51d1dc7-6859-4fa3-ba67-f2edf5e95ce7/2026-05/consolidado/1782572466285_roles_pago_transpuesto_2026_05.pdf.metadata.json",
+      "bytes": 222,
+      "extension": ".json",
+      "category": "metadata_companion",
+      "sha256": "4823baf8687f1325f0e8f2560b84c7b08739f78d48d0dfd6810047fd970b3133"
+    }
+  ]
+}

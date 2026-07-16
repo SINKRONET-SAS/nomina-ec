@@ -780,7 +780,12 @@ async function crear(req, res) {
     const tenant = await db.query('SELECT * FROM tenants WHERE id = $1', [tenantId]);
     if (tenant.rows.length > 0) {
       try {
-        await generarContrato(empleado, tenant.rows[0], tipo_contrato || 'indefinido');
+        await generarContrato(empleado, tenant.rows[0], tipo_contrato || null, {
+          resolveTenantCatalog: true,
+          useTenantDefault: !tipo_contrato || tipo_contrato === 'indefinido',
+          correlationId: req.correlationId,
+          userId: req.usuarioId || req.usuario?.id || null,
+        });
         logger.info({
           code: 'EMPLOYEE_CONTRACT_GENERATED',
           correlationId: req.correlationId || 'empleado-contrato',

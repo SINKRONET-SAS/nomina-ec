@@ -1,6 +1,108 @@
 
 ---
 
+## Current Haiky Plan - HAIKY-PLANTILLAS-CONTRATOS-CLIENTE-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | `HAIKY-PLANTILLAS-CONTRATOS-CLIENTE-2026` |
+| Codigo | `TPC26` |
+| Estado | `TPC26-06 closed; implementacion, QA y gobierno completados` |
+| Fecha | `2026-07-16` |
+| Superficie | BACKEND, PWA, DOCUMENTOS, ALMACENAMIENTO, GOBIERNO |
+| Requerimiento | Parametrizar plantillas de contratos, habilitar solo las requeridas por cliente y optimizar almacenamiento sin perder evidencias. |
+| Plan doc | `docs2/PLAN_HAIKY_PLANTILLAS_CONTRATOS_CLIENTE_2026.md` |
+| Prompts | `.github/prompts/TPC26-00` a `.github/prompts/TPC26-06` |
+| AuditLock | `.vscode/AuditLock.json` |
+
+### Diagnostico TPC26-01
+
+- Decision confirmada: reutilizar `configuration_catalogs` con `catalog_type = plantilla_contrato`; no se crea una fuente paralela.
+- Se mantienen las fuentes JSON compartidas y se guardan por tenant solo activacion, orden, default, version, aliases y parametros permitidos.
+- La respuesta operativa conserva `templateKey`, `tipoContrato` y los campos existentes; la PWA consume el resultado del resolver backend.
+- La generacion automatica del alta de empleado continua, usando el default activo por tenant y el fallback legado mientras no exista configuracion.
+- La medicion local confirmada es 36 archivos y 624999 bytes; PostgreSQL y S3 no estuvieron disponibles, por lo que TPC26-05 debe ejecutar inventario autorizado y dry-run.
+
+### Implementacion TPC26-02
+
+- `configuration_catalogs` reutilizado con `catalog_type = plantilla_contrato`, índice de consulta tenant y unicidad de default activo.
+- El servicio `contractTemplateCatalogService` inicializa activaciones sin copiar definiciones, conserva aliases y valida tenant, estado, versión y permisos.
+- Se agregaron lecturas administrativas y actualización controlada de activación, default, orden y parámetros permitidos.
+- El contrato de generación mantiene `tipoContrato`, `templateKey` y el listado legado; la resolución tenant se activa en las rutas operativas.
+
+### Implementacion TPC26-03
+
+- El resolver backend rechaza una plantilla inactiva o cuya versión instalada no coincide con la versión activada por tenant.
+- Los parámetros aceptados se limitan a rutas `contract.*` declaradas, con tipo, longitud, obligatoriedad y revisión legal.
+- La generación aplica valores tenant y valores explícitos compatibles, y guarda los parámetros normalizados junto al snapshot del documento.
+- La descarga histórica continúa resolviendo por `documentos_legales` y no depende del estado actual de la fuente.
+
+### Implementacion TPC26-04
+
+- La PWA expone `/dashboard/configuracion/plantillas-contrato` con activación, default, orden y parámetros permitidos por plantilla.
+- La pantalla muestra estados de carga, error, ausencia de fuentes y control legal; los cambios se guardan con permisos backend.
+- Contratos generados enlaza a la configuración y muestra el bloqueo accionable cuando no existen plantillas activas.
+- Alta de empleado consume únicamente el catálogo operativo activo y bloquea el guardado cuando la empresa no tiene una plantilla disponible.
+
+### Implementacion TPC26-05
+
+- `tpc26-storage-inventory.mjs` mide archivos, bytes, categorías, SHA-256 y duplicados del almacenamiento local.
+- `tpc26-storage-cleanup.mjs` funciona en `dry-run` por defecto y solo permite cuarentena reversible de candidatos temporales no legales con confirmación explícita.
+- La medición disponible fue 36 archivos y 624999 bytes; 8 archivos bajo `documentos/` y 14 metadata acompañantes quedan excluidos de limpieza.
+- No se ejecutó eliminación ni movimiento: el dry-run no encontró candidatos temporales y PostgreSQL/S3 no están disponibles para afirmar un inventario externo.
+
+### Cierre TPC26-06
+
+- Suite backend completa: 58 suites y 406 tests PASS.
+- Contratos de sistema, Prisma, `node --check`, build PWA, inventario y dry-run PASS.
+- Se corrigió la identificación visible del PDF preliminar de rol como `BORRADOR - NO CONSTITUYE COMPROBANTE DE PAGO` para cumplir el contrato de sistema.
+- AuditLock queda cerrado en `TPC26-06`; no se debe reabrir silenciosamente para cambios posteriores.
+
+### Baseline TPC26
+
+- Existen 17 plantillas JSON en `backend/src/templates/legal/contracts/`.
+- `templateGenerator.listContractTemplates()` enumera todos los JSON globales y no aplica activacion por tenant.
+- `empleados.tipo_contrato` conserva una clave de hasta 60 caracteres con default heredado `indefinido`.
+- `documentoLegalController` mantiene `GET /api/documentos/contrato/plantillas` y generacion por `tipoContrato`/`templateKey`.
+- `NuevoEmpleado.jsx` consume el catalogo y `contractTemplates.js` conserva aliases de compatibilidad en frontend.
+- `templateGenerator.js` genera PDF, persiste metadata con `templateKey`, version y snapshot, y el alta de empleado intenta generar contrato automaticamente.
+- `configuration_catalogs` ya dispone de `tenant_id`, `scope`, `catalog_type`, `code`, `status`, `payload` y campos de aprobacion; TPC26-01 debe decidir si se reutiliza o se amplia sin duplicar fuente.
+- Las definiciones estaticas y los PDFs emitidos son superficies distintas: desactivar una plantilla no autoriza borrar contratos historicos.
+
+### Decisiones TPC26-00
+
+- Esta fase solo crea gobierno y documentacion; no modifica runtime, esquema, seeds, almacenamiento ni pantallas.
+- La activacion por cliente debe referenciar una fuente versionada y guardar solo estado, orden, default y parametros permitidos; no copiar el JSON completo por tenant.
+- La parametrizacion sera de lista blanca, con tipos, obligatoriedad, rangos, condiciones y snapshot por documento.
+- Se mantienen aliases y payloads existentes hasta contar con un plan de compatibilidad aprobado.
+- La PWA debe consumir disponibilidad resuelta por backend; no se creara un catalogo paralelo de plantillas.
+- El ahorro se medira separando fuentes comunes, documentos emitidos, temporales, duplicados y objetos huerfanos.
+- No se eliminan documentos legales, firmados o referenciados como parte de la optimizacion.
+- La revision laboral profesional y cualquier registro externo requerido quedan como controles de salida, no como afirmaciones automaticas del sistema.
+
+### Fases TPC26
+
+| Fase | Objetivo | Estado |
+|---|---|---|
+| TPC26-00 | Baseline, plan, contexto, prompts y AuditLock | completed-documental |
+| TPC26-01 | Diagnostico de fuentes, usos, almacenamiento y decision de arquitectura | completed-pass |
+| TPC26-02 | Activacion por tenant, versionado, permisos y migracion reversible | completed-pass |
+| TPC26-03 | Runtime parametrizable, validacion y snapshots | completed-pass |
+| TPC26-04 | Configuracion y operacion visible en PWA | completed-pass |
+| TPC26-05 | Retencion, limpieza reversible y medicion de almacenamiento | completed-pass |
+| TPC26-06 | QA, seguridad, legal, AuditLock, commit y push | closed |
+
+### Reglas operativas TPC26
+
+- No iniciar una fase posterior sin AuditLock firmado y aprobacion explicita del usuario.
+- No retirar una plantilla con empleados o documentos dependientes sin migracion controlada.
+- No usar una plantilla inactiva para documentos nuevos; permitir descarga de documentos historicos.
+- No aceptar HTML, scripts, expresiones ni variables no declaradas desde parametros de cliente.
+- No cambiar endpoints publicos sin compatibilidad documentada.
+- Cada commit futuro debe incluir `phase: TPC26-X task: <identificador>`.
+
+---
+
 ## Current Haiky Plan - HAIKY-LOGO-REPORTES-FIRMA-EMPRESA-2026
 
 | Campo | Valor |

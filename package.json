@@ -19,6 +19,8 @@
     "audit:integral:v2": "node scripts/haiky-integral-v2-diagnostic.mjs",
     "haiky:solution:v2": "node scripts/haiky-integral-v2-solution.mjs",
     "audit:reportes:2026": "node scripts/haiky-reportes-disponibilidad-2026-diagnostic.mjs",
+    "tpc26:storage:inventory": "node scripts/tpc26-storage-inventory.mjs",
+    "tpc26:storage:dry-run": "node scripts/tpc26-storage-cleanup.mjs",
     "haiky:reportes:2026": "node scripts/haiky-reportes-disponibilidad-2026-solution.mjs",
     "audit:roles:2026": "node scripts/haiky-payroll-correction-2026-diagnostic.mjs",
     "haiky:roles:2026": "node scripts/haiky-payroll-correction-2026-solution.mjs",
