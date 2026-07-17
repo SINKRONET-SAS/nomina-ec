@@ -6,6 +6,7 @@ import { authenticatedApi } from '../../services/authenticatedApi';
 import { fetchPlanCapabilities } from '../../services/beneficiosApi';
 import { contractTemplateOptionLabel, DEFAULT_CONTRACT_TEMPLATE_KEY, normalizeContractTemplateKey } from '../../utils/contractTemplates';
 import { fileToBase64 } from '../../utils/fileToBase64';
+import { PDF_MAX_BYTES, PDF_MAX_PAGES, validateImageFile, validatePdfFile } from '../../utils/documentUploadPolicy';
 
 const initialForm = {
   cedula: '',
@@ -401,40 +402,43 @@ function NuevoEmpleado() {
 
   const handleDependentFile = async (index, file) => {
     if (!file) return;
-    const contenidoBase64 = await fileToBase64(file);
-    setFormData((current) => ({
-      ...current,
-      dependientes: current.dependientes.map((dependent, currentIndex) => (
-        currentIndex === index
-          ? {
-              ...dependent,
-              documento_base64: contenidoBase64,
-              documento_nombre: file.name,
-              documento_mime_type: file.type,
-            }
-          : dependent
-      )),
-    }));
+    try {
+      if (file.type === 'application/pdf') await validatePdfFile(file);
+      else await validateImageFile(file, new Set(['image/jpeg', 'image/png']));
+      const contenidoBase64 = await fileToBase64(file);
+      setFormData((current) => ({
+        ...current,
+        dependientes: current.dependientes.map((dependent, currentIndex) => (
+          currentIndex === index
+            ? {
+                ...dependent,
+                documento_base64: contenidoBase64,
+                documento_nombre: file.name,
+                documento_mime_type: file.type,
+              }
+            : dependent
+        )),
+      }));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const handleCroquisFile = async (file) => {
     if (!file) return;
     setError('');
-    if (!CROQUIS_IMAGE_TYPES.has(file.type)) {
-      setError('Adjunta el croquis del domicilio en JPG, PNG o WebP.');
-      return;
+    try {
+      await validateImageFile(file, CROQUIS_IMAGE_TYPES);
+      const contenidoBase64 = await fileToBase64(file);
+      setFormData((current) => ({
+        ...current,
+        croquis_domicilio_base64: contenidoBase64,
+        croquis_domicilio_nombre: file.name,
+        croquis_domicilio_mime_type: file.type,
+      }));
+    } catch (err) {
+      setError(err.message);
     }
-    if (file.size > CROQUIS_MAX_BYTES) {
-      setError('El croquis del domicilio debe pesar hasta 5 MB.');
-      return;
-    }
-    const contenidoBase64 = await fileToBase64(file);
-    setFormData((current) => ({
-      ...current,
-      croquis_domicilio_base64: contenidoBase64,
-      croquis_domicilio_nombre: file.name,
-      croquis_domicilio_mime_type: file.type,
-    }));
   };
 
   const buildCreatePayload = () => ({
@@ -562,13 +566,9 @@ function NuevoEmpleado() {
     setError('');
     setMessage('');
 
-    if (file.type !== 'application/pdf') {
-      setError('Adjunta el contrato firmado en PDF.');
-      return;
-    }
-
     setUploading(true);
     try {
+      await validatePdfFile(file);
       const contenidoBase64 = await fileToBase64(file);
       await authenticatedApi.post('/documentos/adjuntar', {
         empleadoId: id,
@@ -677,6 +677,7 @@ function NuevoEmpleado() {
                   )}
                   <label className={`block ${FIELD_FULL}`}>
                     <span className="text-sm font-medium text-slate-700">Documento legal de soporte</span>
+                    <span className="mt-1 block text-xs text-slate-500">PDF hasta 8 MB y 30 paginas; imagen hasta 5 MB y 5000 x 5000 pixeles.</span>
                     <input accept="application/pdf,image/jpeg,image/png" className={FILE_CONTROL_CLASS} onChange={(event) => handleDependentFile(index, event.target.files?.[0])} type="file" />
                     {dependent.documento_nombre && <p className="mt-1 text-xs text-slate-500">{dependent.documento_nombre}</p>}
                   </label>
@@ -723,6 +724,7 @@ function NuevoEmpleado() {
           )}
           <label className={`block ${FIELD_FULL}`}>
             <span className="text-sm font-medium text-slate-700">Croquis de llegada al domicilio</span>
+            <span className="mt-1 block text-xs text-slate-500">Imagen JPG, PNG o WebP hasta 5 MB y 5000 x 5000 pixeles.</span>
             <input accept="image/jpeg,image/png,image/webp" className={FILE_CONTROL_CLASS} onChange={(event) => handleCroquisFile(event.target.files?.[0])} type="file" />
             {formData.croquis_domicilio_nombre && <p className="mt-1 text-xs text-slate-500">{formData.croquis_domicilio_nombre}</p>}
             {formData.croquis_domicilio_url && (
@@ -953,6 +955,7 @@ function NuevoEmpleado() {
           <Section title="Gestión posterior" description="Adjunta soportes y consulta movimientos del trabajador.">
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Contrato firmado en PDF</span>
+              <span className="mt-1 block text-xs text-slate-500">Hasta {PDF_MAX_BYTES / 1024 / 1024} MB y {PDF_MAX_PAGES} paginas.</span>
               <input accept="application/pdf" className={FILE_CONTROL_CLASS} disabled={uploading} onChange={handleSignedContract} type="file" />
             </label>
             <div className="flex flex-wrap items-end gap-3">

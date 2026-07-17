@@ -5,6 +5,7 @@ const db = require('../config/database');
 const { s3Upload } = require('../config/s3');
 const AppError = require('../utils/AppError');
 const { AUDIT_ACTIONS, recordAudit } = require('./auditService');
+const { resolveCompanyIdentity } = require('./companyIdentityService');
 
 const MAX_ITEMS = 30;
 const ITEM_CATEGORIES = new Map([
@@ -299,7 +300,20 @@ async function generateEquipmentDeliveryAct({
   const cleanDeliveredBy = cleanText(entregadoPor, 180);
 
   const employeeResult = await db.query(`
-    SELECT e.*, t.razon_social, t.ruc, t.configuracion
+    SELECT
+      e.*,
+      t.razon_social,
+      t.ruc,
+      t.configuracion,
+      (
+        SELECT cc.payload
+        FROM configuration_catalogs cc
+        WHERE cc.tenant_id = t.id
+          AND cc.catalog_type = 'empresa_operativa'
+          AND cc.status = 'activo'
+        ORDER BY cc.updated_at DESC, cc.created_at DESC
+        LIMIT 1
+      ) AS company_operativa_payload
     FROM empleados e
     JOIN tenants t ON t.id = e.tenant_id
     WHERE e.id = $1 AND e.tenant_id = $2
@@ -313,18 +327,15 @@ async function generateEquipmentDeliveryAct({
   }
 
   const employee = employeeResult.rows[0];
-  const parsedConfig = typeof employee.configuracion === 'object' ? employee.configuracion : {};
+  const company = await resolveCompanyIdentity({
+    tenantId,
+    tenantRow: employee,
+    correlationId,
+    userId,
+  });
   const tenant = {
+    ...company,
     id: tenantId,
-    razon_social: employee.razon_social,
-    ruc: employee.ruc,
-    logoBase64: parsedConfig.logoBase64 || null,
-    direccion: parsedConfig.direccion || parsedConfig.direccionMatriz || '',
-    representante_legal: parsedConfig.representanteLegal || parsedConfig.representante_legal || '',
-    representante_legal_identificacion: parsedConfig.representanteLegalIdentificacion
-      || parsedConfig.representante_legal_identificacion
-      || parsedConfig.legalRepresentativeId
-      || '',
   };
   const pdfBuffer = await buildActPdf({
     employee,
@@ -367,6 +378,7 @@ async function generateEquipmentDeliveryAct({
       entregadoPor: cleanDeliveredBy,
       representanteLegal: tenant.representante_legal,
       representanteLegalIdentificacion: tenant.representante_legal_identificacion,
+      representanteLegalFuente: tenant.companyIdentitySource,
       items: normalizedItems,
     };
 

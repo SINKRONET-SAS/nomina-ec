@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Download, FileText, Search, Settings2 } from 'lucide-react';
+import { Download, FileText, Search, Settings2, Trash2 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import CompactNotice from '../../components/UI/CompactNotice';
 import { normalizeContractTemplateKey } from '../../utils/contractTemplates';
@@ -10,6 +10,13 @@ import { formatDateEC } from '../../utils/dateFormat';
 
 function getErrorMessage(err, fallback) {
   return err.response?.data?.message || err.response?.data?.error || err.message || fallback;
+}
+
+function formatBytes(value) {
+  const bytes = Number(value || 0);
+  if (!bytes) return 'Tamano no registrado';
+  if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
 function signatureStatus(doc) {
@@ -58,7 +65,16 @@ function ContratosGenerados() {
     },
   });
 
+  const { data: orphanData, isLoading: loadingOrphans } = useQuery({
+    queryKey: ['documentos-huerfanos'],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/documentos/huerfanos?limit=100');
+      return response.data;
+    },
+  });
+
   const documentosRows = documentos?.rows || [];
+  const orphanRows = orphanData?.documentos || [];
 
   const selectedEmployee = useMemo(
     () => empleados.find((empleado) => empleado.id === form.empleadoId),
@@ -94,6 +110,22 @@ function ContratosGenerados() {
     },
   });
 
+  const deleteOrphanMutation = useMutation({
+    mutationFn: async (documentId) => {
+      const response = await authenticatedApi.delete(`/documentos/huerfanos/${documentId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documentos-huerfanos'] });
+      setMessage('Documento huerfano eliminado del almacenamiento y del registro.');
+      setError('');
+    },
+    onError: (err) => {
+      setError(getErrorMessage(err, 'No pudimos eliminar el documento huerfano.'));
+      setMessage('');
+    },
+  });
+
   const descargar = async (id) => {
     setDescargandoId(id);
     setMessage('');
@@ -110,6 +142,15 @@ function ContratosGenerados() {
   };
 
   const canGenerate = form.empleadoId && effectiveTemplateKey && !generateMutation.isPending;
+
+  const eliminarHuerfano = (documento) => {
+    if (!documento.storageKeyAvailable) {
+      setError('Este documento no tiene una clave de almacenamiento trazable y requiere revision manual.');
+      return;
+    }
+    if (!window.confirm(`¿Eliminar ${documento.fileName || 'este documento'}? Solo se muestran documentos sin empleado vinculado.`)) return;
+    deleteOrphanMutation.mutate(documento.id);
+  };
 
   return (
     <div>
@@ -210,6 +251,50 @@ function ContratosGenerados() {
 
       {message && <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}
       {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
+
+      <section className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-amber-950">Documentos sin empleado vinculado</h2>
+            <p className="mt-1 text-sm leading-5 text-amber-900">
+              Estos archivos pueden eliminarse para cuidar el almacenamiento. La API permite borrar unicamente documentos con empleado_id nulo y clave de almacenamiento trazable.
+            </p>
+          </div>
+          <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-amber-900">
+            {loadingOrphans ? 'Consultando...' : `${orphanRows.length} encontrados`}
+          </span>
+        </div>
+        <div className="mt-3 max-h-64 overflow-auto rounded-md border border-amber-200 bg-white">
+          {loadingOrphans ? (
+            <p className="p-3 text-sm text-slate-600">Cargando documentos sin vinculo...</p>
+          ) : orphanRows.length === 0 ? (
+            <p className="p-3 text-sm text-slate-600">No hay documentos huerfanos disponibles para depuracion.</p>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {orphanRows.map((documento) => (
+                <li className="flex flex-wrap items-center justify-between gap-3 px-3 py-3" key={documento.id}>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900">{documento.fileName}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {documento.tipo_documento || 'documento'} · {formatBytes(documento.sizeBytes)} · {formatDateEC(documento.created_at)}
+                    </p>
+                  </div>
+                  <button
+                    className="inline-flex min-h-9 items-center gap-2 rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    type="button"
+                    disabled={!documento.storageKeyAvailable || deleteOrphanMutation.isPending}
+                    onClick={() => eliminarHuerfano(documento)}
+                    title={documento.storageKeyAvailable ? 'Eliminar documento huerfano' : 'Requiere clave de almacenamiento trazable'}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Eliminar
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
 
       <div className="rounded-lg bg-white shadow">
         <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 p-4">

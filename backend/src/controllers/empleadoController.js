@@ -9,6 +9,7 @@ const { getBankProfileForTenant } = require('../services/bancoAebGenerator');
 const { s3Upload } = require('../config/s3');
 const { generarContrato } = require('../services/templateGenerator');
 const { cleanupEmployeeLegalDocuments } = require('../services/employeeDocumentCleanupService');
+const { assertImage, assertPdf, decodeBase64, policyDetails } = require('../services/documentUploadPolicy');
 const { getEmployeeHistory } = require('../services/employeeHistoryService');
 const { buildEmployeeMasterReport } = require('../services/employeeMasterReportService');
 const { listTerminationCauses } = require('../config/terminationCauses');
@@ -373,9 +374,11 @@ async function uploadDependentDocument(tenantId, employeeId, dependent, index) {
     throw err;
   }
 
-  const cleanBase64 = String(dependent.documento_base64).replace(/^data:[^;]+;base64,/, '');
-  const buffer = Buffer.from(cleanBase64, 'base64');
-  if (buffer.length === 0 || buffer.length > DEPENDENT_DOCUMENT_MAX_BYTES) {
+  const buffer = decodeBase64(dependent.documento_base64, { code: 'DEPENDIENTE_DOCUMENTO_BASE64_INVALIDO', label: 'El documento de carga familiar' });
+  const fileInfo = mimeType === 'application/pdf'
+    ? assertPdf(buffer, { label: 'El documento de carga familiar' })
+    : assertImage(buffer, mimeType, { label: 'El documento de carga familiar' });
+  if (fileInfo.sizeBytes > DEPENDENT_DOCUMENT_MAX_BYTES) {
     const err = new Error('El documento de carga familiar debe pesar hasta 5 MB.');
     err.code = 'DEPENDIENTE_DOCUMENTO_TAMANO_INVALIDO';
     err.statusCode = 400;
@@ -384,7 +387,10 @@ async function uploadDependentDocument(tenantId, employeeId, dependent, index) {
 
   const safeName = String(dependent.documento_nombre || `carga-familiar-${index + 1}.pdf`).replace(/[^a-zA-Z0-9_.-]/g, '_').slice(0, 120);
   const key = `documentos/${tenantId}/${employeeId}/cargas-familiares/${Date.now()}_${index}_${safeName}`;
-  return s3Upload(buffer, key, mimeType);
+  return {
+    url: await s3Upload(buffer, key, mimeType),
+    metadata: { ...fileInfo, mimeType, uploadPolicy: policyDetails() },
+  };
 }
 
 async function uploadEmployeeCroquis(tenantId, employeeId, payload) {
@@ -398,9 +404,9 @@ async function uploadEmployeeCroquis(tenantId, employeeId, payload) {
     throw err;
   }
 
-  const cleanBase64 = String(payload.croquis_domicilio_base64).replace(/^data:[^;]+;base64,/, '');
-  const buffer = Buffer.from(cleanBase64, 'base64');
-  if (buffer.length === 0 || buffer.length > EMPLOYEE_CROQUIS_MAX_BYTES) {
+  const buffer = decodeBase64(payload.croquis_domicilio_base64, { code: 'EMPLEADO_CROQUIS_BASE64_INVALIDO', label: 'El croquis del domicilio' });
+  const fileInfo = assertImage(buffer, mimeType, { label: 'El croquis del domicilio' });
+  if (fileInfo.sizeBytes > EMPLOYEE_CROQUIS_MAX_BYTES) {
     const err = new Error('El croquis del domicilio debe pesar hasta 5 MB.');
     err.code = 'EMPLEADO_CROQUIS_TAMANO_INVALIDO';
     err.statusCode = 400;
@@ -419,9 +425,10 @@ async function uploadEmployeeCroquis(tenantId, employeeId, payload) {
     metadata: {
       originalName: payload.croquis_domicilio_nombre || safeName,
       mimeType,
-      sizeBytes: buffer.length,
-      source: 'ficha_trabajador',
-      documentUse: 'croquis_domicilio_ruta_principal',
+       ...fileInfo,
+       source: 'ficha_trabajador',
+       documentUse: 'croquis_domicilio_ruta_principal',
+       uploadPolicy: policyDetails(),
     },
   };
 }
@@ -466,7 +473,8 @@ async function replaceEmployeeDependents(tenantId, employeeId, dependientes, car
   await db.query('DELETE FROM employee_family_dependents WHERE tenant_id = $1 AND employee_id = $2', [tenantId, employeeId]);
 
   for (const [index, dependent] of normalized.entries()) {
-    const documentoUrl = await uploadDependentDocument(tenantId, employeeId, dependent, index);
+    const uploadedDocument = await uploadDependentDocument(tenantId, employeeId, dependent, index);
+    const documentoUrl = uploadedDocument?.url || '';
     await db.query(`
       INSERT INTO employee_family_dependents (
         tenant_id, employee_id, nombres, apellidos, identificacion, parentesco,
@@ -486,6 +494,7 @@ async function replaceEmployeeDependents(tenantId, employeeId, dependientes, car
       JSON.stringify({
         source: 'ficha_trabajador',
         legalUse: 'cargas_familiares_impuesto_renta',
+        ...(uploadedDocument?.metadata || {}),
       }),
     ]);
   }

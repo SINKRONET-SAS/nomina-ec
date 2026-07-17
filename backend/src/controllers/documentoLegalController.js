@@ -11,6 +11,11 @@ const { listEcuadorContractTypes } = require('../config/ecuadorContractTypes');
 const { calcularLiquidacion } = require('../services/liquidacionService');
 const { generateEquipmentDeliveryAct } = require('../services/equipmentDeliveryActService');
 const {
+  deleteOrphanLegalDocument,
+  listOrphanLegalDocuments,
+} = require('../services/orphanLegalDocumentService');
+const { assertPdf, decodeBase64, policyDetails } = require('../services/documentUploadPolicy');
+const {
   isLocalStorageEnabled,
   resolveStorageUrl,
   s3SignedUrl,
@@ -150,11 +155,8 @@ async function adjuntarDocumento(req, res) {
       return res.status(404).json({ error: 'Empleado no encontrado', correlationId: req.correlationId });
     }
 
-    const cleanBase64 = String(contenidoBase64).replace(/^data:application\/pdf;base64,/, '');
-    const buffer = Buffer.from(cleanBase64, 'base64');
-    if (buffer.length === 0 || buffer.length > 8 * 1024 * 1024) {
-      return res.status(400).json({ error: 'El PDF firmado debe pesar hasta 8 MB.', correlationId: req.correlationId });
-    }
+    const buffer = decodeBase64(contenidoBase64, { label: 'El PDF firmado' });
+    const fileInfo = assertPdf(buffer, { label: 'El PDF firmado' });
 
     const safeName = String(nombreArchivo || 'contrato-firmado.pdf').replace(/[^a-zA-Z0-9_.-]/g, '_').slice(0, 120);
     const key = 'documentos/' + tenantId + '/' + empleadoId + '/firmados/' + Date.now() + '_' + safeName;
@@ -173,10 +175,12 @@ async function adjuntarDocumento(req, res) {
         source: 'adjunto_manual_rrhh',
         documentKind: normalizedType,
         displayName: LEGAL_DOCUMENT_TYPES.get(normalizedType),
-        fileName: safeName,
-        mimeType,
-        storageKey: key,
-        uploadedBy: req.usuarioId || null,
+         fileName: safeName,
+         mimeType,
+         storageKey: key,
+         ...fileInfo,
+         uploadPolicy: policyDetails(),
+         uploadedBy: req.usuarioId || null,
       }),
     ]);
 
@@ -209,6 +213,55 @@ async function listarPlantillasContrato(req, res) {
     });
     return res.status(err.statusCode || 500).json({
       error: err.code || 'DOCUMENTO_CONTRATO_TEMPLATES_ERROR',
+      message: err.message,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function listarHuerfanos(req, res) {
+  try {
+    const data = await listOrphanLegalDocuments({
+      tenantId: req.tenantId,
+      limit: req.query.limit,
+    });
+    return res.json({ success: true, ...data, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[DOCUMENTOS] Error listando documentos huerfanos', {
+      code: err.code || 'ORPHAN_DOCUMENT_LIST_FAILED',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'ORPHAN_DOCUMENT_LIST_FAILED',
+      message: err.message,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function eliminarHuerfano(req, res) {
+  try {
+    const data = await deleteOrphanLegalDocument({
+      tenantId: req.tenantId,
+      documentId: req.params.id,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || req.usuario?.id || null,
+      ipAddress: req.ip,
+    });
+    return res.json({ success: true, ...data, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[DOCUMENTOS] Error eliminando documento huerfano', {
+      code: err.code || 'ORPHAN_DOCUMENT_DELETE_FAILED',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'ORPHAN_DOCUMENT_DELETE_FAILED',
       message: err.message,
       correlationId: req.correlationId,
     });
@@ -454,6 +507,8 @@ module.exports = {
   listarTiposContratoEcuador,
   generarFiniquito,
   generarActaEntregaDotacion,
+  listarHuerfanos,
+  eliminarHuerfano,
   listar,
   descargar,
   adjuntarDocumento

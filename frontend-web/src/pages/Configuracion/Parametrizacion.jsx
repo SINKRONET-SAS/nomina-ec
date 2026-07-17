@@ -1005,6 +1005,18 @@ function Parametrizacion() {
               </CompactNotice>
             )}
 
+            {activeDefinition.key === 'empresa' && (
+              <CompactNotice
+                className="mt-4"
+                tone={String(activeValues?.representante_legal || '').trim() && String(activeValues?.representante_legal_identificacion || '').trim() ? 'teal' : 'amber'}
+                title="Identidad usada en documentos"
+              >
+                {String(activeValues?.representante_legal || '').trim() && String(activeValues?.representante_legal_identificacion || '').trim()
+                  ? 'El representante legal y su identificacion estan disponibles para contratos, actas, finiquitos y roles que requieran firma.'
+                  : 'Completa el representante legal y su identificacion para que los documentos no se generen con datos incompletos.'}
+              </CompactNotice>
+            )}
+
             {activeDefinition.key === 'legal' && (
               <CompactNotice
                 className="mt-4"

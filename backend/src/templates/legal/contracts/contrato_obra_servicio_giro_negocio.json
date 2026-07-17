@@ -35,29 +35,29 @@
   },
   "legalBasis": [
     {
-      "label": "Codigo del Trabajo de Ecuador, Art. 16.1",
-      "note": "la modalidad aplica para la ejecucion de una obra o servicio determinado dentro del giro del negocio, con reglas de nuevo llamamiento."
+      "label": "Codigo del Trabajo de Ecuador, Arts. 16.1 y 185",
+      "note": "la relacion termina al concluir la obra o servicio contratado; corresponde observar el llamamiento para nuevas obras y la bonificacion por desahucio cuando proceda."
     },
     {
-      "label": "Codigo del Trabajo de Ecuador, Arts. 47, 55 y 57",
-      "note": "la jornada, descansos y horas suplementarias o extraordinarias deben registrarse y pagarse conforme a la normativa aplicable."
+      "label": "Codigo del Trabajo de Ecuador, Arts. 47, 55, 56 y 57",
+      "note": "la jornada, descansos y trabajo suplementario o extraordinario se sujetan a los limites, autorizaciones, registro y recargos aplicables; ninguna clausula autoriza trabajo no registrado o no pagado."
     },
     {
       "label": "Codigo del Trabajo de Ecuador, Arts. 111, 113, 169, 172 y 173",
       "note": "el contrato reconoce beneficios sociales y causales de terminacion aplicables a la modalidad."
     },
     {
-      "label": "Ley de Comercio Electronico, Firmas y Mensajes de Datos, Arts. 52 y 56",
-      "note": "las partes aceptan comunicaciones y notificaciones electronicas vinculadas al SUT y a los medios declarados."
+      "label": "Ley de Comercio Electronico, Firmas y Mensajes de Datos, Arts. 2, 6, 7, 14, 45, 52 y 55",
+      "note": "si las partes optan por medios electronicos, los mensajes, documentos y firmas podran tener validez y valor probatorio cuando cumplan autenticidad, integridad, acceso, conservacion y demas requisitos legales; esto no reemplaza una notificacion judicial ni un tramite SUT/MDT."
     },
     {
-      "label": "Proteccion de datos personales y confidencialidad",
-      "note": "el trabajador asume obligaciones de uso, custodia, reporte de incidentes, devolucion y reserva sobre informacion corporativa, de clientes y datos personales."
+      "label": "Ley Organica de Proteccion de Datos Personales y deber de confidencialidad",
+      "note": "el tratamiento de datos debe respetar finalidad, proporcionalidad, confidencialidad, seguridad, derechos del titular y las obligaciones laborales aplicables; el trabajador debe custodiar, reportar incidentes y devolver la informacion."
     }
   ],
   "notices": [
-    "Modelo implementado con base en el documento revisado por abogado para contrato por obra o servicio determinado dentro del giro del negocio. Validar que los datos variables del empleador, trabajador, lugar, duracion, servicio y medios de contacto esten completos antes de firma.",
-    "Registro SUT/MDT: {{contract.sutRegistrationStatus}}. Revision legal: {{contract.legalReviewStatus}}."
+    "Los datos variables del empleador, trabajador, lugar, duracion, servicio y medios de contacto forman parte del contrato y deben permanecer completos, exactos y verificables antes de la firma.",
+    "El registro o tramite ante SUT/MDT, cuando corresponda, se gestiona por los canales oficiales y no se presume cumplido por la sola generacion de este documento."
   ],
   "sections": [
     {
@@ -131,7 +131,7 @@
       "paragraphs": [
         "Para todos los efectos derivados del presente contrato y, especialmente, para los futuros llamamientos relacionados con la ejecucion de nuevas obras o servicios, EL TRABAJADOR/A senala como medios oficiales de comunicacion la direccion de correo electronico {{employee.contactEmail}} y el numero telefonico o medio de contacto {{employee.contactPhone}}, autorizando expresamente a LA EMPLEADORA para remitir a dichos medios cualquier comunicacion, convocatoria, notificacion o llamamiento relacionado con la ejecucion de nuevos proyectos, obras o servicios.",
         "EL TRABAJADOR/A declara que los medios de contacto consignados en este contrato son de su uso personal, habitual y exclusivo, comprometiendose a mantenerlos activos, operativos y bajo su control durante la vigencia de la relacion laboral y mientras subsista el derecho preferente de llamamiento previsto en la legislacion laboral.",
-        "EL TRABAJADOR/A acepta que la evidencia electronica del envio de la comunicacion, tal como correo electronico remitido al buzon registrado, reporte de entrega de WhatsApp, registro de llamada telefonica o cualquier otro medio equivalente, constituira prueba suficiente de que LA EMPLEADORA cumplio con su obligacion legal de efectuar el llamamiento.",
+        "Cuando las partes opten por comunicaciones electronicas, los mensajes enviados a los medios declarados podran conservarse y valorarse como evidencia conforme a la Ley de Comercio Electronico, Firmas y Mensajes de Datos, siempre que puedan verificarse la identidad, integridad, trazabilidad y conservacion del mensaje. El envio por si solo no sustituye una notificacion judicial ni acredita el registro ante SUT/MDT.",
         "En caso de que EL TRABAJADOR/A no informe oportunamente la modificacion de sus datos de contacto y, como consecuencia de ello, no atienda el llamamiento realizado por LA EMPLEADORA para la ejecucion de una nueva obra o servicio, las partes reconocen expresamente que quedara sin efecto la obligacion de LA EMPLEADORA de volver a contratarlo para futuros proyectos, de conformidad con la normativa laboral aplicable."
       ]
     },

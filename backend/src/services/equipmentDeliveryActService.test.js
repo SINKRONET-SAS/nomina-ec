@@ -63,8 +63,8 @@ describe('equipmentDeliveryActService', () => {
         cargo: 'Analista',
         razon_social: 'Demo S.A.',
         ruc: '1790012345001',
-        configuracion: {
-          direccion: 'Quito',
+        configuracion: { direccion: 'Quito' },
+        company_operativa_payload: {
           representanteLegal: 'Ana Representante',
           representanteLegalIdentificacion: '1700000001',
         },

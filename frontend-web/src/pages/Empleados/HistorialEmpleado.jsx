@@ -7,6 +7,7 @@ import { formatDateEC } from '../../utils/dateFormat';
 import { downloadUrl } from '../../utils/downloadUrl';
 import { fileToBase64 } from '../../utils/fileToBase64';
 import { money } from '../../utils/money';
+import { PDF_MAX_BYTES, PDF_MAX_PAGES, validatePdfFile } from '../../utils/documentUploadPolicy';
 
 const DOCUMENT_TYPES = [
   { value: 'contrato_firmado', label: 'Contrato firmado' },
@@ -54,9 +55,7 @@ function HistorialEmpleado() {
       if (!selectedFile) {
         throw new Error('Selecciona un PDF para adjuntar a la ficha laboral.');
       }
-      if (selectedFile.type !== 'application/pdf') {
-        throw new Error('Solo se permiten documentos PDF.');
-      }
+      await validatePdfFile(selectedFile);
 
       const contenidoBase64 = await fileToBase64(selectedFile);
       const response = await authenticatedApi.post('/documentos/adjuntar', {
@@ -200,6 +199,7 @@ function HistorialEmpleado() {
                     accept="application/pdf"
                     onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
                   />
+                  <span className="mt-1 block text-xs font-normal text-slate-500">PDF hasta {PDF_MAX_BYTES / 1024 / 1024} MB y {PDF_MAX_PAGES} paginas.</span>
                 </label>
                 <button
                   className="mt-6 inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300"

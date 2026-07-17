@@ -1,3 +1,48 @@
+## Current Haiky Plan - HAIKY-SEGUNDA-PASADA-IDENTIDAD-REPRESENTANTE-2026
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-SEGUNDA-PASADA-IDENTIDAD-REPRESENTANTE-2026` |
+| Codigo | `RDE26P2` |
+| Estado | `RDE26P2-04 cerrado; segunda pasada ejecutada` |
+| Fecha | `2026-07-16` |
+| Superficie | BACKEND, PDF, DOCUMENTOS, PWA, GOBIERNO |
+| Plan doc | `docs2/PLAN_HAIKY_SEGUNDA_PASADA_IDENTIDAD_REPRESENTANTE_2026.md` |
+| Diagnostico | `docs2/RDE26P2-00-DIAGNOSTICO.md` |
+| Prompts | `.github/prompts/RDE26P2-00` a `.github/prompts/RDE26P2-04` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Plan anterior | `HAIKY-REPORTES-DOCUMENTOS-EMPLEADOS-2026` (`RDE26`, cerrado) |
+
+### Decisiones RDE26P2
+
+- La fuente canonica de Datos de empresa es `configuration_catalogs.payload` con `catalog_type = 'empresa_operativa'`.
+- El catalogo activo prevalece sobre `tenants.configuracion`, con fallback compatible y tenant-aware.
+- Los documentos historicos no se regeneran; la correccion aplica a nuevas emisiones y queda trazada en metadata.
+- Los contratos emitidos no imprimen notas internas de base legal, revision, plantilla preliminar ni estado SUT/MDT; la evidencia legal queda en metadata auditable.
+- Las clausulas electronicas fueron corregidas para no tratar el articulo 56 de la Ley de Comercio Electronico como una regla general de notificacion SUT.
+- Los documentos legales sin `empleado_id` pueden revisarse y eliminarse solo con una clave de almacenamiento trazable.
+- Los adjuntos se validan en cliente y servidor: PDF hasta 8 MB y 30 paginas; imagenes hasta 5 MB y 5000 x 5000 pixeles.
+- Parametrizacion muestra el estado de identidad documental y Documentos expone limpieza de huerfanos.
+
+### Fases RDE26P2
+
+| Fase | Objetivo | Estado |
+|---|---|---|
+| RDE26P2-00 | Gobierno, diagnostico y baseline | completed-pass |
+| RDE26P2-01 | Resolvedor canonico y fallback | completed-pass |
+| RDE26P2-02 | Integracion documental, huerfanos, limites y correccion legal de contratos | completed-pass |
+| RDE26P2-03 | Exposicion de estado y controles en PWA | completed-pass |
+| RDE26P2-04 | QA, cierre, commit y push | completed-pass |
+
+### Cierre RDE26P2
+
+- Suite backend completa: 62 suites y 420 tests PASS.
+- Contratos de sistema, Prisma, `node --check`, build PWA y pruebas de contratos ejecutados.
+- AuditLock cerrado con firma final; el plan exige una nueva cadena para cambios posteriores.
+- Commit y push a `origin/main` forman la entrega del cierre y se ejecutaran despues de la etapa de staging.
+
+---
+
 ## Current Haiky Plan - HAIKY-REPORTES-DOCUMENTOS-EMPLEADOS-2026
 
 | Campo | Valor |

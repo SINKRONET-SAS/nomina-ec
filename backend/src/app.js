@@ -271,6 +271,8 @@ app.put('/api/documentos/contrato/plantillas/:templateKey', requireRole('owner',
 app.post('/api/documentos/finiquito', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.generarFiniquito);
 app.post('/api/documentos/acta-entrega-dotacion', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.generarActaEntregaDotacion);
 app.post('/api/documentos/adjuntar', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.adjuntarDocumento);
+app.get('/api/documentos/huerfanos', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.listarHuerfanos);
+app.delete('/api/documentos/huerfanos/:id', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.eliminarHuerfano);
 app.get('/api/documentos', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.listar);
 app.get('/api/documentos/:id/download', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.descargar);
 

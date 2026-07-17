@@ -259,4 +259,10 @@ describe('AISK26-01: cierre brechas RBAC', () => {
     expect(source).not.toContain("app.delete('/api/empleados/:id', empleadoController.eliminar)");
     expect(source).not.toContain("app.get('/api/reportes/asistencia/:anio/:mes', reporteController.reporteAsistencia)");
   });
+
+  test('GET y DELETE de documentos huerfanos quedan protegidos y separados de la ruta generica', () => {
+    expect(source).toContain("app.get('/api/documentos/huerfanos', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.listarHuerfanos)");
+    expect(source).toContain("app.delete('/api/documentos/huerfanos/:id', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.eliminarHuerfano)");
+    expect(source.indexOf("app.get('/api/documentos/huerfanos'")).toBeLessThan(source.indexOf("app.get('/api/documentos',"));
+  });
 });

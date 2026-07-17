@@ -7,6 +7,7 @@ const AppError = require('../utils/AppError');
 const { toMoneyString } = require('../utils/money');
 const { linesForPayrollRow } = require('./payrollAccountingService');
 const { resolveCompanyData, buildPdfHeader, buildSignatureBlock } = require('./pdfBrandHeader');
+const { resolveCompanyIdentity } = require('./companyIdentityService');
 
 function normalizeDetail(value) {
   if (!value) return {};
@@ -626,6 +627,15 @@ async function generatePayrollRolePdf({ tenantId, payrollId, userId = null, incl
       t.razon_social,
       t.ruc,
       t.configuracion AS tenant_configuracion,
+      (
+        SELECT cc.payload
+        FROM configuration_catalogs cc
+        WHERE cc.tenant_id = t.id
+          AND cc.catalog_type = 'empresa_operativa'
+          AND cc.status = 'activo'
+        ORDER BY cc.updated_at DESC, cc.created_at DESC
+        LIMIT 1
+      ) AS company_operativa_payload,
       COALESCE((
         SELECT jsonb_agg(jsonb_build_object(
           'concept_code', pcl.concept_code,
@@ -664,6 +674,9 @@ async function generatePayrollRolePdf({ tenantId, payrollId, userId = null, incl
     });
   }
 
+  const company = await resolveCompanyIdentity({ tenantId, tenantRow: row, userId });
+  row.tenant_configuracion = company.configuracion;
+  row.companyIdentitySource = company.companyIdentitySource;
   const docDefinition = buildPayrollRoleDocDefinition(row);
   const buffer = await pdfBufferFromDefinition(docDefinition);
   const fileName = `rol_pago_${safeFilePart(row.cedula)}_${row.anio}_${String(row.mes).padStart(2, '0')}.pdf`;
@@ -711,6 +724,15 @@ async function generatePayrollRolePeriodTransposedPdf({ tenantId, anio, mes, use
       t.razon_social,
       t.ruc,
       t.configuracion AS tenant_configuracion,
+      (
+        SELECT cc.payload
+        FROM configuration_catalogs cc
+        WHERE cc.tenant_id = t.id
+          AND cc.catalog_type = 'empresa_operativa'
+          AND cc.status = 'activo'
+        ORDER BY cc.updated_at DESC, cc.created_at DESC
+        LIMIT 1
+      ) AS company_operativa_payload,
       COALESCE((
         SELECT jsonb_agg(jsonb_build_object(
           'concept_code', pcl.concept_code,
@@ -750,8 +772,14 @@ async function generatePayrollRolePeriodTransposedPdf({ tenantId, anio, mes, use
     });
   }
 
+  const company = await resolveCompanyIdentity({ tenantId, tenantRow: result.rows[0], userId });
+  const rows = result.rows.map((row) => ({
+    ...row,
+    tenant_configuracion: company.configuracion,
+    companyIdentitySource: company.companyIdentitySource,
+  }));
   const docDefinition = buildPayrollRoleTransposedDocDefinition({
-    rows: result.rows,
+    rows,
     anio: anioNumber,
     mes: mesNumber,
   });

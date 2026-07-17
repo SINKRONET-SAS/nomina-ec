@@ -313,6 +313,24 @@ describe('templateGenerator', () => {
     });
   });
 
+  test('no imprime notas internas de base legal, revision o registro en contratos emitidos', () => {
+    for (const template of listContractTemplates().map((item) => loadContractTemplate({ templateKey: item.templateKey }))) {
+      const context = buildContractContext({
+        employee: { ...employee, email_personal: 'carla@example.com', telefono: '0999999999' },
+        tenant,
+        template,
+        legalParameters: { payroll: { unifiedBaseSalary: 470, weeklyMaxHours: 40 } },
+        year: 2026,
+        generatedAt: new Date('2026-07-02T00:00:00Z'),
+      });
+      const rendered = JSON.stringify(buildContractDocDefinition({ template, context }));
+      expect(rendered).not.toContain('Base legal y controles de emision');
+      expect(rendered).not.toContain('Modelo implementado con base');
+      expect(rendered).not.toContain('Registro SUT/MDT:');
+      expect(rendered).not.toContain('plantilla preliminar');
+    }
+  });
+
   test('bloquea contrato con sueldo menor al SBU configurado', async () => {
     db.query.mockResolvedValueOnce({
       rows: [{ ...employee, sueldo_bruto_mensual: '300.00' }],

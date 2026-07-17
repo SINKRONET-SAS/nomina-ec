@@ -22,7 +22,21 @@ async function calcularLiquidacion(empleadoId, tenantId, causaTerminacion, optio
   }
 
   const emp = empResult.rows[0];
-  const tenantResult = await db.query('SELECT * FROM tenants WHERE id = $1', [tenantId]);
+  const tenantResult = await db.query(`
+    SELECT
+      t.*,
+      (
+        SELECT cc.payload
+        FROM configuration_catalogs cc
+        WHERE cc.tenant_id = t.id
+          AND cc.catalog_type = 'empresa_operativa'
+          AND cc.status = 'activo'
+        ORDER BY cc.updated_at DESC, cc.created_at DESC
+        LIMIT 1
+      ) AS company_operativa_payload
+    FROM tenants t
+    WHERE t.id = $1
+  `, [tenantId]);
   const tenant = tenantResult.rows[0];
   const fechaIngreso = new Date(emp.fecha_ingreso);
   const fechaSalida = options.fechaSalida ? new Date(options.fechaSalida) : new Date();

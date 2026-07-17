@@ -11,6 +11,7 @@ const db = require('../config/database');
 const AppError = require('../utils/AppError');
 const { getLegalParameters } = require('../config/legal-ecuador');
 const { isAcceptedEcuadorContractType, listEcuadorContractTypes } = require('../config/ecuadorContractTypes');
+const { resolveCompanyIdentity } = require('./companyIdentityService');
 
 const BACKEND_ROOT = path.join(__dirname, '..', '..');
 const CONTRACT_TEMPLATE_DIR = path.join(__dirname, '..', 'templates', 'legal', 'contracts');
@@ -588,27 +589,6 @@ function buildContractDocDefinition({ template, context }) {
     });
   }
 
-  if (!signatureReady && Array.isArray(template.legalBasis) && template.legalBasis.length > 0) {
-    content.push(
-      { text: 'Base legal y controles de emision', style: 'sectionTitle' },
-      {
-        ul: template.legalBasis.map((item) => interpolate(`${item.label}: ${item.note}`, context)),
-        style: 'small',
-        margin: [0, 0, 0, 10],
-      },
-    );
-  }
-
-  if (!signatureReady && Array.isArray(template.notices)) {
-    for (const notice of template.notices) {
-      content.push({
-        text: interpolate(notice, context),
-        style: 'notice',
-        margin: [0, 0, 0, 10],
-      });
-    }
-  }
-
   for (const section of template.sections) {
     content.push({ text: interpolate(section.title, context), style: 'sectionTitle' });
     for (const paragraph of section.paragraphs || []) {
@@ -763,6 +743,7 @@ async function generarContrato(empleado, tenant, tipoContrato = null, options = 
     tipoContrato: template.contractType || tipoContrato,
     legalReviewStatus: context.contract.legalReviewStatus,
     sutRegistrationStatus: context.contract.sutRegistrationStatus,
+    internalLegalBasis: Array.isArray(template.legalBasis) ? template.legalBasis : [],
     probation: template.probation || { enabled: false },
     parameters: normalizedParameters,
     storageKey: key,
@@ -932,9 +913,15 @@ async function generarActaFiniquito(empleado, tenant, causaTerminacion, liquidac
     ? causaTerminacion
     : { code: String(causaTerminacion || ''), label: String(causaTerminacion || '').replace(/_/g, ' ') };
   const generatedAt = options.generatedAt || new Date();
+  const companyTenant = await resolveCompanyIdentity({
+    tenantId: tenant.id,
+    tenantRow: tenant,
+    correlationId: options.correlationId || null,
+    userId: options.userId || null,
+  });
   const docDefinition = buildFiniquitoDocDefinition({
     empleado,
-    tenant,
+    tenant: companyTenant,
     cause,
     liquidacion,
     generatedAt,
@@ -953,11 +940,12 @@ async function generarActaFiniquito(empleado, tenant, causaTerminacion, liquidac
     storageKey: key,
     generatedAt: generatedAt.toISOString(),
     correlationId: options.correlationId || null,
-    snapshot: {
-      liquidacion,
-      empleadoId: empleado.id,
-      tenantId: tenant.id,
-    },
+      snapshot: {
+        liquidacion,
+        empleadoId: empleado.id,
+        tenantId: tenant.id,
+        companyIdentitySource: companyTenant.companyIdentitySource,
+      },
   };
 
   const result = await db.query(`
