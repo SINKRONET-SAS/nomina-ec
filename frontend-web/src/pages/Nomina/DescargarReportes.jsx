@@ -77,6 +77,9 @@ function DescargarReportes() {
   const [format, setFormat] = useState('xlsx');
   const [reportScope, setReportScope] = useState('global');
   const [reportEmployeeSearch, setReportEmployeeSearch] = useState('');
+  const [reportColumns, setReportColumns] = useState([]);
+  const [selectedColumns, setSelectedColumns] = useState([]);
+  const [accountingMode, setAccountingMode] = useState('detail');
   const [filters, setFilters] = useState({
     employeeId: '',
     department: '',
@@ -92,6 +95,31 @@ function DescargarReportes() {
   const [saePrecheck, setSaePrecheck] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    authenticatedApi.get(`/reportes/nomina/columnas?reportCode=${encodeURIComponent(reportCode)}`)
+      .then((response) => {
+        if (!active) return;
+        const columns = response.data.columns || [];
+        setReportColumns(columns);
+        setSelectedColumns(columns.map((column) => column.key));
+      })
+      .catch((err) => {
+        console.error('[REPORTES] No se pudo cargar el catálogo de columnas', {
+          code: err.response?.data?.error || 'REPORT_COLUMNS_LOAD_ERROR',
+          statusCode: err.response?.status || 500,
+          correlationId: err.response?.data?.correlationId || 'frontend-report-columns',
+          userId: null,
+          message: err.message,
+        });
+        if (active) {
+          setReportColumns([]);
+          setSelectedColumns([]);
+        }
+      });
+    return () => { active = false; };
+  }, [reportCode]);
 
   useEffect(() => {
     authenticatedApi.get('/empleados')
@@ -241,7 +269,7 @@ function DescargarReportes() {
         mes,
         reportCode,
         format,
-        filters: reportFilters,
+        filters: { ...reportFilters, columns: selectedColumns },
       });
       const url = response.data.reporte?.url;
 
@@ -266,7 +294,7 @@ function DescargarReportes() {
       const response = await authenticatedApi.get(`/reportes/nomina/${anio}/consolidado`, {
         params: {
           reportCode,
-          filters: JSON.stringify(reportFilters),
+          filters: JSON.stringify({ ...reportFilters, columns: selectedColumns }),
         },
       });
       const url = response.data.reporte?.url;
@@ -304,6 +332,7 @@ function DescargarReportes() {
     return {
       ...filters,
       employeeId: reportScope === 'individual' ? filters.employeeId : '',
+      accountingMode,
     };
   };
 
@@ -581,6 +610,19 @@ function DescargarReportes() {
               <option value="individual">Individual</option>
             </select>
           </div>
+          {reportCode === 'PAYROLL_ACCOUNTING_REPORT' && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700">Salida contable</label>
+              <select
+                value={accountingMode}
+                onChange={(event) => setAccountingMode(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+              >
+                <option value="detail">Detalle por empleado</option>
+                <option value="consolidated">Consolidado por cuenta</option>
+              </select>
+            </div>
+          )}
           {reportScope === 'individual' && (
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700">Empleado</label>
@@ -638,6 +680,34 @@ function DescargarReportes() {
             />
           </div>
         </div>
+        {reportColumns.length > 0 && (
+          <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">Columnas personalizadas</h3>
+                <p className="mt-1 text-xs text-slate-600">Selecciona las columnas que se exportarán. El servidor valida las claves permitidas.</p>
+              </div>
+              <div className="flex gap-2 text-xs font-semibold">
+                <button type="button" className="rounded border border-slate-300 bg-white px-2 py-1 text-slate-700" onClick={() => setSelectedColumns(reportColumns.map((column) => column.key))}>Todas</button>
+                <button type="button" className="rounded border border-slate-300 bg-white px-2 py-1 text-slate-700" onClick={() => setSelectedColumns([])}>Ninguna</button>
+              </div>
+            </div>
+            <div className="mt-3 grid max-h-44 gap-2 overflow-y-auto pr-2 sm:grid-cols-2 lg:grid-cols-3">
+              {reportColumns.map((column) => (
+                <label key={column.key} className="flex items-center gap-2 text-xs text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={selectedColumns.includes(column.key)}
+                    onChange={(event) => setSelectedColumns((current) => event.target.checked
+                      ? [...current, column.key]
+                      : current.filter((key) => key !== column.key))}
+                  />
+                  <span>{column.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
         {reportCode === 'PAYROLL_NOVELTY_MATRIX' && (
           <CompactNotice className="mt-4" tone="teal" title="Matriz de novedades">
             Exporta empleados en filas y novedades del rol en columnas, con totales de ingreso, deduccion y neto por novedad.

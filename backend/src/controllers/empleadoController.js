@@ -8,6 +8,7 @@ const { recordAudit } = require('../services/auditService');
 const { getBankProfileForTenant } = require('../services/bancoAebGenerator');
 const { s3Upload } = require('../config/s3');
 const { generarContrato } = require('../services/templateGenerator');
+const { cleanupEmployeeLegalDocuments } = require('../services/employeeDocumentCleanupService');
 const { getEmployeeHistory } = require('../services/employeeHistoryService');
 const { buildEmployeeMasterReport } = require('../services/employeeMasterReportService');
 const { listTerminationCauses } = require('../config/terminationCauses');
@@ -1316,6 +1317,26 @@ async function eliminar(req, res) {
       });
     }
 
+    const employeeResult = await db.query(`
+      SELECT id, cedula, nombres, apellidos, activo
+      FROM empleados
+      WHERE tenant_id = $1 AND id = $2 AND activo = true
+    `, [tenantId, id]);
+    if (employeeResult.rows.length === 0) {
+      return res.status(404).json({
+        error: 'EMPLEADO_NO_ENCONTRADO',
+        message: 'Empleado no encontrado o ya eliminado.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const documentCleanup = await cleanupEmployeeLegalDocuments({
+      tenantId,
+      employeeId: id,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || req.usuario?.id || null,
+    });
+
     const result = await db.query(`
       UPDATE empleados
       SET activo = false, updated_at = NOW()
@@ -1344,6 +1365,7 @@ async function eliminar(req, res) {
         activo: false,
         deletionMode: 'logical',
         reason: 'sin_nomina_cerrada',
+        documentCleanup,
       },
       metadata: {
         role: req.usuario?.rol || '',
@@ -1358,6 +1380,7 @@ async function eliminar(req, res) {
       empleado: result.rows[0],
       message: 'Ficha eliminada de la base activa.',
       deletionMode: 'logical',
+      documentCleanup,
       correlationId: req.correlationId,
     });
   } catch (err) {

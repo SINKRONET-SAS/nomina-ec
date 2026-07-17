@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Download, FileText, Settings2 } from 'lucide-react';
+import { Download, FileText, Search, Settings2 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import CompactNotice from '../../components/UI/CompactNotice';
 import { normalizeContractTemplateKey } from '../../utils/contractTemplates';
@@ -13,6 +13,7 @@ function getErrorMessage(err, fallback) {
 }
 
 function signatureStatus(doc) {
+  if (doc?.firmado) return 'Firmado';
   const company = doc?.metadata?.snapshot?.company || {};
   const representativeId = company.legalRepresentativeId || '';
   return representativeId && representativeId !== 'no registrada'
@@ -24,14 +25,20 @@ function ContratosGenerados() {
   const queryClient = useQueryClient();
   const [descargandoId, setDescargandoId] = useState('');
   const [form, setForm] = useState({ empleadoId: '', templateKey: '' });
+  const [search, setSearch] = useState('');
+  const [documentFilter, setDocumentFilter] = useState('all');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
   const { data: documentos, isLoading } = useQuery({
-    queryKey: ['contratos'],
+    queryKey: ['contratos', search, documentFilter],
     queryFn: async () => {
-      const response = await authenticatedApi.get('/documentos?tipo=contrato');
-      return response.data.documentos || [];
+      const params = new URLSearchParams({ tipo: 'contrato,contrato_firmado', limit: '1000' });
+      if (search.trim()) params.set('search', search.trim());
+      if (documentFilter === 'signed') params.set('firmado', 'true');
+      if (documentFilter === 'generated') params.set('firmado', 'false');
+      const response = await authenticatedApi.get(`/documentos?${params.toString()}`);
+      return { rows: response.data.documentos || [], total: response.data.total || 0 };
     },
   });
 
@@ -51,13 +58,7 @@ function ContratosGenerados() {
     },
   });
 
-  const { data: contractTypes = [] } = useQuery({
-    queryKey: ['contrato-tipos-ecuador'],
-    queryFn: async () => {
-      const response = await authenticatedApi.get('/documentos/contrato/tipos-ecuador');
-      return response.data.contractTypes || [];
-    },
-  });
+  const documentosRows = documentos?.rows || [];
 
   const selectedEmployee = useMemo(
     () => empleados.find((empleado) => empleado.id === form.empleadoId),
@@ -201,21 +202,6 @@ function ContratosGenerados() {
         )}
       </section>
 
-      {contractTypes.length > 0 && (
-        <section className="mb-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">Tipos de contrato aceptados para Ecuador</h2>
-          <div className="mt-3 grid gap-2 md:grid-cols-2">
-            {contractTypes.map((type) => (
-              <div className="rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-700" key={type.code}>
-                <p className="font-semibold text-slate-950">{type.label}</p>
-                <p>{type.basis}</p>
-                <p className="mt-1">{type.operationalUse}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
       {!loadingTemplates && templates.length === 0 && (
         <CompactNotice className="mb-4" tone="red" title="No hay plantillas activas">
           Activa al menos una plantilla en configuración antes de generar nuevos contratos.
@@ -226,9 +212,26 @@ function ContratosGenerados() {
       {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
 
       <div className="rounded-lg bg-white shadow">
-        <div className="overflow-x-auto">
+        <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 p-4">
+          <div className="flex min-w-[18rem] flex-1 items-center gap-2 rounded-md border border-slate-300 px-3 py-2">
+            <Search className="h-4 w-4 text-slate-400" />
+            <input
+              className="w-full border-0 p-0 text-sm outline-none"
+              placeholder="Buscar empleado, cédula, plantilla o archivo"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
+          <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={documentFilter} onChange={(event) => setDocumentFilter(event.target.value)}>
+            <option value="all">Todos los contratos</option>
+            <option value="generated">Generados pendientes</option>
+            <option value="signed">Contratos firmados</option>
+          </select>
+          <span className="text-xs text-slate-500">{documentos?.total || 0} registros encontrados</span>
+        </div>
+        <div className="max-h-[34rem] overflow-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="sticky top-0 z-10 bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Empleado</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Plantilla</th>
@@ -240,10 +243,10 @@ function ContratosGenerados() {
             <tbody className="divide-y divide-gray-200">
               {isLoading ? (
                 <tr><td colSpan="5" className="px-6 py-4 text-center">Cargando...</td></tr>
-              ) : !documentos || documentos.length === 0 ? (
+              ) : documentosRows.length === 0 ? (
                 <tr><td colSpan="5" className="px-6 py-4 text-center">No hay contratos generados</td></tr>
               ) : (
-                documentos.map((doc) => (
+                documentosRows.map((doc) => (
                   <tr key={doc.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm">{doc.nombres} {doc.apellidos}</td>
                     <td className="px-6 py-4">
@@ -252,7 +255,7 @@ function ContratosGenerados() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`rounded-full px-2 py-1 text-xs ${signatureStatus(doc) === 'Rep./trabajador' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                      <span className={`rounded-full px-2 py-1 text-xs ${doc.firmado || signatureStatus(doc) === 'Rep./trabajador' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
                         {signatureStatus(doc)}
                       </span>
                     </td>
@@ -262,7 +265,7 @@ function ContratosGenerados() {
                         type="button"
                         onClick={() => descargar(doc.id)}
                         disabled={descargandoId === doc.id}
-                        title="Descargar contrato"
+                        title={doc.firmado ? 'Descargar contrato firmado' : 'Descargar contrato generado'}
                         className="rounded bg-blue-100 p-1 text-blue-600 hover:bg-blue-200 disabled:opacity-50"
                       >
                         <Download size={16} />

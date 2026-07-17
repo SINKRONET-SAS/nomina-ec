@@ -7,6 +7,7 @@ const { generarArchivoBanco, precheckArchivoBanco } = require('../services/banco
 const {
   generarConsolidadoAnualNomina,
   generarReporteNomina,
+  getReportColumnCatalog,
 } = require('../services/payrollReportService');
 const {
   generarFormulario107,
@@ -437,6 +438,31 @@ async function exportarNomina(req, res) {
   }
 }
 
+function listarColumnasNomina(req, res) {
+  try {
+    const columns = getReportColumnCatalog(req.query.reportCode);
+    return res.json({
+      success: true,
+      reportCode: String(req.query.reportCode || 'PAYROLL_DETAIL_TABULAR').trim().toUpperCase(),
+      columns,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[REPORTES] Error listando columnas de nómina', {
+      code: err.code || 'REPORTE_COLUMNAS_LIST_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'REPORTE_COLUMNAS_LIST_ERROR',
+      message: err.message,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
 async function exportarConsolidadoAnual(req, res) {
   try {
     const { tenantId } = req;
@@ -497,5 +523,6 @@ module.exports = {
   validarArchivoBanco,
   reporteAsistencia,
   exportarNomina,
+  listarColumnasNomina,
   exportarConsolidadoAnual,
 };

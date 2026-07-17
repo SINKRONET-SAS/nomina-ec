@@ -94,6 +94,7 @@ async function generarReporteNomina({
 
   const tenant = await getTenant(tenantId);
   const reportOptions = {};
+  reportOptions.accountingMode = normalizeAccountingMode(filters.accountingMode);
   if (normalizedReportCode === 'PAYROLL_ACCOUNTING_REPORT') {
     reportOptions.accountingMappings = await getAccountingMappings(tenantId, {
       anio: Number(anio),
@@ -106,11 +107,14 @@ async function generarReporteNomina({
     : isBenefitMovementBalanceReport
       ? rows
       : rowsForReport(rows, normalizedReportCode, Number(anio), Number(mes), reportOptions);
+  const selectedColumns = normalizedFormat === 'pdf'
+    ? []
+    : selectReportColumns(normalizedReportCode, exportRows, filters.columns);
   const buffer = normalizedFormat === 'pdf'
     ? await buildSummaryPdf({ tenant, anio, mes, rows, filters, context })
     : normalizedFormat === 'csv'
-      ? buildCsv({ exportRows, reportCode: normalizedReportCode })
-      : await buildWorkbook({ tenant, anio, mes, exportRows, reportCode: normalizedReportCode, filters, context });
+      ? buildCsv({ exportRows, reportCode: normalizedReportCode, columns: selectedColumns })
+      : await buildWorkbook({ tenant, anio, mes, exportRows, reportCode: normalizedReportCode, filters, context, columns: selectedColumns });
 
   const scopeSuffix = buildScopeSuffix(filters);
   const fileName = `${normalizedReportCode}_${anio}${String(mes).padStart(2, '0')}${scopeSuffix}.${normalizedFormat}`;
@@ -165,6 +169,7 @@ async function generarConsolidadoAnualNomina({
   workbook.created = new Date();
   workbook.modified = new Date();
   const reportOptions = {};
+  reportOptions.accountingMode = normalizeAccountingMode(filters.accountingMode);
   if (normalizedReportCode === 'PAYROLL_ACCOUNTING_REPORT') {
     reportOptions.accountingMappings = await getAccountingMappings(tenantId, {
       anio: Number(anio),
@@ -188,7 +193,7 @@ async function generarConsolidadoAnualNomina({
   if (isBenefitMovementBalanceReport) {
     const exportRows = await getBenefitLedgerRows(tenantId, Number(anio), null, filters);
     const sheet = workbook.addWorksheet('Ledger beneficios');
-    sheet.columns = getWorkbookColumns(normalizedReportCode, exportRows);
+    sheet.columns = selectReportColumns(normalizedReportCode, exportRows, filters.columns);
     sheet.views = [{ state: 'frozen', ySplit: 1 }];
     exportRows.forEach((row) => sheet.addRow(row));
     sheet.getRow(1).font = { bold: true };
@@ -205,7 +210,7 @@ async function generarConsolidadoAnualNomina({
 
       const exportRows = rowsForReport(rows, normalizedReportCode, Number(anio), mes, reportOptions);
       const sheet = workbook.addWorksheet(`${String(mes).padStart(2, '0')}-${anio}`);
-      sheet.columns = getWorkbookColumns(normalizedReportCode, exportRows);
+      sheet.columns = selectReportColumns(normalizedReportCode, exportRows, filters.columns);
       sheet.views = [{ state: 'frozen', ySplit: 1 }];
       exportRows.forEach((row) => sheet.addRow(row));
       sheet.getRow(1).font = { bold: true };
@@ -551,7 +556,7 @@ function addPositionFilter(where, params, value) {
   )`);
 }
 
-async function buildWorkbook({ tenant, anio, mes, exportRows, reportCode, filters, context }) {
+async function buildWorkbook({ tenant, anio, mes, exportRows, reportCode, filters, context, columns }) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'SKNOMINA';
   workbook.created = new Date();
@@ -565,7 +570,7 @@ async function buildWorkbook({ tenant, anio, mes, exportRows, reportCode, filter
         ? 'Novedades rol'
       : 'Detalle';
   const sheet = workbook.addWorksheet(sheetName);
-  sheet.columns = getWorkbookColumns(reportCode, exportRows);
+  sheet.columns = columns || getWorkbookColumns(reportCode, exportRows);
   sheet.views = [{ state: 'frozen', ySplit: 1 }];
 
   exportRows.forEach((row) => {
@@ -593,6 +598,7 @@ async function buildWorkbook({ tenant, anio, mes, exportRows, reportCode, filter
     ['RUC', tenant.ruc || ''],
     ['Periodo', `${String(mes).padStart(2, '0')}/${anio}`],
     ['Reporte', reportCode],
+    ['Columnas', (columns || getWorkbookColumns(reportCode, exportRows)).map((column) => column.key).join(', ')],
     ['Filtros', JSON.stringify(sanitizeFilters(filters))],
     ['Generado en', new Date().toISOString()],
     ['Correlation ID', context.correlationId || ''],
@@ -602,12 +608,12 @@ async function buildWorkbook({ tenant, anio, mes, exportRows, reportCode, filter
   return workbook.xlsx.writeBuffer();
 }
 
-function buildCsv({ exportRows, reportCode }) {
-  const columns = getWorkbookColumns(reportCode, exportRows);
-  const header = columns.map((column) => column.header);
+function buildCsv({ exportRows, reportCode, columns }) {
+  const selectedColumns = columns || getWorkbookColumns(reportCode, exportRows);
+  const header = selectedColumns.map((column) => column.header);
   const lines = [
     header.map(csvCell).join(','),
-    ...exportRows.map((exportRow) => columns.map((column) => csvCell(exportRow[column.key])).join(',')),
+    ...exportRows.map((exportRow) => selectedColumns.map((column) => csvCell(exportRow[column.key])).join(',')),
   ];
 
   return Buffer.from(`\ufeff${lines.join('\r\n')}`, 'utf8');
@@ -624,10 +630,12 @@ function rowsForReport(rows, reportCode, anio, mes, options = {}) {
     return buildBenefitsMatrixRows(rows, anio, mes);
   }
   if (reportCode === 'PAYROLL_ACCOUNTING_REPORT') {
-    return buildAccountingEntries(rows, anio, mes, options.accountingMappings);
+    const entries = buildAccountingEntries(rows, anio, mes, options.accountingMappings);
+    return options.accountingMode === 'consolidated' ? consolidateAccountingEntries(entries) : entries;
   }
   if (reportCode === 'PAYROLL_ACCOUNTING_ENTRIES') {
-    return rows.flatMap((row) => mapAccountingEntries(row, anio, mes));
+    const entries = rows.flatMap((row) => mapAccountingEntries(row, anio, mes));
+    return options.accountingMode === 'consolidated' ? consolidateAccountingEntries(entries) : entries;
   }
   return rows.map((row) => mapRowForExport(row, anio, mes));
 }
@@ -1205,7 +1213,90 @@ function sanitizeFilters(filters = {}) {
     department: String(filters.department || '').trim(),
     position: String(filters.position || '').trim(),
     costCenter: String(filters.costCenter || '').trim(),
+    columns: Array.isArray(filters.columns)
+      ? filters.columns.map((column) => String(column || '').trim()).filter(Boolean).slice(0, 80)
+      : [],
+    accountingMode: normalizeAccountingMode(filters.accountingMode),
   };
+}
+
+function normalizeAccountingMode(value) {
+  return String(value || 'detail').trim().toLowerCase() === 'consolidated'
+    ? 'consolidated'
+    : 'detail';
+}
+
+function consolidateAccountingEntries(entries = []) {
+  const groups = new Map();
+  for (const entry of entries) {
+    const key = `${entry.periodo || ''}|${entry.cuenta || ''}`;
+    const current = groups.get(key) || {
+      ...entry,
+      asiento: 'CONSOLIDADO',
+      conceptoCodigo: 'CONSOLIDADO',
+      concepto: 'Consolidado por cuenta',
+      categoria: 'consolidado',
+      debe: 0,
+      haber: 0,
+      empleado: '',
+      cedula: '',
+      centroCosto: '',
+      loteCalculo: '',
+      referencia: `CONSOLIDADO-${entry.periodo || 'periodo'}-${entry.cuenta || 'cuenta'}`,
+    };
+    current.debe = roundCurrency(current.debe + numberValue(entry.debe));
+    current.haber = roundCurrency(current.haber + numberValue(entry.haber));
+    groups.set(key, current);
+  }
+  return [...groups.values()];
+}
+
+function selectReportColumns(reportCode, exportRows = [], requestedColumns = []) {
+  const availableColumns = getWorkbookColumns(reportCode, exportRows);
+  if (!Array.isArray(requestedColumns)) return availableColumns;
+  if (requestedColumns.length === 0) {
+    const error = new Error('Selecciona al menos una columna para generar el reporte.');
+    error.code = 'REPORTE_COLUMNAS_REQUERIDAS';
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const normalizedReportCode = String(reportCode || '').trim().toUpperCase();
+  const catalogColumns = getWorkbookColumns(normalizedReportCode, []);
+  const requestedSet = new Set(requestedColumns.map((column) => String(column || '').trim()));
+  const selectsEveryStaticColumn = catalogColumns.every((column) => requestedSet.has(column.key));
+  if ((normalizedReportCode === 'PAYROLL_NOVELTY_MATRIX' || normalizedReportCode === 'PAYROLL_BENEFITS_MATRIX')
+    && selectsEveryStaticColumn) {
+    return availableColumns;
+  }
+
+  const allowed = new Set(availableColumns.map((column) => column.key));
+  const selectedKeys = [...new Set(requestedColumns.map((column) => String(column || '').trim()))]
+    .filter((column) => allowed.has(column));
+  if (selectedKeys.length === 0) {
+    const error = new Error('Las columnas solicitadas no pertenecen al reporte seleccionado.');
+    error.code = 'REPORTE_COLUMNAS_INVALIDAS';
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const selectedSet = new Set(selectedKeys);
+  return availableColumns.filter((column) => selectedSet.has(column.key));
+}
+
+function getReportColumnCatalog(reportCode) {
+  const normalizedReportCode = String(reportCode || 'PAYROLL_DETAIL_TABULAR').trim().toUpperCase();
+  if (!REPORT_TYPES[normalizedReportCode]) {
+    const error = new Error(`Reporte de nómina no soportado: ${reportCode}`);
+    error.code = 'REPORTE_NO_SOPORTADO';
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return getWorkbookColumns(normalizedReportCode, []).map((column) => ({
+    key: column.key,
+    label: column.header,
+  }));
 }
 
 function buildScopeSuffix(filters = {}) {
@@ -1223,6 +1314,8 @@ module.exports = {
   getPayrollRows,
   summarizeRows,
   REPORT_TYPES,
+  getReportColumnCatalog,
+  consolidateAccountingEntries,
   rowsForReport,
   buildBenefitLedgerRows,
   buildPayrollNoveltyMatrixRows,

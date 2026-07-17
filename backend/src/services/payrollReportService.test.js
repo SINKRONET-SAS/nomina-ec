@@ -11,7 +11,11 @@ jest.mock('./auditService', () => ({
   recordAudit: jest.fn(),
 }));
 
-const { buildBenefitLedgerRows, rowsForReport } = require('./payrollReportService');
+const {
+  buildBenefitLedgerRows,
+  rowsForReport,
+  getReportColumnCatalog,
+} = require('./payrollReportService');
 
 function payrollRow(overrides = {}) {
   return {
@@ -59,6 +63,26 @@ function payrollRow(overrides = {}) {
 }
 
 describe('payrollReportService accounting entries', () => {
+  test('expone catálogo seguro de columnas por reporte', () => {
+    expect(getReportColumnCatalog('PAYROLL_DETAIL_TABULAR')).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'empleado' }),
+      expect.objectContaining({ key: 'netoRecibir' }),
+    ]));
+  });
+
+  test('consolida reportes contables por período y cuenta', () => {
+    const rows = rowsForReport([
+      payrollRow(),
+      payrollRow({ cedula: '0102030406', nombres: 'Luis' }),
+    ], 'PAYROLL_ACCOUNTING_ENTRIES', 2026, 6, { accountingMode: 'consolidated' });
+
+    const sueldo = rows.find((row) => row.cuenta === '510101');
+    expect(rows).toEqual(expect.arrayContaining([
+      expect.objectContaining({ asiento: 'CONSOLIDADO', conceptoCodigo: 'CONSOLIDADO' }),
+    ]));
+    expect(sueldo.debe).toBe(2000);
+    expect(sueldo.empleado).toBe('');
+  });
   test('mapea codigo de cargo en reporte tabular', () => {
     const rows = rowsForReport([
       {

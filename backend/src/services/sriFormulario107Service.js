@@ -8,6 +8,7 @@ const db = require('../config/database');
 const { s3Upload } = require('../config/s3');
 const { recordAudit } = require('./auditService');
 const { roundMoney } = require('../utils/money');
+const { resolveCompanyData, buildPdfHeader } = require('./pdfBrandHeader');
 
 const FORM_107_MIME = 'application/pdf';
 const TEMPLATE_VERSION = 'FORM107-SRI-RDEP-2026-20260317';
@@ -47,6 +48,7 @@ async function loadFormulario107Data({ tenantId, anio, empleadoId }) {
       t.id AS tenant_id,
       t.ruc,
       t.razon_social,
+      t.configuracion,
       e.id AS empleado_id,
       e.cedula,
       e.nombres,
@@ -90,6 +92,7 @@ async function loadFormulario107Data({ tenantId, anio, empleadoId }) {
       id: result.rows[0].tenant_id,
       ruc: result.rows[0].ruc || '',
       razonSocial: result.rows[0].razon_social || '',
+      configuracion: result.rows[0].configuracion || {},
     },
     employee: {
       id: result.rows[0].empleado_id,
@@ -234,7 +237,15 @@ async function buildFormulario107Pdf({ data, anio, context = {} }) {
     pageSize: 'A4',
     pageMargins: [36, 42, 36, 42],
     content: [
-      { text: 'FORMULARIO 107', style: 'title' },
+      ...buildPdfHeader({
+        title: 'FORMULARIO 107',
+        company: resolveCompanyData({
+          ruc: data.tenant.ruc,
+          razon_social: data.tenant.razonSocial,
+          configuracion: data.tenant.configuracion,
+        }),
+        period: String(anio),
+      }),
       { text: 'Comprobante de retenciones en la fuente del impuesto a la renta por ingresos del trabajo en relacion de dependencia', style: 'subtitle' },
       { text: `Ejercicio fiscal ${anio}`, style: 'period' },
       {

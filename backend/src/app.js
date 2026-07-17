@@ -285,6 +285,7 @@ app.post('/api/reportes/sae', requireRole('owner', 'admin_rrhh'), requireModule(
 // Las rutas legacy /api/pagos/banco/* fueron eliminadas en AISK26-04
 app.post('/api/reportes/banco/precheck', requireRole('owner', 'admin_rrhh'), requireModule('reportes'), reporteController.validarArchivoBanco);
 app.post('/api/reportes/banco', requireRole('owner', 'admin_rrhh'), requireModule('reportes'), reporteController.generarArchivoBanco);
+app.get('/api/reportes/nomina/columnas', requireRole('owner', 'admin_rrhh'), requireModule('reportes'), reporteController.listarColumnasNomina);
 app.post('/api/reportes/nomina/exportar', requireRole('owner', 'admin_rrhh'), requireModule('reportes'), reporteController.exportarNomina);
 app.get('/api/reportes/nomina/:anio/consolidado', requireRole('owner', 'admin_rrhh'), requireModule('reportes'), reporteController.exportarConsolidadoAnual);
 app.get('/api/reportes/asistencia/:anio/:mes', requireRole('owner', 'admin_rrhh', 'supervisor'), requireModule('reportes'), reporteController.reporteAsistencia);

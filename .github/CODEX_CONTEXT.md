@@ -1,3 +1,63 @@
+## Current Haiky Plan - HAIKY-REPORTES-DOCUMENTOS-EMPLEADOS-2026
+
+| Campo | Valor |
+|-------|-------|
+| Plan | `HAIKY-REPORTES-DOCUMENTOS-EMPLEADOS-2026` |
+| Codigo | `RDE26` |
+| Estado | `RDE26-05 completado; QA, gobierno y entrega listos` |
+| Fecha | `2026-07-16` |
+| Superficie | BACKEND, PWA, REPORTES, PDF, DOCUMENTOS, CICLO DE VIDA, GOBIERNO |
+| Plan doc | `docs2/PLAN_HAIKY_REPORTES_DOCUMENTOS_EMPLEADOS_2026.md` |
+| Prompts | `.github/prompts/RDE26-00` a `.github/prompts/RDE26-05` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Plan anterior | `HAIKY-PLANTILLAS-CONTRATOS-CLIENTE-2026` (`TPC26`, cerrado) |
+
+### Baseline y decisiones RDE26-00
+
+- Se conserva la compatibilidad de `POST /api/reportes/nomina/exportar` y `GET /api/reportes/nomina/:anio/consolidado`.
+- Las columnas personalizadas se resolverán contra un catálogo fijo del servidor; nunca se interpolará entrada del cliente en SQL o Excel.
+- El reporte contable mantendrá detalle por defecto y agregará consolidación por periodo, asiento y cuenta.
+- Contratos consultará `contrato` y `contrato_firmado`, reutilizando el endpoint de descarga tenant-aware.
+- La eliminación continuará siendo lógica y se bloqueará con roles cerrados/pagados; solo después se depurarán documentos y objetos vinculados.
+- El catálogo Ecuador se moverá visualmente a Ayuda, reutilizando `/api/documentos/contrato/tipos-ecuador`.
+- Los artefactos previos TPC26 no se reabren; este plan inicia una cadena AuditLock nueva con hash del lock anterior.
+
+### Fases RDE26
+
+| Fase | Objetivo | Estado |
+|---|---|---|
+| RDE26-00 | Baseline, plan, contexto, prompts y gobierno | completed-pass |
+| RDE26-01 | Reportes configurables y columnas seguras | completed-pass |
+| RDE26-02 | PDF con logo y contabilidad por cuenta | completed-pass |
+| RDE26-03 | Contratos, documentos y Ayuda | completed-pass |
+| RDE26-04 | Depuración documental al eliminar empleado | completed-pass |
+| RDE26-05 | QA, cierre, commit y push | completed-pass |
+
+### Contratos de validación RDE26
+
+- UTF-8 sin BOM en archivos modificados.
+- Toda ruta nueva conserva permisos, `tenant_id` y `correlationId`.
+- Todo error de infraestructura incluye `code`, `statusCode`, `correlationId` y `userId` cuando existe.
+- Toda fase se inicia únicamente con AuditLock firmado de la anterior.
+- El frontend debe exponer toda capacidad operativa que se agregue.
+
+### Implementación RDE26-01 a RDE26-04
+
+- `payrollReportService` aplica una lista blanca de columnas por reporte, conserva las columnas dinámicas de matrices cuando se selecciona el catálogo completo y registra columnas/filtros en la hoja Auditoria.
+- `GET /api/reportes/nomina/columnas` expone el catálogo protegido; `DescargarReportes.jsx` permite elegir columnas, alcance global/individual y salida contable detallada/consolidada.
+- `PAYROLL_ACCOUNTING_REPORT` y `PAYROLL_ACCOUNTING_ENTRIES` mantienen detalle por defecto y agrupan por periodo/cuenta en modo consolidado.
+- Formulario 107 reutiliza `pdfBrandHeader` y el logo del tenant; los roles y contratos ya consumen la misma fuente de identidad visual.
+- `documentoLegalController.listar` admite `search`, `firmado`, `limit` y `offset`; Contratos consulta documentos generados/firmados, muestra filtro, desplazamiento y descarga identificada.
+- Ayuda consume el catálogo Ecuador desde la ruta existente; Contratos dejó de duplicarlo.
+- `employeeDocumentCleanupService` elimina objetos y registros legales trazables antes de la baja lógica y detiene el proceso ante claves ausentes o fallas de almacenamiento.
+
+### QA RDE26-05
+
+- `payrollReportService.test.js`: 11 tests PASS.
+- `employeeDocumentCleanupService.test.js` y `empleadoController.test.js`: 14 tests PASS.
+- `npm.cmd run build` en `frontend-web`: PASS.
+- `node --check` en módulos backend modificados: PASS.
+- QA final completada: suite completa, contratos de sistema, Prisma, UTF-8, diff check y cierre de AuditLock aprobados; falta únicamente crear el commit y publicar Git.
 
 ---
 

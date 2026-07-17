@@ -336,10 +336,17 @@ async function generarActaEntregaDotacion(req, res) {
 async function listar(req, res) {
   try {
     const { tenantId } = req;
-    const { empleadoId, tipo } = req.query;
+    const {
+      empleadoId,
+      tipo,
+      search,
+      firmado,
+      limit: rawLimit,
+      offset: rawOffset,
+    } = req.query;
     
     let query = `
-      SELECT d.*, e.nombres, e.apellidos, e.cedula
+      SELECT d.*, e.nombres, e.apellidos, e.cedula, COUNT(*) OVER() AS total_documentos
       FROM documentos_legales d
       LEFT JOIN empleados e ON d.empleado_id = e.id
       WHERE d.tenant_id = $1
@@ -361,10 +368,37 @@ async function listar(req, res) {
       }
     }
     
-    query += ` ORDER BY d.created_at DESC`;
+    const normalizedSearch = String(search || '').trim();
+    if (normalizedSearch) {
+      query += ` AND (
+        COALESCE(e.nombres, '') ILIKE $${params.length + 1}
+        OR COALESCE(e.apellidos, '') ILIKE $${params.length + 1}
+        OR COALESCE(e.cedula, '') ILIKE $${params.length + 1}
+        OR d.tipo_documento::text ILIKE $${params.length + 1}
+        OR COALESCE(d.metadata::text, '') ILIKE $${params.length + 1}
+      )`;
+      params.push(`%${normalizedSearch}%`);
+    }
+    if (firmado === 'true' || firmado === 'false') {
+      query += ` AND d.firmado = $${params.length + 1}`;
+      params.push(firmado === 'true');
+    }
+
+    const limit = Math.min(Math.max(Number.parseInt(rawLimit || '1000', 10) || 1000, 1), 1000);
+    const offset = Math.max(Number.parseInt(rawOffset || '0', 10) || 0, 0);
+    query += ` ORDER BY d.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limit, offset);
     
     const result = await db.query(query, params);
-    res.json({ success: true, documentos: result.rows, correlationId: req.correlationId });
+    res.json({
+      success: true,
+      documentos: result.rows,
+      total: Number(result.rows[0]?.total_documentos || 0),
+      limit,
+      offset,
+      hasMore: result.rows.length === limit,
+      correlationId: req.correlationId,
+    });
   } catch (err) {
     console.error('[DOCUMENTOS] Error listando documentos', {
       code: err.code || 'DOCUMENTO_LIST_ERROR',

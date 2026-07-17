@@ -1,5 +1,7 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { BookOpen, CheckCircle2, FileText, HelpCircle, Settings2 } from 'lucide-react';
+import { authenticatedApi } from '../services/authenticatedApi';
 
 const sections = [
   {
@@ -41,6 +43,14 @@ const sections = [
 ];
 
 function AyudaUsuario() {
+  const { data: contractTypes = [], isLoading: loadingContractTypes, isError: contractTypesError } = useQuery({
+    queryKey: ['ayuda', 'contrato-tipos-ecuador'],
+    queryFn: async () => {
+      const response = await authenticatedApi.get('/documentos/contrato/tipos-ecuador');
+      return response.data.contractTypes || [];
+    },
+  });
+
   return (
     <div className="space-y-6">
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -76,6 +86,29 @@ function AyudaUsuario() {
             </article>
           );
         })}
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <FileText className="h-5 w-5 text-teal-700" />
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">Tipos de contrato aceptados para Ecuador</h2>
+            <p className="mt-1 text-sm text-slate-600">Referencia operativa para seleccionar la modalidad aplicable y revisar su soporte laboral.</p>
+          </div>
+        </div>
+        {loadingContractTypes && <p className="mt-4 text-sm text-slate-500">Cargando catálogo...</p>}
+        {contractTypesError && <p className="mt-4 text-sm text-red-700">No se pudo cargar el catálogo. Reintenta o consulta al administrador.</p>}
+        {!loadingContractTypes && !contractTypesError && (
+          <div className="mt-4 grid gap-2 md:grid-cols-2">
+            {contractTypes.map((type) => (
+              <div className="rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-700" key={type.code}>
+                <p className="font-semibold text-slate-950">{type.label}</p>
+                <p>{type.basis}</p>
+                <p className="mt-1">{type.operationalUse}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

@@ -10,11 +10,15 @@ jest.mock('../services/bancoAebGenerator', () => ({
 jest.mock('../services/bankAccountCrypto', () => ({
   encryptBankAccount: jest.fn((account) => Buffer.from(`encrypted:${account}`)),
 }));
+jest.mock('../services/employeeDocumentCleanupService', () => ({
+  cleanupEmployeeLegalDocuments: jest.fn(),
+}));
 
 const db = require('../config/database');
 const { recordAudit } = require('../services/auditService');
 const { getBankProfileForTenant } = require('../services/bancoAebGenerator');
 const { encryptBankAccount } = require('../services/bankAccountCrypto');
+const { cleanupEmployeeLegalDocuments } = require('../services/employeeDocumentCleanupService');
 const empleadoController = require('./empleadoController');
 
 function mockResponse() {
@@ -277,6 +281,7 @@ describe('empleadoController.eliminar', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     recordAudit.mockResolvedValue(undefined);
+    cleanupEmployeeLegalDocuments.mockResolvedValue({ documentCount: 0, storageObjectCount: 0, storageKeys: [] });
   });
 
   test('bloquea eliminacion cuando existen roles cerrados o pagados', async () => {
@@ -306,6 +311,7 @@ describe('empleadoController.eliminar', () => {
   test('elimina logicamente si no existen roles cerrados o pagados', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [{ total: 0, primer_periodo: null, ultimo_periodo: null }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'emp-1', cedula: '0912345678', nombres: 'Ana', apellidos: 'Perez', activo: true }] })
       .mockResolvedValueOnce({
         rows: [{
           id: 'emp-1',
@@ -328,7 +334,8 @@ describe('empleadoController.eliminar', () => {
     await empleadoController.eliminar(req, res);
 
     expect(db.query.mock.calls[0][0]).toContain("estado IN ('cerrada', 'pagada')");
-    expect(db.query.mock.calls[1][0]).toContain('SET activo = false');
+    expect(db.query.mock.calls[2][0]).toContain('SET activo = false');
+    expect(cleanupEmployeeLegalDocuments).toHaveBeenCalledWith(expect.objectContaining({ employeeId: 'emp-1', tenantId: 'tenant-1' }));
     expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
       action: 'empleado.eliminado',
       entity: 'empleados',

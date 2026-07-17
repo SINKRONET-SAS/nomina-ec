@@ -1,190 +1,73 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-PLANTILLAS-CONTRATOS-CLIENTE-2026",
-  "planCode": "TPC26",
+  "plan": "HAIKY-REPORTES-DOCUMENTOS-EMPLEADOS-2026",
+  "planCode": "RDE26",
   "status": "closed",
-  "phaseCompleted": "TPC26-06",
+  "phaseCompleted": "RDE26-05",
   "currentPhase": "closed",
-  "updatedAt": "2026-07-16T20:45:15.000Z",
+  "updatedAt": "2026-07-16T23:20:00.000Z",
   "rulesSource": "RULES.md",
   "contextSource": ".github/CODEX_CONTEXT.md",
-  "previousPlan": "HAIKY-LOGO-REPORTES-FIRMA-EMPRESA-2026",
-  "previousAuditLockHash": "8ba0847993397f08285359a2c323b8f64028ab22a8aaa294436cc45887475531",
-  "summary": "TPC26 cerrado: catálogo tenant, runtime parametrizable, PWA, inventario reversible, QA y gobierno completados; sin eliminación de evidencia legal.",
-  "nextAction": "Plan cerrado. Cualquier cambio posterior requiere un nuevo plan y AuditLock.",
+  "previousPlan": "HAIKY-PLANTILLAS-CONTRATOS-CLIENTE-2026",
+  "previousAuditLockHash": "6d4e60fec91074e1eea4db1ea1ad137d806670c211e0f47d7d1f55562df3de5b",
+  "summary": "RDE26 cerrado: reportes configurables, PDF con logo, contabilidad por cuenta, contratos operables, Ayuda y depuración documental implementados.",
+  "nextAction": "Plan cerrado. Cualquier cambio posterior requiere un nuevo Plan Haiky y AuditLock.",
   "fases": [
-    {
-      "phase": "TPC26-00",
-      "status": "completed-pass",
-      "detail": "Plan, contexto, prompts por fase, inventario de baseline y gobierno AuditLock generados sin cambios runtime."
-    },
-    {
-      "phase": "TPC26-01",
-      "status": "completed-pass",
-      "detail": "Diagnostico confirmado en docs2/TPC26-01-DIAGNOSTICO-ARQUITECTURA.md; PostgreSQL/S3 quedan como medicion externa pendiente."
-    },
-    {
-      "phase": "TPC26-02",
-      "status": "completed-pass",
-      "detail": "Migracion de indices, servicio tenant-aware, activacion/default/orden, permisos y compatibilidad implementados."
-    },
-    {
-      "phase": "TPC26-03",
-      "status": "completed-pass",
-      "detail": "Resolver tenant, versionado, lista blanca, parámetros normalizados y snapshot implementados."
-    },
-    {
-      "phase": "TPC26-04",
-      "status": "completed-pass",
-      "detail": "Pantalla de configuración, navegación, estados UI y consumo de catálogo activo implementados."
-    },
-    {
-      "phase": "TPC26-05",
-      "status": "completed-pass",
-      "detail": "Inventario local, clasificación legal, duplicados y dry-run reversible implementados; sin eliminación."
-    },
-    {
-      "phase": "TPC26-06",
-      "status": "completed-pass",
-      "detail": "QA completo, revisión de controles, AuditLock cerrado, commit y push a main."
-    }
-  ],
-  "runtimeChanges": [
-    "Backend: contractTemplateCatalogService resuelve catalogo por tenant, activacion, default, aliases y parametros permitidos.",
-    "Backend: rutas administrativas listan y actualizan plantillas tenant sin copiar JSON.",
-    "Backend: generacion operativa valida catalogo tenant cuando la ruta lo solicita y conserva snapshot de parametros.",
-    "Prisma: indice de consulta y unicidad de default activo en configuration_catalogs.",
-    "Frontend: PlantillasContrato expone activacion, default, orden, parametros y bloqueos accionables.",
-    "Storage: inventario SHA-256 y cuarentena reversible en dry-run sin candidatos.",
-    "QA: PDF preliminar identificado como BORRADOR - NO CONSTITUYE COMPROBANTE DE PAGO."
-  ],
-  "validationChecks": [
-    {
-      "name": "rules_read",
-      "ok": true,
-      "output": "RULES.md leido completo; se aplican UTF-8, zero silent failures, compatibilidad, AuditLock, aprobacion por fase, frontend y trazabilidad."
-    },
-    {
-      "name": "contract_template_inventory",
-      "ok": true,
-      "output": "17 fuentes JSON confirmadas en backend/src/templates/legal/contracts; endpoints, aliases, empleado.tipo_contrato y generacion PDF identificados."
-    },
-    {
-      "name": "local_storage_inventory",
-      "ok": true,
-      "output": "36 archivos y 624999 bytes en backend/storage/local-files; no se clasifican como eliminables sin consulta de metadata y retencion."
-    },
-    {
-      "name": "configuration_source_inventory",
-      "ok": true,
-      "output": "configuration_catalogs confirmado como fuente existente con alcance tenant y campos de estado/aprobacion; TPC26-02 lo reutiliza sin fuente paralela."
-    },
-    {
-      "name": "runtime_scope_guard",
-      "ok": true,
-      "output": "TPC26-02 modifica solo catalogo, resolucion backend, rutas y migracion de indices; no copia definiciones ni elimina documentos."
-    },
-    {
-      "name": "node_check_tpc26_02",
-      "ok": true,
-      "output": "Servicios y controladores TPC26-02 superan node --check."
-    },
-    {
-      "name": "prisma_validate_tpc26_02",
-      "ok": true,
-      "output": "npm run prisma:validate PASS."
-    },
-    {
-      "name": "backend_focused_tests_tpc26_02",
-      "ok": true,
-      "output": "41 tests PASS en templateGenerator y app.routes."
-    },
-    {
-      "name": "runtime_parameter_tests_tpc26_03",
-      "ok": true,
-      "output": "11 tests PASS en templateGenerator y contractTemplateCatalogService; parámetros no declarados rechazados."
-    },
-    {
-      "name": "frontend_build_tpc26_04",
-      "ok": true,
-      "output": "npm run build:web PASS; la ruta PlantillasContrato fue compilada como chunk PWA.",
-      "correlationId": "tpc26-04-build"
-    },
-    {
-      "name": "storage_inventory_tpc26_05",
-      "ok": true,
-      "output": "36 archivos y 624999 bytes inventariados; 8 evidencias legales y 14 metadata acompañantes excluidos."
-    },
-    {
-      "name": "storage_dry_run_tpc26_05",
-      "ok": true,
-      "output": "npm run tpc26:storage:dry-run PASS; candidatos temporales encontrados: 0; archivos modificados: 0."
-    },
-    {
-      "name": "backend_full_tests_tpc26_06",
-      "ok": true,
-      "output": "npm run test:backend PASS: 58 suites y 406 tests."
-    },
-    {
-      "name": "contracts_gate_tpc26_06",
-      "ok": true,
-      "output": "npm run contracts PASS: frontend, backend, Prisma y reportes mantienen contrato de sistema unico."
-    },
-    {
-      "name": "utf8_and_diff_gate_tpc26_06",
-      "ok": true,
-      "output": "Archivos modificados validados como UTF-8 sin BOM y git diff --check PASS."
-    },
-    {
-      "name": "auditlock_signature_tpc26_06",
-      "ok": true,
-      "output": "AuditLock cerrado con firma SHA256(previousAuditLockHash + updatedAt)."
-    },
-    {
-      "name": "utf8_documental",
-      "ok": true,
-      "output": "Artefactos TPC26-00 guardados como UTF-8 sin BOM y sujetos a validacion explicita."
-    }
+    { "phase": "RDE26-00", "status": "completed-pass", "detail": "Gobierno, plan, contexto, prompts y diagnóstico de baseline generados." },
+    { "phase": "RDE26-01", "status": "completed-pass", "detail": "Catálogo seguro de columnas, ruta protegida y controles PWA de selección implementados." },
+    { "phase": "RDE26-02", "status": "completed-pass", "detail": "PDF con logo en Formulario 107 y salida contable detallada o consolidada por cuenta." },
+    { "phase": "RDE26-03", "status": "completed-pass", "detail": "Búsqueda, filtros, scroll y descarga de contratos firmados; tipos Ecuador visibles en Ayuda." },
+    { "phase": "RDE26-04", "status": "completed-pass", "detail": "Depuración de documentos legales y objetos trazables al eliminar lógicamente un empleado elegible." },
+    { "phase": "RDE26-05", "status": "completed-pass", "detail": "QA, gobierno, commit y push completados." }
   ],
   "filesModified": [
+    "docs2/PLAN_HAIKY_REPORTES_DOCUMENTOS_EMPLEADOS_2026.md",
+    "docs2/RDE26-00-DIAGNOSTICO-BASELINE.md",
     ".github/CODEX_CONTEXT.md",
-    "docs2/TPC26-01-DIAGNOSTICO-ARQUITECTURA.md",
-    "backend/prisma/migrations/20260716203000_tpc26_contrato_tenant_catalog/migration.sql",
-    "backend/src/services/contractTemplateCatalogService.js",
-    "backend/src/services/contractTemplateCatalogService.test.js",
-    "backend/src/services/templateGenerator.js",
-    "backend/src/services/payrollRolePdfService.js",
+    ".github/prompts/RDE26-00-baseline-gobierno.md",
+    ".github/prompts/RDE26-01-reportes-exportacion.md",
+    ".github/prompts/RDE26-02-pdf-contabilidad.md",
+    ".github/prompts/RDE26-03-documentos-ayuda.md",
+    ".github/prompts/RDE26-04-depuracion-empleados.md",
+    ".github/prompts/RDE26-05-qa-release.md",
+    ".vscode/AuditLock.json",
+    "backend/src/app.js",
     "backend/src/controllers/documentoLegalController.js",
     "backend/src/controllers/empleadoController.js",
-    "backend/src/app.js",
-    "frontend-web/src/pages/Configuracion/PlantillasContrato.jsx",
+    "backend/src/controllers/empleadoController.test.js",
+    "backend/src/controllers/reporteController.js",
+    "backend/src/services/employeeDocumentCleanupService.js",
+    "backend/src/services/employeeDocumentCleanupService.test.js",
+    "backend/src/services/payrollReportService.js",
+    "backend/src/services/payrollReportService.test.js",
+    "backend/src/services/sriFormulario107Service.js",
+    "frontend-web/src/pages/AyudaUsuario.jsx",
     "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
-    "frontend-web/src/pages/Empleados/NuevoEmpleado.jsx",
-    "frontend-web/src/components/Layout/Layout.jsx",
-    "frontend-web/src/App.jsx",
-    "scripts/tpc26-storage-inventory.mjs",
-    "scripts/tpc26-storage-cleanup.mjs",
-    "docs2/TPC26-05-storage-inventory.json",
-    "docs2/TPC26-05-storage-inventory.md",
-    "package.json",
-    ".github/prompts/TPC26-00-baseline-gobierno.md",
-    ".github/prompts/TPC26-01-diagnostico-arquitectura.md",
-    ".github/prompts/TPC26-02-catalogo-tenant-migracion.md",
-    ".github/prompts/TPC26-03-runtime-parametrizable.md",
-    ".github/prompts/TPC26-04-frontend-configuracion-operacion.md",
-    ".github/prompts/TPC26-05-storage-migracion-retencion.md",
-    ".github/prompts/TPC26-06-qa-release.md",
-    ".vscode/AuditLock.json",
-    "docs2/PLAN_HAIKY_PLANTILLAS_CONTRATOS_CLIENTE_2026.md"
+    "frontend-web/src/pages/Nomina/DescargarReportes.jsx"
   ],
-  "riskControls": [
-    "No se eliminan plantillas ni documentos emitidos durante TPC26-00.",
-    "La activacion por cliente debe referenciar fuentes versionadas y no duplicar JSON completos.",
-    "Los aliases y payloads existentes se conservan hasta ejecutar una migracion compatible.",
-    "Los documentos historicos se separan de fuentes, temporales y objetos huerfanos.",
-    "La parametrizacion futura usa lista blanca, tipos, rangos, condiciones y snapshot.",
-    "La PWA debe exponer configuracion, bloqueos y siguiente accion cuando TPC26 afecte la experiencia."
+  "validationChecks": [
+    "RULES.md leído completo",
+    "Git baseline confirmado en main sincronizado con origin/main",
+    "Inventario de reportes, documentos, contratos firmados, tipos Ecuador y eliminación revisado",
+    "Diagnóstico RDE26-00 generado",
+    "Catálogo de columnas y selección lista blanca cubiertos por prueba backend",
+    "Ruta GET de columnas protegida por rol y módulo",
+    "Controles PWA de columnas y filtros enviados de forma compatible",
+    "Prueba payrollReportService: 11 tests PASS",
+    "node --check reportes, payrollReportService y Formulario 107 PASS",
+    "Formulario 107 usa cabecera PDF compartida y logo del tenant",
+    "Build PWA Vite PASS; pantallas DescargarReportes, ContratosGenerados y Ayuda compiladas",
+    "Listado documental conserva permisos y agrega búsqueda, firmado, límite y desplazamiento",
+    "Contratos consulta documentos generados y firmados y mantiene descarga protegida",
+    "Pruebas de depuración documental y eliminación lógica: 14 tests PASS",
+    "Depuración detiene el flujo cuando falta clave de almacenamiento o falla s3Delete",
+    "El bloqueo por roles cerrados/pagados se mantiene antes de depurar documentos",
+    "npm.cmd run contracts PASS",
+    "npm.cmd run prisma:validate PASS",
+    "Suite backend completa: 59 suites y 411 tests PASS",
+    "npm.cmd run build en frontend-web PASS",
+    "UTF-8 sin BOM validado en 23 archivos",
+    "git diff --check PASS"
   ],
-  "signatureAlgorithm": "SHA256(previousAuditLockHash + updatedAt)",
-  "signature": "cea62c3dcca5a66252cdb6716bed7c320afa0bd88085cc855ed96611a8512ea5"
+  "signature": "34cb84882e3aad601403378eac0971f0ff1c7a78362a3261a034719b82391fbb"
 }
