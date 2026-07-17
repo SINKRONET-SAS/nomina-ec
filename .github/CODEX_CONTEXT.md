@@ -57,7 +57,7 @@
 - `employeeDocumentCleanupService.test.js` y `empleadoController.test.js`: 14 tests PASS.
 - `npm.cmd run build` en `frontend-web`: PASS.
 - `node --check` en módulos backend modificados: PASS.
-- QA final completada: suite completa, contratos de sistema, Prisma, UTF-8, diff check y cierre de AuditLock aprobados; falta únicamente crear el commit y publicar Git.
+- QA final completada: suite completa, contratos de sistema, Prisma, UTF-8, diff check, cierre de AuditLock, commit y push a `origin/main` aprobados.
 
 ---
 
