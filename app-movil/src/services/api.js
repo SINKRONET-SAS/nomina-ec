@@ -75,7 +75,6 @@ export const mobileAPI = {
   history: () => api.get('/mobile/historial'),
   requestPermission: (payload) => api.post('/mobile/permisos', payload),
   sendMobilizationReport: (payload) => api.post('/movilizacion/informe', payload),
-  mobilizationReports: () => api.get('/movilizacion/mis-informes'),
 };
 
 export default api;

@@ -10,7 +10,7 @@ function NotFound() {
           <AlertTriangle className="h-6 w-6" />
           <p className="text-sm font-semibold uppercase tracking-[0.16em]">Ruta no encontrada</p>
         </div>
-        <h1 className="mt-4 text-2xl font-semibold text-slate-950">No encontramos esta pagina en SKNOMINA</h1>
+        <h1 className="mt-4 text-2xl font-semibold text-slate-950">No encontramos esta página en SKNOMINA</h1>
         <p className="mt-3 text-sm leading-6 text-slate-600">La ruta puede haber cambiado o tu sesion no tiene acceso al modulo solicitado.</p>
         <Link className="mt-6 inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white" to="/dashboard">
           <ArrowLeft className="h-4 w-4" />

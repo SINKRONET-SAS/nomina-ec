@@ -152,7 +152,7 @@ export default function OperacionMovilScreen({ user }) {
     const lat = Number(zoneForm.latitude);
     const lng = Number(zoneForm.longitude);
     if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
-      Alert.alert('Coordenadas invalidas', 'Latitud debe estar entre -90 y 90, longitud entre -180 y 180.');
+      Alert.alert('Coordenadas inválidas', 'Latitud debe estar entre -90 y 90, longitud entre -180 y 180.');
       return;
     }
     setSaving('zone');
@@ -184,7 +184,7 @@ export default function OperacionMovilScreen({ user }) {
     const lat = Number(siteForm.latitude);
     const lng = Number(siteForm.longitude);
     if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
-      Alert.alert('Coordenadas invalidas', 'Latitud debe estar entre -90 y 90, longitud entre -180 y 180.');
+      Alert.alert('Coordenadas inválidas', 'Latitud debe estar entre -90 y 90, longitud entre -180 y 180.');
       return;
     }
     setSaving('site');

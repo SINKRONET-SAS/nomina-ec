@@ -1,4 +1,48 @@
-## Current Haiky Plan - HAIKY-SEGUNDA-PASADA-IDENTIDAD-REPRESENTANTE-2026
+## Current Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-V100-SKNOMINA-2026
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-AUDITORIA-INTEGRAL-V100-SKNOMINA-2026` |
+| Codigo | `AIV100` |
+| Estado | `AIV100-04 cerrado; auditoria integral ejecutada` |
+| Fecha | `2026-07-20` |
+| Superficie | LANDING, PWA, BACKEND, MOBILE APP, SUPERADMIN |
+| Plan doc | `docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V100_SKNOMINA_2026.md` |
+| Scripts | `docs2/auditoria-integral-v100-sknomina-2026/scripts/` |
+| Prompts | `.github/prompts/AIV100-00` a `.github/prompts/AIV100-04` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Plan anterior | `HAIKY-SEGUNDA-PASADA-IDENTIDAD-REPRESENTANTE-2026` (`RDE26P2`, cerrado) |
+
+### Decisiones AIV100
+
+- Los hallazgos se reconfirmaron con grep/wc para descartar falsos positivos (7 descartados).
+- Los scripts de solucion son idempotentes y verifican precondiciones antes de actuar.
+- Los archivos modelo vacios (0 bytes) son candidatos a eliminacion sin riesgo.
+- El cumplimiento legal Ecuador esta CONFORME en todos los articulos verificados.
+- Las utilidades (Art. 97 CT) estan fuera del alcance de la nomina mensual (observacion, no defecto).
+- La ortografia se corrige solo en cadenas visibles al usuario, no en nombres de variables o rutas.
+- El token Expo expuesto requiere rotacion inmediata en EAS Dashboard.
+
+### Fases AIV100
+
+| Fase | Objetivo | Estado |
+|---|---|---|
+| AIV100-00 | Diagnostico integral y reconfirmacion | completed-pass |
+| AIV100-01 | Ortografia, UTF-8, texto usuario | completed-pass |
+| AIV100-02 | Codigo muerto, duplicado, bugs | completed-pass |
+| AIV100-03 | Seguridad y configuracion | completed-pass |
+| AIV100-04 | QA, regresion y cierre gobierno | completed-pass |
+
+### Gates AIV100
+
+- node --check: PASS (6 archivos verificados)
+- Backend tests: 62 suites / 420 tests PASS
+- Prisma validate: PASS
+- PWA build: PASS (101 precache entries)
+
+---
+
+## Previous Haiky Plan - HAIKY-SEGUNDA-PASADA-IDENTIDAD-REPRESENTANTE-2026
 
 | Campo | Valor |
 |---|---|

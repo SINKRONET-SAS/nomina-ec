@@ -1,6 +1,6 @@
 // ============================================================
 // SKNOMINA - Formateador monetario compartido (frontend-web)
-// Extraido en fase AISK26-04 (DRY). Consumido por:
+// Extraído en fase AISK26-04 (DRY). Consumido por:
 //   - HistorialEmpleado.jsx
 //   - MovilizacionAprobacion.jsx
 //   - Dashboard.jsx

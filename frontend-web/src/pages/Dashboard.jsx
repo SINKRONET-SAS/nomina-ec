@@ -461,7 +461,7 @@ function Dashboard() {
             </div>
             {!employeeHealth.attendance ? (
               <p className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                No pudimos cargar el resumen de asistencia para esta sesion.
+                No pudimos cargar el resumen de asistencia para esta sesión.
               </p>
             ) : (
               <div className="mt-4 space-y-3">

@@ -50,7 +50,7 @@ function PrivacyScopeRow({ item, onToggle, disabled }) {
           <span className={`h-7 w-7 rounded-full bg-white shadow transition ${item.active ? 'translate-x-7' : 'translate-x-0'}`} />
         </button>
       ) : (
-        <span className="text-sm font-medium text-slate-500">No revocable aqui</span>
+        <span className="text-sm font-medium text-slate-500">No revocable aquí</span>
       )}
     </div>
   );
