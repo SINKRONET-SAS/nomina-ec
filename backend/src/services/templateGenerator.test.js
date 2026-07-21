@@ -234,7 +234,7 @@ describe('templateGenerator', () => {
     expect(rendered).not.toContain('Generado por SKNOMINA');
     expect(result.template).toMatchObject({
       templateKey: 'contrato_obra_servicio_giro_negocio',
-      version: '2026.07.03',
+      version: '2026.07.20',
     });
   });
 
