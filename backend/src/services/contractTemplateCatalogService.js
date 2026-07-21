@@ -284,13 +284,12 @@ async function resolveTenantContractTemplate({ tenantId, templateKey, tipoContra
 
   const payload = rowPayload(configured);
   if (configured && payload.templateVersion && payload.templateVersion !== template.version) {
-    throw new AppError('La versión activa de la plantilla ya no coincide con la fuente instalada.', {
-      code: 'CONTRATO_TEMPLATE_VERSION_DESALINEADA',
-      statusCode: 409,
-      correlationId,
-      userId,
-      details: { templateKey: template.templateKey, configuredVersion: payload.templateVersion, sourceVersion: template.version },
-    });
+    const updatedPayload = { ...payload, templateVersion: template.version, sourcePath: template.sourcePath };
+    await db.query(
+      `UPDATE configuration_catalogs SET payload = $1, updated_at = NOW() WHERE id = $2`,
+      [JSON.stringify(updatedPayload), configured.id],
+    );
+    configured.payload = JSON.stringify(updatedPayload);
   }
 
   return { template, configuration: configured ? toClientTemplate(template, configured, { includeInactive: true }) : null };

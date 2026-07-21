@@ -117,11 +117,11 @@ function ContratosGenerados() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documentos-huerfanos'] });
-      setMessage('Documento huerfano eliminado del almacenamiento y del registro.');
+      setMessage('Documento huérfano eliminado del almacenamiento y del registro.');
       setError('');
     },
     onError: (err) => {
-      setError(getErrorMessage(err, 'No pudimos eliminar el documento huerfano.'));
+      setError(getErrorMessage(err, 'No pudimos eliminar el documento huérfano.'));
       setMessage('');
     },
   });
@@ -266,9 +266,9 @@ function ContratosGenerados() {
         </div>
         <div className="mt-3 max-h-64 overflow-auto rounded-md border border-amber-200 bg-white">
           {loadingOrphans ? (
-            <p className="p-3 text-sm text-slate-600">Cargando documentos sin vinculo...</p>
+            <p className="p-3 text-sm text-slate-600">Cargando documentos sin vínculo...</p>
           ) : orphanRows.length === 0 ? (
-            <p className="p-3 text-sm text-slate-600">No hay documentos huerfanos disponibles para depuracion.</p>
+            <p className="p-3 text-sm text-slate-600">No hay documentos huérfanos disponibles para depuración.</p>
           ) : (
             <ul className="divide-y divide-slate-100">
               {orphanRows.map((documento) => (
@@ -284,7 +284,7 @@ function ContratosGenerados() {
                     type="button"
                     disabled={!documento.storageKeyAvailable || deleteOrphanMutation.isPending}
                     onClick={() => eliminarHuerfano(documento)}
-                    title={documento.storageKeyAvailable ? 'Eliminar documento huerfano' : 'Requiere clave de almacenamiento trazable'}
+                    title={documento.storageKeyAvailable ? 'Eliminar documento huérfano' : 'Requiere clave de almacenamiento trazable'}
                   >
                     <Trash2 className="h-4 w-4" />
                     Eliminar
