@@ -3,6 +3,16 @@
   "version": "1.0.0",
   "private": true,
   "description": "SKNOMINA como un solo sistema: backend, PWA web y app movil gobernados desde la raiz.",
+  "overrides": {
+    "fast-uri": "3.1.4",
+    "uuid": "11.1.1",
+    "exceljs": {
+      "uuid": "11.1.1"
+    },
+    "xcode": {
+      "uuid": "11.1.1"
+    }
+  },
   "workspaces": [
     "backend",
     "frontend-web",
