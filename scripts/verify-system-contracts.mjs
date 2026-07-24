@@ -164,6 +164,7 @@ const templateGenerator = read('backend/src/services/templateGenerator.js');
 const payrollRolePdfService = read('backend/src/services/payrollRolePdfService.js');
 const mobileController = read('backend/src/controllers/mobileController.js');
 const employeeHistoryService = read('backend/src/services/employeeHistoryService.js');
+const novedadesController = read('backend/src/controllers/novedadController.js');
 const novedadesPendientes = read('frontend-web/src/pages/Asistencia/NovedadesPendientes.jsx');
 const employeeSearchSelect = read('frontend-web/src/components/UI/EmployeeSearchSelect.jsx');
 const equipmentDeliveryActService = read('backend/src/services/equipmentDeliveryActService.js');
@@ -406,6 +407,13 @@ assert(cerrarMes.includes('Descartar cálculo'), 'Cierre mensual debe permitir v
 assert(rolesPagos.includes('Corregir novedades'), 'Roles de pago debe exponer correccion de fuentes para borradores.');
 assert(rolesPagos.includes('Eliminar borrador'), 'Roles de pago debe permitir eliminar un borrador con confirmacion.');
 assert(novedadesPendientes.includes('useSearchParams'), 'Novedades debe recibir empleado y periodo desde la correccion de un rol.');
+const noveltyBulkTemplate = novedadesController.slice(
+  novedadesController.indexOf('const NOVELTY_BULK_TEMPLATE_COLUMNS'),
+  novedadesController.indexOf('const NOVELTY_WRITABLE_PERIOD_STATUSES')
+);
+assert(noveltyBulkTemplate.includes("'cedula'") && !noveltyBulkTemplate.includes("'empleadoId'"), 'La plantilla de novedades debe identificar empleados por cedula y no exigir el UUID interno.');
+assert(novedadesPendientes.includes('cargarArchivoNovedad') && novedadesPendientes.includes('type="file"'), 'La carga masiva de novedades debe permitir seleccionar un archivo CSV.');
+assert(novedadesPendientes.includes('placeholder="cedula,fecha,tipoNovedad'), 'La pantalla de novedades debe orientar el CSV con cedula como identificador visible.');
 assert(mobileController.includes("estado IN ('cerrada', 'pagada')"), 'Mobile solo debe exponer roles cerrados o pagados.');
 assert(employeeHistoryService.includes('closedPayrollOnly'), 'Historial mobile debe poder excluir roles borrador.');
 assert(payrollRolePdfService.includes('BORRADOR - NO CONSTITUYE COMPROBANTE DE PAGO'), 'PDF preliminar debe identificarse como borrador.');

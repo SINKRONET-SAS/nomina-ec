@@ -23,6 +23,7 @@ import CookieConsent from './components/Privacy/CookieConsent';
 import ErrorBoundary from './components/ErrorBoundary';
 import { hasRoleAccess } from './utils/access';
 const Parametrizacion = lazy(() => import('./pages/Configuracion/Parametrizacion'));
+const UsuariosRoles = lazy(() => import('./pages/Configuracion/UsuariosRoles'));
 const PlantillasContrato = lazy(() => import('./pages/Configuracion/PlantillasContrato'));
 const Comunicaciones = lazy(() => import('./pages/Configuracion/Comunicaciones'));
 const Auditoria = lazy(() => import('./pages/Auditoria'));
@@ -249,6 +250,11 @@ function App() {
               <Route path="configuracion/parametrizacion" element={
                 <ProtectedRoute requiredRole={['superadmin', 'owner', 'admin_rrhh']}>
                   <Parametrizacion />
+                </ProtectedRoute>
+              } />
+              <Route path="configuracion/usuarios" element={
+                <ProtectedRoute requiredRole={['superadmin', 'owner']}>
+                  <UsuariosRoles />
                 </ProtectedRoute>
               } />
               <Route path="configuracion/plantillas-contrato" element={

@@ -10,9 +10,11 @@ describe('validacion ecuatoriana de identificacion', () => {
     expect(soloDigitos('17-13175071')).toBe('1713175071');
   });
 
-  test('valida cedula con modulo 10 y tercer digito 0-5', () => {
+  test('valida cedula con provincia y modulo 10 sin falso negativo por tercer digito', () => {
     expect(validarCedula('1713175071')).toBe(true);
+    expect(validarCedula('0966930315')).toBe(true);
     expect(validarCedula('1700000000')).toBe(false);
+    expect(validarCedula('0966930314')).toBe(false);
     expect(validarCedula('1790016919')).toBe(false);
   });
 

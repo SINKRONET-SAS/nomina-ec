@@ -3187,3 +3187,58 @@ Reglas HRD26:
 - No prometer XML IESS oficial; mantener Batch IESS TXT/DAT.
 - No modificar parametros legales 2026 sin fuente y AuditLock.
 - No exponer datos sensibles adicionales en reportes de disponibilidad sin RBAC y justificacion.
+
+---
+
+## Current Haiky Plan - HAIKY-CORRECCION-REPORTES-IDENTIDAD-USUARIOS-2026
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-CORRECCION-REPORTES-IDENTIDAD-USUARIOS-2026` |
+| Codigo | `HCF26` |
+| Estado | `HCF26-06 cerrado` |
+| Fecha | `2026-07-23` |
+| Plan doc | `docs2/PLAN_HAIKY_CORRECCION_REPORTES_IDENTIDAD_USUARIOS_2026.md` |
+| Prompts | `.github/prompts/HCF26-00` a `.github/prompts/HCF26-06` |
+| Referencia | `C:\proyectos web\sinkroniq-mobile` (solo lectura) |
+| AuditLock anterior | `E1E54BD76684513E1D183436441407100F4D708C3F75E383B9DC13E78DB32DED` |
+
+### Alcance HCF26
+
+- Mejorar logo y legibilidad de reportes y documentos PDF.
+- Aceptar `0966930315` como caso válido, conservando longitud, provincia y dígito verificador.
+- Completar usuarios delegados: alta, listado, estado, cuota, permisos efectivos por módulo y DPA/LOPDP auditable.
+- Mejorar plantillas de carga masiva de empleados, novedades, asistencia manual y saldos iniciales con cédula visible, selector de archivo y compatibilidad con `empleadoId`.
+
+### Referencia sinkroniq-mobile
+
+La revisión comparativa encontró `GestionStaffScreen`, endpoints de staff, permisos efectivos por rol/override, límites de alcance y aceptación de privacidad al activar el acceso. Se adapta el patrón a `usuarios`, `module_permissions`, `consent_preferences` y auditoría de nuevo_nomina; el repositorio de referencia no se modifica.
+
+### Fases HCF26
+
+| Fase | Objetivo | Estado |
+|---|---|---|
+| HCF26-00 | Gobierno, baseline y cadena AuditLock | completed-pass |
+| HCF26-01 | Diagnóstico comparativo | completed-pass |
+| HCF26-02 | PDFs | completed-pass |
+| HCF26-03 | Cédula | completed-pass |
+| HCF26-04 | Usuarios delegados y DPA | completed-pass |
+| HCF26-05 | Plantillas masivas | completed-pass |
+| HCF26-06 | QA y cierre | completed-pass |
+
+### Decisiones HCF26
+
+- `0966930315` es el caso de aceptación funcional informado por el usuario; no se descarta por el tercer dígito.
+- Los UUID internos permanecen soportados en integraciones, pero las plantillas priorizan cédula.
+- La cuota usa `planes_comerciales.usuarios_max` mediante `planCapabilityService`.
+- La gestión de usuarios no elimina registros: desactiva y audita.
+- La aceptación DPA es obligatoria para crear delegados y se registra con versión, actor, tenant y correlación.
+
+### Evidencia HCF26
+
+- PDFs: 120pt para logo y estilos base de 10pt en documentos principales; suites PDF verdes.
+- Identidad: `validarCedula('0966930315') === true`, normalización en alta y filtro de dígitos en formulario.
+- Usuarios: `GET /api/usuarios`, `PATCH /api/usuarios/:id/estado`, alta delegada compatible con `/api/auth/register` y permisos por módulo existentes.
+- DPA: alta delegada exige `dpaAccepted`/`lopdpConsent`, registra preferencias y auditoría `lopdp.consent.delegated.register`.
+- Cargas: novedades tiene botón visible `Seleccionar archivo`; empleados y saldos ya tenían selector; asistencia conserva cédula y UUID opcional.
+- Validaciones: 62 suites / 421 tests PASS, Prisma validate PASS, contratos del sistema PASS, build frontend transformó 1537 módulos y generó el chunk `UsuariosRoles`.

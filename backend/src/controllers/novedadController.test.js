@@ -13,6 +13,7 @@ const {
   actualizar,
   crear,
   eliminar,
+  descargarPlantillaCargaMasiva,
   listarPendientes,
   listarTipos,
   resolverPeriodo,
@@ -22,8 +23,16 @@ function createResponse() {
   return {
     statusCode: 200,
     body: null,
+    headers: {},
     status(code) {
       this.statusCode = code;
+      return this;
+    },
+    setHeader(name, value) {
+      this.headers[name] = value;
+    },
+    send(payload) {
+      this.body = payload;
       return this;
     },
     json(payload) {
@@ -32,6 +41,21 @@ function createResponse() {
     },
   };
 }
+
+describe('novedadController plantilla de carga masiva', () => {
+  test('identifica al empleado por cédula sin exponer el EmpleadoId interno', async () => {
+    const res = createResponse();
+
+    await descargarPlantillaCargaMasiva({}, res);
+
+    const csv = String(res.body).replace(/^\uFEFF/, '');
+    expect(csv.split(/\r?\n/)[0]).toBe(
+      'cedula,fecha,tipoNovedad,horas,monto,justificacion,idempotencyKey'
+    );
+    expect(csv).not.toContain('empleadoId');
+    expect(res.headers['Content-Type']).toBe('text/csv; charset=utf-8');
+  });
+});
 
 describe('novedadController resolverPeriodo', () => {
   beforeEach(() => {

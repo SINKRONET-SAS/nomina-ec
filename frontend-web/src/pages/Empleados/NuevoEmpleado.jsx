@@ -346,6 +346,7 @@ function NuevoEmpleado() {
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormData((current) => {
+      if (name === 'cedula') return { ...current, cedula: value.replace(/\D/g, '').slice(0, 10) };
       if (name === 'departamento') {
         const nextUnit = activeOrganizationUnits.find((unit) => unit.name === value);
         const currentPosition = activeJobPositions.find((position) => position.id === current.position_id);

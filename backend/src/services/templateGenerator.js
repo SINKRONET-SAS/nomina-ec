@@ -537,7 +537,7 @@ function buildContractDocDefinition({ template, context }) {
   if (context.company.logoBase64) {
     content.push({
       columns: [
-        { image: context.company.logoBase64, width: 70, margin: [0, 0, 0, 6] },
+        { image: context.company.logoBase64, width: 120, margin: [0, 0, 0, 6] },
         {
           stack: [
             { text: template.documentTitle || template.displayName || 'CONTRATO DE TRABAJO', style: 'title' },
@@ -641,7 +641,7 @@ function buildContractDocDefinition({ template, context }) {
     pageSize: 'A4',
     pageMargins: [38, 42, 38, 42],
     content,
-    defaultStyle: { fontSize: 9, lineHeight: 1.25 },
+    defaultStyle: { fontSize: 10, lineHeight: 1.3 },
     styles: {
       title: { fontSize: 15, bold: true, alignment: 'center', margin: [0, 0, 0, 4] },
       sectionTitle: {
@@ -652,9 +652,9 @@ function buildContractDocDefinition({ template, context }) {
       },
       paragraph: { alignment: 'justify' },
       boxTitle: { fontSize: 9, bold: true, color: '#0f766e', margin: [0, 0, 0, 3] },
-      notice: { fontSize: 8, color: '#475569', italics: true },
-      small: { fontSize: 8, color: '#334155' },
-      audit: { fontSize: 7, color: '#64748b' },
+      notice: { fontSize: 9, color: '#475569', italics: true },
+      small: { fontSize: 9, color: '#334155' },
+      audit: { fontSize: 8, color: '#64748b' },
     },
   };
 }
@@ -795,7 +795,7 @@ function buildFiniquitoDocDefinition({ empleado, tenant, cause, liquidacion, gen
   if (logoBase64) {
     headerContent.push({
       columns: [
-        { image: logoBase64, width: 70, margin: [0, 0, 0, 6] },
+        { image: logoBase64, width: 120, margin: [0, 0, 0, 6] },
         {
           stack: [
             { text: 'ACTA DE FINIQUITO LABORAL', style: 'title' },
@@ -897,13 +897,13 @@ function buildFiniquitoDocDefinition({ empleado, tenant, cause, liquidacion, gen
         margin: [0, 18, 0, 0],
       },
     ],
-    defaultStyle: { fontSize: 9, lineHeight: 1.25 },
+    defaultStyle: { fontSize: 10, lineHeight: 1.3 },
     styles: {
       title: { fontSize: 15, bold: true, alignment: 'center', margin: [0, 0, 0, 4] },
       subtitle: { fontSize: 11, bold: true, alignment: 'center', color: '#0f766e', margin: [0, 0, 0, 4] },
       sectionTitle: { fontSize: 10, bold: true, color: '#0f766e', margin: [0, 9, 0, 4] },
-      notice: { fontSize: 8, color: '#475569', italics: true },
-      audit: { fontSize: 7, color: '#64748b' },
+      notice: { fontSize: 9, color: '#475569', italics: true },
+      audit: { fontSize: 8, color: '#64748b' },
     },
   };
 }

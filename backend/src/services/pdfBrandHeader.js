@@ -7,6 +7,8 @@ function cleanText(value, fallback = '') {
   return text || fallback;
 }
 
+const PDF_LOGO_WIDTH = 120;
+
 function normalizeConfig(value) {
   if (!value) return {};
   if (typeof value === 'object') return value;
@@ -71,7 +73,7 @@ function buildPdfHeader({ title, company, period = '', isDraft = false, extraSub
       columns: [
         {
           image: company.logoBase64,
-          width: 80,
+          width: PDF_LOGO_WIDTH,
           margin: [0, 0, 0, 6],
         },
         {
@@ -153,6 +155,7 @@ function buildSignatureBlock({ company, employeeName = '', employeeCedula = '', 
 }
 
 module.exports = {
+  PDF_LOGO_WIDTH,
   resolveCompanyData,
   buildPdfHeader,
   buildSignatureBlock,

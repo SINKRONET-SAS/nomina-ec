@@ -137,6 +137,9 @@ app.get('/api/facturacion/documentos', requireRole('superadmin'), fiscalBillingC
 app.post('/api/facturacion/transacciones/:paymentTransactionId/emitir', requireRole('superadmin'), requireFreshUser, fiscalBillingController.emitForTransaction);
 
 const modulePermissionController = require('./controllers/modulePermissionController');
+const userManagementController = require('./controllers/userManagementController');
+app.get('/api/usuarios', requireRole('superadmin', 'owner'), userManagementController.listar);
+app.patch('/api/usuarios/:id/estado', requireRole('superadmin', 'owner'), requireFreshUser, userManagementController.cambiarEstado);
 app.get('/api/usuarios/:id/permisos-modulo', requireRole('superadmin', 'owner'), modulePermissionController.obtener);
 app.put('/api/usuarios/:id/permisos-modulo', requireRole('superadmin', 'owner'), requireFreshUser, modulePermissionController.actualizar);
 

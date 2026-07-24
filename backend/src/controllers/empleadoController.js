@@ -2,7 +2,7 @@
 // SKNOMINA - Controlador de Empleados
 // ============================================================
 const db = require('../config/database');
-const { validarCedula } = require('../utils/validarCedula');
+const { soloDigitos, validarCedula } = require('../utils/validarCedula');
 const { encryptBankAccount } = require('../services/bankAccountCrypto');
 const { recordAudit } = require('../services/auditService');
 const { getBankProfileForTenant } = require('../services/bancoAebGenerator');
@@ -642,9 +642,10 @@ async function crear(req, res) {
       direccion, ciudad_codigo, provincia_codigo, estado_civil, cargas_familiares, dependientes, telefono, email,
       whatsapp_consent
     } = profileData;
+    const cedulaNormalizada = soloDigitos(cedula);
     
     // Validaciones
-    if (!validarCedula(cedula)) {
+    if (!validarCedula(cedulaNormalizada)) {
       return res.status(400).json({ error: 'Cédula inválida' });
     }
     
@@ -713,7 +714,7 @@ async function crear(req, res) {
     // Verificar que la cedula no exista dentro del tenant actual.
     const existe = await db.query(
       'SELECT id FROM empleados WHERE tenant_id = $1 AND cedula = $2',
-      [tenantId, cedula]
+      [tenantId, cedulaNormalizada]
     );
     
     if (existe.rows.length > 0) {
@@ -749,7 +750,7 @@ async function crear(req, res) {
         referencia_no_convive_nombres, referencia_no_convive_email, referencia_no_convive_telefono,
         domicilio_lat, domicilio_lng, croquis_domicilio_url
     `, [
-      tenantId, cedula, nombres, apellidos, fecha_nacimiento, positionAssignment.positionId, positionAssignment.cargo, departamento || positionAssignment.unidadOrganizativaNombre || '',
+      tenantId, cedulaNormalizada, nombres, apellidos, fecha_nacimiento, positionAssignment.positionId, positionAssignment.cargo, departamento || positionAssignment.unidadOrganizativaNombre || '',
       positionAssignment.unidadOrganizativaCodigo, normalizedWorkShiftCode, normalizedWorkZoneCode, normalizedAttendanceControl,
       sueldo_bruto_mensual,
       jornada_horas_mensuales || null,

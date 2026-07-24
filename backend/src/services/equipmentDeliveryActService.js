@@ -156,7 +156,7 @@ async function buildActPdf({ employee, tenant, items, fechaEntrega, observacione
   if (logoBase64) {
     headerContent.push({
       columns: [
-        { image: logoBase64, width: 70, margin: [0, 0, 0, 6] },
+        { image: logoBase64, width: 120, margin: [0, 0, 0, 6] },
         {
           stack: [
             { text: 'ACTA DE ENTREGA DE DOTACION Y EQUIPOS', style: 'title' },
@@ -259,10 +259,10 @@ async function buildActPdf({ employee, tenant, items, fechaEntrega, observacione
     styles: {
       title: { fontSize: 16, bold: true, alignment: 'center', margin: [0, 0, 0, 4] },
       section: { fontSize: 10, bold: true, color: '#0f766e', margin: [0, 0, 0, 4] },
-      notice: { fontSize: 8, color: '#475569', italics: true },
-      audit: { fontSize: 8, color: '#64748b' },
+      notice: { fontSize: 9, color: '#475569', italics: true },
+      audit: { fontSize: 9, color: '#64748b' },
     },
-    defaultStyle: { fontSize: 9, lineHeight: 1.25 },
+    defaultStyle: { fontSize: 10, lineHeight: 1.3 },
   };
 
   return new Promise((resolve) => {

@@ -9,6 +9,7 @@ const {
 } = require('../services/communicationService');
 const { DEFAULT_TRIAL_DAYS, getPlanTrialDays } = require('../services/planTrialService');
 const { CONSENT_SCOPES, LOPDP_VERSION } = require('../services/privacyConsentService');
+const { getTenantPlanCapabilities } = require('../services/planCapabilityService');
 
 const OWNER_LOPDP_VERSION = 'LOPDP-2026-06';
 const AUTH_ROLE_PRIORITY = new Map([
@@ -41,6 +42,7 @@ function buildUserPayload(usuario) {
     rol: normalizeRole(usuario.rol),
     nombres: usuario.nombres,
     apellidos: usuario.apellidos,
+    activo: usuario.activo !== false,
     emailVerificadoEn: usuario.email_verificado_en || null,
   };
 }
@@ -121,7 +123,7 @@ function publicTenantChoice(row) {
   };
 }
 
-async function insertConsentAudit(queryable, { tenantId, userId, consent, ipAddress, correlationId }) {
+async function insertConsentAudit(queryable, { tenantId, userId, consent, ipAddress, correlationId, action = 'lopdp.consent.owner.register' }) {
   await queryable.query(`
     INSERT INTO audit_logs (
       tenant_id, user_id, correlation_id, accion, entidad, entidad_id,
@@ -132,7 +134,7 @@ async function insertConsentAudit(queryable, { tenantId, userId, consent, ipAddr
     tenantId,
     userId,
     correlationId || 'registro-publico',
-    'lopdp.consent.owner.register',
+    action,
     'usuarios',
     userId,
     JSON.stringify({}),
@@ -278,6 +280,11 @@ async function login(req, res, next) {
 async function register(req, res, next) {
   try {
     const { email, password, rol, nombres, apellidos } = req.body;
+    const isDelegated = req.body?.delegated === true;
+    const delegatedConsent = req.body?.lopdpConsent || {
+      acceptedDataProcessing: req.body?.dpaAccepted === true,
+      version: LOPDP_VERSION,
+    };
     const requestedTenantId = String(req.body?.tenantId || '').trim();
     const tenantId = req.usuario?.rol === 'superadmin'
       ? requestedTenantId
@@ -307,6 +314,14 @@ async function register(req, res, next) {
       });
     }
 
+    if (isDelegated && !hasAcceptedLopdpConsent(delegatedConsent)) {
+      return res.status(400).json({
+        error: 'LOPDP_CONSENTIMIENTO_REQUERIDO',
+        message: 'Debe aceptar el tratamiento de datos personales para crear un usuario delegado.',
+        correlationId: req.correlationId,
+      });
+    }
+
     const existe = await db.query(
       'SELECT id FROM usuarios WHERE tenant_id = $1 AND lower(email) = lower($2)',
       [tenantId, email]
@@ -320,6 +335,24 @@ async function register(req, res, next) {
       });
     }
 
+    if (isDelegated) {
+      const capabilities = await getTenantPlanCapabilities(tenantId);
+      const activeUsers = await db.query(
+        'SELECT COUNT(*)::int AS total FROM usuarios WHERE tenant_id = $1 AND activo = true',
+        [tenantId]
+      );
+      const currentUsers = Number(activeUsers.rows[0]?.total || 0);
+      const usersMax = Number(capabilities.limits?.usersMax || 0);
+      if (usersMax > 0 && currentUsers >= usersMax) {
+        return res.status(409).json({
+          error: 'CUOTA_USUARIOS_AGOTADA',
+          message: `El plan permite hasta ${usersMax} usuarios activos. Amplía el plan o desactiva un usuario antes de continuar.`,
+          correlationId: req.correlationId,
+          details: { usersMax, currentUsers },
+        });
+      }
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
     const result = await db.query(
       `INSERT INTO usuarios (tenant_id, email, password_hash, rol, nombres, apellidos)
@@ -329,6 +362,22 @@ async function register(req, res, next) {
     );
 
     const verification = await createEmailVerificationToken(db, result.rows[0], req.correlationId);
+    if (isDelegated) {
+      await insertConsentAudit(db, {
+        tenantId,
+        userId: result.rows[0].id,
+        consent: delegatedConsent,
+        ipAddress: req.ip,
+        correlationId: req.correlationId,
+        action: 'lopdp.consent.delegated.register',
+      });
+      await insertDefaultConsentPreferences(db, {
+        tenantId,
+        userId: result.rows[0].id,
+        consent: delegatedConsent,
+        source: 'owner-delegated-register',
+      });
+    }
     const delivery = await sendEmailVerification(verification.deliveryPayload);
 
     const user = buildUserPayload(result.rows[0]);

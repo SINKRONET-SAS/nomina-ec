@@ -49,7 +49,9 @@ function validarCedula(cedula) {
 
   const codigoProvincia = Number.parseInt(clean.substring(0, 2), 10);
   if (codigoProvincia < 1 || codigoProvincia > 24) return false;
-  if (Number.parseInt(clean[2], 10) > 5) return false;
+
+  // El tercer dígito no se usa como filtro excluyente en el expediente laboral:
+  // existen identificaciones válidas que el guard histórico rechazaba.
 
   return validarModulo10(clean);
 }

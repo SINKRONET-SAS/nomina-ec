@@ -361,10 +361,10 @@ function buildPayrollRoleDocDefinition(row) {
       table: {
         widths: ['*', 70],
         body: [
-          [{ text: 'Concepto', bold: true, fontSize: 8 }, { text: 'Valor', bold: true, alignment: 'right', fontSize: 8 }],
+          [{ text: 'Concepto', bold: true, fontSize: 9 }, { text: 'Valor', bold: true, alignment: 'right', fontSize: 9 }],
           ...(rows.length > 0 ? rows : [['Sin valores', '$0.00']]).map(([label, amount]) => [
-            { text: label, fontSize: 8 },
-            { text: amount, alignment: 'right', fontSize: 8 },
+            { text: label, fontSize: 9 },
+            { text: amount, alignment: 'right', fontSize: 9 },
           ]),
         ],
       },
@@ -457,11 +457,11 @@ function buildPayrollRoleDocDefinition(row) {
       subtitle: { fontSize: 11, bold: true, alignment: 'center', color: '#0f766e', margin: [0, 0, 0, 4] },
       section: { fontSize: 10, bold: true, color: '#0f766e', margin: [0, 8, 0, 4] },
       boxTitle: { fontSize: 9, bold: true, color: '#0f766e', margin: [0, 0, 0, 3] },
-      notice: { fontSize: 8, color: '#475569', italics: true },
-      audit: { fontSize: 8, color: '#64748b' },
+      notice: { fontSize: 9, color: '#475569', italics: true },
+      audit: { fontSize: 9, color: '#64748b' },
       draftWarning: { fontSize: 10, bold: true, alignment: 'center', color: '#b91c1c', margin: [0, 0, 0, 6] },
     },
-    defaultStyle: { fontSize: 9, lineHeight: 1.25 },
+    defaultStyle: { fontSize: 10, lineHeight: 1.3 },
   };
 }
 
@@ -601,11 +601,11 @@ function buildPayrollRoleTransposedDocDefinition({ rows, anio, mes } = {}) {
       title: { fontSize: 15, bold: true, alignment: 'center', margin: [0, 0, 0, 4] },
       subtitle: { fontSize: 10, bold: true, alignment: 'center', color: '#0f766e', margin: [0, 0, 0, 4] },
       section: { fontSize: 9, bold: true, color: '#0f766e', margin: [0, 7, 0, 3] },
-      notice: { fontSize: 7, color: '#475569', italics: true },
-      audit: { fontSize: 7, color: '#64748b' },
+      notice: { fontSize: 8, color: '#475569', italics: true },
+      audit: { fontSize: 8, color: '#64748b' },
       draftWarning: { fontSize: 9, bold: true, alignment: 'center', color: '#b91c1c', margin: [0, 0, 0, 5] },
     },
-    defaultStyle: { fontSize: 7, lineHeight: 1.15 },
+    defaultStyle: { fontSize: 8, lineHeight: 1.2 },
   };
 }
 

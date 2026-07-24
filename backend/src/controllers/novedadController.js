@@ -18,7 +18,6 @@ const { monthInEcuador, yearInEcuador } = require('../utils/dateEcuador');
 const { sendNotificacionPermisoResuelto } = require('../services/communicationService');
 
 const NOVELTY_BULK_TEMPLATE_COLUMNS = [
-  'empleadoId',
   'cedula',
   'fecha',
   'tipoNovedad',
@@ -441,7 +440,6 @@ async function eliminar(req, res) {
 
 async function descargarPlantillaCargaMasiva(_req, res) {
   const example = [
-    '',
     '0102030405',
     '2026-06-30',
     'hora_extra_50',
@@ -637,15 +635,20 @@ async function ensureNoveltyEditable({ tenantId, noveltyId }) {
 
 async function resolveEmployeeForBulkRow(tenantId, row) {
   if (!row.empleadoId && !row.cedula) {
-    throw new Error('Cada fila requiere empleadoId o cedula.');
+    throw new Error('Cada fila requiere la cédula del empleado.');
   }
 
   const params = [tenantId];
   const clauses = ['tenant_id = $1', 'activo = true'];
   const identifiers = [];
-  if (/^[0-9a-fA-F-]{36}$/.test(row.empleadoId)) {
-    params.push(row.empleadoId);
-    identifiers.push(`id = $${params.length}::uuid`);
+  if (row.empleadoId) {
+    if (!/^[0-9a-fA-F-]{36}$/.test(row.empleadoId) && !row.cedula) {
+      throw new Error('EmpleadoId no tiene un formato válido; usa la cédula del empleado.');
+    }
+    if (/^[0-9a-fA-F-]{36}$/.test(row.empleadoId)) {
+      params.push(row.empleadoId);
+      identifiers.push(`id = $${params.length}::uuid`);
+    }
   }
   if (row.cedula) {
     params.push(row.cedula);

@@ -1037,7 +1037,7 @@ async function buildSummaryPdf({ tenant, anio, mes, rows, filters, context }) {
   if (logoBase64) {
     headerContent.push({
       columns: [
-        { image: logoBase64, width: 70, margin: [0, 0, 0, 6] },
+        { image: logoBase64, width: 120, margin: [0, 0, 0, 6] },
         {
           stack: [
             { text: 'Resumen de nomina', style: 'title' },
@@ -1087,11 +1087,11 @@ async function buildSummaryPdf({ tenant, anio, mes, rows, filters, context }) {
       title: { fontSize: 18, bold: true, margin: [0, 0, 0, 4] },
       subtitle: { fontSize: 10, color: '#475569', margin: [0, 0, 0, 4] },
       section: { fontSize: 11, bold: true, margin: [0, 8, 0, 6] },
-      metricLabel: { fontSize: 8, color: '#64748b' },
-      metricValue: { fontSize: 12, bold: true },
-      audit: { fontSize: 8, color: '#64748b' },
+      metricLabel: { fontSize: 9, color: '#64748b' },
+      metricValue: { fontSize: 13, bold: true },
+      audit: { fontSize: 9, color: '#64748b' },
     },
-    defaultStyle: { fontSize: 9 },
+    defaultStyle: { fontSize: 10 },
   };
 
   return new Promise((resolve) => {

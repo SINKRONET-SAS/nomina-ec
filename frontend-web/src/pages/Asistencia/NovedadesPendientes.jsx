@@ -65,6 +65,7 @@ function NovedadesPendientes() {
   const [searchParams] = useSearchParams();
   const [form, setForm] = useState(initialForm);
   const [bulkCsv, setBulkCsv] = useState('');
+  const [bulkFileName, setBulkFileName] = useState('');
   const [bulkResult, setBulkResult] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -73,6 +74,7 @@ function NovedadesPendientes() {
   const [attendancePeriod, setAttendancePeriod] = useState('day');
   const [attendanceForm, setAttendanceForm] = useState(initialAttendanceForm);
   const [attendanceBulkCsv, setAttendanceBulkCsv] = useState('');
+  const [attendanceBulkFileName, setAttendanceBulkFileName] = useState('');
   const [attendanceBulkResult, setAttendanceBulkResult] = useState(null);
 
   useEffect(() => {
@@ -450,11 +452,34 @@ function NovedadesPendientes() {
     if (!file) return;
     try {
       setAttendanceBulkCsv(await file.text());
+      setAttendanceBulkFileName(file.name);
       setAttendanceBulkResult(null);
       setMessage(`Archivo listo: ${file.name}. Revisa las filas y procesa la carga.`);
       setError('');
     } catch {
       setError('No pudimos leer el archivo CSV seleccionado.');
+    }
+  }
+
+  async function cargarArchivoNovedad(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const content = await file.text();
+      if (!content.trim()) {
+        throw new Error('El archivo CSV seleccionado está vacío.');
+      }
+      setBulkCsv(content);
+      setBulkFileName(file.name);
+      setBulkResult(null);
+      setMessage(`Archivo listo: ${file.name}. Revisa las filas y procesa la carga.`);
+      setError('');
+    } catch (err) {
+      setBulkFileName('');
+      setError(err.message || 'No pudimos leer el archivo CSV seleccionado.');
+      setMessage('');
+    } finally {
+      event.target.value = '';
     }
   }
 
@@ -731,6 +756,7 @@ function NovedadesPendientes() {
               className="mt-1 min-h-40 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-xs font-normal"
               onChange={(event) => {
                 setAttendanceBulkCsv(event.target.value);
+                setAttendanceBulkFileName('');
                 setAttendanceBulkResult(null);
               }}
               placeholder="empleadoId,cedula,desde,hasta,horaInicio,horaFin,justificacion"
@@ -740,6 +766,7 @@ function NovedadesPendientes() {
           <p className="text-xs leading-5 text-slate-500">
             Usa cédula o empleadoId. Para un solo día repite la fecha en desde y hasta. Máximo 1.000 filas; las marcaciones existentes se conservan.
           </p>
+          {attendanceBulkFileName && <p className="text-xs font-semibold text-teal-700">Archivo seleccionado: {attendanceBulkFileName}</p>}
           <button
             className="inline-flex min-h-10 items-center gap-2 rounded-md bg-slate-800 px-4 text-sm font-semibold text-white hover:bg-slate-900 disabled:opacity-60"
             disabled={asistenciaMasivaMutation.isPending || !attendanceBulkCsv.trim()}
@@ -880,7 +907,7 @@ function NovedadesPendientes() {
           <div>
             <h2 className="text-lg font-semibold text-slate-950">Carga masiva de novedades</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Usa la plantilla CSV oficial y pega las filas para registrar novedades pendientes por empleado.
+              Usa la plantilla CSV oficial, selecciona el archivo o pega sus filas para registrar novedades pendientes. La cédula identifica al empleado.
             </p>
           </div>
           <button
@@ -892,15 +919,44 @@ function NovedadesPendientes() {
           </button>
         </div>
         <form className="mt-4" onSubmit={submitBulkNovelty}>
+          <div className="rounded-md border border-dashed border-teal-300 bg-teal-50/60 p-3">
+            <p className="text-sm font-semibold text-slate-700">Archivo CSV</p>
+            <label
+              className="mt-2 inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-md bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
+              htmlFor="novelty-bulk-file"
+            >
+              <Upload className="h-4 w-4" />
+              {bulkFileName ? 'Cambiar archivo' : 'Seleccionar archivo'}
+              <input
+                accept=".csv,text/csv"
+                className="sr-only"
+                id="novelty-bulk-file"
+                onChange={cargarArchivoNovedad}
+                type="file"
+              />
+            </label>
+            <span className="ml-3 text-xs text-slate-600">También puedes pegar las filas en el cuadro inferior.</span>
+          </div>
+          {bulkFileName && (
+            <p className="mt-2 text-xs text-slate-500">Archivo seleccionado: {bulkFileName}</p>
+          )}
           <textarea
-            className="min-h-40 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs"
+            aria-label="Filas CSV de novedades"
+            className="mt-3 min-h-40 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs"
+            onChange={(event) => {
+              setBulkCsv(event.target.value);
+              setBulkFileName('');
+              setBulkResult(null);
+            }}
+            placeholder="cedula,fecha,tipoNovedad,horas,monto,justificacion,idempotencyKey"
             value={bulkCsv}
-            onChange={(event) => setBulkCsv(event.target.value)}
-            placeholder="empleadoId,cedula,fecha,tipoNovedad,horas,monto,justificacion,idempotencyKey"
           />
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            La plantilla usa cédula, que el usuario puede consultar en la ficha del empleado. EmpleadoId solo queda disponible como campo opcional para integraciones.
+          </p>
           <button
             className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-md bg-slate-800 px-4 text-sm font-semibold text-white hover:bg-slate-900 disabled:opacity-60"
-            disabled={cargaMasivaMutation.isPending}
+            disabled={cargaMasivaMutation.isPending || !bulkCsv.trim()}
             type="submit"
           >
             <Plus className="h-4 w-4" />
