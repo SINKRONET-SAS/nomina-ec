@@ -22,7 +22,7 @@ const db = require('../config/database');
 const { sendEmailVerification } = require('../services/communicationService');
 const { verifyJwt } = require('../config/jwt');
 const bcrypt = require('bcryptjs');
-const { confirmEmailVerification, login, refreshToken, register } = require('./authController');
+const { confirmEmailVerification, createEmailVerificationToken, login, refreshToken, register } = require('./authController');
 
 function createResponse() {
   return {
@@ -320,6 +320,24 @@ describe('authController confirmEmailVerification', () => {
       correlationId: 'corr-email-expired',
     });
     expect(db.query).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('authController email verification token issuance', () => {
+  beforeEach(() => {
+    db.query.mockReset();
+  });
+
+  test('invalidates previous tokens and returns a future expiration for the new code', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
+    const before = Date.now();
+
+    const result = await createEmailVerificationToken(db, { id: 'user-verify', email: 'delegado@example.com', nombres: 'Delegado', tenant_id: 'tenant-1' }, 'corr-token');
+
+    expect(new Date(result.expiresAt).getTime()).toBeGreaterThan(before);
+    expect(db.query).toHaveBeenNthCalledWith(1, expect.stringContaining('confirmado_en = COALESCE(confirmado_en, NOW())'), ['user-verify']);
+    expect(db.query.mock.calls[1][0]).toContain('INSERT INTO email_verification_tokens');
+    expect(db.query.mock.calls[1][1]).toEqual(['user-verify', expect.any(String), expect.any(Date)]);
   });
 });
 

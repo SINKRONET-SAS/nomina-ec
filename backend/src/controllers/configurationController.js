@@ -1,6 +1,7 @@
 const configurationService = require('../services/configurationService');
 const tenantLogoService = require('../services/tenantLogoService');
 const { yearInEcuador } = require('../utils/dateEcuador');
+const { bulkCreateJobPositions: createJobPositionsBulk, parseCsv, templateCsv } = require('../services/jobPositionBulkService');
 
 function requestContext(req) {
   return {
@@ -144,6 +145,30 @@ async function removeLogo(req, res, next) {
   }
 }
 
+async function downloadJobPositionsTemplate(_req, res, next) {
+  try {
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="plantilla_carga_masiva_cargos.csv"');
+    return res.send(`\ufeff${templateCsv()}`);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function bulkCreateJobPositions(req, res, next) {
+  try {
+    const rows = Array.isArray(req.body?.rows) ? req.body.rows : parseCsv(req.body?.csv);
+    const result = await createJobPositionsBulk({
+      user: req.usuario,
+      rows,
+      context: requestContext(req),
+    });
+    return res.status(201).json({ success: true, ...result, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   summary,
   list,
@@ -156,4 +181,6 @@ module.exports = {
   syncLegalParametersFromGlobal,
   uploadLogo,
   removeLogo,
+  downloadJobPositionsTemplate,
+  bulkCreateJobPositions,
 };

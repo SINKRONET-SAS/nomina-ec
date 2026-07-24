@@ -44,3 +44,13 @@ export async function removeTenantLogo() {
   const response = await authenticatedApi.delete('/configuracion/logo');
   return response.data?.data;
 }
+
+export async function downloadJobPositionsTemplate() {
+  const response = await authenticatedApi.get('/configuracion/jobPositions/plantilla-carga-masiva', { responseType: 'blob' });
+  return response.data;
+}
+
+export async function bulkCreateJobPositions(csv) {
+  const response = await authenticatedApi.post('/configuracion/jobPositions/carga-masiva', { csv });
+  return response.data;
+}

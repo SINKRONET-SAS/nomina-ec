@@ -55,6 +55,7 @@ const { authenticateToken, requireFreshUser, requireRole } = require('./middlewa
 const { requirePlanCapability } = require('./middleware/planCapability');
 const { requireModule } = require('./middleware/moduleAuth');
 const authRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, keyPrefix: 'auth' });
+const delegatedVerificationRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 5, keyPrefix: 'delegated-verification' });
 const requireMobileAppPlan = requirePlanCapability('mobileApp');
 const requireFieldRoutesPlan = requirePlanCapability('fieldRoutes');
 app.use('/api/auth', createAuthRoutes({ authRateLimit }));
@@ -99,6 +100,8 @@ app.post('/api/configuracion/parametros-legales/obligatorios', requireRole('supe
 app.post('/api/configuracion/parametros-legales/sincronizar-globales', requireRole('superadmin', 'owner'), requireFreshUser, requireModule('parametrizacion'), configurationController.syncLegalParametersFromGlobal);
 app.put('/api/configuracion/logo', requireRole('owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.uploadLogo);
 app.delete('/api/configuracion/logo', requireRole('owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.removeLogo);
+app.get('/api/configuracion/jobPositions/plantilla-carga-masiva', requireRole('superadmin', 'owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.downloadJobPositionsTemplate);
+app.post('/api/configuracion/jobPositions/carga-masiva', requireRole('superadmin', 'owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.bulkCreateJobPositions);
 app.get('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.list);
 app.post('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.create);
 app.put('/api/configuracion/:resource/:id', requireRole('superadmin', 'owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.update);
@@ -140,6 +143,7 @@ const modulePermissionController = require('./controllers/modulePermissionContro
 const userManagementController = require('./controllers/userManagementController');
 app.get('/api/usuarios', requireRole('superadmin', 'owner'), userManagementController.listar);
 app.patch('/api/usuarios/:id/estado', requireRole('superadmin', 'owner'), requireFreshUser, userManagementController.cambiarEstado);
+app.post('/api/usuarios/:id/verificacion-email/reenviar', delegatedVerificationRateLimit, requireRole('owner'), requireFreshUser, userManagementController.reenviarVerificacionEmail);
 app.get('/api/usuarios/:id/permisos-modulo', requireRole('superadmin', 'owner'), modulePermissionController.obtener);
 app.put('/api/usuarios/:id/permisos-modulo', requireRole('superadmin', 'owner'), requireFreshUser, modulePermissionController.actualizar);
 
@@ -229,11 +233,20 @@ app.put('/api/novedades/:id', requireRole('owner', 'admin_rrhh'), requireModule(
 app.delete('/api/novedades/:id', requireRole('owner', 'admin_rrhh'), requireModule('asistencia'), novedadController.eliminar);
 app.put('/api/novedades/:id/aprobar', requireRole('owner', 'admin_rrhh'), requireModule('asistencia'), novedadController.aprobar);
 app.put('/api/novedades/:id/rechazar', requireRole('owner', 'admin_rrhh'), requireModule('asistencia'), novedadController.rechazar);
+app.put('/api/novedades/:id/anular', requireRole('owner', 'admin_rrhh'), requireModule('asistencia'), novedadController.anular);
 
 const beneficioEmpleadoController = require('./controllers/beneficioEmpleadoController');
 app.get('/api/beneficios', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), beneficioEmpleadoController.listar);
 app.post('/api/beneficios', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), beneficioEmpleadoController.crear);
 app.put('/api/beneficios/:id', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), beneficioEmpleadoController.actualizar);
+
+const advancePayrollController = require('./controllers/advancePayrollController');
+app.get('/api/nomina/anticipos/roles', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), advancePayrollController.listar);
+app.post('/api/nomina/anticipos/roles', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), advancePayrollController.crear);
+app.put('/api/nomina/anticipos/roles/:id/aprobar', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), advancePayrollController.aprobar);
+app.put('/api/nomina/anticipos/roles/:id/lineas/:lineId/decidir', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), advancePayrollController.decidirLinea);
+app.put('/api/nomina/anticipos/roles/:id/cerrar', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), advancePayrollController.cerrar);
+app.get('/api/nomina/anticipos/roles/:id.csv', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), advancePayrollController.descargarCsv);
 
 const payrollAccountingController = require('./controllers/payrollAccountingController');
 app.get('/api/nomina/contabilidad/conceptos', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), payrollAccountingController.listConcepts);
@@ -295,6 +308,8 @@ app.get('/api/reportes/nomina/columnas', requireRole('owner', 'admin_rrhh'), req
 app.post('/api/reportes/nomina/exportar', requireRole('owner', 'admin_rrhh'), requireModule('reportes'), reporteController.exportarNomina);
 app.get('/api/reportes/nomina/:anio/consolidado', requireRole('owner', 'admin_rrhh'), requireModule('reportes'), reporteController.exportarConsolidadoAnual);
 app.get('/api/reportes/asistencia/:anio/:mes', requireRole('owner', 'admin_rrhh', 'supervisor'), requireModule('reportes'), reporteController.reporteAsistencia);
+app.get('/api/reportes/novedades/:anio/:mes.csv', requireRole('owner', 'admin_rrhh', 'supervisor'), requireModule('reportes'), reporteController.exportarReporteNovedadesCsv);
+app.get('/api/reportes/novedades/:anio/:mes', requireRole('owner', 'admin_rrhh', 'supervisor'), requireModule('reportes'), reporteController.reporteNovedades);
 
 const auditController = require('./controllers/auditController');
 app.get('/api/auditoria', requireRole('superadmin', 'owner'), requireModule('auditoria'), auditController.listar);

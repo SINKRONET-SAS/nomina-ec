@@ -438,6 +438,184 @@ async function exportarNomina(req, res) {
   }
 }
 
+function noveltyReportPeriod(req) {
+  const anio = Number(req.params.anio);
+  const mes = Number(req.params.mes);
+  if (!Number.isInteger(anio) || anio < 2020 || anio > 2100 || !Number.isInteger(mes) || mes < 1 || mes > 12) {
+    const error = new Error('Selecciona un mes y año válidos para consultar las novedades.');
+    error.code = 'PERIODO_INVALIDO';
+    error.statusCode = 400;
+    throw error;
+  }
+  return { anio, mes };
+}
+
+function csvCell(value) {
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
+}
+
+async function getNoveltyReportRows({ tenantId, anio, mes, filters = {} }) {
+  const params = [tenantId, anio, mes];
+  const clauses = [
+    'na.tenant_id = $1',
+    'EXTRACT(YEAR FROM na.fecha) = $2',
+    'EXTRACT(MONTH FROM na.fecha) = $3',
+  ];
+
+  if (filters.estado) {
+    params.push(String(filters.estado).trim().toLowerCase());
+    clauses.push(`na.estado = $${params.length}`);
+  }
+  if (filters.tipo) {
+    params.push(String(filters.tipo).trim().toLowerCase());
+    clauses.push(`na.tipo_novedad = $${params.length}`);
+  }
+  if (filters.origen === 'manual') {
+    clauses.push("COALESCE(na.metadata->>'source', '') <> 'carga_masiva_novedades' AND na.novelty_batch_id IS NULL");
+  } else if (filters.origen === 'carga_masiva') {
+    clauses.push("(na.metadata->>'source' = 'carga_masiva_novedades' OR na.novelty_batch_id IS NOT NULL)");
+  }
+  if (filters.buscar) {
+    params.push(`%${String(filters.buscar).trim()}%`);
+    clauses.push(`(
+      e.cedula ILIKE $${params.length}
+      OR e.nombres ILIKE $${params.length}
+      OR e.apellidos ILIKE $${params.length}
+      OR na.justificacion ILIKE $${params.length}
+    )`);
+  }
+
+  const result = await db.query(`
+    SELECT
+      na.id,
+      na.empleado_id,
+      e.cedula,
+      e.nombres,
+      e.apellidos,
+      (e.nombres || ' ' || e.apellidos) AS empleado_nombre,
+      na.fecha::text AS fecha,
+      na.periodo_nomina,
+      na.tipo_novedad,
+      na.minutos,
+      ROUND(na.minutos::numeric / 60, 2) AS horas,
+      na.monto,
+      na.justificacion,
+      na.estado,
+      CASE
+        WHEN na.metadata->>'source' = 'carga_masiva_novedades' OR na.novelty_batch_id IS NOT NULL THEN 'carga_masiva'
+        ELSE 'manual'
+      END AS origen,
+      na.novelty_batch_id,
+      na.aprobado_por,
+      approver.email AS aprobador_email,
+      na.aprobado_en,
+      na.created_at,
+      na.updated_at,
+      EXISTS (
+        SELECT 1
+        FROM payroll_calculation_lines pcl
+        WHERE pcl.tenant_id = na.tenant_id
+          AND pcl.source = 'novedad'
+          AND pcl.source_id = na.id::text
+      ) AS consumida_por_rol
+    FROM novedades_asistencia na
+    JOIN empleados e ON e.id = na.empleado_id AND e.tenant_id = na.tenant_id
+    LEFT JOIN usuarios approver ON approver.id = na.aprobado_por AND approver.tenant_id = na.tenant_id
+    WHERE ${clauses.join(' AND ')}
+    ORDER BY na.fecha DESC, e.apellidos, e.nombres, na.created_at DESC
+  `, params);
+
+  return result.rows;
+}
+
+async function reporteNovedades(req, res) {
+  try {
+    const { anio, mes } = noveltyReportPeriod(req);
+    const rows = await getNoveltyReportRows({
+      tenantId: req.tenantId,
+      anio,
+      mes,
+      filters: req.query || {},
+    });
+    const summary = rows.reduce((acc, row) => {
+      const status = String(row.estado || 'pendiente');
+      acc.total += 1;
+      acc.porEstado[status] = (acc.porEstado[status] || 0) + 1;
+      acc.totalHoras += Number(row.horas || 0);
+      acc.totalMonto += Number(row.monto || 0);
+      if (row.origen === 'carga_masiva') acc.cargaMasiva += 1;
+      else acc.manual += 1;
+      return acc;
+    }, { total: 0, totalHoras: 0, totalMonto: 0, manual: 0, cargaMasiva: 0, porEstado: {} });
+
+    return res.json({
+      success: true,
+      reporte: {
+        periodo: { anio, mes },
+        filtros: req.query || {},
+        resumen: {
+          ...summary,
+          totalHoras: Number(summary.totalHoras.toFixed(2)),
+          totalMonto: Number(summary.totalMonto.toFixed(2)),
+        },
+        filas: rows,
+      },
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    console.error('[REPORTES] Error reporte novedades', {
+      code: err.code || 'REPORTE_NOVEDADES_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'REPORTE_NOVEDADES_ERROR',
+      message: err.message || 'No pudimos consultar el reporte de novedades.',
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function exportarReporteNovedadesCsv(req, res) {
+  try {
+    const { anio, mes } = noveltyReportPeriod(req);
+    const rows = await getNoveltyReportRows({ tenantId: req.tenantId, anio, mes, filters: req.query || {} });
+    const headers = ['empleado', 'cedula', 'fecha', 'periodoNomina', 'tipoNovedad', 'horas', 'monto', 'estado', 'origen', 'justificacion', 'aprobador', 'consumidaPorRol'];
+    const csvRows = rows.map((row) => [
+      row.empleado_nombre,
+      row.cedula,
+      row.fecha,
+      row.periodo_nomina,
+      row.tipo_novedad,
+      row.horas,
+      row.monto,
+      row.estado,
+      row.origen,
+      row.justificacion,
+      row.aprobador_email,
+      row.consumida_por_rol ? 'si' : 'no',
+    ].map(csvCell).join(','));
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="reporte_novedades_${anio}_${String(mes).padStart(2, '0')}.csv"`);
+    return res.send(`\ufeff${[headers.join(','), ...csvRows].join('\r\n')}`);
+  } catch (err) {
+    console.error('[REPORTES] Error exportando novedades CSV', {
+      code: err.code || 'REPORTE_NOVEDADES_CSV_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'REPORTE_NOVEDADES_CSV_ERROR',
+      message: err.message || 'No pudimos exportar el reporte de novedades.',
+      correlationId: req.correlationId,
+    });
+  }
+}
+
 function listarColumnasNomina(req, res) {
   try {
     const columns = getReportColumnCatalog(req.query.reportCode);
@@ -522,6 +700,8 @@ module.exports = {
   generarArchivoBanco: generarArchivoBancoCtrl,
   validarArchivoBanco,
   reporteAsistencia,
+  reporteNovedades,
+  exportarReporteNovedadesCsv,
   exportarNomina,
   listarColumnasNomina,
   exportarConsolidadoAnual,

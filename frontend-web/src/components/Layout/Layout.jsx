@@ -78,6 +78,7 @@ function Layout() {
       submenu: [
         { path: '/dashboard/asistencia/novedades', label: 'Ingreso manual y pendientes' },
         { path: '/dashboard/asistencia/reporte', label: 'Reporte de Asistencia' },
+        { path: '/dashboard/asistencia/reporte-novedades', label: 'Reporte de novedades' },
         { path: '/dashboard/asistencia/rutas', label: 'Rutas de campo', capability: 'fieldRoutes' },
       ]
     },

@@ -9,6 +9,7 @@ import {
   Plus,
   Settings2,
   Trash2,
+  Upload,
   X,
 } from 'lucide-react';
 import CompactNotice from '../../components/UI/CompactNotice';
@@ -26,7 +27,10 @@ import {
   updateConfigurationResource,
   uploadTenantLogo,
   removeTenantLogo,
+  bulkCreateJobPositions,
+  downloadJobPositionsTemplate,
 } from '../../services/configurationApi';
+import { downloadBlob } from '../../utils/downloadBlob';
 import { extractApiError } from '../../services/publicApi';
 
 import {
@@ -371,6 +375,9 @@ function Parametrizacion() {
   const [pendingDeleteId, setPendingDeleteId] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [jobPositionCsv, setJobPositionCsv] = useState('');
+  const [jobPositionFileName, setJobPositionFileName] = useState('');
+  const [jobPositionBulkResult, setJobPositionBulkResult] = useState(null);
 
   const {
     data: summary,
@@ -477,6 +484,21 @@ function Parametrizacion() {
     onError: (err) => {
       setMessage('');
       setError(extractApiError(err, 'No pudimos cargar los parámetros legales obligatorios.'));
+    },
+  });
+
+  const jobPositionBulkMutation = useMutation({
+    mutationFn: () => bulkCreateJobPositions(jobPositionCsv),
+    onSuccess: (result) => {
+      setJobPositionBulkResult(result);
+      setError('');
+      setMessage(`Carga de cargos procesada: ${result.creados || 0} creados y ${result.errores || 0} con error.`);
+      queryClient.invalidateQueries({ queryKey: ['configuration-summary'] });
+    },
+    onError: (err) => {
+      setJobPositionBulkResult(null);
+      setMessage('');
+      setError(extractApiError(err, 'No pudimos procesar la carga masiva de cargos.'));
     },
   });
 
@@ -621,6 +643,30 @@ function Parametrizacion() {
 
   function generateBankMappingStructure(structure) {
     generateBankMappingStructureMutation.mutate(structure);
+  }
+
+  async function handleJobPositionFile(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      setJobPositionCsv(await file.text());
+      setJobPositionFileName(file.name);
+      setJobPositionBulkResult(null);
+      setError('');
+    } catch (err) {
+      setJobPositionCsv('');
+      setJobPositionFileName('');
+      setError(`No se pudo leer el archivo de cargos: ${err.message}`);
+    }
+  }
+
+  async function handleJobPositionTemplate() {
+    try {
+      const blob = await downloadJobPositionsTemplate();
+      downloadBlob(blob, 'plantilla_carga_masiva_cargos.csv');
+    } catch (err) {
+      setError(extractApiError(err, 'No pudimos descargar la plantilla de cargos.'));
+    }
   }
 
   function updateBracket(index, name, value) {
@@ -1116,6 +1162,26 @@ function Parametrizacion() {
               </div>
             )}
           </form>
+
+          {activeDefinition.key === 'cargo' && (
+            <section className="rounded-md border border-teal-200 bg-teal-50/60 p-4 xl:col-span-2">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="font-semibold text-slate-950">Carga masiva de cargos o puestos</h3>
+                  <p className="mt-1 text-sm leading-6 text-slate-700">Usa la plantilla CSV, selecciona el archivo y revisa el resultado por fila. La unidad organizativa debe estar activa.</p>
+                </div>
+                <button className="inline-flex min-h-9 items-center gap-2 rounded-md border border-teal-300 bg-white px-3 text-sm font-semibold text-teal-800" onClick={handleJobPositionTemplate} type="button"><Download className="h-4 w-4" /> Descargar plantilla</button>
+              </div>
+              <label className="mt-4 inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-md bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800">
+                <Upload className="h-4 w-4" /> Seleccionar archivo CSV
+                <input accept=".csv,text/csv" className="sr-only" onChange={handleJobPositionFile} type="file" />
+              </label>
+              {jobPositionFileName && <p className="mt-2 text-xs font-semibold text-teal-800">Archivo seleccionado: {jobPositionFileName}</p>}
+              <textarea aria-label="Filas CSV de cargos" className="mt-3 min-h-28 w-full rounded-md border border-slate-300 bg-white px-3 py-2 font-mono text-xs" onChange={(event) => { setJobPositionCsv(event.target.value); setJobPositionFileName(''); setJobPositionBulkResult(null); }} placeholder="organization_unit_code,code,name,description,salary_min,salary_max,currency,effective_from,effective_to,status" value={jobPositionCsv} />
+              <button className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-60" disabled={jobPositionBulkMutation.isPending || !jobPositionCsv.trim()} onClick={() => jobPositionBulkMutation.mutate()} type="button"><Upload className="h-4 w-4" />{jobPositionBulkMutation.isPending ? 'Procesando...' : 'Procesar carga masiva'}</button>
+              {jobPositionBulkResult?.results?.length > 0 && <div className="mt-4 max-h-52 overflow-auto rounded-md border border-slate-200 bg-white"><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Fila</th><th className="px-3 py-2">Estado</th><th className="px-3 py-2">Detalle</th></tr></thead><tbody className="divide-y divide-slate-100">{jobPositionBulkResult.results.map((row) => <tr key={row.rowNumber}><td className="px-3 py-2">{row.rowNumber}</td><td className="px-3 py-2">{row.status}</td><td className="px-3 py-2">{row.message || row.cargo?.name || ''}</td></tr>)}</tbody></table></div>}
+            </section>
+          )}
 
           <aside className="rounded-md border border-slate-200 p-4">
             <h3 className="font-semibold text-slate-950">{activeDefinition.recordsTitle || 'Registros vigentes'}</h3>

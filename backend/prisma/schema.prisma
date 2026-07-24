@@ -26,6 +26,7 @@ enum ApprovalStatus {
   pendiente
   aprobado
   rechazado
+  anulado
 }
 
 enum PayrollStatus {

@@ -41,6 +41,7 @@ const NuevoEmpleado = lazy(() => import('./pages/Empleados/NuevoEmpleado'));
 const TerminarEmpleado = lazy(() => import('./pages/Empleados/TerminarEmpleado'));
 const NovedadesPendientes = lazy(() => import('./pages/Asistencia/NovedadesPendientes'));
 const ReporteAsistencia = lazy(() => import('./pages/Asistencia/ReporteAsistencia'));
+const ReporteNovedades = lazy(() => import('./pages/Asistencia/ReporteNovedades'));
 const RutasCampo = lazy(() => import('./pages/Asistencia/RutasCampo'));
 const PeriodosNomina = lazy(() => import('./pages/Nomina/PeriodosNomina'));
 const CerrarMes = lazy(() => import('./pages/Nomina/CerrarMes'));
@@ -203,6 +204,11 @@ function App() {
               <Route path="nomina/periodos" element={
                 <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
                   <PeriodosNomina />
+                </ProtectedRoute>
+              } />
+              <Route path="asistencia/reporte-novedades" element={
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh', 'supervisor']}>
+                  <ReporteNovedades />
                 </ProtectedRoute>
               } />
               <Route path="nomina/cerrar" element={

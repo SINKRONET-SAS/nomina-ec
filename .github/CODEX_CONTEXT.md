@@ -3291,3 +3291,54 @@ La revisión comparativa encontró `GestionStaffScreen`, endpoints de staff, per
 - DPA: alta delegada exige `dpaAccepted`/`lopdpConsent`, registra preferencias y auditoría `lopdp.consent.delegated.register`.
 - Cargas: novedades tiene botón visible `Seleccionar archivo`; empleados y saldos ya tenían selector; asistencia conserva cédula y UUID opcional.
 - Validaciones: 62 suites / 421 tests PASS, Prisma validate PASS, contratos del sistema PASS, build frontend transformó 1537 módulos y generó el chunk `UsuariosRoles`.
+
+---
+
+## Current Haiky Plan — HAIKY-NOVEDADES-ANTICIPOS-CARGOS-REPORTES-VERIFICACION-2026
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-NOVEDADES-ANTICIPOS-CARGOS-REPORTES-VERIFICACION-2026` |
+| Código | `NAR26` |
+| Estado | `NAR26-06 cerrado; implementación y validación completadas` |
+| Fecha | `2026-07-24` |
+| Plan doc | `docs2/PLAN_HAIKY_NOVEDADES_ANTICIPOS_CARGOS_REPORTES_VERIFICACION_2026.md` |
+| Prompts | `.github/prompts/NAR26-00` a `.github/prompts/NAR26-06` |
+| AuditLock anterior | `CEF0E2C99F5126F6B2AB60825F0490A5EFB8E1AA62D4434087992EFC4BB6B1DC` |
+
+### Hallazgos NAR26
+
+- Las novedades manuales requieren un listado operativo explícito y el mismo ciclo de aprobación, edición, anulación y eliminación que las cargas masivas.
+- El rol mensual no cubre anticipos de mitad de periodo ni la decisión posterior de descontar o bonificar.
+- Cargo o puesto necesita carga masiva por plantilla y selector de archivo.
+- Las cargas de novedades necesitan reporte verificable por periodo, estado, origen, empleado, horas y monto.
+- Usuarios y roles necesita reenvío seguro del correo de verificación para delegados recién creados; el código debe llegar recién emitido y con vigencia completa, nunca caducado.
+
+### Decisiones NAR26
+
+- Se conserva `novedades_asistencia` como fuente operativa y se agrega `anulado` sin cambiar payloads existentes.
+- El rol de anticipos tendrá persistencia propia, pero toda la operación de descuento o bonificación nacerá de la misma ruta visible de Anticipos y préstamos; no se crea un camino paralelo. El cálculo mensual seguirá usando los anticipos aprobados y la conversión quedará trazada como novedad con tipo parametrizado y nombre de bonificación indicado por el usuario.
+- La carga de cargos reutilizará la validación de `job_positions` y nunca podrá cruzar tenants.
+- El reporte será detallado y descargable, pero mantendrá RBAC de reportes y no expondrá datos ajenos a la empresa.
+- El reenvío de verificación reutilizará `createEmailVerificationToken` y `sendEmailVerification`, sin exponer el código; se validará que el token enviado tenga `expira_en` futura y una vigencia completa.
+
+### Fases NAR26
+
+| Fase | Objetivo | Estado |
+|---|---|---|
+| NAR26-00 | Gobierno, contexto, prompts y baseline | completed-pass |
+| NAR26-01 | Ciclo de vida de novedades y reporte | completed-pass |
+| NAR26-02 | Rol de anticipos y bonificaciones | completed-pass |
+| NAR26-03 | Carga masiva de cargos | completed-pass |
+| NAR26-04 | Reenvío de verificación de delegados | completed-pass |
+| NAR26-05 | Integración frontend | completed-pass |
+| NAR26-06 | QA, cierre, commit y push | completed-pass |
+
+### Cierre NAR26
+
+- La generación y decisión de anticipos queda expuesta en la ruta visible existente de Anticipos y préstamos; no se creó una pantalla paralela. El usuario puede escoger el tipo de novedad parametrizado y el nombre de la bonificación.
+- Las novedades manuales y masivas comparten listado, filtros, acciones de aprobación/edición/anulación/eliminación y reporte CSV detallado. La anulación es explícita y bloquea nuevas modificaciones.
+- La carga masiva de cargos incluye plantilla, selector de archivo, validación por fila y persistencia aislada por tenant.
+- El reenvío de verificación de delegados invalida tokens anteriores, emite uno nuevo con vigencia completa futura, no expone el código y audita la operación.
+- Validación: 65 suites / 435 tests backend PASS; contratos PASS; Prisma validate PASS; parseo JSX estático PASS; `git diff --check` PASS.
+- El build web no pudo ejecutarse porque la instalación local no contiene el binario `vite` (`vite no se reconoce`); no se modificó el código para ocultar esa limitación del entorno.

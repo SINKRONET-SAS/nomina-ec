@@ -3,6 +3,8 @@ const AppError = require('../utils/AppError');
 const { recordAudit } = require('../services/auditService');
 const { getTenantPlanCapabilities } = require('../services/planCapabilityService');
 const { resolveEffectivePermissions } = require('../config/modules');
+const { createEmailVerificationToken } = require('./authController');
+const { sendEmailVerification } = require('../services/communicationService');
 
 async function listar(req, res, next) {
   try {
@@ -84,4 +86,66 @@ async function cambiarEstado(req, res, next) {
   }
 }
 
-module.exports = { listar, cambiarEstado };
+async function reenviarVerificacionEmail(req, res, next) {
+  try {
+    const tenantId = req.usuario.tenantId;
+    const userId = String(req.params.id || '').trim();
+    if (!tenantId || !userId) {
+      throw new AppError('Empresa y usuario son requeridos.', { code: 'VERIFICACION_USUARIO_REQUERIDA', statusCode: 400 });
+    }
+
+    const result = await db.query(`
+      SELECT id, tenant_id, email, nombres, rol, activo, email_verificado_en
+      FROM usuarios
+      WHERE id = $1 AND tenant_id = $2
+      LIMIT 1
+    `, [userId, tenantId]);
+    const target = result.rows[0];
+    if (!target) {
+      throw new AppError('Usuario delegado no encontrado en la empresa.', { code: 'USUARIO_NO_ENCONTRADO', statusCode: 404 });
+    }
+    if (String(target.rol || '').toLowerCase() === 'owner') {
+      throw new AppError('El administrador principal no requiere reenvío de invitación.', { code: 'USUARIO_VERIFICACION_NO_APLICA', statusCode: 409 });
+    }
+    if (!target.activo) {
+      throw new AppError('Activa el usuario antes de reenviar su verificación.', { code: 'USUARIO_INACTIVO', statusCode: 409 });
+    }
+    if (target.email_verificado_en) {
+      throw new AppError('El correo de este usuario ya está verificado.', { code: 'EMAIL_YA_VERIFICADO', statusCode: 409 });
+    }
+
+    const verification = await createEmailVerificationToken(db, target, req.correlationId);
+    const expiration = new Date(verification.expiresAt);
+    if (!Number.isFinite(expiration.getTime()) || expiration.getTime() <= Date.now()) {
+      throw new AppError('No se generó un código de verificación vigente.', { code: 'EMAIL_VERIFICACION_CADUCADA', statusCode: 503 });
+    }
+    const delivery = await sendEmailVerification(verification.deliveryPayload);
+
+    await recordAudit({
+      tenantId,
+      userId: req.usuario.id,
+      correlationId: req.correlationId,
+      action: 'usuario.email.verificacion.reenviada',
+      entity: 'usuarios',
+      entityId: userId,
+      newData: {
+        targetUserId: userId,
+        deliveryStatus: delivery?.status || 'unknown',
+        expiresAt: verification.expiresAt,
+      },
+      ipAddress: req.ip,
+    });
+
+    return res.json({
+      success: true,
+      message: 'Se envió un código nuevo de verificación. Tiene vigencia completa desde este envío.',
+      expiresAt: verification.expiresAt,
+      delivery: { status: delivery?.status || 'sent' },
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = { listar, cambiarEstado, reenviarVerificacionEmail };

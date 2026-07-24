@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { authenticatedApi } from '../../services/authenticatedApi';
-import { Calculator, CalendarCheck2, Check, Download, Pencil, Plus, Trash2, Unlock, Upload, X } from 'lucide-react';
+import { Ban, Calculator, CalendarCheck2, Check, Download, Pencil, Plus, Trash2, Unlock, Upload, X } from 'lucide-react';
 import { extractApiError } from '../../services/publicApi';
 import { formatDateEC, todayISOEC } from '../../utils/dateFormat';
 import { downloadBlob } from '../../utils/downloadBlob';
@@ -71,6 +71,9 @@ function NovedadesPendientes() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [editingNovelty, setEditingNovelty] = useState(null);
+  const [noveltySearch, setNoveltySearch] = useState('');
+  const [noveltyStatusFilter, setNoveltyStatusFilter] = useState('todos');
+  const [noveltyOriginFilter, setNoveltyOriginFilter] = useState('todos');
   const [attendanceScope, setAttendanceScope] = useState('employee');
   const [attendancePeriod, setAttendancePeriod] = useState('day');
   const [attendanceForm, setAttendanceForm] = useState(initialAttendanceForm);
@@ -104,10 +107,23 @@ function NovedadesPendientes() {
   const { data: novedades, isLoading } = useQuery({
     queryKey: ['novedades-pendientes'],
     queryFn: async () => {
-      const response = await authenticatedApi.get('/novedades/pendientes?scope=operativas');
+      const response = await authenticatedApi.get('/novedades/pendientes', { params: { scope: 'operativas' } });
       return response.data.novedades;
     }
   });
+
+  const novedadesFiltradas = useMemo(() => {
+    const search = noveltySearch.trim().toLowerCase();
+    return (novedades || []).filter((nov) => {
+      const matchesStatus = noveltyStatusFilter === 'todos' || nov.estado === noveltyStatusFilter;
+      const matchesOrigin = noveltyOriginFilter === 'todos' || nov.origen === noveltyOriginFilter;
+      const searchable = [nov.nombres, nov.apellidos, nov.cedula, nov.tipo_novedad, nov.justificacion]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return matchesStatus && matchesOrigin && (!search || searchable.includes(search));
+    });
+  }, [novedades, noveltyOriginFilter, noveltySearch, noveltyStatusFilter]);
 
   const { data: empleados } = useQuery({
     queryKey: ['empleados-novedad-manual'],
@@ -312,8 +328,29 @@ function NovedadesPendientes() {
   });
 
   const rechazarMutation = useMutation({
-    mutationFn: (id) => authenticatedApi.put(`/novedades/${id}/rechazar`),
-    onSuccess: () => queryClient.invalidateQueries(['novedades-pendientes'])
+    mutationFn: ({ id, motivo }) => authenticatedApi.put(`/novedades/${id}/rechazar`, { motivo }),
+    onSuccess: () => {
+      setMessage('Novedad rechazada.');
+      setError('');
+      queryClient.invalidateQueries({ queryKey: ['novedades-pendientes'] });
+    },
+    onError: (err) => {
+      setMessage('');
+      setError(err.response?.data?.message || err.response?.data?.error || 'No pudimos rechazar la novedad.');
+    },
+  });
+
+  const anularMutation = useMutation({
+    mutationFn: ({ id, motivo }) => authenticatedApi.put(`/novedades/${id}/anular`, { motivo }),
+    onSuccess: () => {
+      setMessage('Novedad anulada y conservada en el historial.');
+      setError('');
+      queryClient.invalidateQueries({ queryKey: ['novedades-pendientes'] });
+    },
+    onError: (err) => {
+      setMessage('');
+      setError(err.response?.data?.message || err.response?.data?.error || 'No pudimos anular la novedad.');
+    },
   });
 
   function updateField(name, value) {
@@ -992,6 +1029,37 @@ function NovedadesPendientes() {
         )}
       </section>
       
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">Listado de novedades cargadas</h2>
+            <p className="mt-1 text-sm text-slate-600">Consulta ingresos manuales y cargas masivas del periodo operativo. Las acciones respetan el cierre y el consumo por rol.</p>
+          </div>
+          <span className="text-sm font-semibold text-slate-500">{novedadesFiltradas.length} de {(novedades || []).length}</span>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <input
+            aria-label="Buscar novedad"
+            className="min-h-10 rounded-md border border-slate-300 px-3 text-sm"
+            onChange={(event) => setNoveltySearch(event.target.value)}
+            placeholder="Buscar empleado, cédula o tipo"
+            value={noveltySearch}
+          />
+          <select className="min-h-10 rounded-md border border-slate-300 px-3 text-sm" onChange={(event) => setNoveltyStatusFilter(event.target.value)} value={noveltyStatusFilter}>
+            <option value="todos">Todos los estados</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="aprobado">Aprobadas</option>
+            <option value="rechazado">Rechazadas</option>
+            <option value="anulado">Anuladas</option>
+          </select>
+          <select className="min-h-10 rounded-md border border-slate-300 px-3 text-sm" onChange={(event) => setNoveltyOriginFilter(event.target.value)} value={noveltyOriginFilter}>
+            <option value="todos">Todos los orígenes</option>
+            <option value="manual">Ingreso manual</option>
+            <option value="carga_masiva">Carga masiva</option>
+          </select>
+        </div>
+      </section>
+
       <div className="bg-white rounded-lg shadow">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -1000,6 +1068,7 @@ function NovedadesPendientes() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Empleado</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo de novedad</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Origen</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Horas</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
@@ -1008,11 +1077,11 @@ function NovedadesPendientes() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {isLoading ? (
-                <tr><td colSpan="7" className="px-6 py-4 text-center">Cargando...</td></tr>
-              ) : !novedades || novedades.length === 0 ? (
-                <tr><td colSpan="7" className="px-6 py-4 text-center">No hay novedades editables antes de rol</td></tr>
+                <tr><td colSpan="8" className="px-6 py-4 text-center">Cargando...</td></tr>
+              ) : !novedadesFiltradas.length ? (
+                <tr><td colSpan="8" className="px-6 py-4 text-center">No hay novedades para los filtros seleccionados.</td></tr>
               ) : (
-                novedades.map(nov => (
+                novedadesFiltradas.map(nov => (
                   <tr key={nov.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm">{nov.nombres} {nov.apellidos}</td>
                     <td className="px-6 py-4 text-sm">{formatDateEC(nov.fecha)}</td>
@@ -1027,6 +1096,7 @@ function NovedadesPendientes() {
                         {getNoveltyTypeLabel(nov.tipo_novedad, noveltyTypeOptions)}
                       </span>
                     </td>
+                    <td className="px-6 py-4 text-sm">{nov.origenLabel || (nov.origen === 'carga_masiva' ? 'Carga masiva' : 'Ingreso manual')}</td>
                     <td className="px-6 py-4 text-sm">{minutesToHours(nov.minutos)} h</td>
                     <td className="px-6 py-4 text-sm font-semibold">{money(nov.monto)}</td>
                     <td className="px-6 py-4 text-sm">
@@ -1053,7 +1123,10 @@ function NovedadesPendientes() {
                               <Check size={16} />
                             </button>
                             <button
-                              onClick={() => rechazarMutation.mutate(nov.id)}
+                              onClick={() => {
+                                const motivo = window.prompt('Indica el motivo del rechazo:');
+                                if (motivo?.trim()) rechazarMutation.mutate({ id: nov.id, motivo: motivo.trim() });
+                              }}
                               className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
                               title="Rechazar"
                               type="button"
@@ -1061,6 +1134,20 @@ function NovedadesPendientes() {
                               <X size={16} />
                             </button>
                           </>
+                        )}
+                        {nov.editable && nov.estado !== 'anulado' && (
+                          <button
+                            disabled={anularMutation.isPending}
+                            onClick={() => {
+                              const motivo = window.prompt('Indica el motivo de la anulación:');
+                              if (motivo?.trim()) anularMutation.mutate({ id: nov.id, motivo: motivo.trim() });
+                            }}
+                            className="p-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 disabled:opacity-60"
+                            title="Anular y conservar en historial"
+                            type="button"
+                          >
+                            <Ban size={16} />
+                          </button>
                         )}
                         {nov.editable && (
                           <>

@@ -87,6 +87,7 @@ function requiresEmailVerification(usuario) {
 }
 
 async function createEmailVerificationToken(queryable, usuario, correlationId) {
+  const expiresAt = new Date(Date.now() + (24 * 60 * 60 * 1000));
   await queryable.query(
     `UPDATE email_verification_tokens
      SET confirmado_en = COALESCE(confirmado_en, NOW())
@@ -98,12 +99,13 @@ async function createEmailVerificationToken(queryable, usuario, correlationId) {
   const code = generateVerificationCode();
   await queryable.query(
     `INSERT INTO email_verification_tokens (usuario_id, token_hash, expira_en)
-     VALUES ($1, $2, NOW() + INTERVAL '24 hours')`,
-    [usuario.id, hashCode(code)]
+     VALUES ($1, $2, $3)`,
+    [usuario.id, hashCode(code), expiresAt]
   );
 
   return {
     code,
+    expiresAt: expiresAt.toISOString(),
     deliveryPayload: {
       to: usuario.email,
       code,
@@ -875,4 +877,5 @@ module.exports = {
   confirmEmailVerification,
   emailVerificationStatus,
   sessionContext,
+  createEmailVerificationToken,
 };

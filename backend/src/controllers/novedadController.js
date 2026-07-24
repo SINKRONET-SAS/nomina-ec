@@ -33,14 +33,22 @@ const OVERTIME_LIMIT_APPROVAL_REASON_MIN_LENGTH = 10;
 
 function resolveNoveltyMetadata(row = {}) {
   const metadata = row.metadata && typeof row.metadata === 'object' ? { ...row.metadata } : row.metadata;
-  if (!metadata || typeof metadata !== 'object') return row;
-  const support = metadata.soporteMedico;
-  if (!support || typeof support !== 'object') return row;
+  const safeMetadata = metadata && typeof metadata === 'object' ? metadata : {};
+  const origin = safeMetadata.source === 'carga_masiva_novedades' || row.novelty_batch_id
+    ? 'carga_masiva'
+    : 'manual';
+  const support = safeMetadata.soporteMedico;
+  const normalized = {
+    ...row,
+    origen: origin,
+    origenLabel: origin === 'carga_masiva' ? 'Carga masiva' : 'Ingreso manual',
+  };
+  if (!support || typeof support !== 'object') return normalized;
 
   return {
-    ...row,
+    ...normalized,
     metadata: {
-      ...metadata,
+      ...safeMetadata,
       soporteMedico: {
         ...support,
         url: resolveStorageUrl(support.url, support.storageKey),
@@ -95,7 +103,7 @@ async function listarPendientes(req, res) {
     if (scope === 'operativas') {
       params.push(Array.from(NOVELTY_OPERATIVE_PERIOD_STATUSES));
       filter = `
-        na.estado IN ('pendiente', 'aprobado', 'rechazado')
+        na.estado IN ('pendiente', 'aprobado', 'rechazado', 'anulado')
         AND pp.status = ANY($2::text[])
       `;
     }
@@ -138,7 +146,7 @@ async function listarPendientes(req, res) {
 
     const novedades = result.rows.map((row) => ({
       ...resolveNoveltyMetadata(row),
-      editable: NOVELTY_WRITABLE_PERIOD_STATUSES.has(row.period_status) && !row.consumida_por_rol,
+      editable: NOVELTY_WRITABLE_PERIOD_STATUSES.has(row.period_status) && !row.consumida_por_rol && row.estado !== 'anulado',
       requiresEmployeePayrollInvalidation: Boolean(row.consumida_por_rol && row.has_employee_payroll_draft && row.period_status !== 'closed'),
       canRecalculateEmployee: Boolean(
         !row.consumida_por_rol
@@ -438,6 +446,73 @@ async function eliminar(req, res) {
   }
 }
 
+async function anular(req, res) {
+  try {
+    const { tenantId, usuarioId } = req;
+    const { id } = req.params;
+    const motivo = String(req.body?.motivo || '').trim();
+    if (motivo.length < 5) {
+      return res.status(422).json({
+        error: 'MOTIVO_ANULACION_REQUERIDO',
+        message: 'Indica un motivo claro de al menos 5 caracteres para anular la novedad.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const { novelty } = await ensureNoveltyEditable({ tenantId, noveltyId: id });
+    const result = await db.query(`
+      UPDATE novedades_asistencia
+      SET estado = 'anulado',
+          aprobado_por = $1,
+          aprobado_en = NOW(),
+          justificacion = $2,
+          metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+            'lifecycleAction', 'anulado',
+            'lifecycleReason', $2::text,
+            'lifecycleAt', NOW()
+          ),
+          updated_at = NOW()
+      WHERE id = $3 AND tenant_id = $4
+      RETURNING id, empleado_id, fecha, tipo_novedad, monto, estado, metadata
+    `, [usuarioId, motivo, id, tenantId]);
+
+    if (result.rows.length === 0) {
+      throw new AppError('La novedad no está disponible para anulación.', {
+        code: 'NOVEDAD_NO_ANULABLE',
+        statusCode: 409,
+      });
+    }
+
+    await recordAudit({
+      tenantId,
+      userId: usuarioId,
+      correlationId: req.correlationId,
+      action: 'novedades.manual.anular',
+      entity: 'novedades_asistencia',
+      entityId: id,
+      previousData: novelty,
+      newData: result.rows[0],
+      ipAddress: req.ip,
+    });
+
+    return res.json({ success: true, novedad: result.rows[0], correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[NOVEDADES] Error anulando novedad', {
+      code: err.code || 'NOVEDAD_ANULAR_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'NOVEDAD_ANULAR_ERROR',
+      message: err.message || 'No pudimos anular la novedad.',
+      details: err.details,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
 async function descargarPlantillaCargaMasiva(_req, res) {
   const example = [
     '0102030405',
@@ -609,6 +684,12 @@ async function ensureNoveltyEditable({ tenantId, noveltyId }) {
   }
 
   const novelty = result.rows[0];
+  if (novelty.estado === 'anulado') {
+    throw new AppError('La novedad anulada no puede modificarse.', {
+      code: 'NOVEDAD_ANULADA_NO_MODIFICABLE',
+      statusCode: 409,
+    });
+  }
   const period = await ensureWritablePayrollPeriodForDate({ tenantId, fecha: novelty.fecha });
   const consumed = await db.query(`
     SELECT 1
@@ -1131,6 +1212,7 @@ module.exports = {
   crear,
   actualizar,
   eliminar,
+  anular,
   cargaMasiva,
   descargarPlantillaCargaMasiva,
   aprobar,
