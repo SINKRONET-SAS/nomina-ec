@@ -3,14 +3,14 @@
   "plan": "HAIKY-NOVEDADES-ANTICIPOS-CARGOS-REPORTES-VERIFICACION-2026",
   "planCode": "NAR26",
   "status": "closed",
-  "phaseCompleted": "NAR26-06",
-  "currentPhase": "NAR26-06",
-  "updatedAt": "2026-07-24T22:12:00.000Z",
+  "phaseCompleted": "NAR26-07",
+  "currentPhase": "NAR26-07",
+  "updatedAt": "2026-07-24T22:25:00.000Z",
   "rulesSource": "RULES.md",
   "contextSource": ".github/CODEX_CONTEXT.md",
   "previousPlan": "HAIKY-DOCUMENTOS-GENERADOS-REGENERABLES-2026",
-  "previousAuditLockHash": "CEF0E2C99F5126F6B2AB60825F0490A5EFB8E1AA62D4434087992EFC4BB6B1DC",
-  "summary": "NAR26 cerrado: novedades, roles de anticipos, carga masiva de cargos, reporte de verificacion y reenvio seguro de email de delegados implementados y validados.",
+  "previousAuditLockHash": "28B1D2AE95644D509BE40F3EE6434FE8A8C8C387C8791EA3E2775631D71B5E16",
+  "summary": "NAR26 cerrado: novedades, roles de anticipos, carga masiva de cargos, reporte de verificacion, reenvio seguro de email y dependencia nativa reproducible implementados y validados.",
   "nextAction": "Ninguna; conservar AuditLock cerrado y continuar desde main en un plan posterior.",
   "fases": [
     { "phase": "NAR26-00", "status": "completed-pass", "detail": "Plan, contexto, prompts y cadena AuditLock desplegados; baseline limpio preservado." },
@@ -19,7 +19,8 @@
     { "phase": "NAR26-03", "status": "completed-pass", "detail": "Carga masiva de cargos o puestos con plantilla y selector de archivo." },
     { "phase": "NAR26-04", "status": "completed-pass", "detail": "Reenvío de verificación de delegados con token fresco, vigencia completa y auditoría." },
     { "phase": "NAR26-05", "status": "completed-pass", "detail": "Integración frontend en rutas existentes y verificación de regresiones." },
-    { "phase": "NAR26-06", "status": "completed-pass", "detail": "QA, cierre de gobierno y preparación de publicación en main." }
+    { "phase": "NAR26-06", "status": "completed-pass", "detail": "QA, cierre de gobierno y preparación de publicación en main." },
+    { "phase": "NAR26-07", "status": "completed-pass", "detail": "Binding nativo de libxmljs2 verificado/reconstruible y CI alineado con Node 22.19.0." }
   ],
   "filesModified": [
     "docs2/PLAN_HAIKY_NOVEDADES_ANTICIPOS_CARGOS_REPORTES_VERIFICACION_2026.md",
@@ -55,7 +56,11 @@
     "frontend-web/src/pages/Configuracion/UsuariosRoles.jsx",
     "frontend-web/src/pages/Nomina/Beneficios.jsx",
     "frontend-web/src/services/advancePayrollApi.js",
-    "frontend-web/src/services/configurationApi.js"
+    "frontend-web/src/services/configurationApi.js",
+    "backend/package.json",
+    "backend/scripts/ensure-native-bindings.js",
+    ".github/workflows/nomina-ec-ci.yml",
+    ".github/prompts/NAR26-07-dependencia-nativa-reproducible.md"
   ],
   "validationChecks": [
     "RULES.md leido y orden NAR26 documentado",
@@ -68,7 +73,9 @@
     "65 suites / 435 tests backend PASS",
     "Parseo JSX estatico PASS",
     "git diff --check PASS",
-    "Build web bloqueado por vite ausente en node_modules; documentado sin ocultar el hallazgo"
+    "Build web bloqueado por vite ausente en node_modules; documentado sin ocultar el hallazgo",
+    "npm workspace backend test -- --runInBand: 65 suites / 435 tests PASS",
+    "Pretest libxmljs2 PASS y reconstrucción automática disponible"
   ],
-  "signature": "28B1D2AE95644D509BE40F3EE6434FE8A8C8C387C8791EA3E2775631D71B5E16"
+  "signature": "E590B9225F4DCD3BC540F9CBE6DB76203329A5F9C306434A8E4B2A8D4B816EE5"
 }

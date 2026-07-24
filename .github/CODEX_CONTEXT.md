@@ -3342,3 +3342,9 @@ La revisión comparativa encontró `GestionStaffScreen`, endpoints de staff, per
 - El reenvío de verificación de delegados invalida tokens anteriores, emite uno nuevo con vigencia completa futura, no expone el código y audita la operación.
 - Validación: 65 suites / 435 tests backend PASS; contratos PASS; Prisma validate PASS; parseo JSX estático PASS; `git diff --check` PASS.
 - El build web no pudo ejecutarse porque la instalación local no contiene el binario `vite` (`vite no se reconoce`); no se modificó el código para ocultar esa limitación del entorno.
+
+### Corrección NAR26-07 — Dependencia nativa reproducible
+
+- CI backend usa Node `22.19.0`, alineado con Render y con el requisito de `libxmljs2`.
+- `backend/scripts/ensure-native-bindings.js` se ejecuta como `pretest`: comprueba `libxmljs2`, ejecuta `npm rebuild libxmljs2 --foreground-scripts` cuando falta el binding y falla con instrucciones claras si no existe el toolchain nativo.
+- Verificación oficial: `npm.cmd --workspace=backend test -- --runInBand` PASS, 65 suites / 435 tests; RDEP ya no queda fuera por binding ausente.

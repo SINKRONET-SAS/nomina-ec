@@ -47,3 +47,9 @@ Corregir los hallazgos operativos reportados en SKNOMINA sin romper las rutas p�
 - El build web queda pendiente de ejecución por una limitación del entorno local: el workspace no tiene disponible el ejecutable `vite` (`vite no se reconoce`). No se altera el código para ocultar esta condición.
 - Se mantiene una sola ruta visible para anticipos y bonificaciones: Anticipos y préstamos; el nombre de la bonificación y el tipo parametrizado se capturan dentro de esa operación.
 - La publicación se realizará en `main` después de registrar el cierre de AuditLock.
+
+## Corrección NAR26-07 — Dependencia nativa reproducible
+
+- Se alinea el CI backend con Node `22.19.0`, compatible con `libxmljs2` y consistente con Render.
+- El backend ejecuta `ensure-native-bindings.js` antes de las pruebas: verifica `libxmljs2`, reconstruye el binding si falta y devuelve un diagnóstico accionable si el toolchain de `node-gyp` no está disponible.
+- Validación: `npm.cmd --workspace=backend test -- --runInBand` PASS con 65 suites / 435 tests; la suite RDEP inicia y valida XML contra el XSD.
