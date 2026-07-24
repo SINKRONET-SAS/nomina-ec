@@ -3236,6 +3236,55 @@ La revisión comparativa encontró `GestionStaffScreen`, endpoints de staff, per
 
 ### Evidencia HCF26
 
+---
+
+## Current Haiky Plan — HAIKY-DOCUMENTOS-GENERADOS-REGENERABLES-2026
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-DOCUMENTOS-GENERADOS-REGENERABLES-2026` |
+| Codigo | `HDG26` |
+| Estado | `HDG26-04 cerrado; eliminacion y regeneracion segura implementadas` |
+| Fecha | `2026-07-23` |
+| Plan doc | `docs2/PLAN_HAIKY_DOCUMENTOS_GENERADOS_REGENERABLES_2026.md` |
+| Prompts | `.github/prompts/HDG26-00` a `.github/prompts/HDG26-04` |
+| AuditLock anterior | `38B18FE06F53F59043207DF1AA42B12C166022640FEA172F59F2C2BEFEBDA874` |
+
+### Alcance HDG26
+
+- Permitir eliminar contratos generados no firmados para corregir formato y regenerar.
+- Permitir eliminar actas de finiquito generadas no firmadas.
+- Permitir eliminar actas de entrega de dotacion no firmadas y no devueltas, incluyendo su registro operativo asociado.
+- Mantener bloqueados documentos firmados, adjuntos manuales, tipos no autorizados y actas devueltas.
+- Exponer la accion en las tres pantallas de documentos, con confirmacion, mensajes y refresco de listado.
+
+### Decisiones HDG26
+
+- La eliminacion se limita a `contrato`, `acta_finiquito` y `acta_entrega_dotacion` con `firmado = false`.
+- La clave de almacenamiento debe ser trazable antes de tocar el registro; la operacion conserva tenant y auditoria.
+- Un acta de dotacion devuelta no se elimina porque forma parte del expediente operativo; una acta no devuelta se elimina junto con su fila para permitir regeneracion limpia.
+- La ruta nueva es adicional y no cambia payloads existentes de generacion, descarga ni documentos firmados.
+- Los cambios locales previos de carga masiva de anticipos se preservan y se validan en el cierre.
+
+### Fases HDG26
+
+| Fase | Objetivo | Estado |
+|---|---|---|
+| HDG26-00 | Gobierno, baseline y cadena AuditLock | completed-pass |
+| HDG26-01 | Diagnostico documental | completed-pass |
+| HDG26-02 | Eliminacion segura backend | completed-pass |
+| HDG26-03 | Exposicion frontend y regeneracion | completed-pass |
+| HDG26-04 | QA, cierre, commit y push | completed-pass |
+
+### Evidencia HDG26
+
+- Backend: `DELETE /api/documentos/:id` protegido por rol, usuario fresco y modulo `documentos`; elimina solo documentos generados no firmados con `storageKey` trazable y conserva auditoria por tenant.
+- Actas de dotacion: un acta devuelta permanece protegida; un acta no devuelta elimina de forma atomica su documento y registro operativo asociado.
+- Frontend: Contratos, Actas de Finiquito y Entrega de Dotacion exponen eliminacion confirmada para documentos no firmados y refrescan sus listados.
+- Regresion preservada: la carga masiva de anticipos muestra el monto cargado en resultados y tabla de novedades.
+- QA: suite backend `64 suites / 429 tests PASS`; servicio HDG26 `5 tests PASS`; rutas y novedades `46 tests PASS`; Prisma validate PASS; contratos del sistema PASS; build frontend PASS con `1537 modules transformed`; `git diff --check` PASS.
+- UTF-8: artefactos HDG26 verificados sin BOM y sin secuencias de mojibake nuevas. `C:\proyectos web\sinkroniq-mobile` no fue modificado.
+
 - PDFs: 120pt para logo y estilos base de 10pt en documentos principales; suites PDF verdes.
 - Identidad: `validarCedula('0966930315') === true`, normalización en alta y filtro de dígitos en formulario.
 - Usuarios: `GET /api/usuarios`, `PATCH /api/usuarios/:id/estado`, alta delegada compatible con `/api/auth/register` y permisos por módulo existentes.

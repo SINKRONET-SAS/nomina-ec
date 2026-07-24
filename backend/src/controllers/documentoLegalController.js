@@ -14,6 +14,7 @@ const {
   deleteOrphanLegalDocument,
   listOrphanLegalDocuments,
 } = require('../services/orphanLegalDocumentService');
+const { deleteGeneratedLegalDocument } = require('../services/generatedLegalDocumentDeletionService');
 const { assertPdf, decodeBase64, policyDetails } = require('../services/documentUploadPolicy');
 const {
   isLocalStorageEnabled,
@@ -268,6 +269,32 @@ async function eliminarHuerfano(req, res) {
   }
 }
 
+async function eliminarGenerado(req, res) {
+  try {
+    const result = await deleteGeneratedLegalDocument({
+      tenantId: req.tenantId,
+      documentId: req.params.id,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || req.usuario?.id || null,
+      ipAddress: req.ip,
+    });
+    return res.json({ success: true, ...result, correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[DOCUMENTOS] Error eliminando documento generado', {
+      code: err.code || 'DOCUMENTO_GENERADO_DELETE_FAILED',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'DOCUMENTO_GENERADO_DELETE_FAILED',
+      message: err.message,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
 async function configurarPlantillasContrato(req, res) {
   try {
     const templates = await listTenantContractTemplates(req.tenantId, { includeInactive: true });
@@ -509,6 +536,7 @@ module.exports = {
   generarActaEntregaDotacion,
   listarHuerfanos,
   eliminarHuerfano,
+  eliminarGenerado,
   listar,
   descargar,
   adjuntarDocumento

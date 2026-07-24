@@ -277,6 +277,7 @@ app.post('/api/documentos/adjuntar', requireRole('owner', 'admin_rrhh'), require
 app.get('/api/documentos/huerfanos', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.listarHuerfanos);
 app.delete('/api/documentos/huerfanos/:id', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.eliminarHuerfano);
 app.get('/api/documentos', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.listar);
+app.delete('/api/documentos/:id', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('documentos'), documentoLegalController.eliminarGenerado);
 app.get('/api/documentos/:id/download', requireRole('owner', 'admin_rrhh'), requireModule('documentos'), documentoLegalController.descargar);
 
 const reporteController = require('./controllers/reporteController');

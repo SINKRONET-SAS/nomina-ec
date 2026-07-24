@@ -126,6 +126,22 @@ function ContratosGenerados() {
     },
   });
 
+  const deleteGeneratedMutation = useMutation({
+    mutationFn: async (documentId) => {
+      const response = await authenticatedApi.delete(`/documentos/${documentId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contratos'] });
+      setMessage('Contrato generado eliminado. Puedes volver a generarlo con la versión correcta.');
+      setError('');
+    },
+    onError: (err) => {
+      setError(getErrorMessage(err, 'No pudimos eliminar el contrato generado.'));
+      setMessage('');
+    },
+  });
+
   const descargar = async (id) => {
     setDescargandoId(id);
     setMessage('');
@@ -150,6 +166,15 @@ function ContratosGenerados() {
     }
     if (!window.confirm(`¿Eliminar ${documento.fileName || 'este documento'}? Solo se muestran documentos sin empleado vinculado.`)) return;
     deleteOrphanMutation.mutate(documento.id);
+  };
+
+  const eliminarGenerado = (documento) => {
+    if (documento.firmado) {
+      setError('Los contratos firmados o adjuntos no se pueden eliminar desde esta pantalla.');
+      return;
+    }
+    if (!window.confirm('¿Eliminar este contrato generado? Podrás volver a generarlo con la plantilla correcta.')) return;
+    deleteGeneratedMutation.mutate(documento.id);
   };
 
   return (
@@ -346,15 +371,28 @@ function ContratosGenerados() {
                     </td>
                     <td className="px-6 py-4 text-sm">{formatDateEC(doc.created_at)}</td>
                     <td className="px-6 py-4">
-                      <button
-                        type="button"
-                        onClick={() => descargar(doc.id)}
-                        disabled={descargandoId === doc.id}
-                        title={doc.firmado ? 'Descargar contrato firmado' : 'Descargar contrato generado'}
-                        className="rounded bg-blue-100 p-1 text-blue-600 hover:bg-blue-200 disabled:opacity-50"
-                      >
-                        <Download size={16} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => descargar(doc.id)}
+                          disabled={descargandoId === doc.id}
+                          title={doc.firmado ? 'Descargar contrato firmado' : 'Descargar contrato generado'}
+                          className="rounded bg-blue-100 p-1 text-blue-600 hover:bg-blue-200 disabled:opacity-50"
+                        >
+                          <Download size={16} />
+                        </button>
+                        {!doc.firmado && (
+                          <button
+                            type="button"
+                            onClick={() => eliminarGenerado(doc)}
+                            disabled={deleteGeneratedMutation.isPending}
+                            title="Eliminar contrato generado para regenerar"
+                            className="rounded bg-red-100 p-1 text-red-600 hover:bg-red-200 disabled:opacity-50"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

@@ -102,6 +102,22 @@ function ActasEntregaDotacion() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (documentId) => {
+      const response = await authenticatedApi.delete(`/documentos/${documentId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['actas-entrega-dotacion'] });
+      setMessage('Acta de entrega eliminada. Puedes volver a generarla con el formato correcto.');
+      setError('');
+    },
+    onError: (err) => {
+      setError(extractApiError(err, 'No pudimos eliminar el acta de entrega.'));
+      setMessage('');
+    },
+  });
+
   const updateField = (name, value) => {
     setForm((current) => ({ ...current, [name]: value }));
   };
@@ -144,6 +160,15 @@ function ActasEntregaDotacion() {
     } finally {
       setDescargandoId('');
     }
+  };
+
+  const eliminarGenerado = (documento) => {
+    if (documento.firmado) {
+      setError('Las actas firmadas no se pueden eliminar desde esta pantalla.');
+      return;
+    }
+    if (!window.confirm('¿Eliminar esta acta de entrega generada? Podrás volver a generarla con el formato correcto.')) return;
+    deleteMutation.mutate(documento.id);
   };
 
   const submit = (event) => {
@@ -380,15 +405,28 @@ function ActasEntregaDotacion() {
                     </span>
                   </td>
                   <td className="px-5 py-4">
-                    <button
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50"
-                      disabled={descargandoId === doc.id}
-                      onClick={() => descargar(doc.id)}
-                      title="Descargar acta"
-                      type="button"
-                    >
-                      <Download className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50"
+                        disabled={descargandoId === doc.id}
+                        onClick={() => descargar(doc.id)}
+                        title="Descargar acta"
+                        type="button"
+                      >
+                        <Download className="h-4 w-4" />
+                      </button>
+                      {!doc.firmado && (
+                        <button
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50"
+                          disabled={deleteMutation.isPending}
+                          onClick={() => eliminarGenerado(doc)}
+                          title="Eliminar acta generada para regenerar"
+                          type="button"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

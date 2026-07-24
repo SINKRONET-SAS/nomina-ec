@@ -6,6 +6,7 @@ import { Calculator, CalendarCheck2, Check, Download, Pencil, Plus, Trash2, Unlo
 import { extractApiError } from '../../services/publicApi';
 import { formatDateEC, todayISOEC } from '../../utils/dateFormat';
 import { downloadBlob } from '../../utils/downloadBlob';
+import { money } from '../../utils/money';
 import EmployeeSearchSelect from '../../components/UI/EmployeeSearchSelect';
 import {
   buildNoveltyTypeOptions,
@@ -970,6 +971,7 @@ function NovedadesPendientes() {
                 <tr>
                   <th className="px-3 py-2">Fila</th>
                   <th className="px-3 py-2">Estado</th>
+                  <th className="px-3 py-2">Monto</th>
                   <th className="px-3 py-2">Detalle</th>
                 </tr>
               </thead>
@@ -978,6 +980,9 @@ function NovedadesPendientes() {
                   <tr key={row.rowNumber}>
                     <td className="px-3 py-2">{row.rowNumber}</td>
                     <td className="px-3 py-2">{row.status}</td>
+                    <td className="px-3 py-2 font-medium">
+                      {row.novedad ? money(row.novedad.monto) : '—'}
+                    </td>
                     <td className="px-3 py-2">{row.message || row.novedad?.id || ''}</td>
                   </tr>
                 ))}
@@ -996,15 +1001,16 @@ function NovedadesPendientes() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo de novedad</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Horas</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {isLoading ? (
-                <tr><td colSpan="6" className="px-6 py-4 text-center">Cargando...</td></tr>
+                <tr><td colSpan="7" className="px-6 py-4 text-center">Cargando...</td></tr>
               ) : !novedades || novedades.length === 0 ? (
-                <tr><td colSpan="6" className="px-6 py-4 text-center">No hay novedades editables antes de rol</td></tr>
+                <tr><td colSpan="7" className="px-6 py-4 text-center">No hay novedades editables antes de rol</td></tr>
               ) : (
                 novedades.map(nov => (
                   <tr key={nov.id} className="hover:bg-gray-50">
@@ -1022,6 +1028,7 @@ function NovedadesPendientes() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">{minutesToHours(nov.minutos)} h</td>
+                    <td className="px-6 py-4 text-sm font-semibold">{money(nov.monto)}</td>
                     <td className="px-6 py-4 text-sm">
                       <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
                         {nov.estado || 'pendiente'}

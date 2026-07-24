@@ -190,7 +190,7 @@ describe('novedadController listarPendientes operativas', () => {
         fecha: '2026-06-15',
         tipo_novedad: 'hora_extra_50',
         minutos: 60,
-        monto: '0',
+        monto: '200.00',
         estado: 'aprobado',
         nombres: 'Ana',
         apellidos: 'Perez',
@@ -215,6 +215,7 @@ describe('novedadController listarPendientes operativas', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.novedades[0]).toMatchObject({
       id: 'nov-1',
+      monto: '200.00',
       editable: false,
       requiresEmployeePayrollInvalidation: true,
     });
