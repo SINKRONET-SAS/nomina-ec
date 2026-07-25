@@ -40,6 +40,10 @@ export default defineConfig(({ mode }) => {
         workbox: pwaWorkbox,
       }),
     ],
+    resolve: {
+      // El monorepo contiene la app móvil; impedir dos instancias de React en el bundle web.
+      dedupe: ['react', 'react-dom', 'react-router'],
+    },
     server: {
       proxy: {
         '/api': buildApiProxy(proxyTarget),

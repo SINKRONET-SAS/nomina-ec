@@ -180,11 +180,11 @@ services:
     domains:
       - sknomina.com
     rootDir: frontend-web
-    buildCommand: npm ci --include=optional && npm install @rollup/rollup-linux-x64-gnu@4.61.1 --no-save --no-audit --no-fund && npm run build
+    buildCommand: npm ci --workspaces=false --include=optional && npm install --workspaces=false @rollup/rollup-linux-x64-gnu@4.61.1 --no-save --no-audit --no-fund && npm run build
     staticPublishPath: ./dist
     envVars:
       - key: NODE_VERSION
-        value: "22.19.0"
+        value: "22.22.0"
       - key: VITE_API_URL
         value: https://api.sknomina.com/api
     routes:
