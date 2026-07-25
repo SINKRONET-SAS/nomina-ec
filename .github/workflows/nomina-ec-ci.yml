@@ -41,7 +41,28 @@ jobs:
           node-version: 22.19.0
           cache: npm
           cache-dependency-path: backend/package-lock.json
-      - run: npm ci --prefix backend
+      - name: Install backend dependencies (resilient)
+        env:
+          npm_config_fetch_retries: "5"
+          npm_config_fetch_retry_factor: "2"
+          npm_config_fetch_retry_mintimeout: "1000"
+          npm_config_fetch_retry_maxtimeout: "30000"
+          npm_config_prefer_online: "true"
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if npm ci --prefix backend; then
+              echo "npm ci backend succeeded on attempt ${attempt}"
+              exit 0
+            fi
+            if [ "${attempt}" -eq 3 ]; then
+              echo "npm ci backend failed after ${attempt} attempts"
+              exit 1
+            fi
+            echo "npm ci backend failed on attempt ${attempt}; clearing npm cache before retry"
+            npm cache clean --force
+            sleep $((attempt * 2))
+          done
       - run: npm --prefix backend run prisma:validate
       - run: npm --prefix backend run db:migrate
       - run: npm --prefix backend test -- --runInBand
@@ -55,5 +76,26 @@ jobs:
           node-version: 22.19.0
           cache: npm
           cache-dependency-path: frontend-web/package-lock.json
-      - run: npm ci --prefix frontend-web
+      - name: Install frontend dependencies (resilient)
+        env:
+          npm_config_fetch_retries: "5"
+          npm_config_fetch_retry_factor: "2"
+          npm_config_fetch_retry_mintimeout: "1000"
+          npm_config_fetch_retry_maxtimeout: "30000"
+          npm_config_prefer_online: "true"
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if npm ci --prefix frontend-web; then
+              echo "npm ci frontend succeeded on attempt ${attempt}"
+              exit 0
+            fi
+            if [ "${attempt}" -eq 3 ]; then
+              echo "npm ci frontend failed after ${attempt} attempts"
+              exit 1
+            fi
+            echo "npm ci frontend failed on attempt ${attempt}; clearing npm cache before retry"
+            npm cache clean --force
+            sleep $((attempt * 2))
+          done
       - run: npm --prefix frontend-web run build
