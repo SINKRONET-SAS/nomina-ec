@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, FileUp, ShieldCheck, Trash2 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router';
 import { ArrowLeft, Download, FileText, Upload } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { formatDateEC } from '../../utils/dateFormat';

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 const CONSENT_KEY = 'sknomina_cookie_consent_v2026_06';
 

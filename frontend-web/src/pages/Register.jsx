@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, UserRound } from 'lucide-react';
 import PlanFunctionalityList from '../components/PlanFunctionalityList';
 import { formatPublicPlanPrice, getPlanPriceBreakdown, normalizePublicPlans } from '../config/publicPlanPresentation';

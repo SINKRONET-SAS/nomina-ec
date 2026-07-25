@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router';
 import { CheckCircle2, Clock3 } from 'lucide-react';
 import BrandLogo from '../components/Brand/BrandLogo';
 

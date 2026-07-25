@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Download, FileText, Search, Settings2, Trash2 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import CompactNotice from '../../components/UI/CompactNotice';

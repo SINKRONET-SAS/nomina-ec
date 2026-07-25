@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ArrowRight, Banknote } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import PlanFunctionalityList from './PlanFunctionalityList';

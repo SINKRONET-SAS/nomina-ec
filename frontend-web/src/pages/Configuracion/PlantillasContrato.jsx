@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { ArrowDown, ArrowUp, FileText, Save, Settings2 } from 'lucide-react';
 import CompactNotice from '../../components/UI/CompactNotice';
 import { authenticatedApi } from '../../services/authenticatedApi';

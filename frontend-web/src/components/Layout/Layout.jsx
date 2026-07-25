@@ -3,7 +3,7 @@
 // ============================================================
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../../context/AuthContext';
 import { LayoutDashboard, Users, Clock, DollarSign, FileText, CreditCard, Mail, Settings2, LogOut, Menu, ShieldCheck, X, Home, Route, HelpCircle } from 'lucide-react';
 import BrandLogo from '../Brand/BrandLogo';

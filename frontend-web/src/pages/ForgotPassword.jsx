@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { ArrowRight, Eye, EyeOff, KeyRound, Mail } from 'lucide-react';
 import { extractApiError, forgotPassword, resetPassword } from '../services/publicApi';
 import BrandLogo from '../components/Brand/BrandLogo';

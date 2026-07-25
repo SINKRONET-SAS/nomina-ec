@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { Ban, Calculator, CalendarCheck2, Check, Download, Pencil, Plus, Trash2, Unlock, Upload, X } from 'lucide-react';
 import { extractApiError } from '../../services/publicApi';

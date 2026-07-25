@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.19.0
+          node-version: 22.22.0
       - name: Install backend dependencies (resilient)
         env:
           npm_config_fetch_retries: "5"
@@ -72,7 +72,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.19.0
+          node-version: 22.22.0
       - name: Install frontend dependencies (resilient)
         env:
           npm_config_fetch_retries: "5"

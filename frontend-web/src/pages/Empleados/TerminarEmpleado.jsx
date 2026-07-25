@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { AlertTriangle, ArrowLeft } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { todayISOEC } from '../../utils/dateFormat';
