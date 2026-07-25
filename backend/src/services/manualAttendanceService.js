@@ -263,6 +263,8 @@ async function registerManualAttendance({
   let employees;
   let plannedRows;
   let inserted;
+  let insertedMarkRows = [];
+  let insertedNoveltyRows = [];
 
   try {
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`manual-attendance:${tenantId}`]);
@@ -348,8 +350,8 @@ async function registerManualAttendance({
                'fin_jornada'::"AttendanceMarkType",
                end_time
         FROM planned
-      )
-      INSERT INTO marcaciones (
+      ), inserted_marks AS (
+        INSERT INTO marcaciones (
         empleado_id, tenant_id, period_id, operational_date, tipo_marcacion,
         timestamp, dentro_perimetro, distancia_metros, ip_address, source,
         audit_correlation_id, metadata
@@ -376,8 +378,41 @@ async function registerManualAttendance({
           AND COALESCE(existing.operational_date, DATE(existing.timestamp AT TIME ZONE 'America/Guayaquil')) = mark.operational_date
           AND existing.tipo_marcacion = mark.tipo_marcacion
       )
-      RETURNING id, empleado_id, operational_date, tipo_marcacion, timestamp
-    `, [tenantId, JSON.stringify(plannedRows), ipAddress || null, correlationId || null, metadata]);
+        RETURNING id, empleado_id, operational_date, tipo_marcacion, timestamp
+      ), inserted_novelties AS (
+        INSERT INTO novedades_asistencia (
+          empleado_id, tenant_id, period_id, periodo_nomina, fecha,
+          tipo_novedad, minutos, monto, justificacion, estado, metadata
+        )
+        SELECT
+          plan.empleado_id,
+          $1,
+          plan.period_id,
+          TO_CHAR(plan.operational_date, 'YYYY-MM'),
+          plan.operational_date,
+          'dia_laborado',
+          0,
+          0,
+          CONCAT('Dia laborable calculado desde asistencia manual: ', plan.operational_date),
+          'aprobado',
+          $5::jsonb || jsonb_build_object(
+            'source', 'attendance_workday_calculation',
+            'sourceOperation', 'manual_rrhh',
+            'registeredBy', $6::text,
+            'correlationId', $4::text
+          )
+        FROM planned plan
+        ON CONFLICT (empleado_id, fecha, tipo_novedad) DO NOTHING
+        RETURNING id, empleado_id, fecha AS operational_date
+      )
+      SELECT 'mark' AS result_type, id, empleado_id, operational_date, tipo_marcacion::text, timestamp
+      FROM inserted_marks
+      UNION ALL
+      SELECT 'novelty' AS result_type, id, empleado_id, operational_date, NULL::text, NULL::timestamptz
+      FROM inserted_novelties
+    `, [tenantId, JSON.stringify(plannedRows), ipAddress || null, correlationId || null, metadata, userId || null]);
+    insertedMarkRows = inserted.rows.filter((row) => row.result_type !== 'novelty');
+    insertedNoveltyRows = inserted.rows.filter((row) => row.result_type === 'novelty');
     const expectedMarks = plannedRows.length * 2;
     await recordAudit({
       tenantId,
@@ -385,7 +420,7 @@ async function registerManualAttendance({
       correlationId,
       action: 'asistencia.manual.registrar',
       entity: 'marcaciones',
-      entityId: inserted.rows[0]?.id || null,
+        entityId: insertedMarkRows[0]?.id || null,
       newData: {
         scope: input.scope,
         desde: input.dateFrom,
@@ -394,8 +429,9 @@ async function registerManualAttendance({
         diasRango: dates.length,
         jornadasPlanificadas: plannedRows.length,
         marcacionesEsperadas: expectedMarks,
-        marcacionesCreadas: inserted.rows.length,
-        marcacionesExistentes: expectedMarks - inserted.rows.length,
+        marcacionesCreadas: insertedMarkRows.length,
+        marcacionesExistentes: expectedMarks - insertedMarkRows.length,
+        novedadesDiasLaborablesCreadas: insertedNoveltyRows.length,
         justificacion: input.reason,
       },
       ipAddress,
@@ -416,8 +452,9 @@ async function registerManualAttendance({
     diasRango: dates.length,
     jornadasPlanificadas: plannedRows.length,
     marcacionesEsperadas: expectedMarks,
-    marcacionesCreadas: inserted.rows.length,
-    marcacionesExistentes: expectedMarks - inserted.rows.length,
+    marcacionesCreadas: insertedMarkRows.length,
+    marcacionesExistentes: expectedMarks - insertedMarkRows.length,
+    novedadesDiasLaborablesCreadas: insertedNoveltyRows.length,
   };
 
   return result;
@@ -577,8 +614,8 @@ async function registerManualAttendanceBulk({
                'fin_jornada'::"AttendanceMarkType",
                end_time, row_number, reason
         FROM planned
-      )
-      INSERT INTO marcaciones (
+      ), inserted_marks AS (
+        INSERT INTO marcaciones (
         empleado_id, tenant_id, period_id, operational_date, tipo_marcacion,
         timestamp, dentro_perimetro, distancia_metros, ip_address, source,
         audit_correlation_id, metadata
@@ -610,10 +647,44 @@ async function registerManualAttendanceBulk({
           AND COALESCE(existing.operational_date, DATE(existing.timestamp AT TIME ZONE 'America/Guayaquil')) = mark.operational_date
           AND existing.tipo_marcacion = mark.tipo_marcacion
       )
-      RETURNING id, empleado_id, operational_date, tipo_marcacion, metadata
+        RETURNING id, empleado_id, operational_date, tipo_marcacion, metadata
+      ), inserted_novelties AS (
+        INSERT INTO novedades_asistencia (
+          empleado_id, tenant_id, period_id, periodo_nomina, fecha,
+          tipo_novedad, minutos, monto, justificacion, estado, metadata
+        )
+        SELECT
+          plan.empleado_id,
+          $1,
+          plan.period_id,
+          TO_CHAR(plan.operational_date, 'YYYY-MM'),
+          plan.operational_date,
+          'dia_laborado',
+          0,
+          0,
+          CONCAT('Dia laborable calculado desde carga masiva de asistencia: ', plan.operational_date),
+          'aprobado',
+          jsonb_build_object(
+            'source', 'attendance_workday_calculation',
+            'sourceOperation', 'manual_rrhh_bulk',
+            'rowNumber', plan.row_number,
+            'reason', plan.reason,
+            'registeredBy', $5::text
+          )
+        FROM planned plan
+        ON CONFLICT (empleado_id, fecha, tipo_novedad) DO NOTHING
+        RETURNING id, empleado_id, fecha AS operational_date
+      )
+      SELECT 'mark' AS result_type, id, empleado_id, operational_date, tipo_marcacion::text, metadata
+      FROM inserted_marks
+      UNION ALL
+      SELECT 'novelty' AS result_type, id, empleado_id, operational_date, NULL::text, '{}'::jsonb
+      FROM inserted_novelties
     `, [tenantId, JSON.stringify(plannedRows), ipAddress || null, correlationId || null, userId || null]);
+    const insertedMarkRows = inserted.rows.filter((row) => row.result_type !== 'novelty');
+    const insertedNoveltyRows = inserted.rows.filter((row) => row.result_type === 'novelty');
     const createdByRow = new Map();
-    for (const mark of inserted.rows) {
+    for (const mark of insertedMarkRows) {
       const rowNumber = Number(mark.metadata?.rowNumber || 0);
       createdByRow.set(rowNumber, (createdByRow.get(rowNumber) || 0) + 1);
     }
@@ -637,13 +708,14 @@ async function registerManualAttendanceBulk({
       correlationId,
       action: 'asistencia.manual.carga_masiva',
       entity: 'marcaciones',
-      entityId: inserted.rows[0]?.id || null,
+      entityId: insertedMarkRows[0]?.id || null,
       newData: {
         totalFilas: normalizedRows.length,
         jornadasPlanificadas: plannedRows.length,
         marcacionesEsperadas: expectedMarks,
-        marcacionesCreadas: inserted.rows.length,
-        marcacionesExistentes: expectedMarks - inserted.rows.length,
+        marcacionesCreadas: insertedMarkRows.length,
+        marcacionesExistentes: expectedMarks - insertedMarkRows.length,
+        novedadesDiasLaborablesCreadas: insertedNoveltyRows.length,
       },
       ipAddress,
       dbClient: client,
@@ -654,8 +726,9 @@ async function registerManualAttendanceBulk({
       totalFilas: normalizedRows.length,
       jornadasPlanificadas: plannedRows.length,
       marcacionesEsperadas: expectedMarks,
-      marcacionesCreadas: inserted.rows.length,
-      marcacionesExistentes: expectedMarks - inserted.rows.length,
+      marcacionesCreadas: insertedMarkRows.length,
+      marcacionesExistentes: expectedMarks - insertedMarkRows.length,
+      novedadesDiasLaborablesCreadas: insertedNoveltyRows.length,
       results,
     };
   } catch (err) {

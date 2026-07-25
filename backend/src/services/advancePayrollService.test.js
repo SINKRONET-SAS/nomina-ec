@@ -10,7 +10,7 @@ jest.mock('./payrollNoveltyService', () => ({ ensureNoveltyTypeAllowed: jest.fn(
 const db = require('../config/database');
 const { recordAudit } = require('./auditService');
 const { ensureNoveltyTypeAllowed } = require('./payrollNoveltyService');
-const { createRun, decideLine, closeRun } = require('./advancePayrollService');
+const { ADVANCE_BULK_TEMPLATE_COLUMNS, createRun, decideLine, closeRun, parseBulkCsv, templateCsv } = require('./advancePayrollService');
 
 const user = { id: 'user-1' };
 const context = { correlationId: 'corr-advance', ipAddress: '127.0.0.1' };
@@ -33,6 +33,13 @@ describe('advancePayrollService', () => {
     db.rollback.mockClear();
     recordAudit.mockClear();
     ensureNoveltyTypeAllowed.mockClear();
+  });
+
+  test('expone una plantilla CSV por cedula y rechaza encabezados alternos', () => {
+    const csv = templateCsv();
+    expect(csv.split(/\r?\n/)[0]).toBe(ADVANCE_BULK_TEMPLATE_COLUMNS.join(','));
+    expect(parseBulkCsv(csv)).toEqual([expect.objectContaining({ cedula: '0102030405', monto: '100.00', tipoNovedad: 'bono_desempeno' })]);
+    expect(() => parseBulkCsv('empleadoId,monto,tipoNovedad,nombreBonificacion\nabc,100,bono_desempeno,Bono')).toThrow('encabezado');
   });
 
   test('crea un rol en la ruta única de anticipos y conserva nombre/tipo de bonificación', async () => {

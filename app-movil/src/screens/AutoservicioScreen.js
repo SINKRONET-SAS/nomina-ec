@@ -93,6 +93,7 @@ export default function AutoservicioScreen() {
         {[
           ['roles', 'Mis roles'],
           ['novedades', 'Novedades'],
+          ['permisos', 'Permisos'],
           ['perfil', 'Mi perfil'],
         ].map(([id, label]) => (
           <TouchableOpacity
@@ -175,6 +176,55 @@ export default function AutoservicioScreen() {
         </View>
       )}
 
+      {!loading && activeTab === 'permisos' && (
+        <View style={styles.card}>
+          <Text style={styles.label}>Permisos concedidos</Text>
+          {(history.permisos || []).length === 0 ? (
+            <Text style={styles.detail}>No tienes permisos registrados.</Text>
+          ) : (
+            (history.permisos || []).slice(0, 20).map((permiso) => {
+              const support = permiso.metadata?.soporteMedico || permiso.metadata?.support;
+              const supportUrl = permiso.soporte_url || support?.url;
+              const startDate = permiso.fecha_inicio || permiso.fecha;
+              const endDate = permiso.fecha_fin || permiso.fecha;
+              return (
+                <View key={permiso.id} style={styles.historyItem}>
+                  <Text style={styles.historyTitle}>{String(permiso.tipo_novedad || permiso.tipo || permiso.tipo_permiso || 'Permiso').replace(/_/g, ' ')}</Text>
+                  <Text style={styles.detail}>{String(startDate || '').slice(0, 10)} - {String(endDate || '').slice(0, 10)} · {permiso.estado}</Text>
+                  {permiso.justificacion ? <Text style={styles.detail}>{permiso.justificacion}</Text> : null}
+                  {supportUrl ? (
+                    <TouchableOpacity onPress={() => Linking.openURL(supportUrl)}>
+                      <Text style={styles.link}>Ver soporte adjunto</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              );
+            })
+          )}
+
+          <Text style={[styles.label, styles.sectionLabel]}>Documentos</Text>
+          {(history.documentos || []).length === 0 ? (
+            <Text style={styles.detail}>No tienes documentos disponibles.</Text>
+          ) : (
+            (history.documentos || []).slice(0, 20).map((doc) => {
+              const documentUrl = doc.documento_url || doc.url || doc.metadata?.url || doc.metadata?.documento_url;
+              return (
+                <TouchableOpacity
+                  key={doc.id}
+                  disabled={!documentUrl}
+                  style={styles.historyItem}
+                  onPress={() => Linking.openURL(documentUrl)}
+                >
+                  <Text style={styles.historyTitle}>{doc.tipo_documento || doc.nombre || doc.tipo || 'Documento'}</Text>
+                  <Text style={styles.detail}>{String(doc.created_at || doc.fecha || '').slice(0, 10)}{doc.firmado ? ' · Firmado' : ''}</Text>
+                  {documentUrl ? <Text style={styles.link}>Descargar documento</Text> : <Text style={styles.detail}>Documento sin enlace disponible</Text>}
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </View>
+      )}
+
       {!loading && activeTab === 'perfil' && (
         <View style={styles.card}>
           <Text style={styles.label}>Empleado</Text>
@@ -253,6 +303,11 @@ const styles = StyleSheet.create({
     color: '#64748b',
     marginTop: 10,
   },
+  link: {
+    color: '#0369a1',
+    fontWeight: '800',
+    marginTop: 6,
+  },
   money: {
     color: '#0f766e',
     fontSize: 30,
@@ -292,6 +347,9 @@ const styles = StyleSheet.create({
   },
   periodButtonTextDisabled: {
     color: '#94a3b8',
+  },
+  sectionLabel: {
+    marginTop: 18,
   },
   periodRow: {
     alignItems: 'center',

@@ -92,7 +92,10 @@ function ReporteAsistencia() {
               <tr>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase text-slate-500">Empleado</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase text-slate-500">Control</th>
+                <th className="px-5 py-3 text-right text-xs font-medium uppercase text-slate-500">Días laborables</th>
+                <th className="px-5 py-3 text-right text-xs font-medium uppercase text-slate-500">Días con novedad</th>
                 <th className="px-5 py-3 text-right text-xs font-medium uppercase text-slate-500">Días con marcación</th>
+                <th className="px-5 py-3 text-right text-xs font-medium uppercase text-slate-500">Sin marcación</th>
                 <th className="px-5 py-3 text-right text-xs font-medium uppercase text-slate-500">Faltas aprobadas</th>
                 <th className="px-5 py-3 text-right text-xs font-medium uppercase text-slate-500">Atrasos (min)</th>
                 <th className="px-5 py-3 text-right text-xs font-medium uppercase text-slate-500">Extras 50% (h)</th>
@@ -102,9 +105,9 @@ function ReporteAsistencia() {
             </thead>
             <tbody className="divide-y divide-slate-200">
               {reporteQuery.isLoading ? (
-                <tr><td className="px-5 py-6 text-center text-sm text-slate-600" colSpan="8">Cargando reporte...</td></tr>
+                <tr><td className="px-5 py-6 text-center text-sm text-slate-600" colSpan="11">Cargando reporte...</td></tr>
               ) : reporte.length === 0 ? (
-                <tr><td className="px-5 py-6 text-center text-sm text-slate-600" colSpan="8">No hay empleados vinculados a este período.</td></tr>
+                <tr><td className="px-5 py-6 text-center text-sm text-slate-600" colSpan="11">No hay empleados vinculados a este período.</td></tr>
               ) : (
                 reporte.map((row) => (
                   <tr className="hover:bg-slate-50" key={row.empleado_id}>
@@ -114,7 +117,10 @@ function ReporteAsistencia() {
                         {row.controla_asistencia ? 'Activo' : 'No aplica'}
                       </span>
                     </td>
+                    <td className="px-5 py-3 text-right text-sm">{row.controla_asistencia ? (row.dias_laborables_calculados || 0) : '-'}</td>
+                    <td className="px-5 py-3 text-right text-sm">{row.controla_asistencia ? (row.dias_novedad_laboral || 0) : '-'}</td>
                     <td className="px-5 py-3 text-right text-sm">{row.controla_asistencia ? (row.dias_con_marcacion || 0) : '-'}</td>
+                    <td className="px-5 py-3 text-right text-sm">{row.controla_asistencia ? (row.dias_sin_marcacion || 0) : '-'}</td>
                     <td className="px-5 py-3 text-right text-sm">{row.faltas_aprobadas || 0}</td>
                     <td className="px-5 py-3 text-right text-sm">{row.minutos_tardia || 0}</td>
                     <td className="px-5 py-3 text-right text-sm">{formatHours(row.horas_extra_50)}</td>

@@ -6,6 +6,56 @@ const { ensureNoveltyTypeAllowed } = require('./payrollNoveltyService');
 
 const WRITABLE_PERIODS = new Set(['open', 'novelties_loaded', 'reopened', 'calculation_failed']);
 const VALID_DECISIONS = new Set(['descontar', 'bonificar']);
+const ADVANCE_BULK_TEMPLATE_COLUMNS = ['cedula', 'monto', 'tipoNovedad', 'nombreBonificacion'];
+const CEDULA_PATTERN = /^\d{10,13}$/;
+
+function csvCell(value) {
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
+}
+
+function templateCsv() {
+  return [
+    ADVANCE_BULK_TEMPLATE_COLUMNS.join(','),
+    ['0102030405', '100.00', 'bono_desempeno', 'Bono por cumplimiento'].map(csvCell).join(','),
+  ].join('\r\n');
+}
+
+function parseCsvLine(line) {
+  const cells = [];
+  let current = '';
+  let quoted = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    if (char === '"' && line[index + 1] === '"' && quoted) {
+      current += '"';
+      index += 1;
+    } else if (char === '"') {
+      quoted = !quoted;
+    } else if (char === ',' && !quoted) {
+      cells.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  cells.push(current.trim());
+  return cells;
+}
+
+function parseBulkCsv(csv) {
+  const lines = String(csv || '').replace(/^\uFEFF/, '').split(/\r?\n/).filter((line) => line.trim());
+  if (lines.length < 2) {
+    throw new AppError('La plantilla del rol de anticipos debe incluir encabezado y al menos una fila.', { code: 'ROL_ANTICIPOS_CARGA_SIN_FILAS', statusCode: 400 });
+  }
+  const headers = parseCsvLine(lines[0]);
+  if (headers.length !== ADVANCE_BULK_TEMPLATE_COLUMNS.length || headers.some((value, index) => value !== ADVANCE_BULK_TEMPLATE_COLUMNS[index])) {
+    throw new AppError(`El encabezado no coincide con la plantilla oficial: ${ADVANCE_BULK_TEMPLATE_COLUMNS.join(',')}.`, { code: 'ROL_ANTICIPOS_CARGA_ENCABEZADO_INVALIDO', statusCode: 400 });
+  }
+  return lines.slice(1).map((line) => {
+    const values = parseCsvLine(line);
+    return ADVANCE_BULK_TEMPLATE_COLUMNS.reduce((row, column, index) => ({ ...row, [column]: values[index] || '' }), {});
+  });
+}
 
 function normalizePeriod(anio, mes) {
   const year = Number(anio);
@@ -27,11 +77,15 @@ function normalizeDate(value, year, month) {
 
 function normalizeLine(line, index, year, month) {
   const empleadoId = String(line.empleadoId ?? line.empleado_id ?? '').trim();
+  const cedula = String(line.cedula ?? line.identificacion ?? '').replace(/\s+/g, '').trim();
   const amount = roundMoney(Number(line.monto ?? line.amount));
   const tipoNovedad = String(line.tipoNovedad ?? line.tipo_novedad ?? 'bono_desempeno').trim().toLowerCase();
   const nombreBonificacion = String(line.nombreBonificacion ?? line.nombre_bonificacion ?? line.nombre ?? '').trim().slice(0, 160);
-  if (!empleadoId) {
-    throw new AppError(`El empleado de la fila ${index + 1} es requerido.`, { code: 'ROL_ANTICIPOS_EMPLEADO_REQUERIDO', statusCode: 400 });
+  if (!empleadoId && !cedula) {
+    throw new AppError(`El empleado de la fila ${index + 1} requiere empleadoId o cedula.`, { code: 'ROL_ANTICIPOS_EMPLEADO_REQUERIDO', statusCode: 400 });
+  }
+  if (cedula && !CEDULA_PATTERN.test(cedula)) {
+    throw new AppError(`La cedula de la fila ${index + 1} debe contener entre 10 y 13 digitos.`, { code: 'ROL_ANTICIPOS_CEDULA_INVALIDA', statusCode: 400 });
   }
   if (!Number.isFinite(amount) || amount <= 0) {
     throw new AppError(`El monto de la fila ${index + 1} debe ser mayor a cero.`, { code: 'ROL_ANTICIPOS_MONTO_INVALIDO', statusCode: 400 });
@@ -39,7 +93,7 @@ function normalizeLine(line, index, year, month) {
   if (!tipoNovedad || tipoNovedad.length > 80) {
     throw new AppError(`El tipo de novedad de la fila ${index + 1} no es valido.`, { code: 'ROL_ANTICIPOS_TIPO_NOVEDAD_INVALIDO', statusCode: 400 });
   }
-  return { empleadoId, monto: amount, tipoNovedad, nombreBonificacion };
+  return { empleadoId, cedula, monto: amount, tipoNovedad, nombreBonificacion };
 }
 
 function normalizeRun(row, lines = []) {
@@ -132,6 +186,30 @@ async function listRuns(tenantId, filters = {}) {
     params.push(Number(filters.mes));
     where.push(`r.mes = $${params.length}`);
   }
+  if (filters.estado) {
+    params.push(String(filters.estado).trim().toLowerCase());
+    where.push(`r.estado = $${params.length}`);
+  }
+  if (filters.tipoNovedad || filters.tipo) {
+    params.push(String(filters.tipoNovedad || filters.tipo).trim().toLowerCase());
+    where.push(`EXISTS (SELECT 1 FROM roles_anticipos_detalle fd WHERE fd.role_id = r.id AND fd.tenant_id = r.tenant_id AND fd.tipo_novedad = $${params.length})`);
+  }
+  if (filters.buscar || filters.search || filters.empleadoId) {
+    if (filters.empleadoId) {
+      params.push(String(filters.empleadoId).trim());
+      where.push(`EXISTS (SELECT 1 FROM roles_anticipos_detalle fd WHERE fd.role_id = r.id AND fd.tenant_id = r.tenant_id AND fd.empleado_id::text = $${params.length})`);
+    }
+    if (filters.buscar || filters.search) {
+      params.push(`%${String(filters.buscar || filters.search).trim()}%`);
+      where.push(`EXISTS (
+        SELECT 1
+        FROM roles_anticipos_detalle fd
+        JOIN empleados fe ON fe.id = fd.empleado_id AND fe.tenant_id = fd.tenant_id
+        WHERE fd.role_id = r.id AND fd.tenant_id = r.tenant_id
+          AND (fe.nombres ILIKE $${params.length} OR fe.apellidos ILIKE $${params.length} OR fe.cedula ILIKE $${params.length} OR r.descripcion ILIKE $${params.length})
+      )`);
+    }
+  }
   const result = await db.query(`
     SELECT r.id, r.tenant_id, r.payroll_period_id, r.anio, r.mes, r.fecha_corte, r.estado,
            r.descripcion, r.created_by, r.approved_by, r.approved_at, r.closed_at, r.created_at, r.updated_at
@@ -150,9 +228,6 @@ async function createRun(tenantId, payload = {}, user, context = {}) {
     throw new AppError('El rol de anticipos debe incluir entre 1 y 1000 empleados.', { code: 'ROL_ANTICIPOS_LINEAS_INVALIDAS', statusCode: 400 });
   }
   const lines = sourceLines.map((line, index) => normalizeLine(line, index, year, month));
-  if (new Set(lines.map((line) => line.empleadoId)).size !== lines.length) {
-    throw new AppError('No puedes repetir un empleado dentro del mismo rol de anticipos.', { code: 'ROL_ANTICIPOS_EMPLEADO_DUPLICADO', statusCode: 400 });
-  }
   for (const tipoNovedad of new Set(lines.map((line) => line.tipoNovedad))) {
     await ensureNoveltyTypeAllowed({ tenantId, tipoNovedad, anio: year, mes: month, userId: user.id });
   }
@@ -160,15 +235,33 @@ async function createRun(tenantId, payload = {}, user, context = {}) {
   const tx = await db.getClient(tenantId, user.id);
   try {
     const period = await assertPeriod(tx, tenantId, year, month);
+    const employeeIdsToResolve = lines.map((line) => line.empleadoId).filter(Boolean);
+    const cedulasToResolve = lines.map((line) => line.cedula).filter(Boolean);
     const employeeResult = await tx.query(`
-      SELECT id
+      SELECT id, cedula
       FROM empleados
-      WHERE tenant_id = $1 AND activo = true AND id = ANY($2::uuid[])
-    `, [tenantId, lines.map((line) => line.empleadoId)]);
-    const employeeIds = new Set(employeeResult.rows.map((row) => row.id));
-    const missing = lines.filter((line) => !employeeIds.has(line.empleadoId)).map((line) => line.empleadoId);
+      WHERE tenant_id = $1
+        AND activo = true
+        AND (id::text = ANY($2::text[]) OR cedula = ANY($3::text[]))
+    `, [tenantId, employeeIdsToResolve, cedulasToResolve]);
+    const employeeById = new Map(employeeResult.rows.map((row) => [String(row.id), row]));
+    const employeeByCedula = new Map(employeeResult.rows.map((row) => [String(row.cedula), row]));
+    const resolvedLines = lines.map((line, index) => {
+      const byId = line.empleadoId ? employeeById.get(line.empleadoId) : null;
+      const byCedula = line.cedula ? employeeByCedula.get(line.cedula) : null;
+      if (line.empleadoId && line.cedula && (!byId || !byCedula || byId.id !== byCedula.id)) {
+        throw new AppError(`La fila ${index + 1} tiene empleadoId y cedula de personas diferentes.`, { code: 'ROL_ANTICIPOS_IDENTIDAD_INCONSISTENTE', statusCode: 422 });
+      }
+      const employee = byId || byCedula;
+      if (!employee) return { ...line, empleadoId: null };
+      return { ...line, empleadoId: employee.id, cedula: employee.cedula };
+    });
+    const missing = resolvedLines.filter((line) => !line.empleadoId).map((line) => line.cedula || line.empleadoId);
     if (missing.length > 0) {
       throw new AppError('Uno o mas empleados no existen o estan inactivos en la empresa.', { code: 'ROL_ANTICIPOS_EMPLEADO_INVALIDO', statusCode: 422, details: { empleados: missing } });
+    }
+    if (new Set(resolvedLines.map((line) => line.empleadoId)).size !== resolvedLines.length) {
+      throw new AppError('No puedes repetir un empleado dentro del mismo rol de anticipos.', { code: 'ROL_ANTICIPOS_EMPLEADO_DUPLICADO', statusCode: 400 });
     }
     const runResult = await tx.query(`
       INSERT INTO roles_anticipos (tenant_id, payroll_period_id, anio, mes, fecha_corte, descripcion, created_by, metadata)
@@ -176,7 +269,7 @@ async function createRun(tenantId, payload = {}, user, context = {}) {
       RETURNING id, tenant_id, payroll_period_id, anio, mes, fecha_corte, estado, descripcion, created_by, created_at, updated_at
     `, [tenantId, period.id, year, month, fechaCorte, String(payload.descripcion || '').trim().slice(0, 240), user.id, JSON.stringify({ source: 'rol_anticipos', periodoNomina: marker, correlationId: context.correlationId || null })]);
     const run = runResult.rows[0];
-    for (const line of lines) {
+    for (const line of resolvedLines) {
       await tx.query(`
         INSERT INTO roles_anticipos_detalle (role_id, tenant_id, empleado_id, monto, tipo_novedad, nombre_bonificacion, metadata)
         VALUES ($1,$2,$3,$4,$5,$6,$7)
@@ -207,6 +300,11 @@ async function approveRun(tenantId, id, user, context = {}) {
     await db.rollback(tx);
     throw err;
   }
+}
+
+async function createBulkRun(tenantId, payload = {}, user, context = {}) {
+  const rows = Array.isArray(payload.rows) ? payload.rows : parseBulkCsv(payload.csv);
+  return createRun(tenantId, { ...payload, lineas: rows }, user, context);
 }
 
 async function decideLine(tenantId, roleId, lineId, decision, user, context = {}) {
@@ -299,4 +397,15 @@ async function closeRun(tenantId, id, user, context = {}) {
   }
 }
 
-module.exports = { listRuns, getRun, createRun, approveRun, decideLine, closeRun };
+module.exports = {
+  ADVANCE_BULK_TEMPLATE_COLUMNS,
+  templateCsv,
+  parseBulkCsv,
+  listRuns,
+  getRun,
+  createRun,
+  createBulkRun,
+  approveRun,
+  decideLine,
+  closeRun,
+};

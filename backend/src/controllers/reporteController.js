@@ -325,6 +325,39 @@ async function reporteAsistencia(req, res) {
         SELECT
           make_date($2::int, $3::int, 1) AS fecha_desde,
           (make_date($2::int, $3::int, 1) + INTERVAL '1 month')::date AS fecha_hasta
+      ), dias_laborables AS (
+        SELECT
+          e.id AS empleado_id,
+          COUNT(*)::int AS dias_laborables_calculados
+        FROM empleados e
+        LEFT JOIN work_shifts ws
+          ON ws.tenant_id = e.tenant_id
+         AND ws.code = e.jornada_codigo
+         AND ws.status = 'activo'
+        CROSS JOIN limites l
+        CROSS JOIN LATERAL generate_series(
+          GREATEST(l.fecha_desde, e.fecha_ingreso),
+          LEAST(l.fecha_hasta - 1, COALESCE(e.fecha_salida, l.fecha_hasta - 1)),
+          INTERVAL '1 day'
+        ) AS calendar_day(fecha)
+        WHERE e.tenant_id = $1
+          AND EXISTS (
+            SELECT 1
+            FROM jsonb_array_elements_text(COALESCE(
+              ws.calendar_rules->'workDays',
+              '["monday","tuesday","wednesday","thursday","friday"]'::jsonb
+            )) AS work_day(nombre)
+            WHERE LOWER(work_day.nombre) = CASE EXTRACT(ISODOW FROM calendar_day.fecha)::int
+              WHEN 1 THEN 'monday'
+              WHEN 2 THEN 'tuesday'
+              WHEN 3 THEN 'wednesday'
+              WHEN 4 THEN 'thursday'
+              WHEN 5 THEN 'friday'
+              WHEN 6 THEN 'saturday'
+              WHEN 7 THEN 'sunday'
+            END
+          )
+        GROUP BY e.id
       ), asistencia AS (
         SELECT
           m.empleado_id,
@@ -344,6 +377,7 @@ async function reporteAsistencia(req, res) {
         SELECT
           n.empleado_id,
           COUNT(*)::int AS novedades,
+          COUNT(*) FILTER (WHERE n.tipo_novedad = 'dia_laborado' AND n.metadata->>'source' = 'attendance_workday_calculation')::int AS dias_novedad_laboral,
           COUNT(*) FILTER (WHERE n.tipo_novedad = 'falta')::int AS faltas_aprobadas,
           COALESCE(SUM(n.minutos) FILTER (WHERE n.tipo_novedad = 'atraso'), 0)::int AS minutos_tardia,
           COALESCE(SUM(n.minutos) FILTER (WHERE n.tipo_novedad = 'hora_extra_50'), 0)::int AS minutos_extra_50,
@@ -363,6 +397,9 @@ async function reporteAsistencia(req, res) {
         e.apellidos || ' ' || e.nombres AS nombre,
         e.controla_asistencia,
         COALESCE(a.dias_con_marcacion, 0) AS dias_con_marcacion,
+        COALESCE(d.dias_laborables_calculados, 0) AS dias_laborables_calculados,
+        COALESCE(n.dias_novedad_laboral, 0) AS dias_novedad_laboral,
+        GREATEST(COALESCE(d.dias_laborables_calculados, 0) - COALESCE(a.dias_con_marcacion, 0), 0) AS dias_sin_marcacion,
         COALESCE(a.marcaciones_inicio, 0) AS marcaciones_inicio,
         COALESCE(a.marcaciones_fin, 0) AS marcaciones_fin,
         COALESCE(n.novedades, 0) AS novedades,
@@ -377,6 +414,7 @@ async function reporteAsistencia(req, res) {
       FROM empleados e
       CROSS JOIN limites l
       LEFT JOIN asistencia a ON a.empleado_id = e.id
+      LEFT JOIN dias_laborables d ON d.empleado_id = e.id
       LEFT JOIN novedades n ON n.empleado_id = e.id
       WHERE e.tenant_id = $1
         AND e.fecha_ingreso < l.fecha_hasta
@@ -471,9 +509,11 @@ async function getNoveltyReportRows({ tenantId, anio, mes, filters = {} }) {
     clauses.push(`na.tipo_novedad = $${params.length}`);
   }
   if (filters.origen === 'manual') {
-    clauses.push("COALESCE(na.metadata->>'source', '') <> 'carga_masiva_novedades' AND na.novelty_batch_id IS NULL");
+    clauses.push("COALESCE(na.metadata->>'source', '') NOT IN ('carga_masiva_novedades', 'attendance_workday_calculation') AND na.novelty_batch_id IS NULL");
   } else if (filters.origen === 'carga_masiva') {
     clauses.push("(na.metadata->>'source' = 'carga_masiva_novedades' OR na.novelty_batch_id IS NOT NULL)");
+  } else if (filters.origen === 'asistencia') {
+    clauses.push("na.metadata->>'source' = 'attendance_workday_calculation'");
   }
   if (filters.buscar) {
     params.push(`%${String(filters.buscar).trim()}%`);
@@ -503,6 +543,7 @@ async function getNoveltyReportRows({ tenantId, anio, mes, filters = {} }) {
       na.estado,
       CASE
         WHEN na.metadata->>'source' = 'carga_masiva_novedades' OR na.novelty_batch_id IS NOT NULL THEN 'carga_masiva'
+        WHEN na.metadata->>'source' = 'attendance_workday_calculation' THEN 'asistencia'
         ELSE 'manual'
       END AS origen,
       na.novelty_batch_id,
@@ -544,9 +585,10 @@ async function reporteNovedades(req, res) {
       acc.totalHoras += Number(row.horas || 0);
       acc.totalMonto += Number(row.monto || 0);
       if (row.origen === 'carga_masiva') acc.cargaMasiva += 1;
+      else if (row.origen === 'asistencia') acc.asistencia += 1;
       else acc.manual += 1;
       return acc;
-    }, { total: 0, totalHoras: 0, totalMonto: 0, manual: 0, cargaMasiva: 0, porEstado: {} });
+    }, { total: 0, totalHoras: 0, totalMonto: 0, manual: 0, cargaMasiva: 0, asistencia: 0, porEstado: {} });
 
     return res.json({
       success: true,

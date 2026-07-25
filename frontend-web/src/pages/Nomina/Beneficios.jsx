@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Edit3, LockKeyhole, Plus, Send, Sparkles } from 'lucide-react';
+import { CheckCircle2, Download, Edit3, LockKeyhole, Plus, Send, Sparkles, Upload } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { createBeneficio, fetchBeneficios, updateBeneficio } from '../../services/beneficiosApi';
-import { approveAdvanceRole, closeAdvanceRole, createAdvanceRole, decideAdvanceLine, downloadAdvanceRoleCsv, fetchAdvanceRoles } from '../../services/advancePayrollApi';
+import { approveAdvanceRole, closeAdvanceRole, createAdvanceRole, createAdvanceRoleBulk, decideAdvanceLine, downloadAdvanceReport, downloadAdvanceRoleCsv, downloadAdvanceTemplate, fetchAdvanceNoveltyTypes, fetchAdvanceRoles } from '../../services/advancePayrollApi';
 import { extractApiError } from '../../services/publicApi';
 import { ECUADOR_TIME_ZONE, currentPeriodEC } from '../../utils/dateFormat';
 import { downloadBlob } from '../../utils/downloadBlob';
@@ -43,6 +43,10 @@ function Beneficios() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [advanceDraft, setAdvanceDraft] = useState(() => emptyAdvanceDraft());
+  const [advanceFilters, setAdvanceFilters] = useState(() => ({ anio: currentPeriodEC().anio, mes: currentPeriodEC().mes, estado: '', tipoNovedad: '', buscar: '' }));
+  const [advanceEmployeeSearch, setAdvanceEmployeeSearch] = useState('');
+  const [advanceBulkCsv, setAdvanceBulkCsv] = useState('');
+  const [advanceBulkFileName, setAdvanceBulkFileName] = useState('');
 
   const empleadosQuery = useQuery({
     queryKey: ['empleados-beneficios'],
@@ -58,13 +62,20 @@ function Beneficios() {
   });
 
   const advanceRolesQuery = useQuery({
-    queryKey: ['roles-anticipos'],
-    queryFn: () => fetchAdvanceRoles(),
+    queryKey: ['roles-anticipos', advanceFilters],
+    queryFn: () => fetchAdvanceRoles(advanceFilters),
+  });
+
+  const advanceTypesQuery = useQuery({
+    queryKey: ['roles-anticipos-tipos', advanceDraft.anio, advanceDraft.mes],
+    queryFn: () => fetchAdvanceNoveltyTypes({ anio: advanceDraft.anio, mes: advanceDraft.mes }),
   });
 
   const empleados = empleadosQuery.data || [];
   const beneficios = beneficiosQuery.data || [];
   const advanceRoles = advanceRolesQuery.data || [];
+  const advanceTypes = advanceTypesQuery.data || [];
+  const filteredAdvanceEmployees = empleados.filter((employee) => `${employee.nombres} ${employee.apellidos} ${employee.cedula}`.toLowerCase().includes(advanceEmployeeSearch.toLowerCase().trim()));
 
   const totals = useMemo(() => beneficios.reduce((acc, item) => {
     if (item.estado === 'aprobado') {
@@ -116,6 +127,18 @@ function Beneficios() {
     onError: (err) => { setMessage(''); setError(extractApiError(err, 'No pudimos generar el rol de anticipos.')); },
   });
 
+  const advanceBulkMutation = useMutation({
+    mutationFn: () => createAdvanceRoleBulk({ ...advanceDraft, csv: advanceBulkCsv }),
+    onSuccess: () => {
+      setMessage('Carga masiva del rol de anticipos procesada.');
+      setError('');
+      setAdvanceBulkCsv('');
+      setAdvanceBulkFileName('');
+      queryClient.invalidateQueries({ queryKey: ['roles-anticipos'] });
+    },
+    onError: (err) => { setMessage(''); setError(extractApiError(err, 'No pudimos procesar la carga masiva del rol de anticipos.')); },
+  });
+
   const advanceActionMutation = useMutation({
     mutationFn: ({ action, roleId, lineId, decision }) => {
       if (action === 'approve') return approveAdvanceRole(roleId);
@@ -163,6 +186,37 @@ function Beneficios() {
   function submitAdvanceRole(event) {
     event.preventDefault();
     advanceRoleMutation.mutate();
+  }
+
+  function updateAdvanceFilter(name, value) {
+    setAdvanceFilters((current) => ({ ...current, [name]: value }));
+  }
+
+  async function selectAdvanceBulkFile(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setAdvanceBulkFileName(file.name);
+    setAdvanceBulkCsv(await file.text());
+  }
+
+  async function downloadAdvanceReportFile() {
+    try {
+      const blob = await downloadAdvanceReport(advanceFilters);
+      downloadBlob(blob, `reporte_roles_anticipos_${advanceFilters.anio}_${String(advanceFilters.mes).padStart(2, '0')}.csv`);
+    } catch (err) {
+      setMessage('');
+      setError(extractApiError(err, 'No pudimos descargar el reporte filtrado de anticipos.'));
+    }
+  }
+
+  async function downloadAdvanceTemplateFile() {
+    try {
+      const blob = await downloadAdvanceTemplate();
+      downloadBlob(blob, 'plantilla_rol_anticipos.csv');
+    } catch (err) {
+      setMessage('');
+      setError(extractApiError(err, 'No pudimos descargar la plantilla de anticipos.'));
+    }
   }
 
   async function downloadAdvanceRole(role) {
@@ -320,17 +374,47 @@ function Beneficios() {
             <label><span className="text-sm font-medium text-slate-700">Año</span><input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="2020" value={advanceDraft.anio} onChange={(event) => updateAdvanceField('anio', event.target.value)} required /></label>
             <label><span className="text-sm font-medium text-slate-700">Mes</span><input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="1" max="12" value={advanceDraft.mes} onChange={(event) => updateAdvanceField('mes', event.target.value)} required /></label>
             <label><span className="text-sm font-medium text-slate-700">Fecha de corte</span><input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="date" value={advanceDraft.fechaCorte} onChange={(event) => updateAdvanceField('fechaCorte', event.target.value)} /></label>
-            <label><span className="text-sm font-medium text-slate-700">Tipo de novedad</span><input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={advanceDraft.tipoNovedad} onChange={(event) => updateAdvanceField('tipoNovedad', event.target.value)} required /><span className="mt-1 block text-xs text-slate-500">Debe estar activo en Parametrización.</span></label>
+            <label><span className="text-sm font-medium text-slate-700">Tipo de novedad</span><select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={advanceDraft.tipoNovedad} onChange={(event) => updateAdvanceField('tipoNovedad', event.target.value)} disabled={advanceTypesQuery.isLoading || advanceTypes.length === 0} required><option value="">Selecciona un tipo parametrizado</option>{advanceTypes.map((type) => <option key={type.code} value={type.code}>{type.name} ({type.code})</option>)}</select><span className="mt-1 block text-xs text-slate-500">Solo tipos activos de Parametrización.</span></label>
           </div>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <label><span className="text-sm font-medium text-slate-700">Descripción del rol</span><input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={advanceDraft.descripcion} onChange={(event) => updateAdvanceField('descripcion', event.target.value)} placeholder="Anticipos de la quincena" /></label>
             <label><span className="text-sm font-medium text-slate-700">Nombre de la bonificación</span><input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={advanceDraft.nombreBonificacion} onChange={(event) => updateAdvanceField('nombreBonificacion', event.target.value)} placeholder="Bono por cumplimiento" /><span className="mt-1 block text-xs text-slate-500">Puedes personalizarlo para todas las líneas del rol.</span></label>
           </div>
           <div className="mt-4 overflow-x-auto rounded-md border border-slate-200">
-            <table className="w-full min-w-[700px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Incluir</th><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Cédula</th><th className="px-3 py-2">Monto</th></tr></thead><tbody className="divide-y divide-slate-100">{empleados.map((employee) => { const line = advanceDraft.lines[employee.id] || {}; return <tr key={employee.id}><td className="px-3 py-2"><input type="checkbox" checked={line.selected === true} onChange={(event) => updateAdvanceLine(employee.id, 'selected', event.target.checked)} /></td><td className="px-3 py-2 font-medium text-slate-900">{employee.nombres} {employee.apellidos}</td><td className="px-3 py-2 text-slate-600">{employee.cedula}</td><td className="px-3 py-2"><input className="w-36 rounded-md border border-slate-300 px-3 py-1.5" type="number" min="0.01" step="0.01" value={line.monto || ''} onChange={(event) => updateAdvanceLine(employee.id, 'monto', event.target.value)} disabled={!line.selected} /></td></tr>; })}</tbody></table>
+            <div className="border-b border-slate-200 bg-slate-50 p-3">
+              <label className="block"><span className="text-sm font-medium text-slate-700">Buscar empleado para incluir</span><input className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={advanceEmployeeSearch} onChange={(event) => setAdvanceEmployeeSearch(event.target.value)} placeholder="Cédula, nombres o apellidos" /></label>
+            </div>
+            <table className="w-full min-w-[700px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Incluir</th><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Cédula</th><th className="px-3 py-2">Monto</th></tr></thead><tbody className="divide-y divide-slate-100">{filteredAdvanceEmployees.map((employee) => { const line = advanceDraft.lines[employee.id] || {}; return <tr key={employee.id}><td className="px-3 py-2"><input type="checkbox" checked={line.selected === true} onChange={(event) => updateAdvanceLine(employee.id, 'selected', event.target.checked)} /></td><td className="px-3 py-2 font-medium text-slate-900">{employee.nombres} {employee.apellidos}</td><td className="px-3 py-2 text-slate-600">{employee.cedula}</td><td className="px-3 py-2"><input className="w-36 rounded-md border border-slate-300 px-3 py-1.5" type="number" min="0.01" step="0.01" value={line.monto || ''} onChange={(event) => updateAdvanceLine(employee.id, 'monto', event.target.value)} disabled={!line.selected} /></td></tr>; })}</tbody></table>
           </div>
           <button className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60" type="submit" disabled={advanceRoleMutation.isPending}><Plus className="h-4 w-4" />{advanceRoleMutation.isPending ? 'Generando...' : 'Generar rol de anticipos'}</button>
         </form>
+
+        <section className="rounded-md border border-slate-200 bg-white p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div><h3 className="font-semibold text-slate-950">Carga masiva del rol</h3><p className="mt-1 text-sm text-slate-600">Descarga la plantilla, completa la cédula y el monto, y carga el CSV desde esta misma ruta.</p></div>
+            <button className="inline-flex items-center gap-2 rounded-md border border-teal-200 px-3 py-2 text-sm font-semibold text-teal-800" type="button" onClick={downloadAdvanceTemplateFile}><Download className="h-4 w-4" />Descargar plantilla</button>
+          </div>
+          <div className="mt-3 rounded-md border border-dashed border-teal-300 bg-teal-50/50 p-3">
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-teal-700 px-3 py-2 text-sm font-semibold text-white"><Upload className="h-4 w-4" />Seleccionar archivo<input className="sr-only" type="file" accept=".csv,text/csv" onChange={selectAdvanceBulkFile} /></label>
+            <span className="ml-3 text-sm text-slate-600">{advanceBulkFileName || 'Ningún archivo seleccionado'}</span>
+          </div>
+          <textarea className="mt-3 min-h-28 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-xs" value={advanceBulkCsv} onChange={(event) => setAdvanceBulkCsv(event.target.value)} placeholder="cedula,monto,tipoNovedad,nombreBonificacion" aria-label="Contenido CSV del rol de anticipos" />
+          <button className="mt-3 inline-flex items-center gap-2 rounded-md bg-slate-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" type="button" onClick={() => advanceBulkMutation.mutate()} disabled={advanceBulkMutation.isPending || !advanceBulkCsv.trim()}><Upload className="h-4 w-4" />{advanceBulkMutation.isPending ? 'Procesando...' : 'Procesar carga masiva'}</button>
+        </section>
+
+        <section className="rounded-md border border-slate-200 bg-white p-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div><h3 className="font-semibold text-slate-950">Roles generados</h3><p className="mt-1 text-sm text-slate-600">Filtra por período, estado, tipo de novedad o empleado.</p></div>
+            <button className="inline-flex items-center gap-2 rounded-md border border-teal-200 px-3 py-2 text-sm font-semibold text-teal-800" type="button" onClick={downloadAdvanceReportFile}><Download className="h-4 w-4" />Descargar reporte filtrado</button>
+          </div>
+          <div className="mt-3 grid gap-3 md:grid-cols-5">
+            <label><span className="text-xs font-medium text-slate-600">Año</span><input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="2020" value={advanceFilters.anio} onChange={(event) => updateAdvanceFilter('anio', event.target.value)} /></label>
+            <label><span className="text-xs font-medium text-slate-600">Mes</span><input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="1" max="12" value={advanceFilters.mes} onChange={(event) => updateAdvanceFilter('mes', event.target.value)} /></label>
+            <label><span className="text-xs font-medium text-slate-600">Estado</span><select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={advanceFilters.estado} onChange={(event) => updateAdvanceFilter('estado', event.target.value)}><option value="">Todos</option><option value="borrador">Borrador</option><option value="aprobado">Aprobado</option><option value="cerrado">Cerrado</option></select></label>
+            <label><span className="text-xs font-medium text-slate-600">Tipo de novedad</span><select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={advanceFilters.tipoNovedad} onChange={(event) => updateAdvanceFilter('tipoNovedad', event.target.value)}><option value="">Todos</option>{advanceTypes.map((type) => <option key={type.code} value={type.code}>{type.name}</option>)}</select></label>
+            <label><span className="text-xs font-medium text-slate-600">Empleado</span><input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={advanceFilters.buscar} onChange={(event) => updateAdvanceFilter('buscar', event.target.value)} placeholder="Cédula o nombre" /></label>
+          </div>
+        </section>
 
         <div className="space-y-4">
           {advanceRoles.length === 0 ? <p className="rounded-md border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500">Todavía no hay roles de anticipos generados.</p> : advanceRoles.map((role) => { const pendingLines = role.lineas.filter((line) => line.estado === 'aprobado').length; return <article className="rounded-md border border-slate-200 bg-white p-4" key={role.id}><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold text-slate-950">Rol {role.anio}-{String(role.mes).padStart(2, '0')} · {role.descripcion || 'Sin descripción'}</h3><p className="mt-1 text-xs text-slate-500">Corte: {role.fechaCorte} · Total: {money(role.total)} · Estado: <strong>{role.estado}</strong></p></div><div className="flex flex-wrap gap-2"><button className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700" type="button" onClick={() => downloadAdvanceRole(role)}>Descargar evidencia</button>{role.estado === 'borrador' && <button className="inline-flex items-center gap-1 rounded-md border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'approve', roleId: role.id })} disabled={advanceActionMutation.isPending}><Send className="h-3.5 w-3.5" />Aprobar</button>}{role.estado === 'aprobado' && <button className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'close', roleId: role.id })} disabled={advanceActionMutation.isPending || pendingLines > 0}><LockKeyhole className="h-3.5 w-3.5" />Cerrar rol</button>}</div></div><div className="mt-3 overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Monto</th><th className="px-3 py-2">Tipo / nombre</th><th className="px-3 py-2">Resolución</th><th className="px-3 py-2 text-right">Acciones</th></tr></thead><tbody className="divide-y divide-slate-100">{role.lineas.map((line) => <tr key={line.id}><td className="px-3 py-2"><p className="font-medium text-slate-900">{line.empleadoNombre}</p><p className="text-xs text-slate-500">{line.cedula}</p></td><td className="px-3 py-2">{money(line.monto)}</td><td className="px-3 py-2"><p>{line.tipoNovedad}</p><p className="text-xs text-slate-500">{line.nombreBonificacion || 'Sin nombre personalizado'}</p></td><td className="px-3 py-2"><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{line.estado}</span></td><td className="px-3 py-2 text-right">{role.estado === 'aprobado' && line.estado === 'aprobado' && <><button className="mr-2 rounded-md border border-amber-200 px-2 py-1 text-xs font-semibold text-amber-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'descontar' })} disabled={advanceActionMutation.isPending}>Descontar</button><button className="rounded-md border border-emerald-200 px-2 py-1 text-xs font-semibold text-emerald-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'bonificar' })} disabled={advanceActionMutation.isPending}>Bonificar</button></>}</td></tr>)}</tbody></table></div></article>; })}

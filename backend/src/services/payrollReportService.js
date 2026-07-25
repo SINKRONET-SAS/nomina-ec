@@ -1301,11 +1301,14 @@ function getReportColumnCatalog(reportCode) {
 
 function buildScopeSuffix(filters = {}) {
   const sanitized = sanitizeFilters(filters);
-  const parts = Object.entries(sanitized)
+  const scopeKeys = ['employeeId', 'department', 'position', 'costCenter'];
+  const parts = scopeKeys
+    .map((key) => [key, sanitized[key]])
     .filter(([, value]) => value)
-    .map(([key, value]) => `${key}-${String(value).replace(/[^a-zA-Z0-9_-]/g, '_')}`);
+    .map(([key, value]) => `${key}-${String(value).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40)}`);
 
-  return parts.length > 0 ? `_${parts.join('_')}` : '';
+  if (parts.length === 0) return '';
+  return `_${parts.join('_').slice(0, 120)}`;
 }
 
 module.exports = {
@@ -1319,4 +1322,5 @@ module.exports = {
   rowsForReport,
   buildBenefitLedgerRows,
   buildPayrollNoveltyMatrixRows,
+  buildScopeSuffix,
 };

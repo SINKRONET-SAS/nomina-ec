@@ -94,6 +94,17 @@ const DEFAULT_NOVELTY_RULES = {
     conceptCode: 'descuento_permiso_sin_sueldo',
     affectsBankFile: true,
   },
+  dia_laborado: {
+    name: 'Dia laborado calculado',
+    payrollImpact: 'informativo',
+    calculationMode: 'informational',
+    conceptCode: 'dia_laborado',
+    affectsIess: false,
+    affectsIncomeTax: false,
+    affectsDecimos: false,
+    affectsVacation: false,
+    affectsBankFile: false,
+  },
   anticipo_movilizacion: {
     name: 'Anticipo movilización',
     payrollImpact: 'ingreso',

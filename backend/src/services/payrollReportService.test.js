@@ -15,6 +15,7 @@ const {
   buildBenefitLedgerRows,
   rowsForReport,
   getReportColumnCatalog,
+  buildScopeSuffix,
 } = require('./payrollReportService');
 
 function payrollRow(overrides = {}) {
@@ -63,6 +64,16 @@ function payrollRow(overrides = {}) {
 }
 
 describe('payrollReportService accounting entries', () => {
+  test('mantiene seguro el nombre cuando se seleccionan muchas columnas', () => {
+    const suffix = buildScopeSuffix({
+      columns: Array.from({ length: 80 }, (_, index) => `campo_${index}_${'x'.repeat(100)}`),
+      department: 'Administracion y talento humano con una descripcion extensa',
+    });
+
+    expect(suffix).not.toContain('columns');
+    expect(suffix.length).toBeLessThanOrEqual(121);
+  });
+
   test('expone catálogo seguro de columnas por reporte', () => {
     expect(getReportColumnCatalog('PAYROLL_DETAIL_TABULAR')).toEqual(expect.arrayContaining([
       expect.objectContaining({ key: 'empleado' }),

@@ -22,6 +22,26 @@ async function crear(req, res, next) {
   }
 }
 
+async function descargarPlantilla(_req, res) {
+  const headers = advancePayrollService.ADVANCE_BULK_TEMPLATE_COLUMNS;
+  const csv = [
+    headers.join(','),
+    advancePayrollService.templateCsv().split(/\r?\n/)[1],
+  ].join('\r\n');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="plantilla_rol_anticipos.csv"');
+  return res.send(`\ufeff${csv}`);
+}
+
+async function cargarMasiva(req, res, next) {
+  try {
+    const role = await advancePayrollService.createBulkRun(req.tenantId, req.body, req.usuario, context(req));
+    return res.status(201).json({ success: true, role, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function aprobar(req, res, next) {
   try {
     const role = await advancePayrollService.approveRun(req.tenantId, req.params.id, req.usuario, context(req));
@@ -63,4 +83,25 @@ async function descargarCsv(req, res, next) {
   }
 }
 
-module.exports = { listar, crear, aprobar, decidirLinea, cerrar, descargarCsv };
+async function descargarReporte(req, res, next) {
+  try {
+    const roles = await advancePayrollService.listRuns(req.tenantId, req.query);
+    const headers = ['rolId', 'anio', 'mes', 'fechaCorte', 'estadoRol', 'descripcion', 'empleado', 'cedula', 'monto', 'tipoNovedad', 'nombreBonificacion', 'estadoLinea', 'beneficioId', 'bonificacionNovedadId'];
+    const csvCell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const rows = roles.flatMap((role) => role.lineas.map((line) => [
+      role.id, role.anio, role.mes, role.fechaCorte, role.estado, role.descripcion,
+      line.empleadoNombre, line.cedula, line.monto, line.tipoNovedad,
+      line.nombreBonificacion, line.estado, line.beneficioId, line.bonificacionNovedadId,
+    ].map(csvCell).join(',')));
+    const period = req.query?.anio && req.query?.mes
+      ? `${req.query.anio}_${String(req.query.mes).padStart(2, '0')}`
+      : 'filtrado';
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="reporte_roles_anticipos_${period}.csv"`);
+    return res.send(`\ufeff${[headers.join(','), ...rows].join('\r\n')}`);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = { listar, crear, descargarPlantilla, cargarMasiva, aprobar, decidirLinea, cerrar, descargarCsv, descargarReporte };

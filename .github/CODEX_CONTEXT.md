@@ -1,3 +1,38 @@
+## Segunda pasada NAR26-P2 - Asistencia, anticipos y reportes
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-NAR26-P2-ASISTENCIA-ANTICIPOS-REPORTES-2026` |
+| Codigo | `NAR26-P2` |
+| Estado | `NAR26-P2-03 cerrado; implementacion y regresion ejecutadas` |
+| Plan doc | `docs2/PLAN_HAIKY_NAR26_P2_ASISTENCIA_ANTICIPOS_REPORTES_2026.md` |
+| Prompts | `.github/prompts/NAR26-P2-00` a `.github/prompts/NAR26-P2-03` |
+| Base | AuditLock cerrado `NAR26-07` con firma `E590B9225F4DCD3BC540F9CBE6DB76203329A5F9C306434A8E4B2A8D4B816EE5` |
+
+### Alcance NAR26-P2
+
+- La asistencia genera novedades informativas `dia_laborado` por dia laborable calculado, sin convertir una ausencia en falta. El reporte muestra calculado, marcado, novedad y diferencia.
+- Anticipos y bonificaciones conserva una unica ruta y agrega tipos activos parametrizados, filtros, plantilla CSV con cedula, selector de archivo y descarga filtrada.
+- Los nombres de reportes se limitan a filtros de alcance seguros; las columnas seleccionadas solo permanecen en la evidencia.
+- `app-movil` es parte de `nuevo_nomina`: Autoservicio agrega una pestaña de permisos concedidos y documentos/soportes desde `history`.
+
+### Fases NAR26-P2
+
+| Fase | Estado |
+|---|---|
+| NAR26-P2-00 | completed-pass |
+| NAR26-P2-01 | completed-pass |
+| NAR26-P2-02 | completed-pass |
+| NAR26-P2-03 | completed-pass |
+
+### Cierre NAR26-P2
+
+- Se generan novedades informativas `dia_laborado` de forma idempotente desde cargas manuales y masivas de asistencia; el reporte expone días laborables, novedades, marcaciones y diferencia sin convertir ausencias en faltas.
+- Anticipos y bonificaciones conserva una sola ruta, consume tipos parametrizados, permite filtro, CSV por cédula, selector de archivo y reporte consolidado filtrado; el nombre de bonificación sigue siendo ingresado por el usuario.
+- El nombre de reporte ya no incorpora la lista de columnas y queda limitado a filtros de alcance sanitizados.
+- Validación: 65 suites/437 pruebas backend PASS, contratos PASS, Prisma PASS, `node --check` PASS, parseo JSX web y mobile PASS y `git diff --check` PASS.
+- Limitación ambiental documentada: el build Vite no pudo cerrarse porque falta el binario local `vite` y el árbol `node_modules` está incompleto (`es-abstract/2024/IsArray.js`); la reinstalación offline no finalizó y no se alteró el lockfile.
+
 ## Current Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-V100-SKNOMINA-2026
 
 | Campo | Valor |
