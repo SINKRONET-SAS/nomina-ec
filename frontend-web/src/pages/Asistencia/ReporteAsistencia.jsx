@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CalendarPlus, Info } from 'lucide-react';
 import { Link } from 'react-router';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 import { currentPeriodEC } from '../../utils/dateFormat';
+import TablePagination from '../../components/UI/TablePagination';
 
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -20,6 +21,8 @@ function ReporteAsistencia() {
   const currentPeriod = currentPeriodEC();
   const [anio, setAnio] = useState(currentPeriod.anio);
   const [mes, setMes] = useState(currentPeriod.mes);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const reporteQuery = useQuery({
     queryKey: ['reporte-asistencia', anio, mes],
@@ -30,6 +33,11 @@ function ReporteAsistencia() {
   });
 
   const reporte = reporteQuery.data || [];
+  const totalPages = Math.max(1, Math.ceil(reporte.length / pageSize));
+  const paginatedReporte = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return reporte.slice(start, start + pageSize);
+  }, [reporte, page, pageSize]);
 
   return (
     <div className="space-y-6">
@@ -59,7 +67,10 @@ function ReporteAsistencia() {
             Mes
             <select
               className="mt-1 min-h-10 rounded-md border border-slate-300 px-3"
-              onChange={(event) => setMes(Number(event.target.value))}
+              onChange={(event) => {
+                setMes(Number(event.target.value));
+                setPage(1);
+              }}
               value={mes}
             >
               {MONTHS.map((month, index) => <option key={month} value={index + 1}>{month}</option>)}
@@ -71,7 +82,10 @@ function ReporteAsistencia() {
               className="mt-1 min-h-10 w-28 rounded-md border border-slate-300 px-3"
               max="2100"
               min="2020"
-              onChange={(event) => setAnio(Number(event.target.value))}
+              onChange={(event) => {
+                setAnio(Number(event.target.value));
+                setPage(1);
+              }}
               type="number"
               value={anio}
             />
@@ -109,7 +123,7 @@ function ReporteAsistencia() {
               ) : reporte.length === 0 ? (
                 <tr><td className="px-5 py-6 text-center text-sm text-slate-600" colSpan="11">No hay empleados vinculados a este período.</td></tr>
               ) : (
-                reporte.map((row) => (
+                paginatedReporte.map((row) => (
                   <tr className="hover:bg-slate-50" key={row.empleado_id}>
                     <td className="px-5 py-3 text-sm font-medium text-slate-900">{row.nombre}</td>
                     <td className="px-5 py-3 text-sm">
@@ -132,6 +146,17 @@ function ReporteAsistencia() {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={reporte.length}
+          onPageChange={setPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize);
+            setPage(1);
+          }}
+        />
       </section>
     </div>
   );

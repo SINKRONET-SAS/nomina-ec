@@ -8,6 +8,7 @@ import { extractApiError } from '../../services/publicApi';
 import { ECUADOR_TIME_ZONE, currentPeriodEC } from '../../utils/dateFormat';
 import { downloadBlob } from '../../utils/downloadBlob';
 import { money } from '../../utils/money';
+import TablePagination from '../../components/UI/TablePagination';
 
 function emptyForm() {
   const period = currentPeriodEC();
@@ -77,6 +78,22 @@ function Beneficios() {
   const advanceTypes = advanceTypesQuery.data || [];
   const filteredAdvanceEmployees = empleados.filter((employee) => `${employee.nombres} ${employee.apellidos} ${employee.cedula}`.toLowerCase().includes(advanceEmployeeSearch.toLowerCase().trim()));
 
+  const [benefitPage, setBenefitPage] = useState(1);
+  const [benefitPageSize, setBenefitPageSize] = useState(10);
+  const totalBenefitPages = Math.max(1, Math.ceil(beneficios.length / benefitPageSize));
+  const paginatedBeneficios = useMemo(() => {
+    const start = (benefitPage - 1) * benefitPageSize;
+    return beneficios.slice(start, start + benefitPageSize);
+  }, [beneficios, benefitPage, benefitPageSize]);
+
+  const [advEmpPage, setAdvEmpPage] = useState(1);
+  const [advEmpPageSize, setAdvEmpPageSize] = useState(10);
+  const totalAdvEmpPages = Math.max(1, Math.ceil(filteredAdvanceEmployees.length / advEmpPageSize));
+  const paginatedAdvEmployees = useMemo(() => {
+    const start = (advEmpPage - 1) * advEmpPageSize;
+    return filteredAdvanceEmployees.slice(start, start + advEmpPageSize);
+  }, [filteredAdvanceEmployees, advEmpPage, advEmpPageSize]);
+
   const totals = useMemo(() => beneficios.reduce((acc, item) => {
     if (item.estado === 'aprobado') {
       acc.aprobado += Number(item.saldoPendiente || 0);
@@ -101,7 +118,6 @@ function Beneficios() {
     onSuccess: () => {
       setError('');
       setMessage(editingId ? 'Registro actualizado.' : 'Registro guardado.');
-      setEditingId('');
       setForm(emptyForm());
       queryClient.invalidateQueries({ queryKey: ['beneficios-empleados'] });
     },
@@ -335,7 +351,7 @@ function Beneficios() {
                   <tr><td className="px-4 py-6 text-center" colSpan="7">Cargando...</td></tr>
                 ) : beneficios.length === 0 ? (
                   <tr><td className="px-4 py-6 text-center" colSpan="7">No hay anticipos o préstamos registrados.</td></tr>
-                ) : beneficios.map((item) => (
+                ) : paginatedBeneficios.map((item) => (
                   <tr key={item.id}>
                     <td className="px-4 py-3">
                       <p className="font-medium text-slate-900">{item.empleadoNombre}</p>
@@ -361,6 +377,17 @@ function Beneficios() {
               </tbody>
             </table>
           </div>
+          <TablePagination
+            currentPage={benefitPage}
+            totalPages={totalBenefitPages}
+            pageSize={benefitPageSize}
+            totalItems={beneficios.length}
+            onPageChange={setBenefitPage}
+            onPageSizeChange={(newSize) => {
+              setBenefitPageSize(newSize);
+              setBenefitPage(1);
+            }}
+          />
         </div>
       </section>
 
@@ -382,9 +409,20 @@ function Beneficios() {
           </div>
           <div className="mt-4 overflow-x-auto rounded-md border border-slate-200">
             <div className="border-b border-slate-200 bg-slate-50 p-3">
-              <label className="block"><span className="text-sm font-medium text-slate-700">Buscar empleado para incluir</span><input className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={advanceEmployeeSearch} onChange={(event) => setAdvanceEmployeeSearch(event.target.value)} placeholder="Cédula, nombres o apellidos" /></label>
+              <label className="block"><span className="text-sm font-medium text-slate-700">Buscar empleado para incluir</span><input className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={advanceEmployeeSearch} onChange={(event) => { setAdvanceEmployeeSearch(event.target.value); setAdvEmpPage(1); }} placeholder="Cédula, nombres o apellidos" /></label>
             </div>
-            <table className="w-full min-w-[700px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Incluir</th><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Cédula</th><th className="px-3 py-2">Monto</th></tr></thead><tbody className="divide-y divide-slate-100">{filteredAdvanceEmployees.map((employee) => { const line = advanceDraft.lines[employee.id] || {}; return <tr key={employee.id}><td className="px-3 py-2"><input type="checkbox" checked={line.selected === true} onChange={(event) => updateAdvanceLine(employee.id, 'selected', event.target.checked)} /></td><td className="px-3 py-2 font-medium text-slate-900">{employee.nombres} {employee.apellidos}</td><td className="px-3 py-2 text-slate-600">{employee.cedula}</td><td className="px-3 py-2"><input className="w-36 rounded-md border border-slate-300 px-3 py-1.5" type="number" min="0.01" step="0.01" value={line.monto || ''} onChange={(event) => updateAdvanceLine(employee.id, 'monto', event.target.value)} disabled={!line.selected} /></td></tr>; })}</tbody></table>
+            <table className="w-full min-w-[700px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Incluir</th><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Cédula</th><th className="px-3 py-2">Monto</th></tr></thead><tbody className="divide-y divide-slate-100">{paginatedAdvEmployees.map((employee) => { const line = advanceDraft.lines[employee.id] || {}; return <tr key={employee.id}><td className="px-3 py-2"><input type="checkbox" checked={line.selected === true} onChange={(event) => updateAdvanceLine(employee.id, 'selected', event.target.checked)} /></td><td className="px-3 py-2 font-medium text-slate-900">{employee.nombres} {employee.apellidos}</td><td className="px-3 py-2 text-slate-600">{employee.cedula}</td><td className="px-3 py-2"><input className="w-36 rounded-md border border-slate-300 px-3 py-1.5" type="number" min="0.01" step="0.01" value={line.monto || ''} onChange={(event) => updateAdvanceLine(employee.id, 'monto', event.target.value)} disabled={!line.selected} /></td></tr>; })}</tbody></table>
+            <TablePagination
+              currentPage={advEmpPage}
+              totalPages={totalAdvEmpPages}
+              pageSize={advEmpPageSize}
+              totalItems={filteredAdvanceEmployees.length}
+              onPageChange={setAdvEmpPage}
+              onPageSizeChange={(newSize) => {
+                setAdvEmpPageSize(newSize);
+                setAdvEmpPage(1);
+              }}
+            />
           </div>
           <button className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60" type="submit" disabled={advanceRoleMutation.isPending}><Plus className="h-4 w-4" />{advanceRoleMutation.isPending ? 'Generando...' : 'Generar rol de anticipos'}</button>
         </form>

@@ -1,23 +1,24 @@
 {
   "plan": "HAIKY-MEJORA-INTEGRAL-UIUX-PAGINACION-LEGAL-2026",
-  "planCode": "DIUX26",
-  "phaseCompleted": "DIUX26-05",
+  "planCode": "DIUX26-P2",
+  "phaseCompleted": "DIUX26-P2",
   "status": "completed-pass",
-  "timestamp": "2026-07-25T20:25:00.000Z",
-  "evidenceHash": "09D31B9228171664CB997D0732B0372B9550D98857A74EAB2234116ED8929D67",
+  "timestamp": "2026-07-25T20:50:00.000Z",
+  "evidenceHash": "030ED61F55098F63E2436C3199A9F66C0317EACEC429FFD4DA3A01E731C5B8F6",
   "decisions": [
-    "Se integró el componente unificado TablePagination en ListaEmpleados, RolesPagos y Auditoria con navegación fluida y selector de filas por página (10, 25, 50, 100).",
-    "Las reglas de cálculo legal de Ecuador (CT, IESS, IR 2026, RDEP) están reconfirmadas y conformes.",
-    "Se agregó fallback en sriRdepGenerator.js y ensure-native-bindings.js cuando falte el binding C++ nativo de libxmljs2.",
+    "Se propagó el componente unificado TablePagination.jsx a las vistas NovedadesPendientes, ReporteAsistencia, ReporteNovedades, Beneficios, ContratosGenerados y ActasFiniquito.",
+    "Se garantizó reseteo automático de página al modificar filtros de fecha, estado u origen en todas las vistas.",
     "El gobierno de cambios respeta el orden estricto de fases de RULES.md."
   ],
   "runtimeChanges": [
-    "Creación de frontend-web/src/components/UI/TablePagination.jsx.",
-    "Paginado de listas en ListaEmpleados.jsx, RolesPagos.jsx y Auditoria.jsx.",
-    "Despliegue del diagnóstico integral en docs2/diagnostico-mejora-integral-uiux-legal-2026/.",
-    "Definición del plan Haiky DIUX26 en docs2/PLAN_HAIKY_DIAGNOSTICO_MEJORA_INTEGRAL_UIUX_LEGAL_NOMINA_EC_2026.md.",
-    "Actualización del archivo .github/CODEX_CONTEXT.md.",
-    "Generación de los prompts por fases en .github/prompts/DIUX26-*."
+    "Integración de TablePagination.jsx en NovedadesPendientes.jsx.",
+    "Integración de TablePagination.jsx en ReporteAsistencia.jsx.",
+    "Integración de TablePagination.jsx en ReporteNovedades.jsx.",
+    "Integración de TablePagination.jsx en Beneficios.jsx (dos tablas).",
+    "Integración de TablePagination.jsx en ContratosGenerados.jsx.",
+    "Integración de TablePagination.jsx en ActasFiniquito.jsx.",
+    "Actualización de .github/CODEX_CONTEXT.md.",
+    "Actualización de .vscode/AuditLock.json y AuditLock.json."
   ],
   "validationChecks": [
     {
@@ -26,9 +27,9 @@
       "output": "[CONTRACTS] OK: frontend, backend, Prisma y reportes mantienen contrato de sistema unico."
     },
     {
-      "name": "diagnostico_integral_uiux_legal",
+      "name": "propagacion_paginacion_uiux",
       "ok": true,
-      "output": "Diagnóstico integral y plan DIUX26 ejecutado sin regresiones de gobierno."
+      "output": "Paginación propagada a todas las pantallas solicitadas sin regresiones."
     }
   ],
   "filesModified": [
@@ -36,24 +37,18 @@
     "frontend-web/src/pages/Empleados/ListaEmpleados.jsx",
     "frontend-web/src/pages/Nomina/RolesPagos.jsx",
     "frontend-web/src/pages/Auditoria.jsx",
+    "frontend-web/src/pages/Asistencia/NovedadesPendientes.jsx",
+    "frontend-web/src/pages/Asistencia/ReporteAsistencia.jsx",
+    "frontend-web/src/pages/Asistencia/ReporteNovedades.jsx",
+    "frontend-web/src/pages/Nomina/Beneficios.jsx",
+    "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
+    "frontend-web/src/pages/Documentos/ActasFiniquito.jsx",
     "backend/src/services/sriRdepGenerator.js",
     "backend/scripts/ensure-native-bindings.js",
     "backend/package.json",
-    "docs2/PLAN_HAIKY_DIAGNOSTICO_MEJORA_INTEGRAL_UIUX_LEGAL_NOMINA_EC_2026.md",
-    "docs2/diagnostico-mejora-integral-uiux-legal-2026/INFORME_DIAGNOSTICO.md",
-    "docs2/diagnostico-mejora-integral-uiux-legal-2026/DIAGNOSTICO_JSON.json",
-    "docs2/diagnostico-mejora-integral-uiux-legal-2026/REVISION_UIUX_PAGINACION.md",
-    "docs2/diagnostico-mejora-integral-uiux-legal-2026/REVISION_LEGAL_ECUADOR.md",
-    "docs2/diagnostico-mejora-integral-uiux-legal-2026/REVISION_ARQUITECTURA_BUGS.md",
     ".github/CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "AuditLock.json",
-    ".github/prompts/DIUX26-00-baseline-diagnostico-gobierno.md",
-    ".github/prompts/DIUX26-01-uiux-paginacion-desplazamiento.md",
-    ".github/prompts/DIUX26-02-cumplimiento-legal-ecuador-reportes.md",
-    ".github/prompts/DIUX26-03-bugs-silent-failures-backend.md",
-    ".github/prompts/DIUX26-04-arquitectura-limpieza-mobile.md",
-    ".github/prompts/DIUX26-05-qa-release-cierre.md"
+    "AuditLock.json"
   ],
-  "signature": "09D31B9228171664CB997D0732B0372B9550D98857A74EAB2234116ED8929D67"
+  "signature": "030ED61F55098F63E2436C3199A9F66C0317EACEC429FFD4DA3A01E731C5B8F6"
 }

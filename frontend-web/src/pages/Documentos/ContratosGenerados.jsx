@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { Download, FileText, Search, Settings2, Trash2 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import CompactNotice from '../../components/UI/CompactNotice';
+import TablePagination from '../../components/UI/TablePagination';
 import { normalizeContractTemplateKey } from '../../utils/contractTemplates';
 import { downloadUrl } from '../../utils/downloadUrl';
 import { formatDateEC } from '../../utils/dateFormat';
@@ -36,6 +37,8 @@ function ContratosGenerados() {
   const [documentFilter, setDocumentFilter] = useState('all');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const { data: documentos, isLoading } = useQuery({
     queryKey: ['contratos', search, documentFilter],
@@ -75,6 +78,12 @@ function ContratosGenerados() {
 
   const documentosRows = documentos?.rows || [];
   const orphanRows = orphanData?.documentos || [];
+
+  const totalPages = Math.max(1, Math.ceil(documentosRows.length / pageSize));
+  const paginatedDocumentos = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return documentosRows.slice(start, start + pageSize);
+  }, [documentosRows, page, pageSize]);
 
   const selectedEmployee = useMemo(
     () => empleados.find((empleado) => empleado.id === form.empleadoId),
@@ -329,19 +338,29 @@ function ContratosGenerados() {
               className="w-full border-0 p-0 text-sm outline-none"
               placeholder="Buscar empleado, cédula, plantilla o archivo"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
             />
           </div>
-          <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={documentFilter} onChange={(event) => setDocumentFilter(event.target.value)}>
+          <select
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={documentFilter}
+            onChange={(event) => {
+              setDocumentFilter(event.target.value);
+              setPage(1);
+            }}
+          >
             <option value="all">Todos los contratos</option>
             <option value="generated">Generados pendientes</option>
             <option value="signed">Contratos firmados</option>
           </select>
-          <span className="text-xs text-slate-500">{documentos?.total || 0} registros encontrados</span>
+          <span className="text-xs text-slate-500">{documentosRows.length} registros encontrados</span>
         </div>
-        <div className="max-h-[34rem] overflow-auto">
+        <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="sticky top-0 z-10 bg-gray-50">
+            <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Empleado</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Plantilla</th>
@@ -356,7 +375,7 @@ function ContratosGenerados() {
               ) : documentosRows.length === 0 ? (
                 <tr><td colSpan="5" className="px-6 py-4 text-center">No hay contratos generados</td></tr>
               ) : (
-                documentosRows.map((doc) => (
+                paginatedDocumentos.map((doc) => (
                   <tr key={doc.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm">{doc.nombres} {doc.apellidos}</td>
                     <td className="px-6 py-4">
@@ -400,6 +419,17 @@ function ContratosGenerados() {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={documentosRows.length}
+          onPageChange={setPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize);
+            setPage(1);
+          }}
+        />
       </div>
     </div>
   );

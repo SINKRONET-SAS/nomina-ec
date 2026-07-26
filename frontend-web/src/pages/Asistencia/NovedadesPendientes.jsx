@@ -8,6 +8,7 @@ import { formatDateEC, todayISOEC } from '../../utils/dateFormat';
 import { downloadBlob } from '../../utils/downloadBlob';
 import { money } from '../../utils/money';
 import EmployeeSearchSelect from '../../components/UI/EmployeeSearchSelect';
+import TablePagination from '../../components/UI/TablePagination';
 import {
   buildNoveltyTypeOptions,
   getNoveltyTypeLabel,
@@ -124,6 +125,14 @@ function NovedadesPendientes() {
       return matchesStatus && matchesOrigin && (!search || searchable.includes(search));
     });
   }, [novedades, noveltyOriginFilter, noveltySearch, noveltyStatusFilter]);
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const totalPages = Math.max(1, Math.ceil(novedadesFiltradas.length / pageSize));
+  const paginatedNovedades = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return novedadesFiltradas.slice(start, start + pageSize);
+  }, [novedadesFiltradas, page, pageSize]);
 
   const { data: empleados } = useQuery({
     queryKey: ['empleados-novedad-manual'],
@@ -1041,18 +1050,35 @@ function NovedadesPendientes() {
           <input
             aria-label="Buscar novedad"
             className="min-h-10 rounded-md border border-slate-300 px-3 text-sm"
-            onChange={(event) => setNoveltySearch(event.target.value)}
+            onChange={(event) => {
+              setNoveltySearch(event.target.value);
+              setPage(1);
+            }}
             placeholder="Buscar empleado, cédula o tipo"
             value={noveltySearch}
           />
-          <select className="min-h-10 rounded-md border border-slate-300 px-3 text-sm" onChange={(event) => setNoveltyStatusFilter(event.target.value)} value={noveltyStatusFilter}>
+          <select
+            className="min-h-10 rounded-md border border-slate-300 px-3 text-sm"
+            onChange={(event) => {
+              setNoveltyStatusFilter(event.target.value);
+              setPage(1);
+            }}
+            value={noveltyStatusFilter}
+          >
             <option value="todos">Todos los estados</option>
             <option value="pendiente">Pendientes</option>
             <option value="aprobado">Aprobadas</option>
             <option value="rechazado">Rechazadas</option>
             <option value="anulado">Anuladas</option>
           </select>
-          <select className="min-h-10 rounded-md border border-slate-300 px-3 text-sm" onChange={(event) => setNoveltyOriginFilter(event.target.value)} value={noveltyOriginFilter}>
+          <select
+            className="min-h-10 rounded-md border border-slate-300 px-3 text-sm"
+            onChange={(event) => {
+              setNoveltyOriginFilter(event.target.value);
+              setPage(1);
+            }}
+            value={noveltyOriginFilter}
+          >
             <option value="todos">Todos los orígenes</option>
             <option value="manual">Ingreso manual</option>
             <option value="carga_masiva">Carga masiva</option>
@@ -1081,7 +1107,7 @@ function NovedadesPendientes() {
               ) : !novedadesFiltradas.length ? (
                 <tr><td colSpan="8" className="px-6 py-4 text-center">No hay novedades para los filtros seleccionados.</td></tr>
               ) : (
-                novedadesFiltradas.map(nov => (
+                paginatedNovedades.map(nov => (
                   <tr key={nov.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm">{nov.nombres} {nov.apellidos}</td>
                     <td className="px-6 py-4 text-sm">{formatDateEC(nov.fecha)}</td>
@@ -1200,13 +1226,23 @@ function NovedadesPendientes() {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={novedadesFiltradas.length}
+          onPageChange={setPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize);
+            setPage(1);
+          }}
+        />
       </div>
     </div>
   );
 }
 
 function parseCsvRows(text) {
-  const lines = String(text || '').split(/\r?\n/).filter((line) => line.trim());
   if (lines.length < 2) {
     throw new Error('Pega el encabezado y al menos una fila de la plantilla.');
   }

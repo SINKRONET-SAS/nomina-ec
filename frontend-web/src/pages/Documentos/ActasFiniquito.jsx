@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, Trash2 } from 'lucide-react';
 import CompactNotice from '../../components/UI/CompactNotice';
+import TablePagination from '../../components/UI/TablePagination';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { downloadUrl } from '../../utils/downloadUrl';
 import { formatDateEC } from '../../utils/dateFormat';
@@ -11,6 +12,8 @@ function ActasFiniquito() {
   const [descargandoId, setDescargandoId] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const { data: documentos, isLoading } = useQuery({
     queryKey: ['finiquitos'],
@@ -19,6 +22,13 @@ function ActasFiniquito() {
       return response.data.documentos;
     },
   });
+
+  const finiquitosList = documentos || [];
+  const totalPages = Math.max(1, Math.ceil(finiquitosList.length / pageSize));
+  const paginatedFiniquitos = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return finiquitosList.slice(start, start + pageSize);
+  }, [finiquitosList, page, pageSize]);
 
   const deleteMutation = useMutation({
     mutationFn: async (documentId) => {
@@ -85,10 +95,10 @@ function ActasFiniquito() {
             <tbody className="divide-y divide-gray-200">
               {isLoading ? (
                 <tr><td colSpan="4" className="px-6 py-4 text-center">Cargando...</td></tr>
-              ) : !documentos || documentos.length === 0 ? (
+              ) : finiquitosList.length === 0 ? (
                 <tr><td colSpan="4" className="px-6 py-4 text-center">No hay actas de finiquito</td></tr>
               ) : (
-                documentos.map((doc) => (
+                paginatedFiniquitos.map((doc) => (
                   <tr key={doc.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm">{doc.nombres} {doc.apellidos}</td>
                     <td className="px-6 py-4 text-sm">{doc.cedula}</td>
@@ -99,7 +109,7 @@ function ActasFiniquito() {
                           type="button"
                           onClick={() => descargar(doc.id)}
                           disabled={descargandoId === doc.id}
-                          title="Descargar acta de finiquito"
+                          title="Descargar acta"
                           className="rounded bg-blue-100 p-1 text-blue-600 hover:bg-blue-200 disabled:opacity-50"
                         >
                           <Download size={16} />
@@ -109,7 +119,7 @@ function ActasFiniquito() {
                             type="button"
                             onClick={() => eliminarGenerado(doc)}
                             disabled={deleteMutation.isPending}
-                            title="Eliminar acta generada para regenerar"
+                            title="Eliminar acta generada"
                             className="rounded bg-red-100 p-1 text-red-600 hover:bg-red-200 disabled:opacity-50"
                           >
                             <Trash2 size={16} />
@@ -123,6 +133,17 @@ function ActasFiniquito() {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={finiquitosList.length}
+          onPageChange={setPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize);
+            setPage(1);
+          }}
+        />
       </div>
     </div>
   );
