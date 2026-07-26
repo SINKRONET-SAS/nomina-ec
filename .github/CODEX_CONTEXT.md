@@ -3,21 +3,22 @@
 | Campo | Valor |
 |---|---|
 | Plan | `HAIKY-MEJORA-INTEGRAL-UIUX-PAGINACION-LEGAL-2026` |
-| Codigo | `DIUX26` / `DIUX26-P2` / `DIUX26-P3` |
-| Estado | `DIUX26-P3 cerrado; remanentes de paginacion completados` |
+| Codigo | `DIUX26` / `DIUX26-P2` / `DIUX26-P3` / `DIUX26-P3-FIX` |
+| Estado | `DIUX26-P3-FIX cerrado; regresion de descarga de reportes solucionada` |
 | Plan doc | `docs2/PLAN_HAIKY_DIAGNOSTICO_MEJORA_INTEGRAL_UIUX_LEGAL_NOMINA_EC_2026.md` |
 | Informes | `docs2/diagnostico-mejora-integral-uiux-legal-2026/` |
 | Prompts | `.github/prompts/DIUX26-00` a `.github/prompts/DIUX26-05` |
-| Base | AuditLock cerrado `DIUX26-P2` con firma `030ED61F55098F63E2436C3199A9F66C0317EACEC429FFD4DA3A01E731C5B8F6` |
+| Base | AuditLock cerrado `DIUX26-P3` con firma `BF4E2FD4D70FD9D045C272DBA959BD80323462E2CC452E3DC205817BF7DA791F` |
 
-### Alcance DIUX26, DIUX26-P2 & DIUX26-P3
+### Alcance DIUX26, DIUX26-P2, DIUX26-P3 & DIUX26-P3-FIX
 
-- **UI/UX y Paginación Unificada**: Componente `TablePagination.jsx` integrado en **TODAS** las vistas tabulares del sistema: `ListaEmpleados`, `RolesPagos`, `Auditoria`, `NovedadesPendientes`, `ReporteAsistencia`, `ReporteNovedades`, `Beneficios` (dos tablas), `ContratosGenerados`, `ActasFiniquito`, `CerrarMes` (lotes de novedades), `ActasEntregaDotacion` (actas generadas), `MovilizacionAprobacion`, `PermisosOperacion`, `UsuariosRoles` y `RutasCampo` (excepciones).
+- **UI/UX y Paginación Unificada**: Componente `TablePagination.jsx` integrado en **TODAS** las vistas tabulares del sistema.
+- **Corrección de Descarga de Reportes (Blob Fetch)**: Utilidad `downloadUrl.js` mejorada para obtener los archivos via `authenticatedApi` con `responseType: 'blob'`, superando bloqueos de pop-up navegacionales y restricciones de descarga cross-origin en navegadores.
 - **Cumplimiento Legal Ecuador 2026**: Código del Trabajo (Arts. 97, 111, 113, 196, 69), aportes IESS, Impuesto a la Renta 2026, validación RDEP XML con fallback estructural y soporte bancario nacional.
 - **Zero Silent Failures**: Logueo estructurado con `correlationId` y fallback nativo en `ensure-native-bindings.js`.
 - **Reportería UTF-8**: PDF y Excel sin caracteres corruptos ni mojibake.
 
-### Fases DIUX26, DIUX26-P2 & DIUX26-P3
+### Fases DIUX26, DIUX26-P2, DIUX26-P3 & DIUX26-P3-FIX
 
 | Fase | Estado |
 |---|---|
@@ -29,6 +30,7 @@
 | DIUX26-05 | completed-pass |
 | DIUX26-P2 | completed-pass |
 | DIUX26-P3 | completed-pass |
+| DIUX26-P3-FIX | completed-pass |
 
 ---
 

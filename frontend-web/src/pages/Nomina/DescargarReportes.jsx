@@ -197,6 +197,7 @@ function DescargarReportes() {
     } catch (err) {
       const nextError = err.response?.data?.message || err.response?.data?.error || 'No pudimos prevalidar datos IESS.';
       setError(nextError);
+      setError(nextError);
       setSaePrecheck(null);
       return null;
     } finally {
@@ -247,7 +248,7 @@ function DescargarReportes() {
       const url = response.data.reporte?.url || response.data.reporte?.csvUrl;
 
       if (url) {
-        downloadUrl(url, response.data.reporte?.fileName || `${tipo}-${anio}-${mes}`);
+        await downloadUrl(url, response.data.reporte?.fileName || `${tipo}-${anio}-${mes}`);
       }
       setMessage('Reporte generado exitosamente.');
     } catch (err) {
@@ -274,7 +275,7 @@ function DescargarReportes() {
       const url = response.data.reporte?.url;
 
       if (url) {
-        downloadUrl(url, response.data.reporte?.fileName || `${reportCode}-${anio}-${mes}.${format}`);
+        await downloadUrl(url, response.data.reporte?.fileName || `${reportCode}-${anio}-${mes}.${format}`);
       }
       setMessage(`Reporte de nómina generado: ${response.data.reporte?.totalFilas || 0} filas.`);
     } catch (err) {
@@ -300,7 +301,7 @@ function DescargarReportes() {
       const url = response.data.reporte?.url;
 
       if (url) {
-        downloadUrl(url, response.data.reporte?.fileName || `PAYROLL_ANUAL_${reportCode}_${anio}.xlsx`);
+        await downloadUrl(url, response.data.reporte?.fileName || `PAYROLL_ANUAL_${reportCode}_${anio}.xlsx`);
       }
       setMessage(`Consolidado anual generado: ${response.data.reporte?.totalFilas || 0} filas.`);
     } catch (err) {
