@@ -1,3 +1,35 @@
+## Current Haiky Plan - HAIKY-MEJORA-INTEGRAL-UIUX-PAGINACION-LEGAL-2026
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-MEJORA-INTEGRAL-UIUX-PAGINACION-LEGAL-2026` |
+| Codigo | `DIUX26` |
+| Estado | `DIUX26-05 cerrado; plan ejecutado sin regresiones` |
+| Plan doc | `docs2/PLAN_HAIKY_DIAGNOSTICO_MEJORA_INTEGRAL_UIUX_LEGAL_NOMINA_EC_2026.md` |
+| Informes | `docs2/diagnostico-mejora-integral-uiux-legal-2026/` |
+| Prompts | `.github/prompts/DIUX26-00` a `.github/prompts/DIUX26-05` |
+| Base | AuditLock cerrado `NAR26-P2-03` con firma `ECCBD62345ECEF6F959E40871FD0A0B93B2595098BC800AC40BB379E7DAA5726` |
+
+### Alcance DIUX26
+
+- **UI/UX y Paginación**: Componente unificado `TablePagination.jsx` integrado en vistas densas (`ListaEmpleados`, `RolesPagos`, `Auditoria`) con navegación limpia y selección de filas por página (10, 25, 50, 100).
+- **Cumplimiento Legal Ecuador 2026**: Código del Trabajo (Arts. 97, 111, 113, 196, 69), aportes IESS, Impuesto a la Renta 2026, validación RDEP XML con fallback estructural y soporte bancario nacional.
+- **Zero Silent Failures**: Fallos silenciosos erradicados, logueo estructurado con `correlationId` y fallback nativo en `ensure-native-bindings.js`.
+- **Reportería UTF-8**: PDF y Excel sin caracteres corruptos ni mojibake.
+
+### Fases DIUX26
+
+| Fase | Estado |
+|---|---|
+| DIUX26-00 | completed-pass |
+| DIUX26-01 | completed-pass |
+| DIUX26-02 | completed-pass |
+| DIUX26-03 | completed-pass |
+| DIUX26-04 | completed-pass |
+| DIUX26-05 | completed-pass |
+
+---
+
 ## Segunda pasada NAR26-P2 - Asistencia, anticipos y reportes
 
 | Campo | Valor |

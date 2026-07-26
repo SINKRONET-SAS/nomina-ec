@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ShieldCheck } from 'lucide-react';
 import { authenticatedApi } from '../services/authenticatedApi';
 import { formatDateTimeEC } from '../utils/dateFormat';
+import TablePagination from '../components/UI/TablePagination';
 
 function formatDate(value) {
   return formatDateTimeEC(value);
@@ -11,6 +12,8 @@ function formatDate(value) {
 function Auditoria() {
   const [entidad, setEntidad] = useState('');
   const [accion, setAccion] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['auditoria', entidad, accion],
@@ -25,6 +28,11 @@ function Auditoria() {
   });
 
   const logs = data || [];
+  const totalPages = Math.max(1, Math.ceil(logs.length / pageSize));
+  const paginatedLogs = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return logs.slice(start, start + pageSize);
+  }, [logs, page, pageSize]);
 
   return (
     <div className="space-y-6">
@@ -48,7 +56,10 @@ function Auditoria() {
             Entidad
             <input
               className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-              onChange={(event) => setEntidad(event.target.value)}
+              onChange={(event) => {
+                setEntidad(event.target.value);
+                setPage(1);
+              }}
               placeholder="Ej: empleados"
               value={entidad}
             />
@@ -57,7 +68,10 @@ function Auditoria() {
             Accion
             <input
               className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-              onChange={(event) => setAccion(event.target.value)}
+              onChange={(event) => {
+                setAccion(event.target.value);
+                setPage(1);
+              }}
               placeholder="Ej: configuracion.crear"
               value={accion}
             />
@@ -75,7 +89,7 @@ function Auditoria() {
         </div>
       )}
 
-      <section className="soft-panel overflow-hidden">
+      <section className="soft-panel overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-50">
@@ -93,7 +107,7 @@ function Auditoria() {
               ) : logs.length === 0 ? (
                 <tr><td className="px-4 py-6 text-center text-sm text-slate-500" colSpan="5">No hay eventos de auditoria.</td></tr>
               ) : (
-                logs.map((log) => (
+                paginatedLogs.map((log) => (
                   <tr className="hover:bg-slate-50" key={log.id}>
                     <td className="px-4 py-3 text-sm text-slate-600">{formatDate(log.created_at || log.createdAt)}</td>
                     <td className="px-4 py-3 text-sm font-semibold text-slate-950">{log.accion || log.action || '-'}</td>
@@ -106,6 +120,17 @@ function Auditoria() {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={logs.length}
+          onPageChange={setPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize);
+            setPage(1);
+          }}
+        />
       </section>
     </div>
   );

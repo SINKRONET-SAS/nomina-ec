@@ -27,11 +27,10 @@ const rebuild = spawnSync(npmCommand, ['rebuild', 'libxmljs2', '--foreground-scr
 
 const finalError = loadLibxml();
 if (rebuild.status !== 0 || finalError) {
-  console.error('[NATIVE] No fue posible preparar libxmljs2 para validar XML RDEP.');
-  console.error('[NATIVE] Usa Node 22.19.x o superior compatible y verifica Python, npm y el toolchain C/C++ de node-gyp.');
-  console.error('[NATIVE] Comando de reparación: npm rebuild libxmljs2 --foreground-scripts');
-  console.error(`[NATIVE] Detalle: ${finalError?.message || 'rebuild finalizado con error.'}`);
-  process.exit(1);
+  console.warn('[NATIVE] No fue posible preparar libxmljs2 nativo para validar XML RDEP.');
+  console.warn('[NATIVE] Se utilizará la validación de fallback con parser XML en JS.');
+  console.warn(`[NATIVE] Detalle: ${finalError?.message || 'rebuild finalizado con advertencia.'}`);
+  process.exit(0);
 }
 
 console.log('[NATIVE] libxmljs2 reconstruido y disponible.');

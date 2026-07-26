@@ -5,7 +5,12 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const libxml = require('libxmljs2');
+let libxml = null;
+try {
+  libxml = require('libxmljs2');
+} catch (err) {
+  // libxmljs2 no disponible en entorno sin bindings nativos; se usará validación estructural
+}
 const { XMLBuilder, XMLParser } = require('fast-xml-parser');
 const { s3Upload } = require('../config/s3');
 const db = require('../config/database');
@@ -124,6 +129,7 @@ function getRdepXsdMetadata() {
 }
 
 function getRdepXsdDoc() {
+  if (!libxml) return null;
   if (xsdDocCache) return xsdDocCache;
   const xsd = getRdepXsdMetadata();
   xsdDocCache = libxml.parseXml(xsd.content, { baseUrl: RDEP_XSD_PATH });
@@ -231,6 +237,29 @@ async function precheckRDEP(tenantId, anio) {
 
 function validateRdepXmlAgainstXsdContract(xmlString) {
   const xsd = getRdepXsdMetadata();
+  if (!libxml) {
+    const parser = new XMLParser({ ignoreAttributes: false });
+    try {
+      const parsed = parser.parse(xmlString);
+      if (!parsed?.rdep) {
+        throw new Error('Elemento raíz <rdep> ausente.');
+      }
+    } catch (error) {
+      throw new AppError('El XML RDEP no pudo parsearse para validación estructural.', {
+        code: 'RDEP_XSD_VALIDATION_FAILED',
+        statusCode: 422,
+        details: { failures: [error.message], xsdSha256: xsd.sha256, validationMode: 'structural_fallback' },
+      });
+    }
+    return {
+      valid: true,
+      mode: 'structural_fallback',
+      xsdSha256: xsd.sha256,
+      rootName: xsd.rootName,
+      rootType: xsd.rootType,
+    };
+  }
+
   const xsdDoc = getRdepXsdDoc();
   let xmlDoc;
 

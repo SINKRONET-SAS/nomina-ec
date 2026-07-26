@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { Download, Pencil, Send, Trash2, X } from 'lucide-react';
@@ -6,6 +6,7 @@ import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 import { downloadUrl } from '../../utils/downloadUrl';
 import { currentPeriodEC } from '../../utils/dateFormat';
+import TablePagination from '../../components/UI/TablePagination';
 
 function normalizeDetail(value) {
   if (!value) return {};
@@ -57,6 +58,8 @@ function RolesPagos() {
   const initialPeriod = currentPeriodEC();
   const [anio, setAnio] = useState(initialPeriod.anio);
   const [mes, setMes] = useState(initialPeriod.mes);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [downloadingId, setDownloadingId] = useState('');
   const [sendingId, setSendingId] = useState('');
   const [downloadingTransposed, setDownloadingTransposed] = useState(false);
@@ -72,6 +75,13 @@ function RolesPagos() {
       return response.data.nominas;
     },
   });
+
+  const list = nominas || [];
+  const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
+  const paginatedList = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return list.slice(start, start + pageSize);
+  }, [list, page, pageSize]);
 
   const descargarPDF = async (id) => {
     setDownloadingId(id);
@@ -226,6 +236,7 @@ function RolesPagos() {
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Ingresos</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Horas extra</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Deducciones</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Deducciones</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Neto</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Estado</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Acciones</th>
@@ -237,7 +248,7 @@ function RolesPagos() {
               ) : !nominas || nominas.length === 0 ? (
                 <tr><td colSpan="7" className="px-6 py-4 text-center">No hay nóminas para este período</td></tr>
               ) : (
-                nominas.map((nomina) => {
+                paginatedList.map((nomina) => {
                   const employeeName = `${nomina.nombres || ''} ${nomina.apellidos || ''}`.trim() || 'empleado';
                   const overtime = overtimeLines(nomina);
                   const roleClosed = nomina.estado === 'cerrada' || nomina.estado === 'pagada';
@@ -324,6 +335,17 @@ function RolesPagos() {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={list.length}
+          onPageChange={setPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize);
+            setPage(1);
+          }}
+        />
       </div>
 
       {pendingAction && (

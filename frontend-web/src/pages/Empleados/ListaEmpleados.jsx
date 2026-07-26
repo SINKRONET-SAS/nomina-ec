@@ -23,6 +23,7 @@ import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 import { formatDateTimeEC, todayISOEC } from '../../utils/dateFormat';
 import { downloadBlob } from '../../utils/downloadBlob';
+import TablePagination from '../../components/UI/TablePagination';
 
 function ImportPanel({ onImported }) {
   const [rawText, setRawText] = useState('');
@@ -311,6 +312,8 @@ function readinessBlockerLabel(code) {
 function ListaEmpleados() {
   const queryClient = useQueryClient();
   const [busqueda, setBusqueda] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [lastInvite, setLastInvite] = useState(null);
   const [message, setMessage] = useState('');
   const [deleteTargetId, setDeleteTargetId] = useState('');
@@ -390,6 +393,7 @@ function ListaEmpleados() {
     },
   });
 
+
   const empleados = data || [];
   const activationRows = invitationsQuery.data || [];
   const activationByEmployee = useMemo(() => new Map(
@@ -398,6 +402,13 @@ function ListaEmpleados() {
   const filtrados = useMemo(() => empleados.filter((empleado) => (
     `${empleado.nombres} ${empleado.apellidos} ${empleado.cedula}`.toLowerCase().includes(busqueda.toLowerCase())
   )), [empleados, busqueda]);
+
+  const totalPages = Math.max(1, Math.ceil(filtrados.length / pageSize));
+  const paginados = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtrados.slice(start, start + pageSize);
+  }, [filtrados, page, pageSize]);
+
   const activationMetrics = useMemo(() => {
     const rows = activationRows;
     return {
@@ -555,7 +566,10 @@ function ListaEmpleados() {
             <Search className="absolute left-3 top-2.5 text-slate-400" size={20} />
             <input
               className="w-full rounded-md border border-slate-300 py-2 pl-10 pr-4 text-sm outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
-              onChange={(event) => setBusqueda(event.target.value)}
+              onChange={(event) => {
+                setBusqueda(event.target.value);
+                setPage(1);
+              }}
               placeholder="Buscar por nombre o cedula"
               type="text"
               value={busqueda}
@@ -581,7 +595,7 @@ function ListaEmpleados() {
               ) : filtrados.length === 0 ? (
                 <tr><td className="px-6 py-4 text-center text-sm text-slate-600" colSpan="6">No hay empleados para mostrar</td></tr>
               ) : (
-                filtrados.map((empleado) => {
+                paginados.map((empleado) => {
                   const activation = activationByEmployee.get(empleado.id);
                   const ready = activation?.readiness?.ready;
                   const activeLink = activation?.link?.status === 'ACTIVE';
@@ -677,6 +691,17 @@ function ListaEmpleados() {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={filtrados.length}
+          onPageChange={setPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize);
+            setPage(1);
+          }}
+        />
       </section>
     </div>
   );
