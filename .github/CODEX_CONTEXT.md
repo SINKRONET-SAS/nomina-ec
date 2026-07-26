@@ -3,22 +3,23 @@
 | Campo | Valor |
 |---|---|
 | Plan | `HAIKY-MEJORA-INTEGRAL-UIUX-PAGINACION-LEGAL-2026` |
-| Codigo | `DIUX26` / `DIUX26-P2` / `DIUX26-P3` / `DIUX26-P3-FIX` |
-| Estado | `DIUX26-P3-FIX cerrado; regresion de descarga de reportes solucionada` |
+| Codigo | `DIUX26` / `DIUX26-P2` / `DIUX26-P3` / `DIUX26-P3-FIX` / `DIUX26-P4` |
+| Estado | `DIUX26-P4 cerrado; busqueda, filtro por categoria y paginacion de parametros/novedades completada` |
 | Plan doc | `docs2/PLAN_HAIKY_DIAGNOSTICO_MEJORA_INTEGRAL_UIUX_LEGAL_NOMINA_EC_2026.md` |
 | Informes | `docs2/diagnostico-mejora-integral-uiux-legal-2026/` |
 | Prompts | `.github/prompts/DIUX26-00` a `.github/prompts/DIUX26-05` |
-| Base | AuditLock cerrado `DIUX26-P3` con firma `BF4E2FD4D70FD9D045C272DBA959BD80323462E2CC452E3DC205817BF7DA791F` |
+| Base | AuditLock cerrado `DIUX26-P3-FIX` con firma `6CDCF2040EC6BDE1EDA9C68C64D482B464E2B7DBEB5D67307104CDA71E27DDF5` |
 
-### Alcance DIUX26, DIUX26-P2, DIUX26-P3 & DIUX26-P3-FIX
+### Alcance DIUX26, DIUX26-P2, DIUX26-P3, DIUX26-P3-FIX & DIUX26-P4
 
-- **UI/UX y Paginación Unificada**: Componente `TablePagination.jsx` integrado en **TODAS** las vistas tabulares del sistema.
+- **UI/UX y Paginación Unificada**: Componente `TablePagination.jsx` integrado en **TODAS** las vistas tabulares del sistema y en la barra lateral de Registros Vigentes de `Parametrizacion.jsx`.
+- **Filtro y Búsqueda en Parametrización (Tipos de Novedad, Cargos, Unidades, etc.)**: Eliminación del corte artificial `slice(0, 12)`, agregando búsqueda en tiempo real por texto, filtro selector por categoría/impacto y paginación navegable completa con `TablePagination`.
 - **Corrección de Descarga de Reportes (Blob Fetch)**: Utilidad `downloadUrl.js` mejorada para obtener los archivos via `authenticatedApi` con `responseType: 'blob'`, superando bloqueos de pop-up navegacionales y restricciones de descarga cross-origin en navegadores.
 - **Cumplimiento Legal Ecuador 2026**: Código del Trabajo (Arts. 97, 111, 113, 196, 69), aportes IESS, Impuesto a la Renta 2026, validación RDEP XML con fallback estructural y soporte bancario nacional.
 - **Zero Silent Failures**: Logueo estructurado con `correlationId` y fallback nativo en `ensure-native-bindings.js`.
 - **Reportería UTF-8**: PDF y Excel sin caracteres corruptos ni mojibake.
 
-### Fases DIUX26, DIUX26-P2, DIUX26-P3 & DIUX26-P3-FIX
+### Fases DIUX26, DIUX26-P2, DIUX26-P3, DIUX26-P3-FIX & DIUX26-P4
 
 | Fase | Estado |
 |---|---|
@@ -31,6 +32,7 @@
 | DIUX26-P2 | completed-pass |
 | DIUX26-P3 | completed-pass |
 | DIUX26-P3-FIX | completed-pass |
+| DIUX26-P4 | completed-pass |
 
 ---
 

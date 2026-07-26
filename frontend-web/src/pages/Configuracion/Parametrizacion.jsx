@@ -7,12 +7,14 @@ import {
   Download,
   Edit3,
   Plus,
+  Search,
   Settings2,
   Trash2,
   Upload,
   X,
 } from 'lucide-react';
 import CompactNotice from '../../components/UI/CompactNotice';
+import TablePagination from '../../components/UI/TablePagination';
 import { useAuth } from '../../context/AuthContext';
 import Field from './parametrizacion/Field';
 import IncomeTaxTableFields from './parametrizacion/IncomeTaxTableFields';
@@ -378,6 +380,10 @@ function Parametrizacion() {
   const [jobPositionCsv, setJobPositionCsv] = useState('');
   const [jobPositionFileName, setJobPositionFileName] = useState('');
   const [jobPositionBulkResult, setJobPositionBulkResult] = useState(null);
+  const [sidebarSearch, setSidebarSearch] = useState('');
+  const [sidebarFilter, setSidebarFilter] = useState('');
+  const [sidebarPage, setSidebarPage] = useState(1);
+  const [sidebarPageSize, setSidebarPageSize] = useState(10);
 
   const {
     data: summary,
@@ -575,6 +581,42 @@ function Parametrizacion() {
     ? dedupeNoveltyRecords(baseRecords)
     : baseRecords;
   const legalRecords = summary?.resources?.legalParameters || [];
+
+  const availableCategories = React.useMemo(() => {
+    if (!Array.isArray(records)) return [];
+    const set = new Set();
+    records.forEach((r) => {
+      if (r.category) set.add(r.category);
+      if (r.payroll_impact) set.add(r.payroll_impact);
+      if (r.status && !r.category) set.add(r.status);
+    });
+    return Array.from(set);
+  }, [records]);
+
+  const filteredRecords = React.useMemo(() => {
+    if (!Array.isArray(records)) return [];
+    return records.filter((record) => {
+      const label = String(activeDefinition.recordLabel?.(record, summary) || '').toLowerCase();
+      const meta = String(recordMetaForDefinition?.(activeDefinition, record, summary) || '').toLowerCase();
+      const code = String(record.code || record.parameter_key || record.concept_code || record.banco_codigo || '').toLowerCase();
+      const name = String(record.name || record.source_name || record.label || '').toLowerCase();
+      const description = String(record.description || record.notes || '').toLowerCase();
+      const category = String(record.category || record.payroll_impact || record.status || '').toLowerCase();
+
+      const searchLower = sidebarSearch.trim().toLowerCase();
+      const matchesSearch = !searchLower || [label, meta, code, name, description].some((field) => field.includes(searchLower));
+      const matchesFilter = !sidebarFilter || category === sidebarFilter.toLowerCase();
+
+      return matchesSearch && matchesFilter;
+    });
+  }, [records, activeDefinition, summary, sidebarSearch, sidebarFilter]);
+
+  const totalSidebarPages = Math.ceil(filteredRecords.length / sidebarPageSize) || 1;
+
+  const paginatedRecords = React.useMemo(() => {
+    const start = (sidebarPage - 1) * sidebarPageSize;
+    return filteredRecords.slice(start, start + sidebarPageSize);
+  }, [filteredRecords, sidebarPage, sidebarPageSize]);
   const rootFormDefinitions = formDefinitions.filter((definition) => !definition.parentKey);
   const childFormDefinitions = (parentKey) => formDefinitions.filter((definition) => definition.parentKey === parentKey);
 
@@ -705,39 +747,6 @@ function Parametrizacion() {
   }
 
   function submitForm(event) {
-    event.preventDefault();
-    if (activeDefinition.customType === 'bankMappingStructure') {
-      return;
-    }
-    saveMutation.mutate({
-      definition: activeDefinition,
-      values: activeValues,
-      record: isEditingActiveRecord ? editingRecord : null,
-    });
-  }
-
-  function selectForm(definitionKey) {
-    setActiveForm(definitionKey);
-    setEditingRecord(null);
-    setPendingDeleteId('');
-  }
-
-  function startEdit(definition, record) {
-    try {
-      const values = formValuesFromRecord(definition, record);
-      setActiveForm(definition.key);
-      setEditingRecord({ ...record, definitionKey: definition.key });
-      setPendingDeleteId('');
-      setError('');
-      setMessage('');
-      setForms((current) => ({ ...current, [definition.key]: values }));
-    } catch (err) {
-      setError(`No se pudo cargar el registro para editar: ${err.message}`);
-    }
-  }
-
-  function cancelEdit() {
-    setEditingRecord(null);
     setPendingDeleteId('');
     setForms((current) => ({
       ...current,
@@ -1184,72 +1193,146 @@ function Parametrizacion() {
           )}
 
           <aside className="rounded-md border border-slate-200 p-4">
-            <h3 className="font-semibold text-slate-950">{activeDefinition.recordsTitle || 'Registros vigentes'}</h3>
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="font-semibold text-slate-950">{activeDefinition.recordsTitle || 'Registros vigentes'}</h3>
+              <span className="text-xs font-medium text-slate-500">
+                {filteredRecords.length} {filteredRecords.length === 1 ? 'registro' : 'registros'}
+              </span>
+            </div>
+
+            {activeDefinition.customType !== 'bankMappingStructure' && (
+              <div className="mt-3 space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder={`Buscar en ${activeDefinition.title.toLowerCase()}...`}
+                    value={sidebarSearch}
+                    onChange={(e) => {
+                      setSidebarSearch(e.target.value);
+                      setSidebarPage(1);
+                    }}
+                    className="w-full rounded-md border border-slate-300 pl-8 pr-7 py-1.5 text-xs outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                  />
+                  {sidebarSearch && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSidebarSearch('');
+                        setSidebarPage(1);
+                      }}
+                      className="absolute right-2 top-2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {availableCategories.length > 0 && (
+                  <select
+                    value={sidebarFilter}
+                    onChange={(e) => {
+                      setSidebarFilter(e.target.value);
+                      setSidebarPage(1);
+                    }}
+                    className="w-full rounded-md border border-slate-300 px-2 py-1 text-xs outline-none focus:border-teal-500"
+                  >
+                    <option value="">Todas las categorías ({availableCategories.length})</option>
+                    {availableCategories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+
             <div className="mt-4 space-y-3">
               {activeDefinition.customType === 'bankMappingStructure' ? (
                 <BankMappingGroups records={records} />
-              ) : records.length === 0 && (
+              ) : filteredRecords.length === 0 ? (
                 <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                  {activeDefinition.emptyText || 'Aún no hay registros en esta categoría.'}
+                  {sidebarSearch || sidebarFilter
+                    ? 'No se encontraron registros que coincidan con los filtros.'
+                    : (activeDefinition.emptyText || 'Aún no hay registros en esta categoría.')}
                 </p>
+              ) : (
+                paginatedRecords.map((record) => {
+                  const recordLocked = activeDefinition.resource === 'legalParameters'
+                    && record.validation_status === 'validado_oficial'
+                    && !canValidateLegalParameters;
+                  return (
+                    <div className="rounded-md bg-slate-50 px-3 py-2" key={record.id}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-900">{activeDefinition.recordLabel(record, summary)}</p>
+                          <p className="mt-1 text-xs text-slate-500">{recordMetaForDefinition(activeDefinition, record, summary)}</p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1">
+                          <button
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-teal-700 hover:border-teal-300"
+                            type="button"
+                            disabled={recordLocked}
+                            onClick={() => startEdit(activeDefinition, record)}
+                            title={recordLocked ? 'Solo el administrador principal puede modificar parámetros validados' : 'Editar registro'}
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                          {pendingDeleteId === record.id ? (
+                            <>
+                              <button
+                                className="inline-flex min-h-8 items-center rounded-md border border-red-200 bg-white px-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                                type="button"
+                                disabled={deleteMutation.isPending || recordLocked}
+                                onClick={() => confirmDelete(activeDefinition, record)}
+                              >
+                                Eliminar
+                              </button>
+                              <button
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:border-slate-300"
+                                type="button"
+                                onClick={() => setPendingDeleteId('')}
+                                title="Cancelar eliminacion"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:text-red-700"
+                              type="button"
+                              disabled={recordLocked}
+                              onClick={() => requestDelete(record.id)}
+                              title={recordLocked ? 'Solo el administrador principal puede eliminar parámetros validados' : 'Eliminar si no tiene consumos'}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
               )}
-              {activeDefinition.customType !== 'bankMappingStructure' && records.slice(0, 12).map((record) => {
-                const recordLocked = activeDefinition.resource === 'legalParameters'
-                  && record.validation_status === 'validado_oficial'
-                  && !canValidateLegalParameters;
-                return (
-                <div className="rounded-md bg-slate-50 px-3 py-2" key={record.id}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-900">{activeDefinition.recordLabel(record, summary)}</p>
-                      <p className="mt-1 text-xs text-slate-500">{recordMetaForDefinition(activeDefinition, record, summary)}</p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <button
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-teal-700 hover:border-teal-300"
-                        type="button"
-                        disabled={recordLocked}
-                        onClick={() => startEdit(activeDefinition, record)}
-                        title={recordLocked ? 'Solo el administrador principal puede modificar parámetros validados' : 'Editar registro'}
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </button>
-                      {pendingDeleteId === record.id ? (
-                        <>
-                          <button
-                            className="inline-flex min-h-8 items-center rounded-md border border-red-200 bg-white px-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
-                            type="button"
-                            disabled={deleteMutation.isPending || recordLocked}
-                            onClick={() => confirmDelete(activeDefinition, record)}
-                          >
-                            Eliminar
-                          </button>
-                          <button
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:border-slate-300"
-                            type="button"
-                            onClick={() => setPendingDeleteId('')}
-                            title="Cancelar eliminacion"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:text-red-700"
-                          type="button"
-                          disabled={recordLocked}
-                          onClick={() => requestDelete(record.id)}
-                          title={recordLocked ? 'Solo el administrador principal puede eliminar parámetros validados' : 'Eliminar si no tiene consumos'}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                );
-              })}
             </div>
+
+            {activeDefinition.customType !== 'bankMappingStructure' && filteredRecords.length > sidebarPageSize && (
+              <div className="mt-4 border-t border-slate-100 pt-3">
+                <TablePagination
+                  currentPage={sidebarPage}
+                  onPageChange={setSidebarPage}
+                  onPageSizeChange={(size) => {
+                    setSidebarPageSize(size);
+                    setSidebarPage(1);
+                  }}
+                  pageSize={sidebarPageSize}
+                  totalItems={filteredRecords.length}
+                  totalPages={totalSidebarPages}
+                />
+              </div>
+            )}
+
             {activeDefinition.key === 'legal' && (
               <LegalParametersPreview records={legalRecords} />
             )}
