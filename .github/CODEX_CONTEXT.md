@@ -3,21 +3,21 @@
 | Campo | Valor |
 |---|---|
 | Plan | `HAIKY-MEJORA-INTEGRAL-UIUX-PAGINACION-LEGAL-2026` |
-| Codigo | `DIUX26` / `DIUX26-P2` |
-| Estado | `DIUX26-P2 cerrado; propagacion de paginacion completada` |
+| Codigo | `DIUX26` / `DIUX26-P2` / `DIUX26-P3` |
+| Estado | `DIUX26-P3 cerrado; remanentes de paginacion completados` |
 | Plan doc | `docs2/PLAN_HAIKY_DIAGNOSTICO_MEJORA_INTEGRAL_UIUX_LEGAL_NOMINA_EC_2026.md` |
 | Informes | `docs2/diagnostico-mejora-integral-uiux-legal-2026/` |
 | Prompts | `.github/prompts/DIUX26-00` a `.github/prompts/DIUX26-05` |
-| Base | AuditLock cerrado `NAR26-P2-03` con firma `ECCBD62345ECEF6F959E40871FD0A0B93B2595098BC800AC40BB379E7DAA5726` |
+| Base | AuditLock cerrado `DIUX26-P2` con firma `030ED61F55098F63E2436C3199A9F66C0317EACEC429FFD4DA3A01E731C5B8F6` |
 
-### Alcance DIUX26 & DIUX26-P2
+### Alcance DIUX26, DIUX26-P2 & DIUX26-P3
 
-- **UI/UX y Paginación Unificada**: Componente `TablePagination.jsx` integrado en todas las vistas tabulares principales: `ListaEmpleados`, `RolesPagos`, `Auditoria`, `NovedadesPendientes`, `ReporteAsistencia`, `ReporteNovedades`, `Beneficios` (tabla de préstamos y tabla de selección de empleados para anticipos), `ContratosGenerados` y `ActasFiniquito`.
+- **UI/UX y Paginación Unificada**: Componente `TablePagination.jsx` integrado en **TODAS** las vistas tabulares del sistema: `ListaEmpleados`, `RolesPagos`, `Auditoria`, `NovedadesPendientes`, `ReporteAsistencia`, `ReporteNovedades`, `Beneficios` (dos tablas), `ContratosGenerados`, `ActasFiniquito`, `CerrarMes` (lotes de novedades), `ActasEntregaDotacion` (actas generadas), `MovilizacionAprobacion`, `PermisosOperacion`, `UsuariosRoles` y `RutasCampo` (excepciones).
 - **Cumplimiento Legal Ecuador 2026**: Código del Trabajo (Arts. 97, 111, 113, 196, 69), aportes IESS, Impuesto a la Renta 2026, validación RDEP XML con fallback estructural y soporte bancario nacional.
 - **Zero Silent Failures**: Logueo estructurado con `correlationId` y fallback nativo en `ensure-native-bindings.js`.
 - **Reportería UTF-8**: PDF y Excel sin caracteres corruptos ni mojibake.
 
-### Fases DIUX26 & DIUX26-P2
+### Fases DIUX26, DIUX26-P2 & DIUX26-P3
 
 | Fase | Estado |
 |---|---|
@@ -28,6 +28,7 @@
 | DIUX26-04 | completed-pass |
 | DIUX26-05 | completed-pass |
 | DIUX26-P2 | completed-pass |
+| DIUX26-P3 | completed-pass |
 
 ---
 

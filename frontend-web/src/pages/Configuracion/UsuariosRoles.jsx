@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Mail, ShieldCheck, UserPlus, UserRound, X } from 'lucide-react';
+import TablePagination from '../../components/UI/TablePagination';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 
@@ -13,6 +14,8 @@ export default function UsuariosRoles() {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [permissions, setPermissions] = useState({});
   const [message, setMessage] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const usersQuery = useQuery({
     queryKey: ['usuarios-roles'],
@@ -58,6 +61,12 @@ export default function UsuariosRoles() {
   const mutationError = createMutation.error || statusMutation.error || permissionMutation.error || verificationMutation.error || usersQuery.error || permissionQuery.error;
   const updateForm = (name, value) => { setForm((current) => ({ ...current, [name]: value })); setMessage(''); };
 
+  const totalPages = Math.max(1, Math.ceil(users.length / pageSize));
+  const paginatedUsers = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return users.slice(start, start + pageSize);
+  }, [users, page, pageSize]);
+
   return (
     <div className="space-y-5">
       <div><p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-800">Configuración y acceso</p><h1 className="mt-1 text-2xl font-bold text-slate-950">Usuarios y roles</h1><p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">Administra usuarios delegados, permisos por módulo y estado de acceso. La información queda aislada por empresa y auditada.</p></div>
@@ -74,7 +83,40 @@ export default function UsuariosRoles() {
           <button className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white hover:bg-teal-800 disabled:bg-slate-300" disabled={createMutation.isPending || !form.dpaAccepted} type="button" onClick={() => createMutation.mutate()}><UserPlus className="h-4 w-4" />{createMutation.isPending ? 'Creando...' : 'Crear usuario'}</button>
         </div></section>
 
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-2"><UserRound className="h-5 w-5 text-teal-700" /><h2 className="text-lg font-semibold text-slate-950">Usuarios registrados</h2></div><div className="mt-4 overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Usuario</th><th className="px-3 py-2">Rol</th><th className="px-3 py-2">Estado</th><th className="px-3 py-2">Correo</th><th className="px-3 py-2 text-right">Acciones</th></tr></thead><tbody className="divide-y divide-slate-100">{users.map((user) => <tr key={user.id}><td className="px-3 py-3"><p className="font-semibold text-slate-900">{[user.nombres, user.apellidos].filter(Boolean).join(' ') || user.email}</p><p className="text-xs text-slate-500">{user.email}</p></td><td className="px-3 py-3">{ROLE_LABELS[user.rol] || user.rol}</td><td className="px-3 py-3"><span className={`rounded-full px-2 py-1 text-xs font-semibold ${user.activo ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{user.activo ? 'Activo' : 'Inactivo'}</span></td><td className="px-3 py-3"><span className={`rounded-full px-2 py-1 text-xs font-semibold ${user.emailVerificadoEn ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{user.emailVerificadoEn ? 'Verificado' : 'Pendiente'}</span></td><td className="px-3 py-3 text-right"><button className="mr-2 rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700" type="button" onClick={() => setSelectedUserId(user.id)} disabled={!user.activo}>Permisos</button>{user.activo && !user.emailVerificadoEn && user.rol !== 'owner' && <button className="mr-2 inline-flex items-center gap-1 rounded-md border border-teal-200 px-2 py-1 text-xs font-semibold text-teal-800 disabled:opacity-50" type="button" onClick={() => verificationMutation.mutate(user.id)} disabled={verificationMutation.isPending} title="Enviar un código nuevo de verificación con vigencia completa"><Mail className="h-3.5 w-3.5" />Reenviar</button>}<button className="rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700" type="button" onClick={() => statusMutation.mutate({ id: user.id, activo: !user.activo })}>{user.activo ? 'Desactivar' : 'Activar'}</button></td></tr>)}{users.length === 0 && <tr><td className="px-3 py-6 text-center text-slate-500" colSpan="5">No hay usuarios registrados.</td></tr>}</tbody></table></div></section>
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-2"><UserRound className="h-5 w-5 text-teal-700" /><h2 className="text-lg font-semibold text-slate-950">Usuarios registrados</h2></div>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[760px] text-sm">
+              <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                <tr><th className="px-3 py-2">Usuario</th><th className="px-3 py-2">Rol</th><th className="px-3 py-2">Estado</th><th className="px-3 py-2">Correo</th><th className="px-3 py-2 text-right">Acciones</th></tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {paginatedUsers.map((user) => (
+                  <tr key={user.id}>
+                    <td className="px-3 py-3"><p className="font-semibold text-slate-900">{[user.nombres, user.apellidos].filter(Boolean).join(' ') || user.email}</p><p className="text-xs text-slate-500">{user.email}</p></td>
+                    <td className="px-3 py-3">{ROLE_LABELS[user.rol] || user.rol}</td>
+                    <td className="px-3 py-3"><span className={`rounded-full px-2 py-1 text-xs font-semibold ${user.activo ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{user.activo ? 'Activo' : 'Inactivo'}</span></td>
+                    <td className="px-3 py-3"><span className={`rounded-full px-2 py-1 text-xs font-semibold ${user.emailVerificadoEn ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{user.emailVerificadoEn ? 'Verificado' : 'Pendiente'}</span></td>
+                    <td className="px-3 py-3 text-right">
+                      <button className="mr-2 rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700" type="button" onClick={() => setSelectedUserId(user.id)} disabled={!user.activo}>Permisos</button>
+                      {user.activo && !user.emailVerificadoEn && user.rol !== 'owner' && <button className="mr-2 inline-flex items-center gap-1 rounded-md border border-teal-200 px-2 py-1 text-xs font-semibold text-teal-800 disabled:opacity-50" type="button" onClick={() => verificationMutation.mutate(user.id)} disabled={verificationMutation.isPending} title="Enviar un código nuevo de verificación con vigencia completa"><Mail className="h-3.5 w-3.5" />Reenviar</button>}
+                      <button className="rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700" type="button" onClick={() => statusMutation.mutate({ id: user.id, activo: !user.activo })}>{user.activo ? 'Desactivar' : 'Activar'}</button>
+                    </td>
+                  </tr>
+                ))}
+                {users.length === 0 && <tr><td className="px-3 py-6 text-center text-slate-500" colSpan="5">No hay usuarios registrados.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+          <TablePagination
+            currentPage={page}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+            pageSize={pageSize}
+            totalItems={users.length}
+            totalPages={totalPages}
+          />
+        </section>
       </div>
 
       {selected && <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold text-slate-950">Permisos de {selected.nombres || selected.email}</h2><p className="mt-1 text-sm text-slate-600">Owner y superadmin son irrestrictos. Los demás pueden personalizarse por módulo.</p></div><button className="rounded-md border border-slate-200 p-2 text-slate-500" type="button" onClick={() => setSelectedUserId('')}><X className="h-4 w-4" /></button></div>{permissionQuery.isLoading ? <p className="mt-4 text-sm text-slate-500">Cargando permisos...</p> : <><div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{modules.map((module) => <label className="flex items-start gap-3 rounded-md border border-slate-200 p-3" key={module.code}><input className="mt-1" type="checkbox" checked={permissions[module.code] === true} disabled={permissionQuery.data?.isUnrestricted} onChange={(event) => setPermissions((current) => ({ ...current, [module.code]: event.target.checked }))} /><span><span className="block font-semibold text-slate-900">{module.label}</span><span className="text-xs text-slate-500">{module.description}</span></span>{permissions[module.code] === true && <Check className="ml-auto h-4 w-4 text-teal-700" />}</label>)}</div><div className="mt-4 flex items-center gap-2 text-xs text-slate-600"><ShieldCheck className="h-4 w-4 text-teal-700" /> Cambios separados por tenant y registrados en auditoría.</div><button className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={permissionMutation.isPending || permissionQuery.data?.isUnrestricted} type="button" onClick={() => permissionMutation.mutate()}>{permissionMutation.isPending ? 'Guardando...' : 'Guardar permisos'}</button></>}</section>}

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarCheck2, CheckCircle2, Paperclip, RefreshCcw, XCircle } from 'lucide-react';
+import TablePagination from '../../components/UI/TablePagination';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { formatDateEC } from '../../utils/dateFormat';
 
@@ -30,6 +31,8 @@ export default function PermisosOperacion() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState('pendiente');
   const [drafts, setDrafts] = useState({});
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const permisosQuery = useQuery({
     queryKey: ['operacion', 'permisos', status],
@@ -63,6 +66,12 @@ export default function PermisosOperacion() {
   const permisos = permisosQuery.data || [];
   const isResolving = aprobarMutation.isPending || rechazarMutation.isPending;
 
+  const totalPages = Math.max(1, Math.ceil(permisos.length / pageSize));
+  const paginatedPermisos = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return permisos.slice(start, start + pageSize);
+  }, [permisos, page, pageSize]);
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -89,7 +98,7 @@ export default function PermisosOperacion() {
             <span className="mb-1 block text-sm font-medium text-slate-700">Estado</span>
             <select
               className="min-h-11 rounded-md border border-slate-300 px-3 text-sm"
-              onChange={(event) => setStatus(event.target.value)}
+              onChange={(event) => { setStatus(event.target.value); setPage(1); }}
               value={status}
             >
               <option value="pendiente">Pendientes</option>
@@ -115,106 +124,109 @@ export default function PermisosOperacion() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="px-4 py-3 text-left font-semibold text-slate-600">Trabajador</th>
-              <th className="px-4 py-3 text-left font-semibold text-slate-600">Fecha</th>
-              <th className="px-4 py-3 text-left font-semibold text-slate-600">Tipo</th>
-              <th className="px-4 py-3 text-left font-semibold text-slate-600">Tiempo</th>
-              <th className="px-4 py-3 text-left font-semibold text-slate-600">Motivo</th>
-              <th className="px-4 py-3 text-left font-semibold text-slate-600">Soporte</th>
-              <th className="px-4 py-3 text-left font-semibold text-slate-600">Estado</th>
-              <th className="px-4 py-3 text-left font-semibold text-slate-600">Acción</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {permisos.map((permiso) => {
-              const soporte = soporteMedico(permiso);
-              return (
-              <tr key={permiso.id} className="align-top">
-                <td className="px-4 py-3">
-                  <div className="font-semibold text-slate-900">{permiso.apellidos} {permiso.nombres}</div>
-                  <div className="text-xs text-slate-500">{permiso.cedula}</div>
-                </td>
-                <td className="px-4 py-3 text-slate-700">{formatDateEC(permiso.fecha)}</td>
-                <td className="px-4 py-3">
-                  <span className="rounded-full bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800">
-                    {formatPermissionType(permiso.tipo_novedad)}
-                  </span>
-                </td>
-                <td className="px-4 py-3 font-medium text-slate-800">{formatHours(permiso.minutos)}</td>
-                <td className="max-w-xs px-4 py-3 text-slate-600">{permiso.justificacion || 'Sin detalle registrado.'}</td>
-                <td className="px-4 py-3">
-                  {soporte?.url ? (
-                    <a
-                      className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-teal-700 hover:bg-teal-50"
-                      href={soporte.url}
-                      rel="noreferrer"
-                      target="_blank"
-                    >
-                      <Paperclip className="h-3.5 w-3.5" />
-                      Revisar
-                    </a>
-                  ) : (
-                    <span className="text-xs text-slate-500">Sin soporte</span>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{permiso.estado}</span>
-                </td>
-                <td className="px-4 py-3">
-                  {permiso.estado === 'pendiente' ? (
-                    <div className="grid min-w-[360px] gap-2 lg:grid-cols-[1fr_auto_auto]">
-                      <input
-                        className="min-h-10 rounded-md border border-slate-300 px-3 text-sm"
-                        onChange={(event) => updateDraft(permiso.id, event.target.value)}
-                        placeholder="Motivo si rechazas"
-                        value={drafts[permiso.id] || ''}
-                      />
-                      <button
-                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-teal-700 px-3 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-60"
-                        disabled={isResolving}
-                        onClick={() => aprobarMutation.mutate(permiso.id)}
-                        type="button"
-                      >
-                        <CheckCircle2 className="h-4 w-4" />
-                        Aprobar
-                      </button>
-                      <button
-                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-red-200 px-3 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
-                        disabled={isResolving}
-                        onClick={() => rechazarMutation.mutate({ id: permiso.id, motivo: drafts[permiso.id] || 'Rechazado por RRHH' })}
-                        type="button"
-                      >
-                        <XCircle className="h-4 w-4" />
-                        Rechazar
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-slate-500">Resuelto</span>
-                  )}
-                </td>
-              </tr>
-              );
-            })}
-            {permisosQuery.isLoading && (
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50">
               <tr>
-                <td className="px-4 py-8 text-center text-slate-500" colSpan={8}>Cargando permisos...</td>
+                <th className="px-4 py-3 text-left font-semibold text-slate-600">Trabajador</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-600">Fecha</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-600">Tipo</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-600">Tiempo</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-600">Motivo</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-600">Soporte</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-600">Estado</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-600">Acción</th>
               </tr>
-            )}
-            {!permisosQuery.isLoading && permisos.length === 0 && (
-              <tr>
-                <td className="px-4 py-8 text-center text-slate-500" colSpan={8}>
-                  No hay solicitudes de permisos para el filtro seleccionado.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {paginatedPermisos.map((permiso) => {
+                const soporte = soporteMedico(permiso);
+                return (
+                  <tr key={permiso.id} className="align-top">
+                    <td className="px-4 py-3">
+                      <div className="font-semibold text-slate-900">{permiso.apellidos} {permiso.nombres}</div>
+                      <div className="text-xs text-slate-500">{permiso.cedula}</div>
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">{formatDateEC(permiso.fecha)}</td>
+                    <td className="px-4 py-3">
+                      <span className="rounded-full bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800">
+                        {formatPermissionType(permiso.tipo_novedad)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-medium text-slate-800">{formatHours(permiso.minutos)}</td>
+                    <td className="max-w-xs px-4 py-3 text-slate-600">{permiso.justificacion || 'Sin detalle registrado.'}</td>
+                    <td className="px-4 py-3">
+                      {soporte?.url ? (
+                        <a
+                          className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-teal-700 hover:bg-teal-50"
+                          href={soporte.url}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          <Paperclip className="h-3.5 w-3.5" />
+                          Revisar
+                        </a>
+                      ) : (
+                        <span className="text-xs text-slate-500">Sin soporte</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{permiso.estado}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {permiso.estado === 'pendiente' ? (
+                        <div className="grid min-w-[360px] gap-2 lg:grid-cols-[1fr_auto_auto]">
+                          <input
+                            className="min-h-10 rounded-md border border-slate-300 px-3 text-sm"
+                            onChange={(event) => updateDraft(permiso.id, event.target.value)}
+                            placeholder="Motivo si rechazas"
+                            value={drafts[permiso.id] || ''}
+                          />
+                          <button
+                            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-teal-700 px-3 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-60"
+                            disabled={isResolving}
+                            onClick={() => aprobarMutation.mutate(permiso.id)}
+                            type="button"
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                            Aprobar
+                          </button>
+                          <button
+                            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-red-200 px-3 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                            disabled={isResolving}
+                            onClick={() => rechazarMutation.mutate({ id: permiso.id, motivo: drafts[permiso.id] || 'Rechazado por RRHH' })}
+                            type="button"
+                          >
+                            <XCircle className="h-4 w-4" />
+                            Rechazar
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-500">Resuelto</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {permisos.length === 0 && (
+                <tr>
+                  <td className="px-4 py-8 text-center text-slate-500" colSpan={8}>
+                    No hay solicitudes de permisos para el filtro seleccionado.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
+        <TablePagination
+          currentPage={page}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+          pageSize={pageSize}
+          totalItems={permisos.length}
+          totalPages={totalPages}
+        />
       </div>
     </div>
   );

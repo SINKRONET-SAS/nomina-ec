@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, Edit3, FileSpreadsheet, FileText, LockKeyhole, MapPin, Plus, Route, Save, Trash2 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
+import TablePagination from '../../components/UI/TablePagination';
 import { fetchPlanCapabilities } from '../../services/beneficiosApi';
 import { extractApiError } from '../../services/publicApi';
 import { downloadBlob } from '../../utils/downloadBlob';
@@ -112,6 +113,14 @@ function RutasCampo() {
   const sites = sitesQuery.data || [];
   const routeDays = daysQuery.data || [];
   const exceptions = exceptionsQuery.data || [];
+
+  const [exceptionPage, setExceptionPage] = useState(1);
+  const [exceptionPageSize, setExceptionPageSize] = useState(10);
+  const totalExceptionPages = Math.max(1, Math.ceil(exceptions.length / exceptionPageSize));
+  const paginatedExceptions = useMemo(() => {
+    const start = (exceptionPage - 1) * exceptionPageSize;
+    return exceptions.slice(start, start + exceptionPageSize);
+  }, [exceptions, exceptionPage, exceptionPageSize]);
   const routeReport = routeReportQuery.data || { rows: [], total: 0 };
   const employees = employeesQuery.data || [];
 
@@ -487,7 +496,7 @@ function RutasCampo() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {exceptions.map((item) => (
+              {paginatedExceptions.map((item) => (
                 <tr key={item.id}>
                   <td className="px-3 py-2">{item.employee_name}</td>
                   <td className="px-3 py-2">{item.site_name || 'No programada'}</td>
@@ -508,6 +517,14 @@ function RutasCampo() {
           </table>
           {!exceptionsQuery.isLoading && exceptions.length === 0 ? <p className="rounded-md bg-slate-50 p-4 text-sm text-slate-500">No hay excepciones para la fecha.</p> : null}
         </div>
+        <TablePagination
+          currentPage={exceptionPage}
+          onPageChange={setExceptionPage}
+          onPageSizeChange={(size) => { setExceptionPageSize(size); setExceptionPage(1); }}
+          pageSize={exceptionPageSize}
+          totalItems={exceptions.length}
+          totalPages={totalExceptionPages}
+        />
       </section>
     </div>
   );

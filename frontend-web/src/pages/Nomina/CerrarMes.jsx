@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
+import CompactNotice from '../../components/UI/CompactNotice';
+import TablePagination from '../../components/UI/TablePagination';
 import EmployeeSearchSelect from '../../components/UI/EmployeeSearchSelect';
 import { ECUADOR_TIME_ZONE, currentPeriodEC, firstDayOfPeriodEC } from '../../utils/dateFormat';
 import {
@@ -195,6 +197,14 @@ function CerrarMes() {
     });
   }, [batches, batchSearch, batchNoveltyFilter, batchScopeFilter, noveltyTypeOptions]);
   const hasBatchFilters = Boolean(batchSearch.trim() || batchNoveltyFilter !== 'all' || batchScopeFilter !== 'all');
+
+  const [batchPage, setBatchPage] = useState(1);
+  const [batchPageSize, setBatchPageSize] = useState(10);
+  const totalBatchPages = Math.max(1, Math.ceil(filteredBatches.length / batchPageSize));
+  const paginatedBatches = useMemo(() => {
+    const start = (batchPage - 1) * batchPageSize;
+    return filteredBatches.slice(start, start + batchPageSize);
+  }, [filteredBatches, batchPage, batchPageSize]);
 
   useEffect(() => {
     setBatchForm((current) => ({
@@ -904,21 +914,22 @@ function CerrarMes() {
               <p className="mt-1 text-sm text-slate-600">
                 {filteredBatches.length} de {batches.length} lotes visibles.
               </p>
+              {hasBatchFilters && (
+                <button
+                  className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:border-slate-300"
+                  onClick={() => {
+                    setBatchSearch('');
+                    setBatchNoveltyFilter('all');
+                    setBatchScopeFilter('all');
+                    setBatchPage(1);
+                  }}
+                  type="button"
+                >
+                  <XCircle className="h-4 w-4" />
+                  Limpiar filtros
+                </button>
+              )}
             </div>
-            {hasBatchFilters && (
-              <button
-                className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:border-slate-300"
-                onClick={() => {
-                  setBatchSearch('');
-                  setBatchNoveltyFilter('all');
-                  setBatchScopeFilter('all');
-                }}
-                type="button"
-              >
-                <XCircle className="h-4 w-4" />
-                Limpiar filtros
-              </button>
-            )}
           </div>
 
           <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(240px,1fr)_220px_180px]">
@@ -926,7 +937,7 @@ function CerrarMes() {
               Empleado, cédula o alcance
               <input
                 className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
-                onChange={(event) => setBatchSearch(event.target.value)}
+                onChange={(event) => { setBatchSearch(event.target.value); setBatchPage(1); }}
                 placeholder="Buscar por nombre, cédula, cargo o departamento"
                 value={batchSearch}
               />
@@ -935,7 +946,7 @@ function CerrarMes() {
               Novedad
               <select
                 className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
-                onChange={(event) => setBatchNoveltyFilter(event.target.value)}
+                onChange={(event) => { setBatchNoveltyFilter(event.target.value); setBatchPage(1); }}
                 value={batchNoveltyFilter}
               >
                 <option value="all">Todas</option>
@@ -948,7 +959,7 @@ function CerrarMes() {
               Alcance
               <select
                 className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
-                onChange={(event) => setBatchScopeFilter(event.target.value)}
+                onChange={(event) => { setBatchScopeFilter(event.target.value); setBatchPage(1); }}
                 value={batchScopeFilter}
               >
                 <option value="all">Todos</option>
@@ -959,9 +970,9 @@ function CerrarMes() {
             </label>
           </div>
 
-          <div className="mt-4 max-h-[28rem] overflow-auto rounded-md border border-slate-200">
+          <div className="mt-4 overflow-x-auto rounded-md border border-slate-200">
             <table className="w-full min-w-[760px] text-sm">
-              <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase text-slate-500">
+              <thead className="bg-slate-50 text-xs uppercase text-slate-500">
                 <tr>
                   <th className="min-w-[18rem] px-4 py-3 text-left">Alcance</th>
                   <th className="px-4 py-3 text-left">Novedad</th>
@@ -980,7 +991,7 @@ function CerrarMes() {
                     </td>
                   </tr>
                 )}
-                {filteredBatches.map((batch) => (
+                {paginatedBatches.map((batch) => (
                   <tr key={batch.id}>
                     <td className="max-w-[28rem] whitespace-normal break-words px-4 py-3 font-medium text-slate-800">{batchScopeLabel(batch)}</td>
                     <td className="px-4 py-3">{getNoveltyTypeLabel(batch.tipo_novedad, noveltyTypeOptions)}</td>
@@ -1023,6 +1034,14 @@ function CerrarMes() {
               </tbody>
             </table>
           </div>
+          <TablePagination
+            currentPage={batchPage}
+            onPageChange={setBatchPage}
+            onPageSizeChange={(size) => { setBatchPageSize(size); setBatchPage(1); }}
+            pageSize={batchPageSize}
+            totalItems={filteredBatches.length}
+            totalPages={totalBatchPages}
+          />
         </section>
       )}
     </div>

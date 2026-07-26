@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
   "plan": "HAIKY-MEJORA-INTEGRAL-UIUX-PAGINACION-LEGAL-2026",
-  "planCode": "DIUX26-P2",
+  "planCode": "DIUX26-P3",
   "status": "closed",
-  "phaseCompleted": "DIUX26-P2",
-  "currentPhase": "DIUX26-P2",
-  "updatedAt": "2026-07-25T20:50:00.000Z",
+  "phaseCompleted": "DIUX26-P3",
+  "currentPhase": "DIUX26-P3",
+  "updatedAt": "2026-07-26T14:20:00.000Z",
   "rulesSource": "RULES.md",
   "contextSource": ".github/CODEX_CONTEXT.md",
   "previousPlan": "HAIKY-MEJORA-INTEGRAL-UIUX-PAGINACION-LEGAL-2026",
-  "previousAuditLockHash": "09D31B9228171664CB997D0732B0372B9550D98857A74EAB2234116ED8929D67",
-  "summary": "Segunda pasada DIUX26-P2 ejecutada exitosamente: propagacion del componente TablePagination.jsx a vistas adicionales de asistencia, reportes, beneficios, contratos y actas de finiquito.",
-  "nextAction": "Mantener custodia de gobierno y realizar commit + push de cierre.",
+  "previousAuditLockHash": "030ED61F55098F63E2436C3199A9F66C0317EACEC429FFD4DA3A01E731C5B8F6",
+  "summary": "Tercera pasada DIUX26-P3 ejecutada exitosamente: propagacion de paginacion UI/UX a remanentes tabulares (cierre de mes, actas de dotacion, movilizacion, permisos, usuarios/roles y excepciones de rutas de campo).",
+  "nextAction": "Realizar commit + push de cierre.",
   "fases": [
     { "phase": "DIUX26-00", "status": "completed-pass", "detail": "Diagnóstico integral y despliegue documental Haiky." },
     { "phase": "DIUX26-01", "status": "completed-pass", "detail": "Componente TablePagination.jsx integrado en vistas densas iniciales." },
@@ -19,7 +19,8 @@
     { "phase": "DIUX26-03", "status": "completed-pass", "detail": "Zero silent failures y fallback nativo backend." },
     { "phase": "DIUX26-04", "status": "completed-pass", "detail": "Revisión arquitectónica, PWA/Mobile." },
     { "phase": "DIUX26-05", "status": "completed-pass", "detail": "QA integral y cierre AuditLock inicial." },
-    { "phase": "DIUX26-P2", "status": "completed-pass", "detail": "Propagación de paginación a NovedadesPendientes, ReporteAsistencia, ReporteNovedades, Beneficios, ContratosGenerados y ActasFiniquito." }
+    { "phase": "DIUX26-P2", "status": "completed-pass", "detail": "Propagación de paginación a NovedadesPendientes, ReporteAsistencia, ReporteNovedades, Beneficios, ContratosGenerados y ActasFiniquito." },
+    { "phase": "DIUX26-P3", "status": "completed-pass", "detail": "Propagación de paginación a remanentes: CerrarMes, ActasEntregaDotacion, MovilizacionAprobacion, PermisosOperacion, UsuariosRoles y RutasCampo." }
   ],
   "filesModified": [
     "frontend-web/src/components/UI/TablePagination.jsx",
@@ -32,19 +33,22 @@
     "frontend-web/src/pages/Nomina/Beneficios.jsx",
     "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
     "frontend-web/src/pages/Documentos/ActasFiniquito.jsx",
-    "backend/src/services/sriRdepGenerator.js",
-    "backend/scripts/ensure-native-bindings.js",
-    "backend/package.json",
+    "frontend-web/src/pages/Nomina/CerrarMes.jsx",
+    "frontend-web/src/pages/Documentos/ActasEntregaDotacion.jsx",
+    "frontend-web/src/pages/Operacion/MovilizacionAprobacion.jsx",
+    "frontend-web/src/pages/Operacion/PermisosOperacion.jsx",
+    "frontend-web/src/pages/Configuracion/UsuariosRoles.jsx",
+    "frontend-web/src/pages/Asistencia/RutasCampo.jsx",
     ".github/CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
     "AuditLock.json"
   ],
   "validationChecks": [
-    "RULES.md leído y orden DIUX26-P2 documentado",
-    "Hash SHA256 del AuditLock anterior encadenado (09D31B9228171664CB997D0732B0372B9550D98857A74EAB2234116ED8929D67)",
-    "TablePagination.jsx propagado a todas las vistas solicitadas",
-    "node scripts/verify-system-contracts.mjs PASS",
-    "git diff --check PASS"
+    "RULES.md leído y orden DIUX26-P3 documentado",
+    "Hash SHA256 del AuditLock anterior encadenado (030ED61F55098F63E2436C3199A9F66C0317EACEC429FFD4DA3A01E731C5B8F6)",
+    "TablePagination.jsx propagado a todas las vistas tabulares remanentes",
+    "npx vite build PASS",
+    "npm run contracts PASS"
   ],
-  "signature": "030ED61F55098F63E2436C3199A9F66C0317EACEC429FFD4DA3A01E731C5B8F6"
+  "signature": "BF4E2FD4D70FD9D045C272DBA959BD80323462E2CC452E3DC205817BF7DA791F"
 }

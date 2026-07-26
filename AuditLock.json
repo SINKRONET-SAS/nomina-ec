@@ -1,36 +1,26 @@
 {
+  "schemaVersion": 1,
   "plan": "HAIKY-MEJORA-INTEGRAL-UIUX-PAGINACION-LEGAL-2026",
-  "planCode": "DIUX26-P2",
-  "phaseCompleted": "DIUX26-P2",
-  "status": "completed-pass",
-  "timestamp": "2026-07-25T20:50:00.000Z",
-  "evidenceHash": "030ED61F55098F63E2436C3199A9F66C0317EACEC429FFD4DA3A01E731C5B8F6",
-  "decisions": [
-    "Se propagó el componente unificado TablePagination.jsx a las vistas NovedadesPendientes, ReporteAsistencia, ReporteNovedades, Beneficios, ContratosGenerados y ActasFiniquito.",
-    "Se garantizó reseteo automático de página al modificar filtros de fecha, estado u origen en todas las vistas.",
-    "El gobierno de cambios respeta el orden estricto de fases de RULES.md."
-  ],
-  "runtimeChanges": [
-    "Integración de TablePagination.jsx en NovedadesPendientes.jsx.",
-    "Integración de TablePagination.jsx en ReporteAsistencia.jsx.",
-    "Integración de TablePagination.jsx en ReporteNovedades.jsx.",
-    "Integración de TablePagination.jsx en Beneficios.jsx (dos tablas).",
-    "Integración de TablePagination.jsx en ContratosGenerados.jsx.",
-    "Integración de TablePagination.jsx en ActasFiniquito.jsx.",
-    "Actualización de .github/CODEX_CONTEXT.md.",
-    "Actualización de .vscode/AuditLock.json y AuditLock.json."
-  ],
-  "validationChecks": [
-    {
-      "name": "contratos_sistema_unico",
-      "ok": true,
-      "output": "[CONTRACTS] OK: frontend, backend, Prisma y reportes mantienen contrato de sistema unico."
-    },
-    {
-      "name": "propagacion_paginacion_uiux",
-      "ok": true,
-      "output": "Paginación propagada a todas las pantallas solicitadas sin regresiones."
-    }
+  "planCode": "DIUX26-P3",
+  "status": "closed",
+  "phaseCompleted": "DIUX26-P3",
+  "currentPhase": "DIUX26-P3",
+  "updatedAt": "2026-07-26T14:20:00.000Z",
+  "rulesSource": "RULES.md",
+  "contextSource": ".github/CODEX_CONTEXT.md",
+  "previousPlan": "HAIKY-MEJORA-INTEGRAL-UIUX-PAGINACION-LEGAL-2026",
+  "previousAuditLockHash": "030ED61F55098F63E2436C3199A9F66C0317EACEC429FFD4DA3A01E731C5B8F6",
+  "summary": "Tercera pasada DIUX26-P3 ejecutada exitosamente: propagacion de paginacion UI/UX a remanentes tabulares (cierre de mes, actas de dotacion, movilizacion, permisos, usuarios/roles y excepciones de rutas de campo).",
+  "nextAction": "Realizar commit + push de cierre.",
+  "fases": [
+    { "phase": "DIUX26-00", "status": "completed-pass", "detail": "Diagnóstico integral y despliegue documental Haiky." },
+    { "phase": "DIUX26-01", "status": "completed-pass", "detail": "Componente TablePagination.jsx integrado en vistas densas iniciales." },
+    { "phase": "DIUX26-02", "status": "completed-pass", "detail": "Reconfirmación legal Ecuador 2026, reportes PDF y exportaciones UTF-8." },
+    { "phase": "DIUX26-03", "status": "completed-pass", "detail": "Zero silent failures y fallback nativo backend." },
+    { "phase": "DIUX26-04", "status": "completed-pass", "detail": "Revisión arquitectónica, PWA/Mobile." },
+    { "phase": "DIUX26-05", "status": "completed-pass", "detail": "QA integral y cierre AuditLock inicial." },
+    { "phase": "DIUX26-P2", "status": "completed-pass", "detail": "Propagación de paginación a NovedadesPendientes, ReporteAsistencia, ReporteNovedades, Beneficios, ContratosGenerados y ActasFiniquito." },
+    { "phase": "DIUX26-P3", "status": "completed-pass", "detail": "Propagación de paginación a remanentes: CerrarMes, ActasEntregaDotacion, MovilizacionAprobacion, PermisosOperacion, UsuariosRoles y RutasCampo." }
   ],
   "filesModified": [
     "frontend-web/src/components/UI/TablePagination.jsx",
@@ -43,12 +33,22 @@
     "frontend-web/src/pages/Nomina/Beneficios.jsx",
     "frontend-web/src/pages/Documentos/ContratosGenerados.jsx",
     "frontend-web/src/pages/Documentos/ActasFiniquito.jsx",
-    "backend/src/services/sriRdepGenerator.js",
-    "backend/scripts/ensure-native-bindings.js",
-    "backend/package.json",
+    "frontend-web/src/pages/Nomina/CerrarMes.jsx",
+    "frontend-web/src/pages/Documentos/ActasEntregaDotacion.jsx",
+    "frontend-web/src/pages/Operacion/MovilizacionAprobacion.jsx",
+    "frontend-web/src/pages/Operacion/PermisosOperacion.jsx",
+    "frontend-web/src/pages/Configuracion/UsuariosRoles.jsx",
+    "frontend-web/src/pages/Asistencia/RutasCampo.jsx",
     ".github/CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
     "AuditLock.json"
   ],
-  "signature": "030ED61F55098F63E2436C3199A9F66C0317EACEC429FFD4DA3A01E731C5B8F6"
+  "validationChecks": [
+    "RULES.md leído y orden DIUX26-P3 documentado",
+    "Hash SHA256 del AuditLock anterior encadenado (030ED61F55098F63E2436C3199A9F66C0317EACEC429FFD4DA3A01E731C5B8F6)",
+    "TablePagination.jsx propagado a todas las vistas tabulares remanentes",
+    "npx vite build PASS",
+    "npm run contracts PASS"
+  ],
+  "signature": "BF4E2FD4D70FD9D045C272DBA959BD80323462E2CC452E3DC205817BF7DA791F"
 }

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, FileText, Plus, Trash2 } from 'lucide-react';
 import CompactNotice from '../../components/UI/CompactNotice';
+import TablePagination from '../../components/UI/TablePagination';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 import { downloadUrl } from '../../utils/downloadUrl';
@@ -179,6 +180,14 @@ function ActasEntregaDotacion() {
   };
 
   const documentos = documentsQuery.data || [];
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const totalPages = Math.max(1, Math.ceil(documentos.length / pageSize));
+  const paginatedDocumentos = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return documentos.slice(start, start + pageSize);
+  }, [documentos, page, pageSize]);
 
   return (
     <div className="space-y-6">
@@ -393,7 +402,7 @@ function ActasEntregaDotacion() {
                 <tr><td className="px-5 py-4 text-center text-sm" colSpan="6">Cargando...</td></tr>
               ) : documentos.length === 0 ? (
                 <tr><td className="px-5 py-4 text-center text-sm" colSpan="6">No hay actas de entrega generadas</td></tr>
-              ) : documentos.map((doc) => (
+              ) : paginatedDocumentos.map((doc) => (
                 <tr className="hover:bg-slate-50" key={doc.id}>
                   <td className="px-5 py-4 text-sm">{doc.nombres} {doc.apellidos}</td>
                   <td className="px-5 py-4 text-sm">{doc.cedula}</td>
@@ -433,6 +442,14 @@ function ActasEntregaDotacion() {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={page}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+          pageSize={pageSize}
+          totalItems={documentos.length}
+          totalPages={totalPages}
+        />
       </section>
     </div>
   );
