@@ -239,6 +239,9 @@ const beneficioEmpleadoController = require('./controllers/beneficioEmpleadoCont
 app.get('/api/beneficios', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), beneficioEmpleadoController.listar);
 app.post('/api/beneficios', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), beneficioEmpleadoController.crear);
 app.put('/api/beneficios/:id', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), beneficioEmpleadoController.actualizar);
+app.delete('/api/beneficios/:id', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), beneficioEmpleadoController.eliminar);
+app.put('/api/beneficios/:id/aprobar', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), beneficioEmpleadoController.aprobar);
+app.put('/api/beneficios/:id/anular', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), beneficioEmpleadoController.anular);
 
 const advancePayrollController = require('./controllers/advancePayrollController');
 app.get('/api/nomina/anticipos/tipos-novedad', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), novedadController.listarTipos);

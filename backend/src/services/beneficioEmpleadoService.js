@@ -242,6 +242,132 @@ async function updateBenefit(tenantId, id, payload, user, context = {}) {
   return normalizeBenefit(result.rows[0]);
 }
 
+async function deleteBenefit(tenantId, id, user, context = {}) {
+  const previous = await db.query(
+    'SELECT * FROM beneficios_empleados WHERE id = $1 AND tenant_id = $2',
+    [id, tenantId]
+  );
+  if (previous.rows.length === 0) {
+    throw new AppError('Beneficio no encontrado.', {
+      code: 'BENEFICIO_NO_ENCONTRADO',
+      statusCode: 404,
+      userId: user.id,
+    });
+  }
+
+  const row = previous.rows[0];
+  if (row.estado === 'aprobado') {
+    throw new AppError('No se puede eliminar un beneficio aprobado. Anúlelo primero.', {
+      code: 'BENEFICIO_APROBADO_NO_ELIMINABLE',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+
+  await db.query('DELETE FROM beneficios_empleados WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+
+  await recordAudit({
+    tenantId,
+    userId: user.id,
+    correlationId: context.correlationId,
+    action: 'beneficios.eliminar',
+    entity: 'beneficios_empleados',
+    entityId: id,
+    previousData: row,
+    ipAddress: context.ipAddress,
+  });
+}
+
+async function approveBenefit(tenantId, id, user, context = {}) {
+  const previous = await db.query(
+    'SELECT * FROM beneficios_empleados WHERE id = $1 AND tenant_id = $2',
+    [id, tenantId]
+  );
+  if (previous.rows.length === 0) {
+    throw new AppError('Beneficio no encontrado.', {
+      code: 'BENEFICIO_NO_ENCONTRADO',
+      statusCode: 404,
+      userId: user.id,
+    });
+  }
+
+  if (previous.rows[0].estado !== 'pendiente') {
+    throw new AppError('Solo se pueden aprobar beneficios en estado pendiente.', {
+      code: 'BENEFICIO_ESTADO_INVALIDO_APROBAR',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+
+  const result = await db.query(`
+    UPDATE beneficios_empleados
+    SET estado = 'aprobado',
+        aprobado_por = $3,
+        aprobado_en = NOW(),
+        updated_at = NOW()
+    WHERE id = $1 AND tenant_id = $2
+    RETURNING *
+  `, [id, tenantId, user.id]);
+
+  await recordAudit({
+    tenantId,
+    userId: user.id,
+    correlationId: context.correlationId,
+    action: 'beneficios.aprobar',
+    entity: 'beneficios_empleados',
+    entityId: id,
+    previousData: previous.rows[0],
+    newData: result.rows[0],
+    ipAddress: context.ipAddress,
+  });
+
+  return normalizeBenefit(result.rows[0]);
+}
+
+async function annulBenefit(tenantId, id, user, context = {}) {
+  const previous = await db.query(
+    'SELECT * FROM beneficios_empleados WHERE id = $1 AND tenant_id = $2',
+    [id, tenantId]
+  );
+  if (previous.rows.length === 0) {
+    throw new AppError('Beneficio no encontrado.', {
+      code: 'BENEFICIO_NO_ENCONTRADO',
+      statusCode: 404,
+      userId: user.id,
+    });
+  }
+
+  if (previous.rows[0].estado === 'anulado') {
+    throw new AppError('El beneficio ya está anulado.', {
+      code: 'BENEFICIO_YA_ANULADO',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+
+  const result = await db.query(`
+    UPDATE beneficios_empleados
+    SET estado = 'anulado',
+        updated_at = NOW()
+    WHERE id = $1 AND tenant_id = $2
+    RETURNING *
+  `, [id, tenantId]);
+
+  await recordAudit({
+    tenantId,
+    userId: user.id,
+    correlationId: context.correlationId,
+    action: 'beneficios.anular',
+    entity: 'beneficios_empleados',
+    entityId: id,
+    previousData: previous.rows[0],
+    newData: result.rows[0],
+    ipAddress: context.ipAddress,
+  });
+
+  return normalizeBenefit(result.rows[0]);
+}
+
 async function getApprovedDeductions(tenantId, empleadoId, anio, mes, options = {}) {
   assertPeriod(anio, mes);
   const executor = options.dbClient || db;
@@ -277,5 +403,8 @@ module.exports = {
   listBenefits,
   createBenefit,
   updateBenefit,
+  deleteBenefit,
+  approveBenefit,
+  annulBenefit,
   getApprovedDeductions,
 };

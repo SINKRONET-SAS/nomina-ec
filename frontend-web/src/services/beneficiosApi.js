@@ -15,6 +15,21 @@ export async function updateBeneficio(id, payload) {
   return response.data?.beneficio;
 }
 
+export async function deleteBeneficio(id) {
+  const response = await authenticatedApi.delete(`/beneficios/${id}`);
+  return response.data;
+}
+
+export async function approveBeneficio(id) {
+  const response = await authenticatedApi.put(`/beneficios/${id}/aprobar`);
+  return response.data?.beneficio;
+}
+
+export async function annulBeneficio(id) {
+  const response = await authenticatedApi.put(`/beneficios/${id}/anular`);
+  return response.data?.beneficio;
+}
+
 export async function fetchPlanCapabilities() {
   const response = await authenticatedApi.get('/pagos/capabilities');
   return response.data?.data;

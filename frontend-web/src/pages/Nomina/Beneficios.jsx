@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Download, Edit3, LockKeyhole, Plus, Send, Sparkles, Upload } from 'lucide-react';
+import { Ban, CheckCircle2, Download, Edit3, LockKeyhole, Plus, Send, Sparkles, Trash2, Upload } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
-import { createBeneficio, fetchBeneficios, updateBeneficio } from '../../services/beneficiosApi';
+import { annulBeneficio, approveBeneficio, createBeneficio, deleteBeneficio, fetchBeneficios, updateBeneficio } from '../../services/beneficiosApi';
 import { approveAdvanceRole, closeAdvanceRole, createAdvanceRole, createAdvanceRoleBulk, decideAdvanceLine, downloadAdvanceReport, downloadAdvanceRoleCsv, downloadAdvanceTemplate, fetchAdvanceNoveltyTypes, fetchAdvanceRoles } from '../../services/advancePayrollApi';
 import { extractApiError } from '../../services/publicApi';
 import { ECUADOR_TIME_ZONE, currentPeriodEC } from '../../utils/dateFormat';
@@ -124,6 +124,26 @@ function Beneficios() {
     onError: (err) => {
       setMessage('');
       setError(extractApiError(err, 'No pudimos guardar el anticipo o préstamo.'));
+    },
+  });
+
+  const benefitActionMutation = useMutation({
+    mutationFn: ({ action, id }) => {
+      if (action === 'delete') return deleteBeneficio(id);
+      if (action === 'approve') return approveBeneficio(id);
+      return annulBeneficio(id);
+    },
+    onSuccess: (_data, variables) => {
+      const labels = { delete: 'eliminado', approve: 'aprobado', annul: 'anulado' };
+      setError('');
+      setMessage(`Registro ${labels[variables.action]}.`);
+      setEditingId('');
+      setForm(emptyForm());
+      queryClient.invalidateQueries({ queryKey: ['beneficios-empleados'] });
+    },
+    onError: (err) => {
+      setMessage('');
+      setError(extractApiError(err, 'No pudimos procesar la acción.'));
     },
   });
 
@@ -368,9 +388,26 @@ function Beneficios() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <button className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-teal-700" type="button" onClick={() => editBenefit(item)} title="Editar anticipo o préstamo">
-                        <Edit3 className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        {item.estado === 'pendiente' && (
+                          <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-emerald-200 text-emerald-700 hover:bg-emerald-50" type="button" onClick={() => { if (window.confirm('¿Aprobar este registro?')) benefitActionMutation.mutate({ action: 'approve', id: item.id }); }} title="Aprobar" disabled={benefitActionMutation.isPending}>
+                            <CheckCircle2 className="h-4 w-4" />
+                          </button>
+                        )}
+                        {item.estado !== 'anulado' && (
+                          <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-amber-200 text-amber-700 hover:bg-amber-50" type="button" onClick={() => { if (window.confirm('¿Anular este registro?')) benefitActionMutation.mutate({ action: 'annul', id: item.id }); }} title="Anular" disabled={benefitActionMutation.isPending}>
+                            <Ban className="h-4 w-4" />
+                          </button>
+                        )}
+                        <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-teal-700 hover:bg-slate-50" type="button" onClick={() => editBenefit(item)} title="Editar">
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                        {item.estado !== 'aprobado' && (
+                          <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 text-red-600 hover:bg-red-50" type="button" onClick={() => { if (window.confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) benefitActionMutation.mutate({ action: 'delete', id: item.id }); }} title="Eliminar" disabled={benefitActionMutation.isPending}>
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

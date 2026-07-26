@@ -37,8 +37,38 @@ async function actualizar(req, res, next) {
   }
 }
 
+async function eliminar(req, res, next) {
+  try {
+    await beneficioService.deleteBenefit(req.tenantId, req.params.id, req.usuario, context(req));
+    return res.json({ success: true, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function aprobar(req, res, next) {
+  try {
+    const beneficio = await beneficioService.approveBenefit(req.tenantId, req.params.id, req.usuario, context(req));
+    return res.json({ success: true, beneficio, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function anular(req, res, next) {
+  try {
+    const beneficio = await beneficioService.annulBenefit(req.tenantId, req.params.id, req.usuario, context(req));
+    return res.json({ success: true, beneficio, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   listar,
   crear,
   actualizar,
+  eliminar,
+  aprobar,
+  anular,
 };
