@@ -34,6 +34,7 @@ const OperacionIntegral = lazy(() => import('./pages/Operacion/OperacionIntegral
 const MovilizacionAprobacion = lazy(() => import('./pages/Operacion/MovilizacionAprobacion'));
 const PermisosOperacion = lazy(() => import('./pages/Operacion/PermisosOperacion'));
 const SaldosIniciales = lazy(() => import('./pages/Onboarding/SaldosIniciales'));
+const MiSuscripcion = lazy(() => import('./pages/MiSuscripcion'));
 const FacturacionFiscal = lazy(() => import('./pages/Facturacion/FacturacionFiscal'));
 const ListaEmpleados = lazy(() => import('./pages/Empleados/ListaEmpleados'));
 const HistorialEmpleado = lazy(() => import('./pages/Empleados/HistorialEmpleado'));
@@ -286,6 +287,11 @@ function App() {
               <Route path="ayuda" element={
                 <ProtectedRoute requiredRole={['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado']}>
                   <AyudaUsuario />
+                </ProtectedRoute>
+              } />
+              <Route path="mi-suscripcion" element={
+                <ProtectedRoute requiredRole={['owner', 'admin_rrhh']}>
+                  <MiSuscripcion />
                 </ProtectedRoute>
               } />
               <Route path="planes" element={

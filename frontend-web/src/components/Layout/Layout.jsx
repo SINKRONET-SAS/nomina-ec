@@ -121,6 +121,7 @@ function Layout() {
     { path: '/dashboard/configuracion/usuarios', icon: Users, label: 'Usuarios y roles', roles: ['superadmin', 'owner'], module: 'parametrizacion' },
     { path: '/dashboard/configuracion/plantillas-contrato', icon: FileText, label: 'Plantillas de contrato', roles: ['superadmin', 'owner', 'admin_rrhh'], module: 'parametrizacion' },
     { path: '/dashboard/configuracion/comunicaciones', icon: Mail, label: 'Comunicaciones', roles: ['superadmin', 'owner', 'admin_rrhh'], module: 'comunicaciones' },
+    { path: '/dashboard/mi-suscripcion', icon: CreditCard, label: 'Mi suscripcion', roles: ['owner', 'admin_rrhh'] },
     { path: '/dashboard/ayuda', icon: HelpCircle, label: 'Ayuda', roles: ['superadmin', 'owner', 'admin_rrhh', 'supervisor', 'empleado'] },
     { path: '/dashboard/facturacion', icon: CreditCard, label: 'Facturador interno', roles: ['superadmin'] },
     { path: '/dashboard/auditoria', icon: ShieldCheck, label: 'Auditoría', roles: ['superadmin', 'owner'], module: 'auditoria' },
