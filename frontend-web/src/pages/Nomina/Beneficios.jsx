@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Ban, CheckCircle2, Download, Edit3, LockKeyhole, Plus, Send, Sparkles, Trash2, Upload } from 'lucide-react';
+import { Ban, CheckCircle2, Download, Edit3, LockKeyhole, Plus, RotateCcw, Send, Sparkles, Trash2, Upload, X } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { annulBeneficio, approveBeneficio, createBeneficio, deleteBeneficio, fetchBeneficios, updateBeneficio } from '../../services/beneficiosApi';
 import { approveAdvanceRole, closeAdvanceRole, createAdvanceRole, createAdvanceRoleBulk, decideAdvanceLine, downloadAdvanceReport, downloadAdvanceRoleCsv, downloadAdvanceTemplate, fetchAdvanceNoveltyTypes, fetchAdvanceRoles } from '../../services/advancePayrollApi';
@@ -48,6 +48,10 @@ function Beneficios() {
   const [advanceEmployeeSearch, setAdvanceEmployeeSearch] = useState('');
   const [advanceBulkCsv, setAdvanceBulkCsv] = useState('');
   const [advanceBulkFileName, setAdvanceBulkFileName] = useState('');
+  const [debouncedEmpSearch, setDebouncedEmpSearch] = useState('');
+  const debounceTimer = useRef(null);
+  const [rolePage, setRolePage] = useState(1);
+  const [rolePageSize, setRolePageSize] = useState(5);
 
   const empleadosQuery = useQuery({
     queryKey: ['empleados-beneficios'],
@@ -76,7 +80,19 @@ function Beneficios() {
   const beneficios = beneficiosQuery.data || [];
   const advanceRoles = advanceRolesQuery.data || [];
   const advanceTypes = advanceTypesQuery.data || [];
-  const filteredAdvanceEmployees = empleados.filter((employee) => `${employee.nombres} ${employee.apellidos} ${employee.cedula}`.toLowerCase().includes(advanceEmployeeSearch.toLowerCase().trim()));
+  const filteredAdvanceEmployees = useMemo(() => empleados.filter((employee) => `${employee.nombres} ${employee.apellidos} ${employee.cedula}`.toLowerCase().includes(debouncedEmpSearch.toLowerCase().trim())), [empleados, debouncedEmpSearch]);
+
+  useEffect(() => {
+    if (!message) return;
+    const timer = setTimeout(() => setMessage(''), 5000);
+    return () => clearTimeout(timer);
+  }, [message]);
+
+  const handleEmployeeSearch = useCallback((value) => {
+    setAdvanceEmployeeSearch(value);
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => { setDebouncedEmpSearch(value); setAdvEmpPage(1); }, 300);
+  }, []);
 
   const [benefitPage, setBenefitPage] = useState(1);
   const [benefitPageSize, setBenefitPageSize] = useState(10);
@@ -185,6 +201,17 @@ function Beneficios() {
     onError: (err) => { setMessage(''); setError(extractApiError(err, 'No pudimos actualizar el rol de anticipos.')); },
   });
 
+  const totalRolePages = Math.max(1, Math.ceil(advanceRoles.length / rolePageSize));
+  const paginatedRoles = useMemo(() => {
+    const start = (rolePage - 1) * rolePageSize;
+    return advanceRoles.slice(start, start + rolePageSize);
+  }, [advanceRoles, rolePage, rolePageSize]);
+
+  function cancelEdit() {
+    setEditingId('');
+    setForm(emptyForm());
+  }
+
   function editBenefit(item) {
     setEditingId(item.id);
     setForm({
@@ -205,6 +232,13 @@ function Beneficios() {
 
   function submit(event) {
     event.preventDefault();
+    const monto = Number(form.montoTotal);
+    const cuota = Number(form.cuotaMensual || form.montoTotal);
+    if (cuota > monto) {
+      setMessage('');
+      setError('La cuota mensual no puede ser mayor al monto total.');
+      return;
+    }
     mutation.mutate();
   }
 
@@ -346,10 +380,18 @@ function Beneficios() {
               </label>
             </div>
           </div>
-          <button className="mt-5 inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60" disabled={mutation.isPending} type="submit">
-            <Plus className="h-4 w-4" />
-            {mutation.isPending ? 'Guardando...' : 'Guardar registro'}
-          </button>
+          <div className="mt-5 flex items-center gap-2">
+            <button className="inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-60" disabled={mutation.isPending} type="submit">
+              <Plus className="h-4 w-4" />
+              {mutation.isPending ? 'Guardando...' : 'Guardar registro'}
+            </button>
+            {editingId && (
+              <button className="inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" type="button" onClick={cancelEdit}>
+                <X className="h-4 w-4" />
+                Cancelar
+              </button>
+            )}
+          </div>
         </form>
 
         <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -390,20 +432,20 @@ function Beneficios() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         {item.estado === 'pendiente' && (
-                          <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-emerald-200 text-emerald-700 hover:bg-emerald-50" type="button" onClick={() => { if (window.confirm('¿Aprobar este registro?')) benefitActionMutation.mutate({ action: 'approve', id: item.id }); }} title="Aprobar" disabled={benefitActionMutation.isPending}>
+                          <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-emerald-200 text-emerald-700 hover:bg-emerald-50" type="button" onClick={() => { if (window.confirm('¿Aprobar este registro?')) benefitActionMutation.mutate({ action: 'approve', id: item.id }); }} title="Aprobar" aria-label={`Aprobar beneficio de ${item.empleadoNombre}`} disabled={benefitActionMutation.isPending}>
                             <CheckCircle2 className="h-4 w-4" />
                           </button>
                         )}
                         {item.estado !== 'anulado' && (
-                          <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-amber-200 text-amber-700 hover:bg-amber-50" type="button" onClick={() => { if (window.confirm('¿Anular este registro?')) benefitActionMutation.mutate({ action: 'annul', id: item.id }); }} title="Anular" disabled={benefitActionMutation.isPending}>
+                          <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-amber-200 text-amber-700 hover:bg-amber-50" type="button" onClick={() => { if (window.confirm('¿Anular este registro?')) benefitActionMutation.mutate({ action: 'annul', id: item.id }); }} title="Anular" aria-label={`Anular beneficio de ${item.empleadoNombre}`} disabled={benefitActionMutation.isPending}>
                             <Ban className="h-4 w-4" />
                           </button>
                         )}
-                        <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-teal-700 hover:bg-slate-50" type="button" onClick={() => editBenefit(item)} title="Editar">
+                        <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-teal-700 hover:bg-slate-50" type="button" onClick={() => editBenefit(item)} title="Editar" aria-label={`Editar beneficio de ${item.empleadoNombre}`}>
                           <Edit3 className="h-4 w-4" />
                         </button>
                         {item.estado !== 'aprobado' && (
-                          <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 text-red-600 hover:bg-red-50" type="button" onClick={() => { if (window.confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) benefitActionMutation.mutate({ action: 'delete', id: item.id }); }} title="Eliminar" disabled={benefitActionMutation.isPending}>
+                          <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 text-red-600 hover:bg-red-50" type="button" onClick={() => { if (window.confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) benefitActionMutation.mutate({ action: 'delete', id: item.id }); }} title="Eliminar" aria-label={`Eliminar beneficio de ${item.empleadoNombre}`} disabled={benefitActionMutation.isPending}>
                             <Trash2 className="h-4 w-4" />
                           </button>
                         )}
@@ -446,9 +488,9 @@ function Beneficios() {
           </div>
           <div className="mt-4 overflow-x-auto rounded-md border border-slate-200">
             <div className="border-b border-slate-200 bg-slate-50 p-3">
-              <label className="block"><span className="text-sm font-medium text-slate-700">Buscar empleado para incluir</span><input className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={advanceEmployeeSearch} onChange={(event) => { setAdvanceEmployeeSearch(event.target.value); setAdvEmpPage(1); }} placeholder="Cédula, nombres o apellidos" /></label>
+              <label className="block"><span className="text-sm font-medium text-slate-700">Buscar empleado para incluir</span><input className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={advanceEmployeeSearch} onChange={(event) => handleEmployeeSearch(event.target.value)} placeholder="Cédula, nombres o apellidos" /></label>
             </div>
-            <table className="w-full min-w-[700px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Incluir</th><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Cédula</th><th className="px-3 py-2">Monto</th></tr></thead><tbody className="divide-y divide-slate-100">{paginatedAdvEmployees.map((employee) => { const line = advanceDraft.lines[employee.id] || {}; return <tr key={employee.id}><td className="px-3 py-2"><input type="checkbox" checked={line.selected === true} onChange={(event) => updateAdvanceLine(employee.id, 'selected', event.target.checked)} /></td><td className="px-3 py-2 font-medium text-slate-900">{employee.nombres} {employee.apellidos}</td><td className="px-3 py-2 text-slate-600">{employee.cedula}</td><td className="px-3 py-2"><input className="w-36 rounded-md border border-slate-300 px-3 py-1.5" type="number" min="0.01" step="0.01" value={line.monto || ''} onChange={(event) => updateAdvanceLine(employee.id, 'monto', event.target.value)} disabled={!line.selected} /></td></tr>; })}</tbody></table>
+            <table className="w-full min-w-[700px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Incluir</th><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Cédula</th><th className="px-3 py-2">Monto</th></tr></thead><tbody className="divide-y divide-slate-100">{paginatedAdvEmployees.map((employee) => { const line = advanceDraft.lines[employee.id] || {}; return <tr key={employee.id}><td className="px-3 py-2"><input type="checkbox" checked={line.selected === true} onChange={(event) => updateAdvanceLine(employee.id, 'selected', event.target.checked)} aria-label={`Incluir a ${employee.nombres} ${employee.apellidos}`} /></td><td className="px-3 py-2 font-medium text-slate-900">{employee.nombres} {employee.apellidos}</td><td className="px-3 py-2 text-slate-600">{employee.cedula}</td><td className="px-3 py-2"><input className="w-36 rounded-md border border-slate-300 px-3 py-1.5" type="number" min="0.01" step="0.01" value={line.monto || ''} onChange={(event) => updateAdvanceLine(employee.id, 'monto', event.target.value)} disabled={!line.selected} /></td></tr>; })}</tbody></table>
             <TablePagination
               currentPage={advEmpPage}
               totalPages={totalAdvEmpPages}
@@ -489,10 +531,23 @@ function Beneficios() {
             <label><span className="text-xs font-medium text-slate-600">Tipo de novedad</span><select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={advanceFilters.tipoNovedad} onChange={(event) => updateAdvanceFilter('tipoNovedad', event.target.value)}><option value="">Todos</option>{advanceTypes.map((type) => <option key={type.code} value={type.code}>{type.name}</option>)}</select></label>
             <label><span className="text-xs font-medium text-slate-600">Empleado</span><input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={advanceFilters.buscar} onChange={(event) => updateAdvanceFilter('buscar', event.target.value)} placeholder="Cédula o nombre" /></label>
           </div>
+          <div className="mt-3">
+            <button className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50" type="button" onClick={() => setAdvanceFilters({ anio: currentPeriodEC().anio, mes: currentPeriodEC().mes, estado: '', tipoNovedad: '', buscar: '' })}><RotateCcw className="h-3.5 w-3.5" />Limpiar filtros</button>
+          </div>
         </section>
 
         <div className="space-y-4">
-          {advanceRoles.length === 0 ? <p className="rounded-md border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500">Todavía no hay roles de anticipos generados.</p> : advanceRoles.map((role) => { const pendingLines = role.lineas.filter((line) => line.estado === 'aprobado').length; return <article className="rounded-md border border-slate-200 bg-white p-4" key={role.id}><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold text-slate-950">Rol {role.anio}-{String(role.mes).padStart(2, '0')} · {role.descripcion || 'Sin descripción'}</h3><p className="mt-1 text-xs text-slate-500">Corte: {role.fechaCorte} · Total: {money(role.total)} · Estado: <strong>{role.estado}</strong></p></div><div className="flex flex-wrap gap-2"><button className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700" type="button" onClick={() => downloadAdvanceRole(role)}>Descargar evidencia</button>{role.estado === 'borrador' && <button className="inline-flex items-center gap-1 rounded-md border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'approve', roleId: role.id })} disabled={advanceActionMutation.isPending}><Send className="h-3.5 w-3.5" />Aprobar</button>}{role.estado === 'aprobado' && <button className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'close', roleId: role.id })} disabled={advanceActionMutation.isPending || pendingLines > 0}><LockKeyhole className="h-3.5 w-3.5" />Cerrar rol</button>}</div></div><div className="mt-3 overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Monto</th><th className="px-3 py-2">Tipo / nombre</th><th className="px-3 py-2">Resolución</th><th className="px-3 py-2 text-right">Acciones</th></tr></thead><tbody className="divide-y divide-slate-100">{role.lineas.map((line) => <tr key={line.id}><td className="px-3 py-2"><p className="font-medium text-slate-900">{line.empleadoNombre}</p><p className="text-xs text-slate-500">{line.cedula}</p></td><td className="px-3 py-2">{money(line.monto)}</td><td className="px-3 py-2"><p>{line.tipoNovedad}</p><p className="text-xs text-slate-500">{line.nombreBonificacion || 'Sin nombre personalizado'}</p></td><td className="px-3 py-2"><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{line.estado}</span></td><td className="px-3 py-2 text-right">{role.estado === 'aprobado' && line.estado === 'aprobado' && <><button className="mr-2 rounded-md border border-amber-200 px-2 py-1 text-xs font-semibold text-amber-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'descontar' })} disabled={advanceActionMutation.isPending}>Descontar</button><button className="rounded-md border border-emerald-200 px-2 py-1 text-xs font-semibold text-emerald-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'bonificar' })} disabled={advanceActionMutation.isPending}>Bonificar</button></>}</td></tr>)}</tbody></table></div></article>; })}
+          {advanceRoles.length === 0 ? <p className="rounded-md border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500">Todavía no hay roles de anticipos generados.</p> : paginatedRoles.map((role) => { const pendingLines = role.lineas.filter((line) => line.estado === 'aprobado').length; return <article className="rounded-md border border-slate-200 bg-white p-4" key={role.id}><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold text-slate-950">Rol {role.anio}-{String(role.mes).padStart(2, '0')} · {role.descripcion || 'Sin descripción'}</h3><p className="mt-1 text-xs text-slate-500">Corte: {role.fechaCorte ? new Date(role.fechaCorte + 'T12:00:00').toLocaleDateString('es-EC') : 'Sin fecha'} · Total: {money(role.total)} · Estado: <strong>{role.estado}</strong></p></div><div className="flex flex-wrap gap-2"><button className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700" type="button" onClick={() => downloadAdvanceRole(role)} aria-label={`Descargar evidencia del rol ${role.anio}-${role.mes}`}>Descargar evidencia</button>{role.estado === 'borrador' && <button className="inline-flex items-center gap-1 rounded-md border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'approve', roleId: role.id })} disabled={advanceActionMutation.isPending} aria-label={`Aprobar rol ${role.anio}-${role.mes}`}><Send className="h-3.5 w-3.5" />Aprobar</button>}{role.estado === 'aprobado' && <button className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'close', roleId: role.id })} disabled={advanceActionMutation.isPending || pendingLines > 0} aria-label={`Cerrar rol ${role.anio}-${role.mes}`}><LockKeyhole className="h-3.5 w-3.5" />Cerrar rol</button>}</div></div>{role.estado === 'aprobado' && pendingLines > 0 && <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">Resuelve cada linea: <strong>Descontar</strong> crea un beneficio que se deduce del sueldo al cerrar mes. <strong>Bonificar</strong> registra una novedad de ingreso adicional.</p>}<div className="mt-3 overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Monto</th><th className="px-3 py-2">Tipo / nombre</th><th className="px-3 py-2">Resolución</th><th className="px-3 py-2 text-right">Acciones</th></tr></thead><tbody className="divide-y divide-slate-100">{role.lineas.map((line) => <tr key={line.id}><td className="px-3 py-2"><p className="font-medium text-slate-900">{line.empleadoNombre}</p><p className="text-xs text-slate-500">{line.cedula}</p></td><td className="px-3 py-2">{money(line.monto)}</td><td className="px-3 py-2"><p>{line.tipoNovedad}</p><p className="text-xs text-slate-500">{line.nombreBonificacion || 'Sin nombre personalizado'}</p></td><td className="px-3 py-2"><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{line.estado}</span></td><td className="px-3 py-2 text-right">{role.estado === 'aprobado' && line.estado === 'aprobado' && <><button className="mr-2 rounded-md border border-amber-200 px-2 py-1 text-xs font-semibold text-amber-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'descontar' })} disabled={advanceActionMutation.isPending} title="Crea un beneficio que se deduce del sueldo al cerrar mes" aria-label={`Descontar linea de ${line.empleadoNombre}`}>Descontar</button><button className="rounded-md border border-emerald-200 px-2 py-1 text-xs font-semibold text-emerald-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'bonificar' })} disabled={advanceActionMutation.isPending} title="Registra una novedad de ingreso adicional" aria-label={`Bonificar linea de ${line.empleadoNombre}`}>Bonificar</button></>}</td></tr>)}</tbody></table></div></article>; })}
+          {advanceRoles.length > 0 && (
+            <TablePagination
+              currentPage={rolePage}
+              totalPages={totalRolePages}
+              pageSize={rolePageSize}
+              totalItems={advanceRoles.length}
+              onPageChange={setRolePage}
+              onPageSizeChange={(newSize) => { setRolePageSize(newSize); setRolePage(1); }}
+            />
+          )}
         </div>
       </section>
     </div>

@@ -69,6 +69,13 @@ function normalizePayload(payload) {
     });
   }
 
+  if (cuotaMensual > montoTotal) {
+    throw new AppError('La cuota mensual no puede ser mayor al monto total.', {
+      code: 'BENEFICIO_CUOTA_EXCEDE_MONTO',
+      statusCode: 400,
+    });
+  }
+
   return {
     empleadoId: payload.empleadoId || payload.empleado_id,
     tipo,
@@ -298,6 +305,8 @@ async function approveBenefit(tenantId, id, user, context = {}) {
       userId: user.id,
     });
   }
+
+  await assertEmployeeInTenant(tenantId, previous.rows[0].empleado_id);
 
   const result = await db.query(`
     UPDATE beneficios_empleados

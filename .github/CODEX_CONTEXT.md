@@ -1,4 +1,44 @@
-## Current Haiky Plan - HAIKY-MEJORA-INTEGRAL-UIUX-PAGINACION-LEGAL-2026
+## Current Haiky Plan - HAIKY-BENEFICIOS-ANTICIPOS-INTEGRAL-2026
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-BENEFICIOS-ANTICIPOS-INTEGRAL-2026` |
+| Codigo | `BAI26` |
+| Estado | `BAI26-05 ejecutado; fases BAI26-00 a BAI26-05 completadas` |
+| Fecha | `2026-07-25` |
+| Superficie | BACKEND, FRONTEND-WEB, CONTABILIDAD, LEGAL-ECUADOR, REPORTES |
+| Plan doc | `docs2/PLAN_HAIKY_BENEFICIOS_ANTICIPOS_INTEGRAL_2026.md` |
+| Prompts | `.github/prompts/BAI26-00` a `.github/prompts/BAI26-05` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Plan anterior | `HAIKY-MEJORA-INTEGRAL-UIUX-PAGINACION-LEGAL-2026` (`DIUX26-CI-FIX`, cerrado) |
+
+### Alcance BAI26
+
+- **Diagnostico integral** del modulo de Anticipos y prestamos: 23 hallazgos (2 criticos, 5 altos, 11 medios, 5 bajos).
+- **Cumplimiento legal Ecuador**: Art. 83 y Art. 91 descartados como bloqueantes (decision de gerencia: otorgar por encima del porcentaje es politica empresarial).
+- **Bugs y validaciones**: cuotaMensual <= montoTotal validado en backend y frontend, empleado activo verificado en approveBenefit, boton Cancelar edicion, auto-clear mensajes 5s.
+- **UI/UX y accesibilidad**: paginacion roles generados con TablePagination, aria-labels en botones y checkboxes, debounce busqueda 300ms, reset filtros, tooltip Descontar/Bonificar, fechaCorte formateada.
+- **Integracion contable verificada**: asientos Dr 210101 / Cr 112101-112102 correctos en payrollAccountingService.js.
+
+### Decisiones BAI26
+
+- Art. 83 y Art. 91 del Codigo del Trabajo son decision de gerencia, no restriccion de sistema.
+- La integracion contable y el flujo cerrarMes estan verificados y correctos.
+
+### Fases BAI26
+
+| Fase | Objetivo | Estado |
+|---|---|---|
+| BAI26-00 | Diagnostico integral y gobierno | completed-pass |
+| BAI26-01 | Cumplimiento legal Ecuador (decision gerencia) | completed-pass |
+| BAI26-02 | Bugs y validaciones | completed-pass |
+| BAI26-03 | UI/UX y accesibilidad | completed-pass |
+| BAI26-04 | Documentacion y plan | completed-pass |
+| BAI26-05 | QA, regresion y cierre | completed-pass |
+
+---
+
+## Previous Haiky Plan - HAIKY-MEJORA-INTEGRAL-UIUX-PAGINACION-LEGAL-2026
 
 | Campo | Valor |
 |---|---|
