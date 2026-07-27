@@ -99,12 +99,14 @@ async function loadEmployeeDashboardData() {
     routeResult,
     payrollResult,
     mobilizationResult,
+    historialResult,
   ] = await Promise.all([
     optionalGet('/mobile/me'),
     optionalGet('/mobile/asistencia/resumen'),
     optionalGet('/mobile/ruta/hoy'),
     optionalGet(`/mobile/nomina/${period.year}/${period.month}`),
     optionalGet('/movilizacion/mis-informes'),
+    optionalGet('/mobile/historial?limit=20'),
   ]);
 
   return {
@@ -120,12 +122,14 @@ async function loadEmployeeDashboardData() {
       routeMessage: routeResult.data?.message || null,
       payroll: payrollResult.data?.nomina || null,
       movilizacion: pickArray(mobilizationResult.data, ['informes', 'items']),
+      permisosConcedidos: historialResult.data?.history?.permisos || [],
       health: {
         profile: profileResult.ok,
         attendance: attendanceResult.ok,
         route: routeResult.ok,
         payroll: payrollResult.ok,
         movilizacion: mobilizationResult.ok,
+        historial: historialResult.ok,
       },
     },
   };
@@ -366,6 +370,7 @@ function Dashboard() {
     const route = employeeWorkspace.route;
     const movilizacion = employeeWorkspace.movilizacion || [];
     const payroll = employeeWorkspace.payroll;
+    const permisosConcedidos = employeeWorkspace.permisosConcedidos || [];
     const employeeHealth = employeeWorkspace.health || {};
 
     const employeeSummaryCards = [
@@ -602,6 +607,51 @@ function Dashboard() {
               </button>
             </div>
           </div>
+
+          {permisosConcedidos.length > 0 && (
+            <div className="soft-panel p-6" id="mis-permisos-historial">
+              <div className="flex items-center gap-3">
+                <CalendarClock className="h-5 w-5 text-teal-700" />
+                <h2 className="text-lg font-semibold text-slate-950">Mis permisos</h2>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                {permisosConcedidos.map((permiso) => (
+                  <div className="rounded-md border border-slate-200 p-3" key={permiso.id}>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold capitalize text-slate-950">
+                        {String(permiso.tipo_novedad || permiso.tipo || 'permiso').replace(/_/g, ' ')}
+                      </p>
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        permiso.estado === 'aprobado' ? 'bg-emerald-100 text-emerald-700'
+                          : permiso.estado === 'rechazado' ? 'bg-red-100 text-red-700'
+                          : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {permiso.estado}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {formatDateEC(permiso.fecha_inicio || permiso.fecha)}
+                      {permiso.fecha_fin ? ` - ${formatDateEC(permiso.fecha_fin)}` : ''}
+                    </p>
+                    {permiso.justificacion && (
+                      <p className="mt-2 text-sm text-slate-600">{permiso.justificacion}</p>
+                    )}
+                    {permiso.metadata?.soporteMedico?.url && (
+                      <a
+                        className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-teal-700 hover:underline"
+                        href={permiso.metadata.soporteMedico.url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                        Ver soporte medico
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="soft-panel p-6" id="mi-nomina">
             <div className="flex items-center gap-3">

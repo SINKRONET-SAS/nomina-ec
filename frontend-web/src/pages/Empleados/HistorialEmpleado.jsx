@@ -161,7 +161,7 @@ function HistorialEmpleado() {
           </section>
 
           <section className="rounded-lg border border-slate-200 bg-white p-5">
-            <h2 className="text-lg font-semibold text-slate-950">Novedades y permisos</h2>
+            <h2 className="text-lg font-semibold text-slate-950">Novedades</h2>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {history.novedades.length === 0 ? (
                 <p className="text-sm text-slate-600">Sin novedades registradas.</p>
@@ -170,6 +170,27 @@ function HistorialEmpleado() {
                   <p className="text-sm font-semibold text-slate-950">{String(item.tipo_novedad || '').replace(/_/g, ' ')}</p>
                   <p className="mt-1 text-xs text-slate-600">{formatDateEC(item.fecha)} - {item.estado}</p>
                   <p className="mt-2 text-sm text-slate-700">{item.justificacion || 'Sin justificacion'}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <h2 className="text-lg font-semibold text-slate-950">Permisos</h2>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {(history.permisos || []).length === 0 ? (
+                <p className="text-sm text-slate-600">Sin permisos registrados.</p>
+              ) : history.permisos.map((permiso) => (
+                <div className="rounded-md border border-slate-200 p-3" key={permiso.id}>
+                  <p className="text-sm font-semibold capitalize text-slate-950">{String(permiso.tipo_novedad || permiso.tipo || '').replace(/_/g, ' ')}</p>
+                  <p className="mt-1 text-xs text-slate-600">{formatDateEC(permiso.fecha)} - {permiso.estado}</p>
+                  {permiso.justificacion && <p className="mt-2 text-sm text-slate-700">{permiso.justificacion}</p>}
+                  {permiso.metadata?.soporteMedico?.url && (
+                    <a className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-teal-700 hover:underline" href={permiso.metadata.soporteMedico.url} target="_blank" rel="noreferrer">
+                      <FileText className="h-3.5 w-3.5" />
+                      Ver soporte medico adjunto
+                    </a>
+                  )}
                 </div>
               ))}
             </div>
