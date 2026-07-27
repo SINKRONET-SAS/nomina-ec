@@ -64,7 +64,9 @@ jobs:
           done
       - run: npm --prefix backend run prisma:validate
       - run: npm --prefix backend run db:migrate
-      - run: npm --prefix backend test -- --runInBand
+      - name: Run backend tests
+        working-directory: backend
+        run: npm test -- --runInBand
 
   frontend:
     runs-on: ubuntu-latest

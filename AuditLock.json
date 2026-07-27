@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
   "plan": "HAIKY-MEJORA-INTEGRAL-UIUX-PAGINACION-LEGAL-2026",
-  "planCode": "DIUX26-P4",
+  "planCode": "DIUX26-CI-FIX",
   "status": "closed",
-  "phaseCompleted": "DIUX26-P4",
-  "currentPhase": "DIUX26-P4",
-  "updatedAt": "2026-07-26T16:30:00.000Z",
+  "phaseCompleted": "DIUX26-CI-FIX",
+  "currentPhase": "DIUX26-CI-FIX",
+  "updatedAt": "2026-07-26T19:30:00.000Z",
   "rulesSource": "RULES.md",
   "contextSource": ".github/CODEX_CONTEXT.md",
   "previousPlan": "HAIKY-MEJORA-INTEGRAL-UIUX-PAGINACION-LEGAL-2026",
-  "previousAuditLockHash": "6CDCF2040EC6BDE1EDA9C68C64D482B464E2B7DBEB5D67307104CDA71E27DDF5",
-  "summary": "Fase DIUX26-P4 ejecutada exitosamente: eliminación del límite artificial slice(0,12) en la barra lateral de Parametrización, agregando cuadro de búsqueda en tiempo real, selector de filtros por categoría/estado y paginación con TablePagination.",
+  "previousAuditLockHash": "C35B9EA1B6DDCB22FD4877C91293C28332965B3FD27937DBF633EB054EE69730",
+  "summary": "Fase DIUX26-CI-FIX ejecutada exitosamente: creación del ejecutor inteligente backend/scripts/run-jest.js para resolver dinámicamente la ruta del runner de Jest tanto en entornos locales como en GitHub Actions CI (npm ci --prefix backend).",
   "nextAction": "Realizar commit + push de cierre final.",
   "fases": [
     { "phase": "DIUX26-00", "status": "completed-pass", "detail": "Diagnóstico integral y despliegue documental Haiky." },
@@ -22,20 +22,22 @@
     { "phase": "DIUX26-P2", "status": "completed-pass", "detail": "Propagación de paginación a NovedadesPendientes, ReporteAsistencia, ReporteNovedades, Beneficios, ContratosGenerados y ActasFiniquito." },
     { "phase": "DIUX26-P3", "status": "completed-pass", "detail": "Propagación de paginación a remanentes: CerrarMes, ActasEntregaDotacion, MovilizacionAprobacion, PermisosOperacion, UsuariosRoles y RutasCampo." },
     { "phase": "DIUX26-P3-FIX", "status": "completed-pass", "detail": "Resolución de regresión en descarga de reportes mediante blob fetch autenticado (downloadUrl.js y DescargarReportes.jsx)." },
-    { "phase": "DIUX26-P4", "status": "completed-pass", "detail": "Búsqueda, filtro por categoría y paginación con TablePagination integrada en la lista de Registros Vigentes de Parametrización (Tipos de Novedad, Cargos, etc.)." }
+    { "phase": "DIUX26-P4", "status": "completed-pass", "detail": "Búsqueda, filtro por categoría y paginación con TablePagination integrada en la lista de Registros Vigentes de Parametrización." },
+    { "phase": "DIUX26-CI-FIX", "status": "completed-pass", "detail": "Resolución del error de módulo de Jest en GitHub Actions CI creando backend/scripts/run-jest.js y configurando working-directory en nomina-ec-ci.yml." }
   ],
   "filesModified": [
-    "frontend-web/src/pages/Configuracion/Parametrizacion.jsx",
+    ".github/workflows/nomina-ec-ci.yml",
+    "backend/package.json",
+    "backend/scripts/run-jest.js",
     ".github/CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
     "AuditLock.json"
   ],
   "validationChecks": [
-    "RULES.md leído y orden DIUX26-P4 documentado",
-    "Hash SHA256 del AuditLock anterior encadenado (6CDCF2040EC6BDE1EDA9C68C64D482B464E2B7DBEB5D67307104CDA71E27DDF5)",
-    "Búsqueda, filtro y paginación integrados en Registros Vigentes de Parametrización",
-    "npx vite build PASS",
-    "npm run contracts PASS"
+    "RULES.md leído y orden DIUX26-CI-FIX documentado",
+    "Hash SHA256 del AuditLock anterior encadenado (C35B9EA1B6DDCB22FD4877C91293C28332965B3FD27937DBF633EB054EE69730)",
+    "Script backend/scripts/run-jest.js agnóstico para CI y local creado",
+    "Workflow nomina-ec-ci.yml actualizado con working-directory: backend"
   ],
-  "signature": "C35B9EA1B6DDCB22FD4877C91293C28332965B3FD27937DBF633EB054EE69730"
+  "signature": "39B20C9FC44E0E94F3F56E0CD501F0F9CC70E4E173DEF93C7DC7CFE2EAC52281"
 }
