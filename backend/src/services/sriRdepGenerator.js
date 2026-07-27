@@ -146,6 +146,16 @@ async function loadRdepData(tenantId, anio) {
   }
   const tenant = tenantResult.rows[0];
 
+  const companyConfigResult = await db.query(`
+    SELECT payload
+    FROM configuration_catalogs
+    WHERE tenant_id = $1
+      AND catalog_type = 'empresa_operativa'
+      AND status = 'activo'
+    ORDER BY updated_at DESC, created_at DESC
+    LIMIT 1
+  `, [tenantId]);
+
   const nominasResult = await db.query(`
     SELECT
       e.id AS empleado_id,
@@ -155,6 +165,7 @@ async function loadRdepData(tenantId, anio) {
       e.gastos_personales_anuales,
       e.cargas_familiares,
       n.mes,
+      n.sueldo_bruto,
       n.total_ingresos,
       n.aporte_iess_personal,
       n.impuesto_renta,
@@ -168,7 +179,36 @@ async function loadRdepData(tenantId, anio) {
     ORDER BY e.apellidos, e.nombres, n.mes
   `, [tenantId, anio]);
 
-  return { tenant, nominas: nominasResult.rows };
+  const companyConfig = safeJsonObject(companyConfigResult.rows[0]?.payload);
+
+  return { tenant, nominas: nominasResult.rows, companyConfig };
+}
+
+function safeJsonObject(value) {
+  if (!value) return {};
+  if (typeof value === 'object') return value;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function resolveRdepEstablishmentCode(tenant, companyConfig) {
+  const tenantConfig = safeJsonObject(tenant?.configuracion);
+  const candidates = [
+    companyConfig.rdepEstablecimiento,
+    companyConfig.establecimientoSRI,
+    tenantConfig.rdepEstablecimiento,
+    tenantConfig.establecimientoSRI,
+  ];
+  const configured = candidates.find((c) => String(c || '').trim());
+  if (configured) {
+    const clean = String(configured).replace(/\D/g, '');
+    if (clean.length >= 1 && clean.length <= 3) return clean.padStart(3, '0');
+  }
+  return '001';
 }
 
 async function precheckRDEP(tenantId, anio) {
@@ -333,6 +373,7 @@ function aggregateAnnualRows(nominas) {
   return [...grouped.values()].map((rows) => {
     const first = rows[0];
     const totalIngresos = roundMoney(rows.reduce((total, row) => total + numberValue(row.total_ingresos), 0));
+    const sueldoBase = roundMoney(rows.reduce((total, row) => total + numberValue(row.sueldo_bruto || row.detalle_calculo?.sueldoProporcional), 0));
     const aporteIess = roundMoney(rows.reduce((total, row) => total + numberValue(row.aporte_iess_personal), 0));
     const impuestoRenta = roundMoney(rows.reduce((total, row) => total + numberValue(row.impuesto_renta), 0));
     const fondoReserva = roundMoney(
@@ -340,12 +381,18 @@ function aggregateAnnualRows(nominas) {
     );
     const decimoTercero = sumDetail(rows, 'provisionDecimoTercero');
     const decimoCuarto = sumDetail(rows, 'provisionDecimoCuarto');
-    const sueldoSalario = Math.max(0, roundMoney(totalIngresos - fondoReserva));
+    const extras50 = sumDetail(rows, 'montoExtras50');
+    const extras100 = sumDetail(rows, 'montoExtras100');
+    const extrasNocturnas = sumDetail(rows, 'montoExtrasNocturnas');
+    const sobresueldo = roundMoney(extras50 + extras100 + extrasNocturnas);
+    const otrosIngresosGravados = Math.max(0, roundMoney(totalIngresos - sueldoBase - sobresueldo - fondoReserva));
 
     return {
       ...first,
       total_ingresos_anual: totalIngresos,
-      sueldo_salario_anual: sueldoSalario,
+      sueldo_base_anual: sueldoBase,
+      sobresueldo_anual: sobresueldo,
+      otros_ingresos_gravados_anual: otrosIngresosGravados,
       aporte_iess_anual: aporteIess,
       impuesto_renta_anual: impuestoRenta,
       fondo_reserva_anual: fondoReserva,
@@ -357,11 +404,14 @@ function aggregateAnnualRows(nominas) {
   });
 }
 
-function buildRdepRecord(nomina) {
-  const ingresos = money(nomina.sueldo_salario_anual);
+function buildRdepRecord(nomina, options = {}) {
+  const suelSal = money(nomina.sueldo_base_anual);
+  const sobSuelComRemu = money(nomina.sobresueldo_anual);
+  const otrosIngRenGrav = money(nomina.otros_ingresos_gravados_anual);
   const aporteIess = money(nomina.aporte_iess_anual);
   const impuestoRenta = money(nomina.impuesto_renta_anual);
   const baseImponible = Math.max(0, roundMoney(nomina.total_ingresos_anual - nomina.aporte_iess_anual));
+  const estab = options.establishmentCode || '001';
 
   return {
     empleado: {
@@ -371,7 +421,7 @@ function buildRdepRecord(nomina) {
       idRet: nomina.cedula,
       apellidoTrab: toXsdNameText(nomina.apellidos),
       nombreTrab: toXsdNameText(nomina.nombres),
-      estab: '001',
+      estab,
       residenciaTrab: '01',
       paisResidencia: '593',
       aplicaConvenio: 'NA',
@@ -379,8 +429,8 @@ function buildRdepRecord(nomina) {
       porcentajeDiscap: 0,
       tipIdDiscap: 'N',
     },
-    suelSal: ingresos,
-    sobSuelComRemu: '0.00',
+    suelSal,
+    sobSuelComRemu,
     partUtil: '0.00',
     intGrabGen: '0.00',
     impRentEmpl: '0.00',
@@ -388,7 +438,7 @@ function buildRdepRecord(nomina) {
     decimCuar: money(nomina.decimo_cuarto_anual),
     fondoReserva: money(nomina.fondo_reserva_anual),
     salarioDigno: '0.00',
-    otrosIngRenGrav: '0.00',
+    otrosIngRenGrav,
     ingGravConEsteEmpl: money(nomina.total_ingresos_anual),
     sisSalNet: 1,
     apoPerIess: aporteIess,
@@ -422,8 +472,9 @@ async function generarXML_RDEP(tenantId, anio) {
       details: { checks: precheck.checks },
     });
   }
-  const { tenant, nominas } = await loadRdepData(tenantId, anio);
+  const { tenant, nominas, companyConfig } = await loadRdepData(tenantId, anio);
   const annualRecords = aggregateAnnualRows(nominas);
+  const establishmentCode = resolveRdepEstablishmentCode(tenant, companyConfig);
 
   const rdep = {
     rdep: {
@@ -432,7 +483,7 @@ async function generarXML_RDEP(tenantId, anio) {
       tipoEmpleador: 'PRIVADO_MIXTO',
       enteSegSocial: 'IESS',
       retRelDep: {
-        datRetRelDep: annualRecords.map(buildRdepRecord),
+        datRetRelDep: annualRecords.map((record) => buildRdepRecord(record, { establishmentCode })),
       },
     },
   };

@@ -107,7 +107,8 @@ async function generarSAE(req, res) {
     if (!period) return null;
     const { anio, mes } = period;
 
-    const resultado = await generarXML_SAE(tenantId, anio, mes);
+    const movementType = req.body.movementType || req.body.tipoMovimiento || 'MSU';
+    const resultado = await generarXML_SAE(tenantId, anio, mes, movementType);
     res.json({ success: true, reporte: resultado, correlationId: req.correlationId });
   } catch (err) {
     console.error('[REPORTES] Error SAE', {

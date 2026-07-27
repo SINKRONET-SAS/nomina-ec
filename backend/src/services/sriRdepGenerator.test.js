@@ -21,23 +21,37 @@ const tenant = {
   razon_social: 'EMPRESA DEMO S.A.',
 };
 
+const companyConfig = { payload: {} };
+
 const nomina = {
   empleado_id: 'emp-1',
   cedula: '0102030405',
   nombres: 'ANA',
   apellidos: 'DEMO',
   mes: 6,
+  sueldo_bruto: 800,
   total_ingresos: '1000.00',
   aporte_iess_personal: '94.50',
   impuesto_renta: '0.00',
   estado: 'cerrada',
   detalle_calculo: {
+    sueldoProporcional: 800,
+    montoExtras50: 112.50,
+    montoExtras100: 0,
+    montoExtrasNocturnas: 0,
     fondoReservaPagadoEmpleado: 83.33,
     fondoReservaDepositadoIess: 0,
     provisionDecimoTercero: 83.33,
     provisionDecimoCuarto: 39.17,
   },
 };
+
+function mockLoadRdepData() {
+  db.query
+    .mockResolvedValueOnce({ rows: [tenant] })
+    .mockResolvedValueOnce({ rows: [companyConfig] })
+    .mockResolvedValueOnce({ rows: [nomina] });
+}
 
 describe('sriRdepGenerator', () => {
   beforeEach(() => {
@@ -46,9 +60,7 @@ describe('sriRdepGenerator', () => {
   });
 
   test('precheck marca listo con tenant y nomina cerrada', async () => {
-    db.query
-      .mockResolvedValueOnce({ rows: [tenant] })
-      .mockResolvedValueOnce({ rows: [nomina] });
+    mockLoadRdepData();
 
     const result = await precheckRDEP('tenant-1', 2026);
 
@@ -68,6 +80,7 @@ describe('sriRdepGenerator', () => {
   test('precheck bloquea si no hay nomina cerrada', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [tenant] })
+      .mockResolvedValueOnce({ rows: [companyConfig] })
       .mockResolvedValueOnce({ rows: [] });
 
     const result = await precheckRDEP('tenant-1', 2026);
@@ -77,11 +90,8 @@ describe('sriRdepGenerator', () => {
   });
 
   test('genera XML RDEP con validacion real contra XSD oficial', async () => {
-    db.query
-      .mockResolvedValueOnce({ rows: [tenant] })
-      .mockResolvedValueOnce({ rows: [nomina] })
-      .mockResolvedValueOnce({ rows: [tenant] })
-      .mockResolvedValueOnce({ rows: [nomina] });
+    mockLoadRdepData();
+    mockLoadRdepData();
 
     const result = await generarXML_RDEP('tenant-1', 2026);
 
@@ -97,6 +107,18 @@ describe('sriRdepGenerator', () => {
     expect(result.xmlString).toContain('<decimTer>83.33</decimTer>');
     expect(result.xmlString).toContain('<fondoReserva>83.33</fondoReserva>');
     expect(s3Upload).toHaveBeenCalledTimes(1);
+  });
+
+  test('desagrega ingresos: suelSal, sobSuelComRemu, otrosIngRenGrav', async () => {
+    mockLoadRdepData();
+    mockLoadRdepData();
+
+    const result = await generarXML_RDEP('tenant-1', 2026);
+
+    expect(result.xmlString).toContain('<suelSal>800.00</suelSal>');
+    expect(result.xmlString).toContain('<sobSuelComRemu>112.50</sobSuelComRemu>');
+    expect(result.xmlString).toContain('<otrosIngRenGrav>4.17</otrosIngRenGrav>');
+    expect(result.xmlString).toContain('<ingGravConEsteEmpl>1000.00</ingGravConEsteEmpl>');
   });
 
   test('rechaza XML que no cumple el esquema oficial', () => {

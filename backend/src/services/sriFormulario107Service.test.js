@@ -89,4 +89,25 @@ describe('sriFormulario107Service', () => {
       impuestoRentaRetenido: 10,
     });
   });
+
+  test('incluye decimos y fondo de reserva en resumen', () => {
+    const result = buildSummary([{
+      sueldo_bruto: 1000,
+      total_ingresos: 1000,
+      aporte_iess_personal: 94.5,
+      impuesto_renta: 0,
+      total_deducciones: 94.5,
+      neto_recibir: 905.5,
+      detalle_calculo: {
+        provisionDecimoTercero: 83.33,
+        provisionDecimoCuarto: 39.17,
+        fondoReservaPagadoEmpleado: 83.33,
+        fondoReservaDepositadoIess: 0,
+      },
+    }]);
+
+    expect(result.decimoTercero).toBeCloseTo(83.33, 2);
+    expect(result.decimoCuarto).toBeCloseTo(39.17, 2);
+    expect(result.fondoReserva).toBeCloseTo(83.33, 2);
+  });
 });

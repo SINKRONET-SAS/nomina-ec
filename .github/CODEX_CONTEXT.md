@@ -1,4 +1,36 @@
-## Current Haiky Plan - HAIKY-BENEFICIOS-ANTICIPOS-INTEGRAL-2026
+## Current Haiky Plan - HAIKY-RDEP-F107-IESS-CUMPLIMIENTO-2026
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-RDEP-F107-IESS-CUMPLIMIENTO-2026` |
+| Codigo | `RFI26` |
+| Estado | `RFI26-04 ejecutado; fases RFI26-00 a RFI26-04 completadas` |
+| Fecha | `2026-07-27` |
+| Superficie | BACKEND (sriRdepGenerator, sriFormulario107Service, iessSaeGenerator) |
+| Plan doc | `docs2/PLAN_HAIKY_RDEP_F107_IESS_CUMPLIMIENTO_2026.md` |
+| Prompts | `.github/prompts/RFI26-00` a `.github/prompts/RFI26-04` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Plan anterior | `HAIKY-BENEFICIOS-ANTICIPOS-INTEGRAL-2026` (`BAI26`, cerrado) |
+
+### Alcance RFI26
+
+- **RDEP**: Desagregacion de ingresos (`suelSal` vs `sobSuelComRemu` vs `otrosIngRenGrav`), establecimiento dinamico.
+- **Formulario 107**: Agregar decimo tercero, decimo cuarto y fondo de reserva al resumen anual PDF.
+- **IESS Batch**: Sueldo MSU excluye ingresos no-IESS, nuevos movimientos ENT (entrada) y SAL (salida).
+
+### Fases RFI26
+
+| Fase | Objetivo | Estado |
+|---|---|---|
+| RFI26-00 | Diagnostico y gobierno | completed-pass |
+| RFI26-01 | RDEP desagregacion ingresos | completed-pass |
+| RFI26-02 | F107 decimos y fondo reserva | completed-pass |
+| RFI26-03 | IESS Batch sueldo y ENT/SAL | completed-pass |
+| RFI26-04 | QA, regresion y cierre | completed-pass |
+
+---
+
+## Previous Haiky Plan - HAIKY-BENEFICIOS-ANTICIPOS-INTEGRAL-2026
 
 | Campo | Valor |
 |---|---|

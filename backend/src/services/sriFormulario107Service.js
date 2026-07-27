@@ -195,12 +195,18 @@ function buildSummary(rows = []) {
     const extras100 = numberValue(detail.montoExtras100 ?? row.horas_extras_100);
     const extrasNocturnas = numberValue(detail.montoExtrasNocturnas);
     const totalIngresos = numberValue(row.total_ingresos);
+    const decimoTercero = numberValue(detail.provisionDecimoTercero);
+    const decimoCuarto = numberValue(detail.provisionDecimoCuarto);
+    const fondoReserva = numberValue(detail.fondoReservaPagadoEmpleado) + numberValue(detail.fondoReservaDepositadoIess);
 
     summary.sueldosSalarios += sueldo;
     summary.horasSuplementarias += extras50;
     summary.horasExtraordinarias += extras100 + extrasNocturnas;
     summary.otrosIngresosGravados += Math.max(0, totalIngresos - sueldo - extras50 - extras100 - extrasNocturnas);
     summary.totalIngresos += totalIngresos;
+    summary.decimoTercero += decimoTercero;
+    summary.decimoCuarto += decimoCuarto;
+    summary.fondoReserva += fondoReserva;
     summary.aporteIessPersonal += numberValue(row.aporte_iess_personal);
     summary.impuestoRentaRetenido += numberValue(row.impuesto_renta);
     summary.totalDeducciones += numberValue(row.total_deducciones);
@@ -212,6 +218,9 @@ function buildSummary(rows = []) {
     horasExtraordinarias: 0,
     otrosIngresosGravados: 0,
     totalIngresos: 0,
+    decimoTercero: 0,
+    decimoCuarto: 0,
+    fondoReserva: 0,
     aporteIessPersonal: 0,
     impuestoRentaRetenido: 0,
     totalDeducciones: 0,
@@ -280,6 +289,9 @@ async function buildFormulario107Pdf({ data, anio, context = {} }) {
             ['Horas suplementarias', money(summary.horasSuplementarias)],
             ['Horas extraordinarias', money(summary.horasExtraordinarias)],
             ['Otros ingresos gravados / revisables', money(summary.otrosIngresosGravados)],
+            ['Decimo tercer sueldo (provision)', money(summary.decimoTercero)],
+            ['Decimo cuarto sueldo (provision)', money(summary.decimoCuarto)],
+            ['Fondo de reserva', money(summary.fondoReserva)],
             ['Total ingresos del ejercicio', money(summary.totalIngresos)],
             ['Aporte personal IESS deducible', money(summary.aporteIessPersonal)],
             ['Base imponible referencial', money(summary.totalIngresos - summary.aporteIessPersonal)],

@@ -17,7 +17,10 @@ const logger = require('../utils/logger');
 const SAE_MANIFEST_PATH = path.join(__dirname, '..', 'config', 'iess', 'sae-source-manifest.json');
 const SAE_CONTRACT_VERSION = 'IESS-BATCH-ASCII-2026-RPE26';
 const IESS_BATCH_MOVEMENT_MSU = 'MSU';
+const IESS_BATCH_MOVEMENT_ENT = 'ENT';
+const IESS_BATCH_MOVEMENT_SAL = 'SAL';
 const IESS_BATCH_SEPARATOR = ';';
+const SUPPORTED_MOVEMENT_TYPES = new Set([IESS_BATCH_MOVEMENT_MSU, IESS_BATCH_MOVEMENT_ENT, IESS_BATCH_MOVEMENT_SAL]);
 
 function readSaeManifest() {
   if (!fs.existsSync(SAE_MANIFEST_PATH)) {
@@ -165,7 +168,8 @@ async function loadSaeData(tenantId, anio, mes) {
       e.fecha_ingreso,
       n.total_ingresos,
       n.aporte_iess_personal,
-      n.estado
+      n.estado,
+      n.detalle_calculo
     FROM nominas n
     JOIN empleados e ON n.empleado_id = e.id
     WHERE n.tenant_id = $1
@@ -175,6 +179,8 @@ async function loadSaeData(tenantId, anio, mes) {
     ORDER BY e.apellidos, e.nombres
   `, [tenantId, anio, mes]);
 
+  const personalIessRate = Number(legalParameters.payroll?.personalIessRate) || 0.0945;
+
   return {
     tenant: tenantResult.rows[0],
     companyConfig: safeJsonObject(companyConfigResult.rows[0]?.payload),
@@ -182,7 +188,52 @@ async function loadSaeData(tenantId, anio, mes) {
     nominas: nominasResult.rows,
     legalParameters,
     employerIessRate,
+    personalIessRate,
   };
+}
+
+function resolveIessSueldo(row, personalIessRate) {
+  const detail = safeJsonObject(row.detalle_calculo);
+  const nonIessIncome = numberValue(detail.novedadesResumen?.incomeNotAffectsIess);
+  if (nonIessIncome > 0) {
+    return Math.max(0, numberValue(row.total_ingresos) - nonIessIncome);
+  }
+  return numberValue(row.total_ingresos);
+}
+
+async function loadEntSalData(tenantId, anio, mes) {
+  const startDate = `${anio}-${String(mes).padStart(2, '0')}-01`;
+  const entResult = await db.query(`
+    SELECT
+      e.cedula,
+      e.nombres,
+      e.apellidos,
+      e.fecha_ingreso,
+      e.sueldo_bruto_mensual
+    FROM empleados e
+    WHERE e.tenant_id = $1
+      AND e.fecha_ingreso >= $2::date
+      AND e.fecha_ingreso < ($2::date + INTERVAL '1 month')
+      AND e.activo = true
+    ORDER BY e.fecha_ingreso, e.apellidos, e.nombres
+  `, [tenantId, startDate]);
+
+  const salResult = await db.query(`
+    SELECT
+      e.cedula,
+      e.nombres,
+      e.apellidos,
+      e.fecha_salida,
+      e.motivo_salida,
+      e.sueldo_bruto_mensual
+    FROM empleados e
+    WHERE e.tenant_id = $1
+      AND e.fecha_salida >= $2::date
+      AND e.fecha_salida < ($2::date + INTERVAL '1 month')
+    ORDER BY e.fecha_salida, e.apellidos, e.nombres
+  `, [tenantId, startDate]);
+
+  return { entradas: entResult.rows, salidas: salResult.rows };
 }
 
 function uniqueIds(nominas) {
@@ -313,7 +364,7 @@ async function precheckSAE(tenantId, anio, mes) {
   };
 }
 
-function buildIessBatchTxt({ tenant, companyConfig, iessEstablishment, nominas, anio, mes }) {
+function buildIessBatchTxt({ tenant, companyConfig, iessEstablishment, nominas, anio, mes, personalIessRate }) {
   const ruc = normalizeId(tenant.ruc);
   const establishmentCode = resolveIessEstablishmentCode(tenant, companyConfig, iessEstablishment);
   const periodMonth = String(mes).padStart(2, '0');
@@ -325,11 +376,75 @@ function buildIessBatchTxt({ tenant, companyConfig, iessEstablishment, nominas, 
     periodMonth,
     IESS_BATCH_MOVEMENT_MSU,
     normalizeId(row.cedula),
-    money(row.total_ingresos),
+    money(resolveIessSueldo(row, personalIessRate)),
   ].join(IESS_BATCH_SEPARATOR)).join('\r\n') + '\r\n';
 }
 
-async function generarArchivoIessBatch(tenantId, anio, mes) {
+function formatIessDate(value) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '01/01/2000';
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const yyyy = d.getUTCFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function normalizeMotivoSalida(value) {
+  const motivo = String(value || '').trim().toUpperCase();
+  const map = {
+    RENUNCIA: 'RV',
+    DESPIDO: 'DI',
+    DESAHUCIO: 'DH',
+    TERMINACION: 'TE',
+    FALLECIMIENTO: 'FA',
+    JUBILACION: 'JU',
+  };
+  return map[motivo] || 'TE';
+}
+
+function buildIessBatchEntTxt({ tenant, companyConfig, iessEstablishment, entradas, anio, mes }) {
+  if (!entradas || entradas.length === 0) return '';
+  const ruc = normalizeId(tenant.ruc);
+  const establishmentCode = resolveIessEstablishmentCode(tenant, companyConfig, iessEstablishment);
+  const periodMonth = String(mes).padStart(2, '0');
+
+  return entradas.map((row) => [
+    ruc,
+    establishmentCode,
+    String(anio),
+    periodMonth,
+    IESS_BATCH_MOVEMENT_ENT,
+    normalizeId(row.cedula),
+    formatIessDate(row.fecha_ingreso),
+    money(row.sueldo_bruto_mensual),
+  ].join(IESS_BATCH_SEPARATOR)).join('\r\n') + '\r\n';
+}
+
+function buildIessBatchSalTxt({ tenant, companyConfig, iessEstablishment, salidas, anio, mes }) {
+  if (!salidas || salidas.length === 0) return '';
+  const ruc = normalizeId(tenant.ruc);
+  const establishmentCode = resolveIessEstablishmentCode(tenant, companyConfig, iessEstablishment);
+  const periodMonth = String(mes).padStart(2, '0');
+
+  return salidas.map((row) => [
+    ruc,
+    establishmentCode,
+    String(anio),
+    periodMonth,
+    IESS_BATCH_MOVEMENT_SAL,
+    normalizeId(row.cedula),
+    formatIessDate(row.fecha_salida),
+    normalizeMotivoSalida(row.motivo_salida),
+  ].join(IESS_BATCH_SEPARATOR)).join('\r\n') + '\r\n';
+}
+
+async function generarArchivoIessBatch(tenantId, anio, mes, movementType) {
+  const type = String(movementType || IESS_BATCH_MOVEMENT_MSU).toUpperCase();
+
+  if (type === IESS_BATCH_MOVEMENT_ENT || type === IESS_BATCH_MOVEMENT_SAL) {
+    return generarBatchEntSal(tenantId, Number(anio), Number(mes), type);
+  }
+
   const precheck = await precheckSAE(tenantId, anio, mes);
   if (!precheck.ready) {
     throw new AppError('IESS requiere datos validados antes de generar el archivo batch TXT/DAT.', {
@@ -339,7 +454,7 @@ async function generarArchivoIessBatch(tenantId, anio, mes) {
     });
   }
 
-  const { tenant, companyConfig, iessEstablishment, nominas } = await loadSaeData(tenantId, Number(anio), Number(mes));
+  const { tenant, companyConfig, iessEstablishment, nominas, personalIessRate } = await loadSaeData(tenantId, Number(anio), Number(mes));
   const batchString = buildIessBatchTxt({
     tenant,
     companyConfig,
@@ -347,6 +462,7 @@ async function generarArchivoIessBatch(tenantId, anio, mes) {
     nominas,
     anio: Number(anio),
     mes: Number(mes),
+    personalIessRate,
   });
   const sha256 = crypto.createHash('sha256').update(batchString.replace(/\r\n?/g, '\n'), 'ascii').digest('hex');
   const fileName = `IESS_MSU_${anio}${String(mes).padStart(2, '0')}.txt`;
@@ -382,8 +498,59 @@ async function generarArchivoIessBatch(tenantId, anio, mes) {
   };
 }
 
+async function generarBatchEntSal(tenantId, anio, mes, type) {
+  const { tenant, companyConfig, iessEstablishment } = await loadSaeData(tenantId, anio, mes);
+  const { entradas, salidas } = await loadEntSalData(tenantId, anio, mes);
+
+  const records = type === IESS_BATCH_MOVEMENT_ENT ? entradas : salidas;
+  if (records.length === 0) {
+    throw new AppError(`No hay ${type === IESS_BATCH_MOVEMENT_ENT ? 'ingresos' : 'salidas'} de empleados en el periodo ${String(mes).padStart(2, '0')}/${anio}.`, {
+      code: 'IESS_BATCH_NO_RECORDS',
+      statusCode: 422,
+      details: { movementType: type, anio, mes },
+    });
+  }
+
+  const batchString = type === IESS_BATCH_MOVEMENT_ENT
+    ? buildIessBatchEntTxt({ tenant, companyConfig, iessEstablishment, entradas, anio, mes })
+    : buildIessBatchSalTxt({ tenant, companyConfig, iessEstablishment, salidas, anio, mes });
+
+  const sha256 = crypto.createHash('sha256').update(batchString.replace(/\r\n?/g, '\n'), 'ascii').digest('hex');
+  const fileName = `IESS_${type}_${anio}${String(mes).padStart(2, '0')}.txt`;
+  const key = `reportes/${tenantId}/iess/${fileName}`;
+  const contentType = 'text/plain; charset=us-ascii';
+  const url = await s3Upload(Buffer.from(batchString, 'ascii'), key, contentType);
+
+  logger.info({
+    code: 'IESS_BATCH_TXT_GENERATED',
+    correlationId: process.env.CORRELATION_ID || 'iess-batch-generator',
+    tenantId,
+    anio,
+    mes,
+    movementType: type,
+    totalRegistros: records.length,
+  }, `Archivo batch IESS ${type} TXT generado`);
+
+  return {
+    url,
+    fileName,
+    contentType,
+    totalRegistros: records.length,
+    batchString,
+    sha256,
+    movementType: type,
+    validation: {
+      valid: true,
+      mode: 'iess_batch_ascii_txt_dat',
+      contractVersion: SAE_CONTRACT_VERSION,
+      checkedAt: new Date().toISOString(),
+    },
+  };
+}
+
 module.exports = {
   SAE_CONTRACT_VERSION,
+  SUPPORTED_MOVEMENT_TYPES,
   generarArchivoIessBatch,
   generarXML_SAE: generarArchivoIessBatch,
   precheckSAE,

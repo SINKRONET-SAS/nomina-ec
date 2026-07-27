@@ -11,6 +11,7 @@ jest.mock('./legalParameterService', () => ({
     sourceStatus: 'validado_oficial',
     payroll: {
       employerIessRate: 0.2,
+      personalIessRate: 0.0945,
     },
   })),
   assertLegalParametersReadyForProduction: jest.fn(),
@@ -20,15 +21,24 @@ const db = require('../config/database');
 const { s3Upload } = require('../config/s3');
 const { generarXML_SAE, precheckSAE } = require('./iessSaeGenerator');
 
+const tenantRows = [{ id: 'tenant-1', ruc: '1790000000001', razon_social: 'Empresa Demo' }];
+const companyRows = [{ payload: { razonSocial: 'Empresa Demo' } }];
+const establishmentRows = [{ code: '0002', payload: { codigoEstablecimiento: '0002', principal: true } }];
+
+function mockMsuData(payrollRows) {
+  db.query
+    .mockResolvedValueOnce({ rows: tenantRows })
+    .mockResolvedValueOnce({ rows: companyRows })
+    .mockResolvedValueOnce({ rows: establishmentRows })
+    .mockResolvedValueOnce({ rows: payrollRows });
+}
+
 describe('generarXML_SAE', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   test('genera archivo batch IESS MSU en ASCII TXT', async () => {
-    const tenantRows = [{ id: 'tenant-1', ruc: '1790000000001', razon_social: 'Empresa Demo' }];
-    const companyRows = [{ payload: { razonSocial: 'Empresa Demo' } }];
-    const establishmentRows = [{ code: '0002', payload: { codigoEstablecimiento: '0002', principal: true } }];
     const payrollRows = [{
       cedula: '0102030405',
       nombres: 'Ana',
@@ -37,16 +47,10 @@ describe('generarXML_SAE', () => {
       total_ingresos: '1000.00',
       aporte_iess_personal: '94.50',
       estado: 'cerrada',
+      detalle_calculo: null,
     }];
-    db.query
-      .mockResolvedValueOnce({ rows: tenantRows })
-      .mockResolvedValueOnce({ rows: companyRows })
-      .mockResolvedValueOnce({ rows: establishmentRows })
-      .mockResolvedValueOnce({ rows: payrollRows })
-      .mockResolvedValueOnce({ rows: tenantRows })
-      .mockResolvedValueOnce({ rows: companyRows })
-      .mockResolvedValueOnce({ rows: establishmentRows })
-      .mockResolvedValueOnce({ rows: payrollRows });
+    mockMsuData(payrollRows);
+    mockMsuData(payrollRows);
 
     const result = await generarXML_SAE('tenant-1', 2026, 1);
 
@@ -66,8 +70,74 @@ describe('generarXML_SAE', () => {
     );
   });
 
+  test('MSU excluye ingresos no-IESS del sueldo', async () => {
+    const payrollRows = [{
+      cedula: '0102030405',
+      nombres: 'Ana',
+      apellidos: 'Perez',
+      fecha_ingreso: '2026-01-01',
+      total_ingresos: '1050.00',
+      aporte_iess_personal: '94.50',
+      estado: 'cerrada',
+      detalle_calculo: {
+        novedadesResumen: { incomeNotAffectsIess: 50 },
+      },
+    }];
+    mockMsuData(payrollRows);
+    mockMsuData(payrollRows);
+
+    const result = await generarXML_SAE('tenant-1', 2026, 1);
+
+    expect(result.batchString).toContain(';1000.00\r\n');
+    expect(result.batchString).not.toContain(';1050.00');
+  });
+
+  test('genera batch ENT para nuevos empleados del periodo', async () => {
+    mockMsuData([]);
+    db.query
+      .mockResolvedValueOnce({ rows: [{
+        cedula: '0908070605',
+        nombres: 'Carlos',
+        apellidos: 'Lopez',
+        fecha_ingreso: '2026-01-15',
+        sueldo_bruto_mensual: 500,
+      }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const result = await generarXML_SAE('tenant-1', 2026, 1, 'ENT');
+
+    expect(result.movementType).toBe('ENT');
+    expect(result.batchString).toContain(';ENT;');
+    expect(result.batchString).toContain('0908070605');
+    expect(result.batchString).toContain('15/01/2026');
+    expect(result.batchString).toContain('500.00');
+    expect(result.fileName).toBe('IESS_ENT_202601.txt');
+  });
+
+  test('genera batch SAL para empleados con salida en el periodo', async () => {
+    mockMsuData([]);
+    db.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{
+        cedula: '0102030405',
+        nombres: 'Ana',
+        apellidos: 'Perez',
+        fecha_salida: '2026-01-31',
+        motivo_salida: 'RENUNCIA',
+        sueldo_bruto_mensual: 1000,
+      }] });
+
+    const result = await generarXML_SAE('tenant-1', 2026, 1, 'SAL');
+
+    expect(result.movementType).toBe('SAL');
+    expect(result.batchString).toContain(';SAL;');
+    expect(result.batchString).toContain('0102030405');
+    expect(result.batchString).toContain('31/01/2026');
+    expect(result.batchString).toContain(';RV\r\n');
+    expect(result.fileName).toBe('IESS_SAL_202601.txt');
+  });
+
   test('rechaza batch si existen trabajadores duplicados en el periodo', async () => {
-    const tenantRows = [{ id: 'tenant-1', ruc: '1790000000001', razon_social: 'Empresa Demo' }];
     db.query
       .mockResolvedValueOnce({ rows: tenantRows })
       .mockResolvedValueOnce({ rows: [{ payload: {} }] })
@@ -75,22 +145,14 @@ describe('generarXML_SAE', () => {
       .mockResolvedValueOnce({
         rows: [
           {
-            cedula: '0102030405',
-            nombres: 'Ana',
-            apellidos: 'Perez',
-            fecha_ingreso: '2026-01-01',
-            total_ingresos: '1000.00',
-            aporte_iess_personal: '94.50',
-            estado: 'cerrada',
+            cedula: '0102030405', nombres: 'Ana', apellidos: 'Perez',
+            fecha_ingreso: '2026-01-01', total_ingresos: '1000.00',
+            aporte_iess_personal: '94.50', estado: 'cerrada', detalle_calculo: null,
           },
           {
-            cedula: '0102030405',
-            nombres: 'Ana',
-            apellidos: 'Perez',
-            fecha_ingreso: '2026-01-01',
-            total_ingresos: '1000.00',
-            aporte_iess_personal: '94.50',
-            estado: 'cerrada',
+            cedula: '0102030405', nombres: 'Ana', apellidos: 'Perez',
+            fecha_ingreso: '2026-01-01', total_ingresos: '1000.00',
+            aporte_iess_personal: '94.50', estado: 'cerrada', detalle_calculo: null,
           },
         ],
       });
@@ -105,9 +167,7 @@ describe('generarXML_SAE', () => {
 
   test('bloquea SAE cuando no existe nomina cerrada del periodo', async () => {
     db.query
-      .mockResolvedValueOnce({
-        rows: [{ id: 'tenant-1', ruc: '1790000000001', razon_social: 'Empresa Demo' }],
-      })
+      .mockResolvedValueOnce({ rows: tenantRows })
       .mockResolvedValueOnce({ rows: [{ payload: {} }] })
       .mockResolvedValueOnce({ rows: [{ code: '0002', payload: { principal: true } }] })
       .mockResolvedValueOnce({ rows: [] });
@@ -122,20 +182,14 @@ describe('generarXML_SAE', () => {
 
   test('bloquea batch si no existe establecimiento IESS configurado', async () => {
     db.query
-      .mockResolvedValueOnce({
-        rows: [{ id: 'tenant-1', ruc: '1790000000001', razon_social: 'Empresa Demo' }],
-      })
+      .mockResolvedValueOnce({ rows: tenantRows })
       .mockResolvedValueOnce({ rows: [{ payload: {} }] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({
         rows: [{
-          cedula: '0102030405',
-          nombres: 'Ana',
-          apellidos: 'Perez',
-          fecha_ingreso: '2026-01-01',
-          total_ingresos: '1000.00',
-          aporte_iess_personal: '94.50',
-          estado: 'cerrada',
+          cedula: '0102030405', nombres: 'Ana', apellidos: 'Perez',
+          fecha_ingreso: '2026-01-01', total_ingresos: '1000.00',
+          aporte_iess_personal: '94.50', estado: 'cerrada', detalle_calculo: null,
         }],
       });
 
