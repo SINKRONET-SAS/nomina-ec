@@ -417,6 +417,75 @@ function normalizeFiscalInvoiceRow(row = {}) {
   };
 }
 
+const RETRY_MAX_ATTEMPTS = 5;
+const RETRY_BACKOFF_HOURS = 1;
+
+async function retryPendingInvoices(correlationId = 'cron-fiscal-invoice-retry') {
+  const readiness = getFacturadorReadiness();
+  if (!readiness.ready) {
+    logger.info({
+      code: 'CRON_FISCAL_INVOICE_RETRY_SKIPPED',
+      correlationId,
+    }, 'Reintentos de facturacion omitidos: facturador no configurado');
+    return { retried: 0, skippedReason: 'facturador_not_ready' };
+  }
+
+  const result = await db.query(
+    `SELECT fir.*, tr.tenant_id AS tx_tenant_id
+     FROM fiscal_invoice_requests fir
+     LEFT JOIN transacciones_pago tr ON tr.id = fir.payment_transaction_id
+     WHERE fir.status IN ('blocked', 'invoice_rejected')
+       AND fir.attempts < $1
+       AND fir.payment_transaction_id IS NOT NULL
+       AND fir.updated_at < NOW() - INTERVAL '${RETRY_BACKOFF_HOURS} hours'
+     ORDER BY fir.attempts ASC, fir.updated_at ASC
+     LIMIT 20`,
+    [RETRY_MAX_ATTEMPTS]
+  );
+
+  const retried = [];
+  for (const row of result.rows) {
+    const tenantId = row.tenant_id || row.tx_tenant_id;
+    if (!tenantId || !row.payment_transaction_id) continue;
+
+    try {
+      const invoice = await requestInvoiceForTransaction({
+        tenantId,
+        paymentTransactionId: row.payment_transaction_id,
+        userId: null,
+        correlationId,
+      });
+
+      logger.info({
+        code: 'CRON_FISCAL_INVOICE_RETRY',
+        correlationId,
+        tenantId,
+        externalReference: row.external_reference,
+        attempt: row.attempts + 1,
+        resultStatus: invoice?.status || 'unknown',
+      }, `Reintento de factura fiscal #${row.attempts + 1}`);
+
+      retried.push({
+        tenantId,
+        externalReference: row.external_reference,
+        attempt: row.attempts + 1,
+        resultStatus: invoice?.status || 'unknown',
+      });
+    } catch (err) {
+      logger.error({
+        code: err.code || 'CRON_FISCAL_INVOICE_RETRY_ERROR',
+        statusCode: err.statusCode || 500,
+        correlationId,
+        tenantId,
+        userId: null,
+        externalReference: row.external_reference,
+      }, err.message || 'Error reintentando factura fiscal');
+    }
+  }
+
+  return { retried: retried.length, details: retried };
+}
+
 module.exports = {
   buildInvoicePayload,
   getFiscalStatus,
@@ -424,4 +493,5 @@ module.exports = {
   processFacturadorWebhook,
   queueInvoiceForApprovedTransaction,
   requestInvoiceForTransaction,
+  retryPendingInvoices,
 };

@@ -1173,11 +1173,26 @@ async function createManualBankTransfer(req, res, next) {
     );
 
     const row = await fetchManualBankTransferById(result.rows[0].id);
-    res.status(201).json({
+    const response = {
       success: true,
       data: normalizeManualBankTransfer(row),
       correlationId: req.correlationId,
-    });
+    };
+
+    const expectedCents = charge.precioCentavos;
+    if (expectedCents > 0 && amountCentavos > 0) {
+      const deviation = Math.abs(amountCentavos - expectedCents) / expectedCents;
+      if (deviation > 0.2) {
+        response.amountWarning = {
+          message: `El monto registrado ($${(amountCentavos / 100).toFixed(2)}) difiere mas del 20% del precio del plan ($${(expectedCents / 100).toFixed(2)}).`,
+          registeredCentavos: amountCentavos,
+          expectedCentavos: expectedCents,
+          deviationPercent: Math.round(deviation * 100),
+        };
+      }
+    }
+
+    res.status(201).json(response);
   } catch (err) {
     next(err);
   }
@@ -1620,6 +1635,42 @@ async function revokePaymentMethod(req, res, next) {
   }
 }
 
+async function paymentHistory(req, res, next) {
+  try {
+    const result = await db.query(
+      `SELECT tr.id, tr.plan_id, p.nombre AS plan_nombre, tr.estado, tr.monto_centavos,
+         tr.moneda, tr.proveedor, tr.client_transaction_id, tr.created_at, tr.updated_at
+       FROM transacciones_pago tr
+       LEFT JOIN planes_comerciales p ON p.id = tr.plan_id
+       WHERE tr.tenant_id = $1
+       ORDER BY tr.created_at DESC
+       LIMIT 50`,
+      [req.usuario.tenantId]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        items: result.rows.map((row) => ({
+          id: row.id,
+          planId: row.plan_id,
+          planNombre: row.plan_nombre || row.plan_id,
+          estado: row.estado,
+          montoCentavos: row.monto_centavos,
+          monto: Number(row.monto_centavos || 0) / 100,
+          moneda: row.moneda || 'USD',
+          proveedor: row.proveedor,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+        })),
+      },
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   buildPaymentCapabilities,
   listPublicPlans,
@@ -1630,6 +1681,7 @@ module.exports = {
   tenantCapabilities,
   listPaymentMethods,
   subscriptionStatus,
+  paymentHistory,
   listManualBankTransfers,
   createManualBankTransfer,
   updateManualBankTransferStatus,

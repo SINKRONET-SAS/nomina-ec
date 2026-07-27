@@ -121,6 +121,7 @@ app.post('/api/superadmin/incidencias', requireRole('superadmin'), requireFreshU
 app.put('/api/superadmin/incidencias/:id', requireRole('superadmin'), requireFreshUser, superadminController.updateSupportIncident);
 
 app.get('/api/pagos/status', paymentController.subscriptionStatus);
+app.get('/api/pagos/historial', paymentController.paymentHistory);
 app.get('/api/pagos/payment-methods', paymentController.listPaymentMethods);
 app.get('/api/pagos/payment-methods/capabilities', paymentController.paymentCapabilities);
 app.get('/api/pagos/capabilities', paymentController.tenantCapabilities);

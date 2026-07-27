@@ -1,4 +1,38 @@
-## Current Haiky Plan - HAIKY-RDEP-F107-IESS-CUMPLIMIENTO-2026
+## Current Haiky Plan - HAIKY-MONETIZACION-AUTOMATICA-2026
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-MONETIZACION-AUTOMATICA-2026` |
+| Codigo | `MSF26` |
+| Estado | `MSF26-04 ejecutado; fases MSF26-00 a MSF26-04 completadas` |
+| Fecha | `2026-07-27` |
+| Superficie | BACKEND (paymentController, fiscalInvoiceService, cron-jobs), FRONTEND-WEB (Superadmin, historial) |
+| Plan doc | `docs2/PLAN_HAIKY_MONETIZACION_AUTOMATICA_2026.md` |
+| Prompts | `.github/prompts/MSF26-00` a `.github/prompts/MSF26-04` |
+| AuditLock | `.vscode/AuditLock.json` |
+| Plan anterior | `HAIKY-RDEP-F107-IESS-CUMPLIMIENTO-2026` (`RFI26`, cerrado) |
+
+### Alcance MSF26
+
+- **Renovacion automatica**: Cron que procesa suscripciones con `renovacion_automatica = true` proximas a vencer.
+- **Notificacion vencimiento**: Email al owner 7 dias antes de expiracion de suscripcion.
+- **Reintentos facturacion fiscal**: Cron que reintenta facturas `blocked` o `invoice_rejected` con `attempts < 5`.
+- **Historial de pagos tenant**: Endpoint y UI para que el owner vea sus transacciones anteriores.
+- **Validacion coherencia monto-plan**: Advertencia en transferencia manual cuando monto difiere >20% del precio del plan.
+
+### Fases MSF26
+
+| Fase | Objetivo | Estado |
+|---|---|---|
+| MSF26-00 | Diagnostico integral y gobierno | completed-pass |
+| MSF26-01 | Cron renovacion automatica y notificacion vencimiento | completed-pass |
+| MSF26-02 | Reintentos facturacion fiscal automaticos | completed-pass |
+| MSF26-03 | Historial pagos tenant y validacion coherencia | completed-pass |
+| MSF26-04 | QA, regresion y cierre | completed-pass |
+
+---
+
+## Previous Haiky Plan - HAIKY-RDEP-F107-IESS-CUMPLIMIENTO-2026
 
 | Campo | Valor |
 |---|---|
@@ -8,25 +42,7 @@
 | Fecha | `2026-07-27` |
 | Superficie | BACKEND (sriRdepGenerator, sriFormulario107Service, iessSaeGenerator) |
 | Plan doc | `docs2/PLAN_HAIKY_RDEP_F107_IESS_CUMPLIMIENTO_2026.md` |
-| Prompts | `.github/prompts/RFI26-00` a `.github/prompts/RFI26-04` |
-| AuditLock | `.vscode/AuditLock.json` |
-| Plan anterior | `HAIKY-BENEFICIOS-ANTICIPOS-INTEGRAL-2026` (`BAI26`, cerrado) |
-
-### Alcance RFI26
-
-- **RDEP**: Desagregacion de ingresos (`suelSal` vs `sobSuelComRemu` vs `otrosIngRenGrav`), establecimiento dinamico.
-- **Formulario 107**: Agregar decimo tercero, decimo cuarto y fondo de reserva al resumen anual PDF.
-- **IESS Batch**: Sueldo MSU excluye ingresos no-IESS, nuevos movimientos ENT (entrada) y SAL (salida).
-
-### Fases RFI26
-
-| Fase | Objetivo | Estado |
-|---|---|---|
-| RFI26-00 | Diagnostico y gobierno | completed-pass |
-| RFI26-01 | RDEP desagregacion ingresos | completed-pass |
-| RFI26-02 | F107 decimos y fondo reserva | completed-pass |
-| RFI26-03 | IESS Batch sueldo y ENT/SAL | completed-pass |
-| RFI26-04 | QA, regresion y cierre | completed-pass |
+| AuditLock anterior | firma `898FF1C11BF8BB4892E8ACD84722EA5198139A18F62BAB07B93A28F4FCC44B97` |
 
 ---
 

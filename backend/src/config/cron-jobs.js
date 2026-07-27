@@ -4,6 +4,8 @@
 const cron = require('node-cron');
 const { calcularNominaMensual } = require('../services/calculoNominaService');
 const { ensurePayrollPeriodForDate, todayInEcuador } = require('../services/monthlyPeriodService');
+const { processAutoRenewals, notifyExpiringSubscriptions } = require('../services/subscriptionLifecycleService');
+const { retryPendingInvoices } = require('../services/fiscalInvoiceService');
 const db = require('../config/database');
 const logger = require('../utils/logger');
 const { monthInEcuador, yearInEcuador } = require('../utils/dateEcuador');
@@ -41,6 +43,21 @@ function iniciarCronJobs() {
 
   // HAL-92: Purga de comunicaciones LOPDP - semanal, domingos 3am
   cron.schedule('0 3 * * 0', runCron('cron-purga-comunicaciones', purgaComunicaciones), {
+    timezone: 'America/Guayaquil',
+  });
+
+  // MSF26: Renovacion automatica de suscripciones - diario 6am Ecuador
+  cron.schedule('0 6 * * *', runCron('cron-subscription-renewal', processAutoRenewals), {
+    timezone: 'America/Guayaquil',
+  });
+
+  // MSF26: Notificacion de vencimiento proximo - diario 9am Ecuador
+  cron.schedule('0 9 * * *', runCron('cron-subscription-expiry-notify', notifyExpiringSubscriptions), {
+    timezone: 'America/Guayaquil',
+  });
+
+  // MSF26: Reintentos de facturacion fiscal - diario 10am Ecuador, lun-vie
+  cron.schedule('0 10 * * 1-5', runCron('cron-fiscal-invoice-retry', retryPendingInvoices), {
     timezone: 'America/Guayaquil',
   });
 
