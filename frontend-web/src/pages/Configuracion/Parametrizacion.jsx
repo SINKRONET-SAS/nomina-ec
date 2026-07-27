@@ -746,12 +746,48 @@ function Parametrizacion() {
     }));
   }
 
-  function submitForm(event) {
+  function selectForm(definitionKey) {
+    setActiveForm(definitionKey);
+    setEditingRecord(null);
+    setPendingDeleteId('');
+    setSidebarSearch('');
+    setSidebarFilter('');
+    setSidebarPage(1);
+  }
+
+  function startEdit(definition, record) {
+    try {
+      const values = formValuesFromRecord(definition, record);
+      setActiveForm(definition.key);
+      setEditingRecord({ ...record, definitionKey: definition.key });
+      setPendingDeleteId('');
+      setError('');
+      setMessage('');
+      setForms((current) => ({ ...current, [definition.key]: values }));
+    } catch (err) {
+      setError(`No se pudo cargar el registro para editar: ${err.message}`);
+    }
+  }
+
+  function cancelEdit() {
+    setEditingRecord(null);
     setPendingDeleteId('');
     setForms((current) => ({
       ...current,
       [activeDefinition.key]: cloneFormValues(activeDefinition.initial),
     }));
+  }
+
+  function submitForm(event) {
+    event.preventDefault();
+    if (activeDefinition.customType === 'bankMappingStructure') {
+      return;
+    }
+    saveMutation.mutate({
+      definition: activeDefinition,
+      values: activeValues,
+      record: isEditingActiveRecord ? editingRecord : null,
+    });
   }
 
   function requestDelete(recordId) {
