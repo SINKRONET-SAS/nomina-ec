@@ -325,6 +325,8 @@ describe('payrollReportService accounting entries', () => {
     const haber = rows.reduce((sum, row) => sum + row.haber, 0);
 
     expect(rows.some((row) => row.cuenta === '999001')).toBe(true);
+    expect(rows.some((row) => row.momentoContable === 'provision_mensual')).toBe(true);
+    expect(rows.some((row) => row.momentoContable === 'pago_rol')).toBe(true);
     expect(Math.round(debe * 100)).toBe(Math.round(haber * 100));
   });
 

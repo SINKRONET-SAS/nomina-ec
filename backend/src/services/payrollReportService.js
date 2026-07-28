@@ -15,6 +15,12 @@ const {
   getAccountingMappings,
   linesForPayrollRow,
 } = require('./payrollAccountingService');
+const {
+  LABOR_REPORT_CODES,
+  isLaborReportCode,
+  buildLaborReportRows,
+  getLaborReportColumns,
+} = require('./laborReportService');
 
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const PDF_MIME = 'application/pdf';
@@ -29,6 +35,11 @@ const REPORT_TYPES = {
   PAYROLL_BENEFITS_MATRIX: 'benefits_matrix',
   PAYROLL_BENEFIT_MOVEMENT_BALANCE: 'benefit_movement_balance',
   PAYROLL_ACCOUNTING_REPORT: 'accounting_report',
+  LABORAL_DECIMO_TERCERO: 'labor_decimo_tercero',
+  LABORAL_DECIMO_CUARTO: 'labor_decimo_cuarto',
+  LABORAL_PARTICIPACION_UTILIDADES: 'labor_participacion_utilidades',
+  LABORAL_SALARIO_DIGNO: 'labor_salario_digno',
+  LABORAL_BENEFICIOS_ACUMULADOS: 'labor_beneficios_acumulados',
 };
 
 const BENEFIT_MOVEMENT_TYPES = new Set([
@@ -76,6 +87,13 @@ async function generarReporteNomina({
 
   if (!FORMAT_MIME[normalizedFormat]) {
     throw new Error(`Formato de reporte no soportado: ${format}`);
+  }
+
+  if (isLaborReportCode(normalizedReportCode)) {
+    const error = new Error('Los reportes laborales se generan como consolidado anual desde la ruta de Reportes.');
+    error.code = 'REPORTE_LABORAL_REQUIERE_ANUAL';
+    error.statusCode = 400;
+    throw error;
   }
 
   if (normalizedReportCode !== 'PAYROLL_SUMMARY' && normalizedFormat === 'pdf') {
@@ -159,6 +177,15 @@ async function generarConsolidadoAnualNomina({
   context = {},
 }) {
   const normalizedReportCode = String(reportCode || '').trim().toUpperCase();
+  if (isLaborReportCode(normalizedReportCode)) {
+    return generarReporteLaboralAnual({
+      tenantId,
+      anio: Number(anio),
+      reportCode: normalizedReportCode,
+      filters,
+      context,
+    });
+  }
   if (!REPORT_TYPES[normalizedReportCode] || normalizedReportCode === 'PAYROLL_SUMMARY') {
     throw new Error(`Reporte anual de nómina no soportado: ${reportCode}`);
   }
@@ -293,6 +320,99 @@ async function generarConsolidadoAnualNomina({
   };
 }
 
+async function generarReporteLaboralAnual({
+  tenantId,
+  anio,
+  reportCode,
+  filters = {},
+  context = {},
+}) {
+  const tenant = await getTenant(tenantId);
+  const monthlyRows = [];
+  for (let mes = 1; mes <= 12; mes += 1) {
+    const rows = await getPayrollRows(tenantId, Number(anio), mes, filters);
+    monthlyRows.push(...rows);
+  }
+
+  const exportRows = buildLaborReportRows(monthlyRows, reportCode, Number(anio), filters);
+  if (exportRows.length === 0) {
+    const error = new Error(`No hay nÃ³minas para el aÃ±o ${anio} y filtros solicitados.`);
+    error.code = 'REPORTE_LABORAL_SIN_DATOS';
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'SKNOMINA';
+  workbook.created = new Date();
+  workbook.modified = new Date();
+  const sheet = workbook.addWorksheet('Reporte laboral');
+  const columns = getLaborReportColumns(reportCode);
+  sheet.columns = columns;
+  sheet.views = [{ state: 'frozen', ySplit: 1 }];
+  exportRows.forEach((row) => sheet.addRow(row));
+  sheet.getRow(1).font = { bold: true };
+  sheet.autoFilter = {
+    from: { row: 1, column: 1 },
+    to: { row: 1, column: columns.length },
+  };
+
+  const auditSheet = workbook.addWorksheet('Auditoria');
+  auditSheet.columns = [
+    { header: 'Campo', key: 'campo', width: 32 },
+    { header: 'Valor', key: 'valor', width: 110 },
+  ];
+  [
+    ['Empresa', tenant.razon_social],
+    ['RUC', tenant.ruc || ''],
+    ['Año', String(anio)],
+    ['Reporte', reportCode],
+    ['Formato', 'xlsx'],
+    ['Filas', String(exportRows.length)],
+    ['Filtros y parámetros', JSON.stringify(sanitizeFilters(filters))],
+    ['Momento contable', 'La salida distingue provisión mensual de pago en rol; conciliar con parametrización contable vigente.'],
+    ['Referencia normativa', 'Ver plan RLT26 y fuentes oficiales del Ministerio del Trabajo.'],
+    ['Uso del documento', 'Documento operativo de trabajo para revisión, conciliación y preparación de la presentación ante SUT/MDT; validar datos y período legal antes de remitirlo.'],
+    ['Generado en', new Date().toISOString()],
+    ['Correlation ID', context.correlationId || ''],
+  ].forEach(([campo, valor]) => auditSheet.addRow({ campo, valor }));
+  auditSheet.getRow(1).font = { bold: true };
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const scopeSuffix = buildScopeSuffix(filters);
+  const fileName = `LABORAL_ANUAL_${reportCode}_${anio}${scopeSuffix}.xlsx`;
+  const key = `reportes/${tenantId}/nomina/laboral/${fileName}`;
+  const url = await s3Upload(buffer, key, XLSX_MIME);
+
+  if (context.correlationId) {
+    await recordAudit({
+      tenantId,
+      userId: context.userId || null,
+      correlationId: context.correlationId,
+      action: 'generar_reporte_laboral_anual',
+      entity: 'nominas',
+      newData: {
+        anio: Number(anio),
+        reportCode,
+        format: 'xlsx',
+        totalFilas: exportRows.length,
+        filters: sanitizeFilters(filters),
+      },
+      ipAddress: context.ipAddress || null,
+    });
+  }
+
+  return {
+    url,
+    fileName,
+    contentType: XLSX_MIME,
+    reportCode,
+    format: 'xlsx',
+    totalFilas: exportRows.length,
+    resumen: { totalFilas: exportRows.length, totalRoles: monthlyRows.length },
+  };
+}
+
 async function getTenant(tenantId) {
   const result = await db.query('SELECT id, ruc, razon_social, nombre_comercial, configuracion FROM tenants WHERE id = $1', [tenantId]);
   if (result.rows.length === 0) {
@@ -333,6 +453,10 @@ async function getPayrollRows(tenantId, anio, mes, filters = {}) {
       e.cedula,
       e.nombres,
       e.apellidos,
+      e.cargas_familiares,
+      e.modalidad_fondo_reserva,
+      e.modalidad_decimo_tercero,
+      e.modalidad_decimo_cuarto,
       COALESCE(jp.name, e.cargo) AS cargo,
       jp.code AS cargo_codigo,
       jp.salary_min AS cargo_salary_min,
@@ -772,11 +896,12 @@ function mapAccountingEntries(row, anio, mes) {
   const aporteIess = numberValue(row.aporte_iess_personal);
   const impuestoRenta = numberValue(row.impuesto_renta);
   const otrosDescuentos = numberValue(row.anticipos) + numberValue(row.prestamos) + numberValue(detail.descuentoFaltas);
-  const costoPatronal = numberValue(detail.aportePatronal)
-    + numberValue(detail.provisionDecimoTercero)
-    + numberValue(detail.provisionDecimoCuarto)
-    + numberValue(detail.provisionVacaciones)
-    + numberValue(detail.provisionFondosReserva);
+  const aportePatronal = numberValue(detail.aportePatronal);
+  const provisionDecimoTercero = numberValue(detail.provisionDecimoTercero);
+  const provisionDecimoCuarto = numberValue(detail.provisionDecimoCuarto);
+  const provisionVacaciones = numberValue(detail.provisionVacaciones);
+  const provisionFondosReserva = numberValue(detail.provisionFondosReserva);
+  const costoPatronal = aportePatronal + provisionDecimoTercero + provisionDecimoCuarto + provisionVacaciones + provisionFondosReserva;
 
   return [
     accountingRow(periodo, 'DEVENGAMIENTO', '510101', 'Sueldos y salarios', totalIngresos, 0, empleado, row.cedula),
@@ -791,7 +916,7 @@ function mapAccountingEntries(row, anio, mes) {
   ].filter((entry) => entry.debe > 0 || entry.haber > 0);
 }
 
-function accountingRow(periodo, asiento, cuenta, nombreCuenta, debe, haber, empleado, cedula) {
+function accountingRow(periodo, asiento, cuenta, nombreCuenta, debe, haber, empleado, cedula, momentoContable = null) {
   return {
     periodo,
     asiento,
@@ -801,6 +926,7 @@ function accountingRow(periodo, asiento, cuenta, nombreCuenta, debe, haber, empl
     haber: numberValue(haber),
     empleado,
     cedula,
+    momentoContable: momentoContable || (asiento === 'PAGO' ? 'pago_rol' : 'devengamiento_rol'),
     referencia: `${asiento}-${cedula}-${periodo.replace('/', '')}`,
   };
 }
@@ -810,6 +936,9 @@ function csvCell(value) {
 }
 
 function getWorkbookColumns(reportCode, exportRows = []) {
+  if (isLaborReportCode(reportCode)) {
+    return getLaborReportColumns(reportCode);
+  }
   if (reportCode === 'PAYROLL_ACCOUNTING_ENTRIES') {
     return [
       { header: 'Periodo', key: 'periodo', width: 12 },
@@ -821,6 +950,7 @@ function getWorkbookColumns(reportCode, exportRows = []) {
       { header: 'Empleado', key: 'empleado', width: 36 },
       { header: 'Cédula', key: 'cedula', width: 14 },
       { header: 'Referencia', key: 'referencia', width: 28 },
+      { header: 'Momento contable', key: 'momentoContable', width: 22 },
     ];
   }
 
@@ -840,6 +970,7 @@ function getWorkbookColumns(reportCode, exportRows = []) {
       { header: 'Centro costo', key: 'centroCosto', width: 16 },
       { header: 'Lote cálculo', key: 'loteCalculo', width: 38 },
       { header: 'Referencia', key: 'referencia', width: 34 },
+      { header: 'Momento contable', key: 'momentoContable', width: 22 },
     ];
   }
 
@@ -1217,6 +1348,15 @@ function sanitizeFilters(filters = {}) {
       ? filters.columns.map((column) => String(column || '').trim()).filter(Boolean).slice(0, 80)
       : [],
     accountingMode: normalizeAccountingMode(filters.accountingMode),
+    utilidadLiquida: filters.utilidadLiquida === undefined || filters.utilidadLiquida === ''
+      ? ''
+      : numberValue(filters.utilidadLiquida),
+    salarioDignoMensual: filters.salarioDignoMensual === undefined || filters.salarioDignoMensual === ''
+      ? ''
+      : numberValue(filters.salarioDignoMensual),
+    utilidadCompensacion: filters.utilidadCompensacion === undefined || filters.utilidadCompensacion === ''
+      ? ''
+      : numberValue(filters.utilidadCompensacion),
   };
 }
 
@@ -1323,4 +1463,7 @@ module.exports = {
   buildBenefitLedgerRows,
   buildPayrollNoveltyMatrixRows,
   buildScopeSuffix,
+  LABOR_REPORT_CODES,
+  isLaborReportCode,
+  buildLaborReportRows,
 };

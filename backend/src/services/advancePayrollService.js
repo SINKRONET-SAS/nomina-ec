@@ -347,7 +347,7 @@ async function decideLine(tenantId, roleId, lineId, decision, user, context = {}
           INSERT INTO beneficios_empleados (tenant_id, empleado_id, tipo, descripcion, monto_total, saldo_pendiente, cuota_mensual, anio_inicio, mes_inicio, estado, aprobado_por, aprobado_en, metadata, created_by)
           VALUES ($1,$2,'anticipo',$3,$4,$4,$4,$5,$6,'aprobado',$7,NOW(),$8,$7)
           RETURNING id
-        `, [tenantId, line.empleado_id, line.nombre_bonificacion || `Anticipo del rol ${run.anio}-${String(run.mes).padStart(2, '0')}`, line.monto, run.anio, run.mes, user.id, JSON.stringify({ source: 'rol_anticipos', advanceRoleId: roleId, advanceRoleLineId: line.id })]);
+        `, [tenantId, line.empleado_id, line.nombre_bonificacion || `Anticipo del rol ${run.anio}-${String(run.mes).padStart(2, '0')}`, line.monto, run.anio, run.mes, user.id, JSON.stringify({ source: 'rol_anticipos', advanceRoleId: roleId, advanceRoleLineId: line.id, momentoContable: 'pago_anticipo' })]);
         beneficioId = benefit.rows[0].id;
       }
     } else {
@@ -361,7 +361,7 @@ async function decideLine(tenantId, roleId, lineId, decision, user, context = {}
           INSERT INTO novedades_asistencia (empleado_id, tenant_id, period_id, periodo_nomina, fecha, tipo_novedad, minutos, monto, justificacion, estado, aprobado_por, aprobado_en, metadata)
           VALUES ($1,$2,$3,$4,$5,$6,0,$7,$8,'aprobado',$9,NOW(),$10)
           RETURNING id
-        `, [line.empleado_id, tenantId, run.payroll_period_id, `${run.anio}-${String(run.mes).padStart(2, '0')}`, run.fecha_corte, line.tipo_novedad, line.monto, line.nombre_bonificacion || `Bonificacion del rol de anticipos ${run.anio}-${String(run.mes).padStart(2, '0')}`, user.id, JSON.stringify({ source: 'rol_anticipos_bonificacion', advanceRoleId: roleId, advanceRoleLineId: line.id, nombreBonificacion: line.nombre_bonificacion || null })]);
+        `, [line.empleado_id, tenantId, run.payroll_period_id, `${run.anio}-${String(run.mes).padStart(2, '0')}`, run.fecha_corte, line.tipo_novedad, line.monto, line.nombre_bonificacion || `Bonificacion del rol de anticipos ${run.anio}-${String(run.mes).padStart(2, '0')}`, user.id, JSON.stringify({ source: 'rol_anticipos_bonificacion', advanceRoleId: roleId, advanceRoleLineId: line.id, nombreBonificacion: line.nombre_bonificacion || null, momentoContable: 'pago_rol' })]);
         bonificacionNovedadId = novelty.rows[0].id;
       }
     }

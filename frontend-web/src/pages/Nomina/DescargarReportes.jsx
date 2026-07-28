@@ -39,9 +39,39 @@ const iessPreparationReport = {
 };
 
 const pendingRequirements = [
-  'Ministerio del Trabajo: reportes laborales según la obligación aplicable.',
+  'Otros reportes del Ministerio del Trabajo según la obligación aplicable y la actividad de la empresa.',
   'Contraloría, UAFE u otra entidad pública: formatos según actividad y tipo de empresa.',
   'Anexos SRI distintos a RDEP: obligaciones tributarias generales.',
+];
+
+const laborReports = [
+  {
+    code: 'LABORAL_DECIMO_TERCERO',
+    title: 'Décimo tercero',
+    description: 'Consolida provisión mensual y pago en rol del ejercicio por empleado.',
+  },
+  {
+    code: 'LABORAL_DECIMO_CUARTO',
+    title: 'Décimo cuarto',
+    description: 'Consolida provisión mensual y pago en rol con período y modalidad.',
+  },
+  {
+    code: 'LABORAL_PARTICIPACION_UTILIDADES',
+    title: 'Participación laboral y utilidades',
+    description: 'Prepara el reparto 10% por días y 5% por cargas familiares.',
+    parameter: 'utilidadLiquida',
+  },
+  {
+    code: 'LABORAL_SALARIO_DIGNO',
+    title: 'Salario digno',
+    description: 'Calcula objetivo, percepción, brecha y compensación prorrateada.',
+    parameter: 'salarioDigno',
+  },
+  {
+    code: 'LABORAL_BENEFICIOS_ACUMULADOS',
+    title: 'Beneficios laborales acumulados',
+    description: 'Muestra décimos, fondos de reserva y vacaciones con su momento contable.',
+  },
 ];
 
 const accentClasses = {
@@ -93,6 +123,9 @@ function DescargarReportes() {
   const [rdepPrecheck, setRdepPrecheck] = useState(null);
   const [form107Precheck, setForm107Precheck] = useState(null);
   const [saePrecheck, setSaePrecheck] = useState(null);
+  const [laborUtilidadLiquida, setLaborUtilidadLiquida] = useState('');
+  const [laborSalarioDignoMensual, setLaborSalarioDignoMensual] = useState('');
+  const [laborUtilidadCompensacion, setLaborUtilidadCompensacion] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -306,6 +339,40 @@ function DescargarReportes() {
       setMessage(`Consolidado anual generado: ${response.data.reporte?.totalFilas || 0} filas.`);
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Error al exportar consolidado anual de nómina');
+    } finally {
+      setCargando('');
+    }
+  };
+
+  const exportarReporteLaboral = async (report) => {
+    const loadingKey = `laboral-${report.code}`;
+    setCargando(loadingKey);
+    setMessage('');
+    setError('');
+    try {
+      const reportFilters = buildReportFilters();
+      if (!reportFilters) return;
+      const parameters = {
+        ...reportFilters,
+        ...(report.code === 'LABORAL_PARTICIPACION_UTILIDADES' ? { utilidadLiquida: laborUtilidadLiquida } : {}),
+        ...(report.code === 'LABORAL_SALARIO_DIGNO' ? {
+          salarioDignoMensual: laborSalarioDignoMensual,
+          utilidadCompensacion: laborUtilidadCompensacion,
+        } : {}),
+      };
+      const response = await authenticatedApi.get(`/reportes/nomina/${anio}/consolidado`, {
+        params: {
+          reportCode: report.code,
+          filters: JSON.stringify(parameters),
+        },
+      });
+      const url = response.data.reporte?.url;
+      if (url) {
+        await downloadUrl(url, response.data.reporte?.fileName || `${report.code}_${anio}.xlsx`);
+      }
+      setMessage(`${report.title} generado: ${response.data.reporte?.totalFilas || 0} filas.`);
+    } catch (err) {
+      setError(err.response?.data?.message || err.response?.data?.error || `Error al generar ${report.title}.`);
     } finally {
       setCargando('');
     }
@@ -793,8 +860,8 @@ function DescargarReportes() {
         <div className="flex items-start gap-3">
           <Landmark className="mt-1 h-5 w-5 text-teal-700" />
           <div>
-            <h2 className="text-lg font-semibold text-slate-950">Otros requerimientos de entidades públicas</h2>
-            <p className="mt-1 text-sm text-slate-600">Habilita solo los formatos que apliquen a la empresa y al período.</p>
+            <h2 className="text-lg font-semibold text-slate-950">Otros formatos fuera de esta entrega</h2>
+            <p className="mt-1 text-sm text-slate-600">Estos formatos no se generan desde esta pantalla. No los tomes como disponibles: confirma la obligación y el canal oficial que correspondan a tu empresa.</p>
           </div>
         </div>
         <div className="mt-4 grid gap-3 lg:grid-cols-3">
@@ -803,6 +870,79 @@ function DescargarReportes() {
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
               <p className="text-sm text-slate-700">{requirement}</p>
             </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-teal-200 bg-white p-6 shadow-sm">
+        <div className="flex items-start gap-3">
+          <FileSpreadsheet className="mt-1 h-5 w-5 text-teal-700" />
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">Reportes laborales de Ecuador</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              Selecciona el año arriba y descarga el informe que necesites. Los datos se toman de los roles generados y quedan listos para revisar, conciliar y preparar la presentación correspondiente; no reemplazan el registro o envío ante la autoridad.
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <label className="block text-sm font-medium text-slate-700 md:col-span-2 xl:col-span-3">
+            Utilidad líquida anual para repartir utilidades (USD)
+            <input
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+              type="number"
+              min="0"
+              step="0.01"
+              value={laborUtilidadLiquida}
+              onChange={(event) => setLaborUtilidadLiquida(event.target.value)}
+              placeholder="Solo se necesita para el informe de utilidades"
+            />
+            <span className="mt-1 block text-xs font-normal text-slate-500">Es la utilidad disponible que se utilizará como base del cálculo.</span>
+          </label>
+          <label className="block text-sm font-medium text-slate-700">
+            Salario digno mensual vigente (USD)
+            <input
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+              type="number"
+              min="0"
+              step="0.01"
+              value={laborSalarioDignoMensual}
+              onChange={(event) => setLaborSalarioDignoMensual(event.target.value)}
+              placeholder="Solo se necesita para el informe de salario digno"
+            />
+            <span className="mt-1 block text-xs font-normal text-slate-500">Ingresa el valor vigente que corresponda al año seleccionado.</span>
+          </label>
+          <label className="block text-sm font-medium text-slate-700">
+            Fondo disponible para compensar salario digno (USD)
+            <input
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+              type="number"
+              min="0"
+              step="0.01"
+              value={laborUtilidadCompensacion}
+              onChange={(event) => setLaborUtilidadCompensacion(event.target.value)}
+              placeholder="Solo se necesita para el informe de salario digno"
+            />
+            <span className="mt-1 block text-xs font-normal text-slate-500">Permite mostrar si el fondo alcanza o debe prorratearse.</span>
+          </label>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {laborReports.map((report) => (
+            <article className="rounded-md border border-slate-200 bg-slate-50 p-4" key={report.code}>
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="font-semibold text-slate-900">{report.title}</h3>
+                <StatusBadge tone="emerald">Preparación disponible</StatusBadge>
+              </div>
+              <p className="mt-2 min-h-12 text-sm leading-5 text-slate-600">{report.description}</p>
+              <button
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-teal-700 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-60"
+                type="button"
+                disabled={cargando === `laboral-${report.code}`}
+                onClick={() => exportarReporteLaboral(report)}
+              >
+                <Download className="h-4 w-4" />
+                {cargando === `laboral-${report.code}` ? 'Generando...' : 'Descargar XLSX anual'}
+              </button>
+            </article>
           ))}
         </div>
       </section>

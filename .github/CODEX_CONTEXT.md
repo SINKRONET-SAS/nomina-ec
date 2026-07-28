@@ -3509,5 +3509,69 @@ La revisión comparativa encontró `GestionStaffScreen`, endpoints de staff, per
 ### Corrección NAR26-07 — Dependencia nativa reproducible
 
 - CI backend usa Node `22.19.0`, alineado con Render y con el requisito de `libxmljs2`.
+
+---
+
+## Current Haiky Plan — HAIKY-REPORTES-LABORALES-OBLIGATORIOS-2026
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-REPORTES-LABORALES-OBLIGATORIOS-2026` |
+| Código | `RLT26` |
+| Estado | `RLT26-03 completada; RLT26-04 en ejecución` |
+| Fecha | `2026-07-28` |
+| Plan doc | `docs2/PLAN_HAIKY_REPORTES_LABORALES_OBLIGATORIOS_2026.md` |
+| Prompts | `.github/prompts/RLT26-00` a `.github/prompts/RLT26-04` |
+| Superficie | `/dashboard/nomina/reportes` y `/api/reportes/nomina/:anio/consolidado` |
+| AuditLock anterior | `5A97674E46E94BE4B8C8C15BDF8DA603B6D757433D4B2BA1154ED0C29D024D87` |
+
+### Alcance RLT26
+
+La pantalla tenía promesas comerciales para reportes laborales de la República del Ecuador, pero solo mostraba tarjetas informativas sin acciones. RLT26 expone reportes anuales preparatorios y descargables para décimo tercero, décimo cuarto, participación laboral/utilidades, salario digno y beneficios acumulados.
+
+Los reportes se basan en roles del ejercicio, días trabajados, modalidades y provisiones almacenadas. Utilidades y salario digno requieren parámetros explícitos del empleador para no inventar valores: utilidad líquida, umbral mensual oficial y fondo disponible de compensación cuando aplique. Todos los parámetros, fórmulas, referencias y advertencias quedan en la hoja de auditoría.
+
+### Decisiones RLT26
+
+- No se crea una ruta frontend paralela: los controles viven en `DescargarReportes.jsx` dentro de Reportes para entidades públicas.
+- El endpoint anual consolidado existente admite códigos laborales y conserva RBAC, `advancedReports`, filtros por tenant y auditoría.
+- La salida se denomina preparatoria para revisión SUT/MDT; no se presenta como declaración oficial.
+- Utilidades se distribuyen 10% por días y 5% por cargas familiares, con base ingresada y fórmula visible.
+- Salario digno reporta objetivo, percepción, brecha, fondo disponible y prorrateo cuando la compensación no alcanza.
+- La parametrización contable distingue `provision_mensual`, `pago_rol`, `pago_anticipo` y `descuento_rol`; esa metadata fluye a las líneas y asientos para no mezclar provisión con pago ni anticipo con su descuento.
+
+### Evidencia RLT26-01
+
+- El endpoint anual consolidado existente admite los códigos laborales de Ecuador y genera XLSX con una fila por empleado y hoja de auditoría.
+- El catálogo incluye décimo tercero, décimo cuarto, participación laboral/utilidades, salario digno y beneficios acumulados.
+- Las pruebas enfocadas del motor laboral pasan 4/4 y las del motor de reportes pasan 12/12.
+
+### Evidencia RLT26-02
+
+- Utilidades exige la utilidad líquida anual y calcula el 15% con reparto 10% por días y 5% por cargas familiares.
+- Salario digno exige el umbral mensual oficial y el fondo disponible; expone objetivo, percepción, brecha, factor y compensación sin inventar parámetros legales.
+- Beneficios acumulados separa provisión mensual, pago en rol y modalidad; la metadata contable también distingue `pago_anticipo` y `descuento_rol`.
+- Suite backend completa: 67 suites / 456 pruebas PASS; `libxmljs2` disponible.
+
+### Evidencia RLT26-03
+
+- `DescargarReportes.jsx` muestra cinco reportes laborales de Ecuador con botón de descarga XLSX anual y reutiliza `/api/reportes/nomina/:anio/consolidado`.
+- La pantalla conserva filtros global/individual y parámetros visibles para utilidad líquida, salario digno mensual y fondo de compensación.
+- Los formatos no incluidos se identifican como fuera de esta entrega; el usuario no los confunde con archivos disponibles.
+- Build frontend: Vite terminó con código 0, transformó 2.028 módulos y generó el bundle de `DescargarReportes`.
+
+### Evidencia normativa de verificación
+
+- Salario digno: `https://calculadoras.trabajo.gob.ec/salarioDigno` y `https://calculadoras.trabajo.gob.ec/manualSalarioDigo`.
+- Décimos: `https://www.trabajo.gob.ec/29-cual-es-el-plazo-y-como-se-debe-realizar-la-solicitud-de-la-acumulacion-del-pago-de-la-decima-tercera-y-decima-cuarta-remuneracion/`.
+- Utilidades: `https://www.trabajo.gob.ec/10-como-se-divide-el-porcentaje-de-utilidades/`.
+- Registro externo: `https://sutmdt.trabajo.gob.ec/dashboard`.
 - `backend/scripts/ensure-native-bindings.js` se ejecuta como `pretest`: comprueba `libxmljs2`, ejecuta `npm rebuild libxmljs2 --foreground-scripts` cuando falta el binding y falla con instrucciones claras si no existe el toolchain nativo.
-- Verificación oficial: `npm.cmd --workspace=backend test -- --runInBand` PASS, 65 suites / 435 tests; RDEP ya no queda fuera por binding ausente.
+- Verificación oficial: `npm.cmd --workspace=backend test -- --runInBand` PASS, 67 suites / 456 tests; `libxmljs2` disponible y RDEP incluido en la regresión.
+
+### Cierre RLT26-04
+
+- Todas las fases RLT26-00 a RLT26-04 quedaron `completed-pass` y el AuditLock está cerrado.
+- Build frontend Vite PASS con código 0; 2.028 módulos transformados y bundle de `DescargarReportes` generado.
+- Prisma `validate`, `node --check`, parseo JSON, UTF-8 sin BOM y `git diff --check` PASS.
+- No se modificó otra superficie ni se creó una ruta paralela; la entrega queda lista para commit y push a `main`.

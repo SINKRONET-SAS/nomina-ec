@@ -5,6 +5,51 @@
   "purpose": "Catálogo de reportes de nómina y exportaciones auditables.",
   "reports": [
     {
+      "code": "LABORAL_DECIMO_TERCERO",
+      "name": "Reporte anual de décimo tercero",
+      "exports": ["xlsx"],
+      "permissions": ["reports.export"],
+      "filters": ["fiscalYear", "employeeId", "department", "position", "costCenter"],
+      "status": "preparatory",
+      "officialValidation": "SUT/MDT"
+    },
+    {
+      "code": "LABORAL_DECIMO_CUARTO",
+      "name": "Reporte anual de décimo cuarto",
+      "exports": ["xlsx"],
+      "permissions": ["reports.export"],
+      "filters": ["fiscalYear", "employeeId", "department", "position", "costCenter"],
+      "status": "preparatory",
+      "officialValidation": "SUT/MDT"
+    },
+    {
+      "code": "LABORAL_PARTICIPACION_UTILIDADES",
+      "name": "Participación laboral y utilidades",
+      "exports": ["xlsx"],
+      "permissions": ["reports.export"],
+      "filters": ["fiscalYear", "utilidadLiquida", "employeeId", "department", "position", "costCenter"],
+      "status": "preparatory",
+      "officialValidation": "SUT/MDT"
+    },
+    {
+      "code": "LABORAL_SALARIO_DIGNO",
+      "name": "Salario digno",
+      "exports": ["xlsx"],
+      "permissions": ["reports.export"],
+      "filters": ["fiscalYear", "salarioDignoMensual", "utilidadCompensacion", "employeeId", "department", "position", "costCenter"],
+      "status": "preparatory",
+      "officialValidation": "SUT/MDT"
+    },
+    {
+      "code": "LABORAL_BENEFICIOS_ACUMULADOS",
+      "name": "Beneficios laborales acumulados",
+      "exports": ["xlsx"],
+      "permissions": ["reports.export"],
+      "filters": ["fiscalYear", "employeeId", "department", "position", "costCenter"],
+      "status": "preparatory",
+      "officialValidation": "SUT/MDT"
+    },
+    {
       "code": "PAYROLL_SUMMARY",
       "name": "Resumen de nómina",
       "exports": ["pdf", "xlsx", "csv"],

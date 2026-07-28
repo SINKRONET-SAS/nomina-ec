@@ -233,6 +233,13 @@ const DEFAULT_ACCOUNTING_MAPPINGS = PAYROLL_CONCEPTS.map((concept) => ({
   metadata: {
     source: 'CRN26-default-seed',
     editableByTenant: true,
+    momentoContable: concept.category === 'provision'
+      ? 'provision_mensual'
+      : concept.code === 'neto_banco' || concept.code.endsWith('_mensual')
+        ? 'pago_rol'
+        : concept.code === 'anticipo'
+          ? 'descuento_rol'
+          : 'devengamiento_rol',
   },
 }));
 
@@ -446,6 +453,7 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
         metadata: {
           descripcion: item.descripcion || '',
           beneficioId: item.id || '',
+          momentoContable: 'descuento_rol',
         },
       });
     }
@@ -457,6 +465,7 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
       amount: detail.anticipos ?? payrollRow.anticipos,
       source: 'beneficio',
       sourceId: 'anticipo_total',
+      metadata: { momentoContable: 'descuento_rol' },
     });
     addLine(lines, {
       code: 'prestamo',
@@ -465,6 +474,7 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
       amount: detail.prestamos ?? payrollRow.prestamos,
       source: 'beneficio',
       sourceId: 'prestamo_total',
+      metadata: { momentoContable: 'descuento_rol' },
     });
   }
 
@@ -486,7 +496,7 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
       source: 'legal',
       sourceId: 'decimo_tercero_mensual',
       legalParameterKey: 'decimo_tercero',
-      metadata: { modalidad: 'mensual' },
+      metadata: { modalidad: 'mensual', momentoContable: 'pago_rol' },
     });
   } else {
     addLine(lines, {
@@ -497,6 +507,7 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
       source: 'legal',
       sourceId: 'decimo_tercero',
       legalParameterKey: 'decimo_tercero',
+      metadata: { momentoContable: 'provision_mensual' },
     });
   }
   if (detail.decimoCuartoModalidad === 'mensual' && detail.decimoCuartoMensualizado > 0) {
@@ -508,7 +519,7 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
       source: 'legal',
       sourceId: 'decimo_cuarto_mensual',
       legalParameterKey: detail.decimoCuartoParameterKey || 'decimo_cuarto',
-      metadata: { region: detail.decimoCuartoRegion || '', modalidad: 'mensual' },
+      metadata: { region: detail.decimoCuartoRegion || '', modalidad: 'mensual', momentoContable: 'pago_rol' },
     });
   } else {
     addLine(lines, {
@@ -519,7 +530,7 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
       source: 'legal',
       sourceId: 'decimo_cuarto',
       legalParameterKey: detail.decimoCuartoParameterKey || 'decimo_cuarto',
-      metadata: { region: detail.decimoCuartoRegion || '' },
+      metadata: { region: detail.decimoCuartoRegion || '', momentoContable: 'provision_mensual' },
     });
   }
   addLine(lines, {
@@ -530,6 +541,7 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
     source: 'legal',
     sourceId: 'vacaciones',
     legalParameterKey: 'vacaciones',
+    metadata: { momentoContable: 'provision_mensual' },
   });
   addLine(lines, {
     code: 'fondo_reserva_iess',
@@ -539,7 +551,7 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
     source: 'legal',
     sourceId: 'fondo_reserva_iess',
     legalParameterKey: 'fondo_reserva',
-    metadata: { modalidad: detail.fondoReservaModalidad || '' },
+    metadata: { modalidad: detail.fondoReservaModalidad || '', momentoContable: detail.fondoReservaModalidad === 'mensual' ? 'pago_rol' : 'provision_mensual' },
   });
   addLine(lines, {
     code: 'neto_banco',
@@ -548,6 +560,7 @@ function buildCalculationLinesFromDetail(detailValue = {}, payrollRow = {}) {
     amount: detail.netoRecibir ?? payrollRow.neto_recibir,
     source: 'pago',
     sourceId: 'neto_banco',
+    metadata: { momentoContable: 'pago_rol' },
   });
 
   return lines;
@@ -833,6 +846,7 @@ function mappingByConcept(mappings = DEFAULT_ACCOUNTING_MAPPINGS) {
       cost_center_mode: raw.cost_center_mode || raw.costCenterMode || 'employee',
       fixed_cost_center_code: raw.fixed_cost_center_code || raw.fixedCostCenterCode || '',
       requires_employee_breakdown: raw.requires_employee_breakdown ?? raw.requiresEmployeeBreakdown ?? true,
+      metadata: raw.metadata || {},
     };
     if (mapping.concept_code && !map.has(mapping.concept_code)) {
       map.set(mapping.concept_code, mapping);
@@ -858,6 +872,7 @@ function accountLine({ periodo, asiento, mapping, side, amount, row, line, centr
     centroCosto,
     loteCalculo: row.calculation_batch_id || line.calculation_batch_id || '',
     referencia: `${asiento}-${line.concept_code}-${row.cedula || row.empleado_id || row.empleadoId || 'empleado'}-${periodo.replace('/', '')}`,
+    momentoContable: mapping.metadata?.momentoContable || line.metadata?.momentoContable || 'devengamiento_rol',
   };
 }
 
