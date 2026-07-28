@@ -7,6 +7,7 @@ import { extractApiError } from '../../services/publicApi';
 import { downloadUrl } from '../../utils/downloadUrl';
 import { currentPeriodEC } from '../../utils/dateFormat';
 import TablePagination from '../../components/UI/TablePagination';
+import RolesBeneficiosLegales from './RolesBeneficiosLegales';
 
 function normalizeDetail(value) {
   if (!value) return {};
@@ -347,6 +348,8 @@ function RolesPagos() {
           }}
         />
       </div>
+
+      <RolesBeneficiosLegales />
 
       {pendingAction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4" role="presentation">

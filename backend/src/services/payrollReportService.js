@@ -429,6 +429,9 @@ async function getPayrollRows(tenantId, anio, mes, filters = {}) {
   addFilter(where, params, 'e.departamento', filters.department);
   addPositionFilter(where, params, filters.position);
   addFilter(where, params, "COALESCE(ou.cost_center_code, e.departamento, '')", filters.costCenter);
+  if (filters.requireClosed) {
+    where.push("n.estado IN ('cerrada', 'pagada')");
+  }
 
   const result = await db.query(`
     SELECT
@@ -457,6 +460,7 @@ async function getPayrollRows(tenantId, anio, mes, filters = {}) {
       e.modalidad_fondo_reserva,
       e.modalidad_decimo_tercero,
       e.modalidad_decimo_cuarto,
+      e.region_decimo_cuarto,
       COALESCE(jp.name, e.cargo) AS cargo,
       jp.code AS cargo_codigo,
       jp.salary_min AS cargo_salary_min,

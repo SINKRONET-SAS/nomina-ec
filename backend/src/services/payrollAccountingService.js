@@ -184,6 +184,56 @@ const PAYROLL_CONCEPTS = [
     creditAccountName: 'Nomina por pagar',
   },
   {
+    code: 'decimo_tercero_acumulado',
+    label: 'Pago decimo tercero acumulado',
+    category: 'pago',
+    entryType: 'PAGO',
+    debitAccountCode: '210302',
+    debitAccountName: 'Provision decimo tercero por pagar',
+    creditAccountCode: '210101',
+    creditAccountName: 'Nomina por pagar',
+  },
+  {
+    code: 'decimo_cuarto_acumulado',
+    label: 'Pago decimo cuarto acumulado',
+    category: 'pago',
+    entryType: 'PAGO',
+    debitAccountCode: '210303',
+    debitAccountName: 'Provision decimo cuarto por pagar',
+    creditAccountCode: '210101',
+    creditAccountName: 'Nomina por pagar',
+  },
+  {
+    code: 'participacion_laboral_pago',
+    label: 'Pago participacion laboral',
+    category: 'pago',
+    entryType: 'PAGO',
+    debitAccountCode: '510207',
+    debitAccountName: 'Participacion laboral por pagar',
+    creditAccountCode: '210101',
+    creditAccountName: 'Nomina por pagar',
+  },
+  {
+    code: 'salario_digno_compensacion',
+    label: 'Compensacion salario digno',
+    category: 'pago',
+    entryType: 'PAGO',
+    debitAccountCode: '510208',
+    debitAccountName: 'Compensacion salario digno',
+    creditAccountCode: '210101',
+    creditAccountName: 'Nomina por pagar',
+  },
+  {
+    code: 'fondo_reserva_pago',
+    label: 'Pago o deposito fondo de reserva',
+    category: 'pago',
+    entryType: 'PAGO',
+    debitAccountCode: '210305',
+    debitAccountName: 'Fondos de reserva por pagar',
+    creditAccountCode: '110201',
+    creditAccountName: 'Bancos',
+  },
+  {
     code: 'vacaciones',
     label: 'Provision vacaciones',
     category: 'provision',
@@ -230,12 +280,12 @@ const DEFAULT_ACCOUNTING_MAPPINGS = PAYROLL_CONCEPTS.map((concept) => ({
   status: 'activo',
   valid_from: '2026-01-01',
   valid_to: null,
-  metadata: {
-    source: 'CRN26-default-seed',
-    editableByTenant: true,
-    momentoContable: concept.category === 'provision'
+    metadata: {
+      source: 'CRN26-default-seed',
+      editableByTenant: true,
+      momentoContable: concept.category === 'provision'
       ? 'provision_mensual'
-      : concept.code === 'neto_banco' || concept.code.endsWith('_mensual')
+      : concept.category === 'pago' || concept.code === 'neto_banco' || concept.code.endsWith('_mensual')
         ? 'pago_rol'
         : concept.code === 'anticipo'
           ? 'descuento_rol'

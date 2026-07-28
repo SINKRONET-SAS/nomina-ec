@@ -1,4 +1,49 @@
-## Current Haiky Plan - HAIKY-MONETIZACION-AUTOMATICA-2026
+## Current Haiky Plan - HAIKY-ROLES-BENEFICIOS-LEGALES-EC-2026
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-ROLES-BENEFICIOS-LEGALES-EC-2026` |
+| Codigo | `BPR26` |
+| Estado | `BPR26-04 cerrado; fases BPR26-00 a BPR26-04 completadas; superficie dentro de Nómina/Roles de pago` |
+| Plan doc | `docs2/PLAN_HAIKY_ROLES_BENEFICIOS_LEGALES_EC_2026.md` |
+| Prompts | `.github/prompts/BPR26-00` a `.github/prompts/BPR26-04` |
+| AuditLock anterior | `RLT26-04`, hash `DE20F3E826D999A5F877EEB2E227EE8D3A67FF4579E8C0926236BC367269C55A` |
+
+### Decisiones BPR26
+
+- La única superficie de operación es `Nómina > Roles de pago`; los reportes anuales quedan como evidencia y no como camino de pago.
+- La primera entrega operará décimo tercero, décimo cuarto, participación laboral, salario digno y fondos de reserva con fuente, fecha, modalidad, provisión, ajuste y pago.
+- El SBU/SMV vigente a la fecha de pago se guarda en el rol y el décimo cuarto genera ajuste contra la provisión sin reescribir nóminas mensuales.
+- Anticipos/descuentos y vacaciones no se mezclan con beneficios legales: anticipos siguen su ruta existente y vacaciones siguen disfrute/finiquito cuando corresponda.
+- Cada cierre productivo requiere parámetros legales validados para Ecuador; el bloqueo debe quedar visible para el usuario con la acción requerida.
+
+### Fases BPR26
+
+| Fase | Objetivo | Estado |
+|---|---|---|
+| BPR26-00 | Baseline, alcance, gobierno y fuentes oficiales | completed-pass |
+| BPR26-01 | Persistencia, cálculo, fechas y ajustes SBU/SMV | completed-pass |
+| BPR26-02 | API, contabilidad y descargas | completed-pass |
+| BPR26-03 | Superficie Nómina/Roles de pago | completed-pass |
+| BPR26-04 | QA, regresión, cierre y publicación | completed-pass |
+
+### Verificación BPR26-03
+
+- La operación visible quedó integrada como una sección de `Nómina > Roles de pago`; no se creó un menú paralelo.
+- El formulario permite seleccionar beneficio, ejercicio, región del décimo cuarto, fecha de pago y parámetros oficiales requeridos.
+- La lista muestra provisión mensual acumulada, ajuste legal, pago, destino y estado; permite aprobar, cerrar y descargar XLSX/PDF.
+- `npm run build --prefix frontend-web` pasó con 2030 módulos transformados y PWA generada.
+
+### Cierre BPR26-04
+
+- `npm test --prefix backend -- --runInBand`: 68 suites y 464 pruebas aprobadas; el binario nativo `libxmljs2` estuvo disponible.
+- `npm run prisma:validate --prefix backend`: PASS.
+- `git diff --check`: PASS.
+- `AuditLock.json` cerrado con firma encadenada; el plan no deja acciones de implementación abiertas.
+
+---
+
+## Previous Haiky Plan - HAIKY-MONETIZACION-AUTOMATICA-2026
 
 | Campo | Valor |
 |---|---|

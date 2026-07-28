@@ -66,6 +66,8 @@ model Tenant {
   empleados              Employee[]
   cargasFamiliares       EmployeeFamilyDependent[]
   nominas                Payroll[]
+  rolesBeneficios        BenefitPayrollRole[]
+  rolesBeneficiosDetalle BenefitPayrollLine[]
   payrollAccountingMappings PayrollAccountingMapping[]
   payrollCalculationBatches PayrollCalculationBatch[]
   payrollCalculationLines PayrollCalculationLine[]
@@ -377,6 +379,7 @@ model Employee {
   routeExceptions         RouteException[]
   novedades               AttendanceNovelty[]
   nominas                 Payroll[]
+  rolesBeneficiosDetalle  BenefitPayrollLine[]
   payrollCalculationLines PayrollCalculationLine[]
   documentos              LegalDocument[]
   actasEquipos            EquipmentDeliveryAct[]
@@ -816,6 +819,62 @@ model Payroll {
   @@index([tenantId, calculationBatchId])
   @@index([tenantId, anio, mes])
   @@map("nominas")
+}
+
+model BenefitPayrollRole {
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String              @map("tenant_id") @db.Uuid
+  tipoBeneficio   String              @map("tipo_beneficio") @db.VarChar(50)
+  anio            Int
+  region          String              @default("") @db.VarChar(40)
+  fechaPago       DateTime            @map("fecha_pago") @db.Date
+  periodoDesde    DateTime            @map("periodo_desde") @db.Date
+  periodoHasta    DateTime            @map("periodo_hasta") @db.Date
+  estado          String              @default("borrador") @db.VarChar(30)
+  descripcion     String              @default("") @db.VarChar(240)
+  parametros      Json                @default("{}")
+  totalProvision  Decimal             @default(0) @map("total_provision") @db.Decimal(12, 2)
+  totalAjuste     Decimal             @default(0) @map("total_ajuste") @db.Decimal(12, 2)
+  totalPago       Decimal             @default(0) @map("total_pago") @db.Decimal(12, 2)
+  createdBy       String?             @map("created_by") @db.Uuid
+  approvedBy      String?             @map("approved_by") @db.Uuid
+  approvedAt      DateTime?           @map("approved_at") @db.Timestamptz(6)
+  closedAt        DateTime?           @map("closed_at") @db.Timestamptz(6)
+  metadata        Json                @default("{}")
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lineas          BenefitPayrollLine[]
+
+  @@index([tenantId, anio, tipoBeneficio, region, estado])
+  @@index([tenantId, fechaPago])
+  @@map("roles_beneficios")
+}
+
+model BenefitPayrollLine {
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roleId          String              @map("role_id") @db.Uuid
+  tenantId        String              @map("tenant_id") @db.Uuid
+  empleadoId      String              @map("empleado_id") @db.Uuid
+  dias            Int                 @default(0)
+  montoProvision  Decimal             @default(0) @map("monto_provision") @db.Decimal(12, 2)
+  montoAjuste     Decimal             @default(0) @map("monto_ajuste") @db.Decimal(12, 2)
+  montoPago       Decimal             @default(0) @map("monto_pago") @db.Decimal(12, 2)
+  basePago        Decimal             @default(0) @map("base_pago") @db.Decimal(12, 2)
+  sbuProvision    Decimal?            @map("sbu_provision") @db.Decimal(12, 2)
+  sbuPago         Decimal?            @map("sbu_pago") @db.Decimal(12, 2)
+  modalidad       String              @default("") @db.VarChar(40)
+  destino         String              @default("empleado") @db.VarChar(30)
+  estado          String              @default("pendiente") @db.VarChar(30)
+  metadata        Json                @default("{}")
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  role            BenefitPayrollRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  empleado        Employee            @relation(fields: [empleadoId], references: [id], onDelete: Restrict)
+
+  @@unique([roleId, empleadoId])
+  @@index([tenantId, empleadoId, estado])
+  @@map("roles_beneficios_detalle")
 }
 
 model PayrollCalculationBatch {

@@ -256,6 +256,15 @@ app.put('/api/nomina/anticipos/roles/:id/lineas/:lineId/decidir', requireRole('o
 app.put('/api/nomina/anticipos/roles/:id/cerrar', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), advancePayrollController.cerrar);
 app.get('/api/nomina/anticipos/roles/:id.csv', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), advancePayrollController.descargarCsv);
 
+const benefitPayrollController = require('./controllers/benefitPayrollController');
+app.get('/api/nomina/roles-beneficios', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), benefitPayrollController.listar);
+app.post('/api/nomina/roles-beneficios', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), benefitPayrollController.crear);
+app.put('/api/nomina/roles-beneficios/:id/aprobar', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), benefitPayrollController.aprobar);
+app.put('/api/nomina/roles-beneficios/:id/cerrar', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), benefitPayrollController.cerrar);
+app.get('/api/nomina/roles-beneficios/:id.xlsx', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), benefitPayrollController.descargarXlsx);
+app.get('/api/nomina/roles-beneficios/:id.pdf', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), benefitPayrollController.descargarPdf);
+app.get('/api/nomina/roles-beneficios/:id.csv', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), benefitPayrollController.descargarCsv);
+
 const payrollAccountingController = require('./controllers/payrollAccountingController');
 app.get('/api/nomina/contabilidad/conceptos', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), payrollAccountingController.listConcepts);
 app.get('/api/nomina/contabilidad/mapeos', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), payrollAccountingController.listMappings);
