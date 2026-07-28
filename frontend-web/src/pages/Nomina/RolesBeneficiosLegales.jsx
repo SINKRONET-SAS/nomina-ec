@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, Download, LockKeyhole, Plus } from 'lucide-react';
+import { Link } from 'react-router';
 import { approveBenefitPayrollRole, closeBenefitPayrollRole, createBenefitPayrollRole, downloadBenefitPayrollFile, fetchBenefitPayrollRoles } from '../../services/benefitPayrollApi';
 import { extractApiError } from '../../services/publicApi';
 import { currentPeriodEC } from '../../utils/dateFormat';
@@ -25,6 +26,15 @@ function money(value) {
   return `$${Number(value || 0).toFixed(2)}`;
 }
 
+function divergenceLabel(key) {
+  return {
+    sbu: 'SBU/SMV',
+    iess_aporte_personal: 'aporte personal IESS',
+    iess_aporte_patronal: 'aporte patronal IESS',
+    jornada_maxima_semanal: 'jornada máxima semanal',
+  }[key] || key;
+}
+
 function emptyDraft() {
   const period = currentPeriodEC();
   return {
@@ -46,6 +56,8 @@ function RolesBeneficiosLegales() {
   const [draft, setDraft] = useState(emptyDraft);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState('');
+  const [errorDetails, setErrorDetails] = useState({});
   const [downloading, setDownloading] = useState('');
   const period = useMemo(() => currentPeriodEC(), []);
 
@@ -64,11 +76,15 @@ function RolesBeneficiosLegales() {
     onSuccess: async () => {
       setMessage('Borrador de rol de beneficios generado. Revisa provisión, ajuste y pago antes de aprobar.');
       setError('');
+      setErrorCode('');
+      setErrorDetails({});
       await queryClient.invalidateQueries({ queryKey: ['roles-beneficios-legales', draft.anio] });
     },
     onError: (err) => {
       setMessage('');
       setError(extractApiError(err, 'No pudimos generar el rol de beneficios.'));
+      setErrorCode(err?.response?.data?.code || '');
+      setErrorDetails(err?.response?.data?.details || {});
     },
   });
 
@@ -77,11 +93,15 @@ function RolesBeneficiosLegales() {
     onSuccess: async (_role, variables) => {
       setMessage(variables.action === 'approve' ? 'Rol de beneficios aprobado. Verifica el asiento antes del cierre.' : 'Rol de beneficios cerrado y listo como evidencia de pago.');
       setError('');
+      setErrorCode('');
+      setErrorDetails({});
       await queryClient.invalidateQueries({ queryKey: ['roles-beneficios-legales', draft.anio] });
     },
     onError: (err) => {
       setMessage('');
       setError(extractApiError(err, 'No pudimos actualizar el estado del rol de beneficios.'));
+      setErrorCode(err?.response?.data?.code || '');
+      setErrorDetails(err?.response?.data?.details || {});
     },
   });
 
@@ -91,6 +111,8 @@ function RolesBeneficiosLegales() {
     event.preventDefault();
     setMessage('');
     setError('');
+    setErrorCode('');
+    setErrorDetails({});
     createMutation.mutate({
       ...draft,
       anio: Number(draft.anio),
@@ -104,12 +126,16 @@ function RolesBeneficiosLegales() {
   const downloadRole = async (role, format) => {
     setDownloading(`${role.id}-${format}`);
     setError('');
+    setErrorCode('');
+    setErrorDetails({});
     try {
       const blob = await downloadBenefitPayrollFile(role.id, format);
       downloadBlob(blob, `rol_beneficios_${role.tipoBeneficio}_${role.anio}.${format}`);
       setMessage(`Descarga lista: rol de ${role.tipoBeneficioLabel}.`);
     } catch (err) {
       setError(extractApiError(err, 'No pudimos descargar el rol de beneficios.'));
+      setErrorCode(err?.response?.data?.code || '');
+      setErrorDetails(err?.response?.data?.details || {});
     } finally {
       setDownloading('');
     }
@@ -172,7 +198,27 @@ function RolesBeneficiosLegales() {
       </form>
 
       {message && <p className="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800" role="status">{message}</p>}
-      {error && <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">{error}</p>}
+      {error && (
+        <div className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+          <p>{error}</p>
+          {['LEGAL_PARAMETERS_DIVERGENCE', 'LEGAL_PARAMETERS_NOT_VALIDATED'].includes(errorCode) && (
+            <div className="mt-2 rounded-md border border-red-200 bg-white/70 p-3 text-xs leading-5">
+              <p>
+                Revisa el año {errorDetails.year || errorDetails.anio || draft.anio} en <strong>Parametrización &gt; Valores legales</strong>.
+                {errorCode === 'LEGAL_PARAMETERS_DIVERGENCE'
+                  ? ` Verifica: ${(errorDetails.divergences || []).map((item) => divergenceLabel(item.key)).join(', ') || 'los valores indicados'}.`
+                  : ' Marca la fuente oficial como validada antes de volver a generar.'}
+              </p>
+              <Link
+                className="mt-2 inline-flex font-semibold text-red-900 underline underline-offset-2 hover:text-red-700"
+                to={errorDetails.reviewRoute || '/dashboard/configuracion/parametrizacion?seccion=legal'}
+              >
+                Ir a Valores legales
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-4 space-y-4">
         {rolesQuery.isLoading ? <p className="rounded-md bg-white px-4 py-6 text-center text-sm text-slate-500">Cargando roles de beneficios...</p> : null}

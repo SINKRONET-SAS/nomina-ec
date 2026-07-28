@@ -277,7 +277,7 @@ describe('calculoNominaService', () => {
       year: 2026,
       tenantId: 'tenant-prueba',
       operation: 'calculo_nomina',
-    })).toThrow('Los parametros legales del periodo no tienen validacion oficial');
+    })).toThrow('Los parámetros legales del año 2026 no tienen validación oficial');
 
     process.env.REQUIRE_VALIDATED_LEGAL_PARAMETERS = previous;
   });

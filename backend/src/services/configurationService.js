@@ -1150,7 +1150,7 @@ async function listResource(resource, user) {
       SELECT DISTINCT ON (country_code, region_code, period_year, parameter_key) *
       FROM legal_parameter_versions
       WHERE valid_to IS NULL
-        AND (tenant_id = $1 OR tenant_id IS NULL)
+        AND (tenant_id = $1::uuid OR tenant_id IS NULL)
       ORDER BY
         country_code,
         region_code,
@@ -1187,10 +1187,10 @@ async function listResource(resource, user) {
     const result = await db.query(`
       SELECT DISTINCT ON (LOWER(BTRIM(code))) *
       FROM novelty_type_configs
-      WHERE tenant_id = $1 OR tenant_id IS NULL
+      WHERE tenant_id = $1::uuid OR tenant_id IS NULL
       ORDER BY
         LOWER(BTRIM(code)),
-        CASE WHEN tenant_id = $1 THEN 0 ELSE 1 END,
+        CASE WHEN tenant_id = $1::uuid THEN 0 ELSE 1 END,
         CASE WHEN status = 'activo' THEN 0 ELSE 1 END,
         CASE WHEN valid_to IS NULL THEN 0 ELSE 1 END,
         valid_from DESC,
@@ -1202,12 +1202,12 @@ async function listResource(resource, user) {
 
   if (config.tenantScoped) {
     params.push(tenantId);
-    where = 'WHERE tenant_id = $1';
+    where = 'WHERE tenant_id = $1::uuid';
   } else if (user.rol === 'superadmin' && !tenantId) {
     where = '';
   } else {
     params.push(tenantId);
-    where = 'WHERE (tenant_id = $1 OR tenant_id IS NULL)';
+    where = 'WHERE (tenant_id = $1::uuid OR tenant_id IS NULL)';
   }
 
   const result = await db.query(

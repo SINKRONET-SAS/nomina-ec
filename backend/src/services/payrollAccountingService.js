@@ -871,7 +871,7 @@ async function getAccountingMappings(tenantId, { anio, mes, ensureDefaults = tru
   const result = await db.query(`
     SELECT *
     FROM payroll_accounting_mappings
-    WHERE tenant_id = $1
+    WHERE tenant_id = $1::uuid
       AND status = 'activo'
       AND valid_from <= $2::date
       AND (valid_to IS NULL OR valid_to >= $2::date)

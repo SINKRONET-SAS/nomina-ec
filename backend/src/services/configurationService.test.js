@@ -82,7 +82,17 @@ describe('configurationService metadata', () => {
       code: 'atraso',
     })]);
     expect(db.query.mock.calls[0][0]).toContain('DISTINCT ON (LOWER(BTRIM(code)))');
-    expect(db.query.mock.calls[0][0]).toContain('CASE WHEN tenant_id = $1 THEN 0 ELSE 1 END');
+    expect(db.query.mock.calls[0][0]).toContain('CASE WHEN tenant_id = $1::uuid THEN 0 ELSE 1 END');
+    expect(db.query.mock.calls[0][1]).toEqual([ownerUser.tenantId]);
+  });
+
+  test('listResource tipa como UUID el tenant al consultar parámetros legales', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'legal-sbu', tenant_id: ownerUser.tenantId, parameter_key: 'sbu' }] });
+
+    const result = await listResource('legalParameters', ownerUser);
+
+    expect(result).toEqual([expect.objectContaining({ parameter_key: 'sbu' })]);
+    expect(db.query.mock.calls[0][0]).toContain('tenant_id = $1::uuid');
     expect(db.query.mock.calls[0][1]).toEqual([ownerUser.tenantId]);
   });
 

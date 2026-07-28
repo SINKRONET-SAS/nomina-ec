@@ -202,7 +202,7 @@ async function getActiveNoveltyTypeConfigs(tenantId, anio, mes) {
     WHERE status = 'activo'
       AND valid_from <= $2::date
       AND (valid_to IS NULL OR valid_to >= $2::date)
-      AND (tenant_id = $1 OR tenant_id IS NULL)
+      AND (tenant_id = $1::uuid OR tenant_id IS NULL)
     ORDER BY LOWER(code), tenant_id NULLS LAST, valid_from DESC, updated_at DESC
   `, [tenantId, periodDate]);
 
@@ -220,7 +220,7 @@ async function getActiveNoveltyTypeConfigsWithExecutor(executor, tenantId, anio,
     WHERE status = 'activo'
       AND valid_from <= $2::date
       AND (valid_to IS NULL OR valid_to >= $2::date)
-      AND (tenant_id = $1 OR tenant_id IS NULL)
+      AND (tenant_id = $1::uuid OR tenant_id IS NULL)
     ORDER BY LOWER(code), tenant_id NULLS LAST, valid_from DESC, updated_at DESC
   `, [tenantId, periodDate]);
 

@@ -17,8 +17,8 @@ async function getLegalParametersForTenant(tenantId, year) {
     WHERE anio = $1
       AND pais = 'EC'
       AND vigente = true
-      AND (tenant_id = $2 OR tenant_id IS NULL)
-    ORDER BY tenant_id NULLS LAST
+      AND (tenant_id = $2::uuid OR tenant_id IS NULL)
+    ORDER BY CASE WHEN tenant_id = $2::uuid THEN 0 ELSE 1 END, tenant_id NULLS LAST
     LIMIT 1
   `, [year, tenantId]);
 
@@ -60,7 +60,10 @@ async function getLegalParametersForTenant(tenantId, year) {
   };
   const merged = mergeVersionedParameters(legacyParameters, versionedParameters);
   const divergences = detectLegalParameterDivergence(legacyParameters, merged, versionedParameters);
-  if (divergences.length > 0) {
+  const versionedRowsAreOfficial = Object.values(versionedParameters).length > 0
+    && Object.values(versionedParameters).every((parameter) => parameter.validation_status === VALIDATED_SOURCE_STATUS);
+
+  if (divergences.length > 0 && !versionedRowsAreOfficial) {
     console.error('[LEGAL] Divergencia entre parametros legales versionados y tabla legado', {
       code: 'LEGAL_PARAMETERS_DIVERGENCE',
       statusCode: 409,
@@ -70,11 +73,17 @@ async function getLegalParametersForTenant(tenantId, year) {
       divergences,
     });
     if (requiresOfficialLegalValidation()) {
-      throw new AppError('Existen divergencias entre fuentes legales. Unifica parametros antes de calcular nomina.', {
+      throw new AppError(`No se puede generar el rol de beneficios: revisa Parametrización > Valores legales del año ${year}. Unifica ${describeLegalDivergences(divergences)} entre la tabla histórica y los parámetros versionados antes de volver a generar.`, {
         code: 'LEGAL_PARAMETERS_DIVERGENCE',
         statusCode: 409,
         correlationId: process.env.CORRELATION_ID || 'legal-parameters',
-        details: { year, tenantId, divergences },
+        details: {
+          year,
+          tenantId,
+          divergences,
+          reviewRoute: '/dashboard/configuracion/parametrizacion?seccion=legal',
+          reviewSection: 'Valores legales',
+        },
       });
     }
   }
@@ -88,7 +97,7 @@ async function getVersionedLegalParametersForTenant(tenantId, year) {
     FROM legal_parameter_versions
     WHERE period_year = $1
       AND country_code = 'EC'
-      AND (tenant_id = $2 OR tenant_id IS NULL)
+      AND (tenant_id = $2::uuid OR tenant_id IS NULL)
       AND parameter_key IN (
         'income_tax_table',
         'tabla_impuesto_renta',
@@ -107,7 +116,8 @@ async function getVersionedLegalParametersForTenant(tenantId, year) {
         'decimo_cuarto_sierra_amazonia',
         'fondo_reserva'
       )
-    ORDER BY tenant_id NULLS LAST, valid_from DESC, created_at DESC
+    ORDER BY CASE WHEN tenant_id = $2::uuid THEN 0 ELSE 1 END,
+      tenant_id NULLS LAST, valid_from DESC, updated_at DESC, created_at DESC
   `, [year, tenantId]);
 
   const parameters = {};
@@ -278,6 +288,17 @@ function detectLegalParameterDivergence(baseParameters, mergedParameters, versio
 function getByPath(value, itemPath) {
   return itemPath.split('.').reduce((current, key) => current?.[key], value);
 }
+
+function describeLegalDivergences(divergences = []) {
+  const labels = {
+    sbu: 'SBU/SMV',
+    iess_aporte_personal: 'aporte personal IESS',
+    iess_aporte_patronal: 'aporte patronal IESS',
+    jornada_maxima_semanal: 'jornada máxima semanal',
+  };
+  return divergences.map(({ key }) => labels[key] || key).join(', ') || 'los parámetros legales indicados';
+}
+
 function requiresOfficialLegalValidation() {
   return process.env.NODE_ENV === 'production' || process.env.REQUIRE_VALIDATED_LEGAL_PARAMETERS === 'true';
 }
@@ -297,7 +318,7 @@ function assertLegalParametersReadyForProduction(legalParameters, context = {}) 
   }
 
   if (sourceStatus !== VALIDATED_SOURCE_STATUS) {
-    throw new AppError('Los parametros legales del periodo no tienen validacion oficial para calculos productivos', {
+    throw new AppError(`Los parámetros legales del año ${context.year || ''} no tienen validación oficial. Revisa Parametrización > Valores legales y marca la fuente oficial antes de generar el rol.`, {
       code: 'LEGAL_PARAMETERS_NOT_VALIDATED',
       statusCode: 423,
       correlationId: process.env.CORRELATION_ID || 'legal-parameters',
@@ -307,6 +328,8 @@ function assertLegalParametersReadyForProduction(legalParameters, context = {}) 
         tenantId: context.tenantId || null,
         operacion: context.operation || 'calculo_legal',
         fuente: sourceStatus,
+        reviewRoute: '/dashboard/configuracion/parametrizacion?seccion=legal',
+        reviewSection: 'Valores legales',
       },
     });
   }
