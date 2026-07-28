@@ -720,12 +720,32 @@ describe('nominaController proteccion de nomina cerrada', () => {
     recordAudit.mockReset();
   });
 
-  test('mantiene el endpoint heredado sin reabrir ni mutar roles cerrados', async () => {
+  test('rechaza reapertura sin motivo suficiente', async () => {
     const req = {
       tenantId: 'tenant-1',
       usuarioId: 'user-1',
-      correlationId: 'corr-reopen-blocked',
-      body: { anio: 2026, mes: 6, motivo: 'Corregir una novedad detectada luego del cierre' },
+      correlationId: 'corr-reopen-short',
+      body: { anio: 2026, mes: 6, motivo: 'corto' },
+    };
+    const res = createResponse();
+
+    await reabrirMes(req, res);
+
+    expect(res.statusCode).toBe(422);
+    expect(res.body).toMatchObject({
+      error: 'NOMINA_REAPERTURA_MOTIVO_REQUERIDO',
+    });
+  });
+
+  test('rechaza reapertura de periodo no cerrado', async () => {
+    db.getClient.mockResolvedValue({ query: db.query });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'p1', status: 'calculated' }] });
+
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-reopen-not-closed',
+      body: { anio: 2026, mes: 6, motivo: 'Corrección de aporte patronal IESS' },
     };
     const res = createResponse();
 
@@ -733,12 +753,8 @@ describe('nominaController proteccion de nomina cerrada', () => {
 
     expect(res.statusCode).toBe(409);
     expect(res.body).toMatchObject({
-      error: 'NOMINA_CERRADA_INMUTABLE',
-      nextAction: 'registrar_ajuste_periodo_abierto',
-      correlationId: 'corr-reopen-blocked',
+      error: 'NOMINA_PERIODO_NO_CERRADO',
     });
-    expect(db.query).not.toHaveBeenCalled();
-    expect(recordAudit).not.toHaveBeenCalled();
   });
 });
 

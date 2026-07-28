@@ -113,6 +113,8 @@ function CerrarMes() {
   const [closeConfirmation, setCloseConfirmation] = useState(false);
   const [showDiscardCalculation, setShowDiscardCalculation] = useState(false);
   const [discardReason, setDiscardReason] = useState('');
+  const [showReopenPeriod, setShowReopenPeriod] = useState(false);
+  const [reopenReason, setReopenReason] = useState('');
   const [batchSearch, setBatchSearch] = useState('');
   const [batchNoveltyFilter, setBatchNoveltyFilter] = useState('all');
   const [batchScopeFilter, setBatchScopeFilter] = useState('all');
@@ -393,6 +395,26 @@ function CerrarMes() {
     },
   });
 
+  const reopenMutation = useMutation({
+    mutationFn: async () => authenticatedApi.post('/nomina/reabrir', {
+      anio,
+      mes,
+      motivo: reopenReason.trim(),
+    }),
+    onSuccess: (response) => {
+      const roles = response.data?.rolesRevertidos || 0;
+      setResultado(null);
+      setMessage({
+        type: 'success',
+        text: `Periodo reabierto. ${roles} roles revertidos a borrador. Corrige los valores legales si es necesario, luego descarta el cálculo y recalcula.`,
+      });
+      setShowReopenPeriod(false);
+      setReopenReason('');
+      queryClient.invalidateQueries({ queryKey: ['roles-pagos', anio, mes] });
+      refreshPeriod();
+    },
+  });
+
   useEffect(() => {
     setMessage(null);
     setResultado(null);
@@ -406,8 +428,11 @@ function CerrarMes() {
     calculateMutation.reset();
     closeMutation.reset();
     discardCalculationMutation.reset();
+    reopenMutation.reset();
     setShowDiscardCalculation(false);
     setDiscardReason('');
+    setShowReopenPeriod(false);
+    setReopenReason('');
     setBatchSearch('');
     setBatchNoveltyFilter('all');
     setBatchScopeFilter('all');
@@ -594,6 +619,58 @@ function CerrarMes() {
             <Lock className="h-4 w-4" />
             {closeMutation.isPending ? 'Cerrando' : 'Cerrar nómina'}
           </button>
+
+          {isClosedPeriod && (
+            <div className="mt-5 border-t border-slate-200 pt-4">
+              <h3 className="text-sm font-semibold text-slate-900">Reapertura controlada</h3>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                Revierte los roles cerrados a borrador para corregir parámetros y recalcular. Requiere motivo documentado.
+              </p>
+              {!showReopenPeriod ? (
+                <button
+                  className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-4 text-xs font-semibold text-amber-800"
+                  onClick={() => setShowReopenPeriod(true)}
+                  type="button"
+                >
+                  <Undo2 className="h-4 w-4" />
+                  Reabrir periodo
+                </button>
+              ) : (
+                <div className="mt-3 space-y-3">
+                  <textarea
+                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                    onChange={(event) => setReopenReason(event.target.value)}
+                    placeholder="Motivo de reapertura (mín. 10 caracteres)..."
+                    rows={2}
+                    value={reopenReason}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      className="inline-flex min-h-9 items-center gap-2 rounded-md bg-amber-600 px-4 text-xs font-semibold text-white disabled:bg-slate-300"
+                      disabled={reopenReason.trim().length < 10 || reopenMutation.isPending}
+                      onClick={() => reopenMutation.mutate()}
+                      type="button"
+                    >
+                      <Undo2 className="h-4 w-4" />
+                      {reopenMutation.isPending ? 'Reabriendo...' : 'Confirmar reapertura'}
+                    </button>
+                    <button
+                      className="inline-flex min-h-9 items-center gap-2 rounded-md border border-slate-300 px-3 text-xs font-semibold text-slate-700"
+                      onClick={() => { setShowReopenPeriod(false); setReopenReason(''); }}
+                      type="button"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                  {reopenMutation.isError && (
+                    <p className="text-xs font-semibold text-red-700">
+                      {extractApiError(reopenMutation.error) || 'Error al reabrir el periodo.'}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 

@@ -762,7 +762,7 @@ function legalParameterPayloadsFromBase(year) {
       sourceName: 'IESS - Servicios y prestaciones',
       sourceUrl: 'https://www.iess.gob.ec/en/web/afiliado/servicios-y-prestaciones',
       validationStatus: 'validado_oficial',
-      notes: 'Aporte patronal IESS confirmado por fuente oficial IESS: empleador 11.15% del salario del trabajador.',
+      notes: 'Aporte patronal total IESS: 11.15% patronal + 0.50% IECE + 0.50% SECAP = 12.15% del salario del trabajador.',
     },
     {
       parameter_key: 'jornada_horas_mensuales',

@@ -23,7 +23,7 @@ const legalParameters = {
   payroll: {
     monthlyWorkHours: 240,
     personalIessRate: 0.0945,
-    employerIessRate: 0.1115,
+    employerIessRate: 0.1215,
     vacationProvisionRate: 1 / 24,
     thirteenthSalaryProvisionRate: 1 / 12,
     fourteenthSalaryProvisionRate: 1 / 12,

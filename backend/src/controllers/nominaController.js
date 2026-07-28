@@ -989,12 +989,113 @@ async function cerrarMes(req, res) {
 }
 
 async function reabrirMes(req, res) {
-  return res.status(409).json({
-    error: 'NOMINA_CERRADA_INMUTABLE',
-    message: 'La nómina cerrada conserva su respaldo original. Registra la corrección como ajuste en un período abierto.',
-    nextAction: 'registrar_ajuste_periodo_abierto',
-    correlationId: req.correlationId,
-  });
+  let tx = null;
+  try {
+    const { tenantId, usuarioId } = req;
+    const { anio, mes, motivo } = req.body;
+
+    if (!anio || !mes) {
+      return res.status(400).json({ error: 'Año y mes requeridos', correlationId: req.correlationId });
+    }
+    const reason = String(motivo || '').trim();
+    if (reason.length < 10) {
+      return res.status(422).json({
+        error: 'NOMINA_REAPERTURA_MOTIVO_REQUERIDO',
+        message: 'Indica un motivo de al menos 10 caracteres para la reapertura.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const anioNumber = Number(anio);
+    const mesNumber = Number(mes);
+
+    tx = await db.getClient(tenantId, usuarioId);
+    const periodLock = await tx.query(`
+      SELECT id, status
+      FROM payroll_periods
+      WHERE tenant_id = $1 AND anio = $2 AND mes = $3
+      FOR UPDATE
+    `, [tenantId, anioNumber, mesNumber]);
+
+    if (periodLock.rows.length === 0) {
+      await db.rollback(tx);
+      tx = null;
+      return res.status(404).json({
+        error: 'NOMINA_PERIODO_NO_ENCONTRADO',
+        message: 'No existe un periodo para el mes seleccionado.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    if (periodLock.rows[0].status !== 'closed') {
+      await db.rollback(tx);
+      tx = null;
+      return res.status(409).json({
+        error: 'NOMINA_PERIODO_NO_CERRADO',
+        message: 'Solo se pueden reabrir periodos que esten cerrados.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const reverted = await tx.query(`
+      UPDATE nominas
+      SET estado = 'borrador',
+          cerrado_en = NULL,
+          updated_at = NOW()
+      WHERE tenant_id = $1 AND anio = $2 AND mes = $3 AND estado = 'cerrada'
+      RETURNING id
+    `, [tenantId, anioNumber, mesNumber]);
+
+    await tx.query(`
+      UPDATE payroll_periods
+      SET status = 'reopened',
+          closed_at = NULL,
+          summary = COALESCE(summary, '{}'::jsonb) || jsonb_build_object(
+            'lastReopen', jsonb_build_object(
+              'motivo', $4::text,
+              'rolesRevertidos', $5::int,
+              'correlationId', $6::text,
+              'at', NOW()
+            )
+          ),
+          updated_at = NOW()
+      WHERE tenant_id = $1 AND anio = $2 AND mes = $3
+    `, [tenantId, anioNumber, mesNumber, reason, reverted.rows.length, req.correlationId || null]);
+
+    await db.commit(tx);
+    tx = null;
+
+    await recordAudit({
+      tenantId,
+      userId: usuarioId,
+      correlationId: req.correlationId,
+      action: 'nomina.periodo.reabrir',
+      entity: 'payroll_periods',
+      entityId: periodLock.rows[0].id,
+      newData: { anio: anioNumber, mes: mesNumber, motivo: reason, rolesRevertidos: reverted.rows.length },
+      ipAddress: req.ip,
+    });
+
+    return res.json({
+      success: true,
+      message: `Periodo reabierto. ${reverted.rows.length} roles revertidos a borrador para reproceso.`,
+      rolesRevertidos: reverted.rows.length,
+      correlationId: req.correlationId,
+    });
+  } catch (err) {
+    if (tx) await db.rollback(tx).catch(() => {});
+    console.error('[NOMINA] Error reabriendo periodo', {
+      code: err.code || 'NOMINA_REAPERTURA_ERROR',
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'NOMINA_REAPERTURA_ERROR',
+      message: err.message,
+      correlationId: req.correlationId,
+    });
+  }
 }
 
 async function eliminarLoteNovedades(req, res) {

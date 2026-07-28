@@ -122,7 +122,7 @@ describe('templateGenerator', () => {
         payroll: {
           unifiedBaseSalary: 470,
           personalIessRate: 0.0945,
-          employerIessRate: 0.1115,
+          employerIessRate: 0.1215,
           weeklyMaxHours: 40,
         },
       },
