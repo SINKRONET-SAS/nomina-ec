@@ -1230,7 +1230,7 @@ async function buildSummaryPdf({ tenant, anio, mes, rows, filters, context }) {
   };
 
   return new Promise((resolve) => {
-    pdfmake.createPdf(docDefinition).getBuffer((buffer) => resolve(buffer));
+    pdfmake.createPdf(docDefinition).getBuffer((buffer) => resolve(Buffer.from(buffer)));
   });
 }
 

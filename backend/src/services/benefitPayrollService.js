@@ -595,7 +595,7 @@ async function buildWorkbook(tenantId, id) {
 function pdfBufferFromDefinition(definition) {
   return new Promise((resolve, reject) => {
     try {
-      pdfmake.createPdf(definition).getBuffer((buffer) => resolve(buffer));
+      pdfmake.createPdf(definition).getBuffer((buffer) => resolve(Buffer.from(buffer)));
     } catch (err) {
       reject(err);
     }
@@ -646,5 +646,6 @@ module.exports = {
   closeRun,
   buildWorkbook,
   buildPdf,
+  pdfBufferFromDefinition,
   buildCsv,
 };

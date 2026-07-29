@@ -1,9 +1,18 @@
+jest.mock('pdfmake/build/pdfmake', () => ({
+  createPdf: jest.fn(() => ({
+    getBuffer: (callback) => callback(new Uint8Array([37, 80, 68, 70, 45, 49, 46, 51])),
+  })),
+}));
+
+jest.mock('pdfmake/build/vfs_fonts', () => ({}));
+
 const {
   BENEFIT_TYPES,
   normalizePayload,
   resolveBenefitPeriod,
   defaultPaymentDate,
   buildBenefitLines,
+  pdfBufferFromDefinition,
 } = require('./benefitPayrollService');
 
 describe('benefitPayrollService', () => {
@@ -29,5 +38,12 @@ describe('benefitPayrollService', () => {
     expect(lines[0].ajuste).toBe(17.96);
     expect(lines[0].pago).toBe(500);
     expect(BENEFIT_TYPES.decimo_cuarto.conceptCode).toBe('decimo_cuarto_acumulado');
+  });
+
+  test('normaliza el buffer de pdfmake para que Express lo entregue como PDF binario', async () => {
+    const buffer = await pdfBufferFromDefinition({ content: ['prueba'] });
+
+    expect(Buffer.isBuffer(buffer)).toBe(true);
+    expect(buffer.subarray(0, 5).toString()).toBe('%PDF-');
   });
 });

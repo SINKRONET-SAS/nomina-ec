@@ -661,7 +661,7 @@ function buildContractDocDefinition({ template, context }) {
 
 function pdfBufferFromDefinition(docDefinition) {
   return new Promise((resolve) => {
-    pdfmake.createPdf(docDefinition).getBuffer((buffer) => resolve(buffer));
+    pdfmake.createPdf(docDefinition).getBuffer((buffer) => resolve(Buffer.from(buffer)));
   });
 }
 
