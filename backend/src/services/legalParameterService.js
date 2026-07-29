@@ -98,6 +98,7 @@ async function getVersionedLegalParametersForTenant(tenantId, year) {
     WHERE period_year = $1
       AND country_code = 'EC'
       AND (tenant_id = $2::uuid OR tenant_id IS NULL)
+      AND valid_to IS NULL
       AND parameter_key IN (
         'income_tax_table',
         'tabla_impuesto_renta',
@@ -117,7 +118,7 @@ async function getVersionedLegalParametersForTenant(tenantId, year) {
         'fondo_reserva'
       )
     ORDER BY CASE WHEN tenant_id = $2::uuid THEN 0 ELSE 1 END,
-      tenant_id NULLS LAST, valid_from DESC, updated_at DESC, created_at DESC
+      tenant_id NULLS LAST, valid_from DESC, version_number DESC, updated_at DESC, created_at DESC
   `, [year, tenantId]);
 
   const parameters = {};

@@ -1176,6 +1176,9 @@ model LegalParameterVersion {
   approvedBy       String?   @map("approved_by") @db.Uuid
   approvedAt       DateTime? @map("approved_at") @db.Timestamptz(6)
   createdBy        String?   @map("created_by") @db.Uuid
+  versionNumber    Int       @default(1) @map("version_number")
+  versionReason    String    @default("carga_inicial") @map("version_reason") @db.VarChar(80)
+  replacesVersionId String?  @map("replaces_version_id") @db.Uuid
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   tenant           Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)

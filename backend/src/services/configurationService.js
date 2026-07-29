@@ -107,6 +107,29 @@ const RESOURCE_CONFIG = {
 };
 
 const LEGAL_PARAMETER_VALIDATED_STATUS = 'validado_oficial';
+const LEGAL_PARAMETER_VERSION_COLUMNS = [
+  'tenant_id',
+  'country_code',
+  'region_code',
+  'period_year',
+  'parameter_key',
+  'value',
+  'unit',
+  'rounding_mode',
+  'validation_status',
+  'source_name',
+  'source_url',
+  'source_date',
+  'valid_from',
+  'valid_to',
+  'notes',
+  'approved_by',
+  'approved_at',
+  'created_by',
+  'version_number',
+  'version_reason',
+  'replaces_version_id',
+];
 
 function getResourceConfig(resource) {
   const config = RESOURCE_CONFIG[resource];
@@ -707,6 +730,127 @@ function applyLegalParameterApprovalMetadata(values, user, previous = {}) {
   values.approved_at = new Date();
 }
 
+function legalVersionDate(value, user) {
+  const candidate = value || new Date().toISOString().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(candidate))) {
+    throw new AppError('La fecha "Vigente desde" debe tener formato AAAA-MM-DD.', {
+      code: 'LEGAL_PARAMETER_VALID_FROM_INVALID',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+  return String(candidate);
+}
+
+function serializedDbValue(value) {
+  return value && typeof value === 'object' && !(value instanceof Date)
+    ? JSON.stringify(value)
+    : value;
+}
+
+async function withLegalParameterTransaction(user, callback) {
+  if (typeof db.getClient !== 'function') {
+    return callback(db);
+  }
+
+  const client = await db.getClient(user.tenantId || null, user.id);
+  try {
+    const result = await callback(client);
+    await db.commit(client);
+    return result;
+  } catch (err) {
+    await db.rollback(client);
+    throw err;
+  }
+}
+
+function legalVersionPayload(previous, values, user, reason) {
+  const nextStatus = Object.prototype.hasOwnProperty.call(values, 'validation_status')
+    ? values.validation_status
+    : previous.validation_status;
+  const nextValidated = nextStatus === LEGAL_PARAMETER_VALIDATED_STATUS;
+  const approvedBy = nextValidated
+    ? (values.approved_by || user.id)
+    : null;
+  const approvedAt = nextValidated
+    ? (values.approved_at || new Date())
+    : null;
+
+  return {
+    tenant_id: Object.prototype.hasOwnProperty.call(values, 'tenant_id') ? values.tenant_id : previous.tenant_id,
+    country_code: values.country_code || previous.country_code || 'EC',
+    region_code: values.region_code || previous.region_code || 'NACIONAL',
+    period_year: Number(values.period_year || previous.period_year),
+    parameter_key: values.parameter_key || previous.parameter_key,
+    value: Object.prototype.hasOwnProperty.call(values, 'value') ? values.value : previous.value,
+    unit: values.unit || previous.unit || 'decimal',
+    rounding_mode: values.rounding_mode || previous.rounding_mode || 'half_up_2',
+    validation_status: nextStatus || 'pendiente_validacion_oficial',
+    source_name: Object.prototype.hasOwnProperty.call(values, 'source_name') ? values.source_name : (previous.source_name || ''),
+    source_url: Object.prototype.hasOwnProperty.call(values, 'source_url') ? values.source_url : (previous.source_url || ''),
+    source_date: Object.prototype.hasOwnProperty.call(values, 'source_date') ? values.source_date : previous.source_date,
+    valid_from: legalVersionDate(values.valid_from, user),
+    valid_to: null,
+    notes: Object.prototype.hasOwnProperty.call(values, 'notes') ? values.notes : (previous.notes || ''),
+    approved_by: approvedBy,
+    approved_at: approvedAt,
+    created_by: user.id,
+    version_number: Number(previous.version_number || 1) + 1,
+    version_reason: values.version_reason || reason,
+    replaces_version_id: previous.id || null,
+  };
+}
+
+async function createLegalParameterVersion(previous, values, user, context = {}, reason = 'edicion_parametro', closePrevious = true) {
+  const next = legalVersionPayload(previous, values, user, reason);
+  const columns = LEGAL_PARAMETER_VERSION_COLUMNS;
+  const placeholders = columns.map((_, index) => `$${index + 1}`);
+  const params = columns.map((column) => serializedDbValue(next[column]));
+
+  const result = await withLegalParameterTransaction(user, async (connection) => {
+    if (closePrevious && previous.id) {
+      const closed = await connection.query(`
+        UPDATE legal_parameter_versions
+        SET valid_to = $2::date, updated_at = now()
+        WHERE id = $1 AND valid_to IS NULL
+        RETURNING id
+      `, [previous.id, next.valid_from]);
+      if (closed.rows.length === 0) {
+        throw new AppError('El parámetro cambió mientras lo revisabas. Recarga Valores legales e intenta de nuevo.', {
+          code: 'LEGAL_PARAMETER_VERSION_CONFLICT',
+          statusCode: 409,
+          userId: user.id,
+        });
+      }
+    }
+
+    try {
+      const inserted = await connection.query(`
+        INSERT INTO legal_parameter_versions (${columns.join(', ')})
+        VALUES (${placeholders.join(', ')})
+        RETURNING *
+      `, params);
+      return inserted.rows[0];
+    } catch (err) {
+      handleConfigurationDbError(err, { table: 'legal_parameter_versions' }, user);
+    }
+  });
+
+  await recordAudit({
+    tenantId: result.tenant_id || user.tenantId || null,
+    userId: user.id,
+    correlationId: context.correlationId,
+    action: reason === 'restauracion' ? 'configuracion.restaurar_parametro_legal' : 'configuracion.versionar_parametro_legal',
+    entity: 'legal_parameter_versions',
+    entityId: result.id,
+    previousData: previous,
+    newData: result,
+    ipAddress: context.ipAddress,
+  });
+
+  return result;
+}
+
 async function ensureOrganizationUnitWorkZone(values, tenantId, user) {
   if (!values.work_zone_id) {
     throw new AppError('Cada unidad organizativa debe tener una zona de marcación asociada.', {
@@ -931,7 +1075,7 @@ async function loadMandatoryLegalParameters(year, user, context = {}) {
       user.id,
     ];
     const existing = await db.query(`
-      SELECT id
+      SELECT *
       FROM legal_parameter_versions
       WHERE COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid) = COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
         AND country_code = 'EC'
@@ -943,21 +1087,35 @@ async function loadMandatoryLegalParameters(year, user, context = {}) {
       LIMIT 1
     `, [tenantId, periodYear, payload.parameter_key]);
 
-    const result = existing.rows.length > 0
-      ? await db.query(`
-          UPDATE legal_parameter_versions
-          SET value = $4,
-              unit = $5,
-              source_name = $6,
-              source_url = $7,
-              validation_status = $8,
-              source_date = CURRENT_DATE,
-              notes = $9,
-              updated_at = now()
-          WHERE id = $11
-          RETURNING *
-        `, [...params, existing.rows[0].id])
-      : await db.query(`
+    let result;
+    if (existing.rows.length > 0) {
+      const current = existing.rows[0];
+      const sameBase = JSON.stringify(current.value) === JSON.stringify(payload.value)
+        && current.unit === payload.unit
+        && current.source_name === (payload.sourceName || `Parámetros base SKNOMINA ${periodYear}`)
+        && current.source_url === (payload.sourceUrl || 'https://www.sri.gob.ec/formularios-e-instructivos1')
+        && current.validation_status === (payload.validationStatus || 'pendiente_validacion_oficial');
+      result = sameBase
+        ? { rows: [current] }
+        : { rows: [await createLegalParameterVersion(current, {
+            tenant_id: tenantId,
+            country_code: 'EC',
+            region_code: 'NACIONAL',
+            period_year: periodYear,
+            parameter_key: payload.parameter_key,
+            value: payload.value,
+            unit: payload.unit,
+            validation_status: payload.validationStatus || 'pendiente_validacion_oficial',
+            source_name: payload.sourceName || `Parámetros base SKNOMINA ${periodYear}`,
+            source_url: payload.sourceUrl || 'https://www.sri.gob.ec/formularios-e-instructivos1',
+            source_date: new Date().toISOString().slice(0, 10),
+            notes: payload.validationStatus === 'validado_oficial'
+              ? payload.notes
+              : `${payload.notes} Validar contra fuente oficial vigente antes de producción.`,
+            valid_from: new Date().toISOString().slice(0, 10),
+          }, user, context, 'carga_inicial') ] };
+    } else {
+      result = await db.query(`
           INSERT INTO legal_parameter_versions (
             tenant_id, country_code, region_code, period_year, parameter_key, value, unit,
             rounding_mode, validation_status, source_name, source_url, source_date, notes, created_by
@@ -966,6 +1124,7 @@ async function loadMandatoryLegalParameters(year, user, context = {}) {
             $8, $6, $7, CURRENT_DATE, $9, $10)
           RETURNING *
         `, params);
+    }
     rows.push(result.rows[0]);
   }
 
@@ -1070,30 +1229,55 @@ async function syncLegalParametersFromGlobal(year, user, context = {}, options =
         source.approved_at,
         user.id,
       ];
-      const result = await db.query(`
+      const existing = await db.query(`
+        SELECT *
+        FROM legal_parameter_versions
+        WHERE tenant_id = $1::uuid
+          AND country_code = $2
+          AND region_code = $3
+          AND period_year = $4
+          AND parameter_key = $5
+          AND valid_to IS NULL
+        ORDER BY valid_from DESC, version_number DESC, updated_at DESC
+        LIMIT 1
+      `, [tenantId, source.country_code, source.region_code, source.period_year, source.parameter_key]);
+      const current = existing.rows[0];
+      const sameSource = current
+        && JSON.stringify(current.value) === JSON.stringify(source.value)
+        && current.unit === source.unit
+        && current.rounding_mode === source.rounding_mode
+        && current.validation_status === source.validation_status
+        && current.source_name === source.source_name
+        && current.source_url === source.source_url;
+      const result = sameSource
+        ? { rows: [current] }
+        : current
+          ? { rows: [await createLegalParameterVersion(current, {
+              tenant_id: tenantId,
+              country_code: source.country_code,
+              region_code: source.region_code,
+              period_year: source.period_year,
+              parameter_key: source.parameter_key,
+              value: source.value,
+              unit: source.unit,
+              rounding_mode: source.rounding_mode,
+              validation_status: source.validation_status,
+              source_name: source.source_name,
+              source_url: source.source_url,
+              source_date: source.source_date,
+              valid_from: source.valid_from,
+              notes: `${source.notes || ''} Sincronizado desde parámetros globales por SUPERADMIN.`,
+              approved_by: source.approved_by,
+              approved_at: source.approved_at,
+              version_reason: 'sincronizacion_global',
+            }, user, context, 'sincronizacion_global') ] }
+          : await db.query(`
         INSERT INTO legal_parameter_versions (
           tenant_id, country_code, region_code, period_year, parameter_key, value, unit,
           rounding_mode, validation_status, source_name, source_url, source_date, valid_from,
           valid_to, notes, approved_by, approved_at, created_by
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NULL, $14, $15, $16, $17)
-        ON CONFLICT (
-          COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid),
-          country_code, region_code, period_year, parameter_key
-        ) WHERE valid_to IS NULL
-        DO UPDATE SET
-          value = EXCLUDED.value,
-          unit = EXCLUDED.unit,
-          rounding_mode = EXCLUDED.rounding_mode,
-          validation_status = EXCLUDED.validation_status,
-          source_name = EXCLUDED.source_name,
-          source_url = EXCLUDED.source_url,
-          source_date = EXCLUDED.source_date,
-          valid_from = EXCLUDED.valid_from,
-          notes = CONCAT(EXCLUDED.notes, ' Sincronizado desde parámetros globales por SUPERADMIN.'),
-          approved_by = EXCLUDED.approved_by,
-          approved_at = EXCLUDED.approved_at,
-          updated_at = now()
         RETURNING *
       `, params);
       tenantRows.push(result.rows[0]);
@@ -1215,6 +1399,149 @@ async function listResource(resource, user) {
     params
   );
   return result.rows;
+}
+
+async function listLegalParameterHistory(user, options = {}) {
+  const parameterKey = String(options.parameterKey || '').trim();
+  const periodYear = Number(options.periodYear);
+  if (!parameterKey || parameterKey.length > 100) {
+    throw new AppError('Selecciona un parámetro legal para consultar su historial.', {
+      code: 'LEGAL_PARAMETER_HISTORY_KEY_REQUIRED',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+  if (!Number.isInteger(periodYear) || periodYear < 2000 || periodYear > 2100) {
+    throw new AppError('El año del historial de parámetros legales no es válido.', {
+      code: 'LEGAL_PARAMETER_HISTORY_YEAR_INVALID',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+
+  const params = [parameterKey, periodYear];
+  let scope = '';
+  let tenantOrder = 'CASE WHEN parameter.tenant_id IS NULL THEN 0 ELSE 1 END';
+  if (user.rol === 'superadmin' && !user.tenantId) {
+    scope = '';
+  } else {
+    params.push(user.tenantId);
+    scope = 'AND (parameter.tenant_id = $3::uuid OR parameter.tenant_id IS NULL)';
+    tenantOrder = 'CASE WHEN parameter.tenant_id = $3::uuid THEN 0 ELSE 1 END';
+  }
+
+  const result = await db.query(`
+    SELECT
+      parameter.*,
+      CASE WHEN parameter.tenant_id IS NULL THEN 'global' ELSE 'empresa' END AS source_scope,
+      NULLIF(TRIM(CONCAT_WS(' ', creator.nombres, creator.apellidos)), '') AS created_by_name,
+      creator.email AS created_by_email,
+      NULLIF(TRIM(CONCAT_WS(' ', approver.nombres, approver.apellidos)), '') AS approved_by_name,
+      approver.email AS approved_by_email
+    FROM legal_parameter_versions parameter
+    LEFT JOIN usuarios creator ON creator.id = parameter.created_by
+    LEFT JOIN usuarios approver ON approver.id = parameter.approved_by
+    WHERE parameter.country_code = 'EC'
+      AND parameter.parameter_key = $1
+      AND parameter.period_year = $2
+      ${scope}
+    ORDER BY
+      CASE WHEN parameter.valid_to IS NULL THEN 0 ELSE 1 END,
+      ${tenantOrder},
+      parameter.valid_from DESC,
+      parameter.version_number DESC,
+      parameter.created_at DESC
+  `, params);
+
+  return result.rows;
+}
+
+async function restoreLegalParameterVersion(id, user, context = {}) {
+  ensureWriteAllowed(user);
+  if (!canValidateLegalParameters(user)) {
+    throw new AppError('Solo el administrador principal puede restaurar parámetros legales.', {
+      code: 'LEGAL_PARAMETER_OWNER_VALIDATION_REQUIRED',
+      statusCode: 403,
+      userId: user.id,
+    });
+  }
+
+  const params = [id];
+  let scope = '';
+  if (user.rol !== 'superadmin') {
+    params.push(user.tenantId);
+    scope = 'AND (tenant_id = $2::uuid OR tenant_id IS NULL)';
+  }
+  const sourceResult = await db.query(`
+    SELECT *
+    FROM legal_parameter_versions
+    WHERE id = $1::uuid ${scope}
+    LIMIT 1
+  `, params);
+  const source = sourceResult.rows[0];
+  if (!source) {
+    throw new AppError('La versión histórica no existe o no pertenece a esta empresa.', {
+      code: 'LEGAL_PARAMETER_HISTORY_NOT_FOUND',
+      statusCode: 404,
+      userId: user.id,
+    });
+  }
+  if (source.valid_to === null) {
+    throw new AppError('La versión seleccionada ya está vigente; usa editar para crear una nueva versión.', {
+      code: 'LEGAL_PARAMETER_RESTORE_ACTIVE_INVALID',
+      statusCode: 400,
+      userId: user.id,
+    });
+  }
+
+  const targetTenantId = user.rol === 'superadmin' && !user.tenantId
+    ? source.tenant_id
+    : user.tenantId;
+  const currentParams = [source.country_code, source.region_code, source.period_year, source.parameter_key];
+  let currentScope = '';
+  if (targetTenantId) {
+    currentParams.push(targetTenantId);
+    currentScope = 'AND tenant_id = $5::uuid';
+  } else {
+    currentScope = 'AND tenant_id IS NULL';
+  }
+  const currentResult = await db.query(`
+    SELECT *
+    FROM legal_parameter_versions
+    WHERE country_code = $1
+      AND region_code = $2
+      AND period_year = $3
+      AND parameter_key = $4
+      AND valid_to IS NULL
+      ${currentScope}
+    ORDER BY valid_from DESC, version_number DESC, updated_at DESC
+    LIMIT 1
+  `, currentParams);
+  const current = currentResult.rows[0] || null;
+  const previous = current || { ...source, id: source.id, tenant_id: targetTenantId };
+  const restored = await createLegalParameterVersion(previous, {
+    tenant_id: targetTenantId,
+    country_code: source.country_code,
+    region_code: source.region_code,
+    period_year: source.period_year,
+    parameter_key: source.parameter_key,
+    value: source.value,
+    unit: source.unit,
+    rounding_mode: source.rounding_mode,
+    validation_status: source.validation_status,
+    source_name: source.source_name,
+    source_url: source.source_url,
+    source_date: source.source_date,
+    valid_from: new Date().toISOString().slice(0, 10),
+    notes: `${source.notes || ''}${source.notes ? '\n' : ''}Restaurada desde la versión ${source.version_number || 1}; la versión histórica permanece intacta.`,
+    version_reason: 'restauracion',
+  }, user, context, 'restauracion', Boolean(current));
+
+  return {
+    ...restored,
+    restored_from_version_id: source.id,
+    restored_from_version_number: source.version_number || 1,
+  };
 }
 
 async function synchronizeUnifiedAccountingMatrix(config, record, user, context = {}) {
@@ -1351,7 +1678,7 @@ async function createResource(resource, payload, user, context = {}) {
 
   if (config.table === 'legal_parameter_versions') {
     const existing = await db.query(`
-      SELECT id, validation_status, approved_by, approved_at
+      SELECT *
       FROM legal_parameter_versions
       WHERE COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid) = COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
         AND country_code = $2
@@ -1372,36 +1699,7 @@ async function createResource(resource, payload, user, context = {}) {
     if (existing.rows.length > 0) {
       assertLegalParameterOwnerValidationAllowed(user, values, existing.rows[0]);
       applyLegalParameterApprovalMetadata(values, user, existing.rows[0]);
-      const updateColumns = columns.filter((column) => column !== 'created_by');
-      const updateParams = updateColumns.map((column) => {
-        const value = values[column];
-        if (value && typeof value === 'object' && !(value instanceof Date)) {
-          return JSON.stringify(value);
-        }
-        return value;
-      });
-      updateParams.push(existing.rows[0].id);
-      const setClause = updateColumns.map((column, index) => `${column} = $${index + 1}`).join(', ');
-      const result = await db.query(
-        `UPDATE legal_parameter_versions
-         SET ${setClause}, updated_at = now()
-         WHERE id = $${updateParams.length}
-         RETURNING *`,
-        updateParams
-      );
-
-      await recordAudit({
-        tenantId,
-        userId: user.id,
-        correlationId: context.correlationId,
-        action: 'configuracion.actualizar_parametro_legal_activo',
-        entity: config.table,
-        entityId: result.rows[0].id,
-        newData: result.rows[0],
-        ipAddress: context.ipAddress,
-      });
-
-      return result.rows[0];
+      return createLegalParameterVersion(existing.rows[0], values, user, context, 'edicion_parametro');
     }
   }
 
@@ -1496,6 +1794,7 @@ async function updateResource(resource, id, payload, user, context = {}) {
   if (config.table === 'legal_parameter_versions') {
     assertLegalParameterOwnerValidationAllowed(user, values, previous.rows[0]);
     applyLegalParameterApprovalMetadata(values, user, previous.rows[0]);
+    return createLegalParameterVersion(previous.rows[0], values, user, context, 'edicion_parametro');
   }
   await assertIessEstablishmentLimitAvailable({
     ...previous.rows[0],
@@ -1776,6 +2075,13 @@ async function deleteResource(resource, id, user, context = {}) {
 
   if (config.table === 'legal_parameter_versions') {
     assertLegalParameterOwnerValidationAllowed(user, {}, previous.rows[0]);
+    if (previous.rows[0].valid_to !== null) {
+      throw new AppError('Las versiones históricas son inmutables y no se pueden eliminar. Crea una nueva versión para corregir el parámetro.', {
+        code: 'LEGAL_PARAMETER_HISTORY_IMMUTABLE',
+        statusCode: 409,
+        userId: user.id,
+      });
+    }
   }
 
   await ensureResourceCanBeDeleted(config, previous.rows[0], user);
@@ -1952,6 +2258,8 @@ module.exports = {
   loadMandatoryLegalParameters,
   syncLegalParametersFromGlobal,
   listResource,
+  listLegalParameterHistory,
+  restoreLegalParameterVersion,
   createResource,
   updateResource,
   deleteResource,

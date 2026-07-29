@@ -87,6 +87,7 @@ describe('parametros legales Ecuador AIV50', () => {
       expect(result.payroll.unifiedBaseSalary).toBe(482);
       expect(result.sourceStatus).toBe('validado_oficial');
       expect(db.query.mock.calls[0][0]).toContain('tenant_id = $2::uuid');
+      expect(db.query.mock.calls[0][0]).toContain('valid_to IS NULL');
       expect(db.query.mock.calls[1][0]).toContain('tenant_id = $2::uuid');
     } finally {
       if (previousRequirement === undefined) delete process.env.REQUIRE_VALIDATED_LEGAL_PARAMETERS;

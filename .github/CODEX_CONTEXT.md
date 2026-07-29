@@ -3620,3 +3620,48 @@ Los reportes se basan en roles del ejercicio, días trabajados, modalidades y pr
 - Build frontend Vite PASS con código 0; 2.028 módulos transformados y bundle de `DescargarReportes` generado.
 - Prisma `validate`, `node --check`, parseo JSON, UTF-8 sin BOM y `git diff --check` PASS.
 - No se modificó otra superficie ni se creó una ruta paralela; la entrega queda lista para commit y push a `main`.
+
+---
+
+## Current Haiky Plan — HAIKY-VERSIONES-PARAMETROS-LEGALES-EC-2026
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-VERSIONES-PARAMETROS-LEGALES-EC-2026` |
+| Código | `PVE26` |
+| Estado | `PVE26-00 a PVE26-04 completadas; listo para publicación` |
+| Fecha | `2026-07-28` |
+| Plan doc | `docs2/PLAN_HAIKY_VERSIONES_PARAMETROS_LEGALES_EC_2026.md` |
+| Prompts | `.github/prompts/PVE26-00` a `.github/prompts/PVE26-04` |
+| Superficie | `Parametrización > Valores legales` |
+| AuditLock anterior | `D8DF5B9B5EF3E6DD2E407F7E2026EF0A624C7A4BE9630C92E20C8B085008484D` |
+
+### Alcance PVE26-00
+
+El usuario final no debe acceder a la base de datos para conocer los parámetros legales de la República del Ecuador. La implementación actual sobrescribe la fila activa de `legal_parameter_versions`, aunque la tabla ya contiene campos de vigencia; además, el resumen solo expone filas activas. PVE26 corrige primero la persistencia y después expone el historial en la misma pantalla de Valores legales.
+
+La regla de negocio es inmutable: una corrección crea una nueva versión, cierra la anterior y conserva el valor histórico usado por cálculos previos. Restaurar también crea una nueva versión. No se modifican directamente versiones anteriores ni nóminas/asientos cerrados.
+
+### Baseline PVE26-00
+
+- Rama `main` limpia y alineada con `origin/main` en `66c68279a18226e2447c5b77099958463de5ade0`.
+- `libxmljs2` nativo disponible en la validación anterior; el baseline completo previo fue 68 suites backend y 467 pruebas PASS, Prisma validate PASS y build frontend Vite PASS.
+- La causa se observó en `configurationService.createResource/updateResource`: para `legal_parameter_versions` existe una ruta `UPDATE` sobre la fila activa.
+- La pantalla vigente de `Parametrizacion.jsx` no tiene botón ni consulta de historial.
+- Superficie confirmada: `Parametrización > Valores legales`; no se crea una ruta paralela.
+
+### Puertas PVE26
+
+- `PVE26-01`: migración reversible y operación transaccional de cierre + inserción, con pruebas.
+- `PVE26-02`: API de historial y restauración, permisos, aislamiento y auditoría.
+- `PVE26-03`: botón “Ver historial de versiones”, comparación, fuente oficial y restauración visible.
+- `PVE26-04`: regresión completa, artefactos cerrados, commit y push solo con evidencia PASS.
+
+### Evidencia PVE26-01 a PVE26-04
+
+- Persistencia: `legal_parameter_versions` conserva `version_number`, `version_reason` y `replaces_version_id`; editar, cargar o sincronizar crea una nueva versión y cierra la vigente dentro de una transacción.
+- API: historial y restauración están protegidos por módulo/RBAC; restaurar solo copia a una nueva versión, audita la operación y no reabre el registro histórico.
+- Cálculo: la lectura de parámetros filtra `valid_to IS NULL`, por lo que las versiones cerradas no pueden alimentar nuevos cálculos.
+- Frontend: Valores legales muestra historial, valor, año, vigencia, estado, fuente, creador, usuario/fecha de validación, comparación y restauración como nueva versión en la misma superficie.
+- Validaciones: `npm.cmd --workspace=backend test -- --runInBand` PASS (68 suites / 470 pruebas), `npm.cmd --workspace=backend run prisma:validate` PASS, `npm.cmd --workspace=frontend-web run build` PASS (2030 módulos) y `git diff --check` PASS.
+- No se detectaron regresiones en backend, rutas, Prisma ni build frontend; la entrega queda lista para commit y push a `main`.

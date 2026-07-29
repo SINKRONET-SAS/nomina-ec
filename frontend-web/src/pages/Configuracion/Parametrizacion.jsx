@@ -6,7 +6,10 @@ import {
   Circle,
   Download,
   Edit3,
+  GitCompareArrows,
+  History,
   Plus,
+  RotateCcw,
   Search,
   Settings2,
   Trash2,
@@ -25,7 +28,9 @@ import {
   createConfigurationResource,
   deleteConfigurationResource,
   fetchConfigurationSummary,
+  fetchLegalParameterHistory,
   loadMandatoryLegalParameters,
+  restoreLegalParameterVersion,
   updateConfigurationResource,
   uploadTenantLogo,
   removeTenantLogo,
@@ -362,6 +367,19 @@ function dedupeNoveltyRecords(records = []) {
   });
 }
 
+function legalHistoryValue(record) {
+  if (!record) return '—';
+  if (record.value && typeof record.value === 'object') return JSON.stringify(record.value);
+  return String(record.value ?? '—');
+}
+
+function legalHistoryUser(record, prefix) {
+  const name = record?.[`${prefix}_name`];
+  const email = record?.[`${prefix}_email`];
+  const id = record?.[`${prefix}_by`];
+  return name || email || id || 'Sistema';
+}
+
 function Parametrizacion() {
   const { token, usuario } = useAuth();
   const queryClient = useQueryClient();
@@ -384,6 +402,8 @@ function Parametrizacion() {
   const [sidebarFilter, setSidebarFilter] = useState('');
   const [sidebarPage, setSidebarPage] = useState(1);
   const [sidebarPageSize, setSidebarPageSize] = useState(10);
+  const [historyParameter, setHistoryParameter] = useState(null);
+  const [historyCompareId, setHistoryCompareId] = useState('');
 
   const {
     data: summary,
@@ -393,6 +413,13 @@ function Parametrizacion() {
     queryKey: ['configuration-summary'],
     queryFn: () => fetchConfigurationSummary(token),
     enabled: Boolean(token),
+    retry: false,
+  });
+
+  const legalHistoryQuery = useQuery({
+    queryKey: ['legal-parameter-history', historyParameter?.parameter_key, historyParameter?.period_year],
+    queryFn: () => fetchLegalParameterHistory(token, historyParameter.parameter_key, historyParameter.period_year),
+    enabled: Boolean(token && historyParameter?.parameter_key && historyParameter?.period_year),
     retry: false,
   });
 
@@ -445,6 +472,8 @@ function Parametrizacion() {
       setError('');
       const successMessage = definition.key === 'contabilidad'
         ? `${record.concept_label || record.concept_code}: debe ${record.debit_account_code} / haber ${record.credit_account_code}. Cambio guardado.`
+        : definition.resource === 'legalParameters' && mode === 'actualizado'
+          ? `${definition.title} versionado. La versión anterior quedó cerrada y el cambio aplicará desde la fecha indicada.`
         : `${definition.title} ${mode}.`;
       setMessage(`${successMessage}${onboardingWarning}`);
       setForms((current) => ({ ...current, [definition.key]: cloneFormValues(definition.initial) }));
@@ -476,6 +505,20 @@ function Parametrizacion() {
     onError: (err) => {
       setMessage('');
       setError(extractApiError(err, 'No pudimos eliminar el registro. Verifica si ya tiene consumos operativos.'));
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: (recordId) => restoreLegalParameterVersion(token, recordId),
+    onSuccess: (record) => {
+      setError('');
+      setMessage(`Se creó la versión ${record.version_number || ''} como restauración. Las versiones anteriores permanecen intactas.`);
+      queryClient.invalidateQueries({ queryKey: ['configuration-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['legal-parameter-history'] });
+    },
+    onError: (err) => {
+      setMessage('');
+      setError(extractApiError(err, 'No pudimos restaurar el parámetro. Revisa la versión y los permisos del administrador principal.'));
     },
   });
 
@@ -617,6 +660,11 @@ function Parametrizacion() {
     const start = (sidebarPage - 1) * sidebarPageSize;
     return filteredRecords.slice(start, start + sidebarPageSize);
   }, [filteredRecords, sidebarPage, sidebarPageSize]);
+  const legalHistoryRecords = historyParameter && Array.isArray(legalHistoryQuery.data)
+    ? legalHistoryQuery.data
+    : [];
+  const legalHistoryCurrent = legalHistoryRecords.find((record) => !record.valid_to) || legalHistoryRecords[0] || null;
+  const legalHistoryCompare = legalHistoryRecords.find((record) => record.id === historyCompareId) || null;
   const rootFormDefinitions = formDefinitions.filter((definition) => !definition.parentKey);
   const childFormDefinitions = (parentKey) => formDefinitions.filter((definition) => definition.parentKey === parentKey);
 
@@ -753,6 +801,8 @@ function Parametrizacion() {
     setSidebarSearch('');
     setSidebarFilter('');
     setSidebarPage(1);
+    setHistoryParameter(null);
+    setHistoryCompareId('');
   }
 
   function startEdit(definition, record) {
@@ -766,6 +816,21 @@ function Parametrizacion() {
       setForms((current) => ({ ...current, [definition.key]: values }));
     } catch (err) {
       setError(`No se pudo cargar el registro para editar: ${err.message}`);
+    }
+  }
+
+  function openLegalHistory(record) {
+    setHistoryParameter(record);
+    setHistoryCompareId('');
+    setError('');
+    setMessage('');
+  }
+
+  function requestLegalRestore(record) {
+    if (!record?.id || restoreMutation.isPending) return;
+    const versionLabel = record.version_number ? `versión ${record.version_number}` : 'esta versión';
+    if (window.confirm(`Se creará una nueva versión copiando ${versionLabel}. La versión histórica no se modificará. ¿Continuar?`)) {
+      restoreMutation.mutate(record.id);
     }
   }
 
@@ -1126,7 +1191,7 @@ function Parametrizacion() {
 
             {isLegalParameterForm && (
               <CompactNotice className="mt-4" tone="amber" title="Validación del responsable">
-                El check habilita el parámetro para cálculo. Luego solo el administrador principal o soporte global puede cambiarlo.
+                El check habilita el parámetro para cálculo. Al editar se crea una nueva versión desde la fecha indicada; la versión anterior queda cerrada y solo el administrador principal puede restaurarla como una nueva.
               </CompactNotice>
             )}
 
@@ -1306,6 +1371,17 @@ function Parametrizacion() {
                           <p className="mt-1 text-xs text-slate-500">{recordMetaForDefinition(activeDefinition, record, summary)}</p>
                         </div>
                         <div className="flex shrink-0 items-center gap-1">
+                          {activeDefinition.resource === 'legalParameters' && (
+                            <button
+                              className="inline-flex min-h-8 items-center gap-1 rounded-md border border-teal-200 bg-white px-2 text-xs font-semibold text-teal-800 hover:border-teal-400"
+                              type="button"
+                              onClick={() => openLegalHistory(record)}
+                              title="Ver historial de versiones"
+                            >
+                              <History className="h-4 w-4" />
+                              <span className="hidden 2xl:inline">Historial</span>
+                            </button>
+                          )}
                           <button
                             className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-teal-700 hover:border-teal-300"
                             type="button"
@@ -1352,6 +1428,79 @@ function Parametrizacion() {
                 })
               )}
             </div>
+
+            {activeDefinition.resource === 'legalParameters' && historyParameter && (
+              <section className="mt-5 rounded-md border border-teal-200 bg-teal-50/60 p-4" aria-live="polite">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-teal-800">Historial de versiones</p>
+                    <h4 className="mt-1 text-sm font-semibold text-slate-950">{activeDefinition.recordLabel(historyParameter, summary)}</h4>
+                    <p className="mt-1 text-xs leading-5 text-slate-700">La versión vigente se usará en cálculos nuevos. Las anteriores son solo de consulta y no se editan.</p>
+                  </div>
+                  <button className="text-xs font-semibold text-slate-500 hover:text-slate-800" type="button" onClick={() => { setHistoryParameter(null); setHistoryCompareId(''); }}>Cerrar</button>
+                </div>
+
+                {legalHistoryQuery.isLoading && <p className="mt-3 text-sm text-slate-600">Cargando historial...</p>}
+                {legalHistoryQuery.isError && <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">{extractApiError(legalHistoryQuery.error, 'No se pudo consultar el historial. Revisa Parametrización > Valores legales.')}</p>}
+                {!legalHistoryQuery.isLoading && !legalHistoryQuery.isError && legalHistoryRecords.length === 0 && <p className="mt-3 rounded-md bg-white px-3 py-2 text-sm text-slate-600">No hay versiones para este parámetro y año.</p>}
+
+                {legalHistoryRecords.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {legalHistoryRecords.map((version) => {
+                      const isCurrent = !version.valid_to;
+                      return (
+                        <div className={`rounded-md border px-3 py-3 ${isCurrent ? 'border-emerald-300 bg-white' : 'border-slate-200 bg-slate-50'}`} key={version.id}>
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900">Versión {version.version_number || 1} {isCurrent ? '(vigente)' : '(cerrada)'}</p>
+                              <p className="mt-1 text-xs text-slate-600">Valor: {legalHistoryValue(version)} · Unidad: {version.unit || '—'}</p>
+                            </div>
+                            <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${version.validation_status === 'validado_oficial' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                              {version.validation_status === 'validado_oficial' ? 'Fuente oficial validada' : 'Pendiente de validación'}
+                            </span>
+                          </div>
+                          <div className="mt-2 grid gap-1 text-xs text-slate-600 sm:grid-cols-2">
+                            <span>Vigencia: {String(version.valid_from || '').slice(0, 10)} — {version.valid_to ? String(version.valid_to).slice(0, 10) : 'actual'}</span>
+                            <span>Fuente: {version.source_name || 'No registrada'} ({version.source_scope || 'empresa'})</span>
+                            <span>Creó: {legalHistoryUser(version, 'created')} · {String(version.created_at || '').slice(0, 10)}</span>
+                            <span>Validó: {version.approved_at ? `${legalHistoryUser(version, 'approved')} · ${String(version.approved_at).slice(0, 10)}` : 'Sin validación registrada'}</span>
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {legalHistoryCurrent && version.id !== legalHistoryCurrent.id && (
+                              <button className="inline-flex min-h-8 items-center gap-1 rounded-md border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700 hover:border-teal-300" type="button" onClick={() => setHistoryCompareId(version.id)}>
+                                <GitCompareArrows className="h-3.5 w-3.5" /> Comparar con vigente
+                              </button>
+                            )}
+                            {!isCurrent && canValidateLegalParameters && (
+                              <button className="inline-flex min-h-8 items-center gap-1 rounded-md border border-amber-300 bg-white px-2 text-xs font-semibold text-amber-800 hover:bg-amber-50 disabled:opacity-60" type="button" disabled={restoreMutation.isPending} onClick={() => requestLegalRestore(version)}>
+                                <RotateCcw className="h-3.5 w-3.5" /> Restaurar como nueva
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {legalHistoryCompare && legalHistoryCurrent && (
+                  <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-900"><GitCompareArrows className="h-4 w-4 text-teal-700" /> Comparación contra la versión vigente</div>
+                    <div className="mt-2 overflow-x-auto">
+                      <table className="min-w-full text-left text-xs">
+                        <thead className="border-b border-slate-200 text-slate-500"><tr><th className="px-2 py-2">Campo</th><th className="px-2 py-2">Vigente</th><th className="px-2 py-2">Versión {legalHistoryCompare.version_number || 1}</th></tr></thead>
+                        <tbody className="divide-y divide-slate-100">
+                          <tr><td className="px-2 py-2 font-semibold">Valor</td><td className="px-2 py-2">{legalHistoryValue(legalHistoryCurrent)}</td><td className="px-2 py-2">{legalHistoryValue(legalHistoryCompare)}</td></tr>
+                          <tr><td className="px-2 py-2 font-semibold">Vigencia</td><td className="px-2 py-2">{String(legalHistoryCurrent.valid_from || '').slice(0, 10)}</td><td className="px-2 py-2">{String(legalHistoryCompare.valid_from || '').slice(0, 10)}</td></tr>
+                          <tr><td className="px-2 py-2 font-semibold">Fuente</td><td className="px-2 py-2">{legalHistoryCurrent.source_name || '—'}</td><td className="px-2 py-2">{legalHistoryCompare.source_name || '—'}</td></tr>
+                          <tr><td className="px-2 py-2 font-semibold">Estado</td><td className="px-2 py-2">{legalHistoryCurrent.validation_status}</td><td className="px-2 py-2">{legalHistoryCompare.validation_status}</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
 
             {activeDefinition.customType !== 'bankMappingStructure' && filteredRecords.length > sidebarPageSize && (
               <div className="mt-4 border-t border-slate-100 pt-3">

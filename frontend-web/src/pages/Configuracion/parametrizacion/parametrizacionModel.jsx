@@ -324,6 +324,7 @@ const formDefinitions = [
       },
       { name: 'period_year', label: 'Año', type: 'number', required: true },
       { name: 'amount', label: 'Valor (monto, tasa o multiplicador)', type: 'number', step: '0.01', required: true },
+      { name: 'valid_from', label: 'Vigente desde', type: 'date', required: true },
       { name: 'unit', label: 'Unidad', placeholder: 'USD, porcentaje, horas, regla', required: true },
       { name: 'source_name', label: 'Referencia revisada', placeholder: 'SRI, IESS, MDT, acuerdo o resolución' },
       { name: 'owner_validated', label: 'Validado por responsable', type: 'checkbox' },
@@ -334,6 +335,7 @@ const formDefinitions = [
       parameter_key: '',
       period_year: new Date().getFullYear(),
       amount: '',
+      valid_from: `${new Date().getFullYear()}-01-01`,
       unit: 'USD',
       source_name: '',
       source_url: '',
@@ -346,6 +348,7 @@ const formDefinitions = [
       region_code: 'NACIONAL',
       period_year: Number(values.period_year),
       parameter_key: values.parameter_key.trim(),
+      valid_from: dateInputValue(values.valid_from) || null,
       value: parseStructuredValue(values.value_json, buildLegalValueFallback(values.parameter_key.trim(), values.amount)),
       unit: values.unit.trim(),
       owner_validated: Boolean(values.owner_validated),
@@ -367,6 +370,7 @@ const formDefinitions = [
     customType: 'incomeTaxTable',
     initial: {
       period_year: new Date().getFullYear(),
+      valid_from: `${new Date().getFullYear()}-01-01`,
       source_name: 'SRI',
       source_url: '',
       owner_validated: false,
@@ -381,6 +385,7 @@ const formDefinitions = [
       region_code: 'NACIONAL',
       period_year: Number(values.period_year),
       parameter_key: 'income_tax_table',
+      valid_from: dateInputValue(values.valid_from) || null,
       value: {
         brackets: values.brackets.map((bracket) => ({
           from: Number(bracket.from),
@@ -1177,6 +1182,7 @@ function formValuesFromRecord(definition, record) {
         parameter_key: record.parameter_key || '',
         period_year: record.period_year || new Date().getFullYear(),
         amount: String(value.amount ?? value.multiplier ?? value.rate ?? 0),
+        valid_from: dateInputValue(record.valid_from) || `${new Date().getFullYear()}-01-01`,
         unit: record.unit || 'USD',
         source_name: record.source_name || '',
         source_url: record.source_url || '',
@@ -1187,6 +1193,7 @@ function formValuesFromRecord(definition, record) {
     case 'ir':
       return {
         period_year: record.period_year || new Date().getFullYear(),
+        valid_from: dateInputValue(record.valid_from) || `${new Date().getFullYear()}-01-01`,
         source_name: record.source_name || 'SRI',
         source_url: record.source_url || '',
         owner_validated: record.validation_status === 'validado_oficial',

@@ -145,6 +145,31 @@ async function removeLogo(req, res, next) {
   }
 }
 
+async function legalParameterHistory(req, res, next) {
+  try {
+    const data = await configurationService.listLegalParameterHistory(req.usuario, {
+      parameterKey: req.query.parameterKey || req.query.parameter_key,
+      periodYear: req.query.periodYear || req.query.period_year,
+    });
+    return res.json({ data, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function restoreLegalParameterVersion(req, res, next) {
+  try {
+    const data = await configurationService.restoreLegalParameterVersion(
+      req.params.id,
+      req.usuario,
+      requestContext(req)
+    );
+    return res.status(201).json({ data, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function downloadJobPositionsTemplate(_req, res, next) {
   try {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -172,6 +197,8 @@ async function bulkCreateJobPositions(req, res, next) {
 module.exports = {
   summary,
   list,
+  legalParameterHistory,
+  restoreLegalParameterVersion,
   create,
   update,
   remove,

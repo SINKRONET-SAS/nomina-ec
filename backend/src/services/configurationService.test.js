@@ -17,6 +17,8 @@ const {
   loadMandatoryLegalParameters,
   syncLegalParametersFromGlobal,
   listResource,
+  listLegalParameterHistory,
+  restoreLegalParameterVersion,
 } = require('./configurationService');
 const { PAYROLL_CONCEPTS } = require('./payrollAccountingService');
 
@@ -434,6 +436,7 @@ describe('configurationService metadata', () => {
           tenant_id: ownerUser.tenantId,
           period_year: 2026,
           parameter_key: 'sbu',
+          valid_to: null,
         }],
       })
       .mockResolvedValueOnce({ rows: [{ count: 0 }] })
@@ -643,6 +646,119 @@ describe('configurationService metadata', () => {
     expect(recordAudit).not.toHaveBeenCalled();
   });
 
+  test('editar parametro legal cierra la version anterior e inserta una nueva', async () => {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [{
+          id: '22222222-2222-2222-2222-222222222222',
+          tenant_id: ownerUser.tenantId,
+          country_code: 'EC',
+          region_code: 'NACIONAL',
+          period_year: 2026,
+          parameter_key: 'sbu',
+          value: { amount: 482 },
+          unit: 'USD',
+          validation_status: 'pendiente_validacion_oficial',
+          source_name: 'MDT',
+          source_url: 'https://www.trabajo.gob.ec',
+          valid_from: '2026-01-01',
+          valid_to: null,
+          version_number: 1,
+          notes: 'Base',
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [{ id: '22222222-2222-2222-2222-222222222222' }] })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: '33333333-3333-3333-3333-333333333333',
+          tenant_id: ownerUser.tenantId,
+          parameter_key: 'sbu',
+          value: { amount: 500 },
+          version_number: 2,
+          valid_to: null,
+        }],
+      });
+    recordAudit.mockResolvedValueOnce();
+
+    const result = await updateResource('legalParameters', '22222222-2222-2222-2222-222222222222', {
+      value: { amount: 500 },
+      valid_from: '2026-08-01',
+      notes: 'Corrección oficial',
+    }, ownerUser);
+
+    expect(result).toEqual(expect.objectContaining({ id: '33333333-3333-3333-3333-333333333333', version_number: 2 }));
+    expect(db.query.mock.calls[1][0]).toContain('SET valid_to');
+    expect(db.query.mock.calls[2][0]).toContain('INSERT INTO legal_parameter_versions');
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'configuracion.versionar_parametro_legal' }));
+  });
+
+  test('historial devuelve versiones y metadatos de usuario sin acceso a la base', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'legal-current',
+        parameter_key: 'sbu',
+        period_year: 2026,
+        version_number: 2,
+        valid_to: null,
+        created_by_name: 'Owner',
+        approved_by_name: 'Owner',
+      }],
+    });
+
+    const result = await listLegalParameterHistory(ownerUser, { parameterKey: 'sbu', periodYear: 2026 });
+
+    expect(result).toHaveLength(1);
+    expect(db.query.mock.calls[0][0]).toContain('LEFT JOIN usuarios creator');
+    expect(db.query.mock.calls[0][0]).toContain('parameter.valid_to IS NULL');
+  });
+
+  test('restaurar versión histórica crea una nueva versión y no reabre la anterior', async () => {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [{
+          id: '44444444-4444-4444-4444-444444444444',
+          tenant_id: ownerUser.tenantId,
+          country_code: 'EC',
+          region_code: 'NACIONAL',
+          period_year: 2026,
+          parameter_key: 'sbu',
+          value: { amount: 482 },
+          unit: 'USD',
+          validation_status: 'validado_oficial',
+          source_name: 'MDT',
+          source_url: 'https://www.trabajo.gob.ec',
+          source_date: '2026-01-01',
+          valid_from: '2026-01-01',
+          valid_to: '2026-08-01',
+          version_number: 1,
+          notes: 'Histórica',
+        }],
+      })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: '55555555-5555-5555-5555-555555555555',
+          tenant_id: ownerUser.tenantId,
+          country_code: 'EC',
+          region_code: 'NACIONAL',
+          period_year: 2026,
+          parameter_key: 'sbu',
+          value: { amount: 500 },
+          validation_status: 'validado_oficial',
+          valid_to: null,
+          version_number: 2,
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [{ id: '55555555-5555-5555-5555-555555555555' }] })
+      .mockResolvedValueOnce({ rows: [{ id: '66666666-6666-6666-6666-666666666666', version_number: 3, valid_to: null }] });
+    recordAudit.mockResolvedValueOnce();
+
+    const result = await restoreLegalParameterVersion('44444444-4444-4444-4444-444444444444', ownerUser);
+
+    expect(result).toEqual(expect.objectContaining({ id: '66666666-6666-6666-6666-666666666666', restored_from_version_id: '44444444-4444-4444-4444-444444444444' }));
+    expect(db.query.mock.calls[2][0]).toContain('SET valid_to');
+    expect(db.query.mock.calls[3][0]).toContain('INSERT INTO legal_parameter_versions');
+  });
+
   test('createResource crea cargo con rango salarial y unidad activa', async () => {
     db.query
       .mockResolvedValueOnce({
@@ -793,35 +909,34 @@ describe('configurationService legal parameter sync', () => {
   });
 
   test('owner sincroniza parametros globales hacia su tenant sin carga manual', async () => {
-    db.query
-      .mockResolvedValueOnce({
-        rows: [{
-          id: 'global-sbu',
-          tenant_id: null,
-          country_code: 'EC',
-          region_code: 'NACIONAL',
-          period_year: 2026,
-          parameter_key: 'sbu',
-          value: { amount: 470 },
-          unit: 'USD',
-          rounding_mode: 'half_up_2',
-          validation_status: 'validado_oficial',
-          source_name: 'Acuerdo ministerial',
-          source_url: 'https://www.trabajo.gob.ec/',
-          source_date: '2026-01-01',
-          valid_from: '2026-01-01',
-          notes: 'SBU oficial',
-          approved_by: '99999999-9999-9999-9999-999999999999',
-          approved_at: '2026-01-02T00:00:00.000Z',
-        }],
-      })
-      .mockResolvedValueOnce({
-        rows: [{
-          id: 'tenant-sbu',
-          tenant_id: ownerUser.tenantId,
-          parameter_key: 'sbu',
-        }],
-      });
+    db.query.mockImplementation((sql) => {
+      const text = String(sql);
+      if (text.includes('FROM legal_parameter_versions') && text.includes('tenant_id = $1::uuid')) {
+        return Promise.resolve({ rows: [] });
+      }
+      if (text.includes('INSERT INTO legal_parameter_versions')) {
+        return Promise.resolve({ rows: [{ id: 'tenant-sbu', tenant_id: ownerUser.tenantId, parameter_key: 'sbu' }] });
+      }
+      return Promise.resolve({ rows: [{
+        id: 'global-sbu',
+        tenant_id: null,
+        country_code: 'EC',
+        region_code: 'NACIONAL',
+        period_year: 2026,
+        parameter_key: 'sbu',
+        value: { amount: 470 },
+        unit: 'USD',
+        rounding_mode: 'half_up_2',
+        validation_status: 'validado_oficial',
+        source_name: 'Acuerdo ministerial',
+        source_url: 'https://www.trabajo.gob.ec/',
+        source_date: '2026-01-01',
+        valid_from: '2026-01-01',
+        notes: 'SBU oficial',
+        approved_by: '99999999-9999-9999-9999-999999999999',
+        approved_at: '2026-01-02T00:00:00.000Z',
+      }] });
+    });
     recordAudit.mockResolvedValueOnce();
 
     const result = await syncLegalParametersFromGlobal(2026, ownerUser, { correlationId: 'corr-sync' });
@@ -832,8 +947,7 @@ describe('configurationService legal parameter sync', () => {
       tenantCount: 1,
       parameterCount: 1,
     }));
-    expect(db.query.mock.calls[1][0]).toContain('ON CONFLICT');
-    expect(db.query.mock.calls[1][1][0]).toBe(ownerUser.tenantId);
+    expect(db.query.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO legal_parameter_versions'))).toBe(true);
     expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
       action: 'configuracion.sincronizar_parametros_legales_globales',
       tenantId: ownerUser.tenantId,

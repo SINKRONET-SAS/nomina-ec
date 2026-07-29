@@ -15,6 +15,18 @@ export async function updateConfigurationResource(_token, resource, id, payload)
   return response.data?.data;
 }
 
+export async function fetchLegalParameterHistory(_token, parameterKey, periodYear) {
+  const response = await authenticatedApi.get('/configuracion/legalParameters/historial', {
+    params: { parameterKey, periodYear },
+  });
+  return response.data?.data || [];
+}
+
+export async function restoreLegalParameterVersion(_token, id) {
+  const response = await authenticatedApi.post(`/configuracion/legalParameters/${id}/restaurar`);
+  return response.data?.data;
+}
+
 export async function deleteConfigurationResource(_token, resource, id) {
   const response = await authenticatedApi.delete(`/configuracion/${resource}/${id}`);
   return response.data?.data;

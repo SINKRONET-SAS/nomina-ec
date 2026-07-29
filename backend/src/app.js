@@ -102,6 +102,8 @@ app.put('/api/configuracion/logo', requireRole('owner', 'admin_rrhh'), requireMo
 app.delete('/api/configuracion/logo', requireRole('owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.removeLogo);
 app.get('/api/configuracion/jobPositions/plantilla-carga-masiva', requireRole('superadmin', 'owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.downloadJobPositionsTemplate);
 app.post('/api/configuracion/jobPositions/carga-masiva', requireRole('superadmin', 'owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.bulkCreateJobPositions);
+app.get('/api/configuracion/legalParameters/historial', requireRole('superadmin', 'owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.legalParameterHistory);
+app.post('/api/configuracion/legalParameters/:id/restaurar', requireRole('superadmin', 'owner'), requireFreshUser, requireModule('parametrizacion'), configurationController.restoreLegalParameterVersion);
 app.get('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.list);
 app.post('/api/configuracion/:resource', requireRole('superadmin', 'owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.create);
 app.put('/api/configuracion/:resource/:id', requireRole('superadmin', 'owner', 'admin_rrhh'), requireModule('parametrizacion'), configurationController.update);
