@@ -68,8 +68,9 @@ describe('laborReportService', () => {
     ], 'LABORAL_PARTICIPACION_UTILIDADES', 2026, { utilidadLiquida: 10000 });
     expect(rows[0].poolParticipacion).toBe(1500);
     expect(rows[0].participacionTotal).toBeGreaterThan(rows[1].participacionTotal);
-    expect(rows[0].participacion10 + rows[1].participacion10).toBe(150);
-    expect(rows[0].participacion5).toBe(75);
+    expect(rows[0].participacion10 + rows[1].participacion10).toBe(1000);
+    expect(rows[0].participacion5).toBe(500);
+    expect(rows[0].participacionTotal + rows[1].participacionTotal).toBe(1500);
   });
 
   test('exige parámetros para salario digno y prorratea fondo insuficiente', () => {

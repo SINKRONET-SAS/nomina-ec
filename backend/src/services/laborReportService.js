@@ -56,6 +56,7 @@ function requireNonNegativeFilter(filters, key, label) {
 
 function employeeAccumulator(row = {}) {
   const detail = normalizeDetail(row.detalle_calculo);
+  const empleadoId = String(row.empleado_id || row.empleadoId || row.employee_id || '').trim();
   const modalidadDecimoTercero = String(
     detail.decimoTerceroModalidad || row.modalidad_decimo_tercero || 'acumulado',
   ).toLowerCase();
@@ -64,7 +65,7 @@ function employeeAccumulator(row = {}) {
   ).toLowerCase();
 
   return {
-    empleadoId: row.empleado_id || '',
+    empleadoId,
     cedula: row.cedula || '',
     empleado: `${row.apellidos || ''} ${row.nombres || ''}`.trim(),
     departamento: row.departamento || '',
@@ -94,7 +95,7 @@ function employeeAccumulator(row = {}) {
 function aggregateEmployees(rows = []) {
   const employees = new Map();
   for (const row of rows) {
-    const key = row.empleado_id || row.cedula;
+    const key = row.empleado_id || row.empleadoId || row.employee_id || row.cedula;
     if (!key) continue;
     const detail = normalizeDetail(row.detalle_calculo);
     const current = employees.get(key) || employeeAccumulator(row);
@@ -139,6 +140,7 @@ function aggregateEmployees(rows = []) {
 
 function commonReportRow(row, anio) {
   return {
+    empleadoId: row.empleadoId,
     periodo: `01/01/${anio} - 31/12/${anio}`,
     cedula: row.cedula,
     empleado: row.empleado,
@@ -165,17 +167,23 @@ function buildLaborReportRows(rows, reportCode, anio, filters = {}) {
   if (normalizedReportCode === 'LABORAL_PARTICIPACION_UTILIDADES') {
     const utilidadLiquida = requireNonNegativeFilter(filters, 'utilidadLiquida', 'la utilidad líquida anual');
     const pool = roundCurrency(utilidadLiquida * 0.15);
+    const fondo10Trabajadores = roundCurrency(utilidadLiquida * 0.10);
+    const fondo5Cargas = roundCurrency(utilidadLiquida * 0.05);
     const totalDias = employees.reduce((total, row) => total + row.diasTrabajados, 0);
     const totalFactorCargas = employees.reduce((total, row) => total + row.diasTrabajados * row.cargasFamiliares, 0);
     return employees.map((row) => {
-      const participacion10 = totalDias > 0 ? roundCurrency(pool * 0.10 * row.diasTrabajados / totalDias) : 0;
+      const participacion10 = totalDias > 0 ? roundCurrency(fondo10Trabajadores * row.diasTrabajados / totalDias) : 0;
       const participacion5 = totalFactorCargas > 0
-        ? roundCurrency(pool * 0.05 * (row.diasTrabajados * row.cargasFamiliares) / totalFactorCargas)
+        ? roundCurrency(fondo5Cargas * (row.diasTrabajados * row.cargasFamiliares) / totalFactorCargas)
         : 0;
       return {
         ...commonReportRow(row, anio),
         utilidadLiquida,
         poolParticipacion: pool,
+        fondo10Trabajadores,
+        fondo5Cargas,
+        totalDiasTrabajados: roundCurrency(totalDias),
+        totalFactorCargas: roundCurrency(totalFactorCargas),
         participacion10,
         participacion5,
         participacionTotal: roundCurrency(participacion10 + participacion5),
@@ -229,6 +237,7 @@ function buildLaborReportRows(rows, reportCode, anio, filters = {}) {
       return {
         ...base,
         modalidad: row.modalidadDecimoTercero,
+        baseRemunerativa: row.totalIngresosRol,
         provisionMensual: row.provisionDecimoTercero,
         pagadoEnRol: row.pagadoDecimoTercero,
         valorReportable: roundCurrency(row.provisionDecimoTercero + row.pagadoDecimoTercero),
@@ -283,6 +292,9 @@ function getLaborReportColumns(reportCode) {
       ...common,
       { header: 'Concepto', key: 'concepto', width: 22 },
       { header: 'Modalidad', key: 'modalidad', width: 16 },
+      ...(normalizedReportCode === 'LABORAL_DECIMO_TERCERO'
+        ? [{ header: 'Base remunerativa anual', key: 'baseRemunerativa', width: 24, style: { numFmt: '$#,##0.00' } }]
+        : []),
       { header: 'Provisión mensual', key: 'provisionMensual', width: 20, style: { numFmt: '$#,##0.00' } },
       { header: 'Pagado en rol', key: 'pagadoEnRol', width: 18, style: { numFmt: '$#,##0.00' } },
       { header: 'Momento provisión', key: 'momentoProvision', width: 20 },
@@ -294,6 +306,10 @@ function getLaborReportColumns(reportCode) {
   if (normalizedReportCode === 'LABORAL_PARTICIPACION_UTILIDADES') {
     return [
       ...common,
+      { header: 'Fondo 10% tiempo', key: 'fondo10Trabajadores', width: 20, style: { numFmt: '$#,##0.00' } },
+      { header: 'Fondo 5% cargas', key: 'fondo5Cargas', width: 20, style: { numFmt: '$#,##0.00' } },
+      { header: 'Total dias computables', key: 'totalDiasTrabajados', width: 20 },
+      { header: 'Factor B cargas', key: 'totalFactorCargas', width: 18 },
       { header: 'Utilidad líquida base', key: 'utilidadLiquida', width: 22, style: { numFmt: '$#,##0.00' } },
       { header: 'Fondo 15%', key: 'poolParticipacion', width: 16, style: { numFmt: '$#,##0.00' } },
       { header: 'Factor días x cargas', key: 'factorCargasFamiliares', width: 22 },

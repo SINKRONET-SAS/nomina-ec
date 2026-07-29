@@ -26,6 +26,44 @@ function money(value) {
   return `$${Number(value || 0).toFixed(2)}`;
 }
 
+function benefitReportValue(line, key) {
+  const report = line?.metadata?.reportRow || {};
+  if (key === 'destino') return line.destino === 'iess' ? 'IESS' : 'Empleado';
+  if (key === 'modalidad') {
+    return {
+      acumulado: 'Acumulado',
+      mensual: 'Mensual',
+      pago_anual: 'Pago anual',
+      iess_directo: 'IESS directo',
+    }[line.modalidad] || line.modalidad || '';
+  }
+  if (key === 'participacionTotal') return report.participacionTotal ?? line.montoPago;
+  return report[key] ?? line[key] ?? '';
+}
+
+function benefitRoleColumns(tipoBeneficio) {
+  const common = [
+    { key: 'empleado', label: 'Empleado', render: (line) => <><p className="font-medium text-slate-900">{line.empleado}</p><p className="text-xs text-slate-500">{line.cedula}</p></> },
+    { key: 'dias', label: 'Días', number: true },
+  ];
+  const moneyColumn = (key, label) => ({ key, label, money: true });
+  if (tipoBeneficio === 'decimo_tercero') return [...common, moneyColumn('baseRemunerativa', 'Base remunerativa'), { key: 'modalidad', label: 'Modalidad' }, moneyColumn('montoProvision', 'Provisión'), moneyColumn('montoAjuste', 'Ajuste'), moneyColumn('montoPago', 'Pago'), { key: 'destino', label: 'Destino' }];
+  if (tipoBeneficio === 'decimo_cuarto') return [...common, { key: 'modalidad', label: 'Modalidad' }, moneyColumn('sbuProvision', 'SBU/SMV provisión'), moneyColumn('sbuPago', 'SBU/SMV pago'), moneyColumn('montoProvision', 'Provisión'), moneyColumn('montoAjuste', 'Ajuste'), moneyColumn('montoPago', 'Pago'), { key: 'destino', label: 'Destino' }];
+  if (tipoBeneficio === 'participacion_laboral') return [...common, { key: 'cargasFamiliares', label: 'Cargas', number: true }, moneyColumn('utilidadLiquida', 'Utilidad líquida'), moneyColumn('poolParticipacion', 'Fondo 15%'), moneyColumn('fondo10Trabajadores', 'Fondo 10% tiempo'), moneyColumn('fondo5Cargas', 'Fondo 5% cargas'), { key: 'factorCargas', label: 'Factor días x cargas', number: true }, { key: 'totalDiasTrabajados', label: 'Días totales reparto', number: true }, { key: 'totalFactorCargas', label: 'Factor total cargas', number: true }, moneyColumn('participacion10', 'Participación 10%'), moneyColumn('participacion5', 'Participación 5%'), moneyColumn('participacionTotal', 'Pago')];
+  if (tipoBeneficio === 'salario_digno') return [...common, moneyColumn('salarioDignoMensual', 'Salario digno mensual'), moneyColumn('objetivoAnual', 'Objetivo anual'), moneyColumn('percepcionReportada', 'Percepción reportada'), moneyColumn('brechaAnual', 'Brecha anual'), moneyColumn('fondoDisponible', 'Fondo disponible'), { key: 'factorProrrateo', label: 'Factor prorrateo' }, moneyColumn('compensacionSalarioDigno', 'Compensación'), { key: 'estadoSalarioDigno', label: 'Estado' }];
+  return [...common, { key: 'modalidad', label: 'Modalidad' }, moneyColumn('montoProvision', 'Provisión'), moneyColumn('montoAjuste', 'Ajuste'), moneyColumn('montoPago', 'Pago'), { key: 'destino', label: 'Destino' }];
+}
+
+function formatBenefitCell(line, column) {
+  if (column.render) return column.render(line);
+  const value = benefitReportValue(line, column.key);
+  if (column.money && (value === null || value === undefined || value === '')) return '';
+  if (column.money) return money(value);
+  if (column.number) return Number(value || 0).toLocaleString('es-EC');
+  if (column.key === 'factorProrrateo') return Number(value || 0).toFixed(4);
+  return value;
+}
+
 function divergenceLabel(key) {
   return {
     sbu: 'SBU/SMV',
@@ -193,7 +231,7 @@ function RolesBeneficiosLegales() {
             <input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 font-normal" maxLength="500" placeholder="Obligatoria si cambia el SBU/SMV" value={draft.observacion} onChange={(event) => updateDraft('observacion', event.target.value)} />
           </label>
         </div>
-        <p className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">Fondos de reserva con destino IESS se muestran como conciliación del depósito; vacaciones no se generan como rol periódico cuando corresponden a disfrute o finiquito.</p>
+        <p className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">Requisito: todos los roles mensuales normales del período deben estar cerrados en Nómina &gt; Cerrar mes. Fondos de reserva con destino IESS se muestran como conciliación del depósito; vacaciones no se generan como rol periódico cuando corresponden a disfrute o finiquito.</p>
         <button className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-md bg-teal-700 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-300" type="submit" disabled={createMutation.isPending}><Plus className="h-4 w-4" />{createMutation.isPending ? 'Generando borrador...' : 'Generar borrador de beneficio'}</button>
       </form>
 
@@ -217,6 +255,12 @@ function RolesBeneficiosLegales() {
               </Link>
             </div>
           )}
+          {errorCode === 'ROL_BENEFICIO_NOMINAS_MENSUALES_ABIERTAS' && (
+            <div className="mt-2 rounded-md border border-red-200 bg-white/70 p-3 text-xs leading-5">
+              <p>Antes de generar el beneficio, cierra las nóminas mensuales normales indicadas en el mensaje.</p>
+              <Link className="mt-2 inline-flex font-semibold text-red-900 underline underline-offset-2 hover:text-red-700" to={errorDetails.reviewRoute || '/dashboard/nomina/cerrar'}>Ir a Cerrar mes</Link>
+            </div>
+          )}
         </div>
       )}
 
@@ -234,7 +278,7 @@ function RolesBeneficiosLegales() {
                 {role.estado === 'aprobado' && <button className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50" type="button" disabled={actionMutation.isPending} onClick={() => actionMutation.mutate({ action: 'close', id: role.id })}><LockKeyhole className="h-3.5 w-3.5" />Cerrar</button>}
               </div>
             </div>
-            <div className="mt-3 max-h-72 overflow-auto rounded-md border border-slate-100"><table className="w-full min-w-[760px] text-sm"><thead className="sticky top-0 bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Días</th><th className="px-3 py-2">Provisión</th><th className="px-3 py-2">Ajuste</th><th className="px-3 py-2">Pago</th><th className="px-3 py-2">Destino</th></tr></thead><tbody className="divide-y divide-slate-100">{role.lineas.map((line) => <tr key={line.id}><td className="px-3 py-2"><p className="font-medium text-slate-900">{line.empleado}</p><p className="text-xs text-slate-500">{line.cedula}</p></td><td className="px-3 py-2">{line.dias}</td><td className="px-3 py-2">{money(line.montoProvision)}</td><td className="px-3 py-2">{money(line.montoAjuste)}</td><td className="px-3 py-2 font-semibold">{money(line.montoPago)}</td><td className="px-3 py-2">{line.destino}</td></tr>)}</tbody></table></div>
+            <div className="mt-3 max-h-72 overflow-auto rounded-md border border-slate-100"><table className="w-full min-w-[1100px] text-sm"><thead className="sticky top-0 bg-slate-50 text-left text-xs uppercase text-slate-500"><tr>{benefitRoleColumns(role.tipoBeneficio).map((column) => <th className="whitespace-nowrap px-3 py-2" key={column.key}>{column.label}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{role.lineas.map((line) => <tr key={line.id}>{benefitRoleColumns(role.tipoBeneficio).map((column) => <td className={`whitespace-nowrap px-3 py-2 ${column.key === 'montoPago' || column.key === 'participacionTotal' ? 'font-semibold' : ''}`} key={column.key}>{formatBenefitCell(line, column)}</td>)}</tr>)}</tbody></table></div>
           </article>
         ))}
       </div>

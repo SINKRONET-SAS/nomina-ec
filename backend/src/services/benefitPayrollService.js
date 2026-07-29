@@ -55,6 +55,24 @@ function numberValue(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function displayBenefitDestination(value) {
+  const destination = String(value || '').trim().toLowerCase();
+  if (destination === 'iess') return 'IESS';
+  if (destination === 'empleado') return 'Empleado';
+  return String(value || 'No especificado');
+}
+
+function displayBenefitModality(value) {
+  const modality = String(value || '').trim().toLowerCase();
+  const labels = {
+    acumulado: 'Acumulado',
+    mensual: 'Mensual',
+    pago_anual: 'Pago anual',
+    iess_directo: 'IESS directo',
+  };
+  return labels[modality] || String(value || 'No especificada');
+}
+
 function normalizeDate(value, fieldName, { required = true } = {}) {
   const raw = String(value || '').trim();
   if (!raw && !required) return null;
@@ -215,7 +233,7 @@ function sumRowsByEmployee(rows = [], { mode, region } = {}) {
   const employees = new Map();
   for (const row of rows) {
     const detail = normalizeDetail(row.detalle_calculo);
-    const employeeId = String(row.empleado_id || '').trim();
+    const employeeId = String(row.empleado_id || row.empleadoId || row.employee_id || '').trim();
     if (!employeeId) continue;
     const current = employees.get(employeeId) || {
       empleadoId: employeeId,
@@ -325,6 +343,68 @@ async function loadPayrollRowsForPeriod(tenantId, period, filters = {}) {
   return rows;
 }
 
+function periodMonthParts(value) {
+  const match = String(value || '').match(/^(\d{4})-(\d{2})-/);
+  if (!match) return null;
+  return { year: Number(match[1]), month: Number(match[2]) };
+}
+
+async function assertMonthlyPayrollsClosed(tenantId, period) {
+  const from = periodMonthParts(period.desde);
+  const until = periodMonthParts(period.hasta);
+  if (!from || !until) return;
+
+  const result = await db.query(`
+    SELECT n.anio, n.mes,
+           COUNT(*)::int AS total_roles,
+           COUNT(*) FILTER (WHERE n.estado IN ('cerrada', 'pagada'))::int AS roles_cerrados,
+           COUNT(*) FILTER (WHERE COALESCE(n.estado, '') NOT IN ('cerrada', 'pagada'))::int AS roles_pendientes
+    FROM nominas n
+    WHERE n.tenant_id = $1
+      AND (n.anio, n.mes) >= ($2, $3)
+      AND (n.anio, n.mes) <= ($4, $5)
+    GROUP BY n.anio, n.mes
+    ORDER BY n.anio, n.mes
+  `, [tenantId, from.year, from.month, until.year, until.month]);
+
+  const pendingMonths = result.rows
+    .filter((row) => Number(row.roles_pendientes || 0) > 0)
+    .map((row) => `${row.anio}-${String(row.mes).padStart(2, '0')}`);
+  if (pendingMonths.length === 0) return;
+
+  throw new AppError(
+    `No se puede generar el rol de beneficios: existen nóminas mensuales abiertas en ${pendingMonths.join(', ')}. Revisa Nómina > Cerrar mes y cierra los roles normales antes de volver a generar.`,
+    {
+      code: 'ROL_BENEFICIO_NOMINAS_MENSUALES_ABIERTAS',
+      statusCode: 422,
+      details: {
+        pendingMonths,
+        reviewRoute: '/dashboard/nomina/cerrar',
+      },
+    },
+  );
+}
+
+async function resolveBenefitLineEmployeeIds(tenantId, lines) {
+  const normalized = lines.map((line) => ({
+    ...line,
+    empleadoId: String(line.empleadoId ?? '').trim() || null,
+  }));
+  const pending = normalized.filter((line) => !line.empleadoId && String(line.cedula || '').trim());
+  if (pending.length === 0) return normalized;
+
+  const cedulas = [...new Set(pending.map((line) => String(line.cedula).trim()))];
+  const result = await db.query(
+    'SELECT id, cedula FROM empleados WHERE tenant_id = $1 AND cedula = ANY($2::text[])',
+    [tenantId, cedulas],
+  );
+  const byCedula = new Map(result.rows.map((row) => [String(row.cedula || '').trim(), row.id]));
+  return normalized.map((line) => ({
+    ...line,
+    empleadoId: line.empleadoId || byCedula.get(String(line.cedula || '').trim()) || null,
+  }));
+}
+
 function normalizeRun(row, lines = []) {
   return {
     id: row.id,
@@ -361,12 +441,12 @@ function normalizeLine(row) {
     montoAjuste: Number(row.monto_ajuste || 0),
     montoPago: Number(row.monto_pago || 0),
     basePago: Number(row.base_pago || 0),
-    sbuProvision: row.sbu_provision === null ? null : Number(row.sbu_provision || 0),
-    sbuPago: row.sbu_pago === null ? null : Number(row.sbu_pago || 0),
+    sbuProvision: row.sbu_provision == null ? null : Number(row.sbu_provision || 0),
+    sbuPago: row.sbu_pago == null ? null : Number(row.sbu_pago || 0),
     modalidad: row.modalidad || '',
     destino: row.destino || 'empleado',
     estado: row.estado,
-    metadata: row.metadata || {},
+    metadata: normalizeDetail(row.metadata),
   };
 }
 
@@ -427,8 +507,27 @@ async function createRun(tenantId, payload, user, context = {}) {
   });
   const normalized = normalizePayload(payload, legalParameters);
   const period = { desde: normalized.periodoDesde, hasta: normalized.periodoHasta };
+  await assertMonthlyPayrollsClosed(tenantId, period);
   const monthlyRows = await loadPayrollRowsForPeriod(tenantId, period);
-  const lines = buildBenefitLines(normalized.tipoBeneficio, monthlyRows, normalized);
+  const resolvedLines = await resolveBenefitLineEmployeeIds(
+    tenantId,
+    buildBenefitLines(normalized.tipoBeneficio, monthlyRows, normalized),
+  );
+  const lines = resolvedLines.map((line) => ({
+    ...line,
+    empleadoId: String(line.empleadoId ?? '').trim() || null,
+  }));
+  const missingEmployeeLines = lines.filter((line) => !line.empleadoId);
+  if (missingEmployeeLines.length > 0) {
+    throw new AppError('No se pudo identificar uno o más empleados del rol. Revisa la cédula y los roles cerrados del período antes de volver a generar.', {
+      code: 'ROL_BENEFICIO_EMPLEADO_NO_IDENTIFICADO',
+      statusCode: 422,
+      details: {
+        cedulas: missingEmployeeLines.map((line) => line.cedula).filter(Boolean),
+        reviewRoute: '/dashboard/empleados',
+      },
+    });
+  }
   if (lines.length === 0) {
     throw new AppError('No hay líneas pagables para los empleados y parámetros seleccionados. Revisa modalidad, roles cerrados y valores oficiales.', {
       code: 'ROL_BENEFICIO_SIN_LINEAS',
@@ -553,6 +652,132 @@ function csvSafe(value) {
   return `"${String(value ?? '').replace(/"/g, '""')}"`;
 }
 
+function benefitReportMetadata(line) {
+  const metadata = normalizeDetail(line?.metadata);
+  return normalizeDetail(metadata.reportRow);
+}
+
+function benefitReportRecord(line) {
+  const report = benefitReportMetadata(line);
+  return {
+    empleado: line.empleado,
+    cedula: line.cedula,
+    dias: line.dias,
+    cargasFamiliares: numberValue(report.cargasFamiliares),
+    modalidad: displayBenefitModality(line.modalidad),
+    montoProvision: line.montoProvision,
+    montoAjuste: line.montoAjuste,
+    montoPago: line.montoPago,
+    sbuProvision: line.sbuProvision === null ? null : numberValue(line.sbuProvision),
+    sbuPago: line.sbuPago === null ? null : numberValue(line.sbuPago),
+    destino: displayBenefitDestination(line.destino),
+    baseRemunerativa: numberValue(report.baseRemunerativa ?? line.basePago),
+    utilidadLiquida: numberValue(report.utilidadLiquida),
+    poolParticipacion: numberValue(report.poolParticipacion),
+    fondo10Trabajadores: numberValue(report.fondo10Trabajadores),
+    fondo5Cargas: numberValue(report.fondo5Cargas),
+    factorCargas: numberValue(report.factorCargasFamiliares),
+    totalDiasTrabajados: numberValue(report.totalDiasTrabajados),
+    totalFactorCargas: numberValue(report.totalFactorCargas),
+    participacion10: numberValue(report.participacion10),
+    participacion5: numberValue(report.participacion5),
+    participacionTotal: numberValue(report.participacionTotal ?? line.montoPago),
+    salarioDignoMensual: numberValue(report.salarioDignoMensual),
+    objetivoAnual: numberValue(report.objetivoAnual),
+    percepcionReportada: numberValue(report.percepcionReportada),
+    brechaAnual: numberValue(report.brechaAnual),
+    fondoDisponible: numberValue(report.fondoDisponible),
+    factorProrrateo: numberValue(report.factorProrrateo),
+    compensacionSalarioDigno: numberValue(report.compensacionSalarioDigno ?? line.montoPago),
+    estadoSalarioDigno: report.estadoSalarioDigno || '',
+  };
+}
+
+function benefitReportColumns(tipoBeneficio) {
+  const money = { format: 'money', numFmt: '$#,##0.00' };
+  const common = [
+    { header: 'Empleado', key: 'empleado', width: 34 },
+    { header: 'Cédula', key: 'cedula', width: 14 },
+    { header: 'Días', key: 'dias', width: 10, format: 'number' },
+  ];
+  if (tipoBeneficio === 'decimo_tercero') {
+    return [...common,
+      { header: 'Base remunerativa anual', key: 'baseRemunerativa', width: 24, ...money },
+      { header: 'Modalidad', key: 'modalidad', width: 16 },
+      { header: 'Provisión', key: 'montoProvision', width: 18, ...money },
+      { header: 'Ajuste legal', key: 'montoAjuste', width: 18, ...money },
+      { header: 'Pago del rol', key: 'montoPago', width: 18, ...money },
+      { header: 'Destino del pago', key: 'destino', width: 18 },
+    ];
+  }
+  if (tipoBeneficio === 'decimo_cuarto') {
+    return [...common,
+      { header: 'Modalidad', key: 'modalidad', width: 16 },
+      { header: 'SBU/SMV provisión', key: 'sbuProvision', width: 20, ...money },
+      { header: 'SBU/SMV pago', key: 'sbuPago', width: 16, ...money },
+      { header: 'Provisión', key: 'montoProvision', width: 18, ...money },
+      { header: 'Ajuste legal', key: 'montoAjuste', width: 18, ...money },
+      { header: 'Pago del rol', key: 'montoPago', width: 18, ...money },
+      { header: 'Destino del pago', key: 'destino', width: 18 },
+    ];
+  }
+  if (tipoBeneficio === 'participacion_laboral') {
+    return [...common,
+      { header: 'Cargas familiares', key: 'cargasFamiliares', width: 18, format: 'number' },
+      { header: 'Utilidad líquida', key: 'utilidadLiquida', width: 20, ...money },
+      { header: 'Fondo 15%', key: 'poolParticipacion', width: 16, ...money },
+      { header: 'Fondo 10% tiempo', key: 'fondo10Trabajadores', width: 20, ...money },
+      { header: 'Fondo 5% cargas', key: 'fondo5Cargas', width: 20, ...money },
+      { header: 'Días totales del reparto', key: 'totalDiasTrabajados', width: 24, format: 'number' },
+      { header: 'Factor total cargas', key: 'totalFactorCargas', width: 20, format: 'number' },
+      { header: 'Factor días x cargas', key: 'factorCargas', width: 22, format: 'number' },
+      { header: 'Participación 10%', key: 'participacion10', width: 20, ...money },
+      { header: 'Participación 5%', key: 'participacion5', width: 20, ...money },
+      { header: 'Pago del rol', key: 'participacionTotal', width: 18, ...money },
+    ];
+  }
+  if (tipoBeneficio === 'salario_digno') {
+    return [...common,
+      { header: 'Salario digno mensual', key: 'salarioDignoMensual', width: 24, ...money },
+      { header: 'Objetivo anual', key: 'objetivoAnual', width: 20, ...money },
+      { header: 'Percepción reportada', key: 'percepcionReportada', width: 22, ...money },
+      { header: 'Brecha anual', key: 'brechaAnual', width: 18, ...money },
+      { header: 'Fondo disponible', key: 'fondoDisponible', width: 20, ...money },
+      { header: 'Factor prorrateo', key: 'factorProrrateo', width: 18, format: 'decimal' },
+      { header: 'Compensación', key: 'compensacionSalarioDigno', width: 20, ...money },
+      { header: 'Estado', key: 'estadoSalarioDigno', width: 22 },
+    ];
+  }
+  return [...common,
+    { header: 'Modalidad', key: 'modalidad', width: 16 },
+    { header: 'Provisión', key: 'montoProvision', width: 18, ...money },
+    { header: 'Ajuste legal', key: 'montoAjuste', width: 18, ...money },
+    { header: 'Pago del rol', key: 'montoPago', width: 18, ...money },
+    { header: 'Destino del pago', key: 'destino', width: 18 },
+  ];
+}
+
+function formatReportCell(value, format) {
+  if (value === null || value === undefined || value === '') return '';
+  if (format === 'money') return `$${numberValue(value).toFixed(2)}`;
+  if (format === 'number') return String(Math.trunc(numberValue(value)));
+  if (format === 'decimal') return numberValue(value).toFixed(4);
+  return String(value ?? '');
+}
+
+function benefitReportTable(role) {
+  const columns = benefitReportColumns(role.tipoBeneficio);
+  const records = role.lineas.map(benefitReportRecord);
+  return {
+    columns,
+    records,
+    body: [
+      columns.map((column) => ({ text: column.header, bold: true })),
+      ...records.map((record) => columns.map((column) => formatReportCell(record[column.key], column.format))),
+    ],
+  };
+}
+
 async function buildWorkbook(tenantId, id) {
   const role = await getRun(tenantId, id);
   const workbook = new ExcelJS.Workbook();
@@ -570,7 +795,14 @@ async function buildWorkbook(tenantId, id) {
     { header: 'Destino', key: 'destino', width: 14 },
     { header: 'Modalidad', key: 'modalidad', width: 18 },
   ];
-  role.lineas.forEach((line) => sheet.addRow(line));
+  const report = benefitReportTable(role);
+  sheet.columns = report.columns.map((column) => ({
+    header: column.header,
+    key: column.key,
+    width: column.width,
+    ...(column.numFmt ? { style: { numFmt: column.numFmt } } : {}),
+  }));
+  report.records.forEach((record) => sheet.addRow(record));
   sheet.getRow(1).font = { bold: true };
   sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: sheet.columns.length } };
   const audit = workbook.addWorksheet('Auditoría');
@@ -604,29 +836,29 @@ function pdfBufferFromDefinition(definition) {
 
 async function buildPdf(tenantId, id) {
   const role = await getRun(tenantId, id);
-  const body = [
-    [{ text: 'Empleado', bold: true }, { text: 'Cédula', bold: true }, { text: 'Provisión', bold: true }, { text: 'Ajuste', bold: true }, { text: 'Pago', bold: true }, { text: 'Destino', bold: true }],
-    ...role.lineas.map((line) => [line.empleado, line.cedula, `$${line.montoProvision.toFixed(2)}`, `$${line.montoAjuste.toFixed(2)}`, `$${line.montoPago.toFixed(2)}`, line.destino]),
-  ];
+  const report = benefitReportTable(role);
   const definition = {
     pageSize: 'A4',
     pageOrientation: 'landscape',
     content: [
       { text: `ROL DE PAGO · ${role.tipoBeneficioLabel.toUpperCase()}`, style: 'title' },
       { text: `Ejercicio ${role.anio} · Pago: ${role.fechaPago} · Periodo: ${role.periodoDesde} a ${role.periodoHasta}`, margin: [0, 0, 0, 12] },
-      { text: 'La provisión mensual, el ajuste legal y el pago se muestran por separado. Este documento no modifica los roles mensuales históricos.', style: 'note', margin: [0, 0, 0, 12] },
-      { table: { headerRows: 1, widths: ['*', 80, 80, 70, 70, 70], body }, layout: 'lightHorizontalLines' },
+      { table: { headerRows: 1, widths: report.columns.map((column) => column.width), body: report.body }, layout: 'lightHorizontalLines' },
       { text: `Totales · Provisión: $${role.totalProvision.toFixed(2)} · Ajuste: $${role.totalAjuste.toFixed(2)} · Pago: $${role.totalPago.toFixed(2)}`, bold: true, margin: [0, 14, 0, 0] },
     ],
-    styles: { title: { fontSize: 16, bold: true, color: '#0f766e', margin: [0, 0, 0, 8] }, note: { fontSize: 8, color: '#475569' } },
+    styles: { title: { fontSize: 16, bold: true, color: '#0f766e', margin: [0, 0, 0, 8] } },
     defaultStyle: { fontSize: 8 },
   };
   return { role, buffer: await pdfBufferFromDefinition(definition), fileName: `rol_beneficios_${role.tipoBeneficio}_${role.anio}.pdf` };
 }
 
 function buildCsv(role) {
-  const headers = ['empleado', 'cedula', 'dias', 'montoProvision', 'montoAjuste', 'montoPago', 'sbuProvision', 'sbuPago', 'destino', 'modalidad'];
-  const rows = role.lineas.map((line) => headers.map((header) => csvSafe(line[header])).join(','));
+  const columns = benefitReportColumns(role.tipoBeneficio);
+  const headers = columns.map((column) => column.key);
+  const rows = role.lineas.map((line) => {
+    const record = benefitReportRecord(line);
+    return columns.map((column) => csvSafe(record[column.key])).join(',');
+  });
   return `\ufeff${[headers.join(','), ...rows].join('\r\n')}`;
 }
 
@@ -638,6 +870,7 @@ module.exports = {
   resolveBenefitPeriod,
   defaultPaymentDate,
   buildBenefitLines,
+  assertMonthlyPayrollsClosed,
   sumRowsByEmployee,
   listRuns,
   getRun,
