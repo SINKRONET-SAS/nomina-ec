@@ -206,8 +206,8 @@ function RolesBeneficiosLegales() {
               <p>
                 Revisa el año {errorDetails.year || errorDetails.anio || draft.anio} en <strong>Parametrización &gt; Valores legales</strong>.
                 {errorCode === 'LEGAL_PARAMETERS_DIVERGENCE'
-                  ? ` Verifica: ${(errorDetails.divergences || []).map((item) => divergenceLabel(item.key)).join(', ') || 'los valores indicados'}.`
-                  : ' Marca la fuente oficial como validada antes de volver a generar.'}
+                  ? ' La tabla histórica conserva una referencia anterior; el cálculo usa la versión legal vigente. Recarga la pantalla y verifica que la versión vigente sea la que deseas aplicar.'
+                  : ` Valida: ${(errorDetails.pendingParameters || []).map((item) => divergenceLabel(item.key)).join(', ') || 'la fuente oficial pendiente'} antes de volver a generar.`}
               </p>
               <Link
                 className="mt-2 inline-flex font-semibold text-red-900 underline underline-offset-2 hover:text-red-700"

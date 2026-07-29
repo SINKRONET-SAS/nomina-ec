@@ -60,32 +60,15 @@ async function getLegalParametersForTenant(tenantId, year) {
   };
   const merged = mergeVersionedParameters(legacyParameters, versionedParameters);
   const divergences = detectLegalParameterDivergence(legacyParameters, merged, versionedParameters);
-  const versionedRowsAreOfficial = Object.values(versionedParameters).length > 0
-    && Object.values(versionedParameters).every((parameter) => parameter.validation_status === VALIDATED_SOURCE_STATUS);
-
-  if (divergences.length > 0 && !versionedRowsAreOfficial) {
-    console.error('[LEGAL] Divergencia entre parametros legales versionados y tabla legado', {
-      code: 'LEGAL_PARAMETERS_DIVERGENCE',
-      statusCode: 409,
+  if (divergences.length > 0) {
+    logger.info({
+      code: 'LEGAL_PARAMETERS_LEGACY_REFERENCE',
       correlationId: process.env.CORRELATION_ID || 'legal-parameters',
       tenantId,
       year,
       divergences,
-    });
-    if (requiresOfficialLegalValidation()) {
-      throw new AppError(`No se puede generar el rol de beneficios: revisa Parametrización > Valores legales del año ${year}. Unifica ${describeLegalDivergences(divergences)} entre la tabla histórica y los parámetros versionados antes de volver a generar.`, {
-        code: 'LEGAL_PARAMETERS_DIVERGENCE',
-        statusCode: 409,
-        correlationId: process.env.CORRELATION_ID || 'legal-parameters',
-        details: {
-          year,
-          tenantId,
-          divergences,
-          reviewRoute: '/dashboard/configuracion/parametrizacion?seccion=legal',
-          reviewSection: 'Valores legales',
-        },
-      });
-    }
+      sourceOfTruth: 'legal_parameter_versions',
+    }, 'La tabla histórica conserva valores de referencia; el cálculo usa la versión legal vigente.');
   }
 
   return withLegalSourceMetadata(merged, versionedParameters, row, year, tenantId);
@@ -201,9 +184,10 @@ function mergeVersionedParameters(baseParameters, versionedParameters) {
   }
 
   const statusRows = Object.values(versionedParameters).filter(Boolean);
-  const sourceStatus = statusRows.length > 0 && statusRows.every((row) => row.validation_status === VALIDATED_SOURCE_STATUS)
+  const pendingRow = statusRows.find((row) => row.validation_status !== VALIDATED_SOURCE_STATUS);
+  const sourceStatus = statusRows.length > 0 && !pendingRow
     ? VALIDATED_SOURCE_STATUS
-    : (statusRows[0]?.validation_status || baseParameters.sourceStatus);
+    : (pendingRow?.validation_status || baseParameters.sourceStatus);
 
   if (!incomeTax) {
     return {
@@ -260,6 +244,13 @@ function withLegalSourceMetadata(parameters, versionedParameters, legacyRow, yea
         sourceName: row.source_name || '',
         sourceUrl: row.source_url || '',
       })),
+      pendingParameters: versionedRows
+        .filter((row) => row.validation_status !== VALIDATED_SOURCE_STATUS)
+        .map((row) => ({
+          key: row.parameter_key,
+          status: row.validation_status,
+          sourceName: row.source_name || '',
+        })),
       legacyFallbackUsed: versionedRows.length === 0 && Boolean(legacyRow),
     },
   };
@@ -304,6 +295,28 @@ function requiresOfficialLegalValidation() {
   return process.env.NODE_ENV === 'production' || process.env.REQUIRE_VALIDATED_LEGAL_PARAMETERS === 'true';
 }
 
+function describeParameterKey(key) {
+  const labels = {
+    income_tax_table: 'tabla de impuesto a la renta',
+    tabla_impuesto_renta: 'tabla de impuesto a la renta',
+    sbu: 'SBU/SMV',
+    iess_aporte_personal: 'aporte personal IESS',
+    iess_aporte_patronal: 'aporte patronal IESS',
+    jornada_horas_mensuales: 'horas mensuales de jornada',
+    jornada_maxima_semanal: 'jornada máxima semanal',
+    horas_extra_limite_semanal: 'límite semanal de horas extra',
+    horas_extra_recargo_suplementaria: 'recargo de horas suplementarias',
+    horas_extra_recargo_extraordinaria: 'recargo de horas extraordinarias',
+    provision_vacaciones: 'provisión de vacaciones',
+    vacaciones_dias_anuales: 'días anuales de vacaciones',
+    decimo_tercero: 'décimo tercero',
+    decimo_cuarto_costa_galapagos: 'décimo cuarto Costa/Galápagos',
+    decimo_cuarto_sierra_amazonia: 'décimo cuarto Sierra/Amazonía',
+    fondo_reserva: 'fondo de reserva',
+  };
+  return labels[key] || key;
+}
+
 function assertLegalParametersReadyForProduction(legalParameters, context = {}) {
   const sourceStatus = legalParameters?.sourceStatus || PENDING_SOURCE_STATUS;
 
@@ -319,7 +332,10 @@ function assertLegalParametersReadyForProduction(legalParameters, context = {}) 
   }
 
   if (sourceStatus !== VALIDATED_SOURCE_STATUS) {
-    throw new AppError(`Los parámetros legales del año ${context.year || ''} no tienen validación oficial. Revisa Parametrización > Valores legales y marca la fuente oficial antes de generar el rol.`, {
+    const pendingParameters = legalParameters?.legalSource?.pendingParameters || [];
+    const pendingLabels = pendingParameters.map(({ key }) => describeParameterKey(key)).join(', ');
+    const pendingText = pendingLabels ? ` Pendientes: ${pendingLabels}.` : '';
+    throw new AppError(`Los parámetros legales del año ${context.year || ''} no tienen validación oficial.${pendingText} Revisa Parametrización > Valores legales y valida la fuente oficial antes de generar el rol.`, {
       code: 'LEGAL_PARAMETERS_NOT_VALIDATED',
       statusCode: 423,
       correlationId: process.env.CORRELATION_ID || 'legal-parameters',
@@ -329,6 +345,7 @@ function assertLegalParametersReadyForProduction(legalParameters, context = {}) 
         tenantId: context.tenantId || null,
         operacion: context.operation || 'calculo_legal',
         fuente: sourceStatus,
+        pendingParameters,
         reviewRoute: '/dashboard/configuracion/parametrizacion?seccion=legal',
         reviewSection: 'Valores legales',
       },

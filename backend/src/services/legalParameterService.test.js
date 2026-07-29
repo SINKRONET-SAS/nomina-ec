@@ -5,6 +5,7 @@ const {
   detectLegalParameterDivergence,
   getLegalParametersForTenant,
   mergeVersionedParameters,
+  assertLegalParametersReadyForProduction,
 } = require('./legalParameterService');
 
 describe('parametros legales Ecuador AIV50', () => {
@@ -95,7 +96,7 @@ describe('parametros legales Ecuador AIV50', () => {
     }
   });
 
-  test('explica dónde corregir una divergencia cuando los parámetros versionados aún no están validados', async () => {
+  test('identifica los parámetros pendientes y no bloquea por una referencia histórica', async () => {
     const previousRequirement = process.env.REQUIRE_VALIDATED_LEGAL_PARAMETERS;
     process.env.REQUIRE_VALIDATED_LEGAL_PARAMETERS = 'true';
     db.query
@@ -117,15 +118,17 @@ describe('parametros legales Ecuador AIV50', () => {
       });
 
     try {
-      await expect(getLegalParametersForTenant('11111111-1111-1111-1111-111111111111', 2026))
-        .rejects.toMatchObject({
-          code: 'LEGAL_PARAMETERS_DIVERGENCE',
-          details: {
-            reviewRoute: '/dashboard/configuracion/parametrizacion?seccion=legal',
-            reviewSection: 'Valores legales',
-          },
-          message: expect.stringContaining('Parametrización > Valores legales del año 2026'),
-        });
+      const result = await getLegalParametersForTenant('11111111-1111-1111-1111-111111111111', 2026);
+
+      expect(result.sourceStatus).toBe('pendiente_validacion_oficial');
+      expect(result.legalSource.pendingParameters).toEqual([
+        expect.objectContaining({ key: 'sbu', status: 'pendiente_validacion_oficial' }),
+      ]);
+      expect(() => assertLegalParametersReadyForProduction(result, {
+        year: 2026,
+        tenantId: '11111111-1111-1111-1111-111111111111',
+        operation: 'rol_beneficios',
+      })).toThrow('Pendientes: SBU/SMV');
     } finally {
       if (previousRequirement === undefined) delete process.env.REQUIRE_VALIDATED_LEGAL_PARAMETERS;
       else process.env.REQUIRE_VALIDATED_LEGAL_PARAMETERS = previousRequirement;

@@ -801,8 +801,38 @@ function legalVersionPayload(previous, values, user, reason) {
   };
 }
 
+function legalParameterFingerprint(record, includeValidFrom = true, includeNotes = true) {
+  const snapshot = {
+    country_code: record.country_code || 'EC',
+    region_code: record.region_code || 'NACIONAL',
+    period_year: Number(record.period_year),
+    parameter_key: record.parameter_key,
+    value: record.value,
+    unit: record.unit || 'decimal',
+    rounding_mode: record.rounding_mode || 'half_up_2',
+    validation_status: record.validation_status || 'pendiente_validacion_oficial',
+    source_name: record.source_name || '',
+    source_url: record.source_url || '',
+    source_date: record.source_date ? String(record.source_date).slice(0, 10) : null,
+  };
+  if (includeNotes) snapshot.notes = record.notes || '';
+  if (includeValidFrom) snapshot.valid_from = String(record.valid_from || '').slice(0, 10);
+  return JSON.stringify(snapshot);
+}
+
 async function createLegalParameterVersion(previous, values, user, context = {}, reason = 'edicion_parametro', closePrevious = true) {
   const next = legalVersionPayload(previous, values, user, reason);
+  if (previous.id && legalParameterFingerprint(previous) === legalParameterFingerprint(next)) {
+    throw new AppError('No se creó una nueva versión porque no hay cambios en el valor, vigencia, fuente o estado. Edita el parámetro vigente si necesitas corregirlo.', {
+      code: 'LEGAL_PARAMETER_VERSION_NO_CHANGE',
+      statusCode: 409,
+      userId: user.id,
+      details: {
+        reviewRoute: '/dashboard/configuracion/parametrizacion?seccion=legal',
+        reviewSection: 'Valores legales',
+      },
+    });
+  }
   const columns = LEGAL_PARAMETER_VERSION_COLUMNS;
   const placeholders = columns.map((_, index) => `$${index + 1}`);
   const params = columns.map((column) => serializedDbValue(next[column]));
@@ -1518,6 +1548,19 @@ async function restoreLegalParameterVersion(id, user, context = {}) {
     LIMIT 1
   `, currentParams);
   const current = currentResult.rows[0] || null;
+  if (current && legalParameterFingerprint(current, false, false) === legalParameterFingerprint(source, false, false)) {
+    throw new AppError('La versión histórica ya coincide con la vigente en valor, fuente y estado. No hay nada que restaurar; edita la versión vigente si necesitas cambiar la fecha o el valor.', {
+      code: 'LEGAL_PARAMETER_RESTORE_NO_CHANGE',
+      statusCode: 409,
+      userId: user.id,
+      details: {
+        reviewRoute: '/dashboard/configuracion/parametrizacion?seccion=legal',
+        reviewSection: 'Valores legales',
+        currentVersionId: current.id,
+        historicalVersionId: source.id,
+      },
+    });
+  }
   const previous = current || { ...source, id: source.id, tenant_id: targetTenantId };
   const restored = await createLegalParameterVersion(previous, {
     tenant_id: targetTenantId,

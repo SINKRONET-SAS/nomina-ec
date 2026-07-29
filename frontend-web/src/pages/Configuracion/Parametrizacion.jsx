@@ -380,6 +380,31 @@ function legalHistoryUser(record, prefix) {
   return name || email || id || 'Sistema';
 }
 
+function legalHistoryComparison(current, historical) {
+  const fields = [
+    ['value', 'Valor', (record) => legalHistoryValue(record)],
+    ['unit', 'Unidad', (record) => record?.unit || '—'],
+    ['valid_from', 'Vigente desde', (record) => String(record?.valid_from || '').slice(0, 10)],
+    ['source_name', 'Fuente', (record) => record?.source_name || 'No registrada'],
+    ['source_url', 'Referencia', (record) => record?.source_url || 'No registrada'],
+    ['validation_status', 'Estado', (record) => record?.validation_status || 'No registrado'],
+    ['notes', 'Notas', (record) => record?.notes || '—'],
+  ];
+  return fields.map(([key, label, format]) => ({
+    key,
+    label,
+    current: format(current),
+    historical: format(historical),
+    changed: format(current) !== format(historical),
+  }));
+}
+
+function legalHistoryHasRestorableChange(current, historical) {
+  return legalHistoryComparison(current, historical)
+    .filter((field) => !['valid_from', 'notes'].includes(field.key))
+    .some((field) => field.changed);
+}
+
 function Parametrizacion() {
   const { token, usuario } = useAuth();
   const queryClient = useQueryClient();
@@ -665,6 +690,13 @@ function Parametrizacion() {
     : [];
   const legalHistoryCurrent = legalHistoryRecords.find((record) => !record.valid_to) || legalHistoryRecords[0] || null;
   const legalHistoryCompare = legalHistoryRecords.find((record) => record.id === historyCompareId) || null;
+  const legalHistoryComparisonRows = legalHistoryCurrent && legalHistoryCompare
+    ? legalHistoryComparison(legalHistoryCurrent, legalHistoryCompare)
+    : [];
+  const legalHistoryChangedRows = legalHistoryComparisonRows.filter((row) => row.changed);
+  const legalHistoryRestorableChange = legalHistoryCurrent && legalHistoryCompare
+    ? legalHistoryHasRestorableChange(legalHistoryCurrent, legalHistoryCompare)
+    : false;
   const rootFormDefinitions = formDefinitions.filter((definition) => !definition.parentKey);
   const childFormDefinitions = (parentKey) => formDefinitions.filter((definition) => definition.parentKey === parentKey);
 
@@ -828,6 +860,11 @@ function Parametrizacion() {
 
   function requestLegalRestore(record) {
     if (!record?.id || restoreMutation.isPending) return;
+    if (legalHistoryCurrent && !legalHistoryHasRestorableChange(legalHistoryCurrent, record)) {
+      setError('No se restauró la versión porque coincide con la vigente en valor, fuente y estado. Si necesitas cambiar la fecha o el valor, edita la versión vigente.');
+      setMessage('');
+      return;
+    }
     const versionLabel = record.version_number ? `versión ${record.version_number}` : 'esta versión';
     if (window.confirm(`Se creará una nueva versión copiando ${versionLabel}. La versión histórica no se modificará. ¿Continuar?`)) {
       restoreMutation.mutate(record.id);
@@ -1437,7 +1474,14 @@ function Parametrizacion() {
                     <h4 className="mt-1 text-sm font-semibold text-slate-950">{activeDefinition.recordLabel(historyParameter, summary)}</h4>
                     <p className="mt-1 text-xs leading-5 text-slate-700">La versión vigente se usará en cálculos nuevos. Las anteriores son solo de consulta y no se editan.</p>
                   </div>
-                  <button className="text-xs font-semibold text-slate-500 hover:text-slate-800" type="button" onClick={() => { setHistoryParameter(null); setHistoryCompareId(''); }}>Cerrar</button>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    {legalHistoryCurrent && (
+                      <button className="inline-flex min-h-8 items-center rounded-md bg-teal-700 px-2.5 text-xs font-semibold text-white hover:bg-teal-800" type="button" onClick={() => startEdit(activeDefinition, legalHistoryCurrent)}>
+                        Editar versión vigente
+                      </button>
+                    )}
+                    <button className="text-xs font-semibold text-slate-500 hover:text-slate-800" type="button" onClick={() => { setHistoryParameter(null); setHistoryCompareId(''); }}>Cerrar</button>
+                  </div>
                 </div>
 
                 {legalHistoryQuery.isLoading && <p className="mt-3 text-sm text-slate-600">Cargando historial...</p>}
@@ -1448,11 +1492,14 @@ function Parametrizacion() {
                   <div className="mt-3 space-y-2">
                     {legalHistoryRecords.map((version) => {
                       const isCurrent = !version.valid_to;
+                      const restorableChange = !isCurrent && legalHistoryCurrent
+                        ? legalHistoryHasRestorableChange(legalHistoryCurrent, version)
+                        : false;
                       return (
                         <div className={`rounded-md border px-3 py-3 ${isCurrent ? 'border-emerald-300 bg-white' : 'border-slate-200 bg-slate-50'}`} key={version.id}>
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <div>
-                              <p className="text-sm font-semibold text-slate-900">Versión {version.version_number || 1} {isCurrent ? '(vigente)' : '(cerrada)'}</p>
+                              <p className="text-sm font-semibold text-slate-900">Versión {version.version_number || 1} {isCurrent ? '(vigente · se usará en próximos cálculos)' : '(cerrada · solo consulta)'}</p>
                               <p className="mt-1 text-xs text-slate-600">Valor: {legalHistoryValue(version)} · Unidad: {version.unit || '—'}</p>
                             </div>
                             <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${version.validation_status === 'validado_oficial' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
@@ -1472,9 +1519,13 @@ function Parametrizacion() {
                               </button>
                             )}
                             {!isCurrent && canValidateLegalParameters && (
-                              <button className="inline-flex min-h-8 items-center gap-1 rounded-md border border-amber-300 bg-white px-2 text-xs font-semibold text-amber-800 hover:bg-amber-50 disabled:opacity-60" type="button" disabled={restoreMutation.isPending} onClick={() => requestLegalRestore(version)}>
-                                <RotateCcw className="h-3.5 w-3.5" /> Restaurar como nueva
-                              </button>
+                              restorableChange ? (
+                                <button className="inline-flex min-h-8 items-center gap-1 rounded-md border border-amber-300 bg-white px-2 text-xs font-semibold text-amber-800 hover:bg-amber-50 disabled:opacity-60" type="button" disabled={restoreMutation.isPending} onClick={() => requestLegalRestore(version)}>
+                                  <RotateCcw className="h-3.5 w-3.5" /> Restaurar como nueva
+                                </button>
+                              ) : (
+                                <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600">Sin cambios para restaurar</span>
+                              )
                             )}
                           </div>
                         </div>
@@ -1486,14 +1537,19 @@ function Parametrizacion() {
                 {legalHistoryCompare && legalHistoryCurrent && (
                   <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">
                     <div className="flex items-center gap-2 text-sm font-semibold text-slate-900"><GitCompareArrows className="h-4 w-4 text-teal-700" /> Comparación contra la versión vigente</div>
+                    {legalHistoryChangedRows.length === 0 ? (
+                      <p className="mt-2 rounded-md bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-800">No hay diferencias materiales. Esta versión ya representa lo mismo que la vigente; no necesitas restaurarla.</p>
+                    ) : (
+                      <div className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+                        <p>Cambios detectados: {legalHistoryChangedRows.map((row) => row.label).join(', ')}.</p>
+                        {!legalHistoryRestorableChange && <p className="mt-1">El valor, la fuente y el estado son iguales. Solo cambia la vigencia o la nota; para modificar el parámetro usa “Editar versión vigente”.</p>}
+                      </div>
+                    )}
                     <div className="mt-2 overflow-x-auto">
                       <table className="min-w-full text-left text-xs">
                         <thead className="border-b border-slate-200 text-slate-500"><tr><th className="px-2 py-2">Campo</th><th className="px-2 py-2">Vigente</th><th className="px-2 py-2">Versión {legalHistoryCompare.version_number || 1}</th></tr></thead>
                         <tbody className="divide-y divide-slate-100">
-                          <tr><td className="px-2 py-2 font-semibold">Valor</td><td className="px-2 py-2">{legalHistoryValue(legalHistoryCurrent)}</td><td className="px-2 py-2">{legalHistoryValue(legalHistoryCompare)}</td></tr>
-                          <tr><td className="px-2 py-2 font-semibold">Vigencia</td><td className="px-2 py-2">{String(legalHistoryCurrent.valid_from || '').slice(0, 10)}</td><td className="px-2 py-2">{String(legalHistoryCompare.valid_from || '').slice(0, 10)}</td></tr>
-                          <tr><td className="px-2 py-2 font-semibold">Fuente</td><td className="px-2 py-2">{legalHistoryCurrent.source_name || '—'}</td><td className="px-2 py-2">{legalHistoryCompare.source_name || '—'}</td></tr>
-                          <tr><td className="px-2 py-2 font-semibold">Estado</td><td className="px-2 py-2">{legalHistoryCurrent.validation_status}</td><td className="px-2 py-2">{legalHistoryCompare.validation_status}</td></tr>
+                          {legalHistoryComparisonRows.map((row) => <tr className={row.changed ? 'bg-amber-50/60' : ''} key={row.key}><td className="px-2 py-2 font-semibold">{row.label}</td><td className="px-2 py-2">{row.current}</td><td className="px-2 py-2">{row.historical}</td></tr>)}
                         </tbody>
                       </table>
                     </div>

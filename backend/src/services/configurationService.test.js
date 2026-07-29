@@ -759,6 +759,34 @@ describe('configurationService metadata', () => {
     expect(db.query.mock.calls[3][0]).toContain('INSERT INTO legal_parameter_versions');
   });
 
+  test('bloquea restauración cuando la versión histórica ya coincide con la vigente', async () => {
+    const base = {
+      tenant_id: ownerUser.tenantId,
+      country_code: 'EC',
+      region_code: 'NACIONAL',
+      period_year: 2026,
+      parameter_key: 'iess_aporte_patronal',
+      value: { amount: 0.1215 },
+      unit: 'porcentaje decimal',
+      rounding_mode: 'half_up_2',
+      validation_status: 'validado_oficial',
+      source_name: 'IESS - Servicios y prestaciones',
+      source_url: 'https://www.iess.gob.ec',
+      source_date: '2026-01-01',
+      notes: 'Fuente oficial',
+    };
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'history-same', ...base, valid_from: '2026-01-01', valid_to: '2026-07-01', version_number: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'current-same', ...base, valid_from: '2026-07-01', valid_to: null, version_number: 2 }] });
+
+    await expect(restoreLegalParameterVersion('history-same', ownerUser)).rejects.toMatchObject({
+      code: 'LEGAL_PARAMETER_RESTORE_NO_CHANGE',
+      statusCode: 409,
+    });
+    expect(db.query).toHaveBeenCalledTimes(2);
+    expect(recordAudit).not.toHaveBeenCalled();
+  });
+
   test('createResource crea cargo con rango salarial y unidad activa', async () => {
     db.query
       .mockResolvedValueOnce({
