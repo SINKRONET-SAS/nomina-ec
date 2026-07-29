@@ -405,6 +405,28 @@ function legalHistoryHasRestorableChange(current, historical) {
     .some((field) => field.changed);
 }
 
+function legalParameterUserLabel(record) {
+  const labels = {
+    income_tax_table: 'Tabla de impuesto a la renta',
+    tabla_impuesto_renta: 'Tabla de impuesto a la renta',
+    sbu: 'SBU/SMV',
+    iess_aporte_personal: 'Aporte personal IESS',
+    iess_aporte_patronal: 'Aporte patronal IESS',
+    jornada_horas_mensuales: 'Horas mensuales de jornada',
+    jornada_maxima_semanal: 'Jornada máxima semanal',
+    horas_extra_limite_semanal: 'Límite semanal de horas extra',
+    horas_extra_recargo_suplementaria: 'Recargo de horas suplementarias',
+    horas_extra_recargo_extraordinaria: 'Recargo de horas extraordinarias',
+    provision_vacaciones: 'Provisión de vacaciones',
+    vacaciones_dias_anuales: 'Días anuales de vacaciones',
+    decimo_tercero: 'Décimo tercero',
+    decimo_cuarto_costa_galapagos: 'Décimo cuarto Costa/Galápagos',
+    decimo_cuarto_sierra_amazonia: 'Décimo cuarto Sierra/Amazonía',
+    fondo_reserva: 'Fondo de reserva',
+  };
+  return `${labels[record.parameter_key] || record.parameter_key} ${record.period_year}`;
+}
+
 function Parametrizacion() {
   const { token, usuario } = useAuth();
   const queryClient = useQueryClient();
@@ -649,6 +671,45 @@ function Parametrizacion() {
     ? dedupeNoveltyRecords(baseRecords)
     : baseRecords;
   const legalRecords = summary?.resources?.legalParameters || [];
+  const pendingLegalParameters = legalRecords.filter((record) => (
+    Number(record.period_year) === Number(mandatoryYear)
+    && record.validation_status !== 'validado_oficial'
+  ));
+
+  const validatePendingLegalParametersMutation = useMutation({
+    mutationFn: async () => {
+      let completed = 0;
+      try {
+        for (const record of pendingLegalParameters) {
+          const definition = ['income_tax_table', 'tabla_impuesto_renta'].includes(record.parameter_key)
+            ? formDefinitions.find((item) => item.key === 'ir')
+            : formDefinitions.find((item) => item.key === 'legal');
+          const values = formValuesFromRecord(definition, record);
+          const payload = definition.buildPayload({ ...values, owner_validated: true });
+          await updateConfigurationResource(token, 'legalParameters', record.id, payload);
+          completed += 1;
+        }
+        return completed;
+      } catch (err) {
+        err.completed = completed;
+        throw err;
+      }
+    },
+    onSuccess: (completed) => {
+      setError('');
+      setMessage(`Se validaron ${completed} parámetros legales del año ${mandatoryYear}. Ya pueden usarse en el cálculo.`);
+      queryClient.invalidateQueries({ queryKey: ['configuration-summary'] });
+    },
+    onError: (err) => {
+      setMessage('');
+      const partial = Number(err.completed || 0);
+      const fallback = partial > 0
+        ? `Se validaron ${partial} parámetros, pero otro no pudo actualizarse. Revisa el detalle y vuelve a intentar.`
+        : 'No se pudieron validar los parámetros legales pendientes. Revisa el detalle e intenta nuevamente.';
+      setError(extractApiError(err, fallback));
+      queryClient.invalidateQueries({ queryKey: ['configuration-summary'] });
+    },
+  });
 
   const availableCategories = React.useMemo(() => {
     if (!Array.isArray(records)) return [];
@@ -947,6 +1008,39 @@ function Parametrizacion() {
             <p className="max-w-xs text-xs leading-5 text-teal-900">{legalParameterLoadHelp}</p>
           )}
         </div>
+        {pendingLegalParameters.length > 0 ? (
+          <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-3">
+            <p className="text-sm font-semibold text-amber-950">
+              Faltan {pendingLegalParameters.length} parámetros por validar para {mandatoryYear}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-amber-900">
+              El rol no se generará hasta que todos tengan fuente oficial validada. Revisa los valores y usa esta acción solo después de confirmar la fuente aplicable en Ecuador.
+            </p>
+            <p className="mt-2 text-xs leading-5 text-amber-900">
+              {pendingLegalParameters.map(legalParameterUserLabel).join(' · ')}
+            </p>
+            {canValidateLegalParameters && (
+              <button
+                className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-md bg-amber-700 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={validatePendingLegalParametersMutation.isPending}
+                type="button"
+                onClick={() => {
+                  const names = pendingLegalParameters.map(legalParameterUserLabel).join('\n');
+                  if (window.confirm(`Confirma que revisaste la fuente oficial de estos parámetros antes de validarlos:\n\n${names}\n\nSe creará una nueva versión trazable para cada uno. ¿Continuar?`)) {
+                    validatePendingLegalParametersMutation.mutate();
+                  }
+                }}
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                {validatePendingLegalParametersMutation.isPending ? 'Validando pendientes...' : 'Validar todos los pendientes'}
+              </button>
+            )}
+          </div>
+        ) : (
+          <p className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800">
+            Todos los parámetros legales de {mandatoryYear} tienen fuente oficial validada.
+          </p>
+        )}
       </div>
     );
   }
