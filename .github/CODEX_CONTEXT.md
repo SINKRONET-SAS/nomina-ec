@@ -3665,3 +3665,56 @@ La regla de negocio es inmutable: una corrección crea una nueva versión, cierr
 - Frontend: Valores legales muestra historial, valor, año, vigencia, estado, fuente, creador, usuario/fecha de validación, comparación y restauración como nueva versión en la misma superficie.
 - Validaciones: `npm.cmd --workspace=backend test -- --runInBand` PASS (68 suites / 470 pruebas), `npm.cmd --workspace=backend run prisma:validate` PASS, `npm.cmd --workspace=frontend-web run build` PASS (2030 módulos) y `git diff --check` PASS.
 - No se detectaron regresiones en backend, rutas, Prisma ni build frontend; la entrega queda lista para commit y push a `main`.
+
+---
+
+## Current Haiky Plan — HAIKY-NAR26-P3-ROLES-ANTICIPOS-DELEGADOS-2026
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-NAR26-P3-ROLES-ANTICIPOS-DELEGADOS-2026` |
+| Código | `NAR26-P3` |
+| Estado | `NAR26-P3-00 a NAR26-P3-05 completadas con PASS` |
+| Fecha | `2026-07-31` |
+| Plan doc | `docs2/PLAN_HAIKY_NAR26_P3_ROLES_ANTICIPOS_DELEGADOS_2026.md` |
+| Prompts | `.github/prompts/NAR26-P3-00` a `.github/prompts/NAR26-P3-05` |
+| Superficie | `Nómina > Descuento Anticipos` y `/verificar-email` |
+| AuditLock anterior | `F79FC9CB0718AD05D109BDA6132F8854D65AF5134CDD0583E8E10C228D6BB0F0` |
+
+### Alcance NAR26-P3-00
+
+El usuario final necesita distinguir, por empleado, si una línea del rol parcial es un anticipo que se descontará en el cierre mensual o una bonificación que se pagará como ingreso en ese cierre. La ruta única permanece dentro de Nómina. El backend ya tenía ambas salidas, pero la pantalla no conservaba la decisión por línea ni ofrecía una acción guiada para aplicar la selección; la carga masiva tampoco permitía declararla. Se confirmó además la regresión `lines is not defined` en Novedades, la fecha `Invalid Date` en roles y la ausencia de una pantalla pública para activar delegados con el código enviado.
+
+### Decisiones NAR26-P3
+
+- Mantener una sola ruta: `Nómina > Descuento Anticipos`.
+- Aceptar la plantilla CSV anterior y agregar `resolucion` como columna compatible para nuevas cargas.
+- Persistir la resolución solicitada en metadata de la línea, exponerla en reportes y permitir aplicar la selección de forma idempotente.
+- `descontar` conserva la ruta `beneficios_empleados` para que el cálculo del cierre descuente el anticipo; `bonificar` conserva la ruta `novedades_asistencia` aprobada para que el cierre incluya el ingreso.
+- Agregar acciones visibles para aprobar, aplicar selección y cerrar; no modificar roles cerrados.
+- Crear una superficie pública `/verificar-email` que confirme o reenvíe el código; solo el último código vigente puede utilizarse.
+
+### Baseline NAR26-P3
+
+- `main` estaba alineada con `origin/main`.
+- Cambios locales preexistentes preservados: `backend/src/services/fiscalInvoiceService.js` y `backend/src/services/fiscalInvoiceService.test.js`.
+- Contrato existente: `roles_anticipos` y `roles_anticipos_detalle`; las decisiones actuales ya generan beneficio o novedad, pero no se declaran de forma operativa antes de aprobar.
+- Regresión confirmada: `frontend-web/src/pages/Asistencia/NovedadesPendientes.jsx` usa `lines` sin inicializar.
+
+### Puertas NAR26-P3
+
+- `NAR26-P3-01`: resolución por línea, metadata, aplicación idempotente y contrato de cierre.
+- `NAR26-P3-02`: CSV, selección individual, acciones visibles, estados y fecha válida.
+- `NAR26-P3-03`: pantalla pública de activación y reenvío con código no caducado.
+- `NAR26-P3-04`: regresión, contratos y revisión de fiscalInvoiceService.
+- `NAR26-P3-05`: suites, build, AuditLock, commit principal, commit fiscal separado y push.
+
+### Evidencia NAR26-P3-01 a NAR26-P3-05
+
+- Backend: la resolución opcional `descontar`/`bonificar` se conserva en metadata, el CSV nuevo la acepta y el CSV histórico de cuatro columnas sigue siendo válido; la aplicación de selección es idempotente y conserva el impacto en el cierre mensual.
+- Frontend: la selección individual exige empleado, monto y resolución; la carga masiva permite seleccionar archivo; los roles muestran resolución real, fecha válida, aprobación, aplicación de selección, resolución por línea y cierre condicionado.
+- Novedades: corregida la regresión `lines is not defined`.
+- Delegados: `/verificar-email` permite confirmar y reenviar; el backend invalida códigos anteriores y rechaza códigos caducados.
+- Fiscalización previa: revisados `fiscalInvoiceService.js` y su prueba; la suite aislada pasó 4/4 y el comportamiento de identidad fiscal fallback quedó cubierto sin regresión.
+- Validación final: Jest backend directo PASS (68 suites / 477 pruebas), build frontend Vite + PWA PASS (2031 módulos, `sw.js` generado) y `git diff --check` PASS.
+- Publicación: el commit funcional NAR26-P3 y el commit fiscal se mantienen separados y se publican juntos en el mismo push.

@@ -183,6 +183,9 @@ function Login() {
               <Link className="font-semibold text-teal-800" to="/registro">
                 Crear empresa y administrador inicial
               </Link>
+              <div className="mt-2">
+                <Link className="font-semibold text-teal-800" to="/verificar-email">¿Tienes un código de verificación? Activar correo</Link>
+              </div>
             </div>
           </div>
         </div>

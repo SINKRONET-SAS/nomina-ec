@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, CheckCircle2, Download, Edit3, LockKeyhole, Plus, RotateCcw, Send, Sparkles, Trash2, Upload, X } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { annulBeneficio, approveBeneficio, createBeneficio, deleteBeneficio, fetchBeneficios, updateBeneficio } from '../../services/beneficiosApi';
-import { approveAdvanceRole, closeAdvanceRole, createAdvanceRole, createAdvanceRoleBulk, decideAdvanceLine, downloadAdvanceReport, downloadAdvanceRoleCsv, downloadAdvanceTemplate, fetchAdvanceNoveltyTypes, fetchAdvanceRoles } from '../../services/advancePayrollApi';
+import { applyAdvanceRoleSelection, approveAdvanceRole, closeAdvanceRole, createAdvanceRole, createAdvanceRoleBulk, decideAdvanceLine, downloadAdvanceReport, downloadAdvanceRoleCsv, downloadAdvanceTemplate, fetchAdvanceNoveltyTypes, fetchAdvanceRoles } from '../../services/advancePayrollApi';
 import { extractApiError } from '../../services/publicApi';
 import { ECUADOR_TIME_ZONE, currentPeriodEC } from '../../utils/dateFormat';
 import { downloadBlob } from '../../utils/downloadBlob';
@@ -167,7 +167,7 @@ function Beneficios() {
     mutationFn: () => {
       const lineas = Object.entries(advanceDraft.lines)
         .filter(([, line]) => line.selected && Number(line.monto) > 0)
-        .map(([empleadoId, line]) => ({ empleadoId, monto: Number(line.monto), tipoNovedad: advanceDraft.tipoNovedad, nombreBonificacion: advanceDraft.nombreBonificacion }));
+        .map(([empleadoId, line]) => ({ empleadoId, monto: Number(line.monto), tipoNovedad: advanceDraft.tipoNovedad, nombreBonificacion: advanceDraft.nombreBonificacion, resolucion: line.resolucion }));
       return createAdvanceRole({ ...advanceDraft, lineas });
     },
     onSuccess: () => {
@@ -192,8 +192,13 @@ function Beneficios() {
   });
 
   const advanceActionMutation = useMutation({
-    mutationFn: ({ action, roleId, lineId, decision }) => {
+    mutationFn: async ({ action, roleId, lineId, decision }) => {
       if (action === 'approve') return approveAdvanceRole(roleId);
+      if (action === 'approveAndApply') {
+        await approveAdvanceRole(roleId);
+        return applyAdvanceRoleSelection(roleId);
+      }
+      if (action === 'apply') return applyAdvanceRoleSelection(roleId);
       if (action === 'decide') return decideAdvanceLine(roleId, lineId, decision);
       return closeAdvanceRole(roleId);
     },
@@ -255,6 +260,22 @@ function Beneficios() {
 
   function submitAdvanceRole(event) {
     event.preventDefault();
+    const selected = Object.values(advanceDraft.lines).filter((line) => line.selected);
+    if (selected.length === 0) {
+      setMessage('');
+      setError('Selecciona al menos un empleado para generar el rol parcial.');
+      return;
+    }
+    if (selected.some((line) => !(Number(line.monto) > 0))) {
+      setMessage('');
+      setError('Cada empleado seleccionado debe tener un monto mayor a cero.');
+      return;
+    }
+    if (selected.some((line) => !['descontar', 'bonificar'].includes(line.resolucion))) {
+      setMessage('');
+      setError('Define para cada empleado si el valor será un anticipo a descontar o una bonificación a pagar en el cierre.');
+      return;
+    }
     advanceRoleMutation.mutate();
   }
 
@@ -265,8 +286,18 @@ function Beneficios() {
   async function selectAdvanceBulkFile(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-    setAdvanceBulkFileName(file.name);
-    setAdvanceBulkCsv(await file.text());
+    try {
+      const text = await file.text();
+      if (!text.trim()) throw new Error('El archivo CSV está vacío.');
+      setAdvanceBulkFileName(file.name);
+      setAdvanceBulkCsv(text);
+      setError('');
+    } catch (err) {
+      setAdvanceBulkFileName('');
+      setAdvanceBulkCsv('');
+      setMessage('');
+      setError(err.message || 'No pudimos leer el archivo CSV seleccionado.');
+    }
   }
 
   async function downloadAdvanceReportFile() {
@@ -490,7 +521,7 @@ function Beneficios() {
             <div className="border-b border-slate-200 bg-slate-50 p-3">
               <label className="block"><span className="text-sm font-medium text-slate-700">Buscar empleado para incluir</span><input className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={advanceEmployeeSearch} onChange={(event) => handleEmployeeSearch(event.target.value)} placeholder="Cédula, nombres o apellidos" /></label>
             </div>
-            <table className="w-full min-w-[700px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Incluir</th><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Cédula</th><th className="px-3 py-2">Monto</th></tr></thead><tbody className="divide-y divide-slate-100">{paginatedAdvEmployees.map((employee) => { const line = advanceDraft.lines[employee.id] || {}; return <tr key={employee.id}><td className="px-3 py-2"><input type="checkbox" checked={line.selected === true} onChange={(event) => updateAdvanceLine(employee.id, 'selected', event.target.checked)} aria-label={`Incluir a ${employee.nombres} ${employee.apellidos}`} /></td><td className="px-3 py-2 font-medium text-slate-900">{employee.nombres} {employee.apellidos}</td><td className="px-3 py-2 text-slate-600">{employee.cedula}</td><td className="px-3 py-2"><input className="w-36 rounded-md border border-slate-300 px-3 py-1.5" type="number" min="0.01" step="0.01" value={line.monto || ''} onChange={(event) => updateAdvanceLine(employee.id, 'monto', event.target.value)} disabled={!line.selected} /></td></tr>; })}</tbody></table>
+            <table className="w-full min-w-[980px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Incluir</th><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Cédula</th><th className="px-3 py-2">Monto</th><th className="px-3 py-2">Aplicación en cierre</th></tr></thead><tbody className="divide-y divide-slate-100">{paginatedAdvEmployees.map((employee) => { const line = advanceDraft.lines[employee.id] || {}; return <tr key={employee.id}><td className="px-3 py-2"><input type="checkbox" checked={line.selected === true} onChange={(event) => updateAdvanceLine(employee.id, 'selected', event.target.checked)} aria-label={`Incluir a ${employee.nombres} ${employee.apellidos}`} /></td><td className="px-3 py-2 font-medium text-slate-900">{employee.nombres} {employee.apellidos}</td><td className="px-3 py-2 text-slate-600">{employee.cedula}</td><td className="px-3 py-2"><input className="w-36 rounded-md border border-slate-300 px-3 py-1.5" type="number" min="0.01" step="0.01" value={line.monto || ''} onChange={(event) => updateAdvanceLine(employee.id, 'monto', event.target.value)} disabled={!line.selected} /></td><td className="px-3 py-2"><select className="w-64 rounded-md border border-slate-300 px-3 py-1.5 text-xs" value={line.resolucion || ''} onChange={(event) => updateAdvanceLine(employee.id, 'resolucion', event.target.value)} disabled={!line.selected} aria-label={`Aplicación en cierre de ${employee.nombres} ${employee.apellidos}`}><option value="">Selecciona una opción</option><option value="descontar">Anticipo: descontar al cierre</option><option value="bonificar">Bonificación: pagar al cierre</option></select></td></tr>; })}</tbody></table>
             <TablePagination
               currentPage={advEmpPage}
               totalPages={totalAdvEmpPages}
@@ -508,14 +539,14 @@ function Beneficios() {
 
         <section className="rounded-md border border-slate-200 bg-white p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div><h3 className="font-semibold text-slate-950">Carga masiva del rol</h3><p className="mt-1 text-sm text-slate-600">Descarga la plantilla, completa la cédula y el monto, y carga el CSV desde esta misma ruta.</p></div>
+            <div><h3 className="font-semibold text-slate-950">Carga masiva del rol</h3><p className="mt-1 text-sm text-slate-600">Descarga la plantilla, completa cédula, monto y resolución. La plantilla histórica de cuatro columnas también es aceptada.</p></div>
             <button className="inline-flex items-center gap-2 rounded-md border border-teal-200 px-3 py-2 text-sm font-semibold text-teal-800" type="button" onClick={downloadAdvanceTemplateFile}><Download className="h-4 w-4" />Descargar plantilla</button>
           </div>
           <div className="mt-3 rounded-md border border-dashed border-teal-300 bg-teal-50/50 p-3">
             <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-teal-700 px-3 py-2 text-sm font-semibold text-white"><Upload className="h-4 w-4" />Seleccionar archivo<input className="sr-only" type="file" accept=".csv,text/csv" onChange={selectAdvanceBulkFile} /></label>
             <span className="ml-3 text-sm text-slate-600">{advanceBulkFileName || 'Ningún archivo seleccionado'}</span>
           </div>
-          <textarea className="mt-3 min-h-28 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-xs" value={advanceBulkCsv} onChange={(event) => setAdvanceBulkCsv(event.target.value)} placeholder="cedula,monto,tipoNovedad,nombreBonificacion" aria-label="Contenido CSV del rol de anticipos" />
+          <textarea className="mt-3 min-h-28 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-xs" value={advanceBulkCsv} onChange={(event) => setAdvanceBulkCsv(event.target.value)} placeholder="cedula,monto,tipoNovedad,nombreBonificacion,resolucion" aria-label="Contenido CSV del rol de anticipos" />
           <button className="mt-3 inline-flex items-center gap-2 rounded-md bg-slate-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" type="button" onClick={() => advanceBulkMutation.mutate()} disabled={advanceBulkMutation.isPending || !advanceBulkCsv.trim()}><Upload className="h-4 w-4" />{advanceBulkMutation.isPending ? 'Procesando...' : 'Procesar carga masiva'}</button>
         </section>
 
@@ -536,8 +567,18 @@ function Beneficios() {
           </div>
         </section>
 
+        <p className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-5 text-sky-900">Flujo: selecciona empleados y resolución, genera el borrador, aprueba y luego aplica cada línea como anticipo o bonificación. El botón de cierre solo queda disponible cuando todas las líneas ya impactaron el rol mensual.</p>
         <div className="space-y-4">
-          {advanceRoles.length === 0 ? <p className="rounded-md border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500">Todavía no hay roles de anticipos generados.</p> : paginatedRoles.map((role) => { const pendingLines = role.lineas.filter((line) => line.estado === 'aprobado').length; return <article className="rounded-md border border-slate-200 bg-white p-4" key={role.id}><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold text-slate-950">Rol {role.anio}-{String(role.mes).padStart(2, '0')} · {role.descripcion || 'Sin descripción'}</h3><p className="mt-1 text-xs text-slate-500">Corte: {role.fechaCorte ? new Date(role.fechaCorte + 'T12:00:00').toLocaleDateString('es-EC') : 'Sin fecha'} · Total: {money(role.total)} · Estado: <strong>{role.estado}</strong></p></div><div className="flex flex-wrap gap-2"><button className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700" type="button" onClick={() => downloadAdvanceRole(role)} aria-label={`Descargar evidencia del rol ${role.anio}-${role.mes}`}>Descargar evidencia</button>{role.estado === 'borrador' && <button className="inline-flex items-center gap-1 rounded-md border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'approve', roleId: role.id })} disabled={advanceActionMutation.isPending} aria-label={`Aprobar rol ${role.anio}-${role.mes}`}><Send className="h-3.5 w-3.5" />Aprobar</button>}{role.estado === 'aprobado' && <button className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'close', roleId: role.id })} disabled={advanceActionMutation.isPending || pendingLines > 0} aria-label={`Cerrar rol ${role.anio}-${role.mes}`}><LockKeyhole className="h-3.5 w-3.5" />Cerrar rol</button>}</div></div>{role.estado === 'aprobado' && pendingLines > 0 && <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">Resuelve cada linea: <strong>Descontar</strong> crea un beneficio que se deduce del sueldo al cerrar mes. <strong>Bonificar</strong> registra una novedad de ingreso adicional.</p>}<div className="mt-3 overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Monto</th><th className="px-3 py-2">Tipo / nombre</th><th className="px-3 py-2">Resolución</th><th className="px-3 py-2 text-right">Acciones</th></tr></thead><tbody className="divide-y divide-slate-100">{role.lineas.map((line) => <tr key={line.id}><td className="px-3 py-2"><p className="font-medium text-slate-900">{line.empleadoNombre}</p><p className="text-xs text-slate-500">{line.cedula}</p></td><td className="px-3 py-2">{money(line.monto)}</td><td className="px-3 py-2"><p>{line.tipoNovedad}</p><p className="text-xs text-slate-500">{line.nombreBonificacion || 'Sin nombre personalizado'}</p></td><td className="px-3 py-2"><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{line.estado}</span></td><td className="px-3 py-2 text-right">{role.estado === 'aprobado' && line.estado === 'aprobado' && <><button className="mr-2 rounded-md border border-amber-200 px-2 py-1 text-xs font-semibold text-amber-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'descontar' })} disabled={advanceActionMutation.isPending} title="Crea un beneficio que se deduce del sueldo al cerrar mes" aria-label={`Descontar linea de ${line.empleadoNombre}`}>Descontar</button><button className="rounded-md border border-emerald-200 px-2 py-1 text-xs font-semibold text-emerald-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'bonificar' })} disabled={advanceActionMutation.isPending} title="Registra una novedad de ingreso adicional" aria-label={`Bonificar linea de ${line.empleadoNombre}`}>Bonificar</button></>}</td></tr>)}</tbody></table></div></article>; })}
+          {advanceRoles.length === 0 ? <p className="rounded-md border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500">Todavía no hay roles de anticipos generados.</p> : paginatedRoles.map((role) => {
+            const pendingLines = role.lineas.filter((line) => line.estado === 'aprobado').length;
+            const pendingWithoutResolution = role.lineas.some((line) => line.estado === 'aprobado' && !['descontar', 'bonificar'].includes(line.resolucionSolicitada));
+            const canApplySelection = pendingLines > 0 && !pendingWithoutResolution;
+            return <article className="rounded-md border border-slate-200 bg-white p-4" key={role.id}>
+              <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold text-slate-950">Rol {role.anio}-{String(role.mes).padStart(2, '0')} · {role.descripcion || 'Sin descripción'}</h3><p className="mt-1 text-xs text-slate-500">Corte: {role.fechaCorte ? new Date(role.fechaCorte + 'T12:00:00').toLocaleDateString('es-EC') : 'Sin fecha'} · Total: {money(role.total)} · Estado: <strong>{role.estado}</strong></p></div><div className="flex flex-wrap gap-2"><button className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700" type="button" onClick={() => downloadAdvanceRole(role)} aria-label={`Descargar evidencia del rol ${role.anio}-${role.mes}`}>Descargar evidencia</button>{role.estado === 'borrador' && <button className="inline-flex items-center gap-1 rounded-md border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: canApplySelection ? 'approveAndApply' : 'approve', roleId: role.id })} disabled={advanceActionMutation.isPending} aria-label={`Aprobar rol ${role.anio}-${role.mes}`}><Send className="h-3.5 w-3.5" />{canApplySelection ? 'Aprobar y aplicar selección' : 'Aprobar'}</button>}{role.estado === 'aprobado' && canApplySelection && <button className="inline-flex items-center gap-1 rounded-md border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'apply', roleId: role.id })} disabled={advanceActionMutation.isPending} aria-label={`Aplicar selección del rol ${role.anio}-${role.mes}`}><CheckCircle2 className="h-3.5 w-3.5" />Aplicar selección</button>}{role.estado === 'aprobado' && <button className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'close', roleId: role.id })} disabled={advanceActionMutation.isPending || pendingLines > 0} aria-label={`Cerrar rol ${role.anio}-${role.mes}`}><LockKeyhole className="h-3.5 w-3.5" />Cerrar rol</button>}</div></div>
+              {role.estado === 'aprobado' && pendingLines > 0 && <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">{pendingWithoutResolution ? <>Resuelve cada línea: <strong>Descontar</strong> crea un anticipo que se deduce del sueldo al cerrar mes; <strong>Bonificar</strong> registra una novedad de ingreso adicional.</> : 'Las resoluciones seleccionadas están listas para aplicarse al cierre mensual.'}</p>}
+              <div className="mt-3 overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Monto</th><th className="px-3 py-2">Tipo / nombre</th><th className="px-3 py-2">Resolución</th><th className="px-3 py-2 text-right">Acciones</th></tr></thead><tbody className="divide-y divide-slate-100">{role.lineas.map((line) => <tr key={line.id}><td className="px-3 py-2"><p className="font-medium text-slate-900">{line.empleadoNombre}</p><p className="text-xs text-slate-500">{line.cedula}</p></td><td className="px-3 py-2">{money(line.monto)}</td><td className="px-3 py-2"><p>{line.tipoNovedad}</p><p className="text-xs text-slate-500">{line.nombreBonificacion || 'Sin nombre personalizado'}</p></td><td className="px-3 py-2"><p className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{line.resolucionSolicitada === 'descontar' ? 'Anticipo · descontar al cierre' : line.resolucionSolicitada === 'bonificar' ? 'Bonificación · pagar al cierre' : 'Pendiente de resolución'}</p><p className="mt-1 text-xs text-slate-500">Estado: {line.estado}</p></td><td className="px-3 py-2 text-right">{role.estado === 'aprobado' && line.estado === 'aprobado' && <><button className="mr-2 rounded-md border border-amber-200 px-2 py-1 text-xs font-semibold text-amber-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'descontar' })} disabled={advanceActionMutation.isPending} title="Crea un beneficio que se deduce del sueldo al cerrar mes" aria-label={`Descontar línea de ${line.empleadoNombre}`}>Descontar</button><button className="rounded-md border border-emerald-200 px-2 py-1 text-xs font-semibold text-emerald-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'bonificar' })} disabled={advanceActionMutation.isPending} title="Registra una novedad de ingreso adicional" aria-label={`Bonificar línea de ${line.empleadoNombre}`}>Bonificar</button></>}</td></tr>)}</tbody></table></div>
+            </article>;
+          })}
           {advanceRoles.length > 0 && (
             <TablePagination
               currentPage={rolePage}

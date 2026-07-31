@@ -6,7 +6,8 @@ const { ensureNoveltyTypeAllowed } = require('./payrollNoveltyService');
 
 const WRITABLE_PERIODS = new Set(['open', 'novelties_loaded', 'reopened', 'calculation_failed']);
 const VALID_DECISIONS = new Set(['descontar', 'bonificar']);
-const ADVANCE_BULK_TEMPLATE_COLUMNS = ['cedula', 'monto', 'tipoNovedad', 'nombreBonificacion'];
+const LEGACY_ADVANCE_BULK_TEMPLATE_COLUMNS = ['cedula', 'monto', 'tipoNovedad', 'nombreBonificacion'];
+const ADVANCE_BULK_TEMPLATE_COLUMNS = [...LEGACY_ADVANCE_BULK_TEMPLATE_COLUMNS, 'resolucion'];
 const CEDULA_PATTERN = /^\d{10,13}$/;
 
 function csvCell(value) {
@@ -16,7 +17,7 @@ function csvCell(value) {
 function templateCsv() {
   return [
     ADVANCE_BULK_TEMPLATE_COLUMNS.join(','),
-    ['0102030405', '100.00', 'bono_desempeno', 'Bono por cumplimiento'].map(csvCell).join(','),
+    ['0102030405', '100.00', 'bono_desempeno', 'Bono por cumplimiento', 'descontar'].map(csvCell).join(','),
   ].join('\r\n');
 }
 
@@ -48,12 +49,16 @@ function parseBulkCsv(csv) {
     throw new AppError('La plantilla del rol de anticipos debe incluir encabezado y al menos una fila.', { code: 'ROL_ANTICIPOS_CARGA_SIN_FILAS', statusCode: 400 });
   }
   const headers = parseCsvLine(lines[0]);
-  if (headers.length !== ADVANCE_BULK_TEMPLATE_COLUMNS.length || headers.some((value, index) => value !== ADVANCE_BULK_TEMPLATE_COLUMNS[index])) {
-    throw new AppError(`El encabezado no coincide con la plantilla oficial: ${ADVANCE_BULK_TEMPLATE_COLUMNS.join(',')}.`, { code: 'ROL_ANTICIPOS_CARGA_ENCABEZADO_INVALIDO', statusCode: 400 });
+  const isLegacyHeader = headers.length === LEGACY_ADVANCE_BULK_TEMPLATE_COLUMNS.length
+    && headers.every((value, index) => value === LEGACY_ADVANCE_BULK_TEMPLATE_COLUMNS[index]);
+  const isCurrentHeader = headers.length === ADVANCE_BULK_TEMPLATE_COLUMNS.length
+    && headers.every((value, index) => value === ADVANCE_BULK_TEMPLATE_COLUMNS[index]);
+  if (!isLegacyHeader && !isCurrentHeader) {
+    throw new AppError(`El encabezado no coincide con la plantilla oficial: ${ADVANCE_BULK_TEMPLATE_COLUMNS.join(',')}. También se acepta la plantilla histórica de cuatro columnas.`, { code: 'ROL_ANTICIPOS_CARGA_ENCABEZADO_INVALIDO', statusCode: 400 });
   }
   return lines.slice(1).map((line) => {
     const values = parseCsvLine(line);
-    return ADVANCE_BULK_TEMPLATE_COLUMNS.reduce((row, column, index) => ({ ...row, [column]: values[index] || '' }), {});
+    return headers.reduce((row, column, index) => ({ ...row, [column]: values[index] || '' }), {});
   });
 }
 
@@ -81,6 +86,7 @@ function normalizeLine(line, index, year, month) {
   const amount = roundMoney(Number(line.monto ?? line.amount));
   const tipoNovedad = String(line.tipoNovedad ?? line.tipo_novedad ?? 'bono_desempeno').trim().toLowerCase();
   const nombreBonificacion = String(line.nombreBonificacion ?? line.nombre_bonificacion ?? line.nombre ?? '').trim().slice(0, 160);
+  const resolucionSolicitada = String(line.resolucionSolicitada ?? line.resolucion ?? line.decision ?? line.resolution ?? '').trim().toLowerCase();
   if (!empleadoId && !cedula) {
     throw new AppError(`El empleado de la fila ${index + 1} requiere empleadoId o cedula.`, { code: 'ROL_ANTICIPOS_EMPLEADO_REQUERIDO', statusCode: 400 });
   }
@@ -93,7 +99,25 @@ function normalizeLine(line, index, year, month) {
   if (!tipoNovedad || tipoNovedad.length > 80) {
     throw new AppError(`El tipo de novedad de la fila ${index + 1} no es valido.`, { code: 'ROL_ANTICIPOS_TIPO_NOVEDAD_INVALIDO', statusCode: 400 });
   }
-  return { empleadoId, cedula, monto: amount, tipoNovedad, nombreBonificacion };
+  if (resolucionSolicitada && !VALID_DECISIONS.has(resolucionSolicitada)) {
+    throw new AppError(`La resolución de la fila ${index + 1} debe ser descontar o bonificar.`, { code: 'ROL_ANTICIPOS_RESOLUCION_INVALIDA', statusCode: 400 });
+  }
+  return { empleadoId, cedula, monto: amount, tipoNovedad, nombreBonificacion, resolucionSolicitada: resolucionSolicitada || null };
+}
+
+function normalizeDateOutput(value) {
+  const raw = value instanceof Date ? value.toISOString() : String(value || '');
+  const match = raw.match(/^\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : (raw || null);
+}
+
+function parseMetadata(value) {
+  if (value && typeof value === 'object') return value;
+  try {
+    return value ? JSON.parse(String(value)) : {};
+  } catch (_err) {
+    return {};
+  }
 }
 
 function normalizeRun(row, lines = []) {
@@ -103,7 +127,7 @@ function normalizeRun(row, lines = []) {
     payrollPeriodId: row.payroll_period_id,
     anio: Number(row.anio),
     mes: Number(row.mes),
-    fechaCorte: row.fecha_corte,
+    fechaCorte: normalizeDateOutput(row.fecha_corte),
     estado: row.estado,
     descripcion: row.descripcion || '',
     createdBy: row.created_by || null,
@@ -118,6 +142,7 @@ function normalizeRun(row, lines = []) {
 }
 
 function normalizeLineRow(row) {
+  const metadata = parseMetadata(row.metadata);
   return {
     id: row.id,
     roleId: row.role_id,
@@ -127,6 +152,7 @@ function normalizeLineRow(row) {
     monto: Number(row.monto || 0),
     tipoNovedad: row.tipo_novedad,
     nombreBonificacion: row.nombre_bonificacion || '',
+    resolucionSolicitada: metadata.resolucionSolicitada || metadata.resolutionRequested || null,
     estado: row.estado,
     beneficioId: row.beneficio_id || null,
     bonificacionNovedadId: row.bonificacion_novedad_id || null,
@@ -165,7 +191,7 @@ async function getRun(tenantId, id) {
   }
   const linesResult = await db.query(`
     SELECT d.id, d.role_id, d.empleado_id, e.nombres, e.apellidos, e.cedula,
-           d.monto, d.tipo_novedad, d.nombre_bonificacion, d.estado,
+           d.monto, d.tipo_novedad, d.nombre_bonificacion, d.metadata, d.estado,
            d.beneficio_id, d.bonificacion_novedad_id, d.decidido_por, d.decidido_en
     FROM roles_anticipos_detalle d
     JOIN empleados e ON e.id = d.empleado_id AND e.tenant_id = d.tenant_id
@@ -273,7 +299,7 @@ async function createRun(tenantId, payload = {}, user, context = {}) {
       await tx.query(`
         INSERT INTO roles_anticipos_detalle (role_id, tenant_id, empleado_id, monto, tipo_novedad, nombre_bonificacion, metadata)
         VALUES ($1,$2,$3,$4,$5,$6,$7)
-      `, [run.id, tenantId, line.empleadoId, line.monto, line.tipoNovedad, line.nombreBonificacion, JSON.stringify({ source: 'rol_anticipos', periodoNomina: marker })]);
+      `, [run.id, tenantId, line.empleadoId, line.monto, line.tipoNovedad, line.nombreBonificacion, JSON.stringify({ source: 'rol_anticipos', periodoNomina: marker, resolucionSolicitada: line.resolucionSolicitada })]);
     }
     await db.commit(tx);
     await recordAudit({ tenantId, userId: user.id, correlationId: context.correlationId, action: 'nomina.rol_anticipos.creado', entity: 'roles_anticipos', entityId: run.id, newData: { anio: year, mes: month, totalLineas: lines.length }, ipAddress: context.ipAddress });
@@ -379,6 +405,22 @@ async function decideLine(tenantId, roleId, lineId, decision, user, context = {}
   }
 }
 
+async function applyRequestedDecisions(tenantId, id, user, context = {}) {
+  const role = await getRun(tenantId, id);
+  if (role.estado !== 'aprobado') {
+    throw new AppError('Aprueba el rol antes de aplicar las resoluciones seleccionadas.', { code: 'ROL_ANTICIPOS_NO_APROBADO', statusCode: 409 });
+  }
+  const pending = role.lineas.filter((line) => line.estado === 'aprobado');
+  const withoutDecision = pending.filter((line) => !VALID_DECISIONS.has(line.resolucionSolicitada));
+  if (withoutDecision.length > 0) {
+    throw new AppError('Selecciona si cada línea pendiente será anticipo o bonificación antes de aplicarla.', { code: 'ROL_ANTICIPOS_RESOLUCIONES_PENDIENTES', statusCode: 409, details: { lineas: withoutDecision.map((line) => line.id) } });
+  }
+  for (const line of pending) {
+    await decideLine(tenantId, id, line.id, line.resolucionSolicitada, user, context);
+  }
+  return getRun(tenantId, id);
+}
+
 async function closeRun(tenantId, id, user, context = {}) {
   const tx = await db.getClient(tenantId, user.id);
   try {
@@ -407,5 +449,6 @@ module.exports = {
   createBulkRun,
   approveRun,
   decideLine,
+  applyRequestedDecisions,
   closeRun,
 };

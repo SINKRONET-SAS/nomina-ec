@@ -35,6 +35,11 @@ export async function approveAdvanceRole(id) {
   return response.data?.role;
 }
 
+export async function applyAdvanceRoleSelection(id) {
+  const response = await authenticatedApi.put(`/nomina/anticipos/roles/${id}/aplicar-seleccion`);
+  return response.data?.role;
+}
+
 export async function decideAdvanceLine(roleId, lineId, decision) {
   const response = await authenticatedApi.put(`/nomina/anticipos/roles/${roleId}/lineas/${lineId}/decidir`, { decision });
   return response.data?.role;

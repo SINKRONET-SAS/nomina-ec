@@ -254,6 +254,7 @@ app.get('/api/nomina/anticipos/roles/reporte.csv', requireRole('owner', 'admin_r
 app.post('/api/nomina/anticipos/roles', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), advancePayrollController.crear);
 app.post('/api/nomina/anticipos/roles/carga-masiva', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), advancePayrollController.cargarMasiva);
 app.put('/api/nomina/anticipos/roles/:id/aprobar', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), advancePayrollController.aprobar);
+app.put('/api/nomina/anticipos/roles/:id/aplicar-seleccion', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), advancePayrollController.aplicarSeleccion);
 app.put('/api/nomina/anticipos/roles/:id/lineas/:lineId/decidir', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), advancePayrollController.decidirLinea);
 app.put('/api/nomina/anticipos/roles/:id/cerrar', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), advancePayrollController.cerrar);
 app.get('/api/nomina/anticipos/roles/:id.csv', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), advancePayrollController.descargarCsv);

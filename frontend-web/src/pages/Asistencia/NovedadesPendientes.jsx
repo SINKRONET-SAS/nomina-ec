@@ -1243,6 +1243,7 @@ function NovedadesPendientes() {
 }
 
 function parseCsvRows(text) {
+  const lines = String(text || '').replace(/^\uFEFF/, '').split(/\r?\n/).filter((line) => line.trim());
   if (lines.length < 2) {
     throw new Error('Pega el encabezado y al menos una fila de la plantilla.');
   }

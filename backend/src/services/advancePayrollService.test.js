@@ -38,7 +38,8 @@ describe('advancePayrollService', () => {
   test('expone una plantilla CSV por cedula y rechaza encabezados alternos', () => {
     const csv = templateCsv();
     expect(csv.split(/\r?\n/)[0]).toBe(ADVANCE_BULK_TEMPLATE_COLUMNS.join(','));
-    expect(parseBulkCsv(csv)).toEqual([expect.objectContaining({ cedula: '0102030405', monto: '100.00', tipoNovedad: 'bono_desempeno' })]);
+    expect(parseBulkCsv(csv)).toEqual([expect.objectContaining({ cedula: '0102030405', monto: '100.00', tipoNovedad: 'bono_desempeno', resolucion: 'descontar' })]);
+    expect(parseBulkCsv('cedula,monto,tipoNovedad,nombreBonificacion\n0102030405,100,bono_desempeno,Bono')).toEqual([expect.objectContaining({ cedula: '0102030405', monto: '100', tipoNovedad: 'bono_desempeno' })]);
     expect(() => parseBulkCsv('empleadoId,monto,tipoNovedad,nombreBonificacion\nabc,100,bono_desempeno,Bono')).toThrow('encabezado');
   });
 

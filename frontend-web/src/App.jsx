@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Páginas
 const Login = lazy(() => import('./pages/Login'));
+const EmailVerification = lazy(() => import('./pages/EmailVerification'));
 const Landing = lazy(() => import('./pages/Landing'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
@@ -115,6 +116,7 @@ function App() {
             {/* Rutas públicas */}
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/verificar-email" element={<EmailVerification />} />
             <Route path="/registro" element={<Register />} />
             <Route path="/recuperar-password" element={<ForgotPassword />} />
             <Route path="/precios" element={<Planes />} />
@@ -324,4 +326,3 @@ function App() {
 }
 
 export default App;
-

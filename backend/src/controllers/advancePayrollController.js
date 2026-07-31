@@ -60,6 +60,15 @@ async function decidirLinea(req, res, next) {
   }
 }
 
+async function aplicarSeleccion(req, res, next) {
+  try {
+    const role = await advancePayrollService.applyRequestedDecisions(req.tenantId, req.params.id, req.usuario, context(req));
+    return res.json({ success: true, role, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function cerrar(req, res, next) {
   try {
     const role = await advancePayrollService.closeRun(req.tenantId, req.params.id, req.usuario, context(req));
@@ -72,9 +81,9 @@ async function cerrar(req, res, next) {
 async function descargarCsv(req, res, next) {
   try {
     const role = await advancePayrollService.getRun(req.tenantId, req.params.id);
-    const headers = ['empleado', 'cedula', 'monto', 'tipoNovedad', 'nombreBonificacion', 'estado', 'beneficioId', 'bonificacionNovedadId'];
+    const headers = ['empleado', 'cedula', 'monto', 'tipoNovedad', 'nombreBonificacion', 'resolucionSolicitada', 'estado', 'beneficioId', 'bonificacionNovedadId'];
     const csvCell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
-    const rows = role.lineas.map((line) => [line.empleadoNombre, line.cedula, line.monto, line.tipoNovedad, line.nombreBonificacion, line.estado, line.beneficioId, line.bonificacionNovedadId].map(csvCell).join(','));
+    const rows = role.lineas.map((line) => [line.empleadoNombre, line.cedula, line.monto, line.tipoNovedad, line.nombreBonificacion, line.resolucionSolicitada, line.estado, line.beneficioId, line.bonificacionNovedadId].map(csvCell).join(','));
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="rol_anticipos_${role.anio}_${String(role.mes).padStart(2, '0')}.csv"`);
     return res.send(`\ufeff${[headers.join(','), ...rows].join('\r\n')}`);
@@ -86,12 +95,12 @@ async function descargarCsv(req, res, next) {
 async function descargarReporte(req, res, next) {
   try {
     const roles = await advancePayrollService.listRuns(req.tenantId, req.query);
-    const headers = ['rolId', 'anio', 'mes', 'fechaCorte', 'estadoRol', 'descripcion', 'empleado', 'cedula', 'monto', 'tipoNovedad', 'nombreBonificacion', 'estadoLinea', 'beneficioId', 'bonificacionNovedadId'];
+    const headers = ['rolId', 'anio', 'mes', 'fechaCorte', 'estadoRol', 'descripcion', 'empleado', 'cedula', 'monto', 'tipoNovedad', 'nombreBonificacion', 'resolucionSolicitada', 'estadoLinea', 'beneficioId', 'bonificacionNovedadId'];
     const csvCell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
     const rows = roles.flatMap((role) => role.lineas.map((line) => [
       role.id, role.anio, role.mes, role.fechaCorte, role.estado, role.descripcion,
       line.empleadoNombre, line.cedula, line.monto, line.tipoNovedad,
-      line.nombreBonificacion, line.estado, line.beneficioId, line.bonificacionNovedadId,
+      line.nombreBonificacion, line.resolucionSolicitada, line.estado, line.beneficioId, line.bonificacionNovedadId,
     ].map(csvCell).join(',')));
     const period = req.query?.anio && req.query?.mes
       ? `${req.query.anio}_${String(req.query.mes).padStart(2, '0')}`
@@ -104,4 +113,4 @@ async function descargarReporte(req, res, next) {
   }
 }
 
-module.exports = { listar, crear, descargarPlantilla, cargarMasiva, aprobar, decidirLinea, cerrar, descargarCsv, descargarReporte };
+module.exports = { listar, crear, descargarPlantilla, cargarMasiva, aprobar, decidirLinea, aplicarSeleccion, cerrar, descargarCsv, descargarReporte };
