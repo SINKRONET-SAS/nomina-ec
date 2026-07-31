@@ -7,11 +7,14 @@ import {
   Calculator,
   CheckCircle,
   ClipboardCheck,
+  Download,
   Layers,
   Lock,
+  Plus,
   RefreshCw,
   Trash2,
   Undo2,
+  Upload,
   XCircle,
 } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
@@ -20,6 +23,7 @@ import CompactNotice from '../../components/UI/CompactNotice';
 import TablePagination from '../../components/UI/TablePagination';
 import EmployeeSearchSelect from '../../components/UI/EmployeeSearchSelect';
 import { ECUADOR_TIME_ZONE, currentPeriodEC, firstDayOfPeriodEC } from '../../utils/dateFormat';
+import { downloadBlob } from '../../utils/downloadBlob';
 import {
   buildNoveltyTypeOptions,
   getNoveltyTypeLabel,
@@ -118,6 +122,9 @@ function CerrarMes() {
   const [batchSearch, setBatchSearch] = useState('');
   const [batchNoveltyFilter, setBatchNoveltyFilter] = useState('all');
   const [batchScopeFilter, setBatchScopeFilter] = useState('all');
+  const [bulkCsv, setBulkCsv] = useState('');
+  const [bulkFileName, setBulkFileName] = useState('');
+  const [bulkResult, setBulkResult] = useState(null);
   const [batchForm, setBatchForm] = useState({
     scopeType: 'company',
     scopeValue: '',
@@ -253,6 +260,27 @@ function CerrarMes() {
       const batch = response.data?.batch;
       setMessage({ type: 'success', text: `Lote ${batch?.id || ''}: ${batch?.total_creadas || 0} novedades creadas.` });
       refreshPeriod();
+    },
+  });
+
+  const bulkNoveltyMutation = useMutation({
+    mutationFn: (rows) => authenticatedApi.post('/novedades/carga-masiva', { rows }),
+    onSuccess: (response) => {
+      setBulkResult(response.data);
+      setMessage({
+        type: 'success',
+        text: `Carga masiva procesada: ${response.data?.creadas || 0} creadas, ${response.data?.errores || 0} con error.`,
+      });
+      setError('');
+      setBulkCsv('');
+      setBulkFileName('');
+      queryClient.invalidateQueries({ queryKey: ['nomina-periodo', anio, mes] });
+      queryClient.invalidateQueries({ queryKey: ['novedades-pendientes'] });
+    },
+    onError: (error) => {
+      setBulkResult(null);
+      setMessage(null);
+      setError(error.response?.data?.message || error.response?.data?.error || 'No pudimos procesar la carga masiva.');
     },
   });
 
@@ -436,11 +464,59 @@ function CerrarMes() {
     setBatchSearch('');
     setBatchNoveltyFilter('all');
     setBatchScopeFilter('all');
+    setBulkCsv('');
+    setBulkFileName('');
+    setBulkResult(null);
+    bulkNoveltyMutation.reset();
   }, [anio, mes]);
 
   const updateBatch = (field, value) => {
     setBatchForm((current) => ({ ...current, [field]: value }));
   };
+
+  async function downloadBulkNoveltyTemplate() {
+    try {
+      const response = await authenticatedApi.get('/novedades/plantilla-carga-masiva', { responseType: 'blob' });
+      downloadBlob(response.data, 'plantilla_carga_masiva_novedades.csv');
+      setError('');
+    } catch (error) {
+      setError(error.response?.data?.message || 'No pudimos descargar la plantilla de novedades.');
+    }
+  }
+
+  async function loadBulkNoveltyFile(event) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      const content = await file.text();
+      if (!content.trim()) throw new Error('El archivo CSV seleccionado está vacío.');
+      setBulkCsv(content);
+      setBulkFileName(file.name);
+      setBulkResult(null);
+      setMessage({ type: 'success', text: `Archivo listo: ${file.name}. Revisa las filas y procesa la carga.` });
+      setError('');
+    } catch (error) {
+      setBulkFileName('');
+      setBulkCsv('');
+      setBulkResult(null);
+      setMessage(null);
+      setError(error.message || 'No pudimos leer el archivo CSV seleccionado.');
+    } finally {
+      input.value = '';
+    }
+  }
+
+  function submitBulkNovelties(event) {
+    event.preventDefault();
+    try {
+      bulkNoveltyMutation.mutate(parseCsvRows(bulkCsv));
+    } catch (error) {
+      setBulkResult(null);
+      setMessage(null);
+      setError(error.message);
+    }
+  }
 
   const updateBatchHours = (value) => {
     const nextValue = normalizeHoursDraft(value);
@@ -453,7 +529,7 @@ function CerrarMes() {
   const canCreateBatch = isWritablePeriod
     && (!scopeNeedsValue || batchForm.scopeValue)
     && (requiresAmount ? Number(batchForm.monto) > 0 : hoursDraftToNumber(batchForm.horas) > 0);
-  const currentError = openMutation.error || batchMutation.error || deleteBatchMutation.error || resolveNoveltiesMutation.error || precalculateMutation.error || calculateMutation.error || closeMutation.error || discardCalculationMutation.error || periodQuery.error || noveltyTypesQuery.error;
+  const currentError = openMutation.error || batchMutation.error || bulkNoveltyMutation.error || deleteBatchMutation.error || resolveNoveltiesMutation.error || precalculateMutation.error || calculateMutation.error || closeMutation.error || discardCalculationMutation.error || periodQuery.error || noveltyTypesQuery.error;
   const currentPrecheck = precheckDetails(currentError);
   const alertIsError = Boolean(currentError || message?.type === 'error');
   const hasLegalParameterBlocker = hasBlocker(currentPrecheck, [
@@ -983,6 +1059,74 @@ function CerrarMes() {
         )}
       </section>
 
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">Carga masiva de novedades</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              Descarga la plantilla oficial, selecciona el archivo o pega sus filas para registrar novedades del periodo.
+            </p>
+          </div>
+          <button
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-teal-200 px-4 text-sm font-semibold text-teal-700 hover:border-teal-400"
+            onClick={downloadBulkNoveltyTemplate}
+            type="button"
+          >
+            <Download className="h-4 w-4" />
+            Descargar plantilla
+          </button>
+        </div>
+        <form className="mt-4" onSubmit={submitBulkNovelties}>
+          <div className="rounded-md border border-dashed border-teal-300 bg-teal-50/60 p-3">
+            <p className="text-sm font-semibold text-slate-700">Archivo CSV</p>
+            <label className="mt-2 inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-md bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800">
+              <Upload className="h-4 w-4" />
+              {bulkFileName ? 'Cambiar archivo' : 'Seleccionar archivo'}
+              <input accept=".csv,.txt,text/csv,text/plain" className="sr-only" onChange={loadBulkNoveltyFile} type="file" />
+            </label>
+            <span className="ml-3 text-xs text-slate-600">También puedes pegar las filas en el cuadro inferior.</span>
+          </div>
+          {bulkFileName && <p className="mt-2 text-xs text-slate-500">Archivo seleccionado: {bulkFileName}</p>}
+          <textarea
+            aria-label="Filas CSV de novedades en Cerrar Mes"
+            className="mt-3 min-h-40 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs"
+            onChange={(event) => {
+              setBulkCsv(event.target.value);
+              setBulkFileName('');
+              setBulkResult(null);
+            }}
+            placeholder="cedula,fecha,tipoNovedad,horas,monto,justificacion,idempotencyKey"
+            value={bulkCsv}
+          />
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            La cédula identifica al empleado. La fecha debe corresponder al periodo seleccionado; EmpleadoId queda disponible solo para integraciones.
+          </p>
+          <button
+            className="mt-3 inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-slate-800 px-4 text-sm font-semibold text-white hover:bg-slate-900 disabled:opacity-60"
+            disabled={bulkNoveltyMutation.isPending || !bulkCsv.trim()}
+            type="submit"
+          >
+            <Plus className="h-4 w-4" />
+            {bulkNoveltyMutation.isPending ? 'Procesando...' : 'Procesar carga masiva'}
+          </button>
+        </form>
+        {bulkResult && (
+          <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+            <p className="font-semibold text-slate-900">Resultado de la carga</p>
+            <p className="mt-1 text-slate-600">
+              {bulkResult.creadas || 0} creadas · {bulkResult.errores || 0} con error.
+            </p>
+            {bulkResult.results?.some((row) => row.status === 'error') && (
+              <div className="mt-2 space-y-1 text-xs text-red-700">
+                {bulkResult.results.filter((row) => row.status === 'error').slice(0, 10).map((row) => (
+                  <p key={row.rowNumber || row.fila}>Fila {row.rowNumber || row.fila}: {row.message || row.error || 'Revisa los datos.'}</p>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
       {batches.length > 0 && (
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -1123,6 +1267,43 @@ function CerrarMes() {
       )}
     </div>
   );
+}
+
+function parseCsvRows(text) {
+  const lines = String(text || '').replace(/^\uFEFF/, '').split(/\r?\n/).filter((line) => line.trim());
+  if (lines.length < 2) {
+    throw new Error('Pega el encabezado y al menos una fila de la plantilla.');
+  }
+  const headers = splitCsvLine(lines[0].replace(/^\uFEFF/, '')).map((header) => header.trim());
+  return lines.slice(1).map((line) => {
+    const cells = splitCsvLine(line);
+    return headers.reduce((row, header, index) => ({
+      ...row,
+      [header]: cells[index] || '',
+    }), {});
+  });
+}
+
+function splitCsvLine(line) {
+  const cells = [];
+  let current = '';
+  let quoted = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    if (char === '"' && line[index + 1] === '"') {
+      current += '"';
+      index += 1;
+    } else if (char === '"') {
+      quoted = !quoted;
+    } else if (char === ',' && !quoted) {
+      cells.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  cells.push(current);
+  return cells;
 }
 
 export default CerrarMes;
