@@ -60,9 +60,28 @@ describe('fiscalInvoiceService MSF26', () => {
       referenciaExterna: 'SKN-PAY-1',
     }));
     expect(payload.invoice.items[0]).toEqual(expect.objectContaining({
-      descripcion: 'Servicio SKNOMINA - Pyme',
+      descripcion: 'Servicio SaaS SKNOMINA - Pyme',
       total: 56,
+      codigo: 'SKNOMINA-PYME',
     }));
+  });
+
+  test('usa la identidad fiscal de la empresa desde la configuracion del tenant cuando no vienen en la transaccion', () => {
+    const payload = buildInvoicePayload({
+      ...tx,
+      ruc: '',
+      razon_social: '',
+      tenant_configuracion: {
+        razonSocial: 'Empresa Demo S.A.',
+        ruc: '1790012345001',
+      },
+    });
+
+    expect(payload.customer).toEqual(expect.objectContaining({
+      identificacion: '1790012345001',
+      razonSocial: 'Empresa Demo S.A.',
+    }));
+    expect(payload.invoice.cliente).toEqual(payload.customer);
   });
 
   test('registra solicitud bloqueada cuando el facturador no esta configurado', async () => {

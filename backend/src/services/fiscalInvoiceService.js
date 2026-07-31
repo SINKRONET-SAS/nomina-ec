@@ -54,19 +54,34 @@ function buildIdempotencyKey(tx) {
   return `SKNOMINA-${buildExternalReference(tx)}`;
 }
 
-function buildInvoicePayload(tx) {
+function resolveCustomerIdentity(tx) {
   const tenantConfig = safeJson(tx.tenant_configuracion);
   const customerEmail = tenantConfig.facturacionEmail
     || tenantConfig.emailFacturacion
     || tenantConfig.billingEmail
     || tenantConfig.email
     || '';
-  const customer = {
-    identificacion: String(tx.ruc || '').replace(/\D/g, ''),
-    razonSocial: tx.razon_social || '',
+
+  const normalizedRuc = String(tx.ruc || tenantConfig.ruc || '').replace(/\D/g, '');
+  const normalizedRazonSocial = String(tx.razon_social || tenantConfig.razonSocial || tenantConfig.razon_social || '').trim();
+
+  return {
+    identificacion: normalizedRuc,
+    razonSocial: normalizedRazonSocial,
     email: customerEmail,
   };
+}
+
+function buildInvoicePayload(tx) {
+  const customer = resolveCustomerIdentity(tx);
   const planName = tx.plan_nombre || tx.plan_id || 'Suscripcion SKNOMINA';
+  const productCode = `SKNOMINA-${String(tx.plan_id || 'PLAN').slice(0, 30)}`;
+  const productDescription = `Servicio SaaS SKNOMINA - ${planName}`;
+  const amount = centsToUsd(tx.monto_centavos);
+  const baseGravada = centsToUsd(tx.base_gravada_centavos);
+  const baseNoGravada = centsToUsd(tx.base_no_gravada_centavos);
+  const iva = centsToUsd(tx.iva_centavos);
+
   const invoice = {
     origen: 'SKNOMINA',
     tipoComprobante: 'FACTURA',
@@ -75,27 +90,29 @@ function buildInvoicePayload(tx) {
     cliente: customer,
     items: [
       {
-        codigo: `SKNOMINA-${String(tx.plan_id || 'PLAN').slice(0, 30)}`,
-        descripcion: `Servicio SKNOMINA - ${planName}`,
+        codigo: productCode,
+        descripcion: productDescription,
         cantidad: 1,
-        precioUnitario: centsToUsd(tx.monto_centavos),
-        baseGravada: centsToUsd(tx.base_gravada_centavos),
-        baseNoGravada: centsToUsd(tx.base_no_gravada_centavos),
-        iva: centsToUsd(tx.iva_centavos),
-        total: centsToUsd(tx.monto_centavos),
+        precioUnitario: amount,
+        baseGravada,
+        baseNoGravada,
+        iva,
+        total: amount,
       },
     ],
     totales: {
-      baseGravada: centsToUsd(tx.base_gravada_centavos),
-      baseNoGravada: centsToUsd(tx.base_no_gravada_centavos),
-      iva: centsToUsd(tx.iva_centavos),
-      total: centsToUsd(tx.monto_centavos),
+      baseGravada,
+      baseNoGravada,
+      iva,
+      total: amount,
     },
     metadata: {
       tenantId: tx.tenant_id,
       paymentTransactionId: tx.id,
       planId: tx.plan_id,
       proveedorPago: tx.proveedor,
+      producto: productDescription,
+      productoCodigo: productCode,
     },
   };
 
@@ -107,8 +124,11 @@ function validateInvoicePrerequisites(tx, readiness) {
   if (!tx) errors.push('No encontramos la transaccion de pago aprobada.');
   if (tx && tx.estado !== 'APPROVED') errors.push('La transaccion aun no esta aprobada.');
   if (tx && Number(tx.monto_centavos || 0) <= 0) errors.push('La transaccion no tiene valor facturable.');
-  if (tx && !String(tx.ruc || '').replace(/\D/g, '')) errors.push('Falta el RUC de la empresa para facturar.');
-  if (tx && !tx.razon_social) errors.push('Falta la razon social de la empresa para facturar.');
+  const tenantConfig = safeJson(tx?.tenant_configuracion);
+  const tenantRuc = String(tx?.ruc || tenantConfig.ruc || '').replace(/\D/g, '');
+  const tenantRazonSocial = String(tx?.razon_social || tenantConfig.razonSocial || tenantConfig.razon_social || '').trim();
+  if (tx && !tenantRuc) errors.push('Falta el RUC de la empresa para facturar.');
+  if (tx && !tenantRazonSocial) errors.push('Falta la razon social de la empresa para facturar.');
   return errors;
 }
 
