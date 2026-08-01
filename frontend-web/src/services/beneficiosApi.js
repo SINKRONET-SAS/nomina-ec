@@ -2,7 +2,16 @@ import { authenticatedApi } from './authenticatedApi';
 
 export async function fetchBeneficios(params = {}) {
   const response = await authenticatedApi.get('/beneficios', { params });
-  return response.data?.beneficios || [];
+  return {
+    items: response.data?.beneficios || [],
+    pagination: response.data?.pagination || {
+      page: Number(params.page) || 1,
+      pageSize: Number(params.pageSize) || 10,
+      totalItems: 0,
+      totalPages: 1,
+    },
+    totals: response.data?.totales || {},
+  };
 }
 
 export async function createBeneficio(payload) {

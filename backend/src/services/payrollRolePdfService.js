@@ -352,8 +352,21 @@ function buildPayrollRoleDocDefinition(row) {
   addAmountLine(deducciones, 'Aporte IESS personal', detail.aporteIess ?? row.aporte_iess_personal);
   addAmountLine(deducciones, 'Impuesto a la renta', detail.impuestoRenta ?? row.impuesto_renta);
   addRoleConceptLines(deducciones, noveltyConcepts, 'deduccion');
-  addAmountLine(deducciones, 'Anticipos', detail.anticipos ?? row.anticipos);
-  addAmountLine(deducciones, 'Prestamos', detail.prestamos ?? row.prestamos);
+  const benefitDeductions = Array.isArray(detail.beneficiosDescontados)
+    ? detail.beneficiosDescontados
+    : [];
+  if (benefitDeductions.length > 0) {
+    benefitDeductions.forEach((item) => {
+      const label = item.tipo === 'prestamo'
+        ? 'Prestamo descontado (beneficio aprobado)'
+        : 'Anticipo descontado (beneficio aprobado)';
+      const description = String(item.descripcion || '').trim();
+      addAmountLine(deducciones, description ? `${label} · ${description}` : label, item.amount);
+    });
+  } else {
+    addAmountLine(deducciones, 'Anticipos descontados (beneficios aprobados)', detail.anticipos ?? row.anticipos);
+    addAmountLine(deducciones, 'Prestamos descontados (beneficios aprobados)', detail.prestamos ?? row.prestamos);
+  }
 
   const columnTable = (title, rows) => [
     { text: title, style: 'section' },

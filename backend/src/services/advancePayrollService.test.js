@@ -19,10 +19,10 @@ function runRow() {
   return { id: 'role-1', tenant_id: 'tenant-1', payroll_period_id: 'period-1', anio: 2026, mes: 7, fecha_corte: '2026-07-31', estado: 'aprobado', descripcion: 'Quincena', created_by: 'user-1' };
 }
 
-function getRunQueries() {
+function getRunQueries(lineOverrides = {}) {
   db.query
     .mockResolvedValueOnce({ rows: [runRow()] })
-    .mockResolvedValueOnce({ rows: [{ id: 'line-1', role_id: 'role-1', empleado_id: 'employee-1', nombres: 'Ana', apellidos: 'Demo', cedula: '0999999999', monto: '100.00', tipo_novedad: 'bono_desempeno', nombre_bonificacion: 'Bono cumplimiento', estado: 'bonificar', bonificacion_novedad_id: 'novelty-1' }] });
+    .mockResolvedValueOnce({ rows: [{ id: 'line-1', role_id: 'role-1', empleado_id: 'employee-1', nombres: 'Ana', apellidos: 'Demo', cedula: '0999999999', monto: '100.00', tipo_novedad: 'bono_desempeno', nombre_bonificacion: 'Bono cumplimiento', estado: 'bonificar', bonificacion_novedad_id: 'novelty-1', ...lineOverrides }] });
 }
 
 describe('advancePayrollService', () => {
@@ -79,6 +79,30 @@ describe('advancePayrollService', () => {
     expect(result.lineas[0]).toMatchObject({ estado: 'bonificar', bonificacionNovedadId: 'novelty-1' });
     expect(db.commit).toHaveBeenCalledWith(tx);
     expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'nomina.rol_anticipos.linea.bonificar' }));
+  });
+
+  test('convierte una línea en ingreso y un único anticipo vinculado para el cierre', async () => {
+    const tx = { query: jest.fn() };
+    db.getClient.mockResolvedValueOnce(tx);
+    tx.query
+      .mockResolvedValueOnce({ rows: [runRow()] })
+      .mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'open' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'line-1', role_id: 'role-1', empleado_id: 'employee-1', monto: '100.00', tipo_novedad: 'bono_desempeno', nombre_bonificacion: 'Bono movilidad', estado: 'aprobado' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: 'novelty-1' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: 'benefit-1' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    getRunQueries({ estado: 'bonificar_descontar', beneficio_id: 'benefit-1', bonificacion_novedad_id: 'novelty-1' });
+
+    const result = await decideLine('tenant-1', 'role-1', 'line-1', 'bonificar_descontar', user, context);
+
+    expect(result.lineas[0]).toMatchObject({ estado: 'bonificar_descontar', beneficioId: 'benefit-1', bonificacionNovedadId: 'novelty-1' });
+    expect(tx.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE novedades_asistencia'), ['tenant-1', 'novelty-1', 'benefit-1']);
+    expect(db.commit).toHaveBeenCalledWith(tx);
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'nomina.rol_anticipos.linea.bonificar_descontar' }));
   });
 
   test('no cierra el rol mientras existan líneas sin decisión', async () => {

@@ -9,11 +9,21 @@ function context(req) {
 
 async function listar(req, res, next) {
   try {
-    const beneficios = await beneficioService.listBenefits(req.tenantId, {
+    const result = await beneficioService.listBenefits(req.tenantId, {
       estado: req.query.estado,
+      tipo: req.query.tipo,
       empleadoId: req.query.empleadoId,
+      buscar: req.query.buscar || req.query.search,
+      page: req.query.page,
+      pageSize: req.query.pageSize,
     });
-    return res.json({ success: true, beneficios, correlationId: req.correlationId });
+    return res.json({
+      success: true,
+      beneficios: result.items,
+      pagination: result.pagination,
+      totales: result.totals,
+      correlationId: req.correlationId,
+    });
   } catch (err) {
     return next(err);
   }

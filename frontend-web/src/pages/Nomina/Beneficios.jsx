@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, CheckCircle2, Download, Edit3, LockKeyhole, Plus, RotateCcw, Send, Sparkles, Trash2, Upload, X } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { annulBeneficio, approveBeneficio, createBeneficio, deleteBeneficio, fetchBeneficios, updateBeneficio } from '../../services/beneficiosApi';
-import { applyAdvanceRoleSelection, approveAdvanceRole, closeAdvanceRole, createAdvanceRole, createAdvanceRoleBulk, decideAdvanceLine, downloadAdvanceReport, downloadAdvanceRoleCsv, downloadAdvanceTemplate, fetchAdvanceNoveltyTypes, fetchAdvanceRoles } from '../../services/advancePayrollApi';
+import { annulAdvanceRole, applyAdvanceRoleSelection, approveAdvanceRole, closeAdvanceRole, createAdvanceRole, createAdvanceRoleBulk, decideAdvanceLine, deleteAdvanceRole, downloadAdvanceReport, downloadAdvanceRoleCsv, downloadAdvanceTemplate, fetchAdvanceNoveltyTypes, fetchAdvanceRoles, updateAdvanceRole } from '../../services/advancePayrollApi';
 import { extractApiError } from '../../services/publicApi';
 import { ECUADOR_TIME_ZONE, currentPeriodEC } from '../../utils/dateFormat';
 import { downloadBlob } from '../../utils/downloadBlob';
@@ -44,12 +44,16 @@ function Beneficios() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [advanceDraft, setAdvanceDraft] = useState(() => emptyAdvanceDraft());
+  const [editingAdvanceRoleId, setEditingAdvanceRoleId] = useState('');
   const [advanceFilters, setAdvanceFilters] = useState(() => ({ anio: currentPeriodEC().anio, mes: currentPeriodEC().mes, estado: '', tipoNovedad: '', buscar: '' }));
   const [advanceEmployeeSearch, setAdvanceEmployeeSearch] = useState('');
   const [advanceBulkCsv, setAdvanceBulkCsv] = useState('');
   const [advanceBulkFileName, setAdvanceBulkFileName] = useState('');
   const [debouncedEmpSearch, setDebouncedEmpSearch] = useState('');
   const debounceTimer = useRef(null);
+  const [benefitFilters, setBenefitFilters] = useState({ buscar: '', tipo: '', estado: '' });
+  const [benefitPage, setBenefitPage] = useState(1);
+  const [benefitPageSize, setBenefitPageSize] = useState(10);
   const [rolePage, setRolePage] = useState(1);
   const [rolePageSize, setRolePageSize] = useState(5);
   const [roleLinePages, setRoleLinePages] = useState({});
@@ -64,8 +68,8 @@ function Beneficios() {
   });
 
   const beneficiosQuery = useQuery({
-    queryKey: ['beneficios-empleados'],
-    queryFn: () => fetchBeneficios(),
+    queryKey: ['beneficios-empleados', benefitFilters, benefitPage, benefitPageSize],
+    queryFn: () => fetchBeneficios({ ...benefitFilters, page: benefitPage, pageSize: benefitPageSize }),
   });
 
   const advanceRolesQuery = useQuery({
@@ -79,7 +83,10 @@ function Beneficios() {
   });
 
   const empleados = empleadosQuery.data || [];
-  const beneficios = beneficiosQuery.data || [];
+  const beneficiosPage = beneficiosQuery.data || {};
+  const beneficios = beneficiosPage.items || [];
+  const benefitPagination = beneficiosPage.pagination || {};
+  const benefitTotals = beneficiosPage.totals || {};
   const advanceRoles = advanceRolesQuery.data || [];
   const advanceTypes = advanceTypesQuery.data || [];
   const filteredAdvanceEmployees = useMemo(() => empleados.filter((employee) => `${employee.nombres} ${employee.apellidos} ${employee.cedula}`.toLowerCase().includes(debouncedEmpSearch.toLowerCase().trim())), [empleados, debouncedEmpSearch]);
@@ -96,13 +103,7 @@ function Beneficios() {
     debounceTimer.current = setTimeout(() => { setDebouncedEmpSearch(value); setAdvEmpPage(1); }, 300);
   }, []);
 
-  const [benefitPage, setBenefitPage] = useState(1);
-  const [benefitPageSize, setBenefitPageSize] = useState(10);
-  const totalBenefitPages = Math.max(1, Math.ceil(beneficios.length / benefitPageSize));
-  const paginatedBeneficios = useMemo(() => {
-    const start = (benefitPage - 1) * benefitPageSize;
-    return beneficios.slice(start, start + benefitPageSize);
-  }, [beneficios, benefitPage, benefitPageSize]);
+  const totalBenefitPages = Math.max(1, Number(benefitPagination.totalPages || 1));
 
   const [advEmpPage, setAdvEmpPage] = useState(1);
   const [advEmpPageSize, setAdvEmpPageSize] = useState(10);
@@ -112,7 +113,7 @@ function Beneficios() {
     return filteredAdvanceEmployees.slice(start, start + advEmpPageSize);
   }, [filteredAdvanceEmployees, advEmpPage, advEmpPageSize]);
 
-  const totals = useMemo(() => beneficios.reduce((acc, item) => {
+  const localTotals = useMemo(() => beneficios.reduce((acc, item) => {
     if (item.estado === 'aprobado') {
       acc.aprobado += Number(item.saldoPendiente || 0);
     }
@@ -121,6 +122,10 @@ function Beneficios() {
     }
     return acc;
   }, { aprobado: 0, pendiente: 0 }), [beneficios]);
+  const totals = {
+    aprobado: benefitTotals.aprobado != null ? Number(benefitTotals.aprobado) : localTotals.aprobado,
+    pendiente: benefitTotals.pendiente != null ? Number(benefitTotals.pendiente) : localTotals.pendiente,
+  };
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -170,11 +175,13 @@ function Beneficios() {
       const lineas = Object.entries(advanceDraft.lines)
         .filter(([, line]) => line.selected && Number(line.monto) > 0)
         .map(([empleadoId, line]) => ({ empleadoId, monto: Number(line.monto), tipoNovedad: advanceDraft.tipoNovedad, nombreBonificacion: advanceDraft.nombreBonificacion, resolucion: line.resolucion }));
-      return createAdvanceRole({ ...advanceDraft, lineas });
+      const payload = { ...advanceDraft, lineas };
+      return editingAdvanceRoleId ? updateAdvanceRole(editingAdvanceRoleId, payload) : createAdvanceRole(payload);
     },
     onSuccess: () => {
-      setMessage('Rol de anticipos generado. Apruebalo y resuelve cada linea como descuento o bonificacion.');
+      setMessage(editingAdvanceRoleId ? 'Rol de anticipos actualizado.' : 'Rol de anticipos generado. Apruebalo y resuelve cada linea como descuento, bonificacion o ingreso con descuento al cierre.');
       setError('');
+      setEditingAdvanceRoleId('');
       setAdvanceDraft(emptyAdvanceDraft());
       queryClient.invalidateQueries({ queryKey: ['roles-anticipos'] });
     },
@@ -195,6 +202,8 @@ function Beneficios() {
 
   const advanceActionMutation = useMutation({
     mutationFn: async ({ action, roleId, lineId, decision }) => {
+      if (action === 'delete') return deleteAdvanceRole(roleId);
+      if (action === 'annul') return annulAdvanceRole(roleId);
       if (action === 'approve') return approveAdvanceRole(roleId);
       if (action === 'approveAndApply') {
         await approveAdvanceRole(roleId);
@@ -253,6 +262,32 @@ function Beneficios() {
     setAdvanceDraft((current) => ({ ...current, [name]: value }));
   }
 
+  function cancelAdvanceEdit() {
+    setEditingAdvanceRoleId('');
+    setAdvanceDraft(emptyAdvanceDraft());
+  }
+
+  function editAdvanceRole(role) {
+    if (role.estado !== 'borrador') return;
+    const firstLine = role.lineas[0] || {};
+    const lines = Object.fromEntries(role.lineas.map((line) => [line.empleadoId, {
+      selected: true,
+      monto: String(line.monto ?? ''),
+      resolucion: line.resolucionSolicitada || '',
+    }]));
+    setEditingAdvanceRoleId(role.id);
+    setAdvanceDraft({
+      anio: role.anio,
+      mes: role.mes,
+      fechaCorte: role.fechaCorte || '',
+      descripcion: role.descripcion || '',
+      tipoNovedad: firstLine.tipoNovedad || '',
+      nombreBonificacion: firstLine.nombreBonificacion || '',
+      lines,
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   function updateAdvanceLine(employeeId, field, value) {
     setAdvanceDraft((current) => ({
       ...current,
@@ -273,7 +308,7 @@ function Beneficios() {
       setError('Cada empleado seleccionado debe tener un monto mayor a cero.');
       return;
     }
-    if (selected.some((line) => !['descontar', 'bonificar'].includes(line.resolucion))) {
+    if (selected.some((line) => !['descontar', 'bonificar', 'bonificar_descontar'].includes(line.resolucion))) {
       setMessage('');
       setError('Define para cada empleado si el valor será un anticipo a descontar o una bonificación a pagar en el cierre.');
       return;
@@ -284,6 +319,15 @@ function Beneficios() {
   function updateAdvanceFilter(name, value) {
     setAdvanceFilters((current) => ({ ...current, [name]: value }));
   }
+
+  function updateBenefitFilter(name, value) {
+    setBenefitFilters((current) => ({ ...current, [name]: value }));
+    setBenefitPage(1);
+  }
+
+  useEffect(() => {
+    if (benefitPage > totalBenefitPages) setBenefitPage(totalBenefitPages);
+  }, [benefitPage, totalBenefitPages]);
 
   async function selectAdvanceBulkFile(event) {
     const input = event.currentTarget;
@@ -430,8 +474,19 @@ function Beneficios() {
           </div>
         </form>
 
-        <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="overflow-x-auto">
+        <div className="space-y-3">
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px_auto]">
+              <label><span className="text-xs font-medium text-slate-600">Buscar empleado, cédula o descripción</span><input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={benefitFilters.buscar} onChange={(event) => updateBenefitFilter('buscar', event.target.value)} placeholder="Nombre, cédula o descripción" /></label>
+              <label><span className="text-xs font-medium text-slate-600">Tipo</span><select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={benefitFilters.tipo} onChange={(event) => updateBenefitFilter('tipo', event.target.value)}><option value="">Todos</option><option value="anticipo">Anticipo</option><option value="prestamo">Préstamo</option></select></label>
+              <label><span className="text-xs font-medium text-slate-600">Estado</span><select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={benefitFilters.estado} onChange={(event) => updateBenefitFilter('estado', event.target.value)}><option value="">Todos</option><option value="pendiente">Pendiente</option><option value="aprobado">Aprobado</option><option value="descontado">Descontado</option><option value="anulado">Anulado</option></select></label>
+              <button className="self-end rounded-md border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50" type="button" onClick={() => { setBenefitFilters({ buscar: '', tipo: '', estado: '' }); setBenefitPage(1); }}><RotateCcw className="mr-1 inline h-3.5 w-3.5" />Limpiar</button>
+            </div>
+            <p className="mt-2 text-xs text-slate-500">La búsqueda consulta todos los registros; la tabla muestra una página para revisar el origen de cada descuento.</p>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
                 <tr>
@@ -449,13 +504,17 @@ function Beneficios() {
                   <tr><td className="px-4 py-6 text-center" colSpan="7">Cargando...</td></tr>
                 ) : beneficios.length === 0 ? (
                   <tr><td className="px-4 py-6 text-center" colSpan="7">No hay anticipos o préstamos registrados.</td></tr>
-                ) : paginatedBeneficios.map((item) => (
+                ) : beneficios.map((item) => (
                   <tr key={item.id}>
                     <td className="px-4 py-3">
                       <p className="font-medium text-slate-900">{item.empleadoNombre}</p>
                       <p className="text-xs text-slate-500">{item.cedula}</p>
                     </td>
-                    <td className="px-4 py-3 capitalize">{item.tipo}</td>
+                    <td className="px-4 py-3">
+                      <p className="capitalize">{item.tipo}</p>
+                      <p className="text-xs text-slate-500">{item.descripcion || 'Sin descripción'}</p>
+                      {item.metadata?.source === 'rol_anticipos' && <p className="text-xs font-semibold text-sky-700">Origen: rol de anticipos</p>}
+                    </td>
                     <td className="px-4 py-3 text-right">{money(item.saldoPendiente)}</td>
                     <td className="px-4 py-3 text-right">{money(item.cuotaMensual)}</td>
                     <td className="px-4 py-3">{item.mesInicio}/{item.anioInicio}</td>
@@ -496,13 +555,14 @@ function Beneficios() {
             currentPage={benefitPage}
             totalPages={totalBenefitPages}
             pageSize={benefitPageSize}
-            totalItems={beneficios.length}
+            totalItems={Number(benefitPagination.totalItems || 0)}
             onPageChange={setBenefitPage}
             onPageSizeChange={(newSize) => {
               setBenefitPageSize(newSize);
               setBenefitPage(1);
             }}
           />
+        </div>
         </div>
       </section>
 
@@ -526,7 +586,7 @@ function Beneficios() {
             <div className="border-b border-slate-200 bg-slate-50 p-3">
               <label className="block"><span className="text-sm font-medium text-slate-700">Buscar empleado para incluir</span><input className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={advanceEmployeeSearch} onChange={(event) => handleEmployeeSearch(event.target.value)} placeholder="Cédula, nombres o apellidos" /></label>
             </div>
-            <table className="w-full min-w-[980px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Incluir</th><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Cédula</th><th className="px-3 py-2">Monto</th><th className="px-3 py-2">Aplicación en cierre</th></tr></thead><tbody className="divide-y divide-slate-100">{paginatedAdvEmployees.map((employee) => { const line = advanceDraft.lines[employee.id] || {}; return <tr key={employee.id}><td className="px-3 py-2"><input type="checkbox" checked={line.selected === true} onChange={(event) => updateAdvanceLine(employee.id, 'selected', event.target.checked)} aria-label={`Incluir a ${employee.nombres} ${employee.apellidos}`} /></td><td className="px-3 py-2 font-medium text-slate-900">{employee.nombres} {employee.apellidos}</td><td className="px-3 py-2 text-slate-600">{employee.cedula}</td><td className="px-3 py-2"><input className="w-36 rounded-md border border-slate-300 px-3 py-1.5" type="number" min="0.01" step="0.01" value={line.monto || ''} onChange={(event) => updateAdvanceLine(employee.id, 'monto', event.target.value)} disabled={!line.selected} /></td><td className="px-3 py-2"><select className="w-64 rounded-md border border-slate-300 px-3 py-1.5 text-xs" value={line.resolucion || ''} onChange={(event) => updateAdvanceLine(employee.id, 'resolucion', event.target.value)} disabled={!line.selected} aria-label={`Aplicación en cierre de ${employee.nombres} ${employee.apellidos}`}><option value="">Selecciona una opción</option><option value="descontar">Anticipo: descontar al cierre</option><option value="bonificar">Bonificación: pagar al cierre</option></select></td></tr>; })}</tbody></table>
+            <table className="w-full min-w-[980px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Incluir</th><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Cédula</th><th className="px-3 py-2">Monto</th><th className="px-3 py-2">Aplicación en cierre</th></tr></thead><tbody className="divide-y divide-slate-100">{paginatedAdvEmployees.map((employee) => { const line = advanceDraft.lines[employee.id] || {}; return <tr key={employee.id}><td className="px-3 py-2"><input type="checkbox" checked={line.selected === true} onChange={(event) => updateAdvanceLine(employee.id, 'selected', event.target.checked)} aria-label={`Incluir a ${employee.nombres} ${employee.apellidos}`} /></td><td className="px-3 py-2 font-medium text-slate-900">{employee.nombres} {employee.apellidos}</td><td className="px-3 py-2 text-slate-600">{employee.cedula}</td><td className="px-3 py-2"><input className="w-36 rounded-md border border-slate-300 px-3 py-1.5" type="number" min="0.01" step="0.01" value={line.monto || ''} onChange={(event) => updateAdvanceLine(employee.id, 'monto', event.target.value)} disabled={!line.selected} /></td><td className="px-3 py-2"><select className="w-64 rounded-md border border-slate-300 px-3 py-1.5 text-xs" value={line.resolucion || ''} onChange={(event) => updateAdvanceLine(employee.id, 'resolucion', event.target.value)} disabled={!line.selected} aria-label={`Aplicación en cierre de ${employee.nombres} ${employee.apellidos}`}><option value="">Selecciona una opción</option><option value="descontar">Anticipo: descontar al cierre</option><option value="bonificar">Bonificación: pagar al cierre</option><option value="bonificar_descontar">Bonificación: ingresar ahora y descontar al cierre</option></select></td></tr>; })}</tbody></table>
             <TablePagination
               currentPage={advEmpPage}
               totalPages={totalAdvEmpPages}
@@ -544,7 +604,7 @@ function Beneficios() {
 
         <section className="rounded-md border border-slate-200 bg-white p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div><h3 className="font-semibold text-slate-950">Carga masiva del rol</h3><p className="mt-1 text-sm text-slate-600">Descarga la plantilla, completa cédula, monto y resolución. La plantilla histórica de cuatro columnas también es aceptada.</p></div>
+            <div><h3 className="font-semibold text-slate-950">Carga masiva del rol</h3><p className="mt-1 text-sm text-slate-600">Descarga la plantilla, completa cédula, monto y resolución. Usa <strong>descontar</strong>, <strong>bonificar</strong> o <strong>bonificar_descontar</strong> (ingreso ahora y descuento al cierre). La plantilla histórica de cuatro columnas también es aceptada.</p></div>
             <button className="inline-flex items-center gap-2 rounded-md border border-teal-200 px-3 py-2 text-sm font-semibold text-teal-800" type="button" onClick={downloadAdvanceTemplateFile}><Download className="h-4 w-4" />Descargar plantilla</button>
           </div>
           <div className="mt-3 rounded-md border border-dashed border-teal-300 bg-teal-50/50 p-3">
@@ -563,7 +623,7 @@ function Beneficios() {
           <div className="mt-3 grid gap-3 md:grid-cols-5">
             <label><span className="text-xs font-medium text-slate-600">Año</span><input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="2020" value={advanceFilters.anio} onChange={(event) => updateAdvanceFilter('anio', event.target.value)} /></label>
             <label><span className="text-xs font-medium text-slate-600">Mes</span><input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" type="number" min="1" max="12" value={advanceFilters.mes} onChange={(event) => updateAdvanceFilter('mes', event.target.value)} /></label>
-            <label><span className="text-xs font-medium text-slate-600">Estado</span><select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={advanceFilters.estado} onChange={(event) => updateAdvanceFilter('estado', event.target.value)}><option value="">Todos</option><option value="borrador">Borrador</option><option value="aprobado">Aprobado</option><option value="cerrado">Cerrado</option></select></label>
+            <label><span className="text-xs font-medium text-slate-600">Estado</span><select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={advanceFilters.estado} onChange={(event) => updateAdvanceFilter('estado', event.target.value)}><option value="">Todos</option><option value="borrador">Borrador</option><option value="aprobado">Aprobado</option><option value="cerrado">Cerrado</option><option value="anulado">Anulado</option></select></label>
             <label><span className="text-xs font-medium text-slate-600">Tipo de novedad</span><select className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={advanceFilters.tipoNovedad} onChange={(event) => updateAdvanceFilter('tipoNovedad', event.target.value)}><option value="">Todos</option>{advanceTypes.map((type) => <option key={type.code} value={type.code}>{type.name}</option>)}</select></label>
             <label><span className="text-xs font-medium text-slate-600">Empleado</span><input className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={advanceFilters.buscar} onChange={(event) => updateAdvanceFilter('buscar', event.target.value)} placeholder="Cédula o nombre" /></label>
           </div>
@@ -572,11 +632,11 @@ function Beneficios() {
           </div>
         </section>
 
-        <p className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-5 text-sky-900">Flujo: selecciona empleados y resolución, genera el borrador, aprueba y luego aplica cada línea como anticipo o bonificación. El botón de cierre solo queda disponible cuando todas las líneas ya impactaron el rol mensual.</p>
+        <p className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-5 text-sky-900">Flujo: selecciona empleados y resolución, genera el borrador, aprueba y luego aplica cada línea. La opción <strong>bonificar_descontar</strong> registra un ingreso y un único anticipo vinculado para descontarlo al cerrar el rol mensual. El botón de cierre solo queda disponible cuando todas las líneas ya impactaron el rol mensual.</p>
         <div className="space-y-4">
           {advanceRoles.length === 0 ? <p className="rounded-md border border-slate-200 border-dashed bg-white px-4 py-6 text-center text-sm text-slate-500">Todavía no hay roles de anticipos generados.</p> : paginatedRoles.map((sourceRole) => {
             const pendingLines = sourceRole.lineas.filter((line) => line.estado === 'aprobado').length;
-            const pendingWithoutResolution = sourceRole.lineas.some((line) => line.estado === 'aprobado' && !['descontar', 'bonificar'].includes(line.resolucionSolicitada));
+            const pendingWithoutResolution = sourceRole.lineas.some((line) => line.estado === 'aprobado' && !['descontar', 'bonificar', 'bonificar_descontar'].includes(line.resolucionSolicitada));
             const canApplySelection = pendingLines > 0 && !pendingWithoutResolution;
             const totalLinePages = Math.max(1, Math.ceil(sourceRole.lineas.length / roleLinePageSize));
             const linePage = Math.min(roleLinePages[sourceRole.id] || 1, totalLinePages);
@@ -584,8 +644,8 @@ function Beneficios() {
             const role = { ...sourceRole, lineas: paginatedLines };
             return <article className="rounded-md border border-slate-200 bg-white p-4" key={role.id}>
               <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold text-slate-950">Rol {role.anio}-{String(role.mes).padStart(2, '0')} · {role.descripcion || 'Sin descripción'}</h3><p className="mt-1 text-xs text-slate-500">Corte: {role.fechaCorte ? new Date(role.fechaCorte + 'T12:00:00').toLocaleDateString('es-EC') : 'Sin fecha'} · Total: {money(role.total)} · Estado: <strong>{role.estado}</strong></p></div><div className="flex flex-wrap gap-2"><button className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700" type="button" onClick={() => downloadAdvanceRole(role)} aria-label={`Descargar evidencia del rol ${role.anio}-${role.mes}`}>Descargar evidencia</button>{role.estado === 'borrador' && <button className="inline-flex items-center gap-1 rounded-md border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: canApplySelection ? 'approveAndApply' : 'approve', roleId: role.id })} disabled={advanceActionMutation.isPending} aria-label={`Aprobar rol ${role.anio}-${role.mes}`}><Send className="h-3.5 w-3.5" />{canApplySelection ? 'Aprobar y aplicar selección' : 'Aprobar'}</button>}{role.estado === 'aprobado' && canApplySelection && <button className="inline-flex items-center gap-1 rounded-md border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'apply', roleId: role.id })} disabled={advanceActionMutation.isPending} aria-label={`Aplicar selección del rol ${role.anio}-${role.mes}`}><CheckCircle2 className="h-3.5 w-3.5" />Aplicar selección</button>}{role.estado === 'aprobado' && <button className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'close', roleId: role.id })} disabled={advanceActionMutation.isPending || pendingLines > 0} aria-label={`Cerrar rol ${role.anio}-${role.mes}`}><LockKeyhole className="h-3.5 w-3.5" />Cerrar rol</button>}</div></div>
-              {role.estado === 'aprobado' && pendingLines > 0 && <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">{pendingWithoutResolution ? <>Resuelve cada línea: <strong>Descontar</strong> crea un anticipo que se deduce del sueldo al cerrar mes; <strong>Bonificar</strong> registra una novedad de ingreso adicional.</> : 'Las resoluciones seleccionadas están listas para aplicarse al cierre mensual.'}</p>}
-              <div className="mt-3 overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Monto</th><th className="px-3 py-2">Tipo / nombre</th><th className="px-3 py-2">Resolución</th><th className="px-3 py-2 text-right">Acciones</th></tr></thead><tbody className="divide-y divide-slate-100">{role.lineas.map((line) => <tr key={line.id}><td className="px-3 py-2"><p className="font-medium text-slate-900">{line.empleadoNombre}</p><p className="text-xs text-slate-500">{line.cedula}</p></td><td className="px-3 py-2">{money(line.monto)}</td><td className="px-3 py-2"><p>{line.tipoNovedad}</p><p className="text-xs text-slate-500">{line.nombreBonificacion || 'Sin nombre personalizado'}</p></td><td className="px-3 py-2"><p className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{line.resolucionSolicitada === 'descontar' ? 'Anticipo · descontar al cierre' : line.resolucionSolicitada === 'bonificar' ? 'Bonificación · pagar al cierre' : 'Pendiente de resolución'}</p><p className="mt-1 text-xs text-slate-500">Estado: {line.estado}</p></td><td className="px-3 py-2 text-right">{role.estado === 'aprobado' && line.estado === 'aprobado' && <><button className="mr-2 rounded-md border border-amber-200 px-2 py-1 text-xs font-semibold text-amber-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'descontar' })} disabled={advanceActionMutation.isPending} title="Crea un beneficio que se deduce del sueldo al cerrar mes" aria-label={`Descontar línea de ${line.empleadoNombre}`}>Descontar</button><button className="rounded-md border border-emerald-200 px-2 py-1 text-xs font-semibold text-emerald-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'bonificar' })} disabled={advanceActionMutation.isPending} title="Registra una novedad de ingreso adicional" aria-label={`Bonificar línea de ${line.empleadoNombre}`}>Bonificar</button></>}</td></tr>)}</tbody></table></div>
+              {role.estado === 'aprobado' && pendingLines > 0 && <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">{pendingWithoutResolution ? <>Resuelve cada línea: <strong>Descontar</strong> crea un anticipo que se deduce del sueldo al cerrar mes; <strong>Bonificar</strong> registra un ingreso para pagarlo al cierre; <strong>Ingresar y descontar</strong> registra el ingreso y el anticipo que se descontará al cerrar el mes.</> : 'Las resoluciones seleccionadas están listas para aplicarse al cierre mensual.'}</p>}
+              <div className="mt-3 overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Monto</th><th className="px-3 py-2">Tipo / nombre</th><th className="px-3 py-2">Resolución</th><th className="px-3 py-2 text-right">Acciones</th></tr></thead><tbody className="divide-y divide-slate-100">{role.lineas.map((line) => <tr key={line.id}><td className="px-3 py-2"><p className="font-medium text-slate-900">{line.empleadoNombre}</p><p className="text-xs text-slate-500">{line.cedula}</p></td><td className="px-3 py-2">{money(line.monto)}</td><td className="px-3 py-2"><p>{line.tipoNovedad}</p><p className="text-xs text-slate-500">{line.nombreBonificacion || 'Sin nombre personalizado'}</p></td><td className="px-3 py-2"><p className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{line.resolucionSolicitada === 'descontar' ? 'Anticipo · descontar al cierre' : line.resolucionSolicitada === 'bonificar' ? 'Bonificación · pagar al cierre' : line.resolucionSolicitada === 'bonificar_descontar' ? 'Bonificación · ingresar y descontar al cierre' : 'Pendiente de resolución'}</p><p className="mt-1 text-xs text-slate-500">Estado: {line.estado}</p></td><td className="px-3 py-2 text-right">{role.estado === 'aprobado' && line.estado === 'aprobado' && <><button className="mr-2 rounded-md border border-amber-200 px-2 py-1 text-xs font-semibold text-amber-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'descontar' })} disabled={advanceActionMutation.isPending} title="Crea un beneficio que se deduce del sueldo al cerrar mes" aria-label={`Descontar línea de ${line.empleadoNombre}`}>Descontar</button><button className="mr-2 rounded-md border border-emerald-200 px-2 py-1 text-xs font-semibold text-emerald-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'bonificar' })} disabled={advanceActionMutation.isPending} title="Registra una novedad de ingreso adicional" aria-label={`Bonificar línea de ${line.empleadoNombre}`}>Bonificar</button><button className="rounded-md border border-blue-200 px-2 py-1 text-xs font-semibold text-blue-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'bonificar_descontar' })} disabled={advanceActionMutation.isPending} title="Registra el ingreso y crea el anticipo que se descontará al cerrar el mes" aria-label={`Ingresar y descontar línea de ${line.empleadoNombre}`}>Ingresar y descontar</button></>}</td></tr>)}</tbody></table></div>
               <TablePagination
                 currentPage={linePage}
                 totalPages={totalLinePages}

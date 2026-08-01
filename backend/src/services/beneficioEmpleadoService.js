@@ -104,27 +104,79 @@ async function assertEmployeeInTenant(tenantId, empleadoId) {
 }
 
 async function listBenefits(tenantId, filters = {}) {
+  const estado = filters.estado ? String(filters.estado).trim().toLowerCase() : '';
+  const tipo = filters.tipo ? String(filters.tipo).trim().toLowerCase() : '';
+  const empleadoId = filters.empleadoId ? String(filters.empleadoId).trim() : '';
+  const buscar = String(filters.buscar ?? filters.search ?? '').trim();
+  const page = Math.max(1, Number.parseInt(filters.page, 10) || 1);
+  const requestedPageSize = Number.parseInt(filters.pageSize, 10) || 10;
+  const pageSize = [10, 25, 50, 100].includes(requestedPageSize) ? requestedPageSize : 10;
+
+  if (estado && !VALID_STATUSES.has(estado)) {
+    throw new AppError('El estado solicitado no es valido.', {
+      code: 'BENEFICIO_ESTADO_INVALIDO_FILTRO',
+      statusCode: 400,
+    });
+  }
+  if (tipo && !VALID_TYPES.has(tipo)) {
+    throw new AppError('El tipo solicitado no es valido.', {
+      code: 'BENEFICIO_TIPO_INVALIDO_FILTRO',
+      statusCode: 400,
+    });
+  }
+
   const params = [tenantId];
   const clauses = ['b.tenant_id = $1'];
+  const addParam = (value, clause) => {
+    params.push(value);
+    clauses.push(clause.replace('$PARAM', `$${params.length}`));
+  };
 
-  if (filters.estado) {
-    params.push(filters.estado);
-    clauses.push(`b.estado = $${params.length}`);
-  }
-  if (filters.empleadoId) {
-    params.push(filters.empleadoId);
-    clauses.push(`b.empleado_id = $${params.length}`);
+  if (estado) addParam(estado, 'b.estado = $PARAM');
+  if (tipo) addParam(tipo, 'b.tipo = $PARAM');
+  if (empleadoId) addParam(empleadoId, 'b.empleado_id = $PARAM');
+  if (buscar) {
+    addParam(`%${buscar}%`, `(e.nombres ILIKE $PARAM OR e.apellidos ILIKE $PARAM OR e.cedula ILIKE $PARAM OR COALESCE(b.descripcion, '') ILIKE $PARAM)`);
   }
 
+  const where = clauses.join(' AND ');
+  const countResult = await db.query(`
+    SELECT COUNT(*)::int AS total
+    FROM beneficios_empleados b
+    JOIN empleados e ON e.id = b.empleado_id
+    WHERE ${where}
+  `, params);
+
+  const totalItems = Number(countResult.rows[0]?.total || 0);
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const effectivePage = Math.min(page, totalPages);
+  const offset = (effectivePage - 1) * pageSize;
+  const dataParams = [...params, pageSize, offset];
   const result = await db.query(`
     SELECT b.*, e.nombres || ' ' || e.apellidos AS empleado_nombre, e.cedula
     FROM beneficios_empleados b
     JOIN empleados e ON e.id = b.empleado_id
-    WHERE ${clauses.join(' AND ')}
-    ORDER BY b.created_at DESC
-  `, params);
+    WHERE ${where}
+    ORDER BY b.created_at DESC, b.id DESC
+    LIMIT $${dataParams.length - 1} OFFSET $${dataParams.length}
+  `, dataParams);
 
-  return result.rows.map(normalizeBenefit);
+  const totalsResult = await db.query(`
+    SELECT estado, COALESCE(SUM(saldo_pendiente), 0) AS saldo
+    FROM beneficios_empleados
+    WHERE tenant_id = $1
+    GROUP BY estado
+  `, [tenantId]);
+  const totals = Object.fromEntries([...VALID_STATUSES].map((status) => [status, 0]));
+  totalsResult.rows.forEach((row) => {
+    totals[row.estado] = Number(row.saldo || 0);
+  });
+
+  return {
+    items: result.rows.map(normalizeBenefit),
+    pagination: { page: effectivePage, pageSize, totalItems, totalPages },
+    totals,
+  };
 }
 
 async function createBenefit(tenantId, payload, user, context = {}) {

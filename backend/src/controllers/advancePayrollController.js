@@ -42,6 +42,33 @@ async function cargarMasiva(req, res, next) {
   }
 }
 
+async function actualizar(req, res, next) {
+  try {
+    const role = await advancePayrollService.updateDraftRun(req.tenantId, req.params.id, req.body, req.usuario, context(req));
+    return res.json({ success: true, role, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function eliminar(req, res, next) {
+  try {
+    const result = await advancePayrollService.deleteDraftRun(req.tenantId, req.params.id, req.usuario, context(req));
+    return res.json({ success: true, result, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function anular(req, res, next) {
+  try {
+    const role = await advancePayrollService.annulRun(req.tenantId, req.params.id, req.usuario, context(req));
+    return res.json({ success: true, role, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function aprobar(req, res, next) {
   try {
     const role = await advancePayrollService.approveRun(req.tenantId, req.params.id, req.usuario, context(req));
@@ -113,4 +140,4 @@ async function descargarReporte(req, res, next) {
   }
 }
 
-module.exports = { listar, crear, descargarPlantilla, cargarMasiva, aprobar, decidirLinea, aplicarSeleccion, cerrar, descargarCsv, descargarReporte };
+module.exports = { listar, crear, descargarPlantilla, cargarMasiva, actualizar, eliminar, anular, aprobar, decidirLinea, aplicarSeleccion, cerrar, descargarCsv, descargarReporte };

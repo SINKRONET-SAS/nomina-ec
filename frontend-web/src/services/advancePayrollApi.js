@@ -30,6 +30,21 @@ export async function createAdvanceRole(payload) {
   return response.data?.role;
 }
 
+export async function updateAdvanceRole(id, payload) {
+  const response = await authenticatedApi.put(`/nomina/anticipos/roles/${id}`, payload);
+  return response.data?.role;
+}
+
+export async function deleteAdvanceRole(id) {
+  const response = await authenticatedApi.delete(`/nomina/anticipos/roles/${id}`);
+  return response.data?.result;
+}
+
+export async function annulAdvanceRole(id) {
+  const response = await authenticatedApi.put(`/nomina/anticipos/roles/${id}/anular`);
+  return response.data?.role;
+}
+
 export async function approveAdvanceRole(id) {
   const response = await authenticatedApi.put(`/nomina/anticipos/roles/${id}/aprobar`);
   return response.data?.role;
