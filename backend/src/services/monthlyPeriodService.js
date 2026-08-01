@@ -599,6 +599,7 @@ async function getPayrollPeriodState({ tenantId, anio, mes }) {
         WHEN nb.scope_type = 'employee' THEN 'Empleado no disponible'
         WHEN nb.scope_type = 'department' THEN CONCAT('Departamento: ', nb.scope_value)
         WHEN nb.scope_type = 'position' THEN CONCAT('Cargo: ', nb.scope_value)
+        WHEN nb.scope_type = 'bulk_file' THEN CONCAT('Carga masiva: ', nb.scope_value)
         ELSE nb.scope_value
       END AS scope_label
     FROM novelty_batches nb

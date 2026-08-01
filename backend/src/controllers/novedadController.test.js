@@ -13,6 +13,7 @@ const {
   actualizar,
   crear,
   eliminar,
+  cargaMasiva,
   descargarPlantillaCargaMasiva,
   listarPendientes,
   listarTipos,
@@ -43,6 +44,11 @@ function createResponse() {
 }
 
 describe('novedadController plantilla de carga masiva', () => {
+  beforeEach(() => {
+    db.query.mockReset();
+    recordAudit.mockReset();
+  });
+
   test('identifica al empleado por cédula sin exponer el EmpleadoId interno', async () => {
     const res = createResponse();
 
@@ -54,6 +60,122 @@ describe('novedadController plantilla de carga masiva', () => {
     );
     expect(csv).not.toContain('empleadoId');
     expect(res.headers['Content-Type']).toBe('text/csv; charset=utf-8');
+  });
+  test('trata una fila ya cargada como existente y no como error', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'employee-1' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'open' }] })
+      .mockResolvedValueOnce({
+        rows: [{
+          code: 'hora_extra_100',
+          name: 'Hora extra 100%',
+          payroll_impact: 'ingreso',
+          applicability: { calculationMode: 'minutes_hourly_2' },
+          status: 'activo',
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: 'batch-1' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'novedad-1',
+          empleado_id: 'employee-1',
+          fecha: '2026-07-31',
+          tipo_novedad: 'hora_extra_100',
+          minutos: 60,
+          monto: '0.00',
+          estado: 'pendiente',
+          metadata: { source: 'carga_masiva_novedades' },
+          novelty_batch_id: null,
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [{ id: 'novedad-1' }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-bulk-duplicate',
+      ip: '127.0.0.1',
+      body: {
+        rows: [{
+          cedula: '0102030405',
+          fecha: '2026-07-31',
+          tipoNovedad: 'hora_extra_100',
+          horas: '1',
+          monto: '0',
+          idempotencyKey: 'HE100-001',
+        }],
+      },
+    };
+    const res = createResponse();
+
+    await cargaMasiva(req, res);
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body).toMatchObject({
+      total: 1,
+      creadas: 0,
+      yaExistentes: 1,
+      errores: 0,
+    });
+    expect(res.body.results[0]).toMatchObject({
+      rowNumber: 2,
+      status: 'already_exists',
+      novedad: { id: 'novedad-1' },
+    });
+  });
+
+  test('registra las filas nuevas dentro de un lote visible y trazable', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'employee-1' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'open', periodoNomina: '2026-07' }] })
+      .mockResolvedValueOnce({
+        rows: [{
+          code: 'bono_desempeno',
+          name: 'Bono de desempeño',
+          payroll_impact: 'ingreso',
+          applicability: { calculationMode: 'amount' },
+          status: 'activo',
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: 'batch-1' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'novedad-1', estado: 'pendiente' }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-bulk-created',
+      ip: '127.0.0.1',
+      body: {
+        sourceFilename: 'bonos-julio.csv',
+        rows: [{
+          cedula: '0102030405',
+          fecha: '2026-07-31',
+          tipoNovedad: 'bono_desempeno',
+          horas: '0',
+          monto: '100',
+          idempotencyKey: 'BONO-001',
+        }],
+      },
+    };
+    const res = createResponse();
+
+    await cargaMasiva(req, res);
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body).toMatchObject({ batchId: 'batch-1', creadas: 1, yaExistentes: 0, errores: 0 });
+    expect(db.query).toHaveBeenCalledWith(
+      expect.stringContaining('novelty_batch_id'),
+      expect.arrayContaining(['batch-1'])
+    );
+    expect(db.query).toHaveBeenLastCalledWith(
+      expect.stringContaining("status = 'completado'"),
+      expect.arrayContaining(['batch-1'])
+    );
   });
 });
 

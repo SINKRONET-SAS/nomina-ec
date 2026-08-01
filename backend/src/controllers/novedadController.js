@@ -1,6 +1,7 @@
 // ============================================================
 // SKNOMINA - Controlador de Novedades
 // ============================================================
+const crypto = require('crypto');
 const db = require('../config/database');
 const AppError = require('../utils/AppError');
 const { resolveStorageUrl } = require('../config/s3');
@@ -533,10 +534,90 @@ async function descargarPlantillaCargaMasiva(_req, res) {
   return res.status(200).send(`\ufeff${csv}`);
 }
 
+function bulkUploadIdempotencyKey(rows, sourceFilename = '') {
+  const payload = JSON.stringify({
+    sourceFilename: String(sourceFilename || '').trim().slice(0, 140),
+    rows: rows.map((row) => ({
+      cedula: row.cedula,
+      empleadoId: row.empleadoId,
+      fecha: row.fecha,
+      tipoNovedad: row.tipoNovedad,
+      minutos: row.minutos,
+      monto: row.monto,
+      justificacion: row.justificacion,
+      idempotencyKey: row.idempotencyKey,
+    })),
+  });
+  return `bulk-${crypto.createHash('sha256').update(payload).digest('hex')}`;
+}
+
+async function ensureBulkNoveltyBatch({
+  tenantId,
+  usuarioId,
+  period,
+  normalizedRows,
+  sourceFilename,
+  idempotencyKey,
+}) {
+  const existing = await db.query(`
+    SELECT id, status, total_empleados, total_creadas
+    FROM novelty_batches
+    WHERE tenant_id = $1 AND idempotency_key = $2
+    LIMIT 1
+  `, [tenantId, idempotencyKey]);
+  if (existing.rows.length > 0) {
+    return { id: existing.rows[0].id, created: false };
+  }
+
+  const sourceLabel = String(sourceFilename || '').trim().slice(0, 140) || 'Pegado desde la pantalla';
+  const tipoNovedad = [...new Set(normalizedRows.map((row) => row.tipoNovedad))].length === 1
+    ? normalizedRows[0].tipoNovedad
+    : 'carga_masiva';
+  const fecha = normalizedRows[0].fecha;
+  const minutos = normalizedRows.reduce((total, row) => total + Number(row.minutos || 0), 0);
+  const monto = normalizedRows.reduce((total, row) => total + Number(row.monto || 0), 0);
+  const inserted = await db.query(`
+    INSERT INTO novelty_batches (
+      tenant_id, period_id, scope_type, scope_value, tipo_novedad, fecha,
+      minutos, monto, justificacion, idempotency_key, total_empleados, created_by
+    )
+    VALUES ($1,$2,'bulk_file',$3,$4,$5,$6,$7,$8,$9,$10,$11)
+    ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
+    RETURNING id
+  `, [
+    tenantId,
+    period.id,
+    sourceLabel,
+    tipoNovedad,
+    fecha,
+    minutos,
+    monto,
+    `Carga masiva${sourceFilename ? `: ${sourceFilename}` : ''}`.slice(0, 500),
+    idempotencyKey,
+    normalizedRows.length,
+    usuarioId || null,
+  ]);
+  if (inserted.rows.length > 0) {
+    return { id: inserted.rows[0].id, created: true };
+  }
+
+  const concurrent = await db.query(`
+    SELECT id
+    FROM novelty_batches
+    WHERE tenant_id = $1 AND idempotency_key = $2
+    LIMIT 1
+  `, [tenantId, idempotencyKey]);
+  if (concurrent.rows.length === 0) {
+    throw new Error('No se pudo crear el lote de la carga masiva. Intenta nuevamente.');
+  }
+  return { id: concurrent.rows[0].id, created: false };
+}
+
 async function cargaMasiva(req, res) {
   try {
     const { tenantId, usuarioId } = req;
     const rows = Array.isArray(req.body?.rows) ? req.body.rows : [];
+    const sourceFilename = String(req.body?.sourceFilename || '').trim().slice(0, 140);
     if (rows.length === 0) {
       return res.status(400).json({
         error: 'NOVEDADES_CARGA_MASIVA_SIN_FILAS',
@@ -546,8 +627,35 @@ async function cargaMasiva(req, res) {
     }
 
     const results = [];
+    const normalizedRows = [];
     for (const [index, row] of rows.entries()) {
-      const normalized = normalizeBulkRow(row);
+      try {
+        normalizedRows.push({ index, normalized: normalizeBulkRow(row) });
+      } catch (rowErr) {
+        results.push({
+          rowNumber: index + 2,
+          status: 'error',
+          error: rowErr.code || 'NOVEDAD_ROW_ERROR',
+          message: rowErr.message,
+        });
+      }
+    }
+    const validRows = normalizedRows.map(({ normalized }) => normalized);
+    const periods = new Set(validRows.map((row) => row.fecha.slice(0, 7)));
+    if (periods.size > 1) {
+      return res.status(422).json({
+        error: 'NOVEDADES_CARGA_MASIVA_MULTIPLES_PERIODOS',
+        message: 'La carga masiva debe contener fechas de un solo periodo de nómina. Divide el archivo y procesa cada periodo por separado.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    let bulkBatchId = null;
+    let bulkBatchCreated = false;
+    const bulkIdempotencyKey = validRows.length > 0
+      ? bulkUploadIdempotencyKey(validRows, sourceFilename)
+      : null;
+    for (const { index, normalized } of normalizedRows) {
       try {
         const employee = await resolveEmployeeForBulkRow(tenantId, normalized);
         const period = await ensureWritablePayrollPeriodForDate({ tenantId, fecha: normalized.fecha });
@@ -567,11 +675,25 @@ async function cargaMasiva(req, res) {
           throw new Error('La novedad requiere monto mayor a cero.');
         }
 
+        if (!bulkBatchId) {
+          const batch = await ensureBulkNoveltyBatch({
+            tenantId,
+            usuarioId,
+            period,
+            normalizedRows: validRows,
+            sourceFilename,
+            idempotencyKey: bulkIdempotencyKey,
+          });
+          bulkBatchId = batch.id;
+          bulkBatchCreated = batch.created;
+        }
+
         const inserted = await db.query(`
           INSERT INTO novedades_asistencia (
-            empleado_id, tenant_id, period_id, periodo_nomina, fecha, tipo_novedad, minutos, monto, justificacion, metadata
+            empleado_id, tenant_id, period_id, periodo_nomina, fecha, tipo_novedad, minutos, monto, justificacion, metadata, novelty_batch_id
           )
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+          ON CONFLICT (empleado_id, fecha, tipo_novedad) DO NOTHING
           RETURNING id, empleado_id, fecha, tipo_novedad, minutos, monto, estado
         `, [
           employee.id,
@@ -588,8 +710,51 @@ async function cargaMasiva(req, res) {
             rowNumber: index + 2,
             idempotencyKey: normalized.idempotencyKey,
           }),
+          bulkBatchId,
         ]);
-        results.push({ rowNumber: index + 2, status: 'created', novedad: inserted.rows[0] });
+        if (inserted.rows.length > 0) {
+          results.push({ rowNumber: index + 2, status: 'created', novedad: inserted.rows[0] });
+          continue;
+        }
+
+        const existing = await db.query(`
+          SELECT id, empleado_id, fecha, tipo_novedad, minutos, monto, estado, metadata, novelty_batch_id
+          FROM novedades_asistencia
+          WHERE tenant_id = $1
+            AND empleado_id = $2
+            AND fecha = $3::date
+            AND tipo_novedad = $4
+          LIMIT 1
+        `, [tenantId, employee.id, normalized.fecha, normalized.tipoNovedad]);
+
+        if (existing.rows.length === 0) {
+          throw new Error('La novedad no pudo registrarse porque se detectó una operación concurrente. Intenta nuevamente.');
+        }
+
+        const existingNovelty = existing.rows[0];
+        const existingMetadata = typeof existingNovelty.metadata === 'string'
+          ? JSON.parse(existingNovelty.metadata || '{}')
+          : (existingNovelty.metadata || {});
+        if (!existingNovelty.novelty_batch_id
+          && existingMetadata.source === 'carga_masiva_novedades'
+          && bulkBatchId) {
+          const linked = await db.query(`
+            UPDATE novedades_asistencia
+            SET novelty_batch_id = $1
+            WHERE id = $2 AND tenant_id = $3 AND novelty_batch_id IS NULL
+            RETURNING id, empleado_id, fecha, tipo_novedad, minutos, monto, estado
+          `, [bulkBatchId, existingNovelty.id, tenantId]);
+          if (linked.rows.length > 0) {
+            existingNovelty.novelty_batch_id = bulkBatchId;
+          }
+        }
+
+        results.push({
+          rowNumber: index + 2,
+          status: 'already_exists',
+          message: 'La novedad ya estaba registrada; no se creó un duplicado.',
+          novedad: existingNovelty,
+        });
       } catch (rowErr) {
         results.push({
           rowNumber: index + 2,
@@ -598,6 +763,25 @@ async function cargaMasiva(req, res) {
           message: rowErr.message,
         });
       }
+    }
+
+    if (bulkBatchId && bulkBatchCreated) {
+      const batchErrors = results
+        .filter((row) => row.status === 'error')
+        .map(({ rowNumber, error, message }) => ({ rowNumber, error, message }));
+      await db.query(`
+        UPDATE novelty_batches
+        SET status = 'completado',
+            total_creadas = $2,
+            errores = $3::jsonb,
+            completed_at = NOW()
+        WHERE id = $1 AND tenant_id = $4
+      `, [
+        bulkBatchId,
+        results.filter((row) => row.status === 'created').length,
+        JSON.stringify(batchErrors),
+        tenantId,
+      ]);
     }
 
     await recordAudit({
@@ -609,7 +793,9 @@ async function cargaMasiva(req, res) {
       newData: {
         total: rows.length,
         creadas: results.filter((row) => row.status === 'created').length,
+        yaExistentes: results.filter((row) => row.status === 'already_exists').length,
         errores: results.filter((row) => row.status === 'error').length,
+        batchId: bulkBatchId,
       },
       ipAddress: req.ip,
     });
@@ -618,7 +804,9 @@ async function cargaMasiva(req, res) {
       success: true,
       total: rows.length,
       creadas: results.filter((row) => row.status === 'created').length,
+      yaExistentes: results.filter((row) => row.status === 'already_exists').length,
       errores: results.filter((row) => row.status === 'error').length,
+      batchId: bulkBatchId,
       results,
       correlationId: req.correlationId,
     });

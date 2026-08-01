@@ -265,12 +265,12 @@ function CerrarMes() {
   });
 
   const bulkNoveltyMutation = useMutation({
-    mutationFn: (rows) => authenticatedApi.post('/novedades/carga-masiva', { rows }),
+    mutationFn: ({ rows, sourceFilename }) => authenticatedApi.post('/novedades/carga-masiva', { rows, sourceFilename }),
     onSuccess: (response) => {
       setBulkResult(response.data);
       setMessage({
         type: 'success',
-        text: `Carga masiva procesada: ${response.data?.creadas || 0} creadas, ${response.data?.errores || 0} con error.`,
+        text: `Carga masiva procesada: ${response.data?.creadas || 0} creadas, ${response.data?.yaExistentes || 0} ya existentes, ${response.data?.errores || 0} con error.`,
       });
       setError('');
       setBulkCsv('');
@@ -511,7 +511,7 @@ function CerrarMes() {
   function submitBulkNovelties(event) {
     event.preventDefault();
     try {
-      bulkNoveltyMutation.mutate(parseCsvRows(bulkCsv));
+      bulkNoveltyMutation.mutate({ rows: parseCsvRows(bulkCsv), sourceFilename: bulkFileName });
     } catch (error) {
       setBulkResult(null);
       setMessage(null);
@@ -1118,6 +1118,21 @@ function CerrarMes() {
             <p className="font-semibold text-slate-900">Resultado de la carga</p>
             <p className="mt-1 text-slate-600">
               {bulkResult.creadas || 0} creadas · {bulkResult.errores || 0} con error.
+            </p>
+            {bulkResult.batchId && (
+              <p className="mt-1 text-xs text-slate-500">
+                La carga quedó registrada en el lote {bulkResult.batchId} y aparecerá en “Lotes de novedades”.
+              </p>
+            )}
+            {bulkResult.results?.some((row) => row.status === 'already_exists') && (
+              <div className="mt-2 space-y-1 text-xs text-amber-700">
+                {bulkResult.results.filter((row) => row.status === 'already_exists').slice(0, 10).map((row) => (
+                  <p key={row.rowNumber || row.fila}>Fila {row.rowNumber || row.fila}: {row.message || 'La novedad ya estaba registrada; no se creó un duplicado.'}</p>
+                ))}
+              </div>
+            )}
+            <p className="mt-1 text-amber-700">
+              {bulkResult.yaExistentes || 0} ya existentes (no se duplicaron).
             </p>
             {bulkResult.results?.some((row) => row.status === 'error') && (
               <div className="mt-2 space-y-1 text-xs text-red-700">
