@@ -114,6 +114,7 @@ function CerrarMes() {
   const [mes, setMes] = useState(initialMes);
   const [resultado, setResultado] = useState(null);
   const [message, setMessage] = useState(null);
+  const [error, setError] = useState('');
   const [closeConfirmation, setCloseConfirmation] = useState(false);
   const [showDiscardCalculation, setShowDiscardCalculation] = useState(false);
   const [discardReason, setDiscardReason] = useState('');
@@ -529,7 +530,9 @@ function CerrarMes() {
   const canCreateBatch = isWritablePeriod
     && (!scopeNeedsValue || batchForm.scopeValue)
     && (requiresAmount ? Number(batchForm.monto) > 0 : hoursDraftToNumber(batchForm.horas) > 0);
-  const currentError = openMutation.error || batchMutation.error || bulkNoveltyMutation.error || deleteBatchMutation.error || resolveNoveltiesMutation.error || precalculateMutation.error || calculateMutation.error || closeMutation.error || discardCalculationMutation.error || periodQuery.error || noveltyTypesQuery.error;
+  const currentError = error
+    ? { message: error }
+    : openMutation.error || batchMutation.error || bulkNoveltyMutation.error || deleteBatchMutation.error || resolveNoveltiesMutation.error || precalculateMutation.error || calculateMutation.error || closeMutation.error || discardCalculationMutation.error || periodQuery.error || noveltyTypesQuery.error;
   const currentPrecheck = precheckDetails(currentError);
   const alertIsError = Boolean(currentError || message?.type === 'error');
   const hasLegalParameterBlocker = hasBlocker(currentPrecheck, [
