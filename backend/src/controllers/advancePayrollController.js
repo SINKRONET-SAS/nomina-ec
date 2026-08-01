@@ -114,6 +114,15 @@ async function cerrar(req, res, next) {
   }
 }
 
+async function reabrir(req, res, next) {
+  try {
+    const role = await advancePayrollService.reopenRun(req.tenantId, req.params.id, req.usuario, context(req));
+    return res.json({ success: true, role, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function descargarCsv(req, res, next) {
   try {
     const role = await advancePayrollService.getRun(req.tenantId, req.params.id);
@@ -149,4 +158,4 @@ async function descargarReporte(req, res, next) {
   }
 }
 
-module.exports = { listar, crear, descargarPlantilla, cargarMasiva, actualizar, eliminar, anular, aprobar, reversarAprobacion, decidirLinea, aplicarSeleccion, cerrar, descargarCsv, descargarReporte };
+module.exports = { listar, crear, descargarPlantilla, cargarMasiva, actualizar, eliminar, anular, aprobar, reversarAprobacion, decidirLinea, aplicarSeleccion, cerrar, reabrir, descargarCsv, descargarReporte };

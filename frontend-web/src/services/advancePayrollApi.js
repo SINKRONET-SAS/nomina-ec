@@ -70,6 +70,11 @@ export async function closeAdvanceRole(id) {
   return response.data?.role;
 }
 
+export async function reopenAdvanceRole(id) {
+  const response = await authenticatedApi.put(`/nomina/anticipos/roles/${id}/reabrir`);
+  return response.data?.role;
+}
+
 export async function downloadAdvanceRoleCsv(id) {
   const response = await authenticatedApi.get(`/nomina/anticipos/roles/${id}.csv`, { responseType: 'blob' });
   return response.data;

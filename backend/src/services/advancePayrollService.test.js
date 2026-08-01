@@ -10,7 +10,7 @@ jest.mock('./payrollNoveltyService', () => ({ ensureNoveltyTypeAllowed: jest.fn(
 const db = require('../config/database');
 const { recordAudit } = require('./auditService');
 const { ensureNoveltyTypeAllowed } = require('./payrollNoveltyService');
-const { ADVANCE_BULK_TEMPLATE_COLUMNS, annulRun, createRun, decideLine, closeRun, parseBulkCsv, reverseApprovalRun, templateCsv } = require('./advancePayrollService');
+const { ADVANCE_BULK_TEMPLATE_COLUMNS, annulRun, createRun, decideLine, closeRun, parseBulkCsv, reopenRun, reverseApprovalRun, templateCsv } = require('./advancePayrollService');
 
 const user = { id: 'user-1' };
 const context = { correlationId: 'corr-advance', ipAddress: '127.0.0.1' };
@@ -152,6 +152,43 @@ describe('advancePayrollService', () => {
     tx.query.mockResolvedValueOnce({ rows: [{ ...runRow(), estado: 'cerrado' }] });
 
     await expect(annulRun('tenant-1', 'role-1', user, context)).rejects.toMatchObject({ code: 'ROL_ANTICIPOS_CERRADO_BLOQUEADO' });
+    expect(db.rollback).toHaveBeenCalledWith(tx);
+    expect(db.commit).not.toHaveBeenCalled();
+  });
+
+  test('reabre un rol cerrado no consumido y conserva la trazabilidad', async () => {
+    const tx = { query: jest.fn() };
+    db.getClient.mockResolvedValueOnce(tx);
+    tx.query
+      .mockResolvedValueOnce({ rows: [{ ...runRow(), estado: 'cerrado' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'open' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'benefit-1', bonificacion_novedad_id: 'novelty-1' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    db.query
+      .mockResolvedValueOnce({ rows: [{ ...runRow(), estado: 'borrador' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'line-1', role_id: 'role-1', empleado_id: 'employee-1', nombres: 'Ana', apellidos: 'Demo', cedula: '0999999999', monto: '100.00', tipo_novedad: 'bono_desempeno', nombre_bonificacion: 'Bono cumplimiento', estado: 'pendiente', beneficio_id: null, bonificacion_novedad_id: null }] });
+
+    const result = await reopenRun('tenant-1', 'role-1', user, context);
+
+    expect(result).toMatchObject({ estado: 'borrador' });
+    expect(result.lineas[0]).toMatchObject({ estado: 'pendiente', beneficioId: null, bonificacionNovedadId: null });
+    expect(db.commit).toHaveBeenCalledWith(tx);
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'nomina.rol_anticipos.reabierto' }));
+  });
+
+  test('bloquea la reapertura cuando el rol ya fue consumido por el calculo mensual', async () => {
+    const tx = { query: jest.fn() };
+    db.getClient.mockResolvedValueOnce(tx);
+    tx.query
+      .mockResolvedValueOnce({ rows: [{ ...runRow(), estado: 'cerrado' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'open' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'benefit-1', bonificacion_novedad_id: 'novelty-1' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'calculation-line-1' }] });
+
+    await expect(reopenRun('tenant-1', 'role-1', user, context)).rejects.toMatchObject({ code: 'ROL_ANTICIPOS_REAPERTURA_CONSUMIDA' });
     expect(db.rollback).toHaveBeenCalledWith(tx);
     expect(db.commit).not.toHaveBeenCalled();
   });

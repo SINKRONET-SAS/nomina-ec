@@ -673,6 +673,69 @@ async function closeRun(tenantId, id, user, context = {}) {
   }
 }
 
+async function reopenRun(tenantId, id, user, context = {}) {
+  const tx = await db.getClient(tenantId, user.id);
+  try {
+    const currentResult = await tx.query('SELECT * FROM roles_anticipos WHERE id = $1 AND tenant_id = $2 FOR UPDATE', [id, tenantId]);
+    const current = currentResult.rows[0];
+    if (!current) throw new AppError('El rol de anticipos no existe.', { code: 'ROL_ANTICIPOS_NO_ENCONTRADO', statusCode: 404 });
+    if (current.estado !== 'cerrado') {
+      throw new AppError('Solo puedes reabrir un rol de anticipos cerrado.', { code: 'ROL_ANTICIPOS_REAPERTURA_ESTADO_INVALIDO', statusCode: 409 });
+    }
+
+    await assertPeriod(tx, tenantId, current.anio, current.mes);
+    const linked = await tx.query(`
+      SELECT beneficio_id, bonificacion_novedad_id
+      FROM roles_anticipos_detalle
+      WHERE tenant_id = $1 AND role_id = $2
+      FOR UPDATE
+    `, [tenantId, id]);
+    const benefitIds = linked.rows.map((row) => row.beneficio_id).filter(Boolean);
+    const noveltyIds = linked.rows.map((row) => row.bonificacion_novedad_id).filter(Boolean);
+    const consumed = await tx.query(`
+      SELECT 1
+      FROM payroll_calculation_lines pcl
+      JOIN roles_anticipos_detalle d
+        ON d.tenant_id = pcl.tenant_id
+       AND (d.beneficio_id::text = pcl.source_id OR d.bonificacion_novedad_id::text = pcl.source_id)
+      WHERE d.tenant_id = $1 AND d.role_id = $2
+        AND pcl.source IN ('beneficio', 'novedad')
+      LIMIT 1
+    `, [tenantId, id]);
+    if (consumed.rows[0]) {
+      throw new AppError('No se puede reabrir porque una o mas lineas ya fueron incorporadas al calculo de nomina. Revierte primero el calculo mensual.', { code: 'ROL_ANTICIPOS_REAPERTURA_CONSUMIDA', statusCode: 409 });
+    }
+
+    if (benefitIds.length > 0) {
+      await tx.query("UPDATE beneficios_empleados SET estado = 'anulado', updated_at = NOW() WHERE tenant_id = $1 AND id = ANY($2::uuid[]) AND estado IN ('pendiente','aprobado')", [tenantId, benefitIds]);
+    }
+    if (noveltyIds.length > 0) {
+      await tx.query("UPDATE novedades_asistencia SET estado = 'anulado', updated_at = NOW() WHERE tenant_id = $1 AND id = ANY($2::uuid[]) AND estado <> 'anulado'", [tenantId, noveltyIds]);
+    }
+    await tx.query(`
+      UPDATE roles_anticipos_detalle
+      SET estado = 'pendiente', beneficio_id = NULL, bonificacion_novedad_id = NULL,
+          decidido_por = NULL, decidido_en = NULL,
+          metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('reopenedAt', NOW(), 'reopenedFrom', 'cerrado'),
+          updated_at = NOW()
+      WHERE tenant_id = $1 AND role_id = $2
+    `, [tenantId, id]);
+    await tx.query(`
+      UPDATE roles_anticipos
+      SET estado = 'borrador', approved_by = NULL, approved_at = NULL, closed_at = NULL,
+          metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('reopenedAt', NOW(), 'reopenedFrom', 'cerrado'),
+          updated_at = NOW()
+      WHERE tenant_id = $1 AND id = $2
+    `, [tenantId, id]);
+    await db.commit(tx);
+    await recordAudit({ tenantId, userId: user.id, correlationId: context.correlationId, action: 'nomina.rol_anticipos.reabierto', entity: 'roles_anticipos', entityId: id, newData: { benefitIds, noveltyIds }, ipAddress: context.ipAddress });
+    return getRun(tenantId, id);
+  } catch (err) {
+    await db.rollback(tx);
+    throw err;
+  }
+}
+
 module.exports = {
   ADVANCE_BULK_TEMPLATE_COLUMNS,
   templateCsv,
@@ -689,4 +752,5 @@ module.exports = {
   decideLine,
   applyRequestedDecisions,
   closeRun,
+  reopenRun,
 };
