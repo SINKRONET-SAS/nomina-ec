@@ -284,7 +284,8 @@ function Beneficios() {
   }
 
   async function selectAdvanceBulkFile(event) {
-    const file = event.target.files?.[0];
+    const input = event.currentTarget;
+    const file = input.files?.[0];
     if (!file) return;
     try {
       const text = await file.text();
@@ -297,6 +298,8 @@ function Beneficios() {
       setAdvanceBulkCsv('');
       setMessage('');
       setError(err.message || 'No pudimos leer el archivo CSV seleccionado.');
+    } finally {
+      input.value = '';
     }
   }
 
@@ -543,7 +546,7 @@ function Beneficios() {
             <button className="inline-flex items-center gap-2 rounded-md border border-teal-200 px-3 py-2 text-sm font-semibold text-teal-800" type="button" onClick={downloadAdvanceTemplateFile}><Download className="h-4 w-4" />Descargar plantilla</button>
           </div>
           <div className="mt-3 rounded-md border border-dashed border-teal-300 bg-teal-50/50 p-3">
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-teal-700 px-3 py-2 text-sm font-semibold text-white"><Upload className="h-4 w-4" />Seleccionar archivo<input className="sr-only" type="file" accept=".csv,text/csv" onChange={selectAdvanceBulkFile} /></label>
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-teal-700 px-3 py-2 text-sm font-semibold text-white"><Upload className="h-4 w-4" />Seleccionar archivo<input className="sr-only" type="file" accept=".csv,.txt,text/csv,text/plain" onChange={selectAdvanceBulkFile} /></label>
             <span className="ml-3 text-sm text-slate-600">{advanceBulkFileName || 'Ningún archivo seleccionado'}</span>
           </div>
           <textarea className="mt-3 min-h-28 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-xs" value={advanceBulkCsv} onChange={(event) => setAdvanceBulkCsv(event.target.value)} placeholder="cedula,monto,tipoNovedad,nombreBonificacion,resolucion" aria-label="Contenido CSV del rol de anticipos" />
