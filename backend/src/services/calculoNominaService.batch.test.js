@@ -12,6 +12,7 @@ jest.mock('./payrollAccountingService', () => ({
 }));
 
 const db = require('../config/database');
+const { getApprovedDeductions } = require('./beneficioEmpleadoService');
 const {
   assertLegalParametersReadyForProduction,
   getLegalParametersForTenant,
@@ -107,6 +108,30 @@ describe('calculoNominaService lote AIV50', () => {
         },
       }],
     });
+  });
+
+  test('devuelve el desglose del precalculo y no persiste un neto negativo', async () => {
+    employeeRows = [employee('emp-neto-negativo')];
+    getApprovedDeductions.mockResolvedValueOnce({ anticipos: 1000, prestamos: 0, items: [] });
+
+    const result = await calcularNominaMensual('tenant-1', 2026, 6);
+
+    expect(result.resultados).toMatchObject([{
+      empleadoId: 'emp-neto-negativo',
+      errorCode: 'NOMINA_NETO_NEGATIVO',
+      details: {
+        tipo: 'precalculo_neto_negativo',
+        precalculo: expect.objectContaining({
+          totalIngresos: 600,
+          totalDeducciones: expect.any(Number),
+          netoRecibir: expect.any(Number),
+          montoFaltante: expect.any(Number),
+          deducciones: expect.objectContaining({ anticipos: 1000 }),
+        }),
+      },
+    }]);
+    expect(result.resultados[0].details.precalculo.netoRecibir).toBeLessThan(0);
+    expect(db.query.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO nominas'))).toBe(false);
   });
 
   test('recupera la transaccion por empleado y conserva el primer error SQL', async () => {

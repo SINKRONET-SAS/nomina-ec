@@ -10,6 +10,7 @@ const {
   assertEmployeeMeetsUnifiedBaseSalary,
   assertPayrollTotalsIntegrity,
   buildPayrollTotalsIntegrity,
+  buildNegativeNetDetails,
   normalizeIessRelationType,
   resolveOvertimeParameters,
   resolveFourteenthSalaryPeriod,
@@ -331,5 +332,45 @@ describe('calculoNominaService', () => {
       anio: 2026,
       mes: 7,
     })).toThrow('no coincide');
+  });
+
+  test('expone el desglose del precalculo cuando el neto resulta negativo', () => {
+    expect(buildNegativeNetDetails({
+      totalIngresos: 500,
+      totalDeducciones: 725.5,
+      netoRecibir: -225.5,
+      sueldoProporcional: 500,
+      noveltyImpact: {
+        totals: {
+          incomeAffectsIess: 25,
+          incomeNotAffectsIess: 10,
+          deductions: 15,
+        },
+      },
+      fondoReserva: { montoPagadoEmpleado: 20 },
+      initialBalanceEffects: {
+        beneficioRecurrente: 5,
+        descuentoRecurrente: 10,
+      },
+      decimoTerceroMensual: { montoPagadoEmpleado: 0 },
+      decimoCuartoMensual: { montoPagadoEmpleado: 0 },
+      aporteIess: 47.25,
+      impuestoRenta: 0,
+      anticipos: 600,
+      prestamos: 68.25,
+    })).toEqual(expect.objectContaining({
+      totalIngresos: 500,
+      totalDeducciones: 725.5,
+      netoRecibir: -225.5,
+      montoFaltante: 225.5,
+      ingresos: expect.objectContaining({
+        sueldoProporcional: 500,
+        novedadesAfectanIess: 25,
+      }),
+      deducciones: expect.objectContaining({
+        anticipos: 600,
+        prestamos: 68.25,
+      }),
+    }));
   });
 });

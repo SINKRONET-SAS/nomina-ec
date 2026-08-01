@@ -74,6 +74,13 @@ function percentLabel(value) {
   })}%`;
 }
 
+function moneyLabel(value) {
+  return `$${Number(value || 0).toLocaleString('es-EC', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
 function batchScopeLabel(batch = {}) {
   const resolvedLabel = String(batch.scope_label || '').trim();
   if (resolvedLabel) return resolvedLabel;
@@ -1012,13 +1019,56 @@ function CerrarMes() {
                 </div>
                 <div className="divide-y divide-red-100">
                   {resultado.resultados.filter((row) => row.error).map((row) => (
-                    <div className="grid gap-1 px-4 py-3 text-sm md:grid-cols-[minmax(180px,0.6fr)_minmax(0,1.4fr)]" key={`${row.empleadoId}-${row.errorCode || 'error'}`}>
+                    <div className="grid gap-3 px-4 py-3 text-sm md:grid-cols-[minmax(180px,0.6fr)_minmax(0,1.4fr)]" key={`${row.empleadoId}-${row.errorCode || 'error'}`}>
                       <div>
                         <p className="font-semibold text-slate-900">{row.nombre || row.empleadoId}</p>
                         {row.cedula && <p className="mt-1 text-xs text-slate-600">Cédula: {row.cedula}</p>}
                         {row.errorCode && <p className="mt-1 text-xs font-medium text-slate-500">{row.errorCode}</p>}
                       </div>
-                      <p className="leading-6 text-red-800">{row.error}</p>
+                      <div>
+                        <p className="leading-6 text-red-800">{row.error}</p>
+                        {row.errorCode === 'NOMINA_NETO_NEGATIVO' && row.details?.precalculo && (
+                          <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-slate-700">
+                            <p className="font-semibold text-amber-950">Desglose del precálculo</p>
+                            <p className="mt-1 leading-5">
+                              El rol no se guardó porque las deducciones superan los ingresos. Revisa los valores siguientes antes de volver a calcular.
+                            </p>
+                            <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                              <div className="rounded border border-slate-200 bg-white px-2 py-2">
+                                <span className="block text-slate-500">Ingresos</span>
+                                <strong className="text-slate-900">{moneyLabel(row.details.precalculo.totalIngresos)}</strong>
+                              </div>
+                              <div className="rounded border border-slate-200 bg-white px-2 py-2">
+                                <span className="block text-slate-500">Deducciones</span>
+                                <strong className="text-slate-900">{moneyLabel(row.details.precalculo.totalDeducciones)}</strong>
+                              </div>
+                              <div className="rounded border border-red-200 bg-red-50 px-2 py-2">
+                                <span className="block text-red-700">Neto calculado</span>
+                                <strong className="text-red-900">{moneyLabel(row.details.precalculo.netoRecibir)}</strong>
+                              </div>
+                              <div className="rounded border border-amber-200 bg-white px-2 py-2">
+                                <span className="block text-slate-500">Diferencia a cubrir</span>
+                                <strong className="text-amber-900">{moneyLabel(row.details.precalculo.montoFaltante)}</strong>
+                              </div>
+                            </div>
+                            <div className="mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-2">
+                              <p className="font-semibold text-slate-800 sm:col-span-2">Ingresos que forman el precálculo</p>
+                              <p>Sueldo proporcional: <strong>{moneyLabel(row.details.precalculo.ingresos?.sueldoProporcional)}</strong></p>
+                              <p>Novedades: <strong>{moneyLabel(Number(row.details.precalculo.ingresos?.novedadesAfectanIess || 0) + Number(row.details.precalculo.ingresos?.novedadesNoAfectanIess || 0))}</strong></p>
+                              <p>Fondo de reserva: <strong>{moneyLabel(row.details.precalculo.ingresos?.fondoReserva)}</strong></p>
+                              <p>Beneficios mensualizados: <strong>{moneyLabel(Number(row.details.precalculo.ingresos?.decimoTerceroMensualizado || 0) + Number(row.details.precalculo.ingresos?.decimoCuartoMensualizado || 0))}</strong></p>
+                              <p>Beneficio recurrente: <strong>{moneyLabel(row.details.precalculo.ingresos?.beneficioRecurrente)}</strong></p>
+                              <p className="font-semibold text-slate-800 sm:col-span-2">Deducciones que reducen el neto</p>
+                              <p>Aporte personal IESS: <strong>{moneyLabel(row.details.precalculo.deducciones?.aporteIess)}</strong></p>
+                              <p>Impuesto a la renta: <strong>{moneyLabel(row.details.precalculo.deducciones?.impuestoRenta)}</strong></p>
+                              <p>Novedades deducibles: <strong>{moneyLabel(row.details.precalculo.deducciones?.novedades)}</strong></p>
+                              <p>Descuento recurrente: <strong>{moneyLabel(row.details.precalculo.deducciones?.descuentoRecurrente)}</strong></p>
+                              <p>Anticipos: <strong>{moneyLabel(row.details.precalculo.deducciones?.anticipos)}</strong></p>
+                              <p>Préstamos: <strong>{moneyLabel(row.details.precalculo.deducciones?.prestamos)}</strong></p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

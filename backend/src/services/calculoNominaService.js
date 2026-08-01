@@ -52,6 +52,51 @@ function employeeCalculationError(emp, err) {
   };
 }
 
+function buildNegativeNetDetails({
+  totalIngresos = 0,
+  totalDeducciones = 0,
+  netoRecibir = 0,
+  sueldoProporcional = 0,
+  noveltyImpact = {},
+  fondoReserva = {},
+  initialBalanceEffects = {},
+  decimoTerceroMensual = {},
+  decimoCuartoMensual = {},
+  aporteIess = 0,
+  impuestoRenta = 0,
+  anticipos = 0,
+  prestamos = 0,
+} = {}) {
+  const incomeTotals = noveltyImpact.totals || {};
+  const deducciones = {
+    aporteIess: roundMoney(aporteIess),
+    impuestoRenta: roundMoney(impuestoRenta),
+    novedades: roundMoney(incomeTotals.deductions),
+    descuentoRecurrente: roundMoney(initialBalanceEffects.descuentoRecurrente),
+    anticipos: roundMoney(anticipos),
+    prestamos: roundMoney(prestamos),
+  };
+  const ingresos = {
+    sueldoProporcional: roundMoney(sueldoProporcional),
+    novedadesAfectanIess: roundMoney(incomeTotals.incomeAffectsIess),
+    novedadesNoAfectanIess: roundMoney(incomeTotals.incomeNotAffectsIess),
+    fondoReserva: roundMoney(fondoReserva.montoPagadoEmpleado),
+    beneficioRecurrente: roundMoney(initialBalanceEffects.beneficioRecurrente),
+    decimoTerceroMensualizado: roundMoney(decimoTerceroMensual.montoPagadoEmpleado),
+    decimoCuartoMensualizado: roundMoney(decimoCuartoMensual.montoPagadoEmpleado),
+  };
+  const neto = roundMoney(netoRecibir);
+
+  return {
+    totalIngresos: roundMoney(totalIngresos),
+    totalDeducciones: roundMoney(totalDeducciones),
+    netoRecibir: neto,
+    montoFaltante: roundMoney(Math.max(0, -neto)),
+    ingresos,
+    deducciones,
+  };
+}
+
 async function rollbackAndReleaseSavepoint(executor, savepoint, context = {}, originalError = null) {
   try {
     await executor.query(`ROLLBACK TO SAVEPOINT ${savepoint}`);
@@ -602,6 +647,24 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     throw new AppError('El neto a recibir no puede ser negativo', {
       code: 'NOMINA_NETO_NEGATIVO',
       statusCode: 422,
+      details: {
+        tipo: 'precalculo_neto_negativo',
+        precalculo: buildNegativeNetDetails({
+          totalIngresos,
+          totalDeducciones,
+          netoRecibir,
+          sueldoProporcional,
+          noveltyImpact,
+          fondoReserva,
+          initialBalanceEffects,
+          decimoTerceroMensual,
+          decimoCuartoMensual,
+          aporteIess,
+          impuestoRenta,
+          anticipos,
+          prestamos,
+        }),
+      },
     });
   }
 
@@ -1115,4 +1178,5 @@ module.exports = {
   assertEmployeeMeetsUnifiedBaseSalary,
   buildPayrollTotalsIntegrity,
   assertPayrollTotalsIntegrity,
+  buildNegativeNetDetails,
 };
