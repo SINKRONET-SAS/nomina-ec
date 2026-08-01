@@ -107,6 +107,23 @@ describe('manualAttendanceService', () => {
     }])).toThrow(expect.objectContaining({ code: 'MANUAL_ATTENDANCE_BULK_VALIDATION_FAILED' }));
   });
 
+  test('acepta encabezados históricos sin camelCase para los horarios', () => {
+    const rows = normalizeManualAttendanceBulkRows([{
+      cedula: '1726689209',
+      desde: '2026-07-06',
+      hasta: '2026-07-14',
+      horainicio: '8:00',
+      horafin: '17:30',
+      justificacion: 'Regularizacion mensual autorizada por RRHH',
+    }]);
+
+    expect(rows[0]).toMatchObject({
+      startTime: '08:00',
+      endTime: '17:30',
+      cedula: '1726689209',
+    });
+  });
+
   test('rechaza un identificador informado con formato invalido aunque la cedula sea valida', () => {
     try {
       normalizeManualAttendanceBulkRows([{

@@ -4,7 +4,6 @@ const { recordAudit } = require('./auditService');
 const { ensureWritablePayrollPeriodForDate, todayInEcuador } = require('./monthlyPeriodService');
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const DEFAULT_WORK_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 const WEEK_DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const MAX_MANUAL_RANGE_DAYS = 31;
@@ -62,14 +61,22 @@ function databaseDateOnly(value) {
   return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
 }
 
+function normalizeTime(value) {
+  const match = String(value || '').trim().match(/^(\d{1,2}):([0-5]\d)$/);
+  if (!match) return '';
+  const hours = Number(match[1]);
+  if (hours > 23) return '';
+  return `${String(hours).padStart(2, '0')}:${match[2]}`;
+}
+
 function normalizeManualAttendanceInput(payload = {}) {
   const scope = payload.scope === 'all' ? 'all' : 'employee';
   const employeeId = String(payload.empleadoId || payload.employeeId || '').trim();
   const singleDate = payload.fecha || payload.date;
   const dateFrom = normalizeDate(payload.desde || payload.dateFrom || singleDate, 'desde');
   const dateTo = normalizeDate(payload.hasta || payload.dateTo || singleDate, 'hasta');
-  const startTime = String(payload.horaInicio || payload.startTime || '').trim();
-  const endTime = String(payload.horaFin || payload.endTime || '').trim();
+  const startTime = normalizeTime(payload.horaInicio || payload.startTime);
+  const endTime = normalizeTime(payload.horaFin || payload.endTime);
   const reason = String(payload.justificacion || payload.reason || '').trim();
 
   if (scope === 'employee' && !UUID_PATTERN.test(employeeId)) {
@@ -98,7 +105,13 @@ function normalizeManualAttendanceInput(payload = {}) {
       statusCode: 422,
     });
   }
-  if (!TIME_PATTERN.test(startTime) || !TIME_PATTERN.test(endTime) || endTime <= startTime) {
+  if (!startTime || !endTime) {
+    throw new AppError('Las horas deben usar el formato HH:MM, por ejemplo 08:00 y 17:30.', {
+      code: 'MANUAL_ATTENDANCE_TIME_INVALID',
+      statusCode: 400,
+    });
+  }
+  if (endTime <= startTime) {
     throw new AppError('La hora de salida debe ser posterior a la hora de entrada.', {
       code: 'MANUAL_ATTENDANCE_TIME_INVALID',
       statusCode: 400,
@@ -161,11 +174,26 @@ function buildPlannedAttendanceRows(employees, input, periodByMonth) {
   return rows;
 }
 
+function normalizeBulkColumnName(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
 function rowField(row, ...keys) {
   for (const key of keys) {
     if (row?.[key] !== undefined && row?.[key] !== null) return row[key];
   }
-  return '';
+
+  const normalizedKeys = new Set(keys.map(normalizeBulkColumnName));
+  const matchingEntry = Object.entries(row || {}).find(([key, value]) => (
+    value !== undefined
+      && value !== null
+      && normalizedKeys.has(normalizeBulkColumnName(key))
+  ));
+  return matchingEntry ? matchingEntry[1] : '';
 }
 
 function normalizeManualAttendanceBulkRows(rows = []) {
