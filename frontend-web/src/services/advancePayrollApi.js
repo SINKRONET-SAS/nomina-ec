@@ -50,6 +50,11 @@ export async function approveAdvanceRole(id) {
   return response.data?.role;
 }
 
+export async function reverseApprovalAdvanceRole(id) {
+  const response = await authenticatedApi.put(`/nomina/anticipos/roles/${id}/reversar-aprobacion`);
+  return response.data?.role;
+}
+
 export async function applyAdvanceRoleSelection(id) {
   const response = await authenticatedApi.put(`/nomina/anticipos/roles/${id}/aplicar-seleccion`);
   return response.data?.role;

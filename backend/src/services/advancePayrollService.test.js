@@ -10,7 +10,7 @@ jest.mock('./payrollNoveltyService', () => ({ ensureNoveltyTypeAllowed: jest.fn(
 const db = require('../config/database');
 const { recordAudit } = require('./auditService');
 const { ensureNoveltyTypeAllowed } = require('./payrollNoveltyService');
-const { ADVANCE_BULK_TEMPLATE_COLUMNS, createRun, decideLine, closeRun, parseBulkCsv, templateCsv } = require('./advancePayrollService');
+const { ADVANCE_BULK_TEMPLATE_COLUMNS, annulRun, createRun, decideLine, closeRun, parseBulkCsv, reverseApprovalRun, templateCsv } = require('./advancePayrollService');
 
 const user = { id: 'user-1' };
 const context = { correlationId: 'corr-advance', ipAddress: '127.0.0.1' };
@@ -114,5 +114,45 @@ describe('advancePayrollService', () => {
 
     await expect(closeRun('tenant-1', 'role-1', user, context)).rejects.toMatchObject({ code: 'ROL_ANTICIPOS_LINEAS_PENDIENTES' });
     expect(db.rollback).toHaveBeenCalledWith(tx);
+  });
+
+  test('revierte la aprobacion de un rol sin efectos aplicados y lo devuelve a borrador', async () => {
+    const tx = { query: jest.fn() };
+    db.getClient.mockResolvedValueOnce(tx);
+    tx.query
+      .mockResolvedValueOnce({ rows: [runRow()] })
+      .mockResolvedValueOnce({ rows: [{ total: 0 }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    getRunQueries({ estado: 'pendiente', beneficio_id: null, bonificacion_novedad_id: null });
+
+    const result = await reverseApprovalRun('tenant-1', 'role-1', user, context);
+
+    expect(result.lineas[0]).toMatchObject({ estado: 'pendiente' });
+    expect(tx.query).toHaveBeenCalledWith(expect.stringContaining("SET estado = 'borrador'"), ['role-1', 'tenant-1']);
+    expect(db.commit).toHaveBeenCalledWith(tx);
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'nomina.rol_anticipos.aprobacion_reversada' }));
+  });
+
+  test('bloquea la reversa cuando el rol ya tiene efectos aplicados', async () => {
+    const tx = { query: jest.fn() };
+    db.getClient.mockResolvedValueOnce(tx);
+    tx.query
+      .mockResolvedValueOnce({ rows: [runRow()] })
+      .mockResolvedValueOnce({ rows: [{ total: 1 }] });
+
+    await expect(reverseApprovalRun('tenant-1', 'role-1', user, context)).rejects.toMatchObject({ code: 'ROL_ANTICIPOS_REVERSA_CON_EFECTOS' });
+    expect(db.rollback).toHaveBeenCalledWith(tx);
+    expect(db.commit).not.toHaveBeenCalled();
+  });
+
+  test('bloquea la anulacion de un rol cerrado', async () => {
+    const tx = { query: jest.fn() };
+    db.getClient.mockResolvedValueOnce(tx);
+    tx.query.mockResolvedValueOnce({ rows: [{ ...runRow(), estado: 'cerrado' }] });
+
+    await expect(annulRun('tenant-1', 'role-1', user, context)).rejects.toMatchObject({ code: 'ROL_ANTICIPOS_CERRADO_BLOQUEADO' });
+    expect(db.rollback).toHaveBeenCalledWith(tx);
+    expect(db.commit).not.toHaveBeenCalled();
   });
 });

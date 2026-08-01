@@ -434,6 +434,7 @@ async function annulRun(tenantId, id, user, context = {}) {
     const currentResult = await tx.query('SELECT * FROM roles_anticipos WHERE id = $1 AND tenant_id = $2 FOR UPDATE', [id, tenantId]);
     const current = currentResult.rows[0];
     if (!current) throw new AppError('El rol de anticipos no existe.', { code: 'ROL_ANTICIPOS_NO_ENCONTRADO', statusCode: 404 });
+    if (current.estado === 'cerrado') throw new AppError('El rol de anticipos esta cerrado y no admite modificaciones.', { code: 'ROL_ANTICIPOS_CERRADO_BLOQUEADO', statusCode: 409 });
     if (current.estado === 'anulado') throw new AppError('El rol de anticipos ya esta anulado.', { code: 'ROL_ANTICIPOS_YA_ANULADO', statusCode: 409 });
     const linked = await tx.query(`
       SELECT beneficio_id, bonificacion_novedad_id
@@ -484,6 +485,43 @@ async function approveRun(tenantId, id, user, context = {}) {
     await tx.query(`UPDATE roles_anticipos_detalle SET estado = 'aprobado', updated_at = NOW() WHERE role_id = $1 AND tenant_id = $2 AND estado = 'pendiente'`, [id, tenantId]);
     await db.commit(tx);
     await recordAudit({ tenantId, userId: user.id, correlationId: context.correlationId, action: 'nomina.rol_anticipos.aprobado', entity: 'roles_anticipos', entityId: id, ipAddress: context.ipAddress });
+    return getRun(tenantId, id);
+  } catch (err) {
+    await db.rollback(tx);
+    throw err;
+  }
+}
+
+async function reverseApprovalRun(tenantId, id, user, context = {}) {
+  const tx = await db.getClient(tenantId, user.id);
+  try {
+    const currentResult = await tx.query('SELECT * FROM roles_anticipos WHERE id = $1 AND tenant_id = $2 FOR UPDATE', [id, tenantId]);
+    const current = currentResult.rows[0];
+    if (!current) throw new AppError('El rol de anticipos no existe.', { code: 'ROL_ANTICIPOS_NO_ENCONTRADO', statusCode: 404 });
+    if (current.estado !== 'aprobado') {
+      throw new AppError('Solo puedes reversar la aprobacion de un rol aprobado.', { code: 'ROL_ANTICIPOS_REVERSA_ESTADO_INVALIDO', statusCode: 409 });
+    }
+    const linked = await tx.query(`
+      SELECT COUNT(*)::int AS total
+      FROM roles_anticipos_detalle
+      WHERE tenant_id = $1 AND role_id = $2
+        AND (beneficio_id IS NOT NULL OR bonificacion_novedad_id IS NOT NULL)
+    `, [tenantId, id]);
+    if (Number(linked.rows[0]?.total || 0) > 0) {
+      throw new AppError('No se puede reversar la aprobacion porque el rol ya tiene efectos aplicados. Anula el rol para conservar la trazabilidad.', { code: 'ROL_ANTICIPOS_REVERSA_CON_EFECTOS', statusCode: 409 });
+    }
+    await tx.query(`
+      UPDATE roles_anticipos
+      SET estado = 'borrador', approved_by = NULL, approved_at = NULL, updated_at = NOW()
+      WHERE id = $1 AND tenant_id = $2
+    `, [id, tenantId]);
+    await tx.query(`
+      UPDATE roles_anticipos_detalle
+      SET estado = 'pendiente', decidido_por = NULL, decidido_en = NULL, updated_at = NOW()
+      WHERE role_id = $1 AND tenant_id = $2 AND estado = 'aprobado'
+    `, [id, tenantId]);
+    await db.commit(tx);
+    await recordAudit({ tenantId, userId: user.id, correlationId: context.correlationId, action: 'nomina.rol_anticipos.aprobacion_reversada', entity: 'roles_anticipos', entityId: id, ipAddress: context.ipAddress });
     return getRun(tenantId, id);
   } catch (err) {
     await db.rollback(tx);
@@ -647,6 +685,7 @@ module.exports = {
   deleteDraftRun,
   annulRun,
   approveRun,
+  reverseApprovalRun,
   decideLine,
   applyRequestedDecisions,
   closeRun,

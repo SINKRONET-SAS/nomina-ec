@@ -78,6 +78,15 @@ async function aprobar(req, res, next) {
   }
 }
 
+async function reversarAprobacion(req, res, next) {
+  try {
+    const role = await advancePayrollService.reverseApprovalRun(req.tenantId, req.params.id, req.usuario, context(req));
+    return res.json({ success: true, role, correlationId: req.correlationId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function decidirLinea(req, res, next) {
   try {
     const role = await advancePayrollService.decideLine(req.tenantId, req.params.id, req.params.lineId, req.body?.decision, req.usuario, context(req));
@@ -140,4 +149,4 @@ async function descargarReporte(req, res, next) {
   }
 }
 
-module.exports = { listar, crear, descargarPlantilla, cargarMasiva, actualizar, eliminar, anular, aprobar, decidirLinea, aplicarSeleccion, cerrar, descargarCsv, descargarReporte };
+module.exports = { listar, crear, descargarPlantilla, cargarMasiva, actualizar, eliminar, anular, aprobar, reversarAprobacion, decidirLinea, aplicarSeleccion, cerrar, descargarCsv, descargarReporte };

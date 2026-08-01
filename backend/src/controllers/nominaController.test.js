@@ -756,6 +756,36 @@ describe('nominaController proteccion de nomina cerrada', () => {
       error: 'NOMINA_PERIODO_NO_CERRADO',
     });
   });
+
+  test('permite reapertura controlada de periodo cerrado con trazabilidad', async () => {
+    db.getClient.mockResolvedValue({ query: db.query });
+    db.commit.mockClear();
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'p1', status: 'closed' }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'n1' }, { id: 'n2' }] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-reopen-closed',
+      body: { anio: 2026, mes: 6, motivo: 'Correccion documentada posterior al cierre' },
+    };
+    const res = createResponse();
+
+    await reabrirMes(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({
+      success: true,
+      rolesRevertidos: 2,
+    });
+    expect(db.query).toHaveBeenCalledTimes(3);
+    expect(db.commit).toHaveBeenCalledTimes(1);
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'nomina.periodo.reabrir',
+      newData: expect.objectContaining({ rolesRevertidos: 2 }),
+    }));
+  });
 });
 
 describe('nominaController descargarRolesTranspuestosPDF', () => {

@@ -105,11 +105,12 @@ const checks = [
   check(
     'HRC26-API-002',
     'BACKEND',
-    controller.includes("error: 'NOMINA_CERRADA_INMUTABLE'")
-      && controller.includes("nextAction: 'registrar_ajuste_periodo_abierto'")
-      && !controller.includes("action: 'reabrir_nomina'"),
-    'El endpoint heredado de reapertura conserva compatibilidad HTTP, pero no muta roles cerrados.',
-    'Bloquear la reapertura destructiva y orientar las correcciones posteriores al cierre como ajustes en un periodo abierto.',
+    controller.includes("action: 'nomina.periodo.reabrir'")
+      && controller.includes('FOR UPDATE')
+      && controller.includes("status = 'reopened'")
+      && controller.includes('motivo'),
+    'La reapertura controlada del periodo cerrado revierte roles a borrador y deja trazabilidad.',
+    'Exigir reapertura explícita con motivo, bloqueo transaccional y auditoría antes de corregir y recalcular.',
   ),
   check(
     'HRC26-PWA-001',

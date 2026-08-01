@@ -401,9 +401,10 @@ assert(app.includes("'/api/marcaciones/manual/carga-masiva'"), 'Backend debe exp
 assert(novedadesPendientes.includes('/marcaciones/manual/plantilla-carga-masiva'), 'PWA debe descargar la plantilla de asistencia manual.');
 assert(novedadesPendientes.includes('EmployeeSearchSelect'), 'La asistencia manual debe permitir buscar empleados sin recorrer un select completo.');
 assert(employeeSearchSelect.includes('role="combobox"'), 'El selector de empleados debe exponer semantica de combobox accesible.');
-assert(nominaController.includes("error: 'NOMINA_CERRADA_INMUTABLE'"), 'El endpoint heredado de reapertura debe proteger roles cerrados.');
-assert(!nominaController.includes("action: 'reabrir_nomina'"), 'Backend no debe convertir roles cerrados otra vez en borrador.');
+assert(nominaController.includes("action: 'nomina.periodo.reabrir'") && nominaController.includes('motivo'), 'La reapertura de un periodo cerrado debe ser explícita y auditable.');
+assert(nominaController.includes('FOR UPDATE') && nominaController.includes("status = 'reopened'"), 'La reapertura controlada debe bloquear el periodo y dejarlo abierto para correcciones.');
 assert(cerrarMes.includes('Descartar cálculo'), 'Cierre mensual debe permitir volver a novedades antes del cierre.');
+assert(cerrarMes.includes('Reapertura controlada') && cerrarMes.includes('/nomina/reabrir') && cerrarMes.includes('motivo'), 'Cierre mensual debe ofrecer reapertura controlada con motivo.');
 assert(rolesPagos.includes('Corregir novedades'), 'Roles de pago debe exponer correccion de fuentes para borradores.');
 assert(rolesPagos.includes('Eliminar borrador'), 'Roles de pago debe permitir eliminar un borrador con confirmacion.');
 assert(novedadesPendientes.includes('useSearchParams'), 'Novedades debe recibir empleado y periodo desde la correccion de un rol.');
