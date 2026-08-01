@@ -31,8 +31,10 @@ enum ApprovalStatus {
 
 enum PayrollStatus {
   borrador
+  aprobado
   cerrada
   pagada
+  anulado
 }
 
 enum LegalDocumentType {
@@ -806,6 +808,11 @@ model Payroll {
   netoRecibir        Decimal       @default(0) @map("neto_recibir") @db.Decimal(12, 2)
   detalleCalculo     Json          @default("{}") @map("detalle_calculo")
   estado             PayrollStatus @default(borrador)
+  aprobadoPor        String?       @map("aprobado_por") @db.Uuid
+  aprobadoEn         DateTime?     @map("aprobado_en") @db.Timestamptz(6)
+  anuladoPor         String?       @map("anulado_por") @db.Uuid
+  anuladoEn          DateTime?     @map("anulado_en") @db.Timestamptz(6)
+  motivoAnulacion    String?       @map("motivo_anulacion") @db.VarChar(500)
   rolPdfUrl          String?       @map("rol_pdf_url")
   cerradoEn          DateTime?     @map("cerrado_en") @db.Timestamptz(6)
   createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)

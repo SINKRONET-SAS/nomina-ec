@@ -9,6 +9,9 @@ const {
   discardPayrollDraft,
   discardPayrollPeriodCalculation,
   invalidateEmployeePayrollForNovelty,
+  approvePayrollDraft,
+  reversePayrollApproval,
+  annulPayroll,
 } = require('../services/payrollLifecycleService');
 const { resolveStorageUrl } = require('../config/s3');
 const {
@@ -800,7 +803,7 @@ async function cerrarMes(req, res) {
           rol_pdf_url = NULL,
           cerrado_en = NOW(),
           updated_at = NOW()
-      WHERE tenant_id = $1 AND anio = $2 AND mes = $3 AND estado = 'borrador'
+      WHERE tenant_id = $1 AND anio = $2 AND mes = $3 AND estado IN ('borrador', 'aprobado')
       RETURNING id, empleado_id, tenant_id, anio, mes, detalle_calculo
     `, [tenantId, anioNumber, mesNumber]);
 
@@ -1010,6 +1013,7 @@ async function reabrirMes(req, res) {
     const mesNumber = Number(mes);
 
     tx = await db.getClient(tenantId, usuarioId);
+    await tx.query("SELECT set_config('app.allow_payroll_reopen', 'on', true)");
     const periodLock = await tx.query(`
       SELECT id, status
       FROM payroll_periods
@@ -1041,6 +1045,9 @@ async function reabrirMes(req, res) {
       UPDATE nominas
       SET estado = 'borrador',
           cerrado_en = NULL,
+          aprobado_por = NULL,
+          aprobado_en = NULL,
+          rol_pdf_url = NULL,
           updated_at = NOW()
       WHERE tenant_id = $1 AND anio = $2 AND mes = $3 AND estado = 'cerrada'
       RETURNING id
@@ -1093,6 +1100,68 @@ async function reabrirMes(req, res) {
     return res.status(err.statusCode || 500).json({
       error: err.code || 'NOMINA_REAPERTURA_ERROR',
       message: err.message,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function aprobarRol(req, res) {
+  try {
+    const rol = await approvePayrollDraft({
+      tenantId: req.tenantId,
+      payrollId: req.params.id,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+    });
+    return res.json({ success: true, message: 'Rol aprobado.', rol, correlationId: req.correlationId });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'NOMINA_ROL_APROBAR_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function reversarAprobacionRol(req, res) {
+  try {
+    const rol = await reversePayrollApproval({
+      tenantId: req.tenantId,
+      payrollId: req.params.id,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+      reason: req.body?.motivo,
+    });
+    return res.json({ success: true, message: 'Aprobacion reversada; el rol volvio a borrador.', rol, correlationId: req.correlationId });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'NOMINA_ROL_REVERSAR_APROBACION_ERROR',
+      message: err.message,
+      details: err.details,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function anularRol(req, res) {
+  try {
+    const rol = await annulPayroll({
+      tenantId: req.tenantId,
+      payrollId: req.params.id,
+      userId: req.usuarioId,
+      correlationId: req.correlationId,
+      ipAddress: req.ip,
+      reason: req.body?.motivo,
+    });
+    return res.json({ success: true, message: 'Rol anulado.', rol, correlationId: req.correlationId });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'NOMINA_ROL_ANULAR_ERROR',
+      message: err.message,
+      details: err.details,
       correlationId: req.correlationId,
     });
   }
@@ -1421,6 +1490,9 @@ module.exports = {
   descargarRolesTranspuestosPDF,
   cerrarMes,
   reabrirMes,
+  aprobarRol,
+  reversarAprobacionRol,
+  anularRol,
   descartarCalculoPeriodo,
   eliminarBorrador,
   invalidarCalculoEmpleado,

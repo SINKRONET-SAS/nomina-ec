@@ -27,6 +27,9 @@ jest.mock('../services/payrollLifecycleService', () => ({
   discardPayrollDraft: jest.fn(),
   discardPayrollPeriodCalculation: jest.fn(),
   invalidateEmployeePayrollForNovelty: jest.fn(),
+  approvePayrollDraft: jest.fn(),
+  reversePayrollApproval: jest.fn(),
+  annulPayroll: jest.fn(),
 }));
 
 jest.mock('../services/calculoNominaService', () => ({
@@ -50,6 +53,9 @@ const {
   discardPayrollDraft,
   discardPayrollPeriodCalculation,
   invalidateEmployeePayrollForNovelty,
+  approvePayrollDraft,
+  reversePayrollApproval,
+  annulPayroll,
 } = require('../services/payrollLifecycleService');
 const { calcularNominaEmpleado, calcularNominaMensual } = require('../services/calculoNominaService');
 const { approvePayrollOvertimeLimitExceptions } = require('../services/overtimeLimitApprovalService');
@@ -62,6 +68,9 @@ const {
   eliminarBorrador,
   invalidarCalculoEmpleado,
   recalcularEmpleado,
+  aprobarRol,
+  reversarAprobacionRol,
+  anularRol,
   enviarRolPagoEmail,
   reabrirMes,
   descargarRolesTranspuestosPDF,
@@ -717,7 +726,12 @@ describe('nominaController correccion individual por empleado', () => {
 describe('nominaController proteccion de nomina cerrada', () => {
   beforeEach(() => {
     db.query.mockReset();
+    db.rollback.mockReset();
+    db.rollback.mockResolvedValue(undefined);
     recordAudit.mockReset();
+    approvePayrollDraft.mockReset();
+    reversePayrollApproval.mockReset();
+    annulPayroll.mockReset();
   });
 
   test('rechaza reapertura sin motivo suficiente', async () => {
@@ -739,6 +753,7 @@ describe('nominaController proteccion de nomina cerrada', () => {
 
   test('rechaza reapertura de periodo no cerrado', async () => {
     db.getClient.mockResolvedValue({ query: db.query });
+    db.query.mockResolvedValueOnce({ rows: [] });
     db.query.mockResolvedValueOnce({ rows: [{ id: 'p1', status: 'calculated' }] });
 
     const req = {
@@ -760,6 +775,7 @@ describe('nominaController proteccion de nomina cerrada', () => {
   test('permite reapertura controlada de periodo cerrado con trazabilidad', async () => {
     db.getClient.mockResolvedValue({ query: db.query });
     db.commit.mockClear();
+    db.query.mockResolvedValueOnce({ rows: [] });
     db.query.mockResolvedValueOnce({ rows: [{ id: 'p1', status: 'closed' }] });
     db.query.mockResolvedValueOnce({ rows: [{ id: 'n1' }, { id: 'n2' }] });
     db.query.mockResolvedValueOnce({ rows: [] });
@@ -779,12 +795,43 @@ describe('nominaController proteccion de nomina cerrada', () => {
       success: true,
       rolesRevertidos: 2,
     });
-    expect(db.query).toHaveBeenCalledTimes(3);
+    expect(db.query).toHaveBeenCalledTimes(4);
+    expect(db.query.mock.calls[0][0]).toContain("set_config('app.allow_payroll_reopen'");
     expect(db.commit).toHaveBeenCalledTimes(1);
     expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
       action: 'nomina.periodo.reabrir',
       newData: expect.objectContaining({ rolesRevertidos: 2 }),
     }));
+  });
+
+  test('expone las acciones del ciclo de vida del rol mensual', async () => {
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-role-lifecycle',
+      ip: '127.0.0.1',
+      params: { id: 'payroll-1' },
+      body: { motivo: 'Correccion solicitada por RRHH' },
+    };
+
+    approvePayrollDraft.mockResolvedValueOnce({ id: 'payroll-1', estado: 'aprobado' });
+    reversePayrollApproval.mockResolvedValueOnce({ id: 'payroll-1', estado: 'borrador' });
+    annulPayroll.mockResolvedValueOnce({ id: 'payroll-1', estado: 'anulado' });
+
+    let res = createResponse();
+    await aprobarRol(req, res);
+    expect(res.body).toMatchObject({ success: true, rol: { estado: 'aprobado' } });
+    expect(approvePayrollDraft).toHaveBeenCalledWith(expect.objectContaining({ payrollId: 'payroll-1' }));
+
+    res = createResponse();
+    await reversarAprobacionRol(req, res);
+    expect(res.body).toMatchObject({ success: true, rol: { estado: 'borrador' } });
+    expect(reversePayrollApproval).toHaveBeenCalledWith(expect.objectContaining({ reason: req.body.motivo }));
+
+    res = createResponse();
+    await anularRol(req, res);
+    expect(res.body).toMatchObject({ success: true, rol: { estado: 'anulado' } });
+    expect(annulPayroll).toHaveBeenCalledWith(expect.objectContaining({ reason: req.body.motivo }));
   });
 });
 

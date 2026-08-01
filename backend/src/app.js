@@ -293,6 +293,9 @@ app.post('/api/nomina/novedades/lote', requireRole('owner', 'admin_rrhh'), requi
 app.delete('/api/nomina/novedades/lote/:batchId', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), nominaController.eliminarLoteNovedades);
 app.post('/api/nomina/:anio/:mes/empleados/:empleadoId/invalidar-calculo', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.invalidarCalculoEmpleado);
 app.post('/api/nomina/:anio/:mes/empleados/:empleadoId/recalcular', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.recalcularEmpleado);
+app.put('/api/nomina/:id/aprobar', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.aprobarRol);
+app.put('/api/nomina/:id/reversar-aprobacion', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.reversarAprobacionRol);
+app.put('/api/nomina/:id/anular', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.anularRol);
 app.get('/api/nomina/:id/rol-pdf', requireRole('owner', 'admin_rrhh'), requireModule('nomina'), nominaController.descargarRolPDF);
 app.post('/api/nomina/:id/rol-email', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.enviarRolPagoEmail);
 app.delete('/api/nomina/:id', requireRole('owner', 'admin_rrhh'), requireFreshUser, requireModule('nomina'), nominaController.eliminarBorrador);

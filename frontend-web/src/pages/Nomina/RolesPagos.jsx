@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
-import { Download, Pencil, Send, Trash2, X } from 'lucide-react';
+import { Ban, CheckCircle2, Download, Pencil, RotateCcw, Send, Trash2, X } from 'lucide-react';
 import { authenticatedApi } from '../../services/authenticatedApi';
 import { extractApiError } from '../../services/publicApi';
 import { downloadUrl } from '../../utils/downloadUrl';
@@ -171,7 +171,31 @@ function RolesPagos() {
     },
   });
 
-  const openDraftAction = (nomina, intent) => {
+  const lifecycleMutation = useMutation({
+    mutationFn: async ({ payrollId, action, reason }) => authenticatedApi.put(`/nomina/${payrollId}/${action}`, {
+      ...(action === 'anular' || action === 'reversar-aprobacion' ? { motivo: reason.trim() } : {}),
+    }),
+    onSuccess: async (_response, variables) => {
+      setPendingAction(null);
+      setDiscardReason('');
+      await queryClient.invalidateQueries({ queryKey: ['roles-pagos', anio, mes] });
+      await queryClient.invalidateQueries({ queryKey: ['nomina-periodo', anio, mes] });
+      setError('');
+      setMessage(
+        variables.action === 'aprobar'
+          ? 'Rol aprobado.'
+          : variables.action === 'anular'
+            ? 'Rol anulado.'
+            : 'Aprobación reversada. El rol volvió a borrador.',
+      );
+    },
+    onError: (err) => {
+      setMessage('');
+      setError(extractApiError(err, 'No pudimos actualizar el estado del rol.'));
+    },
+  });
+
+  const openRoleAction = (nomina, intent) => {
     setMessage('');
     setError('');
     setDiscardReason('');
@@ -254,11 +278,24 @@ function RolesPagos() {
                   const overtime = overtimeLines(nomina);
                   const roleClosed = nomina.estado === 'cerrada' || nomina.estado === 'pagada';
                   const roleDraft = nomina.estado === 'borrador';
+                  const roleApproved = nomina.estado === 'aprobado';
+                  const roleAnnulled = nomina.estado === 'anulado';
                   const statusLabel = nomina.estado === 'pagada'
                     ? 'Pagado'
                     : roleClosed
                       ? 'Cerrado'
-                      : 'Borrador';
+                      : roleApproved
+                        ? 'Aprobado'
+                        : roleAnnulled
+                          ? 'Anulado'
+                          : 'Borrador';
+                  const statusClass = roleClosed
+                    ? 'bg-green-100 text-green-800'
+                    : roleApproved
+                      ? 'bg-blue-100 text-blue-800'
+                      : roleAnnulled
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-yellow-100 text-yellow-800';
                   return (
                   <tr key={nomina.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm">{employeeName}</td>
@@ -279,7 +316,7 @@ function RolesPagos() {
                     <td className="px-6 py-4 text-sm">{formatMoney(nomina.total_deducciones)}</td>
                     <td className="px-6 py-4 text-sm font-semibold">{formatMoney(nomina.neto_recibir)}</td>
                     <td className="px-6 py-4">
-                      <span className={`rounded-full px-2 py-1 text-xs font-semibold ${roleClosed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                      <span className={`rounded-full px-2 py-1 text-xs font-semibold ${statusClass}`}>
                         {statusLabel}
                       </span>
                     </td>
@@ -309,7 +346,7 @@ function RolesPagos() {
                         <>
                           <button
                             type="button"
-                            onClick={() => openDraftAction(nomina, 'correction')}
+                            onClick={() => openRoleAction(nomina, 'correction')}
                             title="Corregir novedades"
                             aria-label={`Corregir novedades de ${employeeName}`}
                             className="rounded bg-amber-100 p-1 text-amber-800 hover:bg-amber-200"
@@ -318,14 +355,66 @@ function RolesPagos() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => openDraftAction(nomina, 'delete')}
+                            onClick={() => openRoleAction(nomina, 'delete')}
                             title="Eliminar borrador"
                             aria-label={`Eliminar borrador de ${employeeName}`}
                             className="rounded bg-red-100 p-1 text-red-700 hover:bg-red-200"
                           >
                             <Trash2 size={16} />
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => lifecycleMutation.mutate({ payrollId: nomina.id, action: 'aprobar' })}
+                            disabled={lifecycleMutation.isPending}
+                            title="Aprobar rol"
+                            aria-label={`Aprobar rol de ${employeeName}`}
+                            className="rounded bg-emerald-100 p-1 text-emerald-700 hover:bg-emerald-200 disabled:opacity-50"
+                          >
+                            <CheckCircle2 size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openRoleAction(nomina, 'annul')}
+                            title="Anular rol"
+                            aria-label={`Anular rol de ${employeeName}`}
+                            className="rounded bg-red-100 p-1 text-red-700 hover:bg-red-200"
+                          >
+                            <Ban size={16} />
+                          </button>
                         </>
+                      )}
+                      {roleApproved && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => openRoleAction(nomina, 'reverse')}
+                            title="Reversar aprobación"
+                            aria-label={`Reversar aprobación del rol de ${employeeName}`}
+                            className="rounded bg-amber-100 p-1 text-amber-800 hover:bg-amber-200"
+                          >
+                            <RotateCcw size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openRoleAction(nomina, 'annul')}
+                            title="Anular rol"
+                            aria-label={`Anular rol de ${employeeName}`}
+                            className="rounded bg-red-100 p-1 text-red-700 hover:bg-red-200"
+                          >
+                            <Ban size={16} />
+                          </button>
+                        </>
+                      )}
+                      {roleAnnulled && <span className="text-xs text-slate-500">Sin acciones</span>}
+                      {roleClosed && (
+                        <button
+                          type="button"
+                          onClick={() => navigate('/dashboard/nomina/cerrar')}
+                          title="Reabre el periodo desde Cerrar Mes para editar, eliminar, aprobar o anular este rol"
+                          className="text-xs font-semibold text-teal-700 underline decoration-teal-300 underline-offset-2 hover:text-teal-900"
+                        >
+                          Reabrir en Cerrar Mes
+                        </button>
                       )}
                       </div>
                     </td>
@@ -362,16 +451,29 @@ function RolesPagos() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-slate-950" id="discard-role-title">
-                  {pendingAction.intent === 'correction' ? 'Corregir novedades del rol' : 'Eliminar rol en borrador'}
+                  {pendingAction.intent === 'correction'
+                    ? 'Corregir novedades del rol'
+                    : pendingAction.intent === 'delete'
+                      ? 'Eliminar rol en borrador'
+                      : pendingAction.intent === 'annul'
+                        ? 'Anular rol de pago'
+                        : 'Reversar aprobación'}
                 </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
+                <p className={`mt-2 text-sm leading-6 text-slate-600 ${pendingAction.intent === 'annul' || pendingAction.intent === 'reverse' ? 'hidden' : ''}`}>
                   Se descartará el cálculo de {pendingAction.nomina.nombres} {pendingAction.nomina.apellidos}. Las novedades y la auditoría se conservan; después podrás recalcular el periodo.
                 </p>
+                {(pendingAction.intent === 'annul' || pendingAction.intent === 'reverse') && (
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {pendingAction.intent === 'annul'
+                      ? 'El rol quedará anulado y no podrá participar en el cierre. Esta acción solo está disponible mientras el periodo permanezca abierto.'
+                      : 'La aprobación se reversará y el rol volverá a borrador para permitir su revisión o corrección.'}
+                  </p>
+                )}
               </div>
               <button
                 aria-label="Cerrar confirmación"
                 className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-500"
-                disabled={discardDraftMutation.isPending}
+                disabled={discardDraftMutation.isPending || lifecycleMutation.isPending}
                 onClick={() => setPendingAction(null)}
                 type="button"
               >
@@ -379,7 +481,7 @@ function RolesPagos() {
               </button>
             </div>
             <label className="mt-4 block text-sm font-semibold text-slate-700">
-              Motivo
+              Motivo (minimo 10 caracteres)
               <textarea
                 className="mt-1 min-h-24 w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
                 maxLength={500}
@@ -391,7 +493,7 @@ function RolesPagos() {
             <div className="mt-4 flex flex-wrap justify-end gap-2">
               <button
                 className="inline-flex min-h-10 items-center rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700"
-                disabled={discardDraftMutation.isPending}
+                disabled={discardDraftMutation.isPending || lifecycleMutation.isPending}
                 onClick={() => setPendingAction(null)}
                 type="button"
               >
@@ -399,19 +501,39 @@ function RolesPagos() {
               </button>
               <button
                 className="inline-flex min-h-10 items-center gap-2 rounded-md bg-red-700 px-4 text-sm font-semibold text-white disabled:bg-slate-300"
-                disabled={discardReason.trim().length < 10 || discardDraftMutation.isPending}
-                onClick={() => discardDraftMutation.mutate({
-                  payrollId: pendingAction.nomina.id,
-                  intent: pendingAction.intent,
-                })}
+                disabled={discardReason.trim().length < 10 || discardDraftMutation.isPending || lifecycleMutation.isPending}
+                onClick={() => {
+                  if (pendingAction.intent === 'correction' || pendingAction.intent === 'delete') {
+                    discardDraftMutation.mutate({
+                      payrollId: pendingAction.nomina.id,
+                      intent: pendingAction.intent,
+                    });
+                    return;
+                  }
+                  lifecycleMutation.mutate({
+                    payrollId: pendingAction.nomina.id,
+                    action: pendingAction.intent === 'annul' ? 'anular' : 'reversar-aprobacion',
+                    reason: discardReason,
+                  });
+                }}
                 type="button"
               >
-                {pendingAction.intent === 'correction' ? <Pencil className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
-                {discardDraftMutation.isPending
+                {pendingAction.intent === 'correction'
+                  ? <Pencil className="h-4 w-4" />
+                  : pendingAction.intent === 'delete'
+                    ? <Trash2 className="h-4 w-4" />
+                    : pendingAction.intent === 'annul'
+                      ? <Ban className="h-4 w-4" />
+                      : <RotateCcw className="h-4 w-4" />}
+                {discardDraftMutation.isPending || lifecycleMutation.isPending
                   ? 'Procesando'
                   : pendingAction.intent === 'correction'
                     ? 'Descartar y corregir'
-                    : 'Eliminar borrador'}
+                    : pendingAction.intent === 'delete'
+                      ? 'Eliminar borrador'
+                      : pendingAction.intent === 'annul'
+                        ? 'Anular rol'
+                        : 'Reversar aprobación'}
               </button>
             </div>
           </div>

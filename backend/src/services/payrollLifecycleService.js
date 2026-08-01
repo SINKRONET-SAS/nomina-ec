@@ -699,10 +699,223 @@ async function invalidateEmployeePayrollForNovelty({
   }
 }
 
+async function getPayrollForLifecycle(client, { tenantId, payrollId }) {
+  const result = await client.query(`
+    SELECT
+      n.id,
+      n.tenant_id,
+      n.empleado_id,
+      n.anio,
+      n.mes,
+      n.estado,
+      n.total_ingresos,
+      n.total_deducciones,
+      n.neto_recibir,
+      n.aprobado_por,
+      n.aprobado_en,
+      n.anulado_por,
+      n.anulado_en,
+      n.motivo_anulacion,
+      pp.id AS period_id,
+      pp.status AS period_status
+    FROM nominas n
+    JOIN payroll_periods pp
+      ON pp.tenant_id = n.tenant_id
+     AND pp.anio = n.anio
+     AND pp.mes = n.mes
+    WHERE n.id = $1 AND n.tenant_id = $2
+    FOR UPDATE OF n, pp
+  `, [payrollId, tenantId]);
+
+  if (result.rows.length === 0) {
+    throw new AppError('Rol de pago no encontrado.', {
+      code: 'NOMINA_ROL_NO_ENCONTRADO',
+      statusCode: 404,
+    });
+  }
+  return result.rows[0];
+}
+
+function assertPayrollPeriodOpen(row = {}) {
+  if (row.period_status === 'closed') {
+    throw new AppError('Reabre el periodo desde Cerrar Mes antes de modificar este rol.', {
+      code: 'NOMINA_CERRADA_REQUIERE_REAPERTURA',
+      statusCode: 409,
+      details: { payrollId: row.id || null, periodId: row.period_id || null },
+    });
+  }
+}
+
+async function approvePayrollDraft({
+  tenantId,
+  payrollId,
+  userId,
+  correlationId = '',
+  ipAddress = '',
+}) {
+  let client = null;
+  try {
+    client = await db.getClient(tenantId, userId);
+    const payroll = await getPayrollForLifecycle(client, { tenantId, payrollId });
+    assertPayrollPeriodOpen(payroll);
+    if (payroll.estado !== 'borrador') {
+      throw new AppError('Solo se puede aprobar un rol en borrador.', {
+        code: 'NOMINA_ROL_NO_APROBABLE',
+        statusCode: 409,
+        details: { payrollId, estado: payroll.estado },
+      });
+    }
+
+    const updated = await client.query(`
+      UPDATE nominas
+      SET estado = 'aprobado', aprobado_por = $3, aprobado_en = NOW(), updated_at = NOW()
+      WHERE id = $1 AND tenant_id = $2 AND estado = 'borrador'
+      RETURNING *
+    `, [payrollId, tenantId, userId || null]);
+    if (updated.rows.length === 0) {
+      throw new AppError('El rol cambio de estado antes de completar la aprobacion.', {
+        code: 'NOMINA_ROL_CONFLICTO_ESTADO',
+        statusCode: 409,
+      });
+    }
+
+    await recordAudit({
+      tenantId,
+      userId,
+      correlationId,
+      action: 'nomina.rol.aprobar',
+      entity: 'nominas',
+      entityId: payrollId,
+      previousData: { estado: payroll.estado },
+      newData: { estado: 'aprobado', aprobadoPor: userId || null },
+      ipAddress,
+      dbClient: client,
+    });
+    await db.commit(client);
+    client = null;
+    return updated.rows[0];
+  } catch (err) {
+    if (client) await db.rollback(client).catch(() => {});
+    throw err;
+  }
+}
+
+async function reversePayrollApproval({
+  tenantId,
+  payrollId,
+  userId,
+  correlationId = '',
+  ipAddress = '',
+  reason,
+}) {
+  const normalizedReason = normalizeReason(reason);
+  let client = null;
+  try {
+    client = await db.getClient(tenantId, userId);
+    const payroll = await getPayrollForLifecycle(client, { tenantId, payrollId });
+    assertPayrollPeriodOpen(payroll);
+    if (payroll.estado !== 'aprobado') {
+      throw new AppError('Solo se puede reversar la aprobacion de un rol aprobado.', {
+        code: 'NOMINA_ROL_NO_APROBADO',
+        statusCode: 409,
+        details: { payrollId, estado: payroll.estado },
+      });
+    }
+    const updated = await client.query(`
+      UPDATE nominas
+      SET estado = 'borrador', aprobado_por = NULL, aprobado_en = NULL, updated_at = NOW()
+      WHERE id = $1 AND tenant_id = $2 AND estado = 'aprobado'
+      RETURNING *
+    `, [payrollId, tenantId]);
+    if (updated.rows.length === 0) {
+      throw new AppError('El rol cambio de estado antes de completar la reversa.', {
+        code: 'NOMINA_ROL_CONFLICTO_ESTADO',
+        statusCode: 409,
+      });
+    }
+    await recordAudit({
+      tenantId,
+      userId,
+      correlationId,
+      action: 'nomina.rol.reversar_aprobacion',
+      entity: 'nominas',
+      entityId: payrollId,
+      previousData: { estado: payroll.estado, aprobadoPor: payroll.aprobado_por },
+      newData: { estado: 'borrador', motivo: normalizedReason },
+      ipAddress,
+      dbClient: client,
+    });
+    await db.commit(client);
+    client = null;
+    return updated.rows[0];
+  } catch (err) {
+    if (client) await db.rollback(client).catch(() => {});
+    throw err;
+  }
+}
+
+async function annulPayroll({
+  tenantId,
+  payrollId,
+  userId,
+  correlationId = '',
+  ipAddress = '',
+  reason,
+}) {
+  const normalizedReason = normalizeReason(reason);
+  let client = null;
+  try {
+    client = await db.getClient(tenantId, userId);
+    const payroll = await getPayrollForLifecycle(client, { tenantId, payrollId });
+    assertPayrollPeriodOpen(payroll);
+    if (!['borrador', 'aprobado'].includes(payroll.estado)) {
+      throw new AppError('Solo se puede anular un rol en borrador o aprobado.', {
+        code: 'NOMINA_ROL_NO_ANULABLE',
+        statusCode: 409,
+        details: { payrollId, estado: payroll.estado },
+      });
+    }
+    const updated = await client.query(`
+      UPDATE nominas
+      SET estado = 'anulado', rol_pdf_url = NULL, aprobado_por = NULL, aprobado_en = NULL,
+          anulado_por = $3, anulado_en = NOW(), motivo_anulacion = $4, updated_at = NOW()
+      WHERE id = $1 AND tenant_id = $2 AND estado IN ('borrador', 'aprobado')
+      RETURNING *
+    `, [payrollId, tenantId, userId || null, normalizedReason]);
+    if (updated.rows.length === 0) {
+      throw new AppError('El rol cambio de estado antes de completar la anulacion.', {
+        code: 'NOMINA_ROL_CONFLICTO_ESTADO',
+        statusCode: 409,
+      });
+    }
+    await recordAudit({
+      tenantId,
+      userId,
+      correlationId,
+      action: 'nomina.rol.anular',
+      entity: 'nominas',
+      entityId: payrollId,
+      previousData: { estado: payroll.estado },
+      newData: { estado: 'anulado', motivo: normalizedReason, anuladoPor: userId || null },
+      ipAddress,
+      dbClient: client,
+    });
+    await db.commit(client);
+    client = null;
+    return updated.rows[0];
+  } catch (err) {
+    if (client) await db.rollback(client).catch(() => {});
+    throw err;
+  }
+}
+
 module.exports = {
   discardPayrollDraft,
   discardPayrollPeriodCalculation,
   invalidateEmployeePayrollForNovelty,
+  approvePayrollDraft,
+  reversePayrollApproval,
+  annulPayroll,
   normalizeIntent,
   normalizeReason,
 };

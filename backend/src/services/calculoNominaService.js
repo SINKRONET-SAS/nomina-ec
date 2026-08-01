@@ -772,8 +772,14 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
       total_deducciones = EXCLUDED.total_deducciones,
       neto_recibir = EXCLUDED.neto_recibir,
       detalle_calculo = EXCLUDED.detalle_calculo,
+      estado = 'borrador',
+      aprobado_por = NULL,
+      aprobado_en = NULL,
+      anulado_por = NULL,
+      anulado_en = NULL,
+      motivo_anulacion = NULL,
       updated_at = NOW()
-    WHERE nominas.estado = 'borrador'
+    WHERE nominas.estado IN ('borrador', 'anulado')
     RETURNING id
   `, [
     tenantId,
