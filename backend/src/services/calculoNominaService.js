@@ -52,6 +52,36 @@ function employeeCalculationError(emp, err) {
   };
 }
 
+function buildDeductionBreakdown({ benefitDeductions = {}, initialBalanceEffects = {} } = {}) {
+  const benefitItems = Array.isArray(benefitDeductions.items)
+    ? benefitDeductions.items
+      .filter((item) => Number(item.amount || 0) !== 0)
+      .map((item) => ({
+        id: item.id || null,
+        tipo: item.tipo || null,
+        descripcion: item.descripcion || '',
+        amount: roundMoney(item.amount),
+        source: item.source || '',
+        sourceLabel: item.sourceLabel || (item.source === 'rol_anticipos' ? 'Rol de anticipos' : 'Registro manual'),
+      }))
+    : [];
+  const initialItems = (Array.isArray(initialBalanceEffects.items) ? initialBalanceEffects.items : [])
+    .filter((item) => ['anticipo', 'prestamo'].includes(item.balanceType) && Number(item.amount || 0) !== 0)
+    .map((item) => ({
+      id: item.id || null,
+      tipo: item.balanceType,
+      descripcion: item.description || '',
+      amount: roundMoney(item.amount),
+      source: 'saldo_inicial',
+      sourceLabel: 'Saldo inicial',
+    }));
+  const all = [...benefitItems, ...initialItems];
+  return {
+    anticipos: all.filter((item) => item.tipo === 'anticipo'),
+    prestamos: all.filter((item) => item.tipo === 'prestamo'),
+  };
+}
+
 function buildNegativeNetDetails({
   totalIngresos = 0,
   totalDeducciones = 0,
@@ -66,6 +96,7 @@ function buildNegativeNetDetails({
   impuestoRenta = 0,
   anticipos = 0,
   prestamos = 0,
+  benefitDeductions = {},
 } = {}) {
   const incomeTotals = noveltyImpact.totals || {};
   const deducciones = {
@@ -86,6 +117,7 @@ function buildNegativeNetDetails({
     decimoCuartoMensualizado: roundMoney(decimoCuartoMensual.montoPagadoEmpleado),
   };
   const neto = roundMoney(netoRecibir);
+  const desgloseDeducciones = buildDeductionBreakdown({ benefitDeductions, initialBalanceEffects });
 
   return {
     totalIngresos: roundMoney(totalIngresos),
@@ -94,6 +126,7 @@ function buildNegativeNetDetails({
     montoFaltante: roundMoney(Math.max(0, -neto)),
     ingresos,
     deducciones,
+    desgloseDeducciones,
   };
 }
 
@@ -663,6 +696,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
           impuestoRenta,
           anticipos,
           prestamos,
+          benefitDeductions,
         }),
       },
     });
@@ -742,6 +776,7 @@ async function calcularEmpleado(emp, tenantId, anio, mes, preloadedLegalParamete
     anticipos,
     prestamos,
     beneficiosDescontados: benefitDeductions.items,
+    desgloseDeducciones: buildDeductionBreakdown({ benefitDeductions, initialBalanceEffects }),
     saldosIniciales: initialBalanceEffects,
     totalIngresos,
     totalDeducciones,
@@ -1185,4 +1220,5 @@ module.exports = {
   buildPayrollTotalsIntegrity,
   assertPayrollTotalsIntegrity,
   buildNegativeNetDetails,
+  buildDeductionBreakdown,
 };

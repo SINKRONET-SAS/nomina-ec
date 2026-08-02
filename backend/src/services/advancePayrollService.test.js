@@ -5,7 +5,7 @@ jest.mock('../config/database', () => ({
   rollback: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('./auditService', () => ({ recordAudit: jest.fn().mockResolvedValue(undefined) }));
-jest.mock('./payrollNoveltyService', () => ({ ensureNoveltyTypeAllowed: jest.fn().mockResolvedValue({ code: 'bono_desempeno' }) }));
+jest.mock('./payrollNoveltyService', () => ({ ensureNoveltyTypeAllowed: jest.fn().mockResolvedValue({ code: 'bono_desempeno', payrollImpact: 'ingreso' }) }));
 
 const db = require('../config/database');
 const { recordAudit } = require('./auditService');
@@ -103,6 +103,23 @@ describe('advancePayrollService', () => {
     expect(tx.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE novedades_asistencia'), ['tenant-1', 'novelty-1', 'benefit-1']);
     expect(db.commit).toHaveBeenCalledWith(tx);
     expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'nomina.rol_anticipos.linea.bonificar_descontar' }));
+  });
+
+  test('bloquea la bonificacion si el tipo de novedad esta parametrizado como descuento', async () => {
+    const tx = { query: jest.fn() };
+    db.getClient.mockResolvedValueOnce(tx);
+    ensureNoveltyTypeAllowed.mockResolvedValueOnce({ code: 'datoscelular', payrollImpact: 'descuento' });
+    tx.query
+      .mockResolvedValueOnce({ rows: [runRow()] })
+      .mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'open' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'line-1', role_id: 'role-1', empleado_id: 'employee-1', monto: '100.00', tipo_novedad: 'datoscelular', nombre_bonificacion: 'Datos móviles', estado: 'aprobado' }] });
+
+    await expect(decideLine('tenant-1', 'role-1', 'line-1', 'bonificar_descontar', user, context)).rejects.toMatchObject({
+      code: 'ROL_ANTICIPOS_NOVEDAD_IMPACTO_INVALIDO',
+    });
+    expect(tx.query).toHaveBeenCalledTimes(3);
+    expect(db.rollback).toHaveBeenCalledWith(tx);
+    expect(db.commit).not.toHaveBeenCalled();
   });
 
   test('no cierra el rol mientras existan líneas sin decisión', async () => {

@@ -232,6 +232,7 @@ app.get('/api/novedades/plantilla-carga-masiva', requireRole('owner', 'admin_rrh
 app.post('/api/novedades', requireRole('owner', 'admin_rrhh', 'supervisor'), requireModule('asistencia'), novedadController.crear);
 app.post('/api/novedades/carga-masiva', requireRole('owner', 'admin_rrhh'), requireModule('asistencia'), novedadController.cargaMasiva);
 app.put('/api/novedades/periodo/resolver', requireRole('owner', 'admin_rrhh'), requireModule('asistencia'), novedadController.resolverPeriodo);
+app.put('/api/novedades/:id/reabrir', requireRole('owner', 'admin_rrhh'), requireModule('asistencia'), novedadController.reabrir);
 app.put('/api/novedades/:id', requireRole('owner', 'admin_rrhh'), requireModule('asistencia'), novedadController.actualizar);
 app.delete('/api/novedades/:id', requireRole('owner', 'admin_rrhh'), requireModule('asistencia'), novedadController.eliminar);
 app.put('/api/novedades/:id/aprobar', requireRole('owner', 'admin_rrhh'), requireModule('asistencia'), novedadController.aprobar);

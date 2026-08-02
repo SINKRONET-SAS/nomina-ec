@@ -257,7 +257,7 @@ function NovedadesPendientes() {
     onSuccess: (response, variables) => {
       const employeeName = employeeNameFromNovelty(variables.nov);
       const lines = response.data?.lineasInvalidas || 0;
-      setMessage(`Calculo liberado solo para ${employeeName}. Lineas invalidadas: ${lines}. Edita la novedad, apruebala y recalcula este empleado.`);
+      setMessage(`Calculo liberado solo para ${employeeName}. Lineas invalidadas: ${lines}. La novedad quedo pendiente y ya puede editarse.`);
       setError('');
       queryClient.invalidateQueries({ queryKey: ['novedades-pendientes'] });
       const period = periodFromNovelty(variables.nov);
@@ -362,6 +362,19 @@ function NovedadesPendientes() {
     },
   });
 
+  const reabrirMutation = useMutation({
+    mutationFn: ({ id, motivo }) => authenticatedApi.put(`/novedades/${id}/reabrir`, { motivo }),
+    onSuccess: () => {
+      setMessage('Novedad reabierta para modificar y pendiente de aprobación. Revisa el dato y apruébala antes de recalcular.');
+      setError('');
+      queryClient.invalidateQueries({ queryKey: ['novedades-pendientes'] });
+    },
+    onError: (err) => {
+      setMessage('');
+      setError(err.response?.data?.message || err.response?.data?.error || 'No pudimos reabrir la novedad.');
+    },
+  });
+
   function updateField(name, value) {
     setMessage('');
     setError('');
@@ -435,6 +448,21 @@ function NovedadesPendientes() {
     if (accepted) {
       eliminarMutation.mutate(nov.id);
     }
+  }
+
+  function reopenNovelty(nov) {
+    const employeeName = employeeNameFromNovelty(nov);
+    const motivo = window.prompt(
+      `Motivo para reabrir la novedad de ${employeeName || 'empleado'} y devolverla a pendiente:`,
+      `Correccion de novedad de ${employeeName || 'empleado'}`
+    );
+    if (motivo === null) return;
+    if (motivo.trim().length < 10) {
+      setError('La reapertura requiere un motivo de al menos 10 caracteres.');
+      setMessage('');
+      return;
+    }
+    reabrirMutation.mutate({ id: nov.id, motivo: motivo.trim() });
   }
 
   function invalidateEmployeeCalculation(nov) {
@@ -1161,6 +1189,19 @@ function NovedadesPendientes() {
                             </button>
                           </>
                         )}
+                        {nov.canReopen && (
+                          <button
+                            disabled={reabrirMutation.isPending || invalidarCalculoMutation.isPending}
+                            onClick={() => (nov.requiresEmployeePayrollInvalidation
+                              ? invalidateEmployeeCalculation(nov)
+                              : reopenNovelty(nov))}
+                            className="p-1 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 disabled:opacity-60"
+                            title={nov.requiresEmployeePayrollInvalidation ? 'Liberar cálculo y reabrir para modificar' : 'Reabrir para modificar'}
+                            type="button"
+                          >
+                            <Unlock size={16} />
+                          </button>
+                        )}
                         {nov.editable && nov.estado !== 'anulado' && (
                           <button
                             disabled={anularMutation.isPending}
@@ -1195,17 +1236,6 @@ function NovedadesPendientes() {
                               <Trash2 size={16} />
                             </button>
                           </>
-                        )}
-                        {nov.requiresEmployeePayrollInvalidation && (
-                          <button
-                            disabled={invalidarCalculoMutation.isPending}
-                            onClick={() => invalidateEmployeeCalculation(nov)}
-                            className="p-1 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 disabled:opacity-60"
-                            title="Liberar calculo solo de este empleado"
-                            type="button"
-                          >
-                            <Unlock size={16} />
-                          </button>
                         )}
                         {nov.canRecalculateEmployee && (
                           <button

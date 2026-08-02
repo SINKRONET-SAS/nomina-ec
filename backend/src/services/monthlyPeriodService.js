@@ -164,6 +164,37 @@ async function ensureWritablePayrollPeriodForDate({ tenantId, fecha }) {
   };
 }
 
+// A calculated month is still open for correcting an unconsumed novelty.
+// Only a closed month is immutable for this specific lifecycle action.
+async function ensurePayrollPeriodOpenForNoveltyReopen({ tenantId, fecha }) {
+  const period = extractPeriodFromDate(fecha);
+  const result = await db.query(`
+    SELECT id, status
+    FROM payroll_periods
+    WHERE tenant_id = $1 AND anio = $2 AND mes = $3
+    LIMIT 1
+  `, [tenantId, period.anio, period.mes]);
+
+  if (result.rows.length === 0) {
+    throw new AppError('Abre el mes de nomina antes de reabrir novedades.', {
+      code: 'PAYROLL_PERIOD_NOT_OPEN_FOR_NOVELTY_REOPEN',
+      statusCode: 409,
+      details: { periodoNomina: period.periodoNomina, fecha: period.fecha },
+    });
+  }
+
+  const row = result.rows[0];
+  if (row.status === 'closed') {
+    throw new AppError('El mes de nomina esta cerrado; no se puede reabrir la novedad.', {
+      code: 'PAYROLL_PERIOD_CLOSED_FOR_NOVELTY_REOPEN',
+      statusCode: 409,
+      details: { periodoNomina: period.periodoNomina, fecha: period.fecha, status: row.status },
+    });
+  }
+
+  return { id: row.id, status: row.status, ...period };
+}
+
 function makeIdempotencyKey(payload) {
   return crypto
     .createHash('sha256')
@@ -893,6 +924,7 @@ module.exports = {
   currentPeriodInEcuador,
   dateInEcuador,
   ensurePayrollPeriodForDate,
+  ensurePayrollPeriodOpenForNoveltyReopen,
   ensureWritablePayrollPeriodForDate,
   extractPeriodFromDate,
   formatPeriodMarker,

@@ -81,6 +81,12 @@ function moneyLabel(value) {
   })}`;
 }
 
+function deductionSourceItems(items = []) {
+  return Array.isArray(items)
+    ? items.filter((item) => Number(item.amount || 0) !== 0)
+    : [];
+}
+
 function batchScopeLabel(batch = {}) {
   const resolvedLabel = String(batch.scope_label || '').trim();
   if (resolvedLabel) return resolvedLabel;
@@ -1064,6 +1070,30 @@ function CerrarMes() {
                               <p>Novedades deducibles: <strong>{moneyLabel(row.details.precalculo.deducciones?.novedades)}</strong></p>
                               <p>Descuento recurrente: <strong>{moneyLabel(row.details.precalculo.deducciones?.descuentoRecurrente)}</strong></p>
                               <p>Anticipos: <strong>{moneyLabel(row.details.precalculo.deducciones?.anticipos)}</strong></p>
+                              {deductionSourceItems(row.details.precalculo.desgloseDeducciones?.anticipos).length > 0 && (
+                                <div className="rounded border border-slate-200 bg-white px-2 py-2 sm:col-span-2">
+                                  <span className="block font-semibold text-slate-600">Origen de anticipos</span>
+                                  <div className="mt-1 space-y-1">
+                                    {deductionSourceItems(row.details.precalculo.desgloseDeducciones?.anticipos).map((item, index) => (
+                                      <p key={item.id || `${item.source}-${index}`}>
+                                        {item.sourceLabel || item.source || 'Origen no identificado'} · {item.descripcion || 'Anticipo'}: <strong>{moneyLabel(item.amount)}</strong>
+                                      </p>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {deductionSourceItems(row.details.precalculo.desgloseDeducciones?.prestamos).length > 0 && (
+                                <div className="rounded border border-slate-200 bg-white px-2 py-2 sm:col-span-2">
+                                  <span className="block font-semibold text-slate-600">Origen de prestamos</span>
+                                  <div className="mt-1 space-y-1">
+                                    {deductionSourceItems(row.details.precalculo.desgloseDeducciones?.prestamos).map((item, index) => (
+                                      <p key={item.id || `${item.source}-${index}`}>
+                                        {item.sourceLabel || item.source || 'Origen no identificado'} · {item.descripcion || 'Prestamo'}: <strong>{moneyLabel(item.amount)}</strong>
+                                      </p>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                               <p>Préstamos: <strong>{moneyLabel(row.details.precalculo.deducciones?.prestamos)}</strong></p>
                             </div>
                           </div>
@@ -1099,8 +1129,22 @@ function CerrarMes() {
                         <td className="px-4 py-3 text-right">${Number(row.totalIngresos || 0).toFixed(2)}</td>
                         <td className="px-4 py-3 text-right">{row.detalleCalculo?.decimoTerceroModalidad === 'mensual' ? `$${Number(row.detalleCalculo?.decimoTerceroMensualizado || 0).toFixed(2)}` : '-'}</td>
                         <td className="px-4 py-3 text-right">{row.detalleCalculo?.decimoCuartoModalidad === 'mensual' ? `$${Number(row.detalleCalculo?.decimoCuartoMensualizado || 0).toFixed(2)}` : '-'}</td>
-                        <td className="px-4 py-3 text-right">${Number(row.detalleCalculo?.anticipos || 0).toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right">${Number(row.detalleCalculo?.prestamos || 0).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right">
+                          <div>{moneyLabel(row.detalleCalculo?.anticipos)}</div>
+                          {deductionSourceItems(row.detalleCalculo?.desgloseDeducciones?.anticipos).map((item, itemIndex) => (
+                            <div key={item.id || `${item.source}-${itemIndex}`} className="mt-1 text-[10px] text-slate-500">
+                              {item.sourceLabel || item.source || 'Origen'} · {item.descripcion || 'Anticipo'}
+                            </div>
+                          ))}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div>{moneyLabel(row.detalleCalculo?.prestamos)}</div>
+                          {deductionSourceItems(row.detalleCalculo?.desgloseDeducciones?.prestamos).map((item, itemIndex) => (
+                            <div key={item.id || `${item.source}-${itemIndex}`} className="mt-1 text-[10px] text-slate-500">
+                              {item.sourceLabel || item.source || 'Origen'} · {item.descripcion || 'Prestamo'}
+                            </div>
+                          ))}
+                        </td>
                         <td className="px-4 py-3 text-right font-semibold">${Number(row.netoRecibir || 0).toFixed(2)}</td>
                       </tr>
                     ))}

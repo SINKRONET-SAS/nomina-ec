@@ -17,6 +17,7 @@ const {
   descargarPlantillaCargaMasiva,
   listarPendientes,
   listarTipos,
+  reabrir,
   resolverPeriodo,
 } = require('./novedadController');
 
@@ -631,6 +632,57 @@ describe('novedadController crear', () => {
     );
     expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
       action: 'novedades.manual.actualizar',
+      entityId: 'nov-1',
+    }));
+  });
+
+  test('reabre novedad aprobada no consumida cuando el mes sigue abierto', async () => {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'nov-1',
+          empleado_id: 'emp-1',
+          tenant_id: 'tenant-1',
+          period_id: 'period-1',
+          periodo_nomina: '2026-06',
+          fecha: '2026-06-01',
+          tipo_novedad: 'hora_extra_50',
+          minutos: 60,
+          monto: 0,
+          justificacion: 'Original',
+          estado: 'aprobado',
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'open' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'nov-1',
+          empleado_id: 'emp-1',
+          estado: 'pendiente',
+        }],
+      });
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-reopen',
+      ip: '127.0.0.1',
+      params: { id: 'nov-1' },
+      body: { motivo: 'Corregir la fecha de la novedad' },
+    };
+    const res = createResponse();
+
+    await reabrir(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.novedad).toMatchObject({ id: 'nov-1', estado: 'pendiente' });
+    expect(db.query).toHaveBeenNthCalledWith(
+      4,
+      expect.stringContaining("SET estado = 'pendiente'"),
+      expect.arrayContaining(['nov-1', 'tenant-1'])
+    );
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'novedades.manual.reabrir',
       entityId: 'nov-1',
     }));
   });

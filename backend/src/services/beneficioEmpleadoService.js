@@ -433,23 +433,44 @@ async function getApprovedDeductions(tenantId, empleadoId, anio, mes, options = 
   assertPeriod(anio, mes);
   const executor = options.dbClient || db;
   const result = await executor.query(`
-    SELECT id, tipo, descripcion, saldo_pendiente, cuota_mensual
-    FROM beneficios_empleados
-    WHERE tenant_id = $1
-      AND empleado_id = $2
-      AND estado = 'aprobado'
-      AND saldo_pendiente > 0
-      AND (anio_inicio < $3 OR (anio_inicio = $3 AND mes_inicio <= $4))
-    ORDER BY anio_inicio, mes_inicio, created_at
+    SELECT b.id, b.tipo, b.descripcion, b.saldo_pendiente, b.cuota_mensual, b.metadata
+    FROM beneficios_empleados b
+    WHERE b.tenant_id = $1
+      AND b.empleado_id = $2
+      AND b.estado = 'aprobado'
+      AND b.saldo_pendiente > 0
+      AND (b.anio_inicio < $3 OR (b.anio_inicio = $3 AND b.mes_inicio <= $4))
+      AND (
+        COALESCE(b.metadata->>'source', '') <> 'rol_anticipos'
+        OR EXISTS (
+          SELECT 1
+          FROM roles_anticipos_detalle d
+          JOIN roles_anticipos r
+            ON r.id = d.role_id
+           AND r.tenant_id = d.tenant_id
+          WHERE d.tenant_id = b.tenant_id
+            AND d.beneficio_id = b.id
+            AND r.estado <> 'anulado'
+            AND d.estado IN ('descontar', 'bonificar_descontar')
+        )
+      )
+    ORDER BY b.anio_inicio, b.mes_inicio, b.created_at
   `, [tenantId, empleadoId, anio, mes]);
 
   const items = result.rows.map((row) => {
     const amount = roundMoney(Math.min(Number(row.saldo_pendiente), Number(row.cuota_mensual)));
+    const metadata = row.metadata && typeof row.metadata === 'object' ? row.metadata : {};
+    const source = String(metadata.source || '').trim();
     return {
       id: row.id,
       tipo: row.tipo,
       descripcion: row.descripcion,
       amount,
+      source,
+      sourceLabel: source === 'rol_anticipos'
+        ? 'Rol de anticipos'
+        : (source || 'Registro manual'),
+      metadata,
     };
   });
 

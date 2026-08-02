@@ -78,4 +78,29 @@ describe('payrollNoveltyService', () => {
       hours: 2,
     });
   });
+
+  test('conserva como ingreso una bonificacion generada por el rol aunque la configuracion historica sea descuento', () => {
+    const config = normalizeConfig({
+      code: 'datoscelular',
+      name: 'Datos móviles',
+      payrollImpact: 'descuento',
+      applicability: { calculationMode: 'fixed_amount' },
+      affects_iess: false,
+    });
+
+    const result = calculateNoveltyImpacts([{
+      id: 'n-role-bonus',
+      tipo_novedad: 'datoscelular',
+      fecha: '2026-07-31',
+      monto: 15,
+      metadata: {
+        source: 'rol_anticipos_bonificacion',
+        resolucion: 'bonificar_descontar',
+      },
+    }], [config]);
+
+    expect(result.lines[0]).toMatchObject({ category: 'ingreso', payrollImpact: 'ingreso', amount: 15 });
+    expect(result.totals.income).toBe(15);
+    expect(result.totals.deductions).toBe(0);
+  });
 });

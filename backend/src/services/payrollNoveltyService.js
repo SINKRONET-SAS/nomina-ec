@@ -305,19 +305,23 @@ function calculateNoveltyImpacts(rows = [], configs = [], context = {}) {
         },
       });
     }
-    const amount = calculateNoveltyAmount(row, config, context);
-    if (amount <= 0 || config.payrollImpact === 'informativo') continue;
-
-    const category = config.payrollImpact === 'ingreso' ? 'ingreso' : 'deduccion';
-    const overtimeWeekKey = isOvertimeConcept(config.conceptCode) ? weekKeyFromDate(row.fecha) : '';
     const rowMetadata = normalizeJson(row.metadata);
+    const roleResolution = String(rowMetadata.resolucion || '').trim().toLowerCase();
+    const roleGeneratedIncome = rowMetadata.source === 'rol_anticipos_bonificacion'
+      && ['bonificar', 'bonificar_descontar'].includes(roleResolution);
+    const effectivePayrollImpact = roleGeneratedIncome ? 'ingreso' : config.payrollImpact;
+    const amount = calculateNoveltyAmount(row, config, context);
+    if (amount <= 0 || effectivePayrollImpact === 'informativo') continue;
+
+    const category = effectivePayrollImpact === 'ingreso' ? 'ingreso' : 'deduccion';
+    const overtimeWeekKey = isOvertimeConcept(config.conceptCode) ? weekKeyFromDate(row.fecha) : '';
     const line = {
       noveltyId: row.id || '',
       code,
       conceptCode: config.conceptCode,
       label: config.name,
       category,
-      payrollImpact: config.payrollImpact,
+      payrollImpact: effectivePayrollImpact,
       amount,
       minutes: Number(row.minutos || 0),
       hours: roundMoney(Number(row.minutos || 0) / 60),
@@ -335,6 +339,9 @@ function calculateNoveltyImpacts(rows = [], configs = [], context = {}) {
         justificacion: row.justificacion || '',
         tipoNovedad: code,
         configId: config.id,
+        source: rowMetadata.source || null,
+        advanceRoleId: rowMetadata.advanceRoleId || null,
+        advanceRoleLineId: rowMetadata.advanceRoleLineId || null,
         overtimeWeekKey,
         overtimeLimitException: normalizeOvertimeLimitException(rowMetadata.overtimeLimitException),
       },

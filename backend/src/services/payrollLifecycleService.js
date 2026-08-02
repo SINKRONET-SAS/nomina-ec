@@ -12,6 +12,7 @@ const EMPLOYEE_INVALIDATION_ALLOWED_PERIOD_STATUSES = new Set([
   'reopened',
   'calculation_failed',
 ]);
+const EMPLOYEE_INVALIDATION_ALLOWED_PAYROLL_STATES = new Set(['borrador', 'aprobado']);
 
 function normalizeReason(value) {
   const reason = String(value || '').trim();
@@ -48,6 +49,27 @@ function assertDraftEditable(row = {}) {
       code: 'NOMINA_ROL_NO_EDITABLE',
       statusCode: 409,
       details: { payrollId: row.id || null, estado: row.estado || null },
+    });
+  }
+}
+
+function assertEmployeePayrollInvalidationEditable(row = {}) {
+  if (FINAL_PAYROLL_STATES.has(row.estado) || row.period_status === 'closed') {
+    throw new AppError('El rol esta cerrado y no puede reabrirse para corregir novedades.', {
+      code: 'NOMINA_ROL_FINAL_INMUTABLE',
+      statusCode: 409,
+      details: { payrollId: row.id || null, estado: row.estado || null },
+    });
+  }
+  if (!EMPLOYEE_INVALIDATION_ALLOWED_PAYROLL_STATES.has(row.estado)) {
+    throw new AppError('Solo se pueden reabrir roles mensuales abiertos o aprobados.', {
+      code: 'NOMINA_ROL_NO_EDITABLE',
+      statusCode: 409,
+      details: {
+        payrollId: row.id || null,
+        estado: row.estado || null,
+        allowedStates: Array.from(EMPLOYEE_INVALIDATION_ALLOWED_PAYROLL_STATES),
+      },
     });
   }
 }
@@ -534,7 +556,7 @@ async function invalidateEmployeePayrollForNovelty({
     }
 
     const payroll = payrollResult.rows[0];
-    assertDraftEditable({ ...payroll, period_status: period.status });
+    assertEmployeePayrollInvalidationEditable({ ...payroll, period_status: period.status });
 
     const noveltyLineResult = scopedNoveltyId
       ? await client.query(`
@@ -565,7 +587,7 @@ async function invalidateEmployeePayrollForNovelty({
         AND empleado_id = $3
         AND anio = $4
         AND mes = $5
-        AND estado = 'borrador'
+        AND estado IN ('borrador', 'aprobado')
       RETURNING id
     `, [payroll.id, tenantId, scopedEmployeeId, periodInput.anio, periodInput.mes]);
 
@@ -600,6 +622,7 @@ async function invalidateEmployeePayrollForNovelty({
       noveltyId: scopedNoveltyId,
       anio: periodInput.anio,
       mes: periodInput.mes,
+      estadoAnterior: payroll.estado,
       reason: normalizedReason,
       userId: userId || null,
       correlationId: correlationId || '',

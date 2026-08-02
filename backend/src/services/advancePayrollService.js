@@ -561,12 +561,17 @@ async function decideLine(tenantId, roleId, lineId, decision, user, context = {}
       return getRun(tenantId, roleId);
     }
     if (line.estado !== 'aprobado') throw new AppError('La linea no esta aprobada para resolverse.', { code: 'ROL_ANTICIPOS_LINEA_NO_APROBADA', statusCode: 409 });
-    await ensureNoveltyTypeAllowed({ tenantId, tipoNovedad: line.tipo_novedad, anio: run.anio, mes: run.mes, userId: user.id });
-
     let beneficioId = null;
     let bonificacionNovedadId = null;
     const createsBenefit = ['descontar', 'bonificar_descontar'].includes(normalizedDecision);
     const createsNovelty = ['bonificar', 'bonificar_descontar'].includes(normalizedDecision);
+    const noveltyTypeConfig = await ensureNoveltyTypeAllowed({ tenantId, tipoNovedad: line.tipo_novedad, anio: run.anio, mes: run.mes, userId: user.id });
+    if (createsNovelty && noveltyTypeConfig?.payrollImpact !== 'ingreso') {
+      throw new AppError('Para una bonificacion, o para un ingreso que se descuenta al cierre, el tipo de novedad debe estar parametrizado como ingreso en Parametrizacion > Tipo de novedad.', {
+        code: 'ROL_ANTICIPOS_NOVEDAD_IMPACTO_INVALIDO',
+        statusCode: 422,
+      });
+    }
 
     if (createsNovelty) {
       const existingNovelty = await tx.query(`SELECT id FROM novedades_asistencia WHERE tenant_id = $1 AND metadata->>'advanceRoleLineId' = $2 LIMIT 1`, [tenantId, line.id]);

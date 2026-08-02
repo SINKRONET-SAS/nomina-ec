@@ -6,7 +6,12 @@ const db = require('../config/database');
 const AppError = require('../utils/AppError');
 const { resolveStorageUrl } = require('../config/s3');
 const { recordAudit } = require('../services/auditService');
-const { ensureWritablePayrollPeriodForDate, formatPeriodMarker, validatePeriod } = require('../services/monthlyPeriodService');
+const {
+  ensurePayrollPeriodOpenForNoveltyReopen,
+  ensureWritablePayrollPeriodForDate,
+  formatPeriodMarker,
+  validatePeriod,
+} = require('../services/monthlyPeriodService');
 const {
   ensureNoveltyTypeAllowed,
   getActiveNoveltyTypeConfigs,
@@ -133,8 +138,8 @@ async function listarPendientes(req, res) {
             AND n.empleado_id = na.empleado_id
             AND n.anio = EXTRACT(YEAR FROM na.fecha)::int
             AND n.mes = EXTRACT(MONTH FROM na.fecha)::int
-            AND n.estado = 'borrador'
-        ) AS has_employee_payroll_draft
+            AND n.estado IN ('borrador', 'aprobado')
+        ) AS has_employee_payroll_open
       FROM novedades_asistencia na
       JOIN empleados e ON na.empleado_id = e.id
       LEFT JOIN payroll_periods pp
@@ -145,16 +150,26 @@ async function listarPendientes(req, res) {
       ORDER BY na.fecha DESC, e.apellidos, e.nombres
     `, params);
 
-    const novedades = result.rows.map((row) => ({
+    const novedades = result.rows.map((row) => {
+      // Mantener compatibilidad con fixtures antiguos mientras la API evoluciona
+      // de "borrador" a "rol mensual abierto".
+      const hasOpenPayroll = Boolean(row.has_employee_payroll_open ?? row.has_employee_payroll_draft);
+      return ({
       ...resolveNoveltyMetadata(row),
       editable: NOVELTY_WRITABLE_PERIOD_STATUSES.has(row.period_status) && !row.consumida_por_rol && row.estado !== 'anulado',
-      requiresEmployeePayrollInvalidation: Boolean(row.consumida_por_rol && row.has_employee_payroll_draft && row.period_status !== 'closed'),
+      canReopen: Boolean(
+        row.estado === 'aprobado'
+        && NOVELTY_OPERATIVE_PERIOD_STATUSES.has(row.period_status)
+        && (!row.consumida_por_rol || hasOpenPayroll)
+      ),
+      requiresEmployeePayrollInvalidation: Boolean(row.consumida_por_rol && hasOpenPayroll && row.period_status !== 'closed'),
       canRecalculateEmployee: Boolean(
         !row.consumida_por_rol
         && row.estado === 'aprobado'
         && ['reopened', 'calculation_failed'].includes(row.period_status)
       ),
-    }));
+      });
+    });
 
     res.json({ success: true, novedades });
   } catch (err) {
@@ -441,6 +456,73 @@ async function eliminar(req, res) {
     return res.status(err.statusCode || 500).json({
       error: err.code || 'NOVEDAD_MANUAL_DELETE_ERROR',
       message: err.message || 'Error interno',
+      details: err.details,
+      correlationId: req.correlationId,
+    });
+  }
+}
+
+async function reabrir(req, res) {
+  try {
+    const { tenantId, usuarioId } = req;
+    const { id } = req.params;
+    const motivo = String(req.body?.motivo || '').trim();
+    if (motivo.length < 10) {
+      return res.status(422).json({
+        error: 'MOTIVO_REAPERTURA_REQUERIDO',
+        message: 'Indica un motivo claro de al menos 10 caracteres para reabrir la novedad.',
+        correlationId: req.correlationId,
+      });
+    }
+
+    const { novelty } = await ensureNoveltyReopenable({ tenantId, noveltyId: id });
+    const result = await db.query(`
+      UPDATE novedades_asistencia
+      SET estado = 'pendiente',
+          aprobado_por = NULL,
+          aprobado_en = NULL,
+          metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+            'lifecycleAction', 'reabierto',
+            'lifecycleAt', NOW(),
+            'reopenedBy', $3::text,
+            'reopenReason', $4::text
+          ),
+          updated_at = NOW()
+      WHERE id = $1 AND tenant_id = $2 AND estado = 'aprobado'
+      RETURNING id, empleado_id, fecha, tipo_novedad, monto, estado, metadata
+    `, [id, tenantId, usuarioId || '', motivo]);
+
+    if (result.rows.length === 0) {
+      throw new AppError('La novedad ya no esta disponible para reapertura.', {
+        code: 'NOVEDAD_NO_REABRIBLE',
+        statusCode: 409,
+      });
+    }
+
+    await recordAudit({
+      tenantId,
+      userId: usuarioId,
+      correlationId: req.correlationId,
+      action: 'novedades.manual.reabrir',
+      entity: 'novedades_asistencia',
+      entityId: id,
+      previousData: novelty,
+      newData: result.rows[0],
+      ipAddress: req.ip,
+    });
+
+    return res.json({ success: true, novedad: result.rows[0], correlationId: req.correlationId });
+  } catch (err) {
+    console.error('[NOVEDADES] Error reabriendo novedad', {
+      code: err.code || 'NOVEDAD_REABRIR_ERROR',
+      statusCode: err.statusCode || 500,
+      correlationId: req.correlationId,
+      userId: req.usuarioId || null,
+      message: err.message,
+    });
+    return res.status(err.statusCode || 500).json({
+      error: err.code || 'NOVEDAD_REABRIR_ERROR',
+      message: err.message || 'No pudimos reabrir la novedad.',
       details: err.details,
       correlationId: req.correlationId,
     });
@@ -896,6 +978,65 @@ async function ensureNoveltyEditable({ tenantId, noveltyId }) {
         noveltyId,
         periodoNomina: period.periodoNomina,
       },
+    });
+  }
+
+  return { novelty, period };
+}
+
+async function ensureNoveltyReopenable({ tenantId, noveltyId }) {
+  const result = await db.query(`
+    SELECT
+      id,
+      empleado_id,
+      tenant_id,
+      period_id,
+      periodo_nomina,
+      fecha::text AS fecha,
+      tipo_novedad,
+      minutos,
+      monto,
+      justificacion,
+      estado,
+      novelty_batch_id
+    FROM novedades_asistencia
+    WHERE id = $1 AND tenant_id = $2
+    LIMIT 1
+  `, [noveltyId, tenantId]);
+
+  if (result.rows.length === 0) {
+    throw new AppError('Novedad no encontrada.', {
+      code: 'NOVEDAD_NO_ENCONTRADA',
+      statusCode: 404,
+    });
+  }
+
+  const novelty = result.rows[0];
+  if (novelty.estado !== 'aprobado') {
+    throw new AppError('Solo una novedad aprobada puede reabrirse.', {
+      code: 'NOVEDAD_NO_APROBADA_PARA_REAPERTURA',
+      statusCode: 409,
+    });
+  }
+
+  const period = await ensurePayrollPeriodOpenForNoveltyReopen({
+    tenantId,
+    fecha: novelty.fecha,
+  });
+  const consumed = await db.query(`
+    SELECT 1
+    FROM payroll_calculation_lines
+    WHERE tenant_id = $1
+      AND source = 'novedad'
+      AND source_id = $2
+    LIMIT 1
+  `, [tenantId, String(novelty.id)]);
+
+  if (consumed.rows.length > 0) {
+    throw new AppError('La novedad ya fue consumida por un rol de pago. Libera primero el calculo de este empleado antes de reabrirla.', {
+      code: 'NOVEDAD_CONSUMIDA_POR_ROL',
+      statusCode: 409,
+      details: { noveltyId, periodoNomina: period.periodoNomina },
     });
   }
 
@@ -1400,6 +1541,7 @@ module.exports = {
   crear,
   actualizar,
   eliminar,
+  reabrir,
   anular,
   cargaMasiva,
   descargarPlantillaCargaMasiva,
