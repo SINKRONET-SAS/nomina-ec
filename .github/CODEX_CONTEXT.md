@@ -3718,3 +3718,67 @@ El usuario final necesita distinguir, por empleado, si una línea del rol parcia
 - Fiscalización previa: revisados `fiscalInvoiceService.js` y su prueba; la suite aislada pasó 4/4 y el comportamiento de identidad fiscal fallback quedó cubierto sin regresión.
 - Validación final: Jest backend directo PASS (68 suites / 477 pruebas), build frontend Vite + PWA PASS (2031 módulos, `sw.js` generado) y `git diff --check` PASS.
 - Publicación: el commit funcional NAR26-P3 y el commit fiscal se mantienen separados y se publican juntos en el mismo push.
+
+---
+
+## Current Haiky Plan — HAIKY-AUDITORIA-INTEGRAL-V75-CORRECCION-MEJORA-2026
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-AUDITORIA-INTEGRAL-V75-CORRECCION-MEJORA-2026` |
+| Código | `AIV75-26` |
+| Estado | `AIV75-26-00 completed-pass; fases 01 a 04 pendientes de aprobación` |
+| Fecha | `2026-08-02` |
+| Baseline | `32293c537b3bb52bbf0759511ed8a19d36a83eb8` |
+| Plan doc | `docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V75_CORRECCION_MEJORA_2026.md` |
+| Prompts | `.github/prompts/AIV75-26-00` a `.github/prompts/AIV75-26-04` |
+| Fuente | `AuditoriaIntegral2026V75.jsx` y `v75/v75data.jsx` de `sinkroniq-cloud-flow` |
+| Superficies | facturación fiscal backend/Render, seed SUPERADMIN y precheck SAE PWA |
+
+### Reconciliación AIV75-26-00
+
+- `HAL-01` no se acepta literalmente: `fiscalInvoiceService.retryPendingInvoices` y su agenda ya existen. El riesgo permanece **con alcance** porque `render.yaml` mantiene fuera al worker cron general conforme a `CPD26`; por tanto, no hay evidencia de que el reintento se ejecute en producción.
+- La solución prevista no reactiva `backend/src/config/cron-jobs.js`: crea un ejecutor one-shot y un cron Render exclusivamente fiscal, sin documentos ni cálculo de nómina.
+- `HAL-02` es falso positivo para disponibilidad: existe `backend/scripts/seed-superadmin-owner.js`, `backend/package.json` expone `seed:admins` y `render.yaml` lo ejecuta en build. No se permitirá un seed paralelo.
+- La política de verificación de correo de `superadmin` debe documentarse y probarse; el seed actual no escribe `email_verificado_en`, pero el middleware conserva una excepción intencional para ese rol.
+- `B-01` está confirmado: `validarSae` llama dos veces consecutivas a `setError(nextError)`.
+- Los scripts propuestos por V75 asumen interfaces que no coinciden con el runtime vigente y no deben copiarse directamente.
+
+### Decisiones AIV75-26
+
+- La evidencia ejecutable del repositorio prevalece sobre el diagnóstico externo.
+- `CPD26` sigue vigente: no se reactiva el cron general ni el cálculo automático de nómina.
+- El cron fiscal se define como servicio `type: cron`, de una sola corrida, horario UTC documentado y variables seguras.
+- El seed existente se verifica por idempotencia y política; no se versionan credenciales.
+- La corrección PWA será una eliminación de una sola línea, sin alterar el contrato SAE.
+- Evidencia local y evidencia de despliegue Render se reportan por separado.
+
+### Fases AIV75-26
+
+| Fase | Objetivo | Estado |
+|---|---|---|
+| `AIV75-26-00` | Gobierno, baseline y reconciliación | `completed-pass` |
+| `AIV75-26-01` | Contrato y pruebas del reintento fiscal | `pending-approval` |
+| `AIV75-26-02` | Ejecutor one-shot y cron fiscal Render | `pending-approval` |
+| `AIV75-26-03` | Seed vigente y limpieza PWA | `pending-approval` |
+| `AIV75-26-04` | Regresión integral, evidencia operacional y cierre | `pending-approval` |
+
+### Gates AIV75-26
+
+- Suites enfocadas y backend completo.
+- `npm.cmd --workspace=backend run prisma:validate`.
+- `npm.cmd run contracts` y contrato anti-regresión del cron fiscal.
+- `npm.cmd --workspace=frontend-web run build`.
+- `npm.cmd --workspace=app-movil run check:stores`.
+- UTF-8 sin BOM, JSON válido y `git diff --check`.
+- Corrida Render verificable antes de declarar `HAL-01` cerrado operacionalmente.
+
+### Evidencia AIV75-26-00
+
+- `npm.cmd run contracts`: PASS.
+- `npm.cmd --workspace=backend run prisma:validate`: PASS.
+- Jest enfocado en `fiscalInvoiceService.test.js` y `app.routes.test.js`: PASS, 2 suites / 38 pruebas.
+- Build PWA Vite con `--configLoader runner`: PASS, 2.031 módulos y service worker generado.
+- `npm.cmd --workspace=app-movil run check:stores`: PASS.
+- No se modificó runtime; los cambios de esta fase son plan, contexto, prompts y AuditLock.
+- La suite backend completa serial excedió el límite operativo y fue detenida; el intento paralelo con permisos ampliados no fue autorizado. No se declara PASS completo y se mantiene como gate obligatorio de `AIV75-26-04`.

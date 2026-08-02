@@ -1,56 +1,71 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-NAR26-P3-ROLES-ANTICIPOS-DELEGADOS-2026",
-  "planCode": "NAR26-P3",
-  "status": "completed-pass",
-  "phaseCompleted": "NAR26-P3-05",
-  "currentPhase": null,
-  "updatedAt": "2026-07-31T20:23:04.219Z",
+  "plan": "HAIKY-AUDITORIA-INTEGRAL-V75-CORRECCION-MEJORA-2026",
+  "planCode": "AIV75-26",
+  "status": "baseline-completed",
+  "phaseCompleted": "AIV75-26-00",
+  "currentPhase": "AIV75-26-01",
+  "updatedAt": "2026-08-02T19:38:24.270Z",
   "rulesSource": "RULES.md",
   "contextSource": ".github/CODEX_CONTEXT.md",
-  "previousPlan": "HAIKY-VERSIONES-PARAMETROS-LEGALES-EC-2026",
-  "previousAuditLockHash": "DEC23535AB73186A78366AD665D26A5907D07BC4D0BBFFE2A2344F64313A580A",
-  "summary": "NAR26-P3 cerrado: roles parciales con impacto explícito en cierre, carga masiva compatible y activación verificable de delegados.",
-  "nextAction": "Validar el despliegue publicado con datos de prueba del cliente; no modificar roles cerrados.",
+  "previousPlan": "HAIKY-NAR26-P3-ROLES-ANTICIPOS-DELEGADOS-2026",
+  "previousAuditLockHash": "BFC1B2401BD5C01FC5E953F356FF3D07E522BAADDCA144E6E65EC872FA6C5852",
+  "signatureAlgorithm": "SHA256(previous AuditLock bytes + UTF-8 updatedAt)",
+  "summary": "AIV75-26-00 cerrado: hallazgos V75 reconciliados contra runtime y despliegue; fases de producto pendientes de aprobación explícita.",
+  "nextAction": "Aprobar AIV75-26-01 para agregar contrato y pruebas del reintento fiscal; no aplicar directamente los scripts de v75data.jsx.",
   "fases": [
-    { "phase": "NAR26-P3-00", "status": "completed-pass", "detail": "Alcance, superficie, contratos y regresiones confirmadas." },
-    { "phase": "NAR26-P3-01", "status": "completed-pass", "detail": "Resolución por línea en metadata, aplicación idempotente y contrato de cierre." },
-    { "phase": "NAR26-P3-02", "status": "completed-pass", "detail": "CSV compatible, selección individual, archivo, acciones visibles y fecha válida." },
-    { "phase": "NAR26-P3-03", "status": "completed-pass", "detail": "Pantalla pública de verificación y reenvío con rechazo de código caducado o reemplazado." },
-    { "phase": "NAR26-P3-04", "status": "completed-pass", "detail": "Regresión de Novedades corregida y fiscalInvoiceService local revisado sin regresión." },
-    { "phase": "NAR26-P3-05", "status": "completed-pass", "detail": "Suites, build PWA, diff, gobierno y commits separados preparados para publicación." }
+    {
+      "phase": "AIV75-26-00",
+      "status": "completed-pass",
+      "detail": "Gobierno, baseline 32293c5 y reconciliación de HAL-01, HAL-02 y B-01 con evidencia del repositorio objetivo."
+    },
+    {
+      "phase": "AIV75-26-01",
+      "status": "pending-approval",
+      "detail": "Contrato y pruebas del reintento fiscal existente."
+    },
+    {
+      "phase": "AIV75-26-02",
+      "status": "pending-approval",
+      "detail": "Ejecutor one-shot y cron Render exclusivamente fiscal."
+    },
+    {
+      "phase": "AIV75-26-03",
+      "status": "pending-approval",
+      "detail": "Verificación del seed vigente y eliminación de setError duplicado en la PWA."
+    },
+    {
+      "phase": "AIV75-26-04",
+      "status": "pending-approval",
+      "detail": "Regresión integral, evidencia operacional, cierre y publicación de producto."
+    }
   ],
   "filesModified": [
-    "docs2/PLAN_HAIKY_NAR26_P3_ROLES_ANTICIPOS_DELEGADOS_2026.md",
+    "docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V75_CORRECCION_MEJORA_2026.md",
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/NAR26-P3-00-baseline-gobierno.md",
-    ".github/prompts/NAR26-P3-01-modelo-rol-parcial.md",
-    ".github/prompts/NAR26-P3-02-carga-masiva-frontend.md",
-    ".github/prompts/NAR26-P3-03-verificacion-delegados.md",
-    ".github/prompts/NAR26-P3-04-regresion-novedades.md",
-    ".github/prompts/NAR26-P3-05-qa-cierre.md",
-    ".vscode/AuditLock.json",
-    "backend/src/app.js",
-    "backend/src/controllers/advancePayrollController.js",
-    "backend/src/services/advancePayrollService.js",
-    "backend/src/services/advancePayrollService.test.js",
-    "frontend-web/src/App.jsx",
-    "frontend-web/src/pages/Asistencia/NovedadesPendientes.jsx",
-    "frontend-web/src/pages/EmailVerification.jsx",
-    "frontend-web/src/pages/Login.jsx",
-    "frontend-web/src/pages/Nomina/Beneficios.jsx",
-    "frontend-web/src/services/advancePayrollApi.js",
-    "backend/src/services/fiscalInvoiceService.js",
-    "backend/src/services/fiscalInvoiceService.test.js"
+    ".github/prompts/AIV75-26-00-baseline-gobierno.md",
+    ".github/prompts/AIV75-26-01-contrato-reintento-fiscal.md",
+    ".github/prompts/AIV75-26-02-cron-fiscal-render.md",
+    ".github/prompts/AIV75-26-03-seed-y-limpieza-pwa.md",
+    ".github/prompts/AIV75-26-04-qa-cierre-release.md",
+    ".vscode/AuditLock.json"
   ],
   "validationChecks": [
     "RULES.md leído y aplicado.",
-    "node --check aprobado para los módulos backend modificados.",
-    "Jest backend completo PASS: 68 suites / 477 pruebas.",
-    "Suite fiscalInvoiceService aislada PASS: 4 pruebas.",
-    "Build frontend Vite + PWA PASS: 2031 módulos y dist/sw.js generado.",
+    "Baseline main limpio y alineado con origin/main en 32293c5.",
+    "Hallazgos V75 contrastados contra código, configuración y decisiones HAIKY vigentes.",
+    "Contratos del sistema PASS.",
+    "Prisma schema validate PASS.",
+    "Jest enfocado PASS: 2 suites y 38 pruebas.",
+    "Build PWA PASS: 2031 módulos y service worker generado.",
+    "Gate móvil de tiendas PASS.",
     "git diff --check PASS.",
-    "Cambios fiscales previos revisados y se mantienen en commit separado."
+    "Fase documental sin modificaciones de runtime."
   ],
-  "signature": "39E79B80B7CC9C4557A1125486BC35BFDD4CEF6BDC407A618E0E77E858CA051C"
+  "validationLimitations": [
+    "La suite backend completa serial no concluyó dentro del límite operativo y fue detenida.",
+    "El intento paralelo con permisos ampliados no fue autorizado; no se declara PASS completo.",
+    "La evidencia de operación del cron Render corresponde a AIV75-26-02/AIV75-26-04 y aún no existe."
+  ],
+  "signature": "6FD0CF3C42154BB39AF6A9209C30E63CA31A6CDF5070F2553BA197FEDA15E56D"
 }
