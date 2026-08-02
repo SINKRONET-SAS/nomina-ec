@@ -17,6 +17,10 @@ export function sanitizeApiErrorMessage(message, fallback = 'No se pudo completa
     return 'No pudimos completar la operación de nómina. Intenta nuevamente; si persiste, reporta el código de seguimiento.';
   }
 
+  if (normalized.includes('inconsistent types') || normalized.includes('42p08')) {
+    return 'Ocurrió un error interno al procesar la solicitud. Intenta nuevamente; si persiste, contacta a soporte.';
+  }
+
   if (normalized === 'ruta no encontrada' || normalized === 'not_found') {
     return 'No pudimos cargar esta sección. Actualiza la página y verifica que el servicio esté activo.';
   }
