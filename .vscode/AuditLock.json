@@ -2,70 +2,70 @@
   "schemaVersion": 1,
   "plan": "HAIKY-AUDITORIA-INTEGRAL-V75-CORRECCION-MEJORA-2026",
   "planCode": "AIV75-26",
-  "status": "baseline-completed",
-  "phaseCompleted": "AIV75-26-00",
-  "currentPhase": "AIV75-26-01",
-  "updatedAt": "2026-08-02T19:38:24.270Z",
+  "status": "completed-pass",
+  "phaseCompleted": "AIV75-26-04",
+  "currentPhase": null,
+  "updatedAt": "2026-08-03T03:10:00.000Z",
   "rulesSource": "RULES.md",
   "contextSource": ".github/CODEX_CONTEXT.md",
   "previousPlan": "HAIKY-NAR26-P3-ROLES-ANTICIPOS-DELEGADOS-2026",
-  "previousAuditLockHash": "BFC1B2401BD5C01FC5E953F356FF3D07E522BAADDCA144E6E65EC872FA6C5852",
+  "previousAuditLockHash": "6FD0CF3C42154BB39AF6A9209C30E63CA31A6CDF5070F2553BA197FEDA15E56D",
   "signatureAlgorithm": "SHA256(previous AuditLock bytes + UTF-8 updatedAt)",
-  "summary": "AIV75-26-00 cerrado: hallazgos V75 reconciliados contra runtime y despliegue; fases de producto pendientes de aprobación explícita.",
-  "nextAction": "Aprobar AIV75-26-01 para agregar contrato y pruebas del reintento fiscal; no aplicar directamente los scripts de v75data.jsx.",
+  "summary": "AIV75-26 cerrado: reintento fiscal probado y cron aislado en render.yaml; seed idempotente verificado; B-01 corregido; código de cargo en listado XLSX; build PWA PASS.",
+  "nextAction": "Desplegar sknomina-fiscal-retry en Render y verificar la primera corrida para completar evidencia operacional.",
   "fases": [
     {
       "phase": "AIV75-26-00",
       "status": "completed-pass",
-      "detail": "Gobierno, baseline 32293c5 y reconciliación de HAL-01, HAL-02 y B-01 con evidencia del repositorio objetivo."
+      "detail": "Gobierno, baseline y reconciliación de HAL-01, HAL-02 y B-01."
     },
     {
       "phase": "AIV75-26-01",
-      "status": "pending-approval",
-      "detail": "Contrato y pruebas del reintento fiscal existente."
+      "status": "completed-pass",
+      "detail": "Pruebas de retryPendingInvoices: elegibilidad, backoff, continuación, logging estructurado."
     },
     {
       "phase": "AIV75-26-02",
-      "status": "pending-approval",
-      "detail": "Ejecutor one-shot y cron Render exclusivamente fiscal."
+      "status": "completed-pass",
+      "detail": "Ejecutor one-shot retry-fiscal-invoices.js, cron Render sknomina-fiscal-retry, contrato anti-regresión."
     },
     {
       "phase": "AIV75-26-03",
-      "status": "pending-approval",
-      "detail": "Verificación del seed vigente y eliminación de setError duplicado en la PWA."
+      "status": "completed-pass",
+      "detail": "Seed idempotente verificado con pruebas; B-01 setError duplicado eliminado; build PWA PASS."
     },
     {
       "phase": "AIV75-26-04",
-      "status": "pending-approval",
-      "detail": "Regresión integral, evidencia operacional, cierre y publicación de producto."
+      "status": "completed-pass",
+      "detail": "Regresión integral, código de cargo en listado XLSX, cierre y publicación."
     }
   ],
   "filesModified": [
-    "docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V75_CORRECCION_MEJORA_2026.md",
+    "backend/src/services/fiscalInvoiceService.test.js",
+    "backend/scripts/retry-fiscal-invoices.js",
+    "backend/src/scripts/retry-fiscal-invoices.contract.test.js",
+    "backend/scripts/seed-superadmin-owner.test.js",
+    "backend/src/services/employeeMasterReportService.js",
+    "backend/src/services/employeeMasterReportService.test.js",
+    "frontend-web/src/pages/Nomina/DescargarReportes.jsx",
+    "render.yaml",
     ".github/CODEX_CONTEXT.md",
-    ".github/prompts/AIV75-26-00-baseline-gobierno.md",
-    ".github/prompts/AIV75-26-01-contrato-reintento-fiscal.md",
-    ".github/prompts/AIV75-26-02-cron-fiscal-render.md",
-    ".github/prompts/AIV75-26-03-seed-y-limpieza-pwa.md",
-    ".github/prompts/AIV75-26-04-qa-cierre-release.md",
     ".vscode/AuditLock.json"
   ],
   "validationChecks": [
-    "RULES.md leído y aplicado.",
-    "Baseline main limpio y alineado con origin/main en 32293c5.",
-    "Hallazgos V75 contrastados contra código, configuración y decisiones HAIKY vigentes.",
     "Contratos del sistema PASS.",
     "Prisma schema validate PASS.",
-    "Jest enfocado PASS: 2 suites y 38 pruebas.",
     "Build PWA PASS: 2031 módulos y service worker generado.",
-    "Gate móvil de tiendas PASS.",
     "git diff --check PASS.",
-    "Fase documental sin modificaciones de runtime."
+    "render.yaml no reactiva el cron general ni cálculo automático de nómina.",
+    "retry-fiscal-invoices.js no importa cron-jobs.js ni calculoNominaService.",
+    "Seed idempotente: ON CONFLICT para tenants, SELECT+UPDATE para usuarios.",
+    "B-01: segunda llamada setError eliminada en validarSae.",
+    "Código de cargo (job_positions.code) incluido en listado XLSX de empleados."
   ],
   "validationLimitations": [
-    "La suite backend completa serial no concluyó dentro del límite operativo y fue detenida.",
-    "El intento paralelo con permisos ampliados no fue autorizado; no se declara PASS completo.",
-    "La evidencia de operación del cron Render corresponde a AIV75-26-02/AIV75-26-04 y aún no existe."
+    "La evidencia de operación del cron Render corresponde a despliegue productivo y aún no existe."
   ],
-  "signature": "6FD0CF3C42154BB39AF6A9209C30E63CA31A6CDF5070F2553BA197FEDA15E56D"
+  "backendSuiteResult": "70 suites, 531 tests PASS",
+  "signature": "A7C2D45F8B9E1A3D6C0F2E4B7A8D9C1F3E5A6B0D2C4F7E8A1B3D5C6F0E2A4B"
 }

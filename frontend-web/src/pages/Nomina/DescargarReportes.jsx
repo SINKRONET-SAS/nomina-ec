@@ -230,7 +230,6 @@ function DescargarReportes() {
     } catch (err) {
       const nextError = err.response?.data?.message || err.response?.data?.error || 'No pudimos prevalidar datos IESS.';
       setError(nextError);
-      setError(nextError);
       setSaePrecheck(null);
       return null;
     } finally {

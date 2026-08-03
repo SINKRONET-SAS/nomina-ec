@@ -18,6 +18,7 @@ describe('employeeMasterReportService', () => {
         apellidos: 'Pérez',
         nombres: 'Ana',
         fecha_nacimiento: '1990-03-10',
+        codigo_cargo: 'ANA-01',
         cargo: 'Analista',
         departamento: 'Operaciones',
         unidad_organizativa_codigo: 'OPS',
@@ -48,8 +49,9 @@ describe('employeeMasterReportService', () => {
     expect(report.total).toBe(1);
     expect(worksheet.rowCount).toBe(2);
     expect(worksheet.getRow(2).getCell(1).value).toBe('0102030405');
-    expect(worksheet.getRow(2).getCell(9).value).toBe('Sí');
-    expect(worksheet.getRow(2).getCell(10).value).toBe('2026-06-15');
-    expect(worksheet.getRow(2).getCell(12).value).toBe(900);
+    expect(worksheet.getRow(2).getCell(5).value).toBe('ANA-01');
+    expect(worksheet.getRow(2).getCell(10).value).toBe('Sí');
+    expect(worksheet.getRow(2).getCell(11).value).toBe('2026-06-15');
+    expect(worksheet.getRow(2).getCell(13).value).toBe(900);
   });
 });

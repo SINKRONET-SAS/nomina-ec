@@ -174,6 +174,37 @@ services:
   # CPD26: el worker cron queda fuera del blueprint productivo inicial.
   # Los documentos se generan y descargan solo desde sknomina-api con disco persistente.
 
+  - type: cron
+    name: sknomina-fiscal-retry
+    runtime: node
+    rootDir: backend
+    schedule: "0 15 * * 1-5"  # 10:00 AM Ecuador (UTC-5), lun-vie
+    buildCommand: npm ci
+    startCommand: node scripts/retry-fiscal-invoices.js
+    envVars:
+      - key: NODE_VERSION
+        value: "22.19.0"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sknomina-postgres
+          property: connectionString
+      - key: DB_SSL
+        value: "true"
+      - key: SINKRONET_FACTURADOR_BASE_URL
+        sync: false
+      - key: SINKRONET_FACTURADOR_API_KEY
+        sync: false
+      - key: SINKRONET_FACTURADOR_INVOICE_PATH
+        value: /api/facturas
+      - key: SINKRONET_FACTURADOR_HEALTH_PATH
+        value: /api/health
+      - key: SINKRONET_FACTURADOR_WEBHOOK_SECRET
+        sync: false
+      - key: SINKRONET_FACTURADOR_TIMEOUT_MS
+        value: "15000"
+
   - type: web
     name: sknomina-frontend
     runtime: static

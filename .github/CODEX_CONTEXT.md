@@ -1,4 +1,47 @@
-## Current Haiky Plan - HAIKY-ROLES-BENEFICIOS-LEGALES-EC-2026
+## Current Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-V75-CORRECCION-MEJORA-2026
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-AUDITORIA-INTEGRAL-V75-CORRECCION-MEJORA-2026` |
+| Codigo | `AIV75-26` |
+| Estado | `AIV75-26-04 cerrado; fases AIV75-26-00 a AIV75-26-04 completadas` |
+| Fecha | `2026-08-02` |
+| Plan doc | `docs2/PLAN_HAIKY_AUDITORIA_INTEGRAL_V75_CORRECCION_MEJORA_2026.md` |
+| Prompts | `.github/prompts/AIV75-26-00` a `.github/prompts/AIV75-26-04` |
+| AuditLock anterior | `BPR26-04`, hash `6FD0CF3C42154BB39AF6A9209C30E63CA31A6CDF5070F2553BA197FEDA15E56D` |
+
+### Decisiones AIV75-26
+
+- No aplicar scripts de propuesta V75 (`v75data.jsx`) directamente; la evidencia del repositorio objetivo prevalece.
+- No reactivar el cron general (`cron-jobs.js`) porque incluye cálculo automático de nómina (decisión `CPD26`).
+- Crear un cron fiscal aislado de propósito único (`sknomina-fiscal-retry`) en `render.yaml`.
+- Conservar el seed existente (`seed-superadmin-owner.js`) como única fuente de seed administrativo.
+- La política de `superadmin` sin verificación de correo es intencional y queda documentada.
+- Corrección B-01: eliminar solo la segunda llamada consecutiva a `setError(nextError)` en `validarSae`.
+- Código de cargo (`job_positions.code`) agregado al reporte Listado XLSX de empleados.
+
+### Fases AIV75-26
+
+| Fase | Objetivo | Estado |
+|---|---|---|
+| AIV75-26-00 | Gobierno, baseline y reconciliación | completed-pass |
+| AIV75-26-01 | Contrato y pruebas del reintento fiscal | completed-pass |
+| AIV75-26-02 | Ejecutor one-shot y cron Render aislado | completed-pass |
+| AIV75-26-03 | Seed existente y limpieza PWA | completed-pass |
+| AIV75-26-04 | Regresión integral y cierre | completed-pass |
+
+### Cierre AIV75-26-04
+
+- Contratos del sistema: PASS.
+- Prisma schema validate: PASS.
+- Build PWA: PASS, 2031 módulos, `dist/sw.js` generado.
+- `git diff --check`: PASS.
+- `render.yaml` no reactiva el cron general ni cálculo automático de nómina.
+- La evidencia operacional del cron Render queda como objetivo separado del cierre local.
+
+---
+
+## Previous Haiky Plan - HAIKY-ROLES-BENEFICIOS-LEGALES-EC-2026
 
 | Campo | Valor |
 |---|---|
