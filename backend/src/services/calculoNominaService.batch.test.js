@@ -17,7 +17,7 @@ const {
   assertLegalParametersReadyForProduction,
   getLegalParametersForTenant,
 } = require('./legalParameterService');
-const { calcularNominaMensual } = require('./calculoNominaService');
+const { calcularNominaEmpleado, calcularNominaMensual } = require('./calculoNominaService');
 
 const legalParameters = {
   sourceStatus: 'validado_oficial',
@@ -108,6 +108,46 @@ describe('calculoNominaService lote AIV50', () => {
         },
       }],
     });
+  });
+
+  test('bloquea el calculo mensual si un rol de anticipos quedo aplicado parcialmente', async () => {
+    const baseQuery = db.query.getMockImplementation();
+    db.query.mockImplementation(async (sql, params) => {
+      if (String(sql).includes('FROM roles_anticipos r')) {
+        return { rows: [{ role_id: 'role-recargas-julio', pending_lines: 44 }] };
+      }
+      return baseQuery(sql, params);
+    });
+
+    await expect(calcularNominaMensual('tenant-1', 2026, 7)).rejects.toMatchObject({
+      code: 'NOMINA_ANTICIPOS_RESOLUCIONES_PENDIENTES',
+      statusCode: 409,
+      details: {
+        roles: [{ roleId: 'role-recargas-julio', lineasPendientes: 44 }],
+      },
+    });
+
+    expect(db.query.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO payroll_calculation_batches'))).toBe(false);
+    expect(db.query.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO nominas'))).toBe(false);
+  });
+
+  test('bloquea tambien el recalculo individual del empleado con resolucion pendiente', async () => {
+    const baseQuery = db.query.getMockImplementation();
+    db.query.mockImplementation(async (sql, params) => {
+      if (String(sql).includes('FROM roles_anticipos r')) {
+        expect(params).toEqual(['tenant-1', 2026, 7, 'emp-11']);
+        return { rows: [{ role_id: 'role-recargas-julio', pending_lines: 1 }] };
+      }
+      return baseQuery(sql, params);
+    });
+
+    await expect(calcularNominaEmpleado('tenant-1', 'emp-11', 2026, 7)).rejects.toMatchObject({
+      code: 'NOMINA_ANTICIPOS_RESOLUCIONES_PENDIENTES',
+      statusCode: 409,
+    });
+
+    expect(db.query.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO payroll_calculation_batches'))).toBe(false);
+    expect(db.query.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO nominas'))).toBe(false);
   });
 
   test('devuelve el desglose del precalculo y no persiste un neto negativo', async () => {

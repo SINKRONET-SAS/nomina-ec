@@ -10,7 +10,7 @@ jest.mock('./payrollNoveltyService', () => ({ ensureNoveltyTypeAllowed: jest.fn(
 const db = require('../config/database');
 const { recordAudit } = require('./auditService');
 const { ensureNoveltyTypeAllowed } = require('./payrollNoveltyService');
-const { ADVANCE_BULK_TEMPLATE_COLUMNS, annulRun, createRun, decideLine, closeRun, parseBulkCsv, reopenRun, reverseApprovalRun, templateCsv } = require('./advancePayrollService');
+const { ADVANCE_BULK_TEMPLATE_COLUMNS, annulRun, applyRequestedDecisions, createRun, decideLine, closeRun, parseBulkCsv, reopenRun, reverseApprovalRun, templateCsv } = require('./advancePayrollService');
 
 const user = { id: 'user-1' };
 const context = { correlationId: 'corr-advance', ipAddress: '127.0.0.1' };
@@ -103,6 +103,116 @@ describe('advancePayrollService', () => {
     expect(tx.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE novedades_asistencia'), ['tenant-1', 'novelty-1', 'benefit-1']);
     expect(db.commit).toHaveBeenCalledWith(tx);
     expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'nomina.rol_anticipos.linea.bonificar_descontar' }));
+  });
+
+  test('aplica atomica y completamente una carga de 54 resoluciones en una sola transaccion', async () => {
+    const pendingLines = Array.from({ length: 54 }, (_, index) => ({
+      id: `line-${index + 1}`,
+      role_id: 'role-1',
+      empleado_id: `employee-${index + 1}`,
+      monto: index % 2 === 0 ? '15.00' : '15.50',
+      tipo_novedad: 'datoscelular',
+      nombre_bonificacion: 'Datos Moviles',
+      estado: 'aprobado',
+      metadata: { resolucionSolicitada: 'bonificar_descontar' },
+    }));
+    const tx = { query: jest.fn() };
+    let noveltyIndex = 0;
+    let benefitIndex = 0;
+    db.getClient.mockResolvedValueOnce(tx);
+    ensureNoveltyTypeAllowed.mockResolvedValue({ code: 'datoscelular', payrollImpact: 'ingreso' });
+    tx.query.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (text.includes('SELECT * FROM roles_anticipos')) return { rows: [runRow()] };
+      if (text.includes('FROM payroll_periods')) return { rows: [{ id: 'period-1', status: 'open' }] };
+      if (text.includes('FROM roles_anticipos_detalle d') && text.includes("d.estado = 'aprobado'")) return { rows: pendingLines };
+      if (text.includes("metadata->>'advanceRoleLineId'")) return { rows: [] };
+      if (text.includes('FROM novedades_asistencia') && text.includes('empleado_id')) return { rows: [] };
+      if (text.includes('INSERT INTO novedades_asistencia')) {
+        noveltyIndex += 1;
+        return { rows: [{ id: `novelty-${noveltyIndex}` }] };
+      }
+      if (text.includes('INSERT INTO beneficios_empleados')) {
+        benefitIndex += 1;
+        return { rows: [{ id: `benefit-${benefitIndex}` }] };
+      }
+      return { rows: [] };
+    });
+    db.query
+      .mockResolvedValueOnce({ rows: [runRow()] })
+      .mockResolvedValueOnce({ rows: pendingLines.map((line, index) => ({
+        ...line,
+        nombres: 'Empleado',
+        apellidos: String(index + 1),
+        cedula: String(index + 1).padStart(10, '0'),
+        estado: 'bonificar_descontar',
+        beneficio_id: `benefit-${index + 1}`,
+        bonificacion_novedad_id: `novelty-${index + 1}`,
+      })) });
+
+    const result = await applyRequestedDecisions('tenant-1', 'role-1', user, context);
+
+    expect(result.lineas).toHaveLength(54);
+    expect(db.getClient).toHaveBeenCalledTimes(1);
+    expect(db.commit).toHaveBeenCalledTimes(1);
+    expect(db.commit).toHaveBeenCalledWith(tx);
+    expect(db.rollback).not.toHaveBeenCalled();
+    expect(ensureNoveltyTypeAllowed).toHaveBeenCalledTimes(1);
+    expect(tx.query.mock.calls.filter(([sql]) => String(sql).includes('UPDATE roles_anticipos_detalle'))).toHaveLength(54);
+    expect(recordAudit).toHaveBeenCalledTimes(1);
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'nomina.rol_anticipos.seleccion_aplicada',
+      newData: expect.objectContaining({ totalLineas: 54 }),
+    }));
+  });
+
+  test('revierte todo el lote si una linea falla despues de efectos previos', async () => {
+    const pendingLines = Array.from({ length: 12 }, (_, index) => ({
+      id: `line-${index + 1}`,
+      role_id: 'role-1',
+      empleado_id: `employee-${index + 1}`,
+      monto: '15.00',
+      tipo_novedad: 'datoscelular',
+      nombre_bonificacion: 'Datos Moviles',
+      estado: 'aprobado',
+      metadata: { resolucionSolicitada: 'bonificar_descontar' },
+    }));
+    const tx = { query: jest.fn() };
+    let conflictCheck = 0;
+    let noveltyIndex = 0;
+    let benefitIndex = 0;
+    db.getClient.mockResolvedValueOnce(tx);
+    ensureNoveltyTypeAllowed.mockResolvedValue({ code: 'datoscelular', payrollImpact: 'ingreso' });
+    tx.query.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (text.includes('SELECT * FROM roles_anticipos')) return { rows: [runRow()] };
+      if (text.includes('FROM payroll_periods')) return { rows: [{ id: 'period-1', status: 'open' }] };
+      if (text.includes('FROM roles_anticipos_detalle d') && text.includes("d.estado = 'aprobado'")) return { rows: pendingLines };
+      if (text.includes("metadata->>'advanceRoleLineId'")) return { rows: [] };
+      if (text.includes('FROM novedades_asistencia') && text.includes('empleado_id')) {
+        conflictCheck += 1;
+        return { rows: conflictCheck === 11 ? [{ id: 'novelty-conflict' }] : [] };
+      }
+      if (text.includes('INSERT INTO novedades_asistencia')) {
+        noveltyIndex += 1;
+        return { rows: [{ id: `novelty-${noveltyIndex}` }] };
+      }
+      if (text.includes('INSERT INTO beneficios_empleados')) {
+        benefitIndex += 1;
+        return { rows: [{ id: `benefit-${benefitIndex}` }] };
+      }
+      return { rows: [] };
+    });
+
+    await expect(applyRequestedDecisions('tenant-1', 'role-1', user, context)).rejects.toMatchObject({
+      code: 'ROL_ANTICIPOS_NOVEDAD_DUPLICADA',
+    });
+
+    expect(tx.query.mock.calls.filter(([sql]) => String(sql).includes('UPDATE roles_anticipos_detalle'))).toHaveLength(10);
+    expect(db.rollback).toHaveBeenCalledTimes(1);
+    expect(db.rollback).toHaveBeenCalledWith(tx);
+    expect(db.commit).not.toHaveBeenCalled();
+    expect(recordAudit).not.toHaveBeenCalled();
   });
 
   test('bloquea la bonificacion si el tipo de novedad esta parametrizado como descuento', async () => {

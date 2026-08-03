@@ -534,6 +534,91 @@ async function createBulkRun(tenantId, payload = {}, user, context = {}) {
   return createRun(tenantId, { ...payload, lineas: rows }, user, context);
 }
 
+async function persistLineDecision(tx, { tenantId, roleId, run, line, normalizedDecision, user, noveltyTypeConfig = null }) {
+  let beneficioId = null;
+  let bonificacionNovedadId = null;
+  const createsBenefit = ['descontar', 'bonificar_descontar'].includes(normalizedDecision);
+  const createsNovelty = ['bonificar', 'bonificar_descontar'].includes(normalizedDecision);
+  const resolvedNoveltyTypeConfig = noveltyTypeConfig || await ensureNoveltyTypeAllowed({
+    tenantId,
+    tipoNovedad: line.tipo_novedad,
+    anio: run.anio,
+    mes: run.mes,
+    userId: user.id,
+  });
+  if (createsNovelty && resolvedNoveltyTypeConfig?.payrollImpact !== 'ingreso') {
+    throw new AppError('Para una bonificacion, o para un ingreso que se descuenta al cierre, el tipo de novedad debe estar parametrizado como ingreso en Parametrizacion > Tipo de novedad.', {
+      code: 'ROL_ANTICIPOS_NOVEDAD_IMPACTO_INVALIDO',
+      statusCode: 422,
+    });
+  }
+
+  if (createsNovelty) {
+    const existingNovelty = await tx.query(`SELECT id FROM novedades_asistencia WHERE tenant_id = $1 AND metadata->>'advanceRoleLineId' = $2 LIMIT 1`, [tenantId, line.id]);
+    if (existingNovelty.rows[0]) {
+      bonificacionNovedadId = existingNovelty.rows[0].id;
+    } else {
+      const conflict = await tx.query(`
+        SELECT id
+        FROM novedades_asistencia
+        WHERE tenant_id = $1
+          AND empleado_id = $2
+          AND fecha = $3::date
+          AND tipo_novedad = $4
+        LIMIT 1
+      `, [tenantId, line.empleado_id, run.fecha_corte, line.tipo_novedad]);
+      if (conflict.rows[0]) throw new AppError('Ya existe una novedad del mismo tipo para el empleado y fecha de corte.', { code: 'ROL_ANTICIPOS_NOVEDAD_DUPLICADA', statusCode: 409 });
+      const novelty = await tx.query(`
+        INSERT INTO novedades_asistencia (empleado_id, tenant_id, period_id, periodo_nomina, fecha, tipo_novedad, minutos, monto, justificacion, estado, aprobado_por, aprobado_en, metadata)
+        VALUES ($1,$2,$3,$4,$5,$6,0,$7,$8,'aprobado',$9,NOW(),$10)
+        RETURNING id
+      `, [line.empleado_id, tenantId, run.payroll_period_id, `${run.anio}-${String(run.mes).padStart(2, '0')}`, run.fecha_corte, line.tipo_novedad, line.monto, line.nombre_bonificacion || `Bonificacion del rol de anticipos ${run.anio}-${String(run.mes).padStart(2, '0')}`, user.id, JSON.stringify({ source: 'rol_anticipos_bonificacion', advanceRoleId: roleId, advanceRoleLineId: line.id, nombreBonificacion: line.nombre_bonificacion || null, resolucion: normalizedDecision, momentoContable: 'pago_rol' })]);
+      bonificacionNovedadId = novelty.rows[0].id;
+    }
+  }
+
+  if (createsBenefit) {
+    const existingBenefit = await tx.query(`SELECT id FROM beneficios_empleados WHERE tenant_id = $1 AND metadata->>'advanceRoleLineId' = $2 LIMIT 1`, [tenantId, line.id]);
+    if (existingBenefit.rows[0]) {
+      beneficioId = existingBenefit.rows[0].id;
+    } else {
+      const benefitDescription = normalizedDecision === 'bonificar_descontar'
+        ? `${line.nombre_bonificacion || 'Bonificacion'} · anticipo a descontar al cierre`
+        : (line.nombre_bonificacion || `Anticipo del rol ${run.anio}-${String(run.mes).padStart(2, '0')}`);
+      const benefit = await tx.query(`
+        INSERT INTO beneficios_empleados (tenant_id, empleado_id, tipo, descripcion, monto_total, saldo_pendiente, cuota_mensual, anio_inicio, mes_inicio, estado, aprobado_por, aprobado_en, metadata, created_by)
+        VALUES ($1,$2,'anticipo',$3,$4,$4,$4,$5,$6,'aprobado',$7,NOW(),$8,$7)
+        RETURNING id
+      `, [tenantId, line.empleado_id, benefitDescription, line.monto, run.anio, run.mes, user.id, JSON.stringify({ source: 'rol_anticipos', advanceRoleId: roleId, advanceRoleLineId: line.id, resolucion: normalizedDecision, pairedBonificacionNovedadId: bonificacionNovedadId, momentoContable: normalizedDecision === 'bonificar_descontar' ? 'descuento_cierre' : 'pago_anticipo' })]);
+      beneficioId = benefit.rows[0].id;
+    }
+  }
+
+  if (!createsBenefit && !createsNovelty) {
+    throw new AppError('La resolucion no tiene un efecto contable configurado.', { code: 'ROL_ANTICIPOS_RESOLUCION_SIN_EFECTO', statusCode: 400 });
+  }
+  if (createsBenefit && createsNovelty && beneficioId && bonificacionNovedadId) {
+    await tx.query(`
+      UPDATE novedades_asistencia
+      SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('pairedBeneficioId', $3::text), updated_at = NOW()
+      WHERE tenant_id = $1 AND id = $2
+    `, [tenantId, bonificacionNovedadId, beneficioId]);
+  }
+  await tx.query(`
+    UPDATE roles_anticipos_detalle
+    SET estado = $4,
+        beneficio_id = $5,
+        bonificacion_novedad_id = $6,
+        metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('resolucionSolicitada', $4::varchar),
+        decidido_por = $7,
+        decidido_en = NOW(),
+        updated_at = NOW()
+    WHERE id = $1 AND role_id = $2 AND tenant_id = $3
+  `, [line.id, roleId, tenantId, normalizedDecision, beneficioId, bonificacionNovedadId, user.id]);
+
+  return { lineId: line.id, decision: normalizedDecision, beneficioId, bonificacionNovedadId };
+}
+
 async function decideLine(tenantId, roleId, lineId, decision, user, context = {}) {
   const normalizedDecision = normalizeDecision(decision);
   if (!VALID_DECISIONS.has(normalizedDecision)) {
@@ -561,82 +646,9 @@ async function decideLine(tenantId, roleId, lineId, decision, user, context = {}
       return getRun(tenantId, roleId);
     }
     if (line.estado !== 'aprobado') throw new AppError('La linea no esta aprobada para resolverse.', { code: 'ROL_ANTICIPOS_LINEA_NO_APROBADA', statusCode: 409 });
-    let beneficioId = null;
-    let bonificacionNovedadId = null;
-    const createsBenefit = ['descontar', 'bonificar_descontar'].includes(normalizedDecision);
-    const createsNovelty = ['bonificar', 'bonificar_descontar'].includes(normalizedDecision);
-    const noveltyTypeConfig = await ensureNoveltyTypeAllowed({ tenantId, tipoNovedad: line.tipo_novedad, anio: run.anio, mes: run.mes, userId: user.id });
-    if (createsNovelty && noveltyTypeConfig?.payrollImpact !== 'ingreso') {
-      throw new AppError('Para una bonificacion, o para un ingreso que se descuenta al cierre, el tipo de novedad debe estar parametrizado como ingreso en Parametrizacion > Tipo de novedad.', {
-        code: 'ROL_ANTICIPOS_NOVEDAD_IMPACTO_INVALIDO',
-        statusCode: 422,
-      });
-    }
-
-    if (createsNovelty) {
-      const existingNovelty = await tx.query(`SELECT id FROM novedades_asistencia WHERE tenant_id = $1 AND metadata->>'advanceRoleLineId' = $2 LIMIT 1`, [tenantId, line.id]);
-      if (existingNovelty.rows[0]) {
-        bonificacionNovedadId = existingNovelty.rows[0].id;
-      } else {
-        const conflict = await tx.query(`
-          SELECT id
-          FROM novedades_asistencia
-          WHERE tenant_id = $1
-            AND empleado_id = $2
-            AND fecha = $3::date
-            AND tipo_novedad = $4
-          LIMIT 1
-        `, [tenantId, line.empleado_id, run.fecha_corte, line.tipo_novedad]);
-        if (conflict.rows[0]) throw new AppError('Ya existe una novedad del mismo tipo para el empleado y fecha de corte.', { code: 'ROL_ANTICIPOS_NOVEDAD_DUPLICADA', statusCode: 409 });
-        const novelty = await tx.query(`
-          INSERT INTO novedades_asistencia (empleado_id, tenant_id, period_id, periodo_nomina, fecha, tipo_novedad, minutos, monto, justificacion, estado, aprobado_por, aprobado_en, metadata)
-          VALUES ($1,$2,$3,$4,$5,$6,0,$7,$8,'aprobado',$9,NOW(),$10)
-          RETURNING id
-        `, [line.empleado_id, tenantId, run.payroll_period_id, `${run.anio}-${String(run.mes).padStart(2, '0')}`, run.fecha_corte, line.tipo_novedad, line.monto, line.nombre_bonificacion || `Bonificacion del rol de anticipos ${run.anio}-${String(run.mes).padStart(2, '0')}`, user.id, JSON.stringify({ source: 'rol_anticipos_bonificacion', advanceRoleId: roleId, advanceRoleLineId: line.id, nombreBonificacion: line.nombre_bonificacion || null, resolucion: normalizedDecision, momentoContable: 'pago_rol' })]);
-        bonificacionNovedadId = novelty.rows[0].id;
-      }
-    }
-
-    if (createsBenefit) {
-      const existingBenefit = await tx.query(`SELECT id FROM beneficios_empleados WHERE tenant_id = $1 AND metadata->>'advanceRoleLineId' = $2 LIMIT 1`, [tenantId, line.id]);
-      if (existingBenefit.rows[0]) {
-        beneficioId = existingBenefit.rows[0].id;
-      } else {
-        const benefitDescription = normalizedDecision === 'bonificar_descontar'
-          ? `${line.nombre_bonificacion || 'Bonificacion'} · anticipo a descontar al cierre`
-          : (line.nombre_bonificacion || `Anticipo del rol ${run.anio}-${String(run.mes).padStart(2, '0')}`);
-        const benefit = await tx.query(`
-          INSERT INTO beneficios_empleados (tenant_id, empleado_id, tipo, descripcion, monto_total, saldo_pendiente, cuota_mensual, anio_inicio, mes_inicio, estado, aprobado_por, aprobado_en, metadata, created_by)
-          VALUES ($1,$2,'anticipo',$3,$4,$4,$4,$5,$6,'aprobado',$7,NOW(),$8,$7)
-          RETURNING id
-        `, [tenantId, line.empleado_id, benefitDescription, line.monto, run.anio, run.mes, user.id, JSON.stringify({ source: 'rol_anticipos', advanceRoleId: roleId, advanceRoleLineId: line.id, resolucion: normalizedDecision, pairedBonificacionNovedadId: bonificacionNovedadId, momentoContable: normalizedDecision === 'bonificar_descontar' ? 'descuento_cierre' : 'pago_anticipo' })]);
-        beneficioId = benefit.rows[0].id;
-      }
-    }
-
-    if (!createsBenefit && !createsNovelty) {
-      throw new AppError('La resolucion no tiene un efecto contable configurado.', { code: 'ROL_ANTICIPOS_RESOLUCION_SIN_EFECTO', statusCode: 400 });
-    }
-    if (createsBenefit && createsNovelty && beneficioId && bonificacionNovedadId) {
-      await tx.query(`
-        UPDATE novedades_asistencia
-        SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('pairedBeneficioId', $3::text), updated_at = NOW()
-        WHERE tenant_id = $1 AND id = $2
-      `, [tenantId, bonificacionNovedadId, beneficioId]);
-    }
-    await tx.query(`
-      UPDATE roles_anticipos_detalle
-      SET estado = $4,
-          beneficio_id = $5,
-          bonificacion_novedad_id = $6,
-          metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('resolucionSolicitada', $4::varchar),
-          decidido_por = $7,
-          decidido_en = NOW(),
-          updated_at = NOW()
-      WHERE id = $1 AND role_id = $2 AND tenant_id = $3
-    `, [lineId, roleId, tenantId, normalizedDecision, beneficioId, bonificacionNovedadId, user.id]);
+    const effects = await persistLineDecision(tx, { tenantId, roleId, run, line, normalizedDecision, user });
     await db.commit(tx);
-    await recordAudit({ tenantId, userId: user.id, correlationId: context.correlationId, action: `nomina.rol_anticipos.linea.${normalizedDecision}`, entity: 'roles_anticipos_detalle', entityId: lineId, newData: { roleId, beneficioId, bonificacionNovedadId }, ipAddress: context.ipAddress });
+    await recordAudit({ tenantId, userId: user.id, correlationId: context.correlationId, action: `nomina.rol_anticipos.linea.${normalizedDecision}`, entity: 'roles_anticipos_detalle', entityId: lineId, newData: { roleId, beneficioId: effects.beneficioId, bonificacionNovedadId: effects.bonificacionNovedadId }, ipAddress: context.ipAddress });
     return getRun(tenantId, roleId);
   } catch (err) {
     await db.rollback(tx);
@@ -645,19 +657,69 @@ async function decideLine(tenantId, roleId, lineId, decision, user, context = {}
 }
 
 async function applyRequestedDecisions(tenantId, id, user, context = {}) {
-  const role = await getRun(tenantId, id);
-  if (role.estado !== 'aprobado') {
-    throw new AppError('Aprueba el rol antes de aplicar las resoluciones seleccionadas.', { code: 'ROL_ANTICIPOS_NO_APROBADO', statusCode: 409 });
+  const tx = await db.getClient(tenantId, user.id);
+  let committed = false;
+  try {
+    const runResult = await tx.query('SELECT * FROM roles_anticipos WHERE id = $1 AND tenant_id = $2 FOR UPDATE', [id, tenantId]);
+    const run = runResult.rows[0];
+    if (!run) throw new AppError('El rol de anticipos no existe.', { code: 'ROL_ANTICIPOS_NO_ENCONTRADO', statusCode: 404 });
+    if (run.estado !== 'aprobado') {
+      throw new AppError('Aprueba el rol antes de aplicar las resoluciones seleccionadas.', { code: 'ROL_ANTICIPOS_NO_APROBADO', statusCode: 409 });
+    }
+    await assertPeriod(tx, tenantId, run.anio, run.mes);
+    const pendingResult = await tx.query(`
+      SELECT d.*
+      FROM roles_anticipos_detalle d
+      WHERE d.tenant_id = $1 AND d.role_id = $2 AND d.estado = 'aprobado'
+      ORDER BY d.id
+      FOR UPDATE
+    `, [tenantId, id]);
+    const pending = pendingResult.rows.map((line) => {
+      const metadata = parseMetadata(line.metadata);
+      return {
+        ...line,
+        resolucionSolicitada: normalizeDecision(metadata.resolucionSolicitada || metadata.resolutionRequested),
+      };
+    });
+    const withoutDecision = pending.filter((line) => !VALID_DECISIONS.has(line.resolucionSolicitada));
+    if (withoutDecision.length > 0) {
+      throw new AppError('Selecciona si cada linea pendiente sera anticipo o bonificacion antes de aplicarla.', { code: 'ROL_ANTICIPOS_RESOLUCIONES_PENDIENTES', statusCode: 409, details: { lineas: withoutDecision.map((line) => line.id) } });
+    }
+
+    const noveltyConfigs = new Map();
+    for (const tipoNovedad of new Set(pending.map((line) => line.tipo_novedad))) {
+      noveltyConfigs.set(tipoNovedad, await ensureNoveltyTypeAllowed({ tenantId, tipoNovedad, anio: run.anio, mes: run.mes, userId: user.id }));
+    }
+    const appliedEffects = [];
+    for (const line of pending) {
+      appliedEffects.push(await persistLineDecision(tx, {
+        tenantId,
+        roleId: id,
+        run,
+        line,
+        normalizedDecision: line.resolucionSolicitada,
+        user,
+        noveltyTypeConfig: noveltyConfigs.get(line.tipo_novedad),
+      }));
+    }
+
+    await db.commit(tx);
+    committed = true;
+    await recordAudit({
+      tenantId,
+      userId: user.id,
+      correlationId: context.correlationId,
+      action: 'nomina.rol_anticipos.seleccion_aplicada',
+      entity: 'roles_anticipos',
+      entityId: id,
+      newData: { totalLineas: appliedEffects.length, lineas: appliedEffects },
+      ipAddress: context.ipAddress,
+    });
+    return getRun(tenantId, id);
+  } catch (err) {
+    if (!committed) await db.rollback(tx);
+    throw err;
   }
-  const pending = role.lineas.filter((line) => line.estado === 'aprobado');
-  const withoutDecision = pending.filter((line) => !VALID_DECISIONS.has(line.resolucionSolicitada));
-  if (withoutDecision.length > 0) {
-    throw new AppError('Selecciona si cada línea pendiente será anticipo o bonificación antes de aplicarla.', { code: 'ROL_ANTICIPOS_RESOLUCIONES_PENDIENTES', statusCode: 409, details: { lineas: withoutDecision.map((line) => line.id) } });
-  }
-  for (const line of pending) {
-    await decideLine(tenantId, id, line.id, line.resolucionSolicitada, user, context);
-  }
-  return getRun(tenantId, id);
 }
 
 async function closeRun(tenantId, id, user, context = {}) {

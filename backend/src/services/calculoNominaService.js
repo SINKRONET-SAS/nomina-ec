@@ -252,6 +252,38 @@ function resolveOvertimeParameters(payrollParameters = {}) {
   };
 }
 
+async function assertAdvancePayrollSelectionsApplied({ tenantId, anio, mes, empleadoId = null, dbClient = null }) {
+  const executor = dbClient || db;
+  const pendingResult = await executor.query(`
+    SELECT r.id AS role_id, COUNT(*)::int AS pending_lines
+    FROM roles_anticipos r
+    JOIN roles_anticipos_detalle d
+      ON d.role_id = r.id
+      AND d.tenant_id = r.tenant_id
+    WHERE r.tenant_id = $1
+      AND r.anio = $2
+      AND r.mes = $3
+      AND r.estado = 'aprobado'
+      AND d.estado = 'aprobado'
+      AND ($4::text IS NULL OR d.empleado_id::text = $4::text)
+    GROUP BY r.id
+    ORDER BY r.id
+  `, [tenantId, anio, mes, empleadoId ? String(empleadoId) : null]);
+
+  if (pendingResult.rows.length > 0) {
+    throw new AppError('Existen resoluciones aprobadas de anticipos pendientes de aplicar. Ve a Nomina > Descuento Anticipos, aplica la seleccion completa y vuelve a calcular el rol.', {
+      code: 'NOMINA_ANTICIPOS_RESOLUCIONES_PENDIENTES',
+      statusCode: 409,
+      details: {
+        roles: pendingResult.rows.map((row) => ({
+          roleId: row.role_id,
+          lineasPendientes: Number(row.pending_lines || 0),
+        })),
+      },
+    });
+  }
+}
+
 async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
   validarPeriodoNomina(anio, mes);
   logger.info({
@@ -263,6 +295,8 @@ async function calcularNominaMensual(tenantId, anio, mes, context = {}) {
     mes,
   }, 'Cálculo de nómina iniciado');
   const executor = context.dbClient || db;
+
+  await assertAdvancePayrollSelectionsApplied({ tenantId, anio, mes, dbClient: executor });
 
   const batch = await createPayrollCalculationBatch({
     tenantId,
@@ -424,6 +458,13 @@ async function calcularNominaEmpleado(tenantId, empleadoId, anio, mes, context =
   }, 'Recalculo individual de nomina iniciado');
 
   const executor = context.dbClient || db;
+  await assertAdvancePayrollSelectionsApplied({
+    tenantId,
+    anio,
+    mes,
+    empleadoId: scopedEmployeeId,
+    dbClient: executor,
+  });
   const batch = await createPayrollCalculationBatch({
     tenantId,
     anio,
@@ -1196,6 +1237,7 @@ function calcularIR(baseMensual, legalParameters, gastosPersonalesAnuales = 0) {
 }
 
 module.exports = {
+  assertAdvancePayrollSelectionsApplied,
   calcularNominaMensual,
   calcularNominaEmpleado,
   calcularEmpleado,
