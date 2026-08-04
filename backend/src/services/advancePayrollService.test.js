@@ -171,6 +171,60 @@ describe('advancePayrollService', () => {
     }));
   });
 
+  test('reconcilia las 8 bonificaciones pendientes con novedades productivas ya existentes', async () => {
+    const pendingLines = Array.from({ length: 8 }, (_, index) => ({
+      id: `line-bonus-${index + 1}`,
+      role_id: 'role-1',
+      empleado_id: `employee-bonus-${index + 1}`,
+      monto: '15.00',
+      tipo_novedad: 'datoscelular',
+      nombre_bonificacion: 'Datos Moviles',
+      estado: 'aprobado',
+      metadata: { resolucionSolicitada: 'bonificar' },
+    }));
+    const tx = { query: jest.fn() };
+    let conflictIndex = 0;
+    db.getClient.mockResolvedValueOnce(tx);
+    ensureNoveltyTypeAllowed.mockResolvedValue({ code: 'datoscelular', payrollImpact: 'descuento' });
+    tx.query.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (text.includes('SELECT * FROM roles_anticipos')) return { rows: [runRow()] };
+      if (text.includes('FROM payroll_periods')) return { rows: [{ id: 'period-1', status: 'open' }] };
+      if (text.includes('FROM roles_anticipos_detalle d') && text.includes("d.estado = 'aprobado'")) return { rows: pendingLines };
+      if (text.includes("metadata->>'advanceRoleLineId'")) return { rows: [] };
+      if (text.includes('FROM novedades_asistencia') && text.includes('empleado_id')) {
+        conflictIndex += 1;
+        return { rows: [{
+          id: `existing-novelty-${conflictIndex}`,
+          monto: '15.00',
+          estado: 'aprobado',
+          metadata: { source: 'carga_masiva' },
+        }] };
+      }
+      return { rows: [] };
+    });
+    db.query
+      .mockResolvedValueOnce({ rows: [runRow()] })
+      .mockResolvedValueOnce({ rows: pendingLines.map((line, index) => ({
+        ...line,
+        nombres: 'Empleado',
+        apellidos: `Bonificado ${index + 1}`,
+        cedula: String(index + 1).padStart(10, '0'),
+        estado: 'bonificar',
+        beneficio_id: null,
+        bonificacion_novedad_id: `existing-novelty-${index + 1}`,
+      })) });
+
+    const result = await applyRequestedDecisions('tenant-1', 'role-1', user, context);
+
+    expect(result.lineas).toHaveLength(8);
+    expect(tx.query.mock.calls.filter(([sql]) => String(sql).includes('INSERT INTO novedades_asistencia'))).toHaveLength(0);
+    expect(tx.query.mock.calls.filter(([sql]) => String(sql).includes("SET period_id = COALESCE(period_id"))).toHaveLength(8);
+    expect(tx.query.mock.calls.filter(([sql]) => String(sql).includes('UPDATE roles_anticipos_detalle'))).toHaveLength(8);
+    expect(db.commit).toHaveBeenCalledWith(tx);
+    expect(db.rollback).not.toHaveBeenCalled();
+  });
+
   test('revierte todo el lote si una linea falla despues de efectos previos', async () => {
     const pendingLines = Array.from({ length: 12 }, (_, index) => ({
       id: `line-${index + 1}`,

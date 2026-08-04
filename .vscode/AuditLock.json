@@ -3,16 +3,16 @@
   "plan": "HAIKY-REGRESION-NOVEDADES-ROL-JULIO-2026",
   "planCode": "RNRJ26",
   "status": "completed-pass",
-  "phaseCompleted": "RNRJ26-03",
+  "phaseCompleted": "RNRJ26-04",
   "currentPhase": null,
-  "updatedAt": "2026-08-04T15:58:53.682Z",
+  "updatedAt": "2026-08-04T20:18:50.315Z",
   "rulesSource": "RULES.md",
   "contextSource": ".github/CODEX_CONTEXT.md",
   "previousPlan": "HAIKY-AUDITORIA-INTEGRAL-V75-CORRECCION-MEJORA-2026",
-  "previousAuditLockHash": "FF821037BEB7CE27E3B7F9F84B3DA4AB0D9ECFC79FF396F001BF8EDC206429B1",
+  "previousAuditLockHash": "5FF5AE7921CEDD548C9CB477AE8B7DEF8AB5006F5A9AA2739A0EE32E88865ED3",
   "signatureAlgorithm": "SHA256(previous AuditLock bytes + UTF-8 updatedAt)",
-  "summary": "RNRJ26-03 cerrado: se elimino la contradiccion que bloqueaba bonificar cuando datoscelular conservaba una parametrizacion historica de descuento. Las bonificaciones originadas por el rol mantienen su impacto efectivo de ingreso y el lote productivo mixto de 54 lineas se aplica atomicamente.",
-  "nextAction": "Desplegar la correccion, volver a aplicar la seleccion pendiente del rol de anticipos de julio y recalcular los borradores afectados antes del cierre.",
+  "summary": "RNRJ26-04 cerrado: las ocho resoluciones bonificar pendientes ahora reconcilian novedades productivas aprobadas del mismo empleado, fecha, tipo y monto, sin duplicarlas. Las incompatibilidades siguen bloqueadas y el error queda visible junto al rol.",
+  "nextAction": "Desplegar la correccion, pulsar Aplicar seleccion en el rol de julio y recalcular los borradores afectados antes del cierre.",
   "fases": [
     {
       "phase": "RNRJ26-00",
@@ -33,28 +33,33 @@
       "phase": "RNRJ26-03",
       "status": "completed-pass",
       "detail": "Alineacion del impacto de bonificar y bonificar_descontar con el motor de novedades, incluida la validacion del lote productivo mixto."
+    },
+    {
+      "phase": "RNRJ26-04",
+      "status": "completed-pass",
+      "detail": "Reconciliacion segura de bonificaciones con novedades productivas preexistentes y exposicion contextual de errores en el rol."
     }
   ],
   "filesModified": [
     "backend/src/services/advancePayrollService.js",
     "backend/src/services/advancePayrollService.test.js",
-    "backend/src/services/payrollNoveltyService.test.js",
+    "frontend-web/src/pages/Nomina/Beneficios.jsx",
     ".vscode/AuditLock.json",
     "AuditLock.json"
   ],
   "validationChecks": [
-    "Regresion enfocada PASS: bonificar y bonificar_descontar son ingresos del rol aun con configuracion historica de descuento.",
-    "Lote productivo mixto PASS: 54 novedades, 46 anticipos para descuento al cierre y 8 bonificaciones sin anticipo.",
-    "Atomicidad e idempotencia del lote conservadas PASS.",
-    "Backend completo PASS: 70 suites y 536 pruebas.",
-    "Pruebas enfocadas PASS: 2 suites y 17 pruebas.",
+    "Reproduccion previa PASS: ocho bonificaciones pendientes fallaban ante novedades productivas ya existentes.",
+    "Reconciliacion PASS: ocho novedades aprobadas del mismo monto fueron reutilizadas sin inserciones duplicadas.",
+    "Proteccion PASS: novedades con monto, estado o vinculo incompatible mantienen error ROL_ANTICIPOS_NOVEDAD_DUPLICADA.",
+    "Backend completo PASS: 70 suites y 537 pruebas.",
+    "Pruebas enfocadas PASS: 2 suites y 18 pruebas.",
     "Contratos del sistema PASS.",
     "Prisma schema validate PASS.",
-    "Build PWA PASS: 2031 modulos, 106 entradas precache y service worker generado.",
-    "node --check PASS en servicio y pruebas modificados.",
-    "UTF-8 sin BOM valido en archivos JavaScript y JSON modificados.",
+    "Build PWA PASS: 2031 modulos, 106 entradas precache, alerta contextual y service worker generado.",
+    "node --check PASS en servicio y prueba modificados.",
+    "UTF-8 sin BOM valido en archivos JavaScript, JSX y JSON modificados.",
     "git diff --check PASS."
   ],
-  "backendSuiteResult": "70 suites, 536 tests PASS; focused 2 suites, 17 tests PASS",
-  "signature": "261FBEC122FE9C0ACB04C4B0C25945181049B52A328D9ACCAC2BE5FC1C528057"
+  "backendSuiteResult": "70 suites, 537 tests PASS; focused 2 suites, 18 tests PASS",
+  "signature": "39AC09E5F43F484F86E1969600F027CEB1EB915B92F2F3F118D76DFB8A74D618"
 }
