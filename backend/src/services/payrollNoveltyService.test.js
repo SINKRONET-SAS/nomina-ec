@@ -79,7 +79,7 @@ describe('payrollNoveltyService', () => {
     });
   });
 
-  test('conserva como ingreso una bonificacion generada por el rol aunque la configuracion historica sea descuento', () => {
+  test.each(['bonificar', 'bonificar_descontar'])('conserva %s como ingreso aunque la configuracion historica sea descuento', (resolution) => {
     const config = normalizeConfig({
       code: 'datoscelular',
       name: 'Datos móviles',
@@ -95,7 +95,7 @@ describe('payrollNoveltyService', () => {
       monto: 15,
       metadata: {
         source: 'rol_anticipos_bonificacion',
-        resolucion: 'bonificar_descontar',
+        resolucion: resolution,
       },
     }], [config]);
 

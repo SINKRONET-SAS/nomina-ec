@@ -539,17 +539,14 @@ async function persistLineDecision(tx, { tenantId, roleId, run, line, normalized
   let bonificacionNovedadId = null;
   const createsBenefit = ['descontar', 'bonificar_descontar'].includes(normalizedDecision);
   const createsNovelty = ['bonificar', 'bonificar_descontar'].includes(normalizedDecision);
-  const resolvedNoveltyTypeConfig = noveltyTypeConfig || await ensureNoveltyTypeAllowed({
-    tenantId,
-    tipoNovedad: line.tipo_novedad,
-    anio: run.anio,
-    mes: run.mes,
-    userId: user.id,
-  });
-  if (createsNovelty && resolvedNoveltyTypeConfig?.payrollImpact !== 'ingreso') {
-    throw new AppError('Para una bonificacion, o para un ingreso que se descuenta al cierre, el tipo de novedad debe estar parametrizado como ingreso en Parametrizacion > Tipo de novedad.', {
-      code: 'ROL_ANTICIPOS_NOVEDAD_IMPACTO_INVALIDO',
-      statusCode: 422,
+  // El rol define estas bonificaciones como ingresos mediante su metadata; aqui solo se valida que el tipo exista y este habilitado.
+  if (!noveltyTypeConfig) {
+    await ensureNoveltyTypeAllowed({
+      tenantId,
+      tipoNovedad: line.tipo_novedad,
+      anio: run.anio,
+      mes: run.mes,
+      userId: user.id,
     });
   }
 

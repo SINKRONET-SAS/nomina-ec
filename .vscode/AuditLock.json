@@ -3,16 +3,16 @@
   "plan": "HAIKY-REGRESION-NOVEDADES-ROL-JULIO-2026",
   "planCode": "RNRJ26",
   "status": "completed-pass",
-  "phaseCompleted": "RNRJ26-02",
+  "phaseCompleted": "RNRJ26-03",
   "currentPhase": null,
-  "updatedAt": "2026-08-03T23:33:24.075Z",
+  "updatedAt": "2026-08-04T15:58:53.682Z",
   "rulesSource": "RULES.md",
   "contextSource": ".github/CODEX_CONTEXT.md",
   "previousPlan": "HAIKY-AUDITORIA-INTEGRAL-V75-CORRECCION-MEJORA-2026",
-  "previousAuditLockHash": "C28C03AAAB845E86F7547E81264A889F5CE5D92BED7524BF6BE5D7B40C77EF83",
+  "previousAuditLockHash": "FF821037BEB7CE27E3B7F9F84B3DA4AB0D9ECFC79FF396F001BF8EDC206429B1",
   "signatureAlgorithm": "SHA256(previous AuditLock bytes + UTF-8 updatedAt)",
-  "summary": "RNRJ26 cerrado: se confirmo que RECARGAS_JULIO contenia 54 lineas por USD 804,50 y que el rol transpuesto solo incorporo Datos Moviles en los primeros 10 empleados. Aplicar seleccion ahora usa una sola transaccion para todo el lote y el calculo mensual o individual bloquea resoluciones aprobadas pendientes.",
-  "nextAction": "Desplegar la correccion, aplicar las lineas pendientes del rol de anticipos de julio y recalcular los borradores afectados antes del cierre.",
+  "summary": "RNRJ26-03 cerrado: se elimino la contradiccion que bloqueaba bonificar cuando datoscelular conservaba una parametrizacion historica de descuento. Las bonificaciones originadas por el rol mantienen su impacto efectivo de ingreso y el lote productivo mixto de 54 lineas se aplica atomicamente.",
+  "nextAction": "Desplegar la correccion, volver a aplicar la seleccion pendiente del rol de anticipos de julio y recalcular los borradores afectados antes del cierre.",
   "fases": [
     {
       "phase": "RNRJ26-00",
@@ -28,30 +28,33 @@
       "phase": "RNRJ26-02",
       "status": "completed-pass",
       "detail": "Bloqueo preventivo del calculo mensual e individual, regresion completa y cierre."
+    },
+    {
+      "phase": "RNRJ26-03",
+      "status": "completed-pass",
+      "detail": "Alineacion del impacto de bonificar y bonificar_descontar con el motor de novedades, incluida la validacion del lote productivo mixto."
     }
   ],
   "filesModified": [
     "backend/src/services/advancePayrollService.js",
     "backend/src/services/advancePayrollService.test.js",
-    "backend/src/services/calculoNominaService.js",
-    "backend/src/services/calculoNominaService.batch.test.js",
+    "backend/src/services/payrollNoveltyService.test.js",
     ".vscode/AuditLock.json",
     "AuditLock.json"
   ],
   "validationChecks": [
-    "Evidencia productiva reconciliada: 54 recargas, USD 804,50, 46 bonificar_descontar y 8 bonificar.",
-    "Prueba de aplicacion completa de 54 lineas en una sola transaccion PASS.",
-    "Prueba de rollback total ante conflicto en la linea 11 PASS.",
-    "Pruebas de bloqueo mensual e individual ante resoluciones pendientes PASS.",
-    "Backend completo PASS: 70 suites y 535 pruebas.",
-    "Pruebas enfocadas finales PASS: 2 suites y 19 pruebas.",
+    "Regresion enfocada PASS: bonificar y bonificar_descontar son ingresos del rol aun con configuracion historica de descuento.",
+    "Lote productivo mixto PASS: 54 novedades, 46 anticipos para descuento al cierre y 8 bonificaciones sin anticipo.",
+    "Atomicidad e idempotencia del lote conservadas PASS.",
+    "Backend completo PASS: 70 suites y 536 pruebas.",
+    "Pruebas enfocadas PASS: 2 suites y 17 pruebas.",
     "Contratos del sistema PASS.",
     "Prisma schema validate PASS.",
     "Build PWA PASS: 2031 modulos, 106 entradas precache y service worker generado.",
-    "node --check PASS en servicios y pruebas modificados.",
-    "UTF-8 sin BOM valido en archivos JavaScript modificados.",
+    "node --check PASS en servicio y pruebas modificados.",
+    "UTF-8 sin BOM valido en archivos JavaScript y JSON modificados.",
     "git diff --check PASS."
   ],
-  "backendSuiteResult": "70 suites, 535 tests PASS; focused final 2 suites, 19 tests PASS",
-  "signature": "F752C35C255AC77B12FE81B488F902CFE74567D2255228C0423972642B31E275"
+  "backendSuiteResult": "70 suites, 536 tests PASS; focused 2 suites, 17 tests PASS",
+  "signature": "261FBEC122FE9C0ACB04C4B0C25945181049B52A328D9ACCAC2BE5FC1C528057"
 }
