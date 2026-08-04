@@ -551,9 +551,50 @@ async function persistLineDecision(tx, { tenantId, roleId, run, line, normalized
   }
 
   if (createsNovelty) {
-    const existingNovelty = await tx.query(`SELECT id FROM novedades_asistencia WHERE tenant_id = $1 AND metadata->>'advanceRoleLineId' = $2 LIMIT 1`, [tenantId, line.id]);
+    const reconcileNovelty = async (existing) => {
+      const existingMetadata = parseMetadata(existing.metadata);
+      const linkedRoleLineId = String(existingMetadata.advanceRoleLineId || '').trim();
+      const sameRoleLine = !linkedRoleLineId || linkedRoleLineId === String(line.id);
+      const existingAmount = Number(existing.monto);
+      const sameAmount = Number.isFinite(existingAmount) && roundMoney(existingAmount) === roundMoney(Number(line.monto));
+      const isApprovedMatch = existing.estado === 'aprobado' && sameRoleLine && sameAmount;
+      const isReusableAnnulledRoleNovelty = existing.estado === 'anulado'
+        && existingMetadata.source === 'rol_anticipos_bonificacion'
+        && sameAmount;
+      if (!isApprovedMatch && !isReusableAnnulledRoleNovelty) {
+        throw new AppError('Ya existe una novedad incompatible del mismo tipo para el empleado y fecha de corte.', {
+          code: 'ROL_ANTICIPOS_NOVEDAD_DUPLICADA',
+          statusCode: 409,
+          details: { noveltyId: existing.id, sameRoleLine, sameAmount, estado: existing.estado || null },
+        });
+      }
+      const noveltyMetadata = {
+        source: 'rol_anticipos_bonificacion',
+        advanceRoleId: roleId,
+        advanceRoleLineId: line.id,
+        nombreBonificacion: line.nombre_bonificacion || null,
+        resolucion: normalizedDecision,
+        momentoContable: 'pago_rol',
+        reconciledFromSource: existingMetadata.source || null,
+        reactivatedFromAdvanceRoleId: isReusableAnnulledRoleNovelty ? existingMetadata.advanceRoleId || null : null,
+      };
+      await tx.query(`
+        UPDATE novedades_asistencia
+        SET period_id = COALESCE(period_id, $3),
+            periodo_nomina = COALESCE(NULLIF(periodo_nomina, ''), $4),
+            justificacion = CASE WHEN BTRIM(COALESCE(justificacion, '')) = '' THEN $5 ELSE justificacion END,
+            estado = CASE WHEN estado = 'anulado' THEN 'aprobado' ELSE estado END,
+            aprobado_por = CASE WHEN estado = 'anulado' THEN $7 ELSE aprobado_por END,
+            aprobado_en = CASE WHEN estado = 'anulado' THEN NOW() ELSE aprobado_en END,
+            metadata = COALESCE(metadata, '{}'::jsonb) || $6::jsonb,
+            updated_at = NOW()
+        WHERE tenant_id = $1 AND id = $2
+      `, [tenantId, existing.id, run.payroll_period_id, `${run.anio}-${String(run.mes).padStart(2, '0')}`, line.nombre_bonificacion || `Bonificacion del rol de anticipos ${run.anio}-${String(run.mes).padStart(2, '0')}`, JSON.stringify(noveltyMetadata), user.id]);
+      return existing.id;
+    };
+    const existingNovelty = await tx.query(`SELECT id, monto, estado, metadata FROM novedades_asistencia WHERE tenant_id = $1 AND metadata->>'advanceRoleLineId' = $2 LIMIT 1 FOR UPDATE`, [tenantId, line.id]);
     if (existingNovelty.rows[0]) {
-      bonificacionNovedadId = existingNovelty.rows[0].id;
+      bonificacionNovedadId = await reconcileNovelty(existingNovelty.rows[0]);
     } else {
       const conflict = await tx.query(`
         SELECT id, monto, estado, metadata
@@ -567,38 +608,7 @@ async function persistLineDecision(tx, { tenantId, roleId, run, line, normalized
       `, [tenantId, line.empleado_id, run.fecha_corte, line.tipo_novedad]);
       const existingConflict = conflict.rows[0];
       if (existingConflict) {
-        const existingMetadata = parseMetadata(existingConflict.metadata);
-        const linkedRoleLineId = String(existingMetadata.advanceRoleLineId || '').trim();
-        const sameRoleLine = !linkedRoleLineId || linkedRoleLineId === String(line.id);
-        const existingAmount = Number(existingConflict.monto);
-        const sameAmount = Number.isFinite(existingAmount) && roundMoney(existingAmount) === roundMoney(Number(line.monto));
-        const isApproved = existingConflict.estado === 'aprobado';
-        if (!sameRoleLine || !sameAmount || !isApproved) {
-          throw new AppError('Ya existe una novedad incompatible del mismo tipo para el empleado y fecha de corte.', {
-            code: 'ROL_ANTICIPOS_NOVEDAD_DUPLICADA',
-            statusCode: 409,
-            details: { noveltyId: existingConflict.id, sameRoleLine, sameAmount, estado: existingConflict.estado || null },
-          });
-        }
-        const noveltyMetadata = {
-          source: 'rol_anticipos_bonificacion',
-          advanceRoleId: roleId,
-          advanceRoleLineId: line.id,
-          nombreBonificacion: line.nombre_bonificacion || null,
-          resolucion: normalizedDecision,
-          momentoContable: 'pago_rol',
-          reconciledFromSource: existingMetadata.source || null,
-        };
-        await tx.query(`
-          UPDATE novedades_asistencia
-          SET period_id = COALESCE(period_id, $3),
-              periodo_nomina = COALESCE(NULLIF(periodo_nomina, ''), $4),
-              justificacion = CASE WHEN BTRIM(COALESCE(justificacion, '')) = '' THEN $5 ELSE justificacion END,
-              metadata = COALESCE(metadata, '{}'::jsonb) || $6::jsonb,
-              updated_at = NOW()
-          WHERE tenant_id = $1 AND id = $2
-        `, [tenantId, existingConflict.id, run.payroll_period_id, `${run.anio}-${String(run.mes).padStart(2, '0')}`, line.nombre_bonificacion || `Bonificacion del rol de anticipos ${run.anio}-${String(run.mes).padStart(2, '0')}`, JSON.stringify(noveltyMetadata)]);
-        bonificacionNovedadId = existingConflict.id;
+        bonificacionNovedadId = await reconcileNovelty(existingConflict);
       } else {
         const novelty = await tx.query(`
           INSERT INTO novedades_asistencia (empleado_id, tenant_id, period_id, periodo_nomina, fecha, tipo_novedad, minutos, monto, justificacion, estado, aprobado_por, aprobado_en, metadata)

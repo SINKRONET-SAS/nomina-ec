@@ -3,16 +3,16 @@
   "plan": "HAIKY-REGRESION-NOVEDADES-ROL-JULIO-2026",
   "planCode": "RNRJ26",
   "status": "completed-pass",
-  "phaseCompleted": "RNRJ26-05",
+  "phaseCompleted": "RNRJ26-06",
   "currentPhase": null,
-  "updatedAt": "2026-08-04T21:14:17.450Z",
+  "updatedAt": "2026-08-04T21:31:50.944Z",
   "rulesSource": "RULES.md",
   "contextSource": ".github/CODEX_CONTEXT.md",
   "previousPlan": "HAIKY-AUDITORIA-INTEGRAL-V75-CORRECCION-MEJORA-2026",
-  "previousAuditLockHash": "2E48DC311790A808DDE7E1829F2302969EA5432413745A57AB8108ED35396760",
+  "previousAuditLockHash": "45ECB3F887EAAD92577FE7DFA66F28602B266E3502B79788AF621174153C78D4",
   "signatureAlgorithm": "SHA256(previous AuditLock bytes + UTF-8 updatedAt)",
-  "summary": "RNRJ26-05 cerrado: los roles aprobados vuelven a exponer una salida operativa. Pueden revertirse si no tienen efectos o anular coordinadamente el rol, sus anticipos y sus novedades no consumidas, sin mutaciones individuales inseguras.",
-  "nextAction": "Desplegar la correccion y usar Anular rol y efectos en el lote de julio antes de regenerarlo; si algun efecto ya fue consumido, liberar primero el calculo de nomina relacionado.",
+  "summary": "RNRJ26-06 cerrado: un rol vigente puede reactivar y reasignar novedades anuladas por un rol de anticipos anterior, respetando la unicidad por empleado, fecha y tipo sin crear duplicados ni habilitar conflictos ajenos.",
+  "nextAction": "Desplegar la correccion y pulsar Aplicar seleccion en el rol aprobado de julio; las novedades del rol anulado se reactivaran y vincularan al lote vigente.",
   "fases": [
     {
       "phase": "RNRJ26-00",
@@ -43,30 +43,32 @@
       "phase": "RNRJ26-05",
       "status": "completed-pass",
       "detail": "Salida operativa para roles aprobados: reversa sin efectos o anulacion coordinada de beneficios y novedades no consumidos, expuesta en la PWA."
+    },
+    {
+      "phase": "RNRJ26-06",
+      "status": "completed-pass",
+      "detail": "Reactivacion y reasignacion segura de novedades anuladas por un rol anterior, sin duplicarlas y conservando el bloqueo de incompatibilidades reales."
     }
   ],
   "filesModified": [
     "backend/src/services/advancePayrollService.js",
     "backend/src/services/advancePayrollService.test.js",
-    "frontend-web/src/pages/Nomina/Beneficios.jsx",
     "scripts/verify-system-contracts.mjs",
     ".vscode/AuditLock.json",
     "AuditLock.json"
   ],
   "validationChecks": [
-    "Regresion PASS: un rol aprobado con efectos no consumidos se anula sin fallar despues del commit y audita los identificadores vinculados.",
-    "Interfaz PASS: roles aprobados exponen reversa o Anular rol y efectos fuera de la condicion exclusiva de borrador.",
-    "Trazabilidad PASS: beneficios generados remiten al rol de origen y no permiten edicion o anulacion individual insegura.",
-    "Proteccion PASS: si un efecto fue consumido por un calculo de nomina, la anulacion coordinada se bloquea sin cambios.",
-    "Backend completo PASS: 70 suites y 538 pruebas.",
-    "Pruebas enfocadas PASS: 1 suite y 15 pruebas.",
+    "Regresion PASS: una novedad anulada por un rol anterior se reactiva y reasigna al rol vigente sin insertar un duplicado.",
+    "Unicidad PASS: se reutiliza la fila existente por empleado, fecha y tipo conforme al indice unico productivo.",
+    "Proteccion PASS: solo se reactivan novedades anuladas cuyo origen es rol_anticipos_bonificacion y cuyo monto coincide.",
+    "Trazabilidad PASS: metadata conserva el rol anterior y registra el nuevo rol y linea propietarios.",
+    "Backend completo PASS: 70 suites y 539 pruebas.",
+    "Pruebas enfocadas PASS: 1 suite y 16 pruebas.",
     "Contratos del sistema PASS.",
-    "Prisma schema validate PASS.",
-    "Build PWA PASS: 2031 modulos transformados.",
-    "node --check PASS en servicio y prueba modificados.",
-    "UTF-8 sin BOM valido en archivos JavaScript, JSX y JSON modificados.",
+    "node --check PASS en servicio, prueba y contrato modificados.",
+    "UTF-8 sin BOM valido en archivos JavaScript y JSON modificados.",
     "git diff --check PASS."
   ],
-  "backendSuiteResult": "70 suites, 538 tests PASS; focused 1 suite, 15 tests PASS",
-  "signature": "00AB1D9E69C7A84965FA999BCC0F8456E589C39DE8FBFF95F479070C991FEB77"
+  "backendSuiteResult": "70 suites, 539 tests PASS; focused 1 suite, 16 tests PASS",
+  "signature": "2E0E2BCA8D6E02EE8A36D8F10C7FC2179688E457B3A30DAFB39A10A9835D9670"
 }

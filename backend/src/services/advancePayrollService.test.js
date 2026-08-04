@@ -225,6 +225,55 @@ describe('advancePayrollService', () => {
     expect(db.rollback).not.toHaveBeenCalled();
   });
 
+  test('reactiva y reasigna la novedad anulada de un rol anterior sin crear un duplicado', async () => {
+    const pendingLine = {
+      id: 'line-new',
+      role_id: 'role-1',
+      empleado_id: 'employee-1',
+      monto: '15.00',
+      tipo_novedad: 'datoscelular',
+      nombre_bonificacion: 'Datos Moviles',
+      estado: 'aprobado',
+      metadata: { resolucionSolicitada: 'bonificar' },
+    };
+    const tx = { query: jest.fn() };
+    db.getClient.mockResolvedValueOnce(tx);
+    ensureNoveltyTypeAllowed.mockResolvedValue({ code: 'datoscelular', payrollImpact: 'descuento' });
+    tx.query.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (text.includes('SELECT * FROM roles_anticipos')) return { rows: [runRow()] };
+      if (text.includes('FROM payroll_periods')) return { rows: [{ id: 'period-1', status: 'open' }] };
+      if (text.includes('FROM roles_anticipos_detalle d') && text.includes("d.estado = 'aprobado'")) return { rows: [pendingLine] };
+      if (text.includes("metadata->>'advanceRoleLineId'")) return { rows: [] };
+      if (text.includes('FROM novedades_asistencia') && text.includes('empleado_id')) {
+        return { rows: [{
+          id: 'annulled-novelty-1',
+          monto: '15.00',
+          estado: 'anulado',
+          metadata: {
+            source: 'rol_anticipos_bonificacion',
+            advanceRoleId: 'role-annulled',
+            advanceRoleLineId: 'line-annulled',
+          },
+        }] };
+      }
+      return { rows: [] };
+    });
+    db.query
+      .mockResolvedValueOnce({ rows: [runRow()] })
+      .mockResolvedValueOnce({ rows: [{ ...pendingLine, nombres: 'Ana', apellidos: 'Demo', cedula: '0999999999', estado: 'bonificar', beneficio_id: null, bonificacion_novedad_id: 'annulled-novelty-1' }] });
+
+    const result = await applyRequestedDecisions('tenant-1', 'role-1', user, context);
+
+    expect(result.lineas[0]).toMatchObject({ estado: 'bonificar', bonificacionNovedadId: 'annulled-novelty-1' });
+    expect(tx.query.mock.calls.filter(([sql]) => String(sql).includes('INSERT INTO novedades_asistencia'))).toHaveLength(0);
+    const reactivation = tx.query.mock.calls.find(([sql]) => String(sql).includes("estado = CASE WHEN estado = 'anulado' THEN 'aprobado'"));
+    expect(reactivation).toBeDefined();
+    expect(reactivation[1]).toEqual(expect.arrayContaining(['tenant-1', 'annulled-novelty-1', 'user-1']));
+    expect(db.commit).toHaveBeenCalledWith(tx);
+    expect(db.rollback).not.toHaveBeenCalled();
+  });
+
   test('revierte todo el lote si una linea falla despues de efectos previos', async () => {
     const pendingLines = Array.from({ length: 12 }, (_, index) => ({
       id: `line-${index + 1}`,

@@ -153,6 +153,7 @@ const cerrarMes = read('frontend-web/src/pages/Nomina/CerrarMes.jsx');
 const periodosNomina = read('frontend-web/src/pages/Nomina/PeriodosNomina.jsx');
 const rolesPagos = read('frontend-web/src/pages/Nomina/RolesPagos.jsx');
 const beneficios = read('frontend-web/src/pages/Nomina/Beneficios.jsx');
+const advancePayrollService = read('backend/src/services/advancePayrollService.js');
 const descargarReportes = read('frontend-web/src/pages/Nomina/DescargarReportes.jsx');
 const landing = read('frontend-web/src/pages/Landing.jsx');
 const dateFormatWeb = read('frontend-web/src/utils/dateFormat.js');
@@ -485,6 +486,11 @@ assert(
 assert(
   beneficios.includes('id="roles-anticipos"') && beneficios.includes('Gestionar rol'),
   'Beneficios generados deben dirigir al rol de origen en vez de permitir mutaciones individuales inseguras.'
+);
+assert(
+  advancePayrollService.includes('isReusableAnnulledRoleNovelty')
+    && advancePayrollService.includes("estado = CASE WHEN estado = 'anulado' THEN 'aprobado' ELSE estado END"),
+  'Un rol vigente debe poder reactivar sin duplicar una novedad anulada por su rol de origen.'
 );
 assert(planesGestion.includes('Plan versionado como'), 'Superadmin debe informar versionado de planes con suscriptores.');
 
