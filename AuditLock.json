@@ -3,16 +3,16 @@
   "plan": "HAIKY-REGRESION-NOVEDADES-ROL-JULIO-2026",
   "planCode": "RNRJ26",
   "status": "completed-pass",
-  "phaseCompleted": "RNRJ26-04",
+  "phaseCompleted": "RNRJ26-05",
   "currentPhase": null,
-  "updatedAt": "2026-08-04T20:18:50.315Z",
+  "updatedAt": "2026-08-04T21:14:17.450Z",
   "rulesSource": "RULES.md",
   "contextSource": ".github/CODEX_CONTEXT.md",
   "previousPlan": "HAIKY-AUDITORIA-INTEGRAL-V75-CORRECCION-MEJORA-2026",
-  "previousAuditLockHash": "5FF5AE7921CEDD548C9CB477AE8B7DEF8AB5006F5A9AA2739A0EE32E88865ED3",
+  "previousAuditLockHash": "2E48DC311790A808DDE7E1829F2302969EA5432413745A57AB8108ED35396760",
   "signatureAlgorithm": "SHA256(previous AuditLock bytes + UTF-8 updatedAt)",
-  "summary": "RNRJ26-04 cerrado: las ocho resoluciones bonificar pendientes ahora reconcilian novedades productivas aprobadas del mismo empleado, fecha, tipo y monto, sin duplicarlas. Las incompatibilidades siguen bloqueadas y el error queda visible junto al rol.",
-  "nextAction": "Desplegar la correccion, pulsar Aplicar seleccion en el rol de julio y recalcular los borradores afectados antes del cierre.",
+  "summary": "RNRJ26-05 cerrado: los roles aprobados vuelven a exponer una salida operativa. Pueden revertirse si no tienen efectos o anular coordinadamente el rol, sus anticipos y sus novedades no consumidas, sin mutaciones individuales inseguras.",
+  "nextAction": "Desplegar la correccion y usar Anular rol y efectos en el lote de julio antes de regenerarlo; si algun efecto ya fue consumido, liberar primero el calculo de nomina relacionado.",
   "fases": [
     {
       "phase": "RNRJ26-00",
@@ -38,28 +38,35 @@
       "phase": "RNRJ26-04",
       "status": "completed-pass",
       "detail": "Reconciliacion segura de bonificaciones con novedades productivas preexistentes y exposicion contextual de errores en el rol."
+    },
+    {
+      "phase": "RNRJ26-05",
+      "status": "completed-pass",
+      "detail": "Salida operativa para roles aprobados: reversa sin efectos o anulacion coordinada de beneficios y novedades no consumidos, expuesta en la PWA."
     }
   ],
   "filesModified": [
     "backend/src/services/advancePayrollService.js",
     "backend/src/services/advancePayrollService.test.js",
     "frontend-web/src/pages/Nomina/Beneficios.jsx",
+    "scripts/verify-system-contracts.mjs",
     ".vscode/AuditLock.json",
     "AuditLock.json"
   ],
   "validationChecks": [
-    "Reproduccion previa PASS: ocho bonificaciones pendientes fallaban ante novedades productivas ya existentes.",
-    "Reconciliacion PASS: ocho novedades aprobadas del mismo monto fueron reutilizadas sin inserciones duplicadas.",
-    "Proteccion PASS: novedades con monto, estado o vinculo incompatible mantienen error ROL_ANTICIPOS_NOVEDAD_DUPLICADA.",
-    "Backend completo PASS: 70 suites y 537 pruebas.",
-    "Pruebas enfocadas PASS: 2 suites y 18 pruebas.",
+    "Regresion PASS: un rol aprobado con efectos no consumidos se anula sin fallar despues del commit y audita los identificadores vinculados.",
+    "Interfaz PASS: roles aprobados exponen reversa o Anular rol y efectos fuera de la condicion exclusiva de borrador.",
+    "Trazabilidad PASS: beneficios generados remiten al rol de origen y no permiten edicion o anulacion individual insegura.",
+    "Proteccion PASS: si un efecto fue consumido por un calculo de nomina, la anulacion coordinada se bloquea sin cambios.",
+    "Backend completo PASS: 70 suites y 538 pruebas.",
+    "Pruebas enfocadas PASS: 1 suite y 15 pruebas.",
     "Contratos del sistema PASS.",
     "Prisma schema validate PASS.",
-    "Build PWA PASS: 2031 modulos, 106 entradas precache, alerta contextual y service worker generado.",
+    "Build PWA PASS: 2031 modulos transformados.",
     "node --check PASS en servicio y prueba modificados.",
     "UTF-8 sin BOM valido en archivos JavaScript, JSX y JSON modificados.",
     "git diff --check PASS."
   ],
-  "backendSuiteResult": "70 suites, 537 tests PASS; focused 2 suites, 18 tests PASS",
-  "signature": "39AC09E5F43F484F86E1969600F027CEB1EB915B92F2F3F118D76DFB8A74D618"
+  "backendSuiteResult": "70 suites, 538 tests PASS; focused 1 suite, 15 tests PASS",
+  "signature": "00AB1D9E69C7A84965FA999BCC0F8456E589C39DE8FBFF95F479070C991FEB77"
 }

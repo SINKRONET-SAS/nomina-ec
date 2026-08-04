@@ -466,7 +466,7 @@ async function annulRun(tenantId, id, user, context = {}) {
     await tx.query("UPDATE roles_anticipos_detalle SET estado = 'anulado', updated_at = NOW() WHERE tenant_id = $1 AND role_id = $2", [tenantId, id]);
     await tx.query("UPDATE roles_anticipos SET estado = 'anulado', updated_at = NOW() WHERE tenant_id = $1 AND id = $2", [tenantId, id]);
     await db.commit(tx);
-    await recordAudit({ tenantId, userId: user.id, correlationId: context.correlationId, action: 'nomina.rol_anticipos.anulado', entity: 'roles_anticipos', entityId: id, newData: { beneficioIds, noveltyIds }, ipAddress: context.ipAddress });
+    await recordAudit({ tenantId, userId: user.id, correlationId: context.correlationId, action: 'nomina.rol_anticipos.anulado', entity: 'roles_anticipos', entityId: id, newData: { beneficioIds: benefitIds, noveltyIds }, ipAddress: context.ipAddress });
     return getRun(tenantId, id);
   } catch (err) {
     await db.rollback(tx);

@@ -474,6 +474,18 @@ assert(
   'PWA debe bloquear CTA cuando PayPhone no esta configurado.'
 );
 assert(beneficiosApi.includes('return response.data;'), 'Gestion de planes debe recibir meta de versionado desde backend.');
+assert(
+  beneficios.includes("const canManageRole = ['borrador', 'aprobado'].includes(sourceRole.estado);"),
+  'Roles de anticipos aprobados deben exponer una salida operativa para reversar o anular.'
+);
+assert(
+  beneficios.includes('Anular rol y efectos'),
+  'La PWA debe exponer la anulacion coordinada de anticipos y novedades vinculados.'
+);
+assert(
+  beneficios.includes('id="roles-anticipos"') && beneficios.includes('Gestionar rol'),
+  'Beneficios generados deben dirigir al rol de origen en vez de permitir mutaciones individuales inseguras.'
+);
 assert(planesGestion.includes('Plan versionado como'), 'Superadmin debe informar versionado de planes con suscriptores.');
 
 assert(schema.includes('model ConsentPreference'), 'Prisma debe declarar ConsentPreference para LOPDP.');

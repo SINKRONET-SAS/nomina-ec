@@ -347,6 +347,31 @@ describe('advancePayrollService', () => {
     expect(db.commit).not.toHaveBeenCalled();
   });
 
+  test('anula un rol aprobado y sus efectos no consumidos sin fallar despues del commit', async () => {
+    const tx = { query: jest.fn() };
+    db.getClient.mockResolvedValueOnce(tx);
+    tx.query
+      .mockResolvedValueOnce({ rows: [runRow()] })
+      .mockResolvedValueOnce({ rows: [{ beneficio_id: 'benefit-1', bonificacion_novedad_id: 'novelty-1' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    db.query
+      .mockResolvedValueOnce({ rows: [{ ...runRow(), estado: 'anulado' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'line-1', role_id: 'role-1', empleado_id: 'employee-1', nombres: 'Ana', apellidos: 'Demo', cedula: '0999999999', monto: '100.00', tipo_novedad: 'bono_desempeno', nombre_bonificacion: 'Bono cumplimiento', estado: 'anulado', beneficio_id: 'benefit-1', bonificacion_novedad_id: 'novelty-1' }] });
+
+    const result = await annulRun('tenant-1', 'role-1', user, context);
+
+    expect(result).toMatchObject({ estado: 'anulado' });
+    expect(db.commit).toHaveBeenCalledWith(tx);
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'nomina.rol_anticipos.anulado',
+      newData: { beneficioIds: ['benefit-1'], noveltyIds: ['novelty-1'] },
+    }));
+  });
+
   test('reabre un rol cerrado no consumido y conserva la trazabilidad', async () => {
     const tx = { query: jest.fn() };
     db.getClient.mockResolvedValueOnce(tx);

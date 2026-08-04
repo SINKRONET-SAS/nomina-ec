@@ -539,17 +539,22 @@ function Beneficios() {
                             <CheckCircle2 className="h-4 w-4" />
                           </button>
                         )}
-                        {item.estado !== 'anulado' && (
+                        {item.metadata?.source !== 'rol_anticipos' && item.estado !== 'anulado' && (
                           <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-amber-200 text-amber-700 hover:bg-amber-50" type="button" onClick={() => { if (window.confirm('¿Anular este registro?')) benefitActionMutation.mutate({ action: 'annul', id: item.id }); }} title="Anular" aria-label={`Anular beneficio de ${item.empleadoNombre}`} disabled={benefitActionMutation.isPending}>
                             <Ban className="h-4 w-4" />
                           </button>
                         )}
-                        <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-teal-700 hover:bg-slate-50" type="button" onClick={() => editBenefit(item)} title="Editar" aria-label={`Editar beneficio de ${item.empleadoNombre}`}>
+                        {item.metadata?.source !== 'rol_anticipos' && <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-teal-700 hover:bg-slate-50" type="button" onClick={() => editBenefit(item)} title="Editar" aria-label={`Editar beneficio de ${item.empleadoNombre}`}>
                           <Edit3 className="h-4 w-4" />
-                        </button>
-                        {item.estado !== 'aprobado' && (
+                        </button>}
+                        {item.metadata?.source !== 'rol_anticipos' && item.estado !== 'aprobado' && (
                           <button className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 text-red-600 hover:bg-red-50" type="button" onClick={() => { if (window.confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) benefitActionMutation.mutate({ action: 'delete', id: item.id }); }} title="Eliminar" aria-label={`Eliminar beneficio de ${item.empleadoNombre}`} disabled={benefitActionMutation.isPending}>
                             <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                        {item.metadata?.source === 'rol_anticipos' && (
+                          <button className="rounded-md border border-sky-200 px-2 py-1 text-xs font-semibold text-sky-800 hover:bg-sky-50" type="button" onClick={() => document.getElementById('roles-anticipos')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} title="Los efectos generados se corrigen desde el rol completo para conservar la trazabilidad.">
+                            Gestionar rol
                           </button>
                         )}
                       </div>
@@ -574,7 +579,7 @@ function Beneficios() {
         </div>
       </section>
 
-      <section className="space-y-5 rounded-lg border border-teal-100 bg-teal-50/40 p-5 shadow-sm">
+      <section id="roles-anticipos" className="scroll-mt-4 space-y-5 rounded-lg border border-teal-100 bg-teal-50/40 p-5 shadow-sm">
         <div>
           <div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-teal-700" /><h2 className="text-xl font-semibold text-slate-950">Roles de anticipos y bonificaciones</h2></div>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">Genera el rol desde esta misma ruta. Luego de aprobarlo, cada linea se resuelve como descuento para fin de mes o como bonificacion. El nombre de la bonificacion y el tipo de novedad quedan registrados en la evidencia.</p>
@@ -648,6 +653,7 @@ function Beneficios() {
             const canApplySelection = pendingLines > 0 && !pendingWithoutResolution;
             const hasAppliedEffects = sourceRole.lineas.some((line) => line.beneficioId || line.bonificacionNovedadId);
             const canReverseApproval = sourceRole.estado === 'aprobado' && !hasAppliedEffects;
+            const canManageRole = ['borrador', 'aprobado'].includes(sourceRole.estado);
             const totalLinePages = Math.max(1, Math.ceil(sourceRole.lineas.length / roleLinePageSize));
             const linePage = Math.min(roleLinePages[sourceRole.id] || 1, totalLinePages);
             const paginatedLines = sourceRole.lineas.slice((linePage - 1) * roleLinePageSize, linePage * roleLinePageSize);
@@ -658,7 +664,7 @@ function Beneficios() {
               {role.estado === 'aprobado' && pendingLines > 0 && <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">{pendingWithoutResolution ? <>Resuelve cada línea: <strong>Descontar</strong> crea un anticipo que se deduce del sueldo al cerrar mes; <strong>Bonificar</strong> registra un ingreso para pagarlo al cierre; <strong>Ingresar y descontar</strong> registra el ingreso y el anticipo que se descontará al cerrar el mes.</> : 'Las resoluciones seleccionadas están listas para aplicarse al cierre mensual.'}</p>}
               {role.estado === 'cerrado' && <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-violet-100 bg-violet-50 px-3 py-2"><span className="text-xs text-violet-900">Este rol está cerrado. Reábrelo para corregirlo; volverán a estar disponibles editar, eliminar, aprobar y anular.</span><button className="inline-flex items-center gap-1 rounded-md border border-violet-200 bg-white px-3 py-1.5 text-xs font-semibold text-violet-800 disabled:opacity-50" type="button" onClick={() => { if (window.confirm('¿Reabrir este rol para corregirlo? Se conservara la evidencia; los efectos aun no consumidos se anularan para evitar duplicados.')) advanceActionMutation.mutate({ action: 'reopen', roleId: role.id }); }} disabled={advanceActionMutation.isPending} title="Reabre el rol como borrador si el periodo mensual sigue disponible y el rol no fue consumido por el calculo."><RotateCcw className="h-3.5 w-3.5" />Reabrir para corregir</button></div>}
               <div className="mt-3 overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Empleado</th><th className="px-3 py-2">Monto</th><th className="px-3 py-2">Tipo / nombre</th><th className="px-3 py-2">Resolución</th><th className="px-3 py-2 text-right">Acciones</th></tr></thead><tbody className="divide-y divide-slate-100">{role.lineas.map((line) => <tr key={line.id}><td className="px-3 py-2"><p className="font-medium text-slate-900">{line.empleadoNombre}</p><p className="text-xs text-slate-500">{line.cedula}</p></td><td className="px-3 py-2">{money(line.monto)}</td><td className="px-3 py-2"><p>{line.tipoNovedad}</p><p className="text-xs text-slate-500">{line.nombreBonificacion || 'Sin nombre personalizado'}</p></td><td className="px-3 py-2"><p className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{line.resolucionSolicitada === 'descontar' ? 'Anticipo · descontar al cierre' : line.resolucionSolicitada === 'bonificar' ? 'Bonificación · pagar al cierre' : line.resolucionSolicitada === 'bonificar_descontar' ? 'Bonificación · ingresar y descontar al cierre' : 'Pendiente de resolución'}</p><p className="mt-1 text-xs text-slate-500">Estado: {line.estado}</p></td><td className="px-3 py-2 text-right">{role.estado === 'aprobado' && line.estado === 'aprobado' && <><button className="mr-2 rounded-md border border-amber-200 px-2 py-1 text-xs font-semibold text-amber-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'descontar' })} disabled={advanceActionMutation.isPending} title="Crea un beneficio que se deduce del sueldo al cerrar mes" aria-label={`Descontar línea de ${line.empleadoNombre}`}>Descontar</button><button className="mr-2 rounded-md border border-emerald-200 px-2 py-1 text-xs font-semibold text-emerald-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'bonificar' })} disabled={advanceActionMutation.isPending} title="Registra una novedad de ingreso adicional" aria-label={`Bonificar línea de ${line.empleadoNombre}`}>Bonificar</button><button className="rounded-md border border-blue-200 px-2 py-1 text-xs font-semibold text-blue-800 disabled:opacity-50" type="button" onClick={() => advanceActionMutation.mutate({ action: 'decide', roleId: role.id, lineId: line.id, decision: 'bonificar_descontar' })} disabled={advanceActionMutation.isPending} title="Registra el ingreso y crea el anticipo que se descontará al cerrar el mes" aria-label={`Ingresar y descontar línea de ${line.empleadoNombre}`}>Ingresar y descontar</button></>}</td></tr>)}</tbody></table></div>
-              {role.estado === 'borrador' && <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+              {canManageRole && <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
                 <span className="mr-2 text-xs text-slate-500">Acciones disponibles mientras el rol no este cerrado:</span>
                 {role.estado === 'borrador' && <>
                   <button className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50" type="button" onClick={() => editAdvanceRole(sourceRole)} disabled={advanceActionMutation.isPending || advanceRoleMutation.isPending}><Edit3 className="h-3.5 w-3.5" />Editar</button>
@@ -667,8 +673,9 @@ function Beneficios() {
                 </>}
                 {role.estado === 'aprobado' && <>
                   <button className="inline-flex items-center gap-1 rounded-md border border-violet-200 px-3 py-1.5 text-xs font-semibold text-violet-800 disabled:opacity-50" type="button" onClick={() => { if (window.confirm('¿Reversar la aprobacion y devolver el rol a borrador?')) advanceActionMutation.mutate({ action: 'reverseApproval', roleId: role.id }); }} disabled={advanceActionMutation.isPending || !canReverseApproval} title={canReverseApproval ? 'Devuelve el rol a borrador para corregirlo.' : 'No disponible: el rol ya tiene efectos aplicados.'}><RotateCcw className="h-3.5 w-3.5" />Reversar aprobacion</button>
-                  <button className="inline-flex items-center gap-1 rounded-md border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-800 disabled:opacity-50" type="button" onClick={() => { if (window.confirm('¿Anular este rol? Se conservara su evidencia y no podra volver a usarse.')) advanceActionMutation.mutate({ action: 'annul', roleId: role.id }); }} disabled={advanceActionMutation.isPending}><Ban className="h-3.5 w-3.5" />Anular</button>
+                  <button className="inline-flex items-center gap-1 rounded-md border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-800 disabled:opacity-50" type="button" onClick={() => { if (window.confirm('¿Anular este rol aprobado y todos sus efectos no consumidos? Se conservará la evidencia. Si algún efecto ya fue usado por un cálculo de nómina, la operación se bloqueará sin cambios.')) advanceActionMutation.mutate({ action: 'annul', roleId: role.id }); }} disabled={advanceActionMutation.isPending}><Ban className="h-3.5 w-3.5" />Anular rol y efectos</button>
                 </>}
+                {role.estado === 'aprobado' && hasAppliedEffects && <p className="basis-full text-xs text-slate-600">Para corregir este lote usa <strong>Anular rol y efectos</strong>. Se anularán juntos los anticipos y novedades vinculados que todavía no hayan sido consumidos por un cálculo de nómina.</p>}
               </div>}
               <TablePagination
                 currentPage={linePage}
