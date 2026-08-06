@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 const AppError = require('../utils/AppError');
 const { recordCommunicationEvent } = require('./communicationAuditService');
+const { validateLogoDataUrl } = require('../utils/logoDataUrl');
 const logger = require('../utils/logger');
 
 const EMAIL_FROM_NAME = process.env.SMTP_FROM_NAME || 'SKNOMINA';
@@ -54,6 +55,28 @@ function normalizeEmail(value) {
 
 function sanitizeHeader(value, fallback = '') {
   return String(value || fallback).replace(/[\r\n]+/g, ' ').trim();
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function buildInlineTenantLogo(logoBase64) {
+  if (!logoBase64) return null;
+  const validated = validateLogoDataUrl(logoBase64);
+  const extension = validated.detected === 'jpeg' ? 'jpg' : 'png';
+  return {
+    filename: `logo_cliente.${extension}`,
+    content: validated.buffer,
+    contentType: validated.detected === 'jpeg' ? 'image/jpeg' : 'image/png',
+    cid: 'logo-cliente@sknomina',
+    contentDisposition: 'inline',
+  };
 }
 
 function normalizePhone(value) {
@@ -551,13 +574,19 @@ function payrollRoleAvailableEmailTemplate({ employeeName, anio, mes, roleUrl })
   };
 }
 
-function payrollRolePdfEmailTemplate({ employeeName, anio, mes }) {
+function payrollRolePdfEmailTemplate({ employeeName, anio, mes, companyName, logoCid = '' }) {
   const safeName = sanitizeHeader(employeeName, 'empleado');
+  const safeCompanyName = sanitizeHeader(companyName, 'tu compañía');
   const period = `${String(mes).padStart(2, '0')}/${anio}`;
+  const escapedName = escapeHtml(safeName);
+  const escapedCompanyName = escapeHtml(safeCompanyName);
+  const logoBlock = logoCid
+    ? `<img src="cid:${escapeHtml(logoCid)}" alt="Logo de ${escapedCompanyName}" style="display:block;max-width:180px;max-height:72px;margin:0 auto 16px;object-fit:contain;" />`
+    : `<p style="margin:0 0 16px;font-size:18px;font-weight:700;color:#0f766e;">${escapedCompanyName}</p>`;
   return {
-    subject: `Rol de pago ${period}`,
-    text: `Hola ${safeName}.\n\nAdjuntamos tu rol de pago del periodo ${period} generado por SKNOMINA.\n\nSi tienes dudas sobre los valores, contacta a RRHH.`,
-    html: `<p>Hola ${safeName}.</p><p>Adjuntamos tu rol de pago del periodo <strong>${period}</strong> generado por SKNOMINA.</p><p>Si tienes dudas sobre los valores, contacta a RRHH.</p>`,
+    subject: `Rol de pago ${period} - ${safeCompanyName}`,
+    text: `Hola ${safeName}.\n\nAdjunto se encuentra tu Rol de Pagos de la Compañía "${safeCompanyName}" correspondiente al período ${period}.\n\nSi tienes dudas sobre los valores, contacta a RRHH.\n\nGenerado con SKNómina`,
+    html: `<!doctype html><html lang="es"><body style="margin:0;background:#f1f5f9;font-family:Arial,sans-serif;color:#172033;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f1f5f9;padding:24px 12px;"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#ffffff;border:1px solid #dbe4ea;border-radius:14px;overflow:hidden;"><tr><td align="center" style="padding:28px 28px 18px;border-bottom:4px solid #0f766e;">${logoBlock}<h1 style="margin:0;font-size:22px;color:#0f172a;">Rol de pago ${period}</h1></td></tr><tr><td style="padding:28px;font-size:16px;line-height:1.6;"><p style="margin:0 0 16px;">Hola ${escapedName}.</p><p style="margin:0 0 16px;">Adjunto se encuentra tu Rol de Pagos de la Compañía <strong>"${escapedCompanyName}"</strong> correspondiente al período <strong>${period}</strong>.</p><p style="margin:0;">Si tienes dudas sobre los valores, contacta a RRHH.</p></td></tr><tr><td align="center" style="padding:18px 28px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Generado con SKNómina</td></tr></table></td></tr></table></body></html>`,
   };
 }
 
@@ -672,10 +701,21 @@ async function sendRolPagoDisponible({ employee, payroll, correlationId, userId,
 async function sendRolPagoEmail({ employee, payroll, pdf, correlationId, userId }) {
   const name = [employee?.nombres, employee?.apellidos].filter(Boolean).join(' ') || 'empleado';
   const tenantId = employee?.tenant_id || employee?.tenantId || payroll?.tenant_id || payroll?.tenantId || null;
+  const companyName = pdf?.company?.name
+    || payroll?.razon_social
+    || payroll?.razonSocial
+    || employee?.razon_social
+    || employee?.razonSocial
+    || 'tu compañía';
+  const logoAttachment = buildInlineTenantLogo(
+    pdf?.company?.logoBase64 || payroll?.logoBase64 || employee?.logoBase64 || null
+  );
   const content = payrollRolePdfEmailTemplate({
     employeeName: name,
     anio: payroll?.anio,
     mes: payroll?.mes,
+    companyName,
+    logoCid: logoAttachment?.cid || '',
   });
   const buffer = Buffer.isBuffer(pdf?.buffer) ? pdf.buffer : Buffer.from(pdf?.buffer || '');
 
@@ -689,11 +729,15 @@ async function sendRolPagoEmail({ employee, payroll, pdf, correlationId, userId 
   return sendEmail({
     to: employee?.email_personal || employee?.email,
     ...content,
-    attachments: [{
-      filename: sanitizeHeader(pdf?.fileName, 'rol_pago.pdf'),
-      content: buffer,
-      contentType: pdf?.contentType || 'application/pdf',
-    }],
+    attachments: [
+      ...(logoAttachment ? [logoAttachment] : []),
+      {
+        filename: sanitizeHeader(pdf?.fileName, 'rol_pago.pdf'),
+        content: buffer,
+        contentType: pdf?.contentType || 'application/pdf',
+        contentDisposition: 'attachment',
+      },
+    ],
     template: 'payroll_role_pdf',
     correlationId,
     userId,

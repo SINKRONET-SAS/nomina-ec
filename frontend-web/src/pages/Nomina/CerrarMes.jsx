@@ -397,8 +397,19 @@ function CerrarMes() {
 
   const closeMutation = useMutation({
     mutationFn: async () => authenticatedApi.post('/nomina/cerrar', { anio, mes }),
-    onSuccess: () => {
-      setMessage({ type: 'success', text: 'Nómina cerrada correctamente.' });
+    onSuccess: (response) => {
+      const delivery = response.data?.notificacionesRolPago || {};
+      const sent = Number(delivery.enviados || 0);
+      const skipped = Number(delivery.omitidos || 0);
+      const failed = Number(delivery.errores || 0);
+      const hasPendingDelivery = skipped > 0 || failed > 0;
+      const nextAction = hasPendingDelivery
+        ? ' Revisa Nómina > Roles de pago para completar el envío manual cuando corresponda.'
+        : '';
+      setMessage({
+        type: hasPendingDelivery ? 'warning' : 'success',
+        text: `Nómina cerrada. Roles enviados por email: ${sent}; omitidos: ${skipped}; con error: ${failed}.${nextAction}`,
+      });
       setCloseConfirmation(false);
       refreshPeriod();
     },
@@ -548,6 +559,7 @@ function CerrarMes() {
     : openMutation.error || batchMutation.error || bulkNoveltyMutation.error || deleteBatchMutation.error || resolveNoveltiesMutation.error || precalculateMutation.error || calculateMutation.error || closeMutation.error || discardCalculationMutation.error || periodQuery.error || noveltyTypesQuery.error;
   const currentPrecheck = precheckDetails(currentError);
   const alertIsError = Boolean(currentError || message?.type === 'error');
+  const alertIsWarning = !alertIsError && message?.type === 'warning';
   const hasLegalParameterBlocker = hasBlocker(currentPrecheck, [
     'LEGAL_PARAMETERS_NOT_VALIDATED',
     'LEGAL_PARAMETERS_DIVERGENCE',
@@ -602,7 +614,7 @@ function CerrarMes() {
       </section>
 
       {(message || currentError) && (
-        <div className={`rounded-md border px-4 py-3 text-sm font-medium ${alertIsError ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
+        <div className={`rounded-md border px-4 py-3 text-sm font-medium ${alertIsError ? 'border-red-200 bg-red-50 text-red-800' : alertIsWarning ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
           {currentError ? extractApiError(currentError, 'No pudimos completar la accion. Revisa el periodo e intenta nuevamente.') : message.text}
           {currentPrecheck?.blockers?.length > 0 && (
             <ul className="mt-3 list-disc space-y-1 pl-5 text-xs font-semibold">
@@ -698,7 +710,7 @@ function CerrarMes() {
             </p>
           )}
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Cierra solo después de revisar el cálculo. Esta acción marca roles como cerrados.
+            Cierra solo después de revisar el cálculo. Esta acción marca los roles como cerrados y envía a cada empleado su PDF individual al correo personal registrado, con el nombre y logo configurados de la empresa.
           </p>
           <label className="mt-4 flex items-start gap-2 text-sm text-slate-700">
             <input className="mt-1 h-4 w-4 accent-teal-700 disabled:opacity-50" checked={closeConfirmation} disabled={!canClosePayroll} onChange={(event) => setCloseConfirmation(event.target.checked)} type="checkbox" />

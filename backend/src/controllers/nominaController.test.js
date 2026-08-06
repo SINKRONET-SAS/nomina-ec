@@ -126,10 +126,18 @@ describe('nominaController cerrarMes', () => {
     db.rollback.mockReset();
     recordAudit.mockReset();
     sendRolPagoDisponible.mockReset();
+    sendRolPagoEmail.mockReset();
+    generatePayrollRolePdf.mockReset();
     assertTenantPayrollReady.mockReset();
     assertTenantPayrollReady.mockResolvedValue({ ready: true });
     recordAudit.mockResolvedValue();
-    sendRolPagoDisponible.mockResolvedValue({ status: 'sent', provider: 'smtp' });
+    sendRolPagoEmail.mockResolvedValue({ status: 'sent', provider: 'smtp' });
+    generatePayrollRolePdf.mockResolvedValue({
+      fileName: 'rol_pago_0102030405_2026_06.pdf',
+      contentType: 'application/pdf',
+      buffer: Buffer.from('pdf-demo'),
+      company: { name: 'Empresa Demo', logoBase64: null },
+    });
   });
 
   test('bloquea el periodo y cierra nomina dentro de una transaccion', async () => {
@@ -180,12 +188,28 @@ describe('nominaController cerrarMes', () => {
       tenantId: 'tenant-1',
       action: 'cerrar_nomina',
     }));
-    expect(sendRolPagoDisponible).toHaveBeenCalledWith(expect.objectContaining({
+    expect(generatePayrollRolePdf).toHaveBeenCalledWith({
+      tenantId: 'tenant-1',
+      payrollId: 'nomina-1',
+      userId: 'user-1',
+      includeBuffer: true,
+    });
+    expect(sendRolPagoEmail).toHaveBeenCalledWith(expect.objectContaining({
       employee: expect.objectContaining({ nombres: 'Ana' }),
       payroll: expect.objectContaining({ id: 'nomina-1' }),
+      pdf: expect.objectContaining({ fileName: 'rol_pago_0102030405_2026_06.pdf' }),
     }));
+    expect(sendRolPagoDisponible).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(200);
-    expect(res.body).toMatchObject({ success: true, total: 1 });
+    expect(res.body).toMatchObject({
+      success: true,
+      total: 1,
+      notificacionesRolPago: {
+        enviados: 1,
+        omitidos: 0,
+        errores: 0,
+      },
+    });
   });
 
   test('revierte la transaccion si el periodo dejo de estar calculado', async () => {
@@ -207,6 +231,61 @@ describe('nominaController cerrarMes', () => {
     expect(db.commit).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(409);
     expect(res.body.error).toBe('NOMINA_PERIODO_NO_CALCULADO');
+  });
+
+  test('omite el envio automatico sin generar PDF si el empleado no tiene correo personal', async () => {
+    const employeeId = '22222222-2222-2222-2222-222222222222';
+    const tx = {
+      query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'period-2', status: 'calculated' }] })
+        .mockResolvedValueOnce({
+          rows: [{
+            id: 'nomina-2',
+            empleado_id: employeeId,
+            tenant_id: 'tenant-1',
+            anio: 2026,
+            mes: 7,
+            detalle_calculo: { beneficiosDescontados: [] },
+          }],
+        })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({
+          rows: [{
+            id: employeeId,
+            tenant_id: 'tenant-1',
+            nombres: 'Luis',
+            apellidos: 'Ruiz',
+            email_personal: null,
+          }],
+        }),
+    };
+    db.getClient.mockResolvedValueOnce(tx);
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-cierre-sin-email',
+      ip: '127.0.0.1',
+      body: { anio: 2026, mes: 7 },
+    };
+    const res = createResponse();
+
+    await cerrarMes(req, res);
+
+    expect(generatePayrollRolePdf).not.toHaveBeenCalled();
+    expect(sendRolPagoEmail).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.notificacionesRolPago).toMatchObject({
+      enviados: 0,
+      omitidos: 1,
+      errores: 0,
+      empleadosSinNotificacion: [employeeId],
+    });
+    expect(res.body.notificacionesRolPago.detalle[0]).toMatchObject({
+      payrollId: 'nomina-2',
+      employeeId,
+      status: 'skipped',
+      reason: 'email_personal_no_registrado',
+    });
   });
 });
 
@@ -528,6 +607,52 @@ describe('nominaController enviarRolPagoEmail', () => {
     expect(sendRolPagoEmail).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(409);
     expect(res.body.error).toBe('NOMINA_ROL_NO_CERRADO');
+  });
+
+  test('mantiene el envio manual disponible para un rol pagado', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'nomina-pagada',
+        empleado_id: 'emp-2',
+        tenant_id: 'tenant-1',
+        anio: 2026,
+        mes: 6,
+        estado: 'pagada',
+        nombres: 'Maria',
+        apellidos: 'Lopez',
+        cedula: '0102030406',
+        email_personal: 'maria@example.com',
+      }],
+    });
+    generatePayrollRolePdf.mockResolvedValueOnce({
+      fileName: 'rol_pago_0102030406_2026_06.pdf',
+      contentType: 'application/pdf',
+      buffer: Buffer.from('pdf-pagado'),
+      company: { name: 'Empresa Demo', logoBase64: null },
+    });
+    sendRolPagoEmail.mockResolvedValueOnce({
+      status: 'sent',
+      provider: 'smtp',
+      messageId: 'smtp-role-paid',
+    });
+    recordAudit.mockResolvedValueOnce(undefined);
+    const req = {
+      tenantId: 'tenant-1',
+      usuarioId: 'user-1',
+      correlationId: 'corr-role-paid',
+      ip: '127.0.0.1',
+      params: { id: 'nomina-pagada' },
+    };
+    const res = createResponse();
+
+    await enviarRolPagoEmail(req, res);
+
+    expect(sendRolPagoEmail).toHaveBeenCalledTimes(1);
+    expect(res.statusCode).toBe(200);
+    expect(res.body.delivery).toMatchObject({
+      status: 'sent',
+      messageId: 'smtp-role-paid',
+    });
   });
 });
 

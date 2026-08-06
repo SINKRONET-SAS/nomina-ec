@@ -712,6 +712,10 @@ async function generatePayrollRolePdf({ tenantId, payrollId, userId = null, incl
     payrollId,
     tenantId,
     userId,
+    company: {
+      name: cleanText(company.razon_social || company.nombre_comercial, 'Empresa'),
+      logoBase64: company.logoBase64 || null,
+    },
     ...(includeBuffer ? { buffer } : {}),
   };
 }

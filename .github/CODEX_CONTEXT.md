@@ -1,4 +1,56 @@
-## Current Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-V75-CORRECCION-MEJORA-2026
+## Current Haiky Plan - HAIKY-RESPUESTA-CORRECCION-EMAIL-ROLES-PAGO-CLIENTE-2026
+
+| Campo | Valor |
+|---|---|
+| Plan | `HAIKY-RESPUESTA-CORRECCION-EMAIL-ROLES-PAGO-CLIENTE-2026` |
+| Codigo | `ERPC26` |
+| Estado | `ERPC26-00 a ERPC26-04 completed-pass; correccion lista para commit y push en la rama activa` |
+| Fecha | `2026-08-06` |
+| Plan doc | `docs2/PLAN_HAIKY_RESPUESTA_CORRECCION_EMAIL_ROLES_PAGO_CLIENTE_2026.md` |
+| Prompts | `.github/prompts/ERPC26-00` a `.github/prompts/ERPC26-04` |
+| Fuente tecnica adicional | `C:\proyectos web\sinkroniq-mobile` consultado en solo lectura |
+| AuditLock anterior | `RNRJ26-06`, firma `2E0E2BCA8D6E02EE8A36D8F10C7FC2179688E457B3A30DAFB39A10A9835D9670` |
+
+### Diagnostico ERPC26
+
+- El cierre de nomina ya intentaba enviar una notificacion, pero llamaba `sendRolPagoDisponible`, plantilla que no adjunta el PDF y remite al empleado a SKNOMINA.
+- El envio manual `POST /api/nomina/:id/rol-email` ya genera y adjunta el PDF individual; se conserva como contrato publico y salida operativa de reintento.
+- `payrollRolePdfService` ya resuelve identidad empresarial canonica y logo `logoBase64`; el dato puede compartirse de forma aditiva con la plantilla de correo.
+- La PWA de cierre no mostraba el resultado `notificacionesRolPago`, aunque el backend devolvia detalle por empleado.
+- La referencia Sinkroniq Mobile confirma los patrones compatibles: logo inline CID, HTML con texto plano, escape de datos dinamicos y separacion entre operacion principal y entrega por email.
+
+### Contrato ERPC26
+
+- Cada empleado con correo personal recibe unicamente el PDF de su `payrollId` despues de confirmar el cierre.
+- El mensaje incluye el nombre canonico del cliente, su logo inline cuando esta configurado y el pie exacto `Generado con SKNómina`.
+- Un fallo de SMTP no revierte el cierre; se devuelve y muestra como error de entrega con opcion de envio manual.
+- Empleados sin correo se clasifican como omitidos sin generar un envio ambiguo.
+- No se agregan migraciones, estados paralelos ni cambios incompatibles de API.
+
+### Fases ERPC26
+
+| Fase | Objetivo | Estado |
+|---|---|---|
+| ERPC26-00 | Baseline, contraste, plan, contexto y cadena AuditLock | completed-pass |
+| ERPC26-01 | Plantilla con identidad del cliente, logo CID, texto y pie | completed-pass |
+| ERPC26-02 | PDF individual al cierre y preservacion del envio manual | completed-pass |
+| ERPC26-03 | Resultado visible en PWA y siguiente accion | completed-pass |
+| ERPC26-04 | QA, regresiones, AuditLock, commit y push | completed-pass |
+
+### Cierre ERPC26-04
+
+- El cierre procesa la entrega documental despues del commit y no revierte la nomina por fallos SMTP.
+- Cada rol se genera por su `payrollId`; el PDF, empleado, tenant y destinatario permanecen vinculados en el mismo flujo.
+- La plantilla incluye nombre empresarial, logo CID configurado, texto solicitado y `Generado con SKNómina`.
+- El envio manual permanece visible para roles cerrados o pagados.
+- Contratos y Prisma: PASS.
+- Backend completo: 70 suites y 541 pruebas PASS.
+- PWA: 2031 modulos, service worker y build PASS.
+- Mobile store readiness, UTF-8 sin BOM y `git diff --check`: PASS.
+
+---
+
+## Previous Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-V75-CORRECCION-MEJORA-2026
 
 | Campo | Valor |
 |---|---|

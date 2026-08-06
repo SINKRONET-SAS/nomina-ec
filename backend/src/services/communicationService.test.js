@@ -203,22 +203,39 @@ describe('communicationService', () => {
         fileName: 'rol_pago_ana_2026_06.pdf',
         contentType: 'application/pdf',
         buffer: Buffer.from('pdf-demo'),
+        company: {
+          name: 'Compañía Cliente & Asociados',
+          logoBase64: 'data:image/png;base64,iVBORw0KGgo=',
+        },
       },
       correlationId: 'corr-role',
       userId: 'user-role',
     });
 
     expect(result).toMatchObject({ status: 'sent', messageId: 'smtp-role-1' });
-    expect(sendMailMock).toHaveBeenCalledWith(expect.objectContaining({
+    const mail = sendMailMock.mock.calls[0][0];
+    expect(mail).toEqual(expect.objectContaining({
       to: 'ana@example.com',
-      subject: 'Rol de pago 06/2026',
-      attachments: [expect.objectContaining({
+      subject: 'Rol de pago 06/2026 - Compañía Cliente & Asociados',
+      attachments: expect.arrayContaining([expect.objectContaining({
         filename: 'rol_pago_ana_2026_06.pdf',
         contentType: 'application/pdf',
-      })],
+        contentDisposition: 'attachment',
+      }), expect.objectContaining({
+        filename: 'logo_cliente.png',
+        contentType: 'image/png',
+        cid: 'logo-cliente@sknomina',
+        contentDisposition: 'inline',
+      })]),
       disableFileAccess: true,
       disableUrlAccess: true,
     }));
+    expect(mail.html).toContain('cid:logo-cliente@sknomina');
+    expect(mail.html).toContain('Compañía Cliente &amp; Asociados');
+    expect(mail.html).toContain('Adjunto se encuentra tu Rol de Pagos de la Compañía');
+    expect(mail.html).toContain('Generado con SKNómina');
+    expect(mail.text).toContain('Compañía "Compañía Cliente & Asociados"');
+    expect(mail.text).toContain('Generado con SKNómina');
     expect(recordCommunicationEventMock).toHaveBeenCalledWith(expect.objectContaining({
       template: 'payroll_role_pdf',
       status: 'sent',
@@ -226,7 +243,7 @@ describe('communicationService', () => {
         purpose: 'envio_rol_pago_pdf',
         flow: 'nomina_roles_email',
         required: true,
-        attachmentCount: 1,
+        attachmentCount: 2,
       }),
     }));
   });

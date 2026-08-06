@@ -30,10 +30,7 @@ const {
   periodEndDate,
   updatePayrollPeriodDates,
 } = require('../services/monthlyPeriodService');
-const {
-  sendRolPagoDisponible,
-  sendRolPagoEmail,
-} = require('../services/communicationService');
+const { sendRolPagoEmail } = require('../services/communicationService');
 const { approvePayrollOvertimeLimitExceptions } = require('../services/overtimeLimitApprovalService');
 
 async function rollbackPayrollCalculation(tx, req, operation) {
@@ -647,10 +644,10 @@ async function enviarRolPagoEmail(req, res) {
     }
 
     const row = result.rows[0];
-    if (row.estado !== 'cerrada') {
+    if (!['cerrada', 'pagada'].includes(String(row.estado || '').toLowerCase())) {
       return res.status(409).json({
         error: 'NOMINA_ROL_NO_CERRADO',
-        message: 'Solo se puede enviar por email un rol de pago cerrado.',
+        message: 'Solo se puede enviar por email un rol de pago cerrado o pagado.',
         correlationId: req.correlationId,
       });
     }
@@ -907,11 +904,47 @@ async function cerrarMes(req, res) {
 
     for (const payroll of result.rows) {
       const employee = employeeById.get(String(payroll.empleado_id));
-      if (!employee) continue;
+      if (!employee) {
+        console.error('[NOMINA] No se encontro el empleado del rol cerrado', {
+          code: 'ROL_PAGO_EMPLEADO_NO_ENCONTRADO',
+          statusCode: 404,
+          correlationId: req.correlationId,
+          userId: usuarioId || null,
+          payrollId: payroll.id,
+          empleadoId: payroll.empleado_id,
+        });
+        communicationResults.push({
+          payrollId: payroll.id,
+          employeeId: payroll.empleado_id,
+          status: 'failed',
+          provider: 'internal',
+          error: 'ROL_PAGO_EMPLEADO_NO_ENCONTRADO',
+        });
+        continue;
+      }
+
+      if (!employee.email_personal) {
+        communicationResults.push({
+          payrollId: payroll.id,
+          employeeId: employee.id,
+          status: 'skipped',
+          provider: 'smtp',
+          reason: 'email_personal_no_registrado',
+        });
+        continue;
+      }
+
       try {
-        const delivery = await sendRolPagoDisponible({
+        const pdf = await generatePayrollRolePdf({
+          tenantId,
+          payrollId: payroll.id,
+          userId: usuarioId || null,
+          includeBuffer: true,
+        });
+        const delivery = await sendRolPagoEmail({
           employee,
           payroll,
+          pdf,
           correlationId: req.correlationId,
           userId: usuarioId,
         });
@@ -920,13 +953,15 @@ async function cerrarMes(req, res) {
           employeeId: employee.id,
           status: delivery.status,
           provider: delivery.provider,
+          fileName: pdf.fileName,
         });
       } catch (deliveryErr) {
-        console.error('[NOMINA] No se pudo notificar rol de pago disponible', {
-          code: deliveryErr.code || 'ROL_PAGO_NOTIFICACION_ERROR',
+        console.error('[NOMINA] No se pudo enviar el PDF del rol de pago', {
+          code: deliveryErr.code || 'ROL_PAGO_EMAIL_PDF_ERROR',
           statusCode: deliveryErr.statusCode || 500,
           correlationId: req.correlationId,
           userId: usuarioId || null,
+          payrollId: payroll.id,
           empleadoId: employee.id,
           message: deliveryErr.message,
         });
@@ -935,7 +970,7 @@ async function cerrarMes(req, res) {
           employeeId: employee.id,
           status: 'failed',
           provider: 'smtp',
-          error: deliveryErr.code || 'ROL_PAGO_NOTIFICACION_ERROR',
+          error: deliveryErr.code || 'ROL_PAGO_EMAIL_PDF_ERROR',
         });
       }
     }

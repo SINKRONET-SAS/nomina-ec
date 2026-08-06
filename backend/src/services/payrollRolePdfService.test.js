@@ -59,6 +59,7 @@ function payrollRow(overrides = {}) {
     tenant_configuracion: {
       representanteLegal: 'Ana Representante',
       representanteLegalIdentificacion: '1700000001',
+      logoBase64: 'data:image/png;base64,iVBORw0KGgo=',
     },
     ...overrides,
   };
@@ -127,6 +128,10 @@ describe('payrollRolePdfService', () => {
       url: 'http://localhost:3000/api/storage/local/rol-demo',
       fileName: 'rol_pago_1707300008_2026_06.pdf',
       contentType: 'application/pdf',
+      company: {
+        name: 'Empresa Demo',
+        logoBase64: 'data:image/png;base64,iVBORw0KGgo=',
+      },
     });
     expect(s3Upload).toHaveBeenCalledWith(
       Buffer.from('pdf-rol-demo'),

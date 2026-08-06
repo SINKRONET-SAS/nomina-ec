@@ -1,74 +1,87 @@
 {
   "schemaVersion": 1,
-  "plan": "HAIKY-REGRESION-NOVEDADES-ROL-JULIO-2026",
-  "planCode": "RNRJ26",
+  "plan": "HAIKY-RESPUESTA-CORRECCION-EMAIL-ROLES-PAGO-CLIENTE-2026",
+  "planCode": "ERPC26",
   "status": "completed-pass",
-  "phaseCompleted": "RNRJ26-06",
+  "phaseCompleted": "ERPC26-04",
   "currentPhase": null,
-  "updatedAt": "2026-08-04T21:31:50.944Z",
+  "updatedAt": "2026-08-06T23:23:04.927Z",
   "rulesSource": "RULES.md",
   "contextSource": ".github/CODEX_CONTEXT.md",
-  "previousPlan": "HAIKY-AUDITORIA-INTEGRAL-V75-CORRECCION-MEJORA-2026",
-  "previousAuditLockHash": "45ECB3F887EAAD92577FE7DFA66F28602B266E3502B79788AF621174153C78D4",
+  "previousPlan": "HAIKY-REGRESION-NOVEDADES-ROL-JULIO-2026",
+  "previousPhase": "ERPC26-03",
+  "previousAuditLockHash": "A6895DC6CE6F31256117D213B88318A59884CC73CF7323EFBD43F98714FF6E4C",
   "signatureAlgorithm": "SHA256(previous AuditLock bytes + UTF-8 updatedAt)",
-  "summary": "RNRJ26-06 cerrado: un rol vigente puede reactivar y reasignar novedades anuladas por un rol de anticipos anterior, respetando la unicidad por empleado, fecha y tipo sin crear duplicados ni habilitar conflictos ajenos.",
-  "nextAction": "Desplegar la correccion y pulsar Aplicar seleccion en el rol aprobado de julio; las novedades del rol anulado se reactivaran y vincularan al lote vigente.",
+  "approval": "Solicitud explicita del usuario para generar el plan, implementar la correccion, verificar regresiones, hacer commit y push.",
+  "summary": "ERPC26 cerrado: el cierre envia a cada empleado con correo su PDF individual, con nombre y logo CID del cliente, texto solicitado y pie Generado con SKNómina; el reenvio manual permanece disponible y la PWA muestra el resultado agregado.",
+  "nextAction": "Desplegar la rama publicada y monitorear el primer cierre real con SMTP y logo del tenant configurados.",
   "fases": [
     {
-      "phase": "RNRJ26-00",
+      "phase": "ERPC26-00",
       "status": "completed-pass",
-      "detail": "Diagnostico con CSV y PDF productivos: 54 lineas, total USD 804,50; consumo parcial limitado a los primeros 10 empleados."
+      "detail": "Baseline, captura, RULES, runtime local y referencia Sinkroniq Mobile contrastados; plan, contexto y prompts creados."
     },
     {
-      "phase": "RNRJ26-01",
+      "phase": "ERPC26-01",
       "status": "completed-pass",
-      "detail": "Aplicacion atomica de resoluciones en una unica transaccion y validacion de tipo de novedad reutilizada por lote."
+      "detail": "Plantilla con nombre empresarial, logo CID, HTML seguro, texto plano, pie requerido y PDF adjunto."
     },
     {
-      "phase": "RNRJ26-02",
+      "phase": "ERPC26-02",
       "status": "completed-pass",
-      "detail": "Bloqueo preventivo del calculo mensual e individual, regresion completa y cierre."
+      "detail": "PDF individual al cierre, omision explicita sin correo, aislamiento de fallos y envio manual para roles cerrados o pagados."
     },
     {
-      "phase": "RNRJ26-03",
+      "phase": "ERPC26-03",
       "status": "completed-pass",
-      "detail": "Alineacion del impacto de bonificar y bonificar_descontar con el motor de novedades, incluida la validacion del lote productivo mixto."
+      "detail": "Copy previo al cierre, conteos de entrega, alerta diferenciada y ruta de reenvio manual visibles."
     },
     {
-      "phase": "RNRJ26-04",
+      "phase": "ERPC26-04",
       "status": "completed-pass",
-      "detail": "Reconciliacion segura de bonificaciones con novedades productivas preexistentes y exposicion contextual de errores en el rol."
-    },
-    {
-      "phase": "RNRJ26-05",
-      "status": "completed-pass",
-      "detail": "Salida operativa para roles aprobados: reversa sin efectos o anulacion coordinada de beneficios y novedades no consumidos, expuesta en la PWA."
-    },
-    {
-      "phase": "RNRJ26-06",
-      "status": "completed-pass",
-      "detail": "Reactivacion y reasignacion segura de novedades anuladas por un rol anterior, sin duplicarlas y conservando el bloqueo de incompatibilidades reales."
+      "detail": "Contratos, Prisma, 70 suites backend, build PWA, mobile, UTF-8 y diff final aprobados."
     }
   ],
   "filesModified": [
-    "backend/src/services/advancePayrollService.js",
-    "backend/src/services/advancePayrollService.test.js",
-    "scripts/verify-system-contracts.mjs",
+    "docs2/PLAN_HAIKY_RESPUESTA_CORRECCION_EMAIL_ROLES_PAGO_CLIENTE_2026.md",
+    ".github/prompts/ERPC26-00-baseline-contraste.md",
+    ".github/prompts/ERPC26-01-plantilla-identidad-cliente.md",
+    ".github/prompts/ERPC26-02-cierre-envio-pdf-individual.md",
+    ".github/prompts/ERPC26-03-pwa-resultado-reenvio.md",
+    ".github/prompts/ERPC26-04-qa-release.md",
+    ".github/CODEX_CONTEXT.md",
     ".vscode/AuditLock.json",
-    "AuditLock.json"
+    "AuditLock.json",
+    "backend/src/utils/logoDataUrl.js",
+    "backend/src/services/tenantLogoService.js",
+    "backend/src/services/communicationService.js",
+    "backend/src/services/communicationService.test.js",
+    "backend/src/services/payrollRolePdfService.js",
+    "backend/src/services/payrollRolePdfService.test.js",
+    "backend/src/controllers/nominaController.js",
+    "backend/src/controllers/nominaController.test.js",
+    "frontend-web/src/pages/Nomina/CerrarMes.jsx"
   ],
   "validationChecks": [
-    "Regresion PASS: una novedad anulada por un rol anterior se reactiva y reasigna al rol vigente sin insertar un duplicado.",
-    "Unicidad PASS: se reutiliza la fila existente por empleado, fecha y tipo conforme al indice unico productivo.",
-    "Proteccion PASS: solo se reactivan novedades anuladas cuyo origen es rol_anticipos_bonificacion y cuyo monto coincide.",
-    "Trazabilidad PASS: metadata conserva el rol anterior y registra el nuevo rol y linea propietarios.",
-    "Backend completo PASS: 70 suites y 539 pruebas.",
-    "Pruebas enfocadas PASS: 1 suite y 16 pruebas.",
+    "RULES.md leido completamente y fases ERPC26 ejecutadas con AuditLock encadenado.",
+    "Sinkroniq Mobile consultado en solo lectura: logo CID, HTML/texto, escape y separacion de entrega.",
+    "Regresion intermedia detectada y corregida: la validacion de logo se extrajo a una utilidad pura para no cargar DB ni variables de entorno en comunicacion.",
+    "Plantilla PASS: nombre del cliente, logo CID, texto solicitado, pie Generado con SKNómina y PDF adjunto.",
+    "Aislamiento PASS: cada cierre genera el PDF por payrollId y destinatario propietario.",
+    "Omision PASS: empleado sin correo no genera PDF y queda reportado.",
+    "Envio manual PASS: roles cerrados y pagados mantienen reenvio individual.",
+    "Pruebas focalizadas PASS: communicationService 8 pruebas; nominaController 23 pruebas; payrollRolePdfService PASS.",
+    "Backend completo PASS: 70 suites y 541 pruebas.",
     "Contratos del sistema PASS.",
-    "node --check PASS en servicio, prueba y contrato modificados.",
-    "UTF-8 sin BOM valido en archivos JavaScript y JSON modificados.",
+    "Prisma schema validate PASS.",
+    "Build PWA PASS: 2031 modulos y service worker generado.",
+    "Mobile store readiness PASS.",
+    "node --check PASS en JavaScript modificado.",
+    "UTF-8 sin BOM y roundtrip canonico PASS en 18 archivos.",
+    "AuditLock canonico y espejo validos e identicos.",
     "git diff --check PASS."
   ],
-  "backendSuiteResult": "70 suites, 539 tests PASS; focused 1 suite, 16 tests PASS",
-  "signature": "2E0E2BCA8D6E02EE8A36D8F10C7FC2179688E457B3A30DAFB39A10A9835D9670"
+  "backendSuiteResult": "70 suites, 541 tests PASS",
+  "frontendBuildResult": "2031 modules transformed; PWA service worker generated",
+  "signature": "B74625F86F8C3210F9322AAF1B3003ED63DE2EFC6F9EC60164A73460AC54481C"
 }
