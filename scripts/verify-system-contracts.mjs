@@ -406,6 +406,8 @@ assert(nominaController.includes("action: 'nomina.periodo.reabrir'") && nominaCo
 assert(nominaController.includes('FOR UPDATE') && nominaController.includes("status = 'reopened'"), 'La reapertura controlada debe bloquear el periodo y dejarlo abierto para correcciones.');
 assert(cerrarMes.includes('Descartar cálculo'), 'Cierre mensual debe permitir volver a novedades antes del cierre.');
 assert(cerrarMes.includes('Reapertura controlada') && cerrarMes.includes('/nomina/reabrir') && cerrarMes.includes('motivo'), 'Cierre mensual debe ofrecer reapertura controlada con motivo.');
+assert(cerrarMes.includes('PAYROLL_CLOSE_TIMEOUT_MS = 300000'), 'Cierre mensual debe tolerar la generacion y envio de roles sin heredar el timeout global de 20 segundos.');
+assert(cerrarMes.includes('No repitas el cierre'), 'Cierre mensual debe evitar reintentos duplicados si la confirmacion supera el tiempo esperado.');
 assert(rolesPagos.includes('Corregir novedades'), 'Roles de pago debe exponer correccion de fuentes para borradores.');
 assert(rolesPagos.includes('Eliminar borrador'), 'Roles de pago debe permitir eliminar un borrador con confirmacion.');
 assert(novedadesPendientes.includes('useSearchParams'), 'Novedades debe recibir empleado y periodo desde la correccion de un rol.');

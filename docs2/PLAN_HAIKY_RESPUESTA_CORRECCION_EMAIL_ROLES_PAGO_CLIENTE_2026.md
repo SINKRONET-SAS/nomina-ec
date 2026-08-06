@@ -84,6 +84,20 @@ No se copia su persistencia, retry, modelo de bounces ni configuracion SMTP porq
 - PASS UTF-8 sin BOM y roundtrip canonico en 18 archivos gobernados.
 - PASS `git diff --check`.
 
+## Reejecucion de prompts y correccion de timeout
+
+El 2026-08-06 se reejecutaron y contrastaron los prompts `ERPC26-00` a `ERPC26-04`. Durante una prueba real de cierre se detecto que la PWA heredaba el timeout global Axios de 20.000 ms, insuficiente para esperar la generacion y entrega de varios roles.
+
+- El endpoint `/nomina/cerrar` dispone ahora de 300.000 ms en la PWA sin alterar el timeout de las demas operaciones.
+- Mientras procesa, el boton comunica `Cerrando y enviando roles...`.
+- Si se supera incluso ese margen, la PWA evita presentar el timeout crudo, actualiza el estado del periodo y advierte no repetir el cierre para prevenir duplicados.
+- El verificador de contratos protege el timeout especifico y la advertencia operativa.
+- PASS pruebas focalizadas: 3 suites y 41 pruebas.
+- PASS almacenamiento local aislado: 5 pruebas; la operacion principal termino en 16 ms despues de descartar una contencion transitoria de la primera corrida paralela.
+- PASS validacion integral serial posterior: contratos, Prisma, 70 suites/541 pruebas backend y build PWA de 2031 modulos.
+- PASS preparacion mobile para tiendas.
+- Resultado: timeout insuficiente corregido y sin regresiones adicionales.
+
 ## Criterios de aceptacion
 
 - El cierre genera un PDF por cada rol cerrado que tenga destinatario valido y lo adjunta al correo de ese empleado.

@@ -4,7 +4,7 @@
 |---|---|
 | Plan | `HAIKY-RESPUESTA-CORRECCION-EMAIL-ROLES-PAGO-CLIENTE-2026` |
 | Codigo | `ERPC26` |
-| Estado | `ERPC26-00 a ERPC26-04 completed-pass; correccion lista para commit y push en la rama activa` |
+| Estado | `ERPC26-00 a ERPC26-04 completed-pass; prompts reejecutados, timeout de cierre corregido y evidencia final PASS` |
 | Fecha | `2026-08-06` |
 | Plan doc | `docs2/PLAN_HAIKY_RESPUESTA_CORRECCION_EMAIL_ROLES_PAGO_CLIENTE_2026.md` |
 | Prompts | `.github/prompts/ERPC26-00` a `.github/prompts/ERPC26-04` |
@@ -47,6 +47,17 @@
 - Backend completo: 70 suites y 541 pruebas PASS.
 - PWA: 2031 modulos, service worker y build PASS.
 - Mobile store readiness, UTF-8 sin BOM y `git diff --check`: PASS.
+
+### Reejecucion ERPC26 y correccion de timeout - 2026-08-06
+
+- Los prompts `ERPC26-00` a `ERPC26-04` se contrastaron nuevamente contra el runtime y sus criterios de aceptacion.
+- Se reprodujo por evidencia del usuario que `Cerrar nomina` heredaba el timeout global Axios de 20.000 ms mientras el backend generaba y enviaba los roles.
+- La peticion de cierre usa ahora un timeout especifico de 300.000 ms, informa que esta enviando roles y, ante una demora extraordinaria, actualiza el periodo y advierte que no se repita el cierre.
+- El contrato automatico impide regresar accidentalmente al limite global de 20 segundos.
+- Pruebas focalizadas de correo, PDF y cierre: 3 suites y 41 pruebas PASS.
+- Prueba de almacenamiento local: 5 pruebas PASS; una corrida concurrente excedio el tiempo limite por contencion y la repeticion aislada termino en 16 ms.
+- Validacion integral serial posterior a la correccion: contratos PASS, Prisma PASS, backend 70 suites/541 pruebas PASS y build PWA de 2031 modulos PASS.
+- Mobile store readiness PASS; no se detectaron regresiones adicionales.
 
 ---
 

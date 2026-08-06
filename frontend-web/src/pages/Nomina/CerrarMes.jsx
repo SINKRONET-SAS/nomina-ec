@@ -41,6 +41,12 @@ const SCOPE_TYPES = [
 
 const WRITABLE_PERIOD_STATUSES = new Set(['open', 'novelties_loaded', 'reopened', 'calculation_failed']);
 const CALCULABLE_PERIOD_STATUSES = new Set(['open', 'novelties_loaded', 'reopened', 'calculation_failed']);
+const PAYROLL_CLOSE_TIMEOUT_MS = 300000;
+
+function isRequestTimeout(requestError) {
+  return requestError?.code === 'ECONNABORTED'
+    || /timeout/i.test(String(requestError?.message || ''));
+}
 
 function summarize(rows = []) {
   return rows.reduce((memo, row) => ({ ...memo, [row.estado || row.status]: row.total }), {});
@@ -396,7 +402,9 @@ function CerrarMes() {
   });
 
   const closeMutation = useMutation({
-    mutationFn: async () => authenticatedApi.post('/nomina/cerrar', { anio, mes }),
+    mutationFn: async () => authenticatedApi.post('/nomina/cerrar', { anio, mes }, {
+      timeout: PAYROLL_CLOSE_TIMEOUT_MS,
+    }),
     onSuccess: (response) => {
       const delivery = response.data?.notificacionesRolPago || {};
       const sent = Number(delivery.enviados || 0);
@@ -409,6 +417,15 @@ function CerrarMes() {
       setMessage({
         type: hasPendingDelivery ? 'warning' : 'success',
         text: `Nómina cerrada. Roles enviados por email: ${sent}; omitidos: ${skipped}; con error: ${failed}.${nextAction}`,
+      });
+      setCloseConfirmation(false);
+      refreshPeriod();
+    },
+    onError: (requestError) => {
+      if (!isRequestTimeout(requestError)) return;
+      setMessage({
+        type: 'warning',
+        text: 'El cierre y los envios estan tomando mas tiempo de lo esperado. No repitas el cierre: estamos actualizando el estado del periodo para confirmar el resultado.',
       });
       setCloseConfirmation(false);
       refreshPeriod();
@@ -556,7 +573,7 @@ function CerrarMes() {
     && (requiresAmount ? Number(batchForm.monto) > 0 : hoursDraftToNumber(batchForm.horas) > 0);
   const currentError = error
     ? { message: error }
-    : openMutation.error || batchMutation.error || bulkNoveltyMutation.error || deleteBatchMutation.error || resolveNoveltiesMutation.error || precalculateMutation.error || calculateMutation.error || closeMutation.error || discardCalculationMutation.error || periodQuery.error || noveltyTypesQuery.error;
+    : openMutation.error || batchMutation.error || bulkNoveltyMutation.error || deleteBatchMutation.error || resolveNoveltiesMutation.error || precalculateMutation.error || calculateMutation.error || (!isRequestTimeout(closeMutation.error) ? closeMutation.error : null) || discardCalculationMutation.error || periodQuery.error || noveltyTypesQuery.error;
   const currentPrecheck = precheckDetails(currentError);
   const alertIsError = Boolean(currentError || message?.type === 'error');
   const alertIsWarning = !alertIsError && message?.type === 'warning';
@@ -721,7 +738,7 @@ function CerrarMes() {
           )}
           <button className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white disabled:bg-slate-300" disabled={!canClosePayroll || !closeConfirmation || closeMutation.isPending} onClick={() => closeMutation.mutate()} type="button">
             <Lock className="h-4 w-4" />
-            {closeMutation.isPending ? 'Cerrando' : 'Cerrar nómina'}
+            {closeMutation.isPending ? 'Cerrando y enviando roles...' : 'Cerrar nómina'}
           </button>
 
           {isClosedPeriod && (

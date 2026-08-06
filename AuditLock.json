@@ -5,15 +5,15 @@
   "status": "completed-pass",
   "phaseCompleted": "ERPC26-04",
   "currentPhase": null,
-  "updatedAt": "2026-08-06T23:23:04.927Z",
+  "updatedAt": "2026-08-06T23:34:15.4824966Z",
   "rulesSource": "RULES.md",
   "contextSource": ".github/CODEX_CONTEXT.md",
   "previousPlan": "HAIKY-REGRESION-NOVEDADES-ROL-JULIO-2026",
-  "previousPhase": "ERPC26-03",
-  "previousAuditLockHash": "A6895DC6CE6F31256117D213B88318A59884CC73CF7323EFBD43F98714FF6E4C",
+  "previousPhase": "ERPC26-04",
+  "previousAuditLockHash": "F63C7E18022EF66AA5AC945C96E1C90963F7BF13B27D4F3263B4C84A9114B68D",
   "signatureAlgorithm": "SHA256(previous AuditLock bytes + UTF-8 updatedAt)",
   "approval": "Solicitud explicita del usuario para generar el plan, implementar la correccion, verificar regresiones, hacer commit y push.",
-  "summary": "ERPC26 cerrado: el cierre envia a cada empleado con correo su PDF individual, con nombre y logo CID del cliente, texto solicitado y pie Generado con SKNómina; el reenvio manual permanece disponible y la PWA muestra el resultado agregado.",
+  "summary": "ERPC26 cerrado y revalidado: prompts 00 a 04 ejecutados, timeout de cierre ampliado a 300000 ms y regresion integral aprobada.",
   "nextAction": "Desplegar la rama publicada y monitorear el primer cierre real con SMTP y logo del tenant configurados.",
   "fases": [
     {
@@ -79,9 +79,15 @@
     "node --check PASS en JavaScript modificado.",
     "UTF-8 sin BOM y roundtrip canonico PASS en 18 archivos.",
     "AuditLock canonico y espejo validos e identicos.",
-    "git diff --check PASS."
+    "git diff --check PASS.",
+    "Timeout insuficiente corregido: /nomina/cerrar usa 300000 ms sin alterar el timeout global.",
+    "Fallback de demora PASS: actualiza el periodo y evita repetir el cierre.",
+    "Contrato anti-regresion del timeout de cierre PASS.",
+    "Reejecucion focalizada PASS: 3 suites y 41 pruebas.",
+    "Almacenamiento local aislado PASS: 5 pruebas; contencion transitoria descartada.",
+    "Revalidacion integral serial PASS: contratos, Prisma, 70 suites/541 pruebas y PWA 2031 modulos."
   ],
   "backendSuiteResult": "70 suites, 541 tests PASS",
   "frontendBuildResult": "2031 modules transformed; PWA service worker generated",
-  "signature": "B74625F86F8C3210F9322AAF1B3003ED63DE2EFC6F9EC60164A73460AC54481C"
+  "signature": "BE6DC416874480FD6C79F6F8B5D0D8E13FE58285A79112B69D20425F8B461017"
 }
