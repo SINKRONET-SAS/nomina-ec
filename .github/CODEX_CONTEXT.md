@@ -3897,3 +3897,35 @@ El usuario final necesita distinguir, por empleado, si una línea del rol parcia
 - `npm.cmd --workspace=app-movil run check:stores`: PASS.
 - No se modificó runtime; los cambios de esta fase son plan, contexto, prompts y AuditLock.
 - La suite backend completa serial excedió el límite operativo y fue detenida; el intento paralelo con permisos ampliados no fue autorizado. No se declara PASS completo y se mantiene como gate obligatorio de `AIV75-26-04`.
+
+---
+
+## ERPC26-04 — correccion CI y reapertura de novedades
+
+| Campo | Valor |
+|---|---|
+| Incidente CI | Ejecucion `#221`: `npm ci` rechazo lockfiles independientes fuera de sincronizacion (`brace-expansion` 5.0.8 vs 5.0.9). |
+| Incidente funcional | Al reabrir un mes, anticipos y bonificaciones seguian marcados como consumidos por el calculo cerrado. |
+| Causa CI | Se actualizo el manifest/lockfile raiz, pero no todos los lockfiles usados por los jobs con `--prefix`. |
+| Causa funcional | `reabrirMes` revertia `nominas.estado`, pero no liberaba `payroll_calculation_lines` ni restauraba los beneficios descontados al cerrar. |
+| Decision | Corregir ambos incidentes dentro de ERPC26-04 y repetir todas las puertas antes de commit/push. |
+
+### Correccion aplicada
+
+- Backend, frontend y mobile conservan overrides seguros en sus manifests y lockfiles propios.
+- La reapertura restaura saldo/estado del beneficio solo cuando encuentra el marcador exacto `periodo + nominaId`; esto evita dobles reversiones y conserva movimientos historicos ajenos.
+- Las lineas derivadas del calculo anterior se eliminan para los `payrollId` revertidos; los lotes historicos y la auditoria permanecen como evidencia.
+- La PWA confirma roles revertidos, lineas liberadas y beneficios restaurados, y refresca novedades, anticipos y beneficios.
+- La API agrega campos compatibles: `lineasCalculoLiberadas`, `beneficiosRestaurados` y `beneficiosSinDescuento`; no elimina campos existentes.
+
+### Puertas ejecutadas
+
+- `npm ci --dry-run` independiente: backend, frontend y mobile PASS.
+- Instalacion limpia real: backend, frontend y mobile PASS.
+- Auditoria independiente: backend, frontend y mobile con 0 vulnerabilidades.
+- Prueba focalizada de reapertura: 23/23 PASS.
+- Suite backend completa: 70 suites / 541 pruebas PASS.
+- Contratos del sistema y Prisma validate PASS.
+- `node --check` y `git diff --check` PASS.
+- Build PWA PASS: 2031 modulos; mobile store readiness PASS.
+- Cierre final de AuditLock queda como ultima puerta antes de publicar.

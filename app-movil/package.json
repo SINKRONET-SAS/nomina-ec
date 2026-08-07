@@ -2,6 +2,8 @@
   "version": "1.0.0",
   "name": "sknomina-app",
   "overrides": {
+    "brace-expansion": "5.0.9",
+    "js-yaml": "4.3.1",
     "uuid": "^11.1.1",
     "form-data": "^4.0.6"
   },

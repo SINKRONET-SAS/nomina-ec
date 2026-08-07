@@ -1085,8 +1085,75 @@ async function reabrirMes(req, res) {
           rol_pdf_url = NULL,
           updated_at = NOW()
       WHERE tenant_id = $1 AND anio = $2 AND mes = $3 AND estado = 'cerrada'
-      RETURNING id
+      RETURNING id, detalle_calculo
     `, [tenantId, anioNumber, mesNumber]);
+
+    const periodo = `${anioNumber}-${String(mesNumber).padStart(2, '0')}`;
+    let beneficiosRestaurados = 0;
+    let beneficiosSinDescuento = 0;
+
+    for (const payroll of reverted.rows) {
+      const benefits = Array.isArray(payroll.detalle_calculo?.beneficiosDescontados)
+        ? payroll.detalle_calculo.beneficiosDescontados
+        : [];
+      for (const benefit of benefits) {
+        const amount = Number(benefit.amount || 0);
+        if (!benefit.id || !Number.isFinite(amount) || amount <= 0) {
+          beneficiosSinDescuento += 1;
+          continue;
+        }
+
+        const discountMarker = { periodo, nominaId: payroll.id };
+        const restored = await tx.query(`
+          WITH benefit_to_restore AS (
+            SELECT
+              id,
+              COALESCE((
+                SELECT jsonb_agg(entry)
+                FROM jsonb_array_elements(COALESCE(metadata->'descuentosNomina', '[]'::jsonb)) AS entry
+                WHERE NOT (entry @> $4::jsonb)
+              ), '[]'::jsonb) AS remaining_discounts
+            FROM beneficios_empleados
+            WHERE id = $1
+              AND tenant_id = $2
+              AND COALESCE(metadata->'descuentosNomina', '[]'::jsonb) @> $5::jsonb
+            FOR UPDATE
+          )
+          UPDATE beneficios_empleados AS benefit
+          SET saldo_pendiente = LEAST(benefit.monto_total, benefit.saldo_pendiente + $3::numeric),
+              estado = CASE WHEN benefit.estado = 'descontado' THEN 'aprobado' ELSE benefit.estado END,
+              metadata = jsonb_set(
+                COALESCE(benefit.metadata, '{}'::jsonb) - 'ultimoDescuento',
+                '{descuentosNomina}',
+                benefit_to_restore.remaining_discounts,
+                true
+              ),
+              updated_at = NOW()
+          FROM benefit_to_restore
+          WHERE benefit.id = benefit_to_restore.id
+          RETURNING benefit.id
+        `, [
+          benefit.id,
+          tenantId,
+          amount,
+          JSON.stringify(discountMarker),
+          JSON.stringify([discountMarker]),
+        ]);
+        if (restored.rows.length > 0) {
+          beneficiosRestaurados += 1;
+        } else {
+          beneficiosSinDescuento += 1;
+        }
+      }
+    }
+
+    const releasedLines = reverted.rows.length > 0
+      ? await tx.query(`
+        DELETE FROM payroll_calculation_lines
+        WHERE tenant_id = $1 AND payroll_id = ANY($2::uuid[])
+        RETURNING id
+      `, [tenantId, reverted.rows.map((row) => row.id)])
+      : { rows: [] };
 
     await tx.query(`
       UPDATE payroll_periods
@@ -1097,12 +1164,25 @@ async function reabrirMes(req, res) {
               'motivo', $4::text,
               'rolesRevertidos', $5::int,
               'correlationId', $6::text,
+              'lineasCalculoLiberadas', $7::int,
+              'beneficiosRestaurados', $8::int,
+              'beneficiosSinDescuento', $9::int,
               'at', NOW()
             )
           ),
           updated_at = NOW()
       WHERE tenant_id = $1 AND anio = $2 AND mes = $3
-    `, [tenantId, anioNumber, mesNumber, reason, reverted.rows.length, req.correlationId || null]);
+    `, [
+      tenantId,
+      anioNumber,
+      mesNumber,
+      reason,
+      reverted.rows.length,
+      req.correlationId || null,
+      releasedLines.rows.length,
+      beneficiosRestaurados,
+      beneficiosSinDescuento,
+    ]);
 
     await db.commit(tx);
     tx = null;
@@ -1114,7 +1194,15 @@ async function reabrirMes(req, res) {
       action: 'nomina.periodo.reabrir',
       entity: 'payroll_periods',
       entityId: periodLock.rows[0].id,
-      newData: { anio: anioNumber, mes: mesNumber, motivo: reason, rolesRevertidos: reverted.rows.length },
+      newData: {
+        anio: anioNumber,
+        mes: mesNumber,
+        motivo: reason,
+        rolesRevertidos: reverted.rows.length,
+        lineasCalculoLiberadas: releasedLines.rows.length,
+        beneficiosRestaurados,
+        beneficiosSinDescuento,
+      },
       ipAddress: req.ip,
     });
 
@@ -1122,6 +1210,9 @@ async function reabrirMes(req, res) {
       success: true,
       message: `Periodo reabierto. ${reverted.rows.length} roles revertidos a borrador para reproceso.`,
       rolesRevertidos: reverted.rows.length,
+      lineasCalculoLiberadas: releasedLines.rows.length,
+      beneficiosRestaurados,
+      beneficiosSinDescuento,
       correlationId: req.correlationId,
     });
   } catch (err) {

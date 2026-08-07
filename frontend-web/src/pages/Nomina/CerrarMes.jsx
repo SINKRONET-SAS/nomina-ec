@@ -473,14 +473,19 @@ function CerrarMes() {
     }),
     onSuccess: (response) => {
       const roles = response.data?.rolesRevertidos || 0;
+      const calculationLines = response.data?.lineasCalculoLiberadas || 0;
+      const restoredBenefits = response.data?.beneficiosRestaurados || 0;
       setResultado(null);
       setMessage({
         type: 'success',
-        text: `Periodo reabierto. ${roles} roles revertidos a borrador. Corrige los valores legales si es necesario, luego descarta el cálculo y recalcula.`,
+        text: `Periodo reabierto. ${roles} roles volvieron a borrador, ${calculationLines} líneas de cálculo quedaron liberadas y ${restoredBenefits} anticipos o beneficios recuperaron su saldo. Ya puedes corregir las novedades y recalcular.`,
       });
       setShowReopenPeriod(false);
       setReopenReason('');
       queryClient.invalidateQueries({ queryKey: ['roles-pagos', anio, mes] });
+      queryClient.invalidateQueries({ queryKey: ['roles-anticipos'] });
+      queryClient.invalidateQueries({ queryKey: ['beneficios-empleados'] });
+      queryClient.invalidateQueries({ queryKey: ['novedades-pendientes'] });
       refreshPeriod();
     },
   });

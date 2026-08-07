@@ -902,7 +902,23 @@ describe('nominaController proteccion de nomina cerrada', () => {
     db.commit.mockClear();
     db.query.mockResolvedValueOnce({ rows: [] });
     db.query.mockResolvedValueOnce({ rows: [{ id: 'p1', status: 'closed' }] });
-    db.query.mockResolvedValueOnce({ rows: [{ id: 'n1' }, { id: 'n2' }] });
+    db.query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: '11111111-1111-1111-1111-111111111111',
+          detalle_calculo: {
+            beneficiosDescontados: [{
+              id: '33333333-3333-3333-3333-333333333333',
+              tipo: 'anticipo',
+              amount: 125.5,
+            }],
+          },
+        },
+        { id: '22222222-2222-2222-2222-222222222222', detalle_calculo: {} },
+      ],
+    });
+    db.query.mockResolvedValueOnce({ rows: [{ id: '33333333-3333-3333-3333-333333333333' }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'line-1' }, { id: 'line-2' }, { id: 'line-3' }] });
     db.query.mockResolvedValueOnce({ rows: [] });
 
     const req = {
@@ -919,13 +935,29 @@ describe('nominaController proteccion de nomina cerrada', () => {
     expect(res.body).toMatchObject({
       success: true,
       rolesRevertidos: 2,
+      lineasCalculoLiberadas: 3,
+      beneficiosRestaurados: 1,
+      beneficiosSinDescuento: 0,
     });
-    expect(db.query).toHaveBeenCalledTimes(4);
+    expect(db.query).toHaveBeenCalledTimes(6);
     expect(db.query.mock.calls[0][0]).toContain("set_config('app.allow_payroll_reopen'");
+    expect(db.query.mock.calls[3][0]).toContain("metadata->'descuentosNomina'");
+    expect(db.query.mock.calls[3][1]).toEqual([
+      '33333333-3333-3333-3333-333333333333',
+      'tenant-1',
+      125.5,
+      JSON.stringify({ periodo: '2026-06', nominaId: '11111111-1111-1111-1111-111111111111' }),
+      JSON.stringify([{ periodo: '2026-06', nominaId: '11111111-1111-1111-1111-111111111111' }]),
+    ]);
+    expect(db.query.mock.calls[4][0]).toContain('DELETE FROM payroll_calculation_lines');
     expect(db.commit).toHaveBeenCalledTimes(1);
     expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
       action: 'nomina.periodo.reabrir',
-      newData: expect.objectContaining({ rolesRevertidos: 2 }),
+      newData: expect.objectContaining({
+        rolesRevertidos: 2,
+        lineasCalculoLiberadas: 3,
+        beneficiosRestaurados: 1,
+      }),
     }));
   });
 

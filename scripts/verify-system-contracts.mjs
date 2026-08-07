@@ -66,8 +66,13 @@ assert(rootPackage.overrides?.['ip-address'] === '10.4.0', 'Override raiz de ip-
 assert(rootPackage.overrides?.['js-yaml'] === '4.3.1', 'Override raiz de js-yaml debe conservar la version segura 4.3.1.');
 assert(rootPackage.overrides?.['@istanbuljs/load-nyc-config']?.['js-yaml'] === '3.15.1', 'Jest debe conservar js-yaml 3.15.1 corregido.');
 assert(backendPackage.overrides?.['brace-expansion'] === '5.0.9', 'Backend debe declarar brace-expansion 5.0.9 en auditorias independientes.');
+assert(backendPackage.overrides?.['@istanbuljs/load-nyc-config']?.['js-yaml'] === '3.15.1', 'Backend debe conservar js-yaml 3.15.1 para Jest independiente.');
+assert(backendPackage.overrides?.['ip-address'] === '10.4.0', 'Backend debe declarar ip-address 10.4.0 en auditorias independientes.');
 assert(backendPackage.overrides?.['js-yaml'] === '^4.3.1', 'Backend debe declarar js-yaml 4.3.1 o superior corregido.');
 assert(webPackage.overrides?.['brace-expansion'] === '5.0.9', 'Frontend debe declarar brace-expansion 5.0.9 en auditorias independientes.');
+assert(webPackage.overrides?.['fast-uri'] === '3.1.5', 'Frontend debe declarar fast-uri 3.1.5 en auditorias independientes.');
+assert(mobilePackage.overrides?.['brace-expansion'] === '5.0.9', 'Mobile debe declarar brace-expansion 5.0.9 en auditorias independientes.');
+assert(mobilePackage.overrides?.['js-yaml'] === '4.3.1', 'Mobile debe declarar js-yaml 4.3.1 en auditorias independientes.');
 
 const webIndexHtml = read('frontend-web/index.html');
 const pwaConfig = read('frontend-web/pwa.config.js');
@@ -412,8 +417,11 @@ assert(novedadesPendientes.includes('EmployeeSearchSelect'), 'La asistencia manu
 assert(employeeSearchSelect.includes('role="combobox"'), 'El selector de empleados debe exponer semantica de combobox accesible.');
 assert(nominaController.includes("action: 'nomina.periodo.reabrir'") && nominaController.includes('motivo'), 'La reapertura de un periodo cerrado debe ser explícita y auditable.');
 assert(nominaController.includes('FOR UPDATE') && nominaController.includes("status = 'reopened'"), 'La reapertura controlada debe bloquear el periodo y dejarlo abierto para correcciones.');
+assert(nominaController.includes('DELETE FROM payroll_calculation_lines') && nominaController.includes('lineasCalculoLiberadas'), 'La reapertura mensual debe liberar las lineas que bloquean novedades, anticipos y bonificaciones consumidas.');
+assert(nominaController.includes('beneficiosRestaurados') && nominaController.includes("estado = CASE WHEN benefit.estado = 'descontado' THEN 'aprobado'"), 'La reapertura mensual debe restaurar saldo y estado de beneficios aplicados durante el cierre.');
 assert(cerrarMes.includes('Descartar cálculo'), 'Cierre mensual debe permitir volver a novedades antes del cierre.');
 assert(cerrarMes.includes('Reapertura controlada') && cerrarMes.includes('/nomina/reabrir') && cerrarMes.includes('motivo'), 'Cierre mensual debe ofrecer reapertura controlada con motivo.');
+assert(cerrarMes.includes('líneas de cálculo quedaron liberadas') && cerrarMes.includes('anticipos o beneficios recuperaron su saldo'), 'La PWA debe confirmar al usuario los consumos liberados por la reapertura.');
 assert(cerrarMes.includes('PAYROLL_CLOSE_TIMEOUT_MS = 300000'), 'Cierre mensual debe tolerar la generacion y envio de roles sin heredar el timeout global de 20 segundos.');
 assert(cerrarMes.includes('No repitas el cierre'), 'Cierre mensual debe evitar reintentos duplicados si la confirmacion supera el tiempo esperado.');
 assert(rolesPagos.includes('Corregir novedades'), 'Roles de pago debe exponer correccion de fuentes para borradores.');

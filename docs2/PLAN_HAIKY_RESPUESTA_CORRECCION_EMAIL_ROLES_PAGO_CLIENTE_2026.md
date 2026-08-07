@@ -111,6 +111,17 @@ El push de cierre reporto diez alertas Dependabot introducidas por resoluciones 
 - PASS contratos, Prisma, 70 suites/541 pruebas backend, PWA 2031 modulos y mobile.
 - Se agregaron contratos que impiden reintroducir las versiones vulnerables en los manifests auditados por GitHub.
 
+## Correccion posterior de CI y reapertura mensual
+
+La ejecucion CI `#221` evidencio que los manifests independientes de backend y frontend habian cambiado, pero sus lockfiles locales no se habian regenerado. Ademas, la prueba operativa aclaro que el problema de anticipos y bonificaciones ocurre al **reabrir** un mes cerrado.
+
+- Los lockfiles de `backend`, `frontend-web` y `app-movil` se regeneraron desde sus manifests y se comprobaron con instalacion limpia reproducible.
+- La reapertura mensual elimina las lineas derivadas de calculo de los roles revertidos. Asi, una novedad, anticipo o bonificacion deja de aparecer como consumida por el calculo anterior.
+- Los descuentos de beneficios aplicados durante el cierre se revierten de forma idempotente: se restaura el saldo pendiente, el estado `descontado` vuelve a `aprobado` y se retira solamente el movimiento correspondiente al periodo y rol reabierto.
+- La respuesta y la PWA muestran roles revertidos, lineas liberadas y beneficios restaurados; tambien refrescan roles de anticipos, beneficios y novedades.
+- La operacion completa permanece en una sola transaccion: un fallo al restaurar cualquier efecto revierte toda la reapertura.
+- Los contratos del sistema protegen la sincronizacion de dependencias y las dos obligaciones de reapertura.
+
 ## Criterios de aceptacion
 
 - El cierre genera un PDF por cada rol cerrado que tenga destinatario valido y lo adjunta al correo de ese empleado.
