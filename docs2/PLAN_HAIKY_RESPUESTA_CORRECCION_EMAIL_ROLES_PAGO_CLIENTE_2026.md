@@ -122,6 +122,20 @@ La ejecucion CI `#221` evidencio que los manifests independientes de backend y f
 - La operacion completa permanece en una sola transaccion: un fallo al restaurar cualquier efecto revierte toda la reapertura.
 - Los contratos del sistema protegen la sincronizacion de dependencias y las dos obligaciones de reapertura.
 
+## Correccion productiva de descuentos tras reapertura
+
+La verificacion en Render confirmo que `a9edc68` estaba desplegado, pero un rol mensual ya calculado en borrador seguia sin mostrar el descuento de una linea `descontar` o `bonificar_descontar`. La causa estaba en la reaplicacion del rol de anticipos: la novedad se reactivaba, mientras el beneficio vinculado podia conservar `estado = anulado`; el calculo mensual solo consume beneficios `aprobado` con saldo pendiente.
+
+- La reaplicacion bloquea y reconcilia el beneficio existente por linea, valida que el monto coincida y solo permite reutilizar estados no consumidos.
+- Un beneficio anulado vuelve a `aprobado`, recupera saldo cuando corresponde y conserva el mismo identificador para evitar duplicados.
+- Un beneficio ya consumido o incompatible produce conflicto explicito y no altera parcialmente el rol.
+- La migracion `20260807013000_erpc26_repair_advance_role_discounts` repara de forma idempotente los datos existentes para periodos no cerrados y roles activos, tanto en `descontar` como en `bonificar_descontar`.
+- La migracion conserva en metadata el estado, saldo y movimientos retirados, y documenta el SQL de rollback aplicable antes de un nuevo recalculo o cierre.
+- La PWA muestra el estado y saldo del descuento vinculado. Si el rol mensual ya esta en borrador, advierte que debe recalcularse el empleado para sustituir el calculo anterior e incorporar el descuento reactivado.
+- No se modifica automaticamente un rol mensual cerrado ni se parchean sus totales: el motor oficial vuelve a calcular ingresos, deducciones, neto y lineas de evidencia.
+
+Evidencia local posterior: prueba focalizada de anticipos 19/19, backend completo 70 suites/544 pruebas, contratos, Prisma, build PWA y `git diff --check` en PASS.
+
 ## Criterios de aceptacion
 
 - El cierre genera un PDF por cada rol cerrado que tenga destinatario valido y lo adjunta al correo de ese empleado.

@@ -164,6 +164,11 @@ function normalizeLineRow(row) {
     resolucionSolicitada: metadata.resolucionSolicitada || metadata.resolutionRequested || resolutionFromState,
     estado: row.estado,
     beneficioId: row.beneficio_id || null,
+    beneficioEstado: row.beneficio_estado || null,
+    beneficioSaldoPendiente: row.beneficio_saldo_pendiente == null
+      ? null
+      : Number(row.beneficio_saldo_pendiente),
+    nominaEstado: row.nomina_estado || null,
     bonificacionNovedadId: row.bonificacion_novedad_id || null,
     decididoPor: row.decidido_por || null,
     decididoEn: row.decidido_en || null,
@@ -233,9 +238,19 @@ async function getRun(tenantId, id) {
   const linesResult = await db.query(`
     SELECT d.id, d.role_id, d.empleado_id, e.nombres, e.apellidos, e.cedula,
            d.monto, d.tipo_novedad, d.nombre_bonificacion, d.metadata, d.estado,
-           d.beneficio_id, d.bonificacion_novedad_id, d.decidido_por, d.decidido_en
+           d.beneficio_id, b.estado AS beneficio_estado,
+           b.saldo_pendiente AS beneficio_saldo_pendiente,
+           n.estado AS nomina_estado,
+           d.bonificacion_novedad_id, d.decidido_por, d.decidido_en
     FROM roles_anticipos_detalle d
+    JOIN roles_anticipos r ON r.id = d.role_id AND r.tenant_id = d.tenant_id
     JOIN empleados e ON e.id = d.empleado_id AND e.tenant_id = d.tenant_id
+    LEFT JOIN beneficios_empleados b ON b.id = d.beneficio_id AND b.tenant_id = d.tenant_id
+    LEFT JOIN nominas n
+      ON n.tenant_id = d.tenant_id
+     AND n.empleado_id = d.empleado_id
+     AND n.anio = r.anio
+     AND n.mes = r.mes
     WHERE d.tenant_id = $1 AND d.role_id = $2
     ORDER BY e.apellidos, e.nombres, d.id
   `, [tenantId, id]);
@@ -621,9 +636,67 @@ async function persistLineDecision(tx, { tenantId, roleId, run, line, normalized
   }
 
   if (createsBenefit) {
-    const existingBenefit = await tx.query(`SELECT id FROM beneficios_empleados WHERE tenant_id = $1 AND metadata->>'advanceRoleLineId' = $2 LIMIT 1`, [tenantId, line.id]);
+    const existingBenefit = await tx.query(`
+      SELECT id, estado, monto_total, saldo_pendiente, cuota_mensual, metadata
+      FROM beneficios_empleados
+      WHERE tenant_id = $1 AND metadata->>'advanceRoleLineId' = $2
+      LIMIT 1
+      FOR UPDATE
+    `, [tenantId, line.id]);
     if (existingBenefit.rows[0]) {
-      beneficioId = existingBenefit.rows[0].id;
+      const currentBenefit = existingBenefit.rows[0];
+      const currentMetadata = parseMetadata(currentBenefit.metadata);
+      const currentAmount = Number(currentBenefit.monto_total);
+      const sameAmount = Number.isFinite(currentAmount)
+        && roundMoney(currentAmount) === roundMoney(Number(line.monto));
+      const reusableStatus = ['aprobado', 'anulado'].includes(currentBenefit.estado);
+      if (!sameAmount || !reusableStatus) {
+        throw new AppError('El anticipo vinculado ya fue consumido o no coincide con el monto del rol.', {
+          code: 'ROL_ANTICIPOS_BENEFICIO_INCOMPATIBLE',
+          statusCode: 409,
+          details: {
+            beneficioId: currentBenefit.id,
+            sameAmount,
+            estado: currentBenefit.estado || null,
+          },
+        });
+      }
+      const benefitDescription = normalizedDecision === 'bonificar_descontar'
+        ? `${line.nombre_bonificacion || 'Bonificacion'} · anticipo a descontar al cierre`
+        : (line.nombre_bonificacion || `Anticipo del rol ${run.anio}-${String(run.mes).padStart(2, '0')}`);
+      const benefitMetadata = {
+        ...currentMetadata,
+        source: 'rol_anticipos',
+        advanceRoleId: roleId,
+        advanceRoleLineId: line.id,
+        resolucion: normalizedDecision,
+        pairedBonificacionNovedadId: bonificacionNovedadId,
+        momentoContable: normalizedDecision === 'bonificar_descontar' ? 'descuento_cierre' : 'pago_anticipo',
+        reactivatedFromStatus: currentBenefit.estado === 'anulado' ? 'anulado' : null,
+      };
+      const restored = await tx.query(`
+        UPDATE beneficios_empleados
+        SET descripcion = $3,
+            saldo_pendiente = CASE
+              WHEN estado = 'anulado' AND saldo_pendiente <= 0 THEN monto_total
+              ELSE saldo_pendiente
+            END,
+            estado = 'aprobado',
+            aprobado_por = $4,
+            aprobado_en = COALESCE(aprobado_en, NOW()),
+            metadata = $5::jsonb,
+            updated_at = NOW()
+        WHERE id = $1 AND tenant_id = $2 AND estado IN ('aprobado', 'anulado')
+        RETURNING id
+      `, [currentBenefit.id, tenantId, benefitDescription, user.id, JSON.stringify(benefitMetadata)]);
+      if (!restored.rows[0]) {
+        throw new AppError('El anticipo vinculado cambio de estado antes de completar la aplicacion.', {
+          code: 'ROL_ANTICIPOS_BENEFICIO_CONFLICTO_ESTADO',
+          statusCode: 409,
+          details: { beneficioId: currentBenefit.id },
+        });
+      }
+      beneficioId = restored.rows[0].id;
     } else {
       const benefitDescription = normalizedDecision === 'bonificar_descontar'
         ? `${line.nombre_bonificacion || 'Bonificacion'} · anticipo a descontar al cierre`

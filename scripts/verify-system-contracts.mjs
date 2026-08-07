@@ -153,6 +153,7 @@ const manualAttendanceService = read('backend/src/services/manualAttendanceServi
 const nominaController = read('backend/src/controllers/nominaController.js');
 const schema = read('backend/prisma/schema.prisma');
 const payrollBatchPartialFailureMigration = read('backend/prisma/migrations/20260715121500_payroll_batch_partial_failed/migration.sql');
+const advanceRoleDiscountRepairMigration = read('backend/prisma/migrations/20260807013000_erpc26_repair_advance_role_discounts/migration.sql');
 const parametrizacion = read('frontend-web/src/pages/Configuracion/Parametrizacion.jsx');
 const parametrizacionModel = read('frontend-web/src/pages/Configuracion/parametrizacion/parametrizacionModel.jsx');
 const appWeb = read('frontend-web/src/App.jsx');
@@ -419,6 +420,10 @@ assert(nominaController.includes("action: 'nomina.periodo.reabrir'") && nominaCo
 assert(nominaController.includes('FOR UPDATE') && nominaController.includes("status = 'reopened'"), 'La reapertura controlada debe bloquear el periodo y dejarlo abierto para correcciones.');
 assert(nominaController.includes('DELETE FROM payroll_calculation_lines') && nominaController.includes('lineasCalculoLiberadas'), 'La reapertura mensual debe liberar las lineas que bloquean novedades, anticipos y bonificaciones consumidas.');
 assert(nominaController.includes('beneficiosRestaurados') && nominaController.includes("estado = CASE WHEN benefit.estado = 'descontado' THEN 'aprobado'"), 'La reapertura mensual debe restaurar saldo y estado de beneficios aplicados durante el cierre.');
+assert(advancePayrollService.includes('ROL_ANTICIPOS_BENEFICIO_INCOMPATIBLE') && advancePayrollService.includes("estado IN ('aprobado', 'anulado')"), 'La reaplicacion de descontar o bonificar_descontar debe reactivar su beneficio sin reutilizar uno consumido.');
+assert(advanceRoleDiscountRepairMigration.includes("d.estado IN ('descontar', 'bonificar_descontar')") && advanceRoleDiscountRepairMigration.includes("SET estado = 'aprobado'"), 'La migracion productiva debe reparar descuentos historicos de roles activos para ambos tipos de resolucion.');
+assert(beneficios.includes('Descuento vinculado') && beneficios.includes('beneficioEstado') && beneficios.includes('beneficioSaldoPendiente'), 'La PWA debe mostrar si el efecto de descuento esta vinculado, aprobado y con saldo consumible.');
+assert(beneficios.includes('El rol mensual ya estaba calculado: recalcula este empleado') && advancePayrollService.includes('n.estado AS nomina_estado'), 'Un rol mensual en borrador debe advertir que necesita recalculo para incorporar un descuento reactivado.');
 assert(cerrarMes.includes('Descartar cálculo'), 'Cierre mensual debe permitir volver a novedades antes del cierre.');
 assert(cerrarMes.includes('Reapertura controlada') && cerrarMes.includes('/nomina/reabrir') && cerrarMes.includes('motivo'), 'Cierre mensual debe ofrecer reapertura controlada con motivo.');
 assert(cerrarMes.includes('líneas de cálculo quedaron liberadas') && cerrarMes.includes('anticipos o beneficios recuperaron su saldo'), 'La PWA debe confirmar al usuario los consumos liberados por la reapertura.');

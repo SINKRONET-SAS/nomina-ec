@@ -3929,3 +3929,13 @@ El usuario final necesita distinguir, por empleado, si una línea del rol parcia
 - `node --check` y `git diff --check` PASS.
 - Build PWA PASS: 2031 modulos; mobile store readiness PASS.
 - Cierre final de AuditLock queda como ultima puerta antes de publicar.
+
+### Incidente productivo ERPC26-04: descuento ausente en borrador recalculable
+
+- Render confirmo el despliegue de `a9edc68`; por tanto, se descarto retraso de despliegue como causa.
+- Caso reproducido: periodo mensual reabierto, rol mensual calculado en `borrador` y linea de rol de anticipos activa con resolucion `descontar` o `bonificar_descontar`, pero beneficio vinculado en `anulado`.
+- Causa: `persistLineDecision` reutilizaba el identificador del beneficio sin reactivar su estado. `getApprovedDeductions` solo consume beneficios `aprobado` con saldo mayor que cero.
+- Correccion runtime: reconciliacion transaccional del beneficio, restauracion idempotente de estado/saldo y conflicto explicito para beneficios consumidos o de monto incompatible.
+- Correccion productiva: migracion de datos acotada a periodos no cerrados y roles activos, con evidencia reversible en metadata y rollback SQL documentado.
+- Exposicion PWA: estado/saldo del descuento y aviso de recalculo cuando `nominas.estado = borrador`. El borrador existente no se altera silenciosamente; debe pasar nuevamente por el motor oficial.
+- Evidencia: prueba focalizada 19/19, backend completo 70 suites/544 pruebas, contratos, Prisma, build PWA y `git diff --check` PASS.

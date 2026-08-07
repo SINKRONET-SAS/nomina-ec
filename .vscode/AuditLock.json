@@ -5,16 +5,16 @@
   "status": "completed-pass",
   "phaseCompleted": "ERPC26-04",
   "currentPhase": null,
-  "updatedAt": "2026-08-07T01:02:14.444Z",
+  "updatedAt": "2026-08-07T01:31:05.728Z",
   "rulesSource": "RULES.md",
   "contextSource": ".github/CODEX_CONTEXT.md",
   "previousPlan": "HAIKY-REGRESION-NOVEDADES-ROL-JULIO-2026",
   "previousPhase": "ERPC26-04",
-  "previousAuditLockHash": "22FE91FC607BD206187B7556435036B863694F6C77B5BCC7661099E9728AA0E2",
+  "previousAuditLockHash": "8B520E6E152B217F7D496B985124ACEC7E1650D981C4D7C1D023F01E119B380E",
   "signatureAlgorithm": "SHA256(previous AuditLock bytes + UTF-8 updatedAt)",
   "approval": "Solicitud explicita del usuario para generar el plan, implementar la correccion, verificar regresiones, hacer commit y push.",
-  "summary": "ERPC26 revalidado: CI reproducible y reapertura mensual libera novedades, anticipos y bonificaciones, restaurando saldos aplicados al cierre.",
-  "nextAction": "Desplegar la rama publicada y verificar una reapertura real seguida de correccion de novedades y recalculo.",
+  "summary": "ERPC26 revalidado: descuentos descontar y bonificar_descontar se reactivan al reaplicar roles, con reparacion productiva y aviso de recalculo del borrador.",
+  "nextAction": "Desplegar la rama publicada, recalcular el empleado cuyo rol mensual esta en borrador y verificar el descuento en el nuevo calculo.",
   "fases": [
     {
       "phase": "ERPC26-00",
@@ -39,7 +39,7 @@
     {
       "phase": "ERPC26-04",
       "status": "completed-pass",
-      "detail": "Contratos, Prisma, 70 suites backend, build PWA, mobile, lockfiles independientes y reapertura reversible aprobados."
+      "detail": "Contratos, Prisma, 70 suites backend, build PWA, mobile, lockfiles independientes, reapertura y reactivacion reversible de descuentos aprobados."
     }
   ],
   "filesModified": [
@@ -67,6 +67,10 @@
     "backend/package-lock.json",
     "frontend-web/package.json",
     "frontend-web/package-lock.json",
+    "backend/prisma/migrations/20260807013000_erpc26_repair_advance_role_discounts/migration.sql",
+    "backend/src/services/advancePayrollService.js",
+    "backend/src/services/advancePayrollService.test.js",
+    "frontend-web/src/pages/Nomina/Beneficios.jsx",
     "scripts/verify-system-contracts.mjs"
   ],
   "validationChecks": [
@@ -103,9 +107,17 @@
     "Reapertura mensual PASS: libera payroll_calculation_lines de los roles revertidos para reutilizar novedades, anticipos y bonificaciones.",
     "Restauracion idempotente PASS: saldo, estado y metadata del beneficio vuelven al punto anterior al cierre sin afectar otros periodos.",
     "Prueba focalizada de nominaController PASS: 23 pruebas.",
-    "Contrato frontend PASS: la PWA informa lineas liberadas y beneficios restaurados y refresca las fuentes afectadas."
+    "Contrato frontend PASS: la PWA informa lineas liberadas y beneficios restaurados y refresca las fuentes afectadas.",
+    "Render verificado: el commit a9edc68 estaba desplegado; se descarto demora de propagacion como causa del descuento ausente.",
+    "Reaplicacion de descuentos PASS: descontar y bonificar_descontar reactivan el beneficio anulado sin duplicarlo.",
+    "Proteccion contable PASS: un beneficio consumido o de monto incompatible genera conflicto y rollback transaccional.",
+    "Migracion productiva idempotente revisada: solo roles activos de periodos no cerrados, con evidencia y SQL de rollback documentados.",
+    "PWA operativa PASS: expone estado/saldo del descuento y exige recalcular cuando el rol mensual existente esta en borrador.",
+    "Prueba focalizada advancePayrollService PASS: 19 pruebas.",
+    "Backend completo final PASS: 70 suites y 544 pruebas.",
+    "Revalidacion final PASS: contratos, Prisma, build PWA de 2031 modulos y mobile store readiness."
   ],
-  "backendSuiteResult": "70 suites, 541 tests PASS",
+  "backendSuiteResult": "70 suites, 544 tests PASS",
   "frontendBuildResult": "2031 modules transformed; PWA service worker generated",
-  "signature": "7F5087B19C93675069EED494FC730C6AF687E257BDDAC550E9913A64E6886AEA"
+  "signature": "28DBD7F44E0DBFA001910DA7D73F92057674630032B17DA1C8B35D1144E597F2"
 }

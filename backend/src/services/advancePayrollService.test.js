@@ -10,7 +10,7 @@ jest.mock('./payrollNoveltyService', () => ({ ensureNoveltyTypeAllowed: jest.fn(
 const db = require('../config/database');
 const { recordAudit } = require('./auditService');
 const { ensureNoveltyTypeAllowed } = require('./payrollNoveltyService');
-const { ADVANCE_BULK_TEMPLATE_COLUMNS, annulRun, applyRequestedDecisions, createRun, decideLine, closeRun, parseBulkCsv, reopenRun, reverseApprovalRun, templateCsv } = require('./advancePayrollService');
+const { ADVANCE_BULK_TEMPLATE_COLUMNS, annulRun, applyRequestedDecisions, createRun, decideLine, closeRun, getRun, parseBulkCsv, reopenRun, reverseApprovalRun, templateCsv } = require('./advancePayrollService');
 
 const user = { id: 'user-1' };
 const context = { correlationId: 'corr-advance', ipAddress: '127.0.0.1' };
@@ -41,6 +41,41 @@ describe('advancePayrollService', () => {
     expect(parseBulkCsv(csv)).toEqual([expect.objectContaining({ cedula: '0102030405', monto: '100.00', tipoNovedad: 'bono_desempeno', resolucion: 'descontar' })]);
     expect(parseBulkCsv('cedula,monto,tipoNovedad,nombreBonificacion\n0102030405,100,bono_desempeno,Bono')).toEqual([expect.objectContaining({ cedula: '0102030405', monto: '100', tipoNovedad: 'bono_desempeno' })]);
     expect(() => parseBulkCsv('empleadoId,monto,tipoNovedad,nombreBonificacion\nabc,100,bono_desempeno,Bono')).toThrow('encabezado');
+  });
+
+  test('expone estado y saldo del descuento vinculado para verificacion operativa', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [runRow()] })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'line-1',
+          role_id: 'role-1',
+          empleado_id: 'employee-1',
+          nombres: 'Ana',
+          apellidos: 'Demo',
+          cedula: '0999999999',
+          monto: '100.00',
+          tipo_novedad: 'bono_desempeno',
+          nombre_bonificacion: 'Anticipo julio',
+          metadata: { resolucionSolicitada: 'descontar' },
+          estado: 'descontar',
+          beneficio_id: 'benefit-1',
+          beneficio_estado: 'aprobado',
+          beneficio_saldo_pendiente: '100.00',
+          nomina_estado: 'borrador',
+        }],
+      });
+
+    const result = await getRun('tenant-1', 'role-1');
+
+    expect(result.lineas[0]).toMatchObject({
+      beneficioId: 'benefit-1',
+      beneficioEstado: 'aprobado',
+      beneficioSaldoPendiente: 100,
+      nominaEstado: 'borrador',
+    });
+    expect(db.query.mock.calls[1][0]).toContain('LEFT JOIN beneficios_empleados');
+    expect(db.query.mock.calls[1][0]).toContain('LEFT JOIN nominas');
   });
 
   test('crea un rol en la ruta única de anticipos y conserva nombre/tipo de bonificación', async () => {
@@ -103,6 +138,71 @@ describe('advancePayrollService', () => {
     expect(tx.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE novedades_asistencia'), ['tenant-1', 'novelty-1', 'benefit-1']);
     expect(db.commit).toHaveBeenCalledWith(tx);
     expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'nomina.rol_anticipos.linea.bonificar_descontar' }));
+  });
+
+  test('reactiva el descuento existente al reaplicar una linea reabierta', async () => {
+    const tx = { query: jest.fn() };
+    db.getClient.mockResolvedValueOnce(tx);
+    tx.query
+      .mockResolvedValueOnce({ rows: [runRow()] })
+      .mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'open' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'line-1', role_id: 'role-1', empleado_id: 'employee-1', monto: '100.00', tipo_novedad: 'bono_desempeno', nombre_bonificacion: 'Anticipo julio', estado: 'aprobado' }] })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'benefit-1',
+          estado: 'anulado',
+          monto_total: '100.00',
+          saldo_pendiente: '100.00',
+          cuota_mensual: '100.00',
+          metadata: { source: 'rol_anticipos', advanceRoleLineId: 'line-1' },
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [{ id: 'benefit-1' }] })
+      .mockResolvedValueOnce({ rows: [] });
+    getRunQueries({
+      estado: 'descontar',
+      beneficio_id: 'benefit-1',
+      bonificacion_novedad_id: null,
+    });
+
+    const result = await decideLine('tenant-1', 'role-1', 'line-1', 'descontar', user, context);
+
+    expect(result.lineas[0]).toMatchObject({ estado: 'descontar', beneficioId: 'benefit-1' });
+    expect(tx.query.mock.calls[4][0]).toContain("estado = 'aprobado'");
+    expect(tx.query.mock.calls[4][0]).toContain("estado IN ('aprobado', 'anulado')");
+    expect(JSON.parse(tx.query.mock.calls[4][1][4])).toMatchObject({
+      source: 'rol_anticipos',
+      advanceRoleLineId: 'line-1',
+      resolucion: 'descontar',
+      reactivatedFromStatus: 'anulado',
+    });
+    expect(db.commit).toHaveBeenCalledWith(tx);
+  });
+
+  test('bloquea reutilizar un descuento que ya fue consumido', async () => {
+    const tx = { query: jest.fn() };
+    db.getClient.mockResolvedValueOnce(tx);
+    tx.query
+      .mockResolvedValueOnce({ rows: [runRow()] })
+      .mockResolvedValueOnce({ rows: [{ id: 'period-1', status: 'open' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'line-1', role_id: 'role-1', empleado_id: 'employee-1', monto: '100.00', tipo_novedad: 'bono_desempeno', nombre_bonificacion: 'Anticipo julio', estado: 'aprobado' }] })
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'benefit-1',
+          estado: 'descontado',
+          monto_total: '100.00',
+          saldo_pendiente: '0.00',
+          cuota_mensual: '100.00',
+          metadata: { source: 'rol_anticipos', advanceRoleLineId: 'line-1' },
+        }],
+      });
+
+    await expect(decideLine('tenant-1', 'role-1', 'line-1', 'descontar', user, context)).rejects.toMatchObject({
+      code: 'ROL_ANTICIPOS_BENEFICIO_INCOMPATIBLE',
+      statusCode: 409,
+    });
+    expect(db.rollback).toHaveBeenCalledWith(tx);
+    expect(db.commit).not.toHaveBeenCalled();
   });
 
   test('aplica atomica y completamente las 46 bonificaciones con descuento y 8 bonificaciones del lote productivo', async () => {

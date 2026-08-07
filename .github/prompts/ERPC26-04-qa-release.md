@@ -21,3 +21,12 @@ Gate: todos los checks PASS; cualquier regresion debe corregirse antes de firmar
 - Al reabrir un mes, liberar las lineas de calculo que marcaron novedades, anticipos o bonificaciones como consumidas.
 - Revertir exclusivamente los descuentos de beneficios que fueron aplicados por ese cierre, conservando el historial de otros periodos.
 - Exponer en la PWA los conteos restaurados y volver a ejecutar contratos, Prisma, suite backend y build web antes de publicar.
+
+## Correccion productiva adicional 2026-08-06
+
+- Confirmar en Render el commit efectivamente desplegado antes de atribuir el incidente a propagacion.
+- Cubrir `descontar` y `bonificar_descontar`: al reaplicar una linea, reactivar el beneficio anulado sin duplicarlo y rechazar beneficios ya consumidos o incompatibles.
+- Reparar datos existentes solo para roles activos de periodos no cerrados mediante migracion idempotente y rollback documentado.
+- Mostrar en la PWA el estado y saldo del descuento vinculado.
+- Si el rol mensual ya esta calculado en borrador, exigir un recalculo visible del empleado; no modificar totales ni evidencia de calculo directamente por migracion.
+- Repetir prueba focalizada, backend completo, contratos, Prisma, build web, mobile readiness, UTF-8 y `git diff --check` antes de commit y push.
