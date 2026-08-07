@@ -98,6 +98,19 @@ El 2026-08-06 se reejecutaron y contrastaron los prompts `ERPC26-00` a `ERPC26-0
 - PASS preparacion mobile para tiendas.
 - Resultado: timeout insuficiente corregido y sin regresiones adicionales.
 
+## Cierre de regresion de dependencias
+
+El push de cierre reporto diez alertas Dependabot introducidas por resoluciones recientes. La auditoria local agrupo las alertas en cuatro causas transitivas altas y se corrigieron antes de considerar terminada la entrega.
+
+- `brace-expansion`: 5.0.9; ramas compatibles historicas: 1.1.18 y 2.1.4.
+- `fast-uri`: 3.1.5.
+- `ip-address`: 10.4.0.
+- `js-yaml`: 4.3.1 y 3.15.1 para la rama Jest.
+- PASS `npm audit`: 0 vulnerabilidades en lockfile y arbol instalado.
+- PASS arbol de dependencias sin resoluciones invalidas.
+- PASS contratos, Prisma, 70 suites/541 pruebas backend, PWA 2031 modulos y mobile.
+- Se agregaron contratos que impiden reintroducir las versiones vulnerables en los manifests auditados por GitHub.
+
 ## Criterios de aceptacion
 
 - El cierre genera un PDF por cada rol cerrado que tenga destinatario valido y lo adjunta al correo de ese empleado.

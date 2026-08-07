@@ -59,6 +59,15 @@
 - Validacion integral serial posterior a la correccion: contratos PASS, Prisma PASS, backend 70 suites/541 pruebas PASS y build PWA de 2031 modulos PASS.
 - Mobile store readiness PASS; no se detectaron regresiones adicionales.
 
+### Cierre de alertas de dependencias recientes - 2026-08-06
+
+- El aviso del push se trato como regresion: `npm audit` confirmo cuatro causas altas propagadas en diez alertas remotas.
+- Versiones corregidas: `brace-expansion` 5.0.9, `fast-uri` 3.1.5, `ip-address` 10.4.0, `js-yaml` 4.3.1 y la rama Jest `js-yaml` 3.15.1.
+- Las ramas historicas de `brace-expansion` se resolvieron en 1.1.18 y 2.1.4 para respetar el contrato semantico de sus consumidores.
+- `npm audit` sobre lockfile y arbol instalado: 0 vulnerabilidades.
+- El verificador de contratos bloquea regresiones a las versiones vulnerables en raiz, backend y frontend.
+- Validacion posterior: contratos PASS, Prisma PASS, backend 70 suites/541 pruebas PASS, PWA 2031 modulos PASS y mobile PASS.
+
 ---
 
 ## Previous Haiky Plan - HAIKY-AUDITORIA-INTEGRAL-V75-CORRECCION-MEJORA-2026

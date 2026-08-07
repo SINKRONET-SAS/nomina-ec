@@ -60,6 +60,14 @@ assert(Boolean(backendPackage.scripts?.test), 'Backend debe exponer script test.
 assert(Boolean(backendPackage.scripts?.['prisma:validate']), 'Backend debe exponer script prisma:validate.');
 assert(Boolean(webPackage.scripts?.build), 'Frontend web debe exponer script build.');
 assert(Boolean(mobilePackage.scripts?.check?.stores || mobilePackage.scripts?.['check:stores']), 'App movil debe exponer script check:stores.');
+assert(rootPackage.overrides?.['brace-expansion'] === '5.0.9', 'Override raiz de brace-expansion debe conservar la version segura 5.0.9.');
+assert(rootPackage.overrides?.['fast-uri'] === '3.1.5', 'Override raiz de fast-uri debe conservar la version segura 3.1.5.');
+assert(rootPackage.overrides?.['ip-address'] === '10.4.0', 'Override raiz de ip-address debe conservar la version segura 10.4.0.');
+assert(rootPackage.overrides?.['js-yaml'] === '4.3.1', 'Override raiz de js-yaml debe conservar la version segura 4.3.1.');
+assert(rootPackage.overrides?.['@istanbuljs/load-nyc-config']?.['js-yaml'] === '3.15.1', 'Jest debe conservar js-yaml 3.15.1 corregido.');
+assert(backendPackage.overrides?.['brace-expansion'] === '5.0.9', 'Backend debe declarar brace-expansion 5.0.9 en auditorias independientes.');
+assert(backendPackage.overrides?.['js-yaml'] === '^4.3.1', 'Backend debe declarar js-yaml 4.3.1 o superior corregido.');
+assert(webPackage.overrides?.['brace-expansion'] === '5.0.9', 'Frontend debe declarar brace-expansion 5.0.9 en auditorias independientes.');
 
 const webIndexHtml = read('frontend-web/index.html');
 const pwaConfig = read('frontend-web/pwa.config.js');

@@ -4,8 +4,13 @@
   "private": true,
   "description": "SKNOMINA como un solo sistema: backend, PWA web y app movil gobernados desde la raiz.",
   "overrides": {
-    "brace-expansion": "5.0.8",
-    "fast-uri": "3.1.4",
+    "brace-expansion": "5.0.9",
+    "fast-uri": "3.1.5",
+    "ip-address": "10.4.0",
+    "js-yaml": "4.3.1",
+    "@istanbuljs/load-nyc-config": {
+      "js-yaml": "3.15.1"
+    },
     "tar": "7.5.22",
     "uuid": "11.1.1",
     "exceljs": {
