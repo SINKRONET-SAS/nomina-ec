@@ -205,6 +205,41 @@ services:
       - key: SINKRONET_FACTURADOR_TIMEOUT_MS
         value: "15000"
 
+  - type: cron
+    name: sknomina-backup
+    runtime: node
+    rootDir: backend
+    schedule: "30 3 * * *"  # 22:30 Ecuador (UTC-5), despues de Sinkronet
+    buildCommand: npm ci
+    startCommand: node scripts/run-database-backup.js
+    buildFilter:
+      paths:
+        - backend/**
+        - render.yaml
+    envVars:
+      - key: NODE_VERSION
+        value: "22.19.0"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sknomina-postgres
+          property: connectionString
+      - key: BACKUP_RETENTION_DAYS
+        value: "30"
+      - key: BACKUP_DIR
+        value: /tmp/nuevo-nomina-backups
+      - key: BACKUP_FILENAME_PREFIX
+        value: nuevo_nomina
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/secrets/google-service-account.json
+      - key: GOOGLE_DRIVE_ID
+        value: 0ADahqX01k2yZUk9PVA
+      - key: GOOGLE_DRIVE_FOLDER_ID
+        value: 1jB1IY5w3-hFuBt3zInY-bHxZ6slzwxmq
+      - key: BACKUP_ENCRYPTION_KEY
+        sync: false
+
   - type: web
     name: sknomina-frontend
     runtime: static

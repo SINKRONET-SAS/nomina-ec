@@ -18,7 +18,8 @@
     "rdep:verify-source": "node scripts/verify-rdep-xsd-source.js",
     "pretest": "node scripts/ensure-native-bindings.js",
     "test": "node scripts/run-jest.js",
-    "legal:sync": "node scripts/sync-legal-parameters.js"
+    "legal:sync": "node scripts/sync-legal-parameters.js",
+    "backup:db": "node scripts/run-database-backup.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1067.0",
