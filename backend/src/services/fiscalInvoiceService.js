@@ -23,11 +23,21 @@ function centsToUsd(value) {
 
 function normalizeStatus(value) {
   const raw = String(value || '').trim().toLowerCase();
-  if (['autorizada', 'autorizado', 'authorized', 'aprobada', 'aprobado'].includes(raw)) {
+  if (
+    ['invoice_authorized', 'autorizada', 'autorizado', 'authorized', 'aprobada', 'aprobado'].includes(
+      raw
+    )
+  ) {
     return 'invoice_authorized';
   }
-  if (['rechazada', 'rechazado', 'rejected', 'devuelta', 'devuelto', 'error'].includes(raw)) {
+  if (
+    ['invoice_rejected', 'rechazada', 'rechazado', 'rejected', 'devuelta', 'devuelto'].includes(raw)
+  ) {
     return 'invoice_rejected';
+  }
+  if (['failed', 'fallida', 'fallido', 'error', 'error_tecnico'].includes(raw)) return 'failed';
+  if (['blocked', 'invoice_requested', 'received'].includes(raw)) {
+    return raw === 'blocked' ? 'blocked' : 'invoice_requested';
   }
   return 'invoice_requested';
 }
@@ -36,12 +46,14 @@ function extractFacturadorReference(response = {}) {
   const data = response.data || response.factura || response.comprobante || response;
   return {
     status: normalizeStatus(data.estado || data.status || data.estadoSri || data.estado_sri),
-    facturadorRequestId: String(data.id || data.requestId || data.facturaId || data.comprobanteId || ''),
+    facturadorRequestId: String(
+      data.facturadorRequestId || data.requestId || data.id || data.facturaId || data.comprobanteId || ''
+    ),
     invoiceNumber: String(data.numero || data.numeroFactura || data.secuencial || ''),
     accessKey: String(data.claveAcceso || data.accessKey || data.clave_acceso || ''),
     rideUrl: String(data.rideUrl || data.ride_url || data.pdfUrl || ''),
     xmlUrl: String(data.xmlUrl || data.xml_url || ''),
-    lastError: String(data.error || data.message || ''),
+    lastError: String(data.error || data.message || data.mensaje || ''),
     raw: response,
   };
 }
@@ -66,14 +78,29 @@ function resolveCustomerIdentity(tx) {
   const normalizedRazonSocial = String(tx.razon_social || tenantConfig.razonSocial || tenantConfig.razon_social || '').trim();
 
   return {
-    identificacion: normalizedRuc,
-    razonSocial: normalizedRazonSocial,
+    identificationType: normalizedRuc.length === 13 ? '04' : normalizedRuc.length === 10 ? '05' : '06',
+    identification: normalizedRuc,
+    legalName: normalizedRazonSocial,
     email: customerEmail,
+    address: String(
+      tenantConfig.facturacionDireccion
+        || tenantConfig.direccionMatriz
+        || tenantConfig.direccion
+        || ''
+    ).trim(),
+    phone: String(tenantConfig.telefono || tenantConfig.phone || '').trim(),
   };
+}
+
+function resolveVatRate(base, iva) {
+  if (base <= 0 || iva <= 0) return 0;
+  const calculated = Math.round((iva / base) * 100);
+  return [5, 8, 12, 15].includes(calculated) ? calculated : 15;
 }
 
 function buildInvoicePayload(tx) {
   const customer = resolveCustomerIdentity(tx);
+  const tenantConfig = safeJson(tx.tenant_configuracion);
   const planName = tx.plan_nombre || tx.plan_id || 'Suscripcion SKNOMINA';
   const productCode = `SKNOMINA-${String(tx.plan_id || 'PLAN').slice(0, 30)}`;
   const productDescription = `Servicio SaaS SKNOMINA - ${planName}`;
@@ -82,37 +109,65 @@ function buildInvoicePayload(tx) {
   const baseNoGravada = centsToUsd(tx.base_no_gravada_centavos);
   const iva = centsToUsd(tx.iva_centavos);
 
+  const items = [];
+  if (baseGravada > 0) {
+    items.push({
+      code: productCode,
+      description: productDescription,
+      quantity: 1,
+      unitPrice: baseGravada,
+      discount: 0,
+      vatRate: resolveVatRate(baseGravada, iva),
+    });
+  }
+  if (baseNoGravada > 0) {
+    items.push({
+      code: `${productCode}-0`,
+      description: `${productDescription} - tarifa 0%`,
+      quantity: 1,
+      unitPrice: baseNoGravada,
+      discount: 0,
+      vatRate: 0,
+    });
+  }
+  if (items.length === 0) {
+    items.push({
+      code: productCode,
+      description: productDescription,
+      quantity: 1,
+      unitPrice: amount,
+      discount: 0,
+      vatRate: 0,
+    });
+  }
+
   const invoice = {
-    origen: 'SKNOMINA',
-    tipoComprobante: 'FACTURA',
-    referenciaExterna: buildExternalReference(tx),
-    moneda: tx.moneda || 'USD',
-    cliente: customer,
-    items: [
-      {
-        codigo: productCode,
-        descripcion: productDescription,
-        cantidad: 1,
-        precioUnitario: amount,
-        baseGravada,
-        baseNoGravada,
-        iva,
-        total: amount,
+    externalReference: buildExternalReference(tx),
+    customer,
+    invoice: {
+      issueDate: new Date().toISOString().slice(0, 10),
+      currency: tx.moneda || 'USD',
+      items,
+      payments: [{ method: '20', amount, term: 0, timeUnit: 'dias' }],
+      metadata: {
+        tenantId: tx.tenant_id,
+        paymentTransactionId: tx.id,
+        planCode: tx.plan_id,
+        billingPeriod: String(tx.periodo_facturacion || tx.created_at || '').slice(0, 7),
+        provider: tx.proveedor,
+        product: productDescription,
+        productCode,
+        contractVersion: 'SNF26R1',
+        emissionPointId:
+          Number.parseInt(
+            process.env.SINKRONET_FACTURADOR_EMISSION_POINT_ID
+              || tenantConfig.facturadorEmissionPointId
+              || tenantConfig.emissionPointId
+              || tenantConfig.puntoEmisionId
+              || '',
+            10
+          ) || undefined,
       },
-    ],
-    totales: {
-      baseGravada,
-      baseNoGravada,
-      iva,
-      total: amount,
-    },
-    metadata: {
-      tenantId: tx.tenant_id,
-      paymentTransactionId: tx.id,
-      planId: tx.plan_id,
-      proveedorPago: tx.proveedor,
-      producto: productDescription,
-      productoCodigo: productCode,
     },
   };
 
@@ -127,8 +182,15 @@ function validateInvoicePrerequisites(tx, readiness) {
   const tenantConfig = safeJson(tx?.tenant_configuracion);
   const tenantRuc = String(tx?.ruc || tenantConfig.ruc || '').replace(/\D/g, '');
   const tenantRazonSocial = String(tx?.razon_social || tenantConfig.razonSocial || tenantConfig.razon_social || '').trim();
+  const tenantDireccion = String(
+    tenantConfig.facturacionDireccion
+      || tenantConfig.direccionMatriz
+      || tenantConfig.direccion
+      || ''
+  ).trim();
   if (tx && !tenantRuc) errors.push('Falta el RUC de la empresa para facturar.');
   if (tx && !tenantRazonSocial) errors.push('Falta la razon social de la empresa para facturar.');
+  if (tx && !tenantDireccion) errors.push('Falta la direccion fiscal de la empresa para facturar.');
   return errors;
 }
 
@@ -316,7 +378,11 @@ async function requestInvoiceForTransaction({ tenantId, paymentTransactionId, us
       tenantId,
       externalReference,
       facturador: {
-        status: err.code === 'FACTURADOR_NO_CONFIGURADO' ? 'blocked' : 'invoice_rejected',
+        status: err.code === 'FACTURADOR_NO_CONFIGURADO'
+          ? 'blocked'
+          : Number(err.statusCode || 500) >= 500
+            ? 'failed'
+            : 'invoice_rejected',
         facturadorRequestId: '',
         invoiceNumber: '',
         accessKey: '',
@@ -355,10 +421,11 @@ async function queueInvoiceForApprovedTransaction(approvedTx, context = {}) {
 async function processFacturadorWebhook({ payload, rawPayload, signature, correlationId }) {
   verifyFacturadorWebhookSignature(rawPayload || JSON.stringify(payload || {}), signature);
 
-  const idempotencyKey = String(payload.idempotencyKey || payload.idempotency_key || '').trim();
-  const tenantId = String(payload.tenantId || payload.tenant_id || '').trim();
+  const eventPayload = payload?.data && typeof payload.data === 'object' ? payload.data : payload;
+  const idempotencyKey = String(eventPayload.idempotencyKey || eventPayload.idempotency_key || '').trim();
+  const tenantId = String(eventPayload.tenantId || eventPayload.tenant_id || '').trim();
   const externalReference = String(
-    payload.referenciaExterna || payload.externalReference || payload.external_reference || ''
+    eventPayload.referenciaExterna || eventPayload.externalReference || eventPayload.external_reference || ''
   ).trim();
 
   if (!idempotencyKey && (!tenantId || !externalReference)) {
@@ -369,7 +436,7 @@ async function processFacturadorWebhook({ payload, rawPayload, signature, correl
     });
   }
 
-  const facturador = extractFacturadorReference(payload);
+  const facturador = extractFacturadorReference(eventPayload);
   const result = await db.query(
     `UPDATE fiscal_invoice_requests
      SET status = $3,
@@ -396,7 +463,7 @@ async function processFacturadorWebhook({ payload, rawPayload, signature, correl
       facturador.rideUrl,
       facturador.xmlUrl,
       facturador.lastError,
-      JSON.stringify({ facturadorWebhook: payload }),
+      JSON.stringify({ facturadorWebhook: payload, facturadorEventId: payload?.id || null }),
       externalReference,
     ]
   );
@@ -454,7 +521,7 @@ async function retryPendingInvoices(correlationId = 'cron-fiscal-invoice-retry')
     `SELECT fir.*, tr.tenant_id AS tx_tenant_id
      FROM fiscal_invoice_requests fir
      LEFT JOIN transacciones_pago tr ON tr.id = fir.payment_transaction_id
-     WHERE fir.status IN ('blocked', 'invoice_rejected')
+     WHERE fir.status IN ('blocked', 'failed')
        AND fir.attempts < $1
        AND fir.payment_transaction_id IS NOT NULL
        AND fir.updated_at < NOW() - INTERVAL '${RETRY_BACKOFF_HOURS} hours'

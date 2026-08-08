@@ -20,6 +20,7 @@ const {
 const logger = require('../utils/logger');
 const {
   buildInvoicePayload,
+  processFacturadorWebhook,
   requestInvoiceForTransaction,
   retryPendingInvoices,
 } = require('./fiscalInvoiceService');
@@ -40,7 +41,11 @@ const tx = {
   client_transaction_id: 'SKN-PAY-1',
   ruc: '1790012345001',
   razon_social: 'Empresa Demo S.A.',
-  tenant_configuracion: { facturacionEmail: 'contabilidad@example.com' },
+  tenant_configuracion: {
+    facturacionEmail: 'contabilidad@example.com',
+    facturacionDireccion: 'Av. Principal 123, Quito',
+    facturadorEmissionPointId: 27,
+  },
 };
 
 describe('fiscalInvoiceService MSF26', () => {
@@ -52,20 +57,26 @@ describe('fiscalInvoiceService MSF26', () => {
     const payload = buildInvoicePayload(tx);
 
     expect(payload.customer).toEqual(expect.objectContaining({
-      identificacion: '1790012345001',
-      razonSocial: 'Empresa Demo S.A.',
+      identification: '1790012345001',
+      legalName: 'Empresa Demo S.A.',
       email: 'contabilidad@example.com',
+      address: 'Av. Principal 123, Quito',
     }));
     expect(payload.invoice).toEqual(expect.objectContaining({
-      origen: 'SKNOMINA',
-      tipoComprobante: 'FACTURA',
-      referenciaExterna: 'SKN-PAY-1',
+      externalReference: 'SKN-PAY-1',
+      customer: payload.customer,
     }));
-    expect(payload.invoice.items[0]).toEqual(expect.objectContaining({
-      descripcion: 'Servicio SaaS SKNOMINA - Pyme',
-      total: 56,
-      codigo: 'SKNOMINA-PYME',
+    expect(payload.invoice.invoice.items[0]).toEqual(expect.objectContaining({
+      description: 'Servicio SaaS SKNOMINA - Pyme',
+      unitPrice: 50,
+      vatRate: 12,
+      code: 'SKNOMINA-PYME',
     }));
+    expect(payload.invoice.invoice.payments).toEqual([
+      expect.objectContaining({ method: '20', amount: 56 }),
+    ]);
+    expect(payload.invoice.invoice.metadata.emissionPointId).toBe(27);
+    expect(payload.invoice.invoice.metadata.contractVersion).toBe('SNF26R1');
   });
 
   test('usa la identidad fiscal de la empresa desde la configuracion del tenant cuando no vienen en la transaccion', () => {
@@ -76,14 +87,15 @@ describe('fiscalInvoiceService MSF26', () => {
       tenant_configuracion: {
         razonSocial: 'Empresa Demo S.A.',
         ruc: '1790012345001',
+        facturacionDireccion: 'Av. Principal 123, Quito',
       },
     });
 
     expect(payload.customer).toEqual(expect.objectContaining({
-      identificacion: '1790012345001',
-      razonSocial: 'Empresa Demo S.A.',
+      identification: '1790012345001',
+      legalName: 'Empresa Demo S.A.',
     }));
-    expect(payload.invoice.cliente).toEqual(payload.customer);
+    expect(payload.invoice.customer).toEqual(payload.customer);
   });
 
   test('registra solicitud bloqueada cuando el facturador no esta configurado', async () => {
@@ -128,12 +140,15 @@ describe('fiscalInvoiceService MSF26', () => {
       blockers: [],
     });
     requestFiscalInvoice.mockResolvedValue({
-      estado: 'AUTORIZADA',
-      id: 'fac-req-1',
-      numero: '001-001-000000123',
-      claveAcceso: '2806202601179001234500120010010000001231234567811',
-      rideUrl: 'https://facturador.example/ride/123.pdf',
-      xmlUrl: 'https://facturador.example/xml/123.xml',
+      success: true,
+      data: {
+        estado: 'invoice_authorized',
+        facturadorRequestId: 'fac-req-1',
+        numero: '001-001-000000123',
+        claveAcceso: '2806202601179001234500120010010000001231234567811',
+        rideUrl: 'https://facturador.example/ride/123.pdf',
+        xmlUrl: 'https://facturador.example/xml/123.xml',
+      },
     });
     db.query
       .mockResolvedValueOnce({ rows: [tx] })
@@ -179,11 +194,64 @@ describe('fiscalInvoiceService MSF26', () => {
     });
 
     expect(requestFiscalInvoice).toHaveBeenCalledWith(
-      expect.objectContaining({ referenciaExterna: 'SKN-PAY-1' }),
+      expect.objectContaining({
+        externalReference: 'SKN-PAY-1',
+        customer: expect.objectContaining({ identification: '1790012345001' }),
+        invoice: expect.objectContaining({
+          items: expect.any(Array),
+          payments: expect.any(Array),
+        }),
+      }),
       expect.objectContaining({ idempotencyKey: 'SKNOMINA-SKN-PAY-1' })
     );
     expect(result.status).toBe('invoice_authorized');
     expect(result.invoiceNumber).toBe('001-001-000000123');
+  });
+
+  test('concilia el sobre firmado del webhook del Facturador', async () => {
+    const eventPayload = {
+      id: 'event-1',
+      evento: 'factura.autorizada',
+      data: {
+        tenantId: 'tenant-1',
+        externalReference: 'SKN-PAY-1',
+        idempotencyKey: 'SKNOMINA-SKN-PAY-1',
+        facturadorRequestId: 'fac-req-1',
+        estado: 'invoice_authorized',
+        numero: '001-002-000000123',
+      },
+    };
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'invoice-1',
+        tenant_id: 'tenant-1',
+        external_reference: 'SKN-PAY-1',
+        idempotency_key: 'SKNOMINA-SKN-PAY-1',
+        status: 'invoice_authorized',
+        facturador_request_id: 'fac-req-1',
+        invoice_number: '001-002-000000123',
+      }],
+    });
+
+    const result = await processFacturadorWebhook({
+      payload: eventPayload,
+      rawPayload: JSON.stringify(eventPayload),
+      signature: 'sha256=test',
+      correlationId: 'corr-webhook-1',
+    });
+
+    expect(require('./facturadorClient').verifyFacturadorWebhookSignature).toHaveBeenCalledWith(
+      JSON.stringify(eventPayload),
+      'sha256=test'
+    );
+    expect(db.query.mock.calls[0][1]).toEqual(expect.arrayContaining([
+      'SKNOMINA-SKN-PAY-1',
+      'tenant-1',
+      'invoice_authorized',
+      'fac-req-1',
+      'SKN-PAY-1',
+    ]));
+    expect(result.status).toBe('invoice_authorized');
   });
 });
 
@@ -290,7 +358,7 @@ describe('retryPendingInvoices AIV75-26', () => {
     );
   });
 
-  test('selecciona solo facturas elegibles (blocked/invoice_rejected, attempts < max, backoff)', async () => {
+  test('selecciona solo facturas elegibles (blocked/failed, attempts < max, backoff)', async () => {
     mockReadyFacturador();
     mockAuthorizedResponse();
 
@@ -308,7 +376,7 @@ describe('retryPendingInvoices AIV75-26', () => {
 
     // Verify the SELECT query uses the correct parameters
     const selectCall = db.query.mock.calls[0];
-    expect(selectCall[0]).toContain("status IN ('blocked', 'invoice_rejected')");
+    expect(selectCall[0]).toContain("status IN ('blocked', 'failed')");
     expect(selectCall[0]).toContain('attempts < $1');
     expect(selectCall[0]).toContain('LIMIT 20');
     expect(selectCall[1]).toEqual([5]); // RETRY_MAX_ATTEMPTS

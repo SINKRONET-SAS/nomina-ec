@@ -15,7 +15,10 @@ function getFacturadorConfig() {
   return {
     baseUrl,
     apiKeyConfigured: Boolean(process.env.SINKRONET_FACTURADOR_API_KEY),
-    invoicePath: normalizePath(process.env.SINKRONET_FACTURADOR_INVOICE_PATH, '/api/facturas'),
+    invoicePath: normalizePath(
+      process.env.SINKRONET_FACTURADOR_INVOICE_PATH,
+      '/api/integrations/sknomina/invoices'
+    ),
     healthPath: normalizePath(process.env.SINKRONET_FACTURADOR_HEALTH_PATH, '/api/health'),
     timeoutMs: Number.parseInt(process.env.SINKRONET_FACTURADOR_TIMEOUT_MS || '15000', 10),
     webhookSecretConfigured: Boolean(process.env.SINKRONET_FACTURADOR_WEBHOOK_SECRET),
@@ -62,7 +65,7 @@ async function requestFiscalInvoice(payload, options = {}) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Api-Key': process.env.SINKRONET_FACTURADOR_API_KEY,
+        Authorization: `Bearer ${String(process.env.SINKRONET_FACTURADOR_API_KEY || '').trim()}`,
         'Idempotency-Key': options.idempotencyKey,
         'X-Correlation-Id': options.correlationId || 'msf26-facturacion',
       },
@@ -71,15 +74,29 @@ async function requestFiscalInvoice(payload, options = {}) {
     });
 
     const text = await response.text();
-    const body = text ? JSON.parse(text) : {};
+    let body = {};
+    if (text) {
+      try {
+        body = JSON.parse(text);
+      } catch (parseError) {
+        throw new AppError('SINKRONET FACTURADOR devolvio una respuesta no valida.', {
+          code: 'FACTURADOR_RESPUESTA_INVALIDA',
+          statusCode: 502,
+          details: { providerStatus: response.status, parseError: parseError.message },
+          correlationId: options.correlationId,
+          userId: options.userId,
+        });
+      }
+    }
 
     if (!response.ok) {
-      throw new AppError(body.message || 'SINKRONET FACTURADOR no acepto la solicitud fiscal.', {
+      const providerMessage = body?.data?.mensaje || body?.error || body?.message;
+      throw new AppError(providerMessage || 'SINKRONET FACTURADOR no acepto la solicitud fiscal.', {
         code: 'FACTURADOR_API_ERROR',
         statusCode: response.status >= 500 ? 502 : response.status,
         details: {
           providerStatus: response.status,
-          providerCode: body.error || body.code || null,
+          providerCode: body.code || body?.data?.code || null,
         },
         correlationId: options.correlationId,
         userId: options.userId,

@@ -109,7 +109,9 @@ services:
       - key: SINKRONET_FACTURADOR_API_KEY
         sync: false
       - key: SINKRONET_FACTURADOR_INVOICE_PATH
-        value: /api/facturas
+        value: /api/integrations/sknomina/invoices
+      - key: SINKRONET_FACTURADOR_EMISSION_POINT_ID
+        sync: false
       - key: SINKRONET_FACTURADOR_HEALTH_PATH
         value: /api/health
       - key: SINKRONET_FACTURADOR_WEBHOOK_SECRET
@@ -197,7 +199,9 @@ services:
       - key: SINKRONET_FACTURADOR_API_KEY
         sync: false
       - key: SINKRONET_FACTURADOR_INVOICE_PATH
-        value: /api/facturas
+        value: /api/integrations/sknomina/invoices
+      - key: SINKRONET_FACTURADOR_EMISSION_POINT_ID
+        sync: false
       - key: SINKRONET_FACTURADOR_HEALTH_PATH
         value: /api/health
       - key: SINKRONET_FACTURADOR_WEBHOOK_SECRET
